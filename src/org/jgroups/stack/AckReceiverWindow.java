@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.20 2005/08/26 11:32:44 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.21 2006/12/13 11:44:02 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,23 +33,27 @@ public class AckReceiverWindow {
     }
 
 
-    /** Adds a new message. Message cannot be null */
-    public void add(long seqno, Message msg) {
+    /** Adds a new message. Message cannot be null
+     * @return True if the message was added, false if not (e.g. duplicate, message was already present)
+     */
+    public boolean add(long seqno, Message msg) {
         if(msg == null)
             throw new IllegalArgumentException("msg must be non-null");
         synchronized(msgs) {
             if(seqno < next_to_remove) {
                 if(log.isTraceEnabled())
                     log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
-                return;
+                return false;
             }
             Long seq=new Long(seqno);
             if(!msgs.containsKey(seq)) { // todo: replace with atomic action once we have util.concurrent (JDK 5)
                 msgs.put(seq, msg);
+                return true;
             }
             else {
                 if(log.isTraceEnabled())
                     log.trace("seqno " + seqno + " already received - dropping it");
+                return false;
             }
         }
     }
