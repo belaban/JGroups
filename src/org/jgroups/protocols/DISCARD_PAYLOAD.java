@@ -1,9 +1,8 @@
 package org.jgroups.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.Address;
+import org.jgroups.stack.Protocol;
 
 import java.util.Properties;
 
@@ -12,7 +11,7 @@ import java.util.Properties;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.1 2006/12/13 11:23:03 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.2 2006/12/13 11:29:20 belaban Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
     long seqno=3;
