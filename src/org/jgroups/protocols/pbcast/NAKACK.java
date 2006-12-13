@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.84 2006/12/11 14:46:58 belaban Exp $
+// $Id: NAKACK.java,v 1.85 2006/12/13 12:31:20 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -664,7 +664,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             return;
         }
-        win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
+
+        boolean added=win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
+        // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
+        // http://jira.jboss.com/jira/browse/JGRP-379
+        if(msg.isFlagSet(Message.OOB) && added) {
+            passUp(new Event(Event.MSG, msg));
+        }
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
         // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
@@ -674,6 +680,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // order in which they were sent by the sender
         synchronized(win) {
             while((msg_to_deliver=win.remove()) != null) {
+
+                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                if(msg_to_deliver.isFlagSet(Message.OOB)) {
+                    continue;
+                }
 
                 // Changed by bela Jan 29 2003: not needed (see above)
                 //msg_to_deliver.removeHeader(getName());
