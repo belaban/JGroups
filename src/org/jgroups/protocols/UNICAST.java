@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.67 2006/12/13 11:57:45 belaban Exp $
+// $Id: UNICAST.java,v 1.68 2006/12/13 12:02:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -456,9 +456,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         boolean added=entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
-
-        System.out.println("seqno " + msg.getSrc() + ":" + seqno + " added: " + added);
-
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
