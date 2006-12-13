@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.8 2005/07/18 14:23:35 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.9 2006/12/13 12:30:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,8 +20,8 @@ public class NakReceiverWindowTest extends TestCase {
 
     public void test1() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
-        assertTrue(win.getLowestSeen() == 0);
-        assertTrue(win.getHighestSeen() == 0);
+        assertEquals(0, win.getLowestSeen());
+        assertEquals(0, win.getHighestSeen());
         assertNull(win.get(23));
     }
 
@@ -35,19 +35,19 @@ public class NakReceiverWindowTest extends TestCase {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         win.add(1, new Message());
         assertNotNull(win.get(1));
-        assertTrue(win.getLowestSeen() == 1);
-        assertTrue(win.getHighestSeen() == 1);
+        assertEquals(1, win.getLowestSeen());
+        assertEquals(1, win.getHighestSeen());
         win.add(2, new Message());
-        assertTrue(win.getLowestSeen() == 1);
-        assertTrue(win.getHighestSeen() == 2);
+        assertEquals(1, win.getLowestSeen());
+        assertEquals(2, win.getHighestSeen());
         assertNotNull(win.get(2));
     }
 
     public void test4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(null, 1);
         win.add(2, new Message());
-        assertTrue(win.getLowestSeen() == 0);
-        assertTrue(win.getHighestSeen() == 0);
+        assertEquals(0, win.getLowestSeen());
+        assertEquals(0, win.getHighestSeen());
     }
 
     public void test5() throws Exception {
@@ -65,8 +65,8 @@ public class NakReceiverWindowTest extends TestCase {
         while((win.remove()) != null) ;
         assertNotNull(win.get(100));
         assertNotNull(win.get(101));
-        assertTrue(win.getLowestSeen() == 100);
-        assertTrue(win.getHighestSeen() == 101);
+        assertEquals(100, win.getLowestSeen());
+        assertEquals(101, win.getHighestSeen());
     }
 
     public void test7() throws Exception {
@@ -76,8 +76,8 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(3, new Message());
         win.add(4, new Message());
         win.stable(4);
-        assertTrue(win.getLowestSeen() == 1);
-        assertTrue(win.getHighestSeen() == 4);
+        assertEquals(true, win.getLowestSeen() == 1);
+        assertEquals(4, win.getHighestSeen());
         assertNotNull(win.get(2));
     }
 
@@ -93,7 +93,7 @@ public class NakReceiverWindowTest extends TestCase {
         //System.out.println("highest received=" + win.getHighestReceived() +
         //	   "\nhighest_seen=" + win.getHighestSeen() +
         //	   "\nhighest_delivered=" + win.getHighestDelivered());
-        assertTrue(win.getHighestSeen() == 4);
+        assertEquals(4, win.getHighestSeen());
     }
 
 
@@ -132,8 +132,8 @@ public class NakReceiverWindowTest extends TestCase {
         //System.out.println("highest received=" + win.getHighestReceived() +
         //   "\nhighest_seen=" + win.getHighestSeen() +
         //   "\nhighest_delivered=" + win.getHighestDelivered());
-        assertTrue(win.getLowestSeen() == 4);
-        assertTrue(win.getHighestSeen() == 4);
+        assertEquals(4, win.getLowestSeen());
+        assertEquals(4, win.getHighestSeen());
     }
 
 
@@ -143,10 +143,10 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
-        assertEquals(win.getHighestSeen(), 4);
+        assertEquals(4, win.getHighestSeen());
         win.add(10, new Message());
-        assertEquals(win.getHighestSeen(), 4);
-        assertEquals(win.getHighestReceived(), 10);
+        assertEquals(4, win.getHighestSeen());
+        assertEquals(10, win.getHighestReceived());
         System.out.println("win: " + win);
         win.add(9, new Message());
         win.add(7, new Message());
@@ -270,8 +270,8 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(3, new Message());
         win.add(4, new Message());
         while((win.remove()) != null) ;
-        assertTrue(win.getLowestSeen() == 1);
-        assertTrue(win.getHighestSeen() == 4);
+        assertEquals(1, win.getLowestSeen());
+        assertEquals(4, win.getHighestSeen());
     }
 
     public void test10a() throws Exception {
@@ -282,8 +282,8 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(4, new Message());
         while((win.remove()) != null) ;
         win.stable(4);
-        assertTrue(win.getLowestSeen() == 4);
-        assertTrue(win.getHighestSeen() == 4);
+        assertEquals(4, win.getLowestSeen());
+        assertEquals(4, win.getHighestSeen());
 
     }
 
@@ -295,8 +295,8 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(4, new Message());
         while((win.remove()) != null) ;
         win.reset();
-        assertTrue(win.getLowestSeen() == 0);
-        assertTrue(win.getHighestSeen() == 0);
+        assertEquals(true, win.getLowestSeen() == 0);
+        assertEquals(0, win.getHighestSeen());
     }
 
 
@@ -307,9 +307,9 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(2, new Message(null, null, new Integer(2)));
         win.add(3, new Message(null, null, new Integer(3)));
 
-        assertTrue(((Integer)win.remove().getObject()).intValue() == 1);
-        assertTrue(((Integer)win.remove().getObject()).intValue() == 2);
-        assertTrue(((Integer)win.remove().getObject()).intValue() == 3);
+        assertEquals(true, ((Integer)win.remove().getObject()).intValue() == 1);
+        assertEquals(2, ((Integer)win.remove().getObject()).intValue());
+        assertEquals(3, ((Integer)win.remove().getObject()).intValue());
     }
 
 
@@ -333,6 +333,54 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+
+    public void testAddOOBAtHead() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        boolean rc;
+        rc=win.add(0, oob());
+        assertFalse(rc);
+        rc=win.add(1, oob());
+        assertTrue(rc);
+        rc=win.add(1, oob());
+        assertFalse(rc);
+    }
+
+
+    public void testAddOOBAtTail() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        boolean rc;
+        rc=win.add(1, oob());
+        assertTrue(rc);
+        rc=win.add(2, oob());
+        assertTrue(rc);
+        rc=win.add(2, oob());
+        assertFalse(rc);
+    }
+
+
+    public void testAddOOBInTheMiddle() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(null, 1);
+        boolean rc;
+        rc=win.add(3, oob());
+        assertTrue(rc);
+        rc=win.add(3, oob());
+        assertFalse(rc);
+        rc=win.add(1, oob());
+        assertTrue(rc);
+        rc=win.add(1, oob());
+        assertFalse(rc);
+        rc=win.add(2, oob());
+        assertTrue(rc);
+        rc=win.add(2, oob());
+        assertFalse(rc);
+    }
+
+
+    private Message oob() {
+        Message retval=new Message();
+        retval.setFlag(Message.OOB);
+        return retval;
+    }
 
 
     public void testUpdateHighestSeen() {
