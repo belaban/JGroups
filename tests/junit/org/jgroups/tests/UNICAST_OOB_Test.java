@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.3 2006/12/13 11:22:31 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.4 2006/12/13 12:02:42 belaban Exp $
  */
 public class UNICAST_OOB_Test extends TestCase {
     JChannel ch1, ch2;
@@ -42,14 +42,18 @@ public class UNICAST_OOB_Test extends TestCase {
     }
 
 
-    /**
-     * Tests http://jira.jboss.com/jira/browse/JGRP-377: we send 1, 2, 3, 4(OOB) and 5. Message with seqno 3 is discarded
-     * two times, so retransmission will make the receiver receive it *after* 4. Because 4 is marked as OOB, we will
-     * deliver 4 *immediately* (before 3 and 5), so the sequence of the messages at the receiver is 1 - 2 - 4 -3 - 5.
-     * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
-     * @throws Exception
-     */
+    public void testRegularMessages() throws Exception {
+        sendMessages(false);
+    }
+
     public void testOutOfBandMessages() throws Exception {
+        sendMessages(true);
+    }
+
+
+    /**
+     */
+    private void sendMessages(boolean oob) throws Exception {
         DISCARD_PAYLOAD prot1=new DISCARD_PAYLOAD();
         MyReceiver receiver=new MyReceiver();
         ch2.setReceiver(receiver);
@@ -64,25 +68,30 @@ public class UNICAST_OOB_Test extends TestCase {
         Address dest=ch2.getLocalAddress();
         for(int i=1; i <=5; i++) {
             Message msg=new Message(dest, null, new Long(i));
-            if(i == 4)
+            if(i == 4 && oob)
                 msg.setFlag(Message.OOB);
             System.out.println("-- sending message #" + i);
             ch1.send(msg);
             Util.sleep(100);
         }
+
         Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
 
         List seqnos=receiver.getSeqnos();
         System.out.println("sequence numbers: " + seqnos);
 
         // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
-        Long[] expected_seqnos=new Long[]{new Long(1), new Long(2), new Long(4), new Long(3), new Long(5)};
+        Long[] expected_seqnos=oob?
+                new Long[]{new Long(1), new Long(2), new Long(4), new Long(3), new Long(5)} : // OOB
+                new Long[]{new Long(1), new Long(2), new Long(3), new Long(4), new Long(5)};  // regular
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
             Long received_seqno=(Long)seqnos.get(i);
             assertEquals(expected_seqno,  received_seqno);
         }
     }
+
+
 
 
     public static class MyReceiver extends ReceiverAdapter {
