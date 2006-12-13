@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.15 2006/12/13 12:38:16 belaban Exp $
+// $Id: SMACK.java,v 1.16 2006/12/13 12:40:56 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -40,12 +40,12 @@ import java.util.Vector;
  *     been received yet</li>
  * <li>When a max number of (unsuccessful) retransmissions have been
  *     exceeded, all remaining members for that seqno are removed from
- *     the local membership, and the seqno is removed from te hashmap,
+ *     the local membership, and the seqno is removed from the hashmap,
  *     ceasing all retransmissions</li>
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
