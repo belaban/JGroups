@@ -1,26 +1,25 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.JChannel;
-import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.util.Util;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.1 2006/12/13 11:23:04 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.2 2006/12/13 12:30:50 belaban Exp $
  */
 public class NAKACK_OOB_Test extends TestCase {
-    JChannel ch1, ch2, ch3, ch4;
+    JChannel ch1, ch2, ch3;
     final String props="udp.xml";
 
     public NAKACK_OOB_Test(String name) {
@@ -32,7 +31,6 @@ public class NAKACK_OOB_Test extends TestCase {
         ch1=new JChannel(props);
         ch2=new JChannel(props);
         ch3=new JChannel(props);
-        ch4=new JChannel(props);
     }
 
     public void tearDown() throws Exception {
@@ -42,8 +40,6 @@ public class NAKACK_OOB_Test extends TestCase {
             ch2.close();
         if(ch3 != null)
             ch3.close();
-        if(ch4 != null)
-            ch4.close();
         super.tearDown();
     }
 
@@ -60,24 +56,20 @@ public class NAKACK_OOB_Test extends TestCase {
         NAKACK_OOB_Test.MyReceiver receiver1=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver2=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver3=new NAKACK_OOB_Test.MyReceiver();
-        NAKACK_OOB_Test.MyReceiver receiver4=new NAKACK_OOB_Test.MyReceiver();
         ch1.setReceiver(receiver1);
         ch2.setReceiver(receiver2);
         ch3.setReceiver(receiver3);
-        ch4.setReceiver(receiver4);
 
         // all channels will discard messages with seqno #3 two times, the let them pass
         ch1.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
         ch2.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
         ch3.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
-        ch4.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
 
         ch1.connect("x");
         ch2.connect("x");
         ch3.connect("x");
-        ch4.connect("x");
 
-        assertEquals(4, ch4.getView().getMembers().size());
+        assertEquals(3, ch3.getView().getMembers().size());
 
         for(int i=1; i <=5; i++) {
             Message msg=new Message(null, null, new Long(i));
@@ -87,18 +79,17 @@ public class NAKACK_OOB_Test extends TestCase {
             ch1.send(msg);
             Util.sleep(100);
         }
+
         Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
 
         List seqnos1=receiver1.getSeqnos();
         List seqnos2=receiver2.getSeqnos();
         List seqnos3=receiver3.getSeqnos();
-        List seqnos4=receiver4.getSeqnos();
 
         System.out.println("sequence numbers:");
         System.out.println("ch1: " + seqnos1);
         System.out.println("ch2: " + seqnos2);
         System.out.println("ch3: " + seqnos3);
-        System.out.println("ch4: " + seqnos4);
 
         // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
         Long[] expected_seqnos=new Long[]{new Long(1), new Long(2), new Long(4), new Long(3), new Long(5)};
@@ -110,8 +101,6 @@ public class NAKACK_OOB_Test extends TestCase {
             received_seqno=(Long)seqnos2.get(i);
             assertEquals(expected_seqno,  received_seqno);
             received_seqno=(Long)seqnos3.get(i);
-            assertEquals(expected_seqno,  received_seqno);
-            received_seqno=(Long)seqnos4.get(i);
             assertEquals(expected_seqno,  received_seqno);
         }
     }
