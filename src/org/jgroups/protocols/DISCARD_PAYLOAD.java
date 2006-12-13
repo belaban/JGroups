@@ -11,10 +11,11 @@ import java.util.Properties;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.2 2006/12/13 11:29:20 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.3 2006/12/13 12:03:37 belaban Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
-    long seqno=3;
+    long seqno=3; // drop 3
+    long duplicate=4; // duplicate 4 (one time)
     int num_discards=0;
 
     public DISCARD_PAYLOAD() {
@@ -35,6 +36,12 @@ public class DISCARD_PAYLOAD extends Protocol {
             props.remove("seqno");
         }
 
+        str=props.getProperty("duplicate");
+        if(str != null) {
+            duplicate=Long.parseLong(str);
+            props.remove("duplicate");
+        }
+
         if(props.size() > 0) {
             log.error("these properties are not recognized: " + props);
             return false;
@@ -49,12 +56,19 @@ public class DISCARD_PAYLOAD extends Protocol {
             if(msg.getLength() > 0) {
                 try {
                     Long payload=(Long)msg.getObject();
-                    if(payload != null && payload.longValue() == seqno) {
-                        synchronized(this) {
-                            if(num_discards < 3) {
-                                num_discards++;
-                                return;
+                    if(payload != null) {
+                        long val=payload.longValue();
+
+                        if(val == seqno) {
+                            synchronized(this) {
+                                if(num_discards < 3) {
+                                    num_discards++;
+                                    return;
+                                }
                             }
+                        }
+                        if(val == duplicate) { // inject a duplicate message
+                            super.up(evt); // pass it up, will passed up a second time by the default passUp(evt)
                         }
                     }
                 }
