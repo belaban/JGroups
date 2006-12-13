@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.14 2006/02/07 13:49:57 belaban Exp $
+// $Id: SMACK.java,v 1.15 2006/12/13 12:38:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -180,11 +180,22 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                             win=new AckReceiverWindow(hdr.seqno);
                             receivers.put(sender, win);
                         }
-                        win.add(hdr.seqno, msg);
+                        boolean added=win.add(hdr.seqno, msg);
+                        // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
+                        // http://jira.jboss.com/jira/browse/JGRP-379
+                        if(msg.isFlagSet(Message.OOB) && added) {
+                            passUp(new Event(Event.MSG, msg));
+                        }
 
                         // now remove as many messages as possible
-                        while((tmp_msg=win.remove()) != null)
+                        while((tmp_msg=win.remove()) != null) {
+                            // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                            if(tmp_msg.isFlagSet(Message.OOB)) {
+                                continue;
+                            }
+
                             passUp(new Event(Event.MSG, tmp_msg));
+                        }
                         return;
 
                     case SmackHeader.ACK:
