@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.28 2006/01/14 14:00:42 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.29 2006/12/13 12:30:05 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -181,9 +181,11 @@ public class NakReceiverWindow {
      * missing (or already present) element. If it is equal to
      * <code>tail</code>, we advance the latter by 1 and add the message
      * (default case).
+     * @return True if the message was added successfully, false otherwise (e.g. duplicate message)
      */
-    public void add(long seqno, Message msg) {
+    public boolean add(long seqno, Message msg) {
         long old_tail;
+        boolean retval=true;
 
         try {
             lock.writeLock().acquire();
@@ -195,7 +197,7 @@ public class NakReceiverWindow {
                         sb.append(seqno).append(" is smaller than ").append(head).append("); discarding message");
                         log.trace(sb.toString());
                     }
-                    return;
+                    return false;
                 }
 
                 // add at end (regular expected msg)
@@ -251,8 +253,11 @@ public class NakReceiverWindow {
                         //NAKACK.addXmitResponse(msg.getSrc(), seqno);
                         if(retransmitter != null) retransmitter.remove(seqno);
                     }
+                    else
+                        retval=false;
                 }
                 updateLowestSeen();
+
             }
             finally {
                 lock.writeLock().release();
@@ -261,6 +266,7 @@ public class NakReceiverWindow {
         catch(InterruptedException e) {
             log.error("failed acquiring write lock", e);
         }
+        return retval;
     }
 
 
