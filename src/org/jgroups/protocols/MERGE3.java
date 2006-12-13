@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.11 2006/12/12 10:17:43 belaban Exp $
+// $Id: MERGE3.java,v 1.12 2006/12/13 14:21:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -230,6 +230,7 @@ public class MERGE3 extends Protocol {
                 }
             }
             announcements.clear();
+            announcements.add(local_addr);
         }
     }
 
