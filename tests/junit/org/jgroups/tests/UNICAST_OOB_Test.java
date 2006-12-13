@@ -7,7 +7,7 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
-import org.jgroups.protocols.UNICAST_DISCARD;
+import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.2 2006/12/13 09:03:39 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.3 2006/12/13 11:22:31 belaban Exp $
  */
 public class UNICAST_OOB_Test extends TestCase {
     JChannel ch1, ch2;
@@ -46,11 +46,11 @@ public class UNICAST_OOB_Test extends TestCase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-377: we send 1, 2, 3, 4(OOB) and 5. Message with seqno 3 is discarded
      * two times, so retransmission will make the receiver receive it *after* 4. Because 4 is marked as OOB, we will
      * deliver 4 *immediately* (before 3 and 5), so the sequence of the messages at the receiver is 1 - 2 - 4 -3 - 5.
-     * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !  
+     * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      * @throws Exception
      */
     public void testOutOfBandMessages() throws Exception {
-        UNICAST_DISCARD prot1=new UNICAST_DISCARD();
+        DISCARD_PAYLOAD prot1=new DISCARD_PAYLOAD();
         MyReceiver receiver=new MyReceiver();
         ch2.setReceiver(receiver);
 
