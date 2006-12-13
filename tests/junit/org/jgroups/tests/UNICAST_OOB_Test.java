@@ -3,19 +3,21 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.util.Util;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.UNICAST_DISCARD;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
- * Tests the UNICAST protocol for OOB msgs
+ * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.1 2006/12/13 08:25:06 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.2 2006/12/13 09:03:39 belaban Exp $
  */
 public class UNICAST_OOB_Test extends TestCase {
     JChannel ch1, ch2;
@@ -40,6 +42,13 @@ public class UNICAST_OOB_Test extends TestCase {
     }
 
 
+    /**
+     * Tests http://jira.jboss.com/jira/browse/JGRP-377: we send 1, 2, 3, 4(OOB) and 5. Message with seqno 3 is discarded
+     * two times, so retransmission will make the receiver receive it *after* 4. Because 4 is marked as OOB, we will
+     * deliver 4 *immediately* (before 3 and 5), so the sequence of the messages at the receiver is 1 - 2 - 4 -3 - 5.
+     * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !  
+     * @throws Exception
+     */
     public void testOutOfBandMessages() throws Exception {
         UNICAST_DISCARD prot1=new UNICAST_DISCARD();
         MyReceiver receiver=new MyReceiver();
@@ -57,7 +66,9 @@ public class UNICAST_OOB_Test extends TestCase {
             Message msg=new Message(dest, null, new Long(i));
             if(i == 4)
                 msg.setFlag(Message.OOB);
+            System.out.println("-- sending message #" + i);
             ch1.send(msg);
+            Util.sleep(100);
         }
         Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
 
