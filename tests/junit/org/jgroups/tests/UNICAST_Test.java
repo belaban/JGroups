@@ -1,4 +1,4 @@
-// $Id: UNICAST_Test.java,v 1.2 2006/12/12 17:32:37 belaban Exp $
+// $Id: UNICAST_Test.java,v 1.3 2006/12/13 08:00:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -44,7 +44,8 @@ public class UNICAST_Test extends TestCase {
 
     public void tearDown() throws Exception {
         super.tearDown();
-        simulator.stop();
+        if(simulator != null)
+            simulator.stop();
     }
 
 
