@@ -8,21 +8,21 @@ import org.jgroups.Address;
 import java.util.Properties;
 
 /**
- * Discards a UNICAST message whose sequence number (in the payload, as a Long) matches seqno 2 times,
+ * Discards a message whose sequence number (in the payload, as a Long) matches seqno 2 times,
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: UNICAST_DISCARD.java,v 1.2 2006/12/13 09:03:39 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.1 2006/12/13 11:23:03 belaban Exp $
  */
-public class UNICAST_DISCARD extends Protocol {
+public class DISCARD_PAYLOAD extends Protocol {
     long seqno=3;
     int num_discards=0;
 
-    public UNICAST_DISCARD() {
+    public DISCARD_PAYLOAD() {
     }
 
     public String getName() {
-        return "UNICAST_DISCARD";
+        return "DISCARD_PAYLOAD";
     }
 
     public boolean setProperties(Properties props) {
@@ -47,20 +47,20 @@ public class UNICAST_DISCARD extends Protocol {
     public void up(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            Address dest=msg.getDest();
-            if(dest != null && !dest.isMulticastAddress()) {
-                Long payload=(Long)msg.getObject();
-                if(payload != null && payload.longValue() == seqno) {
-                    synchronized(this) {
-                        if(num_discards < 3) {
-                            System.out.println("num_discards=" + num_discards + ", discarding");
-                            num_discards++;
-                            return;
-                        }
-                        else {
-                            System.out.println("num_discards=" + num_discards + ", passing up");
+            if(msg.getLength() > 0) {
+                try {
+                    Long payload=(Long)msg.getObject();
+                    if(payload != null && payload.longValue() == seqno) {
+                        synchronized(this) {
+                            if(num_discards < 3) {
+                                num_discards++;
+                                return;
+                            }
                         }
                     }
+                }
+                catch(Throwable t) {
+                    ;
                 }
             }
         }
