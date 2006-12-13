@@ -3,14 +3,16 @@ package org.jgroups.protocols;
 import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.Address;
 
 import java.util.Properties;
 
 /**
- * Discards a UNICAST message whose sequence number matches seqno 2 times, before passing it up. Used for unit testing
+ * Discards a UNICAST message whose sequence number (in the payload, as a Long) matches seqno 2 times,
+ * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: UNICAST_DISCARD.java,v 1.1 2006/12/13 08:00:25 belaban Exp $
+ * @version $Id: UNICAST_DISCARD.java,v 1.2 2006/12/13 09:03:39 belaban Exp $
  */
 public class UNICAST_DISCARD extends Protocol {
     long seqno=3;
@@ -45,10 +47,20 @@ public class UNICAST_DISCARD extends Protocol {
     public void up(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
-            UNICAST.UnicastHeader hdr=(UNICAST.UnicastHeader)msg.getHeader("UNICAST");
-            if(hdr != null) {
-                if(hdr.seqno == seqno && num_discards++ < 3) {
-                    return;
+            Address dest=msg.getDest();
+            if(dest != null && !dest.isMulticastAddress()) {
+                Long payload=(Long)msg.getObject();
+                if(payload != null && payload.longValue() == seqno) {
+                    synchronized(this) {
+                        if(num_discards < 3) {
+                            System.out.println("num_discards=" + num_discards + ", discarding");
+                            num_discards++;
+                            return;
+                        }
+                        else {
+                            System.out.println("num_discards=" + num_discards + ", passing up");
+                        }
+                    }
                 }
             }
         }
