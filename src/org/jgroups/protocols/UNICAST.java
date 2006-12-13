@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.65 2006/12/11 14:45:08 belaban Exp $
+// $Id: UNICAST.java,v 1.66 2006/12/13 09:03:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -459,6 +459,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
+        // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
+        // http://jira.jboss.com/jira/browse/JGRP-377
+        if(msg.isFlagSet(Message.OOB)) {
+            passUp(new Event(Event.MSG, msg));
+        }
+
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         Message  m;
 
@@ -469,8 +475,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
         synchronized(entry) {
-            while((m=entry.received_msgs.remove()) != null)
+            while((m=entry.received_msgs.remove()) != null) {
+                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
+                if(m.isFlagSet(Message.OOB)) {
+                    continue;
+                }
                 passUp(new Event(Event.MSG, m));
+            }
         }
         return true; // msg was successfully received - send an ack back to the sender
     }
