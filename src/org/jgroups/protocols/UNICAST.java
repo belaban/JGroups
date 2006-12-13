@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.66 2006/12/13 09:03:17 belaban Exp $
+// $Id: UNICAST.java,v 1.67 2006/12/13 11:57:45 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -455,13 +455,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 entry.received_msgs=new AckReceiverWindow(DEFAULT_FIRST_SEQNO);
         }
 
-        entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
+        boolean added=entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
+
+        System.out.println("seqno " + msg.getSrc() + ":" + seqno + " added: " + added);
+
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.OOB)) {
+        if(msg.isFlagSet(Message.OOB) && added) {
             passUp(new Event(Event.MSG, msg));
         }
 
