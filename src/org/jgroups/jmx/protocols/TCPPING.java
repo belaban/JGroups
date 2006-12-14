@@ -1,10 +1,8 @@
 package org.jgroups.jmx.protocols;
 
-import org.jgroups.jmx.Protocol;
-
 /**
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.1 2005/06/14 10:10:10 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.2 2006/12/14 07:46:59 belaban Exp $
  */
 public class TCPPING extends Discovery implements TCPPINGMBean {
 
