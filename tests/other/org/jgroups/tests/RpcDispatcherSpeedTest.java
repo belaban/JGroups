@@ -2,12 +2,14 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.MethodLookup;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServer;
 import java.lang.reflect.Method;
 
 
@@ -16,13 +18,14 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
     RpcDispatcher       disp;
     String              props=null;
     boolean             server=false; // role is client by default
+    boolean             jmx=false;
     int                 num=1000;
     int                 mode=OLD;
     static final int    OLD=1;
@@ -37,15 +40,16 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     final Object[]      EMPTY_OBJECT_ARRAY=new Object[]{};
     final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
     final String[]      EMPTY_STRING_ARRAY=new String[]{};
+    private long        sleep=0;
 
 
-
-
-    public RpcDispatcherSpeedTest(String props, boolean server, int num, int mode) throws NoSuchMethodException {
+    public RpcDispatcherSpeedTest(String props, boolean server, int num, int mode, boolean jmx, long sleep) throws NoSuchMethodException {
         this.props=props;
         this.server=server;
         this.num=num;
         this.mode=mode;
+        this.jmx=jmx;
+        this.sleep=sleep;
         initMethods();
     }
 
@@ -55,7 +59,10 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     }
 
     public long measure() throws Exception {
-        return System.currentTimeMillis();
+        long retval=System.currentTimeMillis();
+        if(sleep > 0)
+            Util.sleep(sleep);
+        return retval;
     }
 
 
@@ -73,6 +80,15 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 return METHODS[0];
             }
         });
+
+
+        if(jmx) {
+            MBeanServer srv=Util.getMBeanServer();
+            if(srv == null)
+                throw new Exception("No MBeanServers found;" +
+                        "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
+            JmxConfigurator.registerChannel((JChannel)channel, srv, "jgroups", channel.getClusterName(), true);
+        }
 
         channel.connect("RpcDispatcherSpeedTestGroup");
 
@@ -198,8 +214,9 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
     public static void main(String[] args) {
         String                 props=null;
-        boolean                server=false;
+        boolean                server=false, jmx=false;
         int                    num=1000;
+        long                   sleep=0;
         RpcDispatcherSpeedTest test;
         int                    mode=OLD;
 
@@ -214,6 +231,14 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             }
             if("-num".equals(args[i])) {
                 num=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if("-jmx".equals(args[i])) {
+                jmx=true;
+                continue;
+            }
+            if("-sleep".equals(args[i])) {
+                sleep=Long.parseLong(args[++i]);
                 continue;
             }
             if("-mode".equals(args[i])) {
@@ -242,7 +267,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
 
         try {
-            test=new RpcDispatcherSpeedTest(props, server, num, mode);
+            test=new RpcDispatcherSpeedTest(props, server, num, mode, jmx, sleep);
             test.start();
         }
         catch(Exception e) {
@@ -252,7 +277,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
     static void help() {
         System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] " +
-                           "[-server] [-num <number of calls>] [-mode <mode>]");
+                           "[-server] [-num <number of calls>] [-mode <mode>] [-jmx] [-sleep <ms>]");
         System.out.println("mode can be either 'old', 'method', 'types', signature' or 'id'");
     }
 }
