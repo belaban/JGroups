@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.85 2006/12/13 12:31:20 belaban Exp $
+// $Id: NAKACK.java,v 1.86 2006/12/15 10:08:06 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -70,7 +70,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Hashtable<Address,NakReceiverWindow>. Stores received messages (keyed by sender). Note that this is no long term
      * storage; messages are just stored until they can be delivered (ie., until the correct FIFO order is established)
      */
-    private final HashMap received_msgs=new HashMap(11);
+    private final Map received_msgs=new HashMap(11);
 
     /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
     private final TreeMap sent_msgs=new TreeMap();
