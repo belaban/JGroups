@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.54 2006/12/12 09:05:12 belaban Exp $
+ * @version $Id: FC.java,v 1.55 2006/12/15 14:16:45 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -334,32 +334,42 @@ public class FC extends Protocol {
                 FcHeader hdr=(FcHeader)msg.removeHeader(name);
                 if(hdr != null) {
                     switch(hdr.type) {
-                    case FcHeader.REPLENISH:
-                        num_credit_responses_received++;
-                        handleCredit(msg.getSrc());
-                        break;
-                    case FcHeader.CREDIT_REQUEST:
-                        num_credit_requests_received++;
-                        Address sender=msg.getSrc();
-                        if(trace)
-                            log.trace("received credit request from " + sender + ": sending credits");
-                        received.put(sender, max_credits_constant);
-                        sendCredit(sender);
-                        break;
-                    default:
-                        log.error("header type " + hdr.type + " not known");
-                        break;
+                        case FcHeader.REPLENISH:
+                            num_credit_responses_received++;
+                            handleCredit(msg.getSrc());
+                            break;
+                        case FcHeader.CREDIT_REQUEST:
+                            num_credit_requests_received++;
+                            Address sender=msg.getSrc();
+                            if(trace)
+                                log.trace("received credit request from " + sender + ": sending credits");
+                            received.put(sender, max_credits_constant);
+                            sendCredit(sender);
+                            break;
+                        default:
+                            log.error("header type " + hdr.type + " not known");
+                            break;
                     }
                     return; // don't pass message up
                 }
                 else {
-                    adjustCredit(msg);
+                    Address sender=msg.getSrc();
+                    boolean insufficient_credits=adjustCredit(msg, sender);
+                    try {
+                        passUp(evt);
+                    }
+                    finally {
+                        if(insufficient_credits) {
+                            if(trace) log.trace("sending replenishment message to " + sender);
+                            sendCredit(sender);
+                        }
+                    }
+                    return;
                 }
-                break;
 
-        case Event.VIEW_CHANGE:
-            handleViewChange(((View)evt.getArg()).getMembers());
-            break;
+            case Event.VIEW_CHANGE:
+                handleViewChange(((View)evt.getArg()).getMembers());
+                break;
         }
         passUp(evt);
     }
@@ -532,24 +542,26 @@ public class FC extends Protocol {
     /**
      * Check whether sender has enough credits left. If not, send him some more
      * @param msg
+     * @return boolean True if credits needs to be sent, false otherwise
      */
-    private void adjustCredit(Message msg) {
-        Address src=msg.getSrc();
+    private boolean adjustCredit(Message msg, Address src) {
         long    length=msg.getLength(); // we don't care about headers for the purpose of flow control
 
         if(src == null) {
             if(log.isErrorEnabled()) log.error("src is null");
-            return;
+            return false;
         }
 
         if(length == 0)
-            return; // no effect
+            return false; // no effect
 
         if(decrementCredit(received, src, length) <= min_credits) {
             received.put(src, max_credits_constant);
-            if(trace) log.trace("sending replenishment message to " + src);
-            sendCredit(src);
+            // if(trace) log.trace("sending replenishment message to " + src);
+            // sendCredit(src);
+            return true;
         }
+        return false;
     }
 
 
