@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.29 2006/12/13 12:30:05 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.30 2006/12/15 10:05:22 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -320,7 +320,8 @@ public class NakReceiverWindow {
             }
         }
         catch(InterruptedException e) {
-            log.error("failed acquiring write lock", e);
+            // log.error("failed acquiring write lock", e);
+            Thread.currentThread().interrupt(); // pass the interrupted status on, someone else will handle this
             return null;
         }
     }
