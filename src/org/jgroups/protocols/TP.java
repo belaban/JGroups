@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.89 2006/12/13 16:06:08 belaban Exp $
+ * @version $Id: TP.java,v 1.90 2006/12/15 14:15:57 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1772,6 +1772,9 @@ public abstract class TP extends Protocol {
                     msg=bufferToMessage(dis, dest, sender, multicast);
                     submitToThreadPool(msg, multicast);
                 }
+            }
+            catch(InterruptedException interrupted_ex) {
+                Thread.currentThread().interrupt(); // pass interrupt on so someone else (thread pool) can handle it
             }
             catch(QueueClosedException closed_ex) {
                 ; // swallow exception
