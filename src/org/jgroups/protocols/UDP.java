@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.124 2006/12/15 12:03:08 belaban Exp $
+ * @version $Id: UDP.java,v 1.125 2006/12/15 17:04:11 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -216,12 +216,18 @@ public class UDP extends TP implements Runnable {
             log.error("null_src_addresses has been deprecated, property will be ignored");
         }
 
+        Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
+        Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
+        Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
+        Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
+
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
     }
+
 
 
 
