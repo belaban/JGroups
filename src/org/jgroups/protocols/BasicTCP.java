@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
+import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -140,6 +141,10 @@ public abstract class BasicTCP extends TP {
             linger=Integer.parseInt(str);
             props.remove("linger");
         }
+
+
+        Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
+        Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
 
         return true;
     }

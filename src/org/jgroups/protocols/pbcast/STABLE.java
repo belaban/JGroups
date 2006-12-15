@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.46 2006/05/17 10:54:38 belaban Exp $
+// $Id: STABLE.java,v 1.47 2006/12/15 17:04:10 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -151,6 +151,8 @@ public class STABLE extends Protocol {
             log.error("max_suspend_time is not supported any longer; please remove it (ignoring it)");
             props.remove("max_suspend_time");
         }
+
+        Util.checkBufferSize("STABLE.max_bytes", max_bytes);
 
         if(props.size() > 0) {
             log.error("these properties are not recognized: " + props);
