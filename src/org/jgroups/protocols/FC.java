@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.55 2006/12/15 14:16:45 belaban Exp $
+ * @version $Id: FC.java,v 1.56 2006/12/15 16:40:17 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -265,8 +265,16 @@ public class FC extends Protocol {
             props.remove("max_block_time");
         }
 
+        // sanity check that max_credits doesn't exceed memory allocated to VM by -Xmx
+        long max_mem=Runtime.getRuntime().maxMemory();
+        if(max_credits > max_mem) {
+            log.error("max_credits (" + Util.printBytes(max_credits) + ") exceed max memory allocated to VM (" +
+                    Util.printBytes(max_mem) + ")");
+            return false;
+        }
+
         if(props.size() > 0) {
-            log.error("FC.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         max_credits_constant=new Long(max_credits);
