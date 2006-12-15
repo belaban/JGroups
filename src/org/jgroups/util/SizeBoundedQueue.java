@@ -13,9 +13,11 @@ import java.util.Map;
  * total. Removal blocks until a message is available, addition blocks if the max size has been exceeded, until there
  * is enough space to add another message.
  * Note that the max size should always be greater than the size of the largest message to be received, otherwise an
- * additon would always fail because msg.length > max size !
+ * additon would always fail because msg.length > max size !<br/>
+ * Access patterns: this instance is always accessed by the thread pool only ! Concurrent take() or poll() methods,
+ * but only a single thread at a time calls put() !
  * @author Bela Ban
- * @version $Id: SizeBoundedQueue.java,v 1.1 2006/12/13 16:39:34 belaban Exp $
+ * @version $Id: SizeBoundedQueue.java,v 1.2 2006/12/15 15:54:42 belaban Exp $
  */
 public class SizeBoundedQueue implements BoundedChannel {
     int max_size=1000 * 1000;
