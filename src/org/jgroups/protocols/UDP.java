@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123 2006/10/23 05:52:47 belaban Exp $
+ * @version $Id: UDP.java,v 1.124 2006/12/15 12:03:08 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -269,7 +269,7 @@ public class UDP extends TP implements Runnable {
             catch(Throwable ex) {
                 if(log.isErrorEnabled())
                     log.error("failure in multicast receive()", ex);
-                Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
+                // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
             }
         }
         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
@@ -969,7 +969,7 @@ public class UDP extends TP implements Runnable {
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
                         log.error("[" + local_addr + "] failed receiving unicast packet", ex);
-                    Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
+                    // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
