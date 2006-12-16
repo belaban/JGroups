@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.47 2006/12/15 17:04:10 belaban Exp $
+// $Id: STABLE.java,v 1.48 2006/12/16 13:39:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -845,6 +845,7 @@ public class STABLE extends Protocol {
 
             if(d != null && !stopped) {
                 msg=new Message();
+                msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
                 if(trace) log.trace("sending stability msg " + d.printHighSeqnos());
