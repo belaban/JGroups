@@ -40,14 +40,13 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.41 2006/12/08 07:11:34 belaban Exp $
+ * @version $Id: Protocol.java,v 1.42 2006/12/18 06:37:33 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     protected ProtocolObserver observer=null; // hook for debugger
-    private final static long  THREAD_JOIN_TIMEOUT=1000;
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
     protected boolean          trace=log.isTraceEnabled();
