@@ -41,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.92 2006/12/15 23:00:06 belaban Exp $
+ * @version $Id: TP.java,v 1.93 2006/12/18 09:43:00 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1129,21 +1129,12 @@ public abstract class TP extends Protocol {
         Address dest=msg.getDest();
         boolean multicast=dest == null || dest.isMulticastAddress();
         if(loopback && (multicast || dest.equals(local_addr))) {
+
+            // we *have* to make a copy, or else passUp() might remove headers from msg which will then *not*
+            // be available for marshalling further down (when sending the message)
             Message copy=msg.copy();
-
-            // copy.removeHeader(name); // we don't remove the header
-            // copy.setDest(dest);
-
             if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
             passUp(new Event(Event.MSG, copy));
-
-
-//            try {
-//                incoming_msg_queue.add(copy);
-//            }
-//            catch(QueueClosedException e) {
-//            }
-
             if(!multicast)
                 return;
         }
