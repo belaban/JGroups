@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.48 2006/12/16 13:39:09 belaban Exp $
+// $Id: STABLE.java,v 1.49 2006/12/18 08:24:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -577,6 +577,7 @@ public class STABLE extends Protocol {
             if(trace)
                 log.trace("sending stable msg " + d.printHighSeqnos());
             Message msg=new Message(); // mcast message
+            msg.setFlag(Message.OOB);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
             num_gossips++;
