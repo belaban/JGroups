@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.68 2006/12/13 12:02:58 belaban Exp $
+// $Id: UNICAST.java,v 1.69 2006/12/18 09:23:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,6 +44,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // default is true
     private boolean          use_gms=true;
     private boolean          started=false;
+
+    /** whether to loop back messages sent to self (will be removed in the future, default=true) */
+    private boolean          loopback=true;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
     private final BoundedList previous_members=new BoundedList(50);
@@ -161,6 +164,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("use_gms");
         }
 
+        str=props.getProperty("loopback");
+        if(str != null) {
+            loopback=Boolean.valueOf(str).booleanValue();
+            props.remove("loopback");
+        }
+
         if(props.size() > 0) {
             log.error("these properties are not recognized: " + props);
             return false;
@@ -237,16 +246,25 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     break;
                 }
 
+                if(!started) {
+                    if(warn)
+                        log.warn("discarded message as start() has not yet been called, message: " + msg);
+                    return;
+                }
+
+                // if the dest is self --> pass the message back up
+                if(local_addr != null && loopback && local_addr.equals(dst)) {
+                    msg.setSrc(local_addr);
+                    passUp(evt);
+                    num_msgs_sent++;
+                    num_bytes_sent+=msg.getLength();
+                    return;
+                }
+
                 if(previous_members.contains(dst)) {
                     if(warn)
                         log.warn("discarding message to " + dst + " as this member left the group," +
                                 " previous_members=" + previous_members);
-                    return;
-                }
-
-                if(!started) {
-                    if(warn)
-                        log.warn("discarded message as start() has not yet been called, message: " + msg);
                     return;
                 }
 
