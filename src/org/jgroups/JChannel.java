@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.108 2006/12/11 08:24:13 belaban Exp $
+ * @version $Id: JChannel.java,v 1.109 2006/12/18 09:22:42 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1188,8 +1188,10 @@ public class JChannel extends Channel {
     public void down(Event evt) {
         if(evt == null) return;
 
+        int type=evt.getType();
+
         // handle setting of additional data (kludge, will be removed soon)
-        if(evt.getType() == Event.CONFIG) {
+        if(type == Event.CONFIG) {
             try {
                 Map m=(Map)evt.getArg();
                 if(m != null && m.containsKey("additional_data")) {
@@ -1202,9 +1204,8 @@ public class JChannel extends Channel {
                 if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
             }
         }
-
-        if(evt.getType() ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED){
-           state_promise.setResult(Boolean.TRUE);
+        else if(type ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED) {
+            state_promise.setResult(Boolean.TRUE);
         }
 
         if(prot_stack != null)
