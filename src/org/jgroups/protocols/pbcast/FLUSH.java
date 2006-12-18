@@ -63,6 +63,7 @@ public class FLUSH extends Protocol
    // GuardedBy ("sharedLock")
    private View currentView;
 
+   // GuardedBy ("sharedLock")
    private Address localAddress;
 
    /**
@@ -463,7 +464,10 @@ public class FLUSH extends Protocol
             break;
 
          case Event.SET_LOCAL_ADDRESS :
-            localAddress = (Address) evt.getArg();
+            synchronized (sharedLock)
+            {
+               localAddress = (Address) evt.getArg();
+            }            
             break;
 
          case Event.SUSPECT :
@@ -513,7 +517,7 @@ public class FLUSH extends Protocol
    
    private void rejectFlush(long viewId, Address flushRequester)
    {
-      Message reject = new Message(flushRequester, localAddress, null);
+      Message reject = new Message(flushRequester);
       reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH, viewId));
       passDown(new Event(Event.MSG, reject));
    }
@@ -612,7 +616,7 @@ public class FLUSH extends Protocol
          }
       }            
       //ack this STOP_FLUSH
-      Message msg = new Message(null, localAddress, null);
+      Message msg = new Message(null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK,currentViewId()));      
       passDown(new Event(Event.MSG, msg));
       
@@ -636,7 +640,7 @@ public class FLUSH extends Protocol
          {
             participantsInFlush = new ArrayList(currentView.getMembers());
          }
-         msg = new Message(null, localAddress, null);
+         msg = new Message(null);
          msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(), participantsInFlush));
       }
       if (participantsInFlush.isEmpty())
@@ -655,7 +659,7 @@ public class FLUSH extends Protocol
    private void onResume()
    {
 	  long viewID = currentViewId();	
-      Message msg = new Message(null, localAddress, null);
+      Message msg = new Message(null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH,viewID));
       passDown(new Event(Event.MSG, msg));
       if (log.isDebugEnabled())
@@ -679,7 +683,7 @@ public class FLUSH extends Protocol
          }        
          flushMembers.removeAll(suspected);
       }
-      Message msg = new Message(null, localAddress, null);
+      Message msg = new Message(null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK, fh.viewID));
       passDown(new Event(Event.MSG, msg));
       if (log.isDebugEnabled())
@@ -697,7 +701,7 @@ public class FLUSH extends Protocol
          flushOkCompleted = flushOkSet.containsAll(flushMembers);
          if (flushOkCompleted)
          {
-            m = new Message(flushCoordinator, localAddress, null);
+            m = new Message(flushCoordinator);
          }
       }
 
@@ -799,7 +803,7 @@ public class FLUSH extends Protocol
          flushOkCompleted = !flushOkSet.isEmpty() && flushOkSet.containsAll(flushMembers);
          if (flushOkCompleted)
          {
-            m = new Message(flushCoordinator, localAddress, null);
+            m = new Message(flushCoordinator);
          }
       }
       if (flushOkCompleted)
