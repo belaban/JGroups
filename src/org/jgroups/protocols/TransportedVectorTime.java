@@ -1,4 +1,4 @@
-// $Id: TransportedVectorTime.java,v 1.6 2006/12/18 06:22:24 belaban Exp $
+// $Id: TransportedVectorTime.java,v 1.7 2006/12/18 06:28:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,7 +13,7 @@ import java.io.Serializable;
  * Lighweight representation of the VectorTime clock suitable for network transport
  *
  * @author Vladimir Blagojevic vladimir@cs.yorku.ca
- * @version $Revision: 1.6 $
+ * @version $Revision: 1.7 $
  */
 public class TransportedVectorTime implements Serializable
 {
