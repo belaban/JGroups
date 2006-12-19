@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.37 2006/11/13 17:50:16 bstansberry Exp $
+// $Id: IpAddress.java,v 1.38 2006/12/19 14:12:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -165,7 +165,7 @@ public class IpAddress implements Address {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
 
         if(ip_addr == null)
             sb.append("<null>");
