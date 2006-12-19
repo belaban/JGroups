@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.86 2006/12/15 10:08:06 belaban Exp $
+// $Id: NAKACK.java,v 1.87 2006/12/19 11:26:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -302,7 +302,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         retval.put("sent_msgs", printSentMsgs());
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Map.Entry entry;
         Address addr;
         Object w;
@@ -322,7 +322,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public String printStats() {
         Map.Entry entry;
         Object key, val;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("sent:\n");
         for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
@@ -640,7 +640,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         if(trace) {
-            StringBuffer sb=new StringBuffer('[');
+            StringBuilder sb=new StringBuilder('[');
             sb.append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno);
             log.trace(sb.toString());
         }
@@ -714,7 +714,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         boolean      amISender; // am I the original sender ?
 
         if(trace) {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
             sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
             log.trace(sb.toString());
@@ -1295,7 +1295,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
    public String printMessages() {
-        StringBuffer ret=new StringBuffer();
+       StringBuilder ret=new StringBuilder();
         Map.Entry entry;
         Address addr;
         Object w;
@@ -1315,7 +1315,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     public String printSentMsgs() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Long min_seqno, max_seqno;
         synchronized(sent_msgs) {
             min_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.firstKey() : new Long(0);
@@ -1343,7 +1343,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long xmit_reqs, xmit_rsps, missing_msgs_rcvd;
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(xmit_reqs).append(" xmit_reqs").append(", ").append(xmit_rsps).append(" xmit_rsps");
             sb.append(", ").append(missing_msgs_rcvd).append(" missing msgs");
             return sb.toString();
@@ -1362,7 +1362,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #").append(seq);
             sb.append(" (XMIT_REQ sent to ").append(xmit_dest).append(")");
             return sb.toString();
@@ -1379,7 +1379,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #").append(seq);
             return sb.toString();
         }
