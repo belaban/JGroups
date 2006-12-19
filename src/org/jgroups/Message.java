@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.57 2006/12/11 15:55:45 belaban Exp $
+// $Id: Message.java,v 1.58 2006/12/19 12:53:12 belaban Exp $
 
 package org.jgroups;
 
@@ -323,10 +323,21 @@ public class Message implements Externalizable, Streamable {
         headers.put(key, hdr);
     }
 
+    /**
+     *
+     * @param key
+     * @return the header assoaicted with key
+     * @deprecated Use getHeader() instead. The issue with removing a header is described in
+     * http://jira.jboss.com/jira/browse/JGRP-393
+     */
     public Header removeHeader(String key) {
-        return (Header)headers.remove(key);
+        // return (Header)headers.remove(key);
+        return getHeader(key);
     }
 
+    /**
+     * @deprecated
+     */
     public void removeHeaders() {
         headers.clear();
     }

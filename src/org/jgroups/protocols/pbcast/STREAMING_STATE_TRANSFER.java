@@ -249,7 +249,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
          case Event.MSG :
             Message msg = (Message) evt.getArg();
-            StateHeader hdr = (StateHeader) msg.removeHeader(getName());
+            StateHeader hdr = (StateHeader) msg.getHeader(getName());
             if (hdr != null)
             {
                switch (hdr.type)
@@ -1165,16 +1165,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             return (int) id;
       }
 
-      public String toString()
-      {
-         StringBuffer sb = new StringBuffer();
-         sb.append("type=").append(type2Str(type));
-         if (sender != null)
-            sb.append(", sender=").append(sender).append(" id=").append(id);
-         if (my_digest != null)
-            sb.append(", digest=").append(my_digest);
-         return sb.toString();
-      }
+       public String toString()
+       {
+           StringBuilder sb=new StringBuilder();
+           sb.append("type=").append(type2Str(type));
+           if (sender != null)
+               sb.append(", sender=").append(sender).append(" id=").append(id);
+           if (my_digest != null)
+               sb.append(", digest=").append(my_digest);
+           return sb.toString();
+       }
 
       static String type2Str(int t)
       {

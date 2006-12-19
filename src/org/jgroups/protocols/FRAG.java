@@ -1,4 +1,3 @@
-// $Id: FRAG.java,v 1.32 2006/10/11 14:39:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.32 2006/10/11 14:39:41 belaban Exp $
+ * @version $Id: FRAG.java,v 1.33 2006/12/19 12:53:12 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -98,7 +97,7 @@ public class FRAG extends Protocol {
             num_sent_msgs++;
             if(size > frag_size) {
                 if(trace) {
-                    StringBuffer sb=new StringBuffer("message size is ");
+                    StringBuilder sb=new StringBuilder("message size is ");
                     sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
                     log.trace(sb.toString());
                 }
@@ -148,9 +147,9 @@ public class FRAG extends Protocol {
 
         case Event.MSG:
             Message msg=(Message)evt.getArg();
-            Object obj=msg.getHeader(name);
-            if(obj != null && obj instanceof FragHeader) { // needs to be defragmented
-                unfragment(msg); // Unfragment and possibly pass up
+            FragHeader hdr=(FragHeader)msg.getHeader(name);
+            if(hdr != null) { // needs to be defragmented
+                unfragment(msg, hdr); // Unfragment and possibly pass up
                 return;
             }
             else {
@@ -191,7 +190,6 @@ public class FRAG extends Protocol {
         Address            dest=msg.getDest(), src=msg.getSrc();
         long               id=curr_id++; // used as seqnos
         int                num_frags;
-        int size;
 
         try {
             // Write message into a byte buffer and fragment it
@@ -209,7 +207,7 @@ public class FRAG extends Protocol {
             num_sent_frags+=num_frags;
 
             if(trace) {
-                StringBuffer sb=new StringBuffer();
+                StringBuilder sb=new StringBuilder();
                 sb.append("fragmenting packet to ").append(dest != null ? dest.toString() : "<all members>");
                 sb.append(" (size=").append(buffer.length).append(") into ").append(num_frags);
                 sb.append(" fragment(s) [frag_size=").append(frag_size).append(']');
@@ -240,11 +238,10 @@ public class FRAG extends Protocol {
      * 4. Set headers and buffer in msg
      * 5. Pass msg up the stack
      */
-    private void unfragment(Message msg) {
+    private void unfragment(Message msg, FragHeader hdr) {
         FragmentationTable   frag_table;
         Address              sender=msg.getSrc();
         Message              assembled_msg;
-        FragHeader           hdr=(FragHeader)msg.removeHeader(name);
         byte[]               m;
         ByteArrayInputStream bis;
         DataInputStream      in=null;
@@ -389,7 +386,7 @@ public class FRAG extends Protocol {
 
         public String toString() {
             Map.Entry entry;
-            StringBuffer buf=new StringBuffer("Fragmentation list contains ");
+            StringBuilder buf=new StringBuilder("Fragmentation list contains ");
             synchronized(frag_tables) {
                 buf.append(frag_tables.size()).append(" tables\n");
                 for(Iterator it=frag_tables.entrySet().iterator(); it.hasNext();) {
@@ -492,7 +489,7 @@ public class FRAG extends Protocol {
              * debug only
              */
             public String toString() {
-                StringBuffer ret=new StringBuffer();
+                StringBuilder ret=new StringBuilder();
                 ret.append("[tot_frags=").append(tot_frags).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
                 return ret.toString();
             }
@@ -539,7 +536,7 @@ public class FRAG extends Protocol {
         }
 
         public String toString() {
-            StringBuffer buf=new StringBuffer("Fragmentation Table Sender:").append(sender).append("\n\t");
+            StringBuilder buf=new StringBuilder("Fragmentation Table Sender:").append(sender).append("\n\t");
             java.util.Enumeration e=this.h.elements();
             while(e.hasMoreElements()) {
                 Entry entry=(Entry)e.nextElement();

@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.49 2006/12/18 08:24:50 belaban Exp $
+// $Id: STABLE.java,v 1.50 2006/12/19 12:53:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -223,7 +223,7 @@ public class STABLE extends Protocol {
                 }
             }
 
-            hdr=(StableHeader)msg.removeHeader(name);
+            hdr=(StableHeader)msg.getHeader(name);
             if(hdr == null)
                 break;
             switch(hdr.type) {
