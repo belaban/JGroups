@@ -1,8 +1,6 @@
 package org.jgroups.tests.perf;
 
 import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
-import EDU.oswego.cs.dl.util.concurrent.QueuedExecutor;
-import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
@@ -56,7 +54,9 @@ public class Test implements Receiver {
 
     private ResultsPublisher publisher=new ResultsPublisher();
 
-    List            heard_from=new ArrayList();
+    final List      heard_from=new ArrayList();
+
+    final List      final_results_ok_list=new ArrayList();
 
     boolean         dump_transport_stats=false;
 
@@ -73,8 +73,6 @@ public class Test implements Receiver {
 
 
     FileWriter      output=null;
-
-    QueuedExecutor  response_sender=new QueuedExecutor();
 
     static  NumberFormat f;
 
@@ -96,12 +94,6 @@ public class Test implements Receiver {
 
         if(output != null)
             this.output=new FileWriter(output, false);
-
-        response_sender.setThreadFactory(new ThreadFactory() {
-            public Thread newThread(Runnable runnable) {
-                return new Thread(runnable, "Test.ResponseSender");
-            }
-        });
 
         config_file=c.getProperty("config");
         fileReader=new BufferedReader(new FileReader(config_file));
@@ -208,9 +200,6 @@ public class Test implements Receiver {
             transport.stop();
             transport.destroy();
         }
-        if(response_sender != null) {
-            response_sender.shutdownNow();
-        }
         if(this.output != null) {
             try {
                 this.output.close();
@@ -239,53 +228,70 @@ public class Test implements Receiver {
             Data d=(Data)Util.streamableFromByteBuffer(Data.class, tmp);
 
             switch(d.getType()) {
-            case Data.DISCOVERY_REQ:
-                // System.out.println("-- received discovery request");
-                sendDiscoveryResponse();
-                break;
-            case Data.DISCOVERY_RSP:
-                // System.out.println("-- received discovery response from " + sender);
-                synchronized(this.members) {
-                    if(!this.members.contains(sender)) {
-                        this.members.add(sender);
-                        System.out.println("-- " + sender + " joined");
-                        if(d.sender) {
-                            synchronized(this.members) {
-                                if(!this.senders.containsKey(sender)) {
-                                    this.senders.put(sender, new MemberInfo(d.num_msgs));
+                case Data.DISCOVERY_REQ:
+                    // System.out.println("-- received discovery request");
+                    sendDiscoveryResponse();
+                    break;
+                case Data.DISCOVERY_RSP:
+                    // System.out.println("-- received discovery response from " + sender);
+                    synchronized(this.members) {
+                        if(!this.members.contains(sender)) {
+                            this.members.add(sender);
+                            System.out.println("-- " + sender + " joined");
+                            if(d.sender) {
+                                synchronized(this.members) {
+                                    if(!this.senders.containsKey(sender)) {
+                                        this.senders.put(sender, new MemberInfo(d.num_msgs));
+                                    }
                                 }
                             }
+                            this.members.notifyAll();
                         }
-                        this.members.notifyAll();
                     }
-                }
-                break;
+                    break;
 
-            case Data.FINAL_RESULTS:
-                publisher.stop();
-                if(!final_results_received) {
-                    dumpResults(d.results);
-                    final_results_received=true;
-                }
-                synchronized(this) {
-                    this.notifyAll();
-                }
-                break;
-
-            case Data.RESULTS:
-                results.put(sender, d.result);
-                heard_from.remove(sender);
-                if(heard_from.size() == 0) {
-                    for(int i=0; i < 3; i++) {
-                        sendFinalResults();
-                        Util.sleep(100);
+                case Data.RESULTS:
+                    results.put(sender, d.result);
+                    heard_from.remove(sender);
+                    if(heard_from.size() == 0) {
+                        for(int i=0; i < 3; i++) {
+                            sendFinalResults();
+                            Util.sleep(300);
+                        }
                     }
-                }
-                break;
+                    break;
 
-            default:
-                log.error("received invalid data type: " + payload[0]);
-                break;
+                case Data.FINAL_RESULTS:
+                    if(!final_results_received) {
+                        dumpResults(d.results);
+                        final_results_received=true;
+                    }
+
+                    boolean done=false;
+                    synchronized(final_results_ok_list) {
+                        final_results_ok_list.remove(sender);
+                        if(final_results_ok_list.size() == 0)
+                            done=true;
+                    }
+
+                    if(done) {
+                        for(int i=0; i < 3; i++) {
+                            sendFinalResultsOk();
+                            Util.sleep(300);
+                        }
+                    }
+                    break;
+
+                case Data.FINAL_RESULTS_OK:
+                    publisher.stop();
+                    synchronized(this) {
+                        this.notifyAll();
+                    }
+                    break;
+
+                default:
+                    log.error("received invalid data type: " + payload[0]);
+                    break;
             }
         }
         catch(Exception e) {
@@ -295,6 +301,8 @@ public class Test implements Receiver {
 
     private void handleData(Object sender, int num_bytes) {
         MemberInfo info=null;
+        boolean do_sleep=false;
+
         synchronized(this) {
             if(all_received)
                 return;
@@ -306,23 +314,21 @@ public class Test implements Receiver {
             num_bytes_received+=num_bytes;
 
             if(num_msgs_received >= num_msgs_expected) {
-                if(stop == 0)
+                if(stop == 0) {
                     stop=System.currentTimeMillis();
+                }
                 all_received=true;
             }
 
-            if(num_msgs_received % log_interval == 0)
+            if(num_msgs_received % log_interval == 0) {
                 System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
+            }
 
             if(counter % log_interval == 0) {
                 output(dumpStats(counter));
             }
             info=(MemberInfo)this.senders.get(sender);
-        }
-
-        boolean do_sleep=false;
-        if(info != null) {
-            synchronized(info) {
+            if(info != null) {
                 if(info.start == 0)
                     info.start=System.currentTimeMillis();
                 info.num_msgs_received++;
@@ -338,9 +344,9 @@ public class Test implements Receiver {
                         do_sleep=true;
                 }
             }
-        }
-        else {
-            log.error("-- sender " + sender + " not found in senders hashmap");
+            else {
+                log.error("-- sender " + sender + " not found in senders hashmap");
+            }
         }
 
         if(do_sleep && processing_delay > 0) {
@@ -367,7 +373,7 @@ public class Test implements Receiver {
         info.total_bytes_received=this.num_bytes_received;
         d.result=info;
         buf=generatePayload(d, null);
-        transport.send(null, buf);
+        transport.send(null, buf, true);
     }
 
 
@@ -375,18 +381,13 @@ public class Test implements Receiver {
         Data d=new Data(Data.FINAL_RESULTS);
         d.results=new ConcurrentReaderHashMap(this.results);
         final byte[] buf=generatePayload(d, null);
-        // transport.send(null, buf);
+        transport.send(null, buf, true);
+    }
 
-        response_sender.execute(new Runnable() {
-            public void run() {
-                try {
-                    transport.send(null, buf);
-                }
-                catch(Exception e) {
-                    log.error("failed sending discovery response", e);
-                }
-            }
-        });
+    private void sendFinalResultsOk() throws Exception {
+        Data d=new Data(Data.FINAL_RESULTS_OK);
+        final byte[] buf=generatePayload(d, null);
+        transport.send(null, buf, true);
     }
 
     boolean allReceived() {
@@ -410,7 +411,7 @@ public class Test implements Receiver {
         byte[] payload=generatePayload(d, buf);
         System.out.println("-- sending " + num_msgs + " " + Util.printBytes(msgSize) + " messages");
         for(int i=0; i < num_msgs; i++) {
-            transport.send(null, payload);
+            transport.send(null, payload, false);
             total_msgs++;
             if(total_msgs % log_interval == 0) {
                 System.out.println("++ sent " + total_msgs);
@@ -574,23 +575,34 @@ public class Test implements Receiver {
         sendDiscoveryRequest();
         sendDiscoveryResponse();
 
-        synchronized(this.members) {
-            System.out.println("-- waiting for " + num_members + " members to join");
-            while(this.members.size() < num_members) {
-                this.members.wait(2000);
+        System.out.println("-- waiting for " + num_members + " members to join");
+        boolean received_all_discovery_rsps=false;
+        while(!received_all_discovery_rsps) {
+            synchronized(members) {
+                received_all_discovery_rsps=members.size() >= num_members;
+                if(!received_all_discovery_rsps)
+                    members.wait(2000);
+            }
+            if(!received_all_discovery_rsps) {
                 sendDiscoveryRequest();
                 sendDiscoveryResponse();
             }
+        }
 
+        synchronized(members) {
             heard_from.addAll(members);
-            System.out.println("-- members: " + this.members.size());
+            System.out.println("-- members: " + members.size());
+        }
+
+        synchronized(final_results_ok_list) {
+            final_results_ok_list.addAll(members);
         }
     }
 
     void sendDiscoveryRequest() throws Exception {
         Data d=new Data(Data.DISCOVERY_REQ);
         // System.out.println("-- sending discovery request");
-        transport.send(null, generatePayload(d, null));
+        transport.send(null, generatePayload(d, null), true);
     }
 
     void sendDiscoveryResponse() throws Exception {
@@ -600,18 +612,7 @@ public class Test implements Receiver {
             d2.num_msgs=Long.parseLong(config.getProperty("num_msgs"));
         }
 
-        response_sender.execute(new Runnable() {
-            public void run() {
-                try {
-                    transport.send(null, generatePayload(d2, null));
-                }
-                catch(Exception e) {
-                    log.error("failed sending discovery response", e);
-                }
-            }
-        });
-
-
+        transport.send(null, generatePayload(d2, null), true);
     }
 
 
@@ -701,6 +702,7 @@ public class Test implements Receiver {
                 String stats=t.dumpTransportStats();
                 System.out.println("\nTransport statistics:\n" + stats);
             }
+
             if(t.jmx) {
                 System.out.println("jmx=true: not terminating");
                 if(t != null) {

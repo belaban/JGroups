@@ -11,7 +11,7 @@ import java.util.Map;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JmsTransport.java,v 1.7 2006/04/25 11:55:18 belaban Exp $
+ * @version $Id: JmsTransport.java,v 1.8 2006/12/19 08:51:46 belaban Exp $
  */
 public class JmsTransport implements Transport, MessageListener {
     Receiver          receiver=null;
@@ -82,7 +82,7 @@ public class JmsTransport implements Transport, MessageListener {
         return null;
     }
 
-    public void send(Object destination, byte[] payload) throws Exception {
+    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
         if(destination != null)
             throw new Exception("JmsTransport.send(): unicast destination is not supported");
 

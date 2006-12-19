@@ -15,7 +15,7 @@ import java.util.StringTokenizer;
  * cluster membership (listed in properties, config.txt)
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsClusterTransport.java,v 1.2 2005/11/08 13:58:07 belaban Exp $
+ * @version $Id: JGroupsClusterTransport.java,v 1.3 2006/12/19 08:51:46 belaban Exp $
  */
 public class JGroupsClusterTransport extends JGroupsTransport implements Transport {
     List members;
@@ -33,16 +33,21 @@ public class JGroupsClusterTransport extends JGroupsTransport implements Transpo
     }
 
 
-    public void send(Object destination, byte[] payload) throws Exception {
-        Message msg=new Message((Address)destination, null, payload);
-
-        if(destination != null)
+    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
+        if(destination != null) {
+            Message msg=new Message((Address)destination, null, payload);
+            if(oob)
+                msg.setFlag(Message.OOB);
             channel.send(msg);
+        }
         else {
             // we don't know the membership from discovery, so we need to send individually
             Address mbr;
             for(int i=0; i < members.size(); i++) {
                 mbr=(Address)members.get(i);
+                Message msg=new Message((Address)destination, null, payload);
+                if(oob)
+                    msg.setFlag(Message.OOB);
                 msg.setDest(mbr);
                 channel.send(msg);
             }
