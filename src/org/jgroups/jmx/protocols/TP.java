@@ -11,7 +11,7 @@ import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.9 2006/12/11 15:51:33 belaban Exp $
+ * @version $Id: TP.java,v 1.10 2006/12/19 11:03:48 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -109,18 +109,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         tp.setMaxBundleTimeout(timeout);
     }
 
-    public int getOutgoingQueueSize() {
-        return tp.getOutgoingQueueSize();
-    }
-
-    public int getOutgoingQueueMaxSize() {
-        return tp.getOutgoingQueueMaxSize();
-    }
-
-    public void setOutgoingQueueMaxSize(int new_size) {
-        tp.setOutgoingQueueMaxSize(new_size);
-    }
-
     public boolean isLoopback() {
         return tp.isLoopback();
     }
@@ -131,10 +119,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
 
     public boolean isUseIncomingPacketHandler() {
         return tp.isUseIncomingPacketHandler();
-    }
-
-    public boolean isUseOutgoungPacketHandler() {
-        return tp.isUseOutgoingPacketHandler();
     }
 
     public int getUnmarshallerMinPoolSize() {
@@ -171,10 +155,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
 
     public int getUnmarshallerMaxQueueSize() {
         return tp.getUnmarshallerMaxQueueSize();
-    }
-
-    public void setUnmarshallerMaxQueueSize(int size) {
-        tp.setUnmarshallerMaxQueueSize(size);
     }
 
 
@@ -220,9 +200,6 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         return tp.getOOBMaxQueueSize();
     }
 
-    public void setOOBMaxQueueSize(int size) {
-        tp.setOOBMaxQueueSize(size);
-    }
 
 
     public int getIncomingMinPoolSize() {
@@ -265,8 +242,5 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         return tp.getIncomingMaxQueueSize();
     }
 
-    public void setIncomingMaxQueueSize(int size) {
-        tp.setIncomingMaxQueueSize(size);
-    }
 
 }
