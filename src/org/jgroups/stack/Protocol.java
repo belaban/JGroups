@@ -7,8 +7,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
 
 import java.util.Map;
 import java.util.Properties;
@@ -40,7 +38,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.42 2006/12/18 06:37:33 belaban Exp $
+ * @version $Id: Protocol.java,v 1.43 2006/12/19 09:00:34 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
