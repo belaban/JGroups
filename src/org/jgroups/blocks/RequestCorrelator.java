@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.31 2006/12/11 08:24:13 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.32 2006/12/19 12:53:11 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -536,7 +536,7 @@ public class RequestCorrelator {
                 break;
 
             case Header.RSP:
-                msg.removeHeader(name);
+                msg.getHeader(name);
                 RspCollector coll=findEntry(hdr.id);
                 if(coll != null) {
                     Address sender=msg.getSrc();
@@ -559,7 +559,7 @@ public class RequestCorrelator {
                 break;
 
             default:
-                msg.removeHeader(name);
+                msg.getHeader(name);
                 if(log.isErrorEnabled()) log.error("header's type is neither REQ nor RSP !");
                 break;
         }
@@ -639,7 +639,7 @@ public class RequestCorrelator {
         // ii. If a reply is expected, pack the return value from the request
         // handler to a reply msg and send it back. The reply msg has the same
         // ID as the request and the name of the sender request correlator
-        hdr=(Header)req.removeHeader(name);
+        hdr=(Header)req.getHeader(name);
 
         if(log.isTraceEnabled()) {
             log.trace(new StringBuffer("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
