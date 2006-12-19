@@ -1,12 +1,12 @@
 package org.jgroups.tests;
 
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
-import EDU.oswego.cs.dl.util.concurrent.WaitFreeQueue;
 import org.jgroups.util.Queue;
 import org.jgroups.util.Queue2;
 import org.jgroups.util.QueueClosedException;
 
 import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
 
 /**
  *
@@ -63,8 +63,11 @@ public class QueueTest2 {
         public void run() {
             do {
                 try {
-                    q.removeElement();
-                    i++;
+                    if(q.removeElement() != null)
+                        i++;
+                    else {
+                        Thread.sleep(1);
+                    }
                     //if(i % 1000 == 0)
                       //  System.out.println("-- removed " + i);
                 }
@@ -127,14 +130,14 @@ public class QueueTest2 {
 
 
     public static class MyQueue extends LinkedList implements Queueable {
-        Object mutex=new Object();
+        final Object mutex=new Object();
         boolean waiting=false; // remover waiting on mutex
 
         public void addElement(Object o) {
             synchronized(mutex) {
                 super.add(o);
                 if(waiting)
-                    mutex.notifyAll(); // todo: change to notify()
+                    mutex.notifyAll();
             }
         }
 
@@ -163,48 +166,18 @@ public class QueueTest2 {
     }
 
 
-    public static class MyLinkedQueue extends LinkedQueue implements Queueable {
+    public static class MyLinkedQueue implements Queueable {
+        ConcurrentLinkedQueue q=new ConcurrentLinkedQueue();
         public void addElement(Object o) {
-            try {
-                super.put(o);
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-            }
+            q.add(o);
         }
 
         public Object removeElement() {
-            try {
-                return super.take();
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-                return null;
-            }
+            return q.poll();
         }
     }
 
 
-      public static class MyWaitFreeQueue extends WaitFreeQueue implements Queueable {
-        public void addElement(Object o) {
-            try {
-                super.put(o);
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public Object removeElement() {
-            try {
-                return super.take();
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
 
 
     public static void main(String[] args) {
@@ -221,10 +194,7 @@ public class QueueTest2 {
             qt.start(q, "based on java.util.LinkedList");
 
             q=new MyLinkedQueue();
-            qt.start(q, "based on EDU.oswego.cs.dl.util.concurrent.LinkedQueue");
-
-            q=new MyWaitFreeQueue();
-            qt.start(q, "based on EDU.oswego.cs.dl.util.concurrent.WaitFreeQueue");
+            qt.start(q, "java.util.concurrent.ConcurrentLinkedList");
         }
         catch(Throwable t) {
             t.printStackTrace();
