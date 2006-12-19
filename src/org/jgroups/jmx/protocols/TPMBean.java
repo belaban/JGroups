@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TPMBean.java,v 1.9 2006/12/11 15:51:33 belaban Exp $
+ * @version $Id: TPMBean.java,v 1.10 2006/12/19 11:03:48 belaban Exp $
  */
 public interface TPMBean extends ProtocolMBean {
     Address getLocalAddress();
@@ -31,13 +31,9 @@ public interface TPMBean extends ProtocolMBean {
     void setMaxBundleSize(int size);
     long getMaxBundleTimeout();
     void setMaxBundleTimeout(long timeout);
-    int getOutgoingQueueSize();
     boolean isLoopback();
     void setLoopback(boolean b);
     boolean isUseIncomingPacketHandler();
-    boolean isUseOutgoungPacketHandler();
-    int getOutgoingQueueMaxSize();
-    void setOutgoingQueueMaxSize(int new_size);
 
     int getUnmarshallerMinPoolSize();
     void setUnmarshallerMinPoolSize(int size);
@@ -48,7 +44,6 @@ public interface TPMBean extends ProtocolMBean {
     void setUnmarshallerKeepAliveTime(long time);
     int getUnmarshallerQueueSize();
     int getUnmarshallerMaxQueueSize();
-    void setUnmarshallerMaxQueueSize(int size);
 
     int getOOBMinPoolSize();
     void setOOBMinPoolSize(int size);
@@ -60,7 +55,6 @@ public interface TPMBean extends ProtocolMBean {
     long getOOBMessages();
     int getOOBQueueSize();
     int getOOBMaxQueueSize();
-    void setOOBMaxQueueSize(int size);
 
     int getIncomingMinPoolSize();
     void setIncomingMinPoolSize(int size);
@@ -72,5 +66,4 @@ public interface TPMBean extends ProtocolMBean {
     long getIncomingMessages();
     int getIncomingQueueSize();
     int getIncomingMaxQueueSize();
-    void setIncomingMaxQueueSize(int size);
 }
