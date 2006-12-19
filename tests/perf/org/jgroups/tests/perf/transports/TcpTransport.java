@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.15 2005/09/08 14:27:35 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.16 2006/12/19 08:51:46 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -106,7 +106,7 @@ public class TcpTransport implements Transport {
         return null;
     }
 
-    public void send(Object destination, byte[] payload) throws Exception {
+    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
         if(destination != null)
             throw new Exception("TcpTransport.send(): unicasts not supported");
         ct.writeMessage(payload);

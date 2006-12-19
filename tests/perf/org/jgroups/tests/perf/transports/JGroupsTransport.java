@@ -15,7 +15,7 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.14 2006/07/31 09:21:59 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.15 2006/12/19 08:51:46 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -77,8 +77,10 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         return channel != null? channel.dumpStats() : null;
     }
 
-    public void send(Object destination, byte[] payload) throws Exception {
+    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
         Message msg=new Message((Address)destination, null, payload);
+        if(oob)
+            msg.setFlag(Message.OOB);
         if(channel != null)
             channel.send(msg);
     }

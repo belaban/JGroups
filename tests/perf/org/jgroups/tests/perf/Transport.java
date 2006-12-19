@@ -16,7 +16,7 @@ import java.util.Map;
  * </ol>
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Transport.java,v 1.3 2005/07/26 11:50:22 belaban Exp $
+ * @version $Id: Transport.java,v 1.4 2006/12/19 08:51:47 belaban Exp $
  */
 public interface Transport {
 
@@ -47,5 +47,5 @@ public interface Transport {
      * @param payload A buffer to be sent
      * @throws Exception
      */
-    void send(Object destination, byte[] payload) throws Exception;
+    void send(Object destination, byte[] payload, boolean oob) throws Exception;
 }
