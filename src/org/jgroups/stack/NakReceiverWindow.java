@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindow.java,v 1.30 2006/12/15 10:05:22 belaban Exp $
+// $Id: NakReceiverWindow.java,v 1.31 2006/12/19 11:41:57 belaban Exp $
 
 
 package org.jgroups.stack;
@@ -193,7 +193,7 @@ public class NakReceiverWindow {
                 old_tail=tail;
                 if(seqno < head) {
                     if(log.isTraceEnabled()) {
-                        StringBuffer sb=new StringBuffer("seqno ");
+                        StringBuilder sb=new StringBuilder("seqno ");
                         sb.append(seqno).append(" is smaller than ").append(head).append("); discarding message");
                         log.trace(sb.toString());
                     }
@@ -663,9 +663,7 @@ public class NakReceiverWindow {
                 msg=(Message)delivered_msgs.get(seqno);
                 if(msg != null)
                     return msg;
-                msg=(Message)received_msgs.get(seqno);
-                if(msg != null)
-                    return msg;
+                return (Message)received_msgs.get(seqno);
             }
             finally {
                 lock.readLock().release();
@@ -696,7 +694,7 @@ public class NakReceiverWindow {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         try {
             lock.readLock().acquire();
             try {
@@ -721,7 +719,7 @@ public class NakReceiverWindow {
      * @return String
      */
     String printDeliveredMessages() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Long min=null, max=null;
 
         if(delivered_msgs.size() > 0) {
@@ -740,7 +738,7 @@ public class NakReceiverWindow {
      * @return String
      */
     String printReceivedMessages() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append('[');
         if(received_msgs.size() > 0) {
             Long first=null, last=null;
