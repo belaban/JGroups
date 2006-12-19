@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.94 2006/12/19 11:03:49 belaban Exp $
+ * @version $Id: TP.java,v 1.95 2006/12/19 11:32:47 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1601,23 +1601,9 @@ public abstract class TP extends Protocol {
 
 
     private void shutdownThreadPool(ThreadPoolExecutor thread_pool, String name) {
-        java.util.List tasks;
-        tasks=thread_pool.shutdownNow();
+        thread_pool.shutdownNow();
         try {
-            boolean success=thread_pool.awaitTermination(POOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
-            if(!success && tasks.size() > 0) {
-                if(trace)
-                    log.trace("running " + tasks.size() + " tasks to completion in " + name);
-                for(Iterator it=tasks.iterator(); it.hasNext();) {
-                    try {
-                        Runnable task=(Runnable)it.next();
-                        task.run();
-                    }
-                    catch(Throwable t) {
-                        log.error("exception running task in " + name, t);
-                    }
-                }
-            }
+            thread_pool.awaitTermination(POOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
         }
         catch(InterruptedException e) {
         }
