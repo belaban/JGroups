@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.15 2006/12/11 14:45:26 belaban Exp $
+ * @version $Id: Global.java,v 1.16 2006/12/20 15:50:33 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -15,10 +15,10 @@ public class Global {
 
     public static final String THREAD_PREFIX=" (channel=";
     
-    public static final int BYTE_SIZE  = 1;
-    public static final int SHORT_SIZE = 2;
-    public static final int INT_SIZE   = 4;
-    public static final int LONG_SIZE  = 8;
+    public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
+    public static final int SHORT_SIZE = Short.SIZE   / 8; // 2
+    public static final int INT_SIZE   = Integer.SIZE / 8; // 4
+    public static final int LONG_SIZE  = Long.SIZE    / 8; // 8
 
     public static final String BIND_ADDR="jgroups.bind_addr";
     public static final String BIND_ADDR_OLD="bind.address";
