@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.87 2006/12/19 11:26:09 belaban Exp $
+// $Id: NAKACK.java,v 1.88 2006/12/20 14:47:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -587,8 +587,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             throw new NullPointerException("msg is null; event is " + evt);
 
         if(!started) {
-            if(warn)
-                log.warn("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
+            if(trace)
+                log.trace("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
             return;
         }
 
