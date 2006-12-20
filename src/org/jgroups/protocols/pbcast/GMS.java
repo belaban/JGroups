@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.68.2.1 2006/12/04 22:49:18 vlada Exp $
+ * @version $Id: GMS.java,v 1.68.2.2 2006/12/20 14:17:34 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -42,8 +42,7 @@ public class GMS extends Protocol {
     private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
-    private final Object      digest_mutex=new Object();
-    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event    
+    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event
     private final Promise     flush_promise = new Promise();
     boolean 				  use_flush=false;	
     private final Hashtable   impls=new Hashtable(3);
@@ -600,17 +599,15 @@ public class GMS extends Protocol {
     public Digest getDigest() {
         Digest ret=null;
 
-        synchronized(digest_mutex) {
-            digest_promise.reset();
-            passDown(Event.GET_DIGEST_EVT);
-            try {
-                ret=(Digest)digest_promise.getResultWithTimeout(digest_timeout);
-            }
-            catch(TimeoutException e) {
-                if(log.isErrorEnabled()) log.error("digest could not be fetched from below");
-            }
-            return ret;
+        digest_promise.reset();
+        passDown(Event.GET_DIGEST_EVT);
+        try {
+            ret=(Digest)digest_promise.getResultWithTimeout(digest_timeout);
         }
+        catch(TimeoutException e) {
+            if(log.isErrorEnabled()) log.error("digest could not be fetched from below");
+        }
+        return ret;
     }
     
     boolean startFlush(View new_view,int numberOfAttempts){     
@@ -1226,7 +1223,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.68.2.1 2006/12/04 22:49:18 vlada Exp $
+     * @version $Id: GMS.java,v 1.68.2.2 2006/12/20 14:17:34 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
