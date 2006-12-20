@@ -11,7 +11,7 @@ import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
 
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.10 2006/12/19 11:03:48 belaban Exp $
+ * @version $Id: TP.java,v 1.11 2006/12/20 16:28:55 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;
@@ -121,43 +121,7 @@ public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
         return tp.isUseIncomingPacketHandler();
     }
 
-    public int getUnmarshallerMinPoolSize() {
-        return tp.getUnmarshallerMinPoolSize();
-    }
-
-    public void setUnmarshallerMinPoolSize(int size) {
-        tp.setUnmarshallerMinPoolSize(size);
-    }
-
-    public int getUnmarshallerMaxPoolSize() {
-        return tp.getUnmarshallerMaxPoolSize();
-    }
-
-    public void setUnmarshallerMaxPoolSize(int size) {
-        tp.setUnmarshallerMaxPoolSize(size);
-    }
-
-    public int getUnmarshallerPoolSize() {
-        return tp.getUnmarshallerPoolSize();
-    }
-
-    public long getUnmarshallerKeepAliveTime() {
-        return tp.getUnmarshallerKeepAliveTime();
-    }
-
-    public void setUnmarshallerKeepAliveTime(long time) {
-        tp.setUnmarshallerKeepAliveTime(time);
-    }
-
-    public int getUnmarshallerQueueSize() {
-        return tp.getUnmarshallerQueueSize();
-    }
-
-    public int getUnmarshallerMaxQueueSize() {
-        return tp.getUnmarshallerMaxQueueSize();
-    }
-
-
+   
 
 
     public int getOOBMinPoolSize() {
