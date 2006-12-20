@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TPMBean.java,v 1.10 2006/12/19 11:03:48 belaban Exp $
+ * @version $Id: TPMBean.java,v 1.11 2006/12/20 16:28:55 belaban Exp $
  */
 public interface TPMBean extends ProtocolMBean {
     Address getLocalAddress();
@@ -35,15 +35,6 @@ public interface TPMBean extends ProtocolMBean {
     void setLoopback(boolean b);
     boolean isUseIncomingPacketHandler();
 
-    int getUnmarshallerMinPoolSize();
-    void setUnmarshallerMinPoolSize(int size);
-    int getUnmarshallerMaxPoolSize();
-    void setUnmarshallerMaxPoolSize(int size);
-    int getUnmarshallerPoolSize();
-    long getUnmarshallerKeepAliveTime();
-    void setUnmarshallerKeepAliveTime(long time);
-    int getUnmarshallerQueueSize();
-    int getUnmarshallerMaxQueueSize();
 
     int getOOBMinPoolSize();
     void setOOBMinPoolSize(int size);
