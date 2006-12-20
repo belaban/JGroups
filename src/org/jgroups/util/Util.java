@@ -27,7 +27,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.108 2006/12/15 17:04:11 belaban Exp $
+ * @version $Id: Util.java,v 1.109 2006/12/20 16:41:20 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -51,7 +51,6 @@ public class Util {
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
-    public static final String DIAG_GROUP="DIAG_GROUP-BELA-322649"; // unique
     static boolean resolve_dns=false;
 
     static boolean      JGROUPS_COMPAT=false;
