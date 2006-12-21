@@ -14,7 +14,7 @@
 	<classpathentry kind="lib" path="lib/jms.jar"/>
 	<classpathentry kind="lib" path="lib/jmxri.jar"/>
 	<classpathentry kind="lib" path="lib/junit.jar"/>
-	<classpathentry kind="lib" path="lib/log4j-1.2.6.jar"/>
+	<classpathentry kind="lib" path="lib/log4j.jar"/>
 	<classpathentry kind="lib" path="lib/xalan.jar"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
