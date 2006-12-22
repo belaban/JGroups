@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.17 2006/12/11 15:38:56 belaban Exp $
+ * @version $Id: Discovery.java,v 1.18 2006/12/22 14:45:52 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -211,8 +211,7 @@ public abstract class Discovery extends Protocol {
 
     public void up(Event evt) {
         Message msg, rsp_msg;
-        Object obj;
-        PingHeader hdr, rsp_hdr;
+        PingHeader rsp_hdr;
         PingRsp rsp;
         Address coord;
 
@@ -220,12 +219,11 @@ public abstract class Discovery extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-            obj=msg.getHeader(getName());
-            if(obj == null || !(obj instanceof PingHeader)) {
+            PingHeader hdr=(PingHeader)msg.getHeader(getName());
+            if(hdr == null) {
                 passUp(evt);
                 return;
             }
-            hdr=(PingHeader)msg.removeHeader(getName());
 
             switch(hdr.type) {
 
