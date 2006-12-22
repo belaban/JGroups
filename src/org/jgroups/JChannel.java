@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.109 2006/12/18 09:22:42 belaban Exp $
+ * @version $Id: JChannel.java,v 1.110 2006/12/22 12:33:57 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -420,6 +420,15 @@ public class JChannel extends Channel {
     }
 
 
+    /**
+     * This method will implement http://jira.jboss.com/jira/browse/JGRP-236, a combined join and state transfer.
+     * @param cluster_name
+     * @param target
+     * @param state_id
+     * @param timeout
+     * @return
+     * @throws ChannelException
+     */
     public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
         throw new UnsupportedOperationException("not yet implemented");
     }
