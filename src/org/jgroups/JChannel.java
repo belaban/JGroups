@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.110 2006/12/22 12:33:57 belaban Exp $
+ * @version $Id: JChannel.java,v 1.111 2006/12/22 12:34:16 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1226,7 +1226,7 @@ public class JChannel extends Channel {
 
 
     public String toString(boolean details) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("local_addr=").append(local_addr).append('\n');
         sb.append("cluster_name=").append(cluster_name).append('\n');
         sb.append("my_view=").append(my_view).append('\n');
