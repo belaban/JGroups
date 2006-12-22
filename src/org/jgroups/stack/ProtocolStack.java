@@ -1,10 +1,9 @@
-// $Id: ProtocolStack.java,v 1.32 2006/12/22 13:37:12 belaban Exp $
+// $Id: ProtocolStack.java,v 1.33 2006/12/22 13:38:35 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
@@ -101,7 +100,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * the properties for each protocol will also be printed.
      */
     public String printProtocolSpec(boolean include_properties) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Protocol     prot=top_prot;
         Properties   tmpProps;
         String       name;
@@ -133,7 +132,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public String printProtocolSpecAsXML() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Protocol     prot=bottom_prot;
         Properties   tmpProps;
         String       name;
