@@ -1,4 +1,4 @@
-// $Id: TOTAL.java,v 1.13 2006/01/03 14:11:29 belaban Exp $
+// $Id: TOTAL.java,v 1.14 2006/12/22 13:07:13 belaban Exp $
 package org.jgroups.protocols;
 
 
@@ -864,10 +864,11 @@ public class TOTAL extends Protocol {
      * If in <code>FLUSH</code> state, forward unicast but queue broadcasts
      *
      * @param event the MSG event
-     * @return true if event should travel further down
+     * @return Event Non-null if event should travel further down, else null
      */
-    private boolean _downMsg(Event event) {
+    private Event _downMsg(Event event) {
         Message msg;
+        Event retval=null;
 
         // *** Get a shared lock
         try {
@@ -878,21 +879,22 @@ public class TOTAL extends Protocol {
                 // ii. Discard all msgs, if blocked
                 if(state == NULL_STATE) {
                     if(log.isErrorEnabled()) log.error("Discard msg in NULL_STATE");
-                    return (false);
+                    return null;
                 }
                 if(state == BLOCK) {
                     if(log.isErrorEnabled()) log.error("Blocked, discard msg");
-                    return (false);
+                    return null;
                 }
 
                 msg=(Message)event.getArg();
                 if(msg.getDest() == null) {
                     _sendBcastRequest(msg);
-                    return (false);
+                    return null;
                 }
                 else {
                     msg=_sendUcast(msg);
-                    event.setArg(msg);
+                    Event tmpEvt=new Event(event.getType(), msg);
+                    retval=tmpEvt;
                 }
 
                 // ** Revoke the shared lock
@@ -905,7 +907,7 @@ public class TOTAL extends Protocol {
             log.error(e.getMessage());
         }
 
-        return (true);
+        return retval;
     }
 
 
@@ -989,9 +991,13 @@ public class TOTAL extends Protocol {
             if(!downBlockOk()) return;
             break;
         case Event.MSG:
-            if(!_downMsg(event)) return;
+            Event tmp=_downMsg(event);
+            if(tmp == null)
+                return;
+            else
+                event=tmp;
             break;
-        default:
+            default:
             break;
         }
 
