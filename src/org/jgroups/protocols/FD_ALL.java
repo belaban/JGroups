@@ -16,7 +16,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.3 2006/12/22 09:02:51 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.4 2006/12/22 09:35:10 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -28,6 +28,8 @@ public class FD_ALL extends Protocol {
     /** Number of milliseconds after which a node P is suspected if neither a heartbeat nor data were received from P */
     long                       timeout=5000;
 
+    /** when a message is received from P, this is treated as if P sent a heartbeat */
+    boolean                    msg_counts_as_heartbeat=true;
 
     Address                    local_addr=null;
     final List                 members=new ArrayList();
@@ -43,7 +45,7 @@ public class FD_ALL extends Protocol {
 
     private boolean            tasks_running=false;
 
-    protected int              num_heartbeats=0;
+    protected int              num_heartbeats_sent, num_heartbeats_received=0;
     protected int              num_suspect_events=0;
 
     final static String        name="FD_ALL";
@@ -60,18 +62,27 @@ public class FD_ALL extends Protocol {
     public String getName() {return FD_ALL.name;}
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     public String getMembers() {return members != null? members.toString() : "null";}
-    public int getNumberOfHeartbeatsSent() {return num_heartbeats;}
-    public int getNumSuspectEventsGenerated() {return num_suspect_events;}
+    public int getHeartbeatsSent() {return num_heartbeats_sent;}
+    public int getHeartbeatsReceived() {return num_heartbeats_received;}
+    public int getSuspectEventsSent() {return num_suspect_events;}
     public long getTimeout() {return timeout;}
     public void setTimeout(long timeout) {this.timeout=timeout;}
+    public long getInterval() {return interval;}
+    public void setInterval(long interval) {this.interval=interval;}
     public boolean isShun() {return shun;}
     public void setShun(boolean flag) {this.shun=flag;}
+    public boolean isRunning() {return tasks_running;}
+
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
             sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
         }
         return sb.toString();
+    }
+
+    public String printTimestamps() {
+        return printTimeStamps();
     }
 
 
@@ -97,6 +108,12 @@ public class FD_ALL extends Protocol {
             props.remove("shun");
         }
 
+        str=props.getProperty("msg_counts_as_heartbeat");
+        if(str != null) {
+            msg_counts_as_heartbeat=Boolean.valueOf(str).booleanValue();
+            props.remove("msg_counts_as_heartbeat");
+        }
+
         if(props.size() > 0) {
             log.error("the following properties are not recognized: " + props);
             return false;
@@ -105,7 +122,7 @@ public class FD_ALL extends Protocol {
     }
 
     public void resetStats() {
-        num_heartbeats=num_suspect_events=0;
+        num_heartbeats_sent=num_heartbeats_received=num_suspect_events=0;
         suspect_history.removeAll();
     }
 
@@ -137,7 +154,8 @@ public class FD_ALL extends Protocol {
             case Event.MSG:
                 msg=(Message)evt.getArg();
                 hdr=(Header)msg.getHeader(name);
-                // update(msg.getSrc()); // update when data is received too ? maybe a bit costly
+                if(msg_counts_as_heartbeat)
+                    update(msg.getSrc()); // update when data is received too ? maybe a bit costly
                 if(hdr == null)
                     break;  // message did not originate from FD_ALL layer, just pass up
 
@@ -157,6 +175,7 @@ public class FD_ALL extends Protocol {
                         }
 
                         update(sender); // updates the heartbeat entry for 'sender'
+                        num_heartbeats_received++;
                         break;          // don't pass up !
 
                     case Header.SUSPECT:
@@ -270,7 +289,7 @@ public class FD_ALL extends Protocol {
 
 
     private void update(Address sender) {
-        if(sender != null)
+        if(sender != null && !sender.equals(local_addr))
             timestamps.put(sender, Long.valueOf(System.currentTimeMillis()));
     }
 
@@ -290,6 +309,8 @@ public class FD_ALL extends Protocol {
                 timestamps.put(mbr, Long.valueOf(System.currentTimeMillis()));
             }
         }
+
+        invalid_pingers.clear();
 
         if(!tasks_running && members.size() > 1)
             startTasks();
@@ -325,6 +346,29 @@ public class FD_ALL extends Protocol {
             num_pings++;
             invalid_pingers.put(sender, Integer.valueOf(num_pings));
         }
+    }
+
+
+    private String printTimeStamps() {
+        StringBuilder sb=new StringBuilder();
+        Map.Entry<Address,Long> entry;
+        long current_time=System.currentTimeMillis();
+        for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            sb.append(entry.getKey()).append(": ");
+            sb.append(current_time - entry.getValue().longValue()).append(" ms old\n");
+        }
+        return sb.toString();
+    }
+
+    void suspect(Address mbr) {
+        Message suspect_msg=new Message();
+        suspect_msg.setFlag(Message.OOB);
+        Header hdr=new Header(Header.SUSPECT, mbr);
+        suspect_msg.putHeader(name, hdr);
+        passDown(new Event(Event.MSG, suspect_msg));
+        num_suspect_events++;
+        suspect_history.add(mbr);
     }
 
 
@@ -420,7 +464,7 @@ public class FD_ALL extends Protocol {
             passDown(new Event(Event.MSG, heartbeat));
             //if(trace)
               //  log.trace(local_addr + ": sent heartbeat to cluster");
-            num_heartbeats++;
+            num_heartbeats_sent++;
         }
 
         public String toString() {
@@ -458,26 +502,7 @@ public class FD_ALL extends Protocol {
             }
         }
 
-        private String printTimeStamps() {
-            StringBuilder sb=new StringBuilder();
-            Map.Entry<Address,Long> entry;
-            long current_time=System.currentTimeMillis();
-            for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                sb.append(entry.getKey()).append(": ");
-                sb.append(current_time - entry.getValue().longValue()).append(" ms old\n");
-            }
-            return sb.toString();
-        }
 
-        void suspect(Address mbr) {
-            Message suspect_msg=new Message();
-            suspect_msg.setFlag(Message.OOB);
-            Header hdr=new Header(Header.SUSPECT, mbr);
-            suspect_msg.putHeader(name, hdr);
-            passDown(new Event(Event.MSG, suspect_msg));
-            num_suspect_events++;
-        }
     }
 
 
