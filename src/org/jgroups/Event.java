@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.26 2006/11/16 20:36:01 belaban Exp $
+// $Id: Event.java,v 1.27 2006/12/22 13:33:56 belaban Exp $
 
 package org.jgroups;
 
@@ -65,12 +65,6 @@ public class Event {
     public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
     public static final int GET_DIGEST_STABLE         = 57;
     public static final int GET_DIGEST_STABLE_OK      = 58;  // response to GET_DIGEST_STABLE
-    // public static final int ACK                       = 59;  // used to flush down events
-    // public static final int ACK_OK                    = 60;  // response to ACK
-    public static final int START                     = 61;  // triggers start() - internal event, handled by Protocol
-    public static final int START_OK                  = 62;  // arg = exception of null - internal event, handled by Protocol
-    public static final int STOP                      = 63;  // triggers stop() - internal event, handled by Protocol
-    public static final int STOP_OK                   = 64;  // arg = exception or null - internal event, handled by Protocol
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
@@ -88,12 +82,13 @@ public class Event {
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
 
 
-    private int    type;       // type of event
-    private Object arg;        // must be serializable if used for inter-stack communication
+    private final int    type;       // type of event
+    private final Object arg;        // must be serializable if used for inter-stack communication
 
 
     public Event(int type) {
         this.type=type;
+        this.arg=null;
     }
 
     public Event(int type, Object arg) {
@@ -105,8 +100,13 @@ public class Event {
         return type;
     }
 
+    /**
+     * Sets the new type
+     * @param type
+     * @deprecated in order to make an Event immutable
+     */
     public void setType(int type) {
-        this.type=type;
+        throw new IllegalAccessError("setType() has been deprecated, to make Events immutable");
     }
 
     public Object getArg() {
@@ -114,7 +114,7 @@ public class Event {
     }
 
     public void setArg(Object arg) {
-        this.arg=arg;
+        throw new IllegalAccessError("setArg() has been deprecated, to make Events immutable");
     }
 
 
@@ -177,12 +177,6 @@ public class Event {
             case CONFIG:                 return "CONFIG";
             case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
             case GET_DIGEST_STABLE_OK:   return "GET_DIGEST_STABLE_OK";
-            // case ACK:                    return "ACK";
-            // case ACK_OK:                 return "ACK_OK";
-            case START:                  return "START";
-            case START_OK:               return "START_OK";
-            case STOP:                   return "STOP";
-            case STOP_OK:                return "STOP_OK";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
@@ -205,7 +199,7 @@ public class Event {
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
 
     public String toString() {
-        StringBuffer ret=new StringBuffer(64);
+        StringBuilder ret=new StringBuilder(64);
         ret.append("Event[type=" + type2String(type) + ", arg=" + arg + ']');
         return ret.toString();
     }
