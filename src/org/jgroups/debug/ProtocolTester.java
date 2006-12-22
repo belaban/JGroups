@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.8 2006/12/22 12:44:05 belaban Exp $
+// $Id: ProtocolTester.java,v 1.9 2006/12/22 13:37:12 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -83,7 +83,7 @@ public class ProtocolTester {
                 p.stop();
                 p=p.getDownProtocol();
             }
-            config.stopProtocolStack(harness);
+            config.destroyProtocolStack(harness);
         }
         else if(top != null) {
             p=top;
@@ -91,7 +91,7 @@ public class ProtocolTester {
                 p.stop();
                 p=p.getDownProtocol();
             }
-            config.stopProtocolStack(top);
+            config.destroyProtocolStack(top);
         }
     }
 
