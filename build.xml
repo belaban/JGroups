@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.77 2006/12/11 10:02:26 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.78 2006/12/22 12:10:26 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -88,7 +88,7 @@
         depends="prepare"
         description="Compiles are Java files">
         <javac destdir="${compile.dir}"
-            source="1.4"
+            source="1.5"
             classpathref="jg.classpath"
             debug="on"
             deprecation="off"
@@ -96,7 +96,6 @@
             listfiles="false"
             includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
-            <exclude name="**/*1_5*"/>
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
@@ -104,27 +103,6 @@
             <src path="${perf.dir}"/>
         </javac>
     </target>
-
-
-    <target name="compile-1.5"
-         depends="prepare"
-         description="Compiles are Java files (including files dependent on JDK 1.5)">
-         <javac destdir="${compile.dir}"
-             source="1.5"
-             classpathref="jg.classpath"
-             debug="on"
-             deprecation="off"
-             optimize="off"
-             listfiles="false"
-             includes="org/jgroups/**">
-             <exclude name="**/obsolete/**"/>
-             <src path="${src.dir}"/>
-             <src path="${tests.dir}"/>
-             <src path="${junit.dir}"/>
-             <src path="${stress.dir}"/>
-             <src path="${perf.dir}"/>
-         </javac>
-     </target>
 
 
     <target name="draw" depends="compile">
@@ -138,13 +116,6 @@
                 jgroups-core.jar">
     </target>
 
-
-    <target name="jar-1.5"
-        description="Compiles for 1.5 and creates JAR files in the ./dist directory"
-        depends="compile-1.5,
-                jgroups-all.jar,
-                jgroups-core.jar">
-    </target>
 
 
     <target name="jgroups-all.jar"
@@ -357,11 +328,6 @@
     <target name="all"
         depends="jar,javadoc"
         description="Compiles all files, creates JARs and Javadoc documentation"/>
-
-    <target name="all-1.5"
-        depends="jar-1.5,javadoc"
-        description="Compiles all files (for 1.5), creates JARs and Javadoc documentation"/>
-
 
     <target name="version"
         depends="compile"
