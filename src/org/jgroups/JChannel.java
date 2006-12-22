@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.111 2006/12/22 12:34:16 belaban Exp $
+ * @version $Id: JChannel.java,v 1.112 2006/12/22 13:53:12 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -578,8 +578,7 @@ public class JChannel extends Channel {
      * @exception ChannelClosedException
      */
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
-        checkClosed();
-        checkNotConnected();
+        checkClosedOrNotConnected();
         if(stats) {
             sent_msgs++;
             sent_bytes+=msg.getLength();
@@ -621,8 +620,7 @@ public class JChannel extends Channel {
      */
     public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
 
-        checkClosed();
-        checkNotConnected();
+        checkClosedOrNotConnected();
 
         try {
             Event evt=(timeout <= 0)? (Event)mq.remove() : (Event)mq.remove(timeout);
@@ -657,8 +655,7 @@ public class JChannel extends Channel {
      */
     public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
 
-        checkClosed();
-        checkNotConnected();
+        checkClosedOrNotConnected();
 
         try {
             Event evt=(timeout <= 0)? (Event)mq.peek() : (Event)mq.peek(timeout);
@@ -1197,24 +1194,23 @@ public class JChannel extends Channel {
     public void down(Event evt) {
         if(evt == null) return;
 
-        int type=evt.getType();
-
-        // handle setting of additional data (kludge, will be removed soon)
-        if(type == Event.CONFIG) {
-            try {
-                Map m=(Map)evt.getArg();
-                if(m != null && m.containsKey("additional_data")) {
-                    additional_data=(byte[])m.get("additional_data");
-                    if(local_addr instanceof IpAddress)
-                        ((IpAddress)local_addr).setAdditionalData(additional_data);
+        switch(evt.getType()) {
+            case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
+                try {
+                    Map m=(Map)evt.getArg();
+                    if(m != null && m.containsKey("additional_data")) {
+                        additional_data=(byte[])m.get("additional_data");
+                        if(local_addr instanceof IpAddress)
+                            ((IpAddress)local_addr).setAdditionalData(additional_data);
+                    }
                 }
-            }
-            catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
-            }
-        }
-        else if(type ==  Event.STATE_TRANSFER_INPUTSTREAM_CLOSED) {
-            state_promise.setResult(Boolean.TRUE);
+                catch(Throwable t) {
+                    if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
+                }
+                break;
+            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+                state_promise.setResult(Boolean.TRUE);
+                break;
         }
 
         if(prot_stack != null)
@@ -1284,14 +1280,6 @@ public class JChannel extends Channel {
     }
 
 
-    /**
-     * health check.<BR>
-     * throws a ChannelNotConnected exception if the channel is not connected
-     */
-    protected void checkNotConnected() throws ChannelNotConnectedException {
-        if(!connected)
-            throw new ChannelNotConnectedException();
-    }
 
     /**
      * health check<BR>
@@ -1302,6 +1290,13 @@ public class JChannel extends Channel {
             throw new ChannelClosedException();
     }
 
+
+    protected void checkClosedOrNotConnected() throws ChannelNotConnectedException, ChannelClosedException {
+        if(closed)
+            throw new ChannelClosedException();
+        if(!connected)
+            throw new ChannelNotConnectedException();
+    }
 
 
     /**
@@ -1367,8 +1362,7 @@ public class JChannel extends Channel {
      * @return true of the state was received, false if the operation timed out
      */
     private boolean _getState(Event evt, StateTransferInfo info) throws ChannelNotConnectedException, ChannelClosedException {
-        checkClosed();
-        checkNotConnected();
+        checkClosedOrNotConnected();
         if(!state_transfer_supported) {
             throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
                     + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
