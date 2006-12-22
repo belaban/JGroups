@@ -12,11 +12,11 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.io.*;
 
 /**
- * Failure detection based on simple heartbeat protocol. Every member preiodically multicasts a heartbeat. Every member
+ * Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat. Every member
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.4 2006/12/22 09:35:10 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.5 2006/12/22 11:54:37 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
