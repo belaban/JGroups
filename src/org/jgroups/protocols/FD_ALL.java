@@ -16,7 +16,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.1 2006/12/21 19:25:12 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.2 2006/12/22 08:55:37 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -144,8 +144,10 @@ public class FD_ALL extends Protocol {
                 switch(hdr.type) {
                     case Header.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         sender=msg.getSrc();
-                        if(trace)
-                            log.trace("received a a heartbeat from " + sender);
+                        if(sender.equals(local_addr))
+                            break;
+                        //if(trace)
+                          //  log.trace(local_addr + ": received a heartbeat from " + sender);
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
                         //    the sender to leave the group (and possibly rejoin it later)
@@ -183,6 +185,7 @@ public class FD_ALL extends Protocol {
     public void down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+                passDown(evt);
                 View v=(View)evt.getArg();
                 handleViewChange(v);
                 break;
@@ -198,12 +201,16 @@ public class FD_ALL extends Protocol {
         startHeartbeatSender();
         startTimeoutChecker();
         tasks_running=true;
+        if(trace)
+            log.trace("started heartbeat sender and timeout checker tasks");
     }
 
     private void stopTasks() {
         stopTimeoutChecker();
         stopHeartbeatSender();
         tasks_running=false;
+        if(trace)
+            log.trace("stopped heartbeat sender and timeout checker tasks");
     }
 
     private void startTimeoutChecker() {
@@ -277,6 +284,8 @@ public class FD_ALL extends Protocol {
         keys.retainAll(mbrs); // remove all nodes which have left the cluster
         for(Iterator it=mbrs.iterator(); it.hasNext();) { // and add new members
             Address mbr=(Address)it.next();
+            if(mbr.equals(local_addr))
+                continue;
             if(!timestamps.containsKey(mbr)) {
                 timestamps.put(mbr, Long.valueOf(System.currentTimeMillis()));
             }
@@ -409,8 +418,8 @@ public class FD_ALL extends Protocol {
             Header hdr=new Header(Header.HEARTBEAT);
             heartbeat.putHeader(name, hdr);
             passDown(new Event(Event.MSG, heartbeat));
-            if(trace)
-                log.trace("sent heartbeat to cluster");
+            //if(trace)
+              //  log.trace(local_addr + ": sent heartbeat to cluster");
             num_heartbeats++;
         }
 
@@ -426,6 +435,11 @@ public class FD_ALL extends Protocol {
             Map.Entry entry;
             Object key;
             Long val;
+
+
+            if(trace)
+                log.trace("checking for expired senders, table is:\n" + printTimeStamps());
+
             long current_time=System.currentTimeMillis(), diff;
             for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
@@ -438,6 +452,18 @@ public class FD_ALL extends Protocol {
                     suspect((Address)key);
                 }
             }
+        }
+
+        private String printTimeStamps() {
+            StringBuilder sb=new StringBuilder();
+            Map.Entry<Address,Long> entry;
+            long current_time=System.currentTimeMillis();
+            for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                sb.append(entry.getKey()).append(": ");
+                sb.append(current_time - entry.getValue().longValue()).append(" ms old\n");
+            }
+            return sb.toString();
         }
 
         void suspect(Address mbr) {
