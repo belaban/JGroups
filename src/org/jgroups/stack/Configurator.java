@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.21 2006/12/13 07:42:41 belaban Exp $
+// $Id: Configurator.java,v 1.22 2006/12/22 12:44:05 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -68,12 +68,6 @@ public class Configurator {
         }
     }
 
-
-    public void startProtocolStack(Protocol bottom_prot) {
-        while(bottom_prot != null) {
-            bottom_prot=bottom_prot.getUpProtocol();
-        }
-    }
 
 
     public void stopProtocolStack(Protocol start_prot) {
