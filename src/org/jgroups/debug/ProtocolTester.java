@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.7 2006/01/28 10:51:19 belaban Exp $
+// $Id: ProtocolTester.java,v 1.8 2006/12/22 12:44:05 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -45,7 +45,6 @@ public class ProtocolTester {
         top.setUpProtocol(harness); // +++
 
         bottom=getBottomProtocol(top);
-        config.startProtocolStack(bottom);
 
         // has to be set after StartProtocolStack, otherwise the up and down handler threads in the harness
         // will be started as well (we don't want that) !
@@ -66,7 +65,6 @@ public class ProtocolTester {
                 p.start();
                 p=p.getDownProtocol();
             }
-            config.startProtocolStack(harness);
         }
         else if(top != null) {
             p=top;
@@ -74,7 +72,6 @@ public class ProtocolTester {
                 p.start();
                 p=p.getDownProtocol();
             }
-            config.startProtocolStack(top);
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.30 2006/12/13 07:42:41 belaban Exp $
+// $Id: ProtocolStack.java,v 1.31 2006/12/22 12:44:05 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -180,7 +180,6 @@ public class ProtocolStack extends Protocol implements Transport {
             top_prot.setUpProtocol(this);
             bottom_prot=conf.getBottommostProtocol(top_prot);
             conf.initProtocolStack(bottom_prot);         // calls init() on each protocol, from bottom to top
-            conf.startProtocolStack(bottom_prot);        // sets up queues and threads
         }
     }
 
