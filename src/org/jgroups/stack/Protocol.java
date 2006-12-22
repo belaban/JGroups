@@ -38,7 +38,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.43 2006/12/19 09:00:34 belaban Exp $
+ * @version $Id: Protocol.java,v 1.44 2006/12/22 13:37:12 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -297,11 +297,6 @@ public abstract class Protocol {
                 return;
             }
         }
-        int type=evt.getType();
-        if(type == Event.START || type == Event.STOP) {
-            if(handleSpecialDownEvent(evt) == false)
-                return;
-        }
         down(evt);
     }
 
@@ -348,38 +343,4 @@ public abstract class Protocol {
     }
 
 
-    /**  These are special internal events that should not be handled by protocols
-     * @return boolean True: the event should be passed further down the stack. False: the event should
-     * be discarded (not passed down the stack)
-     */
-    protected boolean handleSpecialDownEvent(Event evt) {
-        switch(evt.getType()) {
-            case Event.START:
-                try {
-                    start();
-
-                    // if we're the transport protocol, reply with a START_OK up the stack
-                    if(down_prot == null) {
-                        passUp(new Event(Event.START_OK, Boolean.TRUE));
-                        return false; // don't pass down the stack
-                    }
-                    else
-                        return true; // pass down the stack
-                }
-                catch(Exception e) {
-                    passUp(new Event(Event.START_OK, new Exception("exception caused by " + getName() + ".start()", e)));
-                    return false;
-                }
-            case Event.STOP:
-                stop();
-                if(down_prot == null) {
-                    passUp(new Event(Event.STOP_OK, Boolean.TRUE));
-                    return false; // don't pass down the stack
-                }
-                else
-                    return true; // pass down the stack
-            default:
-                return true; // pass down by default
-        }
-    }
 }

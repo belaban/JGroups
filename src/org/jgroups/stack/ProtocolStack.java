@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.31 2006/12/22 12:44:05 belaban Exp $
+// $Id: ProtocolStack.java,v 1.32 2006/12/22 13:37:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -32,10 +32,10 @@ public class ProtocolStack extends Protocol implements Transport {
     // final Promise                   ack_promise=new Promise();
 
     /** Used to sync on START/START_OK events for start()*/
-    Promise                         start_promise=null;
+    // Promise                         start_promise=null;
 
     /** used to sync on STOP/STOP_OK events for stop() */
-    Promise                         stop_promise=null;
+    // Promise                         stop_promise=null;
 
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
@@ -251,7 +251,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void destroy() {
         if(top_prot != null) {
-            conf.stopProtocolStack(top_prot);           // destroys msg queues and threads
+            conf.destroyProtocolStack(top_prot);           // destroys msg queues and threads
             top_prot=null;
         }
     }
@@ -264,25 +264,10 @@ public class ProtocolStack extends Protocol implements Transport {
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
     public void startStack() throws Exception {
-        Object start_result=null;
         if(stopped == false) return;
 
         timer.start();
-
-        if(start_promise == null)
-            start_promise=new Promise();
-        else
-            start_promise.reset();
-
-        down(new Event(Event.START));
-        start_result=start_promise.getResult(0);
-        if(start_result != null && start_result instanceof Throwable) {
-            if(start_result instanceof Exception)
-                throw (Exception)start_result;
-            else
-                throw new Exception("failed starting stack: " + start_result);
-        }
-
+        conf.startProtocolStack(top_prot);
         stopped=false;
     }
 
@@ -306,14 +291,7 @@ public class ProtocolStack extends Protocol implements Transport {
         }
 
         if(stopped) return;
-
-        if(stop_promise == null)
-            stop_promise=new Promise();
-        else
-            stop_promise.reset();
-
-        down(new Event(Event.STOP));
-        stop_promise.getResult(5000);
+        conf.stopProtocolStack(top_prot);
         stopped=true;
     }
 
@@ -349,17 +327,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void up(Event evt) {
-        switch(evt.getType()) {
-            case Event.START_OK:
-                if(start_promise != null)
-                    start_promise.setResult(evt.getArg());
-                return;
-            case Event.STOP_OK:
-                if(stop_promise != null)
-                    stop_promise.setResult(evt.getArg());
-                return;
-        }
-
         if(channel != null)
             channel.up(evt);
     }

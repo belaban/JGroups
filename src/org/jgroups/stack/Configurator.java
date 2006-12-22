@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.22 2006/12/22 12:44:05 belaban Exp $
+// $Id: Configurator.java,v 1.23 2006/12/22 13:37:12 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -68,9 +68,22 @@ public class Configurator {
         }
     }
 
+    public void startProtocolStack(Protocol prot) throws Exception {
+        while(prot != null) {
+            prot.start();
+            prot=prot.getDownProtocol();
+        }
+    }
+
+    public void stopProtocolStack(Protocol prot) {
+        while(prot != null) {
+            prot.stop();
+            prot=prot.getDownProtocol();
+        }
+    }
 
 
-    public void stopProtocolStack(Protocol start_prot) {
+    public void destroyProtocolStack(Protocol start_prot) {
         while(start_prot != null) {
             start_prot.destroy();
             start_prot=start_prot.getDownProtocol();
@@ -653,7 +666,7 @@ public class Configurator {
                 return;
             protocol_stack=conf.connectProtocols(protocols);
             Thread.sleep(3000);
-            conf.stopProtocolStack(protocol_stack);
+            conf.destroyProtocolStack(protocol_stack);
             // conf.stopProtocolStackInternal(protocol_stack);
         }
         catch(Exception e) {
