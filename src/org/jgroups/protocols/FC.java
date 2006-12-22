@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.57 2006/12/15 17:04:10 belaban Exp $
+ * @version $Id: FC.java,v 1.58 2006/12/22 14:45:52 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -333,7 +333,7 @@ public class FC extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                FcHeader hdr=(FcHeader)msg.removeHeader(name);
+                FcHeader hdr=(FcHeader)msg.getHeader(name);
                 if(hdr != null) {
                     switch(hdr.type) {
                         case FcHeader.REPLENISH:

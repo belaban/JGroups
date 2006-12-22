@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.52 2006/12/12 08:49:08 belaban Exp $
+// $Id: FD_SOCK.java,v 1.53 2006/12/22 14:45:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -203,7 +203,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         case Event.MSG:
             msg=(Message) evt.getArg();
-            hdr=(FdHeader) msg.removeHeader(name);
+            hdr=(FdHeader) msg.getHeader(name);
             if(hdr == null)
                 break;  // message did not originate from FD_SOCK layer, just pass up
 
