@@ -454,13 +454,84 @@
       </table>
     </section>
 
+
+
+      <section>
+          <title>FD_ALL</title>
+
+          <para>Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat.
+              Every member also maintains a table of all members (minus itself). When data or a heartbeat from P are
+              received, we reset the timestamp for P to the current time.
+              Periodically, we check for expired members, and suspect those.
+          </para>
+          <para>
+              Example: &lt;FD_ALL interval="3000" timeout="10000"/&gt;
+          </para>
+          <para>
+              In the exampe above, we send a heartbeat every 3 seconds and suspect members if we haven't received a
+              heartbeat (or traffic) for more than 10 seconds. Note that since we check the timestamps every 'interval'
+              milliseconds, we will suspect a member after roughly 4 * 3s == 12 seconds. If we set the timeout to 8500,
+              then we would suspect a member after 3 * 3 secs == 9 seconds.
+          </para>
+
+
+          <table>
+              <title>Properties</title>
+
+              <tgroup cols="2">
+                  <colspec align="left" />
+
+                  <thead>
+                      <row>
+                          <entry align="center">Name</entry>
+
+                          <entry align="center">Description</entry>
+                      </row>
+                  </thead>
+
+                  <tbody>
+                      <row>
+                          <entry>timeout</entry>
+                          <entry>
+                              Max number of milliseconds until a member is suspected
+                          </entry>
+                      </row>
+                      <row>
+                          <entry>interval</entry>
+                          <entry>
+                              Interval (in milliseconds) to multicast heartbeat messages to the cluster
+                          </entry>
+                      </row>
+                      <row>
+                          <entry>msg_counts_as_heartbeat</entry>
+                          <entry>
+                              If this is true, we treat traffic from P as if P sent a heartbeat, ie. we set the
+                              timestamp for P to the current time. Default is true
+                          </entry>
+                      </row>
+                      <row>
+                          <entry>shun</entry>
+
+                          <entry>Once a member is excluded from the group, and then
+                              rejoins (e.g. because it didn't crash, but was just slow, or a
+                              router that had crashed came back), it will be excluded
+                              (shunned) and then has to rejoin. JGroups allows to configure
+                              itself such that shunning leads to automatic rejoins and state
+                              transfer (default in JBoss). , e.g.
+                              <code>shun="true"</code></entry>
+                      </row>
+                  </tbody>
+              </tgroup>
+          </table>
+      </section>
+
      
 
-    <section>
-      <title>FD_SIMPLE</title>
+      <section>
+          <title>FD_SIMPLE</title>
 
-      <para />
-    </section>
+          <para />
+      </section>
 
      
 
