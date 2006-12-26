@@ -12,7 +12,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ThreadlessStackTest.java,v 1.1 2006/12/26 04:56:55 belaban Exp $
+ * @version $Id: ThreadlessStackTest.java,v 1.2 2006/12/26 05:04:23 belaban Exp $
  */
 public class ThreadlessStackTest extends TestCase {
     String props="udp.xml";
@@ -86,7 +86,7 @@ public class ThreadlessStackTest extends TestCase {
         stop=System.currentTimeMillis();
         diff=stop - start;
 
-        System.out.println("Total time: " + diff + " ms");
+        System.out.println("Total time: " + diff + " ms\n");
 
         checkFIFO(r1);
         checkFIFO(r2);
@@ -168,6 +168,7 @@ public class ThreadlessStackTest extends TestCase {
         p.setProperty("thread_pool.min_threads", "1");
         p.setProperty("thread_pool.max_threads", "100");
         p.setProperty("thread_pool.queue_enabled", "false");
+        // p.setProperty("loopback", "true");
         tp.setProperties(p);
     }
 
@@ -220,7 +221,7 @@ public class ThreadlessStackTest extends TestCase {
 
     private class MyReceiver extends ReceiverAdapter {
         String name;
-        List<Pair<Address,Integer>> msgs=new LinkedList();
+        final List<Pair<Address,Integer>> msgs=new LinkedList();
         AtomicInteger count=new AtomicInteger(0);
 
         public MyReceiver(String name) {
@@ -230,8 +231,10 @@ public class ThreadlessStackTest extends TestCase {
         public void receive(Message msg) {
             Util.sleep(SLEEPTIME);
             Pair pair=new Pair<Address,Integer>(msg.getSrc(), (Integer)msg.getObject());
-            System.out.println(name + ": received " + pair);
-            msgs.add(pair);
+            // System.out.println(name + ": received " + pair);
+            synchronized(msgs) {
+                msgs.add(pair);
+            }
             if(count.incrementAndGet() >= EXPECTED) {
                 try {
                     barrier.await();
