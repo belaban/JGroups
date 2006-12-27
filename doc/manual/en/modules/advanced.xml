@@ -991,26 +991,50 @@
         <title>The concurrent stack</title>
 
         <para>
-
-            <para>The concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>.</para>
-
-            <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
-                <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
-            </figure>
-
-
-            <!--<mediaobject>
-                <imageobject>
-                    <imagedata align="center" fileref="images/ConcurrentStack.png"/>
-                </imageobject>
-
-
-                <textobject>
-                <phrase>A diagram representing JGroups architecture.</phrase>
-            </textobject>
-            </mediaobject>-->
-
+            The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases:
+            <itemizedlist>
+                <listitem>
+                    Large number of threads: each protocol had by default 2 threads, one for the up and one for the
+                    down queue. They could be disabled per protocol by setting up_thread or down_thread to false.
+                    In the new model, these threads have been removed.
+                </listitem>
+                <listitem>
+                    Sequential delivery of messages: JGroups used to have a single queue for incoming messages,
+                    processed by one thread. Therefore, messages from different senders were still processed in
+                    FIFO order. In 2.5 these messages can be processed in parallel.
+                </listitem>
+                <listitem>
+                    Out-of-band messages: when an application doesn't care about the ordering properties of a message,
+                    the OOB flag can be set and JGroups will deliver this particular message without regard for any
+                    ordering.
+                </listitem>
+            </itemizedlist>
         </para>
+
+        <section>
+            <title>Overview</title>
+            <para>The concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>.</para>
+            <para>
+                <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
+                    <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
+                </figure>
+            </para>
+        </section>
+
+        <section>
+            <title>Elimination of up and down threads</title>
+        </section>
+
+        <section>
+            <title>Concurrent message delivery</title>
+        </section>
+
+        <section>
+            <title>Out-of-band messages</title>
+        </section>
+
+
+
     </section>
 
     <section>
