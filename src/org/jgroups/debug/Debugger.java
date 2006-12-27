@@ -1,4 +1,4 @@
-// $Id: Debugger.java,v 1.7 2006/11/17 13:39:18 belaban Exp $
+// $Id: Debugger.java,v 1.8 2006/12/27 15:20:09 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -76,7 +76,7 @@ public class Debugger extends JFrame {
             view=new ProtocolView(prot, table_model, i);
             prot.setObserver(view);
             table_model.insertRow(i, new Object[]{String.valueOf((i + 1)),
-                    prot.getName(), String.valueOf(prot.getUpQueue().size()),
+                    prot.getName(), String.valueOf(0),
                     "0", "0", "0"});
         }
     }
