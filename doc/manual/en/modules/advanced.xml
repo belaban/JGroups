@@ -986,6 +986,33 @@
     </section>
   </section>
 
+
+    <section>
+        <title>The concurrent stack</title>
+
+        <para>
+
+            <para>The concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>.</para>
+
+            <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
+                <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
+            </figure>
+
+
+            <!--<mediaobject>
+                <imageobject>
+                    <imagedata align="center" fileref="images/ConcurrentStack.png"/>
+                </imageobject>
+
+
+                <textobject>
+                <phrase>A diagram representing JGroups architecture.</phrase>
+            </textobject>
+            </mediaobject>-->
+
+        </para>
+    </section>
+
     <section>
         <title>Misc</title>
         <section>
