@@ -1013,12 +1013,143 @@
 
         <section>
             <title>Overview</title>
-            <para>The concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>.</para>
+
+            <para>
+                The architecture of the concurrent stack is shown in <xref linkend="ConcurrentStackFig"/>. The changes
+                were made entirely inside of the transport protocol (TP, with subclasses UDP, TCP and TCP_NIO). Therefore,
+                to configure the concurrent stack, the user has to modify the config for (e.g.) UDP in the XML file.
+            </para>
+
             <para>
                 <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
                     <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
                 </figure>
             </para>
+
+            <para>
+                The concurrent stack consists of 2 thread pools (java.util.concurrent.Executor): the out-of-band (OOB)
+                thread pool and the regular thread pool. Packets are received by multicast or unicast receiver threads
+                (UDP) or a ConnectionTable (TCP, TCP_NIO). Packets marked as OOB (with Message.setFlag(Message.OOB)) are
+                dispatched to the OOB thread pool, and all other packets are dispatched to the regular thread pool.
+            </para>
+
+            <para>
+                When a thread pool is disabled, then we use the thread of the caller (e.g. multicast or unicast
+                receiver threads or the ConnectionTable) to send the message up the stack and into the application.
+                Otherwise, the packet will be processed by a thread from the thread pool, which sends the message up
+                the stack. When all current threads are busy, another thread might be created, up to the maximum number
+                of threads defined. Alternatively, the packet might get queued up until a thread becomes available.
+            </para>
+
+            <para>
+                The point of using a thread pool is that the receiver threads should only receive the packets and forward
+                them to the thread pools for processing, because unmarshalling and processing is slower than simply
+                receiving the message and can benefit from parallelization.
+            </para>
+
+
+            <section>
+                <title>Configuration</title>
+
+                <para>Note that this is preliminary and names or properties might change</para>
+
+                <para>
+                    Here's an example of the new configuration:
+                    <screen>
+                        <![CDATA[
+                        <UDP
+                                mcast_addr="228.10.10.10"
+                                mcast_port="45588"
+
+                                use_concurrent_stack="true"
+
+                                thread_pool.enabled="true"
+                                thread_pool.min_threads="1"
+                                thread_pool.max_threads="100"
+                                thread_pool.keep_alive_time="20000"
+                                thread_pool.queue_enabled="false"
+                                thread_pool.queue_max_size="10"
+                                thread_pool.rejection_policy="Run"
+
+                                oob_thread_pool.enabled="true"
+                                oob_thread_pool.min_threads="1"
+                                oob_thread_pool.max_threads="4"
+                                oob_thread_pool.keep_alive_time="30000"
+                                oob_thread_pool.queue_enabled="true"
+                                oob_thread_pool.queue_max_size="10"
+                                oob_thread_pool.rejection_policy="Run"/>
+                                ]]>
+                    </screen>
+                </para>
+
+                <para>
+                    The concurrent stack can be completely eliminated by setting use_concurrent_stack to false.
+                </para>
+                <para>
+                    The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
+                </para>
+
+                <para>
+                    The attributes are listed below. The roughly correspond to the options of a
+                    java.util.concurrent.ThreadPoolExecutor in JDK 5.
+                    <table>
+                        <title>Attributes of thread pools</title>
+
+                        <tgroup cols="2">
+                            <colspec align="left" />
+
+                            <thead>
+                                <row>
+                                    <entry align="center">Name</entry>
+                                    <entry align="center">Description</entry>
+                                </row>
+                            </thead>
+
+                            <tbody>
+                                <row>
+                                    <entry>enabled</entry>
+                                    <entry>Whether of not to use a thread pool. If set to false, the caller's thread
+                                    is used.</entry>
+                                </row>
+
+                                <row>
+                                    <entry>min_threads</entry>
+                                    <entry>The minimum number of threads to use.</entry>
+                                </row>
+                                <row>
+                                    <entry>max_threads</entry>
+                                    <entry>The maximum number of threads to use.</entry>
+                                </row>
+                                <row>
+                                    <entry>keep_alive_time</entry>
+                                    <entry>Number of milliseconds until an idle thread is removed from the pool</entry>
+                                </row>
+                                <row>
+                                    <entry>queue_enabled</entry>
+                                    <entry>Whether of not to use a (bounded) queue. If enabled, when all minimum
+                                    threads are busy, work items are added to the queue. When the queue is full,
+                                    additional threads are created, up to max_threads. When max_threads have been
+                                    reached, the rejection policy is consulted.</entry>
+                                </row>
+                                <row>
+                                    <entry>max_size</entry>
+                                    <entry>The maximum number of elements in the queue. Ignored if the queue is
+                                    disabled</entry>
+                                </row>
+                                <row>
+                                    <entry>rejection_policy</entry>
+                                    <entry>Determines what happens when the thread pool (and queue, if enabled) is
+                                    full. The default is to run on the caller's thread. "Abort" throws an runtime
+                                    exception. "Discard" discards the message, "DiscardOldest" discards the
+                                    oldest entry in the queue. Note that these values might change, for example a
+                                    "Wait" value might get added in the future.</entry>
+                                </row>
+                            </tbody>
+                        </tgroup>
+                    </table>
+                </para>
+            </section>
+
         </section>
 
         <section>
