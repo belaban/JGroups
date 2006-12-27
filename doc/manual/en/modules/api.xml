@@ -322,7 +322,7 @@
       <graphic align="center" fileref="images/Message.png" format="PNG" />
     </figure>
 
-    <para>A message contains four fields:</para>
+    <para>A message contains 5 fields:</para>
 
     <variablelist>
       <varlistentry>
@@ -344,7 +344,17 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry>
+        <varlistentry>
+            <term>Flags</term>
+
+            <listitem>
+                <para>This is one byte used for flags. The currently recognized flags are OOB, LOW_PRIO and HIGH_PRIO.
+                    See the discussion on the concurrent stack for OOB.
+                </para>
+            </listitem>
+        </varlistentry>
+
+        <varlistentry>
         <term>Payload</term>
 
         <listitem>
