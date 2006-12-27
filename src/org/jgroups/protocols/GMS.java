@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.16 2005/10/26 16:07:33 belaban Exp $
+// $Id: GMS.java,v 1.17 2006/12/27 14:53:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -81,7 +81,7 @@ public class GMS extends RpcProtocol implements Runnable {
 
     public void start() throws Exception {
         super.start();
-        if(checkForViewEnforcer(up_prot) == false) {
+        if(checkForViewEnforcer(getUpProtocol()) == false) {
             if(warn) log.warn("I need protocol layer " +
                     "VIEW_ENFORCER above me to discard messages sent to me while I'm " +
                     "not yet a group member ! Otherwise, these messages will be delivered " +
