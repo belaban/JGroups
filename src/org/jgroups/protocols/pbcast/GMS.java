@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.75 2006/12/22 14:45:50 belaban Exp $
+ * @version $Id: GMS.java,v 1.76 2006/12/27 14:55:07 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -115,7 +115,7 @@ public class GMS extends Protocol {
     public boolean isShun() {return shun;}
     public void setShun(boolean s) {shun=s;}
     public String printPreviousMembers() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         if(prev_members != null) {
             for(Enumeration en=prev_members.elements(); en.hasMoreElements();) {
                 sb.append(en.nextElement()).append("\n");
@@ -144,7 +144,7 @@ public class GMS extends Protocol {
     ViewHandler getViewHandler() {return view_handler;}
 
     public String printPreviousViews() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Enumeration en=prev_views.elements(); en.hasMoreElements();) {
             sb.append(en.nextElement()).append("\n");
         }
@@ -1023,7 +1023,7 @@ public class GMS extends Protocol {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer("GmsHeader");
+            StringBuilder sb=new StringBuilder("GmsHeader");
             sb.append('[' + type2String(type) + ']');
             switch(type) {
                 case JOIN_REQ:
@@ -1221,7 +1221,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.75 2006/12/22 14:45:50 belaban Exp $
+     * @version $Id: GMS.java,v 1.76 2006/12/27 14:55:07 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
@@ -1367,7 +1367,7 @@ public class GMS extends Protocol {
         public int size() {return q.size();}
         public boolean suspended() {return suspended;}
         public String dumpQueue() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             List v=q.values();
             for(Iterator it=v.iterator(); it.hasNext();) {
                 sb.append(it.next() + "\n");
@@ -1376,7 +1376,7 @@ public class GMS extends Protocol {
         }
 
         public String dumpHistory() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             for(Enumeration en=history.elements(); en.hasMoreElements();) {
                 sb.append(en.nextElement() + "\n");
             }
