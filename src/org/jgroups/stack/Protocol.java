@@ -38,13 +38,12 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.45 2006/12/27 14:39:11 belaban Exp $
+ * @version $Id: Protocol.java,v 1.46 2006/12/27 16:31:18 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
     private   Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
-    protected ProtocolObserver observer=null; // hook for debugger
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
     protected boolean          trace=log.isTraceEnabled();
@@ -165,11 +164,6 @@ public abstract class Protocol {
     }
 
 
-    public void setObserver(ProtocolObserver observer) {
-        this.observer=observer;
-        observer.setProtocol(this);
-    }
-
     /**
      * Called after instance has been created (null constructor) and before protocol is started.
      * Properties are already set. Other protocols are not yet connected and events cannot yet be sent.
@@ -277,11 +271,6 @@ public abstract class Protocol {
      * caller's thread (e.g. the protocol layer below us).
      */
     protected void receiveUpEvent(Event evt) {
-        if(observer != null) {                 // call debugger hook (if installed)
-            if(observer.up(evt) == false) {  // false means discard event
-                return;
-            }
-        }
         up(evt);
     }
 
@@ -292,11 +281,6 @@ public abstract class Protocol {
      * caller's thread (e.g. the protocol layer above us).
      */
     protected void receiveDownEvent(Event evt) {
-        if(observer != null) {                                    // call debugger hook (if installed)
-            if(observer.down(evt) == false) {  // false means discard event
-                return;
-            }
-        }
         down(evt);
     }
 
