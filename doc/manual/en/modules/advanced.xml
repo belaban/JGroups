@@ -1054,6 +1054,11 @@
                 <para>Note that this is preliminary and names or properties might change</para>
 
                 <para>
+                    We are thinking of exposing the thread pools programmatically, meaning that a developer might be able to set both
+                    threads pools programmatically, e.g. using something like TP.setOOBThreadPool(Executor executor).
+                </para>
+
+                <para>
                     Here's an example of the new configuration:
                     <screen>
                         <![CDATA[
@@ -1083,7 +1088,8 @@
                 </para>
 
                 <para>
-                    The concurrent stack can be completely eliminated by setting use_concurrent_stack to false.
+                    The concurrent stack can be completely eliminated by setting use_concurrent_stack to false. (Note that
+                    this attribute might be removed in the final 2.5 release).
                 </para>
                 <para>
                     The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
@@ -1154,14 +1160,60 @@
 
         <section>
             <title>Elimination of up and down threads</title>
+
+            <para>
+                By removing the 2 queues/protocol and the associated 2 threads, we effectively reduce the number of
+                threads needed to handle a message, and thus context switching overhead. We also get clear and unambiguous
+                semantics for Channel.send(): now, all messages are sent down the stack on the caller's thread and
+                the send() call only returns once the message has been put on the network. In addition, an exception will
+                only be propagated back to the caller if the message has not yet been placed in a retransmit buffer.
+                Otherwise, JGroups simply logs the error message but keeps retransmitting the message. Therefore,
+                if the caller gets an exception, the message should be re-sent.
+            </para>
+            <para>
+                On the receiving side, a message is handled by a thread pool, either the regular or OOB thread pool. Both
+                thread pools can be completely eliminated, so that we can save even more threads and thus further
+                reduce context switching. The point is that the developer is now able to control the threading behavior
+                almost completely.
+            </para>
         </section>
 
         <section>
             <title>Concurrent message delivery</title>
+            <para>
+                Up to version 2.5, all messages received were processed by a single thread, even if the messages were
+                sent by different senders. For instance, if sender A sent messages 1,2 and 3, and B sent message 34 and 45,
+                and if A's messages were all received first, then B's messages 34 and 35 could only be processed after
+                messages 1-3 from A were processed !
+            </para>
+            <para>
+                Now, we can process messages from different senders in parallel, e.g. messages 1, 2 and 3 from A can be
+                processed by one thread from the thread pool and messages 34 and 35 from B can be processed on a different
+                thread.
+            </para>
+            <para>
+                As a result, we get a speedup of almost N for a cluster of N if every node is sending messages and we
+                configure the thread pool to have at least N threads. There is actually a unit test
+                (ConcurrentStackTest.java) which demonstrates this.
+            </para>
         </section>
 
         <section>
             <title>Out-of-band messages</title>
+            <para>
+                OOB messages completely ignore any ordering constraints the stack might have. Any message marked as OOB
+                will be processed by the OOB thread pool. This is necessary in cases where we don't want the message
+                processing to wait until all other messages from the same sender have been processed, e.g. in the
+                heartbeat case: if sender P sends 5 messages and then a response to a heartbeat request received from
+                some other node, then the time taken to process P's 5 messages might take longer than the heartbeat
+                timeout, so that P might get falsely suspected ! However, if the heartbeat response is marked as OOB,
+                then it will get processed by the OOB thread pool and therefore might be concurrent to its previously
+                sent 5 messages and not trigger a false suspicion.
+            </para>
+            <para>
+                The 2 unit tests UNICAST_OOB_Test and NAKACK_OOB_Test demonstrate how OOB messages influence the ordering,
+                for both unicast and multicast messages.
+            </para>
         </section>
 
 
