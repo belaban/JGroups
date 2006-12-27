@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.97 2006/12/20 16:42:04 belaban Exp $
+ * @version $Id: TP.java,v 1.98 2006/12/27 10:02:05 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -135,7 +135,7 @@ public abstract class TP extends Protocol {
     IncomingMessageHandler incoming_msg_handler;
 
 
-    boolean use_threadless_stack=true;
+    boolean use_concurrent_stack=true;
     ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
 
@@ -705,10 +705,10 @@ public abstract class TP extends Protocol {
             props.remove("use_incoming_packet_handler");
         }
 
-        str=props.getProperty("use_threadless_stack");
+        str=props.getProperty("use_concurrent_stack");
         if(str != null) {
-            use_threadless_stack=Boolean.valueOf(str).booleanValue();
-            props.remove("use_threadless_stack");
+            use_concurrent_stack=Boolean.valueOf(str).booleanValue();
+            props.remove("use_concurrent_stack");
         }
 
 
@@ -1009,7 +1009,7 @@ public abstract class TP extends Protocol {
             if((oob_flag & OOB) == OOB)
                 oob=true;
 
-            if(use_threadless_stack) {
+            if(use_concurrent_stack) {
                 if(oob) {
                     num_oob_msgs_received++;
                     dispatchToThreadPool(oob_thread_pool, dest, sender, data, offset, length);
