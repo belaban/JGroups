@@ -12,16 +12,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ThreadlessStackTest.java,v 1.2 2006/12/26 05:04:23 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.1 2006/12/27 10:04:08 belaban Exp $
  */
-public class ThreadlessStackTest extends TestCase {
+public class ConcurrentStackTest extends TestCase {
     String props="udp.xml";
     JChannel ch1, ch2, ch3;
     final static int NUM=10, EXPECTED=NUM * 3;
     final static long SLEEPTIME=100;
     CyclicBarrier barrier;
 
-    public ThreadlessStackTest(String name) {
+    public ConcurrentStackTest(String name) {
         super(name);
     }
 
@@ -164,7 +164,7 @@ public class ThreadlessStackTest extends TestCase {
         if(tp == null)
             throw new IllegalStateException("Protocol UDP not found in properties");
         Properties p=new Properties();
-        p.setProperty("use_threadless_stack", String.valueOf(threadless));
+        p.setProperty("use_concurrent_stack", String.valueOf(threadless));
         p.setProperty("thread_pool.min_threads", "1");
         p.setProperty("thread_pool.max_threads", "100");
         p.setProperty("thread_pool.queue_enabled", "false");
@@ -254,7 +254,7 @@ public class ThreadlessStackTest extends TestCase {
 
 
     public static void main(String[] args) {
-        String[] testCaseName={ThreadlessStackTest.class.getName()};
+        String[] testCaseName={ConcurrentStackTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
     }
 
