@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <chapter id="user-channel">
-  <title>Channel and related classes</title>
+  <title>API</title>
 
   <para>This chapter explains the classes available in JGroups that will be
   used by applications to build reliable group communication applications. The
