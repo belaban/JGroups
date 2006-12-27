@@ -2,15 +2,10 @@
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
         "../../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
         <!ENTITY overview     SYSTEM "modules/overview.xml">
-        <!ENTITY architecture SYSTEM "modules/architecture.xml">
-        <!ENTITY protstack    SYSTEM "modules/protstack.xml">
         <!ENTITY blocks       SYSTEM "modules/blocks.xml">
-        <!ENTITY debugging    SYSTEM "modules/debugging.xml">
         <!ENTITY protocols    SYSTEM "modules/protocols.xml">
-        <!ENTITY protlist     SYSTEM "modules/protlist.xml">
         <!ENTITY installation SYSTEM "modules/installation.xml">
-        <!ENTITY channel     SYSTEM "modules/channel.xml">
-        <!ENTITY ublocks      SYSTEM "modules/ublocks.xml">
+        <!ENTITY api          SYSTEM "modules/api.xml">
         <!ENTITY advanced     SYSTEM "modules/advanced.xml">
         ]>
 
@@ -18,8 +13,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2006/12/27 10:31:36 $</pubdate>
-        <releaseinfo>$Revision: 1.4 $</releaseinfo>
+        <pubdate>$Date: 2006/12/27 10:40:45 $</pubdate>
+        <releaseinfo>$Revision: 1.5 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -35,13 +30,12 @@
             </author>
         </authorgroup>
         <copyright>
-            <year>1998-2006</year>
+            <year>1998-2007</year>
             <holder>Bela Ban</holder>
         </copyright>
         <legalnotice>
             <para>This document is copyrighted by Bela Ban. Copies are allowed for
-                personal use. Redistribution only with written permission of the
-                author.</para>
+                personal use. Redistribution only with written permission of the author.</para>
         </legalnotice>
     </bookinfo>
 
@@ -182,16 +176,10 @@
 
     &overview;
     &installation;
-    &channel;
-    &ublocks;
-    &advanced;
-
-    &architecture;
-    &protstack;
+    &api;
     &blocks;
-    &debugging;
+    &advanced;
     &protocols;
-    &protlist;
 
 
     <bibliography>
