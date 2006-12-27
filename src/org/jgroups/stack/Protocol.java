@@ -38,11 +38,11 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.44 2006/12/22 13:37:12 belaban Exp $
+ * @version $Id: Protocol.java,v 1.45 2006/12/27 14:39:11 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
-    protected Protocol         up_prot=null, down_prot=null;
+    private   Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     protected ProtocolObserver observer=null; // hook for debugger
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
