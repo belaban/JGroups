@@ -1,0 +1,94 @@
+// $Id: PERF.java.txt,v 1.1 2006/12/27 16:44:40 belaban Exp $
+
+package org.jgroups.protocols;
+
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolObserver;
+
+import java.util.Properties;
+import java.util.Vector;
+
+
+/**
+ * Observes a protocol and adds its timings to the PerfHeader attached to each protocol.
+ */
+class PerfObserver implements ProtocolObserver {
+    final String prot_name;
+    boolean bottom=false;
+
+    PerfObserver(String prot_name) {
+        this.prot_name=prot_name;
+    }
+
+
+    public void setProtocol(Protocol prot) {
+        if(prot != null && prot.getDownProtocol() == null)
+            bottom=true;
+    }
+
+
+    public boolean up(Event evt) {
+        PerfHeader hdr;
+        if(evt.getType() == Event.MSG) {
+            hdr=getPerfHeader((Message)evt.getArg());
+            if(hdr != null) {
+                hdr.setReceived(prot_name, PerfHeader.UP);
+                if(bottom)
+                    hdr.setNetworkReceived();
+            }
+        }
+        return true;
+    }
+
+
+    public boolean passUp(Event evt) {
+        PerfHeader hdr;
+        if(evt.getType() == Event.MSG) {
+            hdr=getPerfHeader((Message)evt.getArg());
+            if(hdr != null) {
+                hdr.setDone(prot_name, PerfHeader.UP);
+            }
+        }
+        return true;
+    }
+
+
+    public boolean down(Event evt) {
+        PerfHeader hdr;
+        if(evt.getType() == Event.MSG) {
+            hdr=getPerfHeader((Message)evt.getArg());
+            if(hdr != null) {
+                hdr.setReceived(prot_name, PerfHeader.DOWN);
+            }
+        }
+        return true;
+    }
+
+
+    public boolean passDown(Event evt) {
+        PerfHeader hdr;
+        if(evt.getType() == Event.MSG) {
+            hdr=getPerfHeader((Message)evt.getArg());
+            if(hdr != null) {
+                hdr.setDone(prot_name, PerfHeader.DOWN);
+                if(bottom)
+                    hdr.setNetworkSent();
+            }
+        }
+        return true;
+    }
+
+
+    PerfHeader getPerfHeader(Message m) {
+        Object hdr=null;
+
+        if(m == null || (hdr=m.getHeader(PERF.name)) == null)
+            return null;
+        return (PerfHeader)hdr;
+    }
+
+
+}
