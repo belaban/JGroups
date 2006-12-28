@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.36 2006/12/28 09:05:48 belaban Exp $
+// $Id: Draw.java,v 1.37 2006/12/28 12:06:03 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -12,9 +12,10 @@ import javax.management.MBeanServer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Random;
-
-
 
 
 /**
@@ -37,11 +38,13 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     private final Color background_color=Color.white;
     boolean                        no_channel=false;
     boolean                        jmx;
+    private boolean                use_state=false;
 
 
-    public Draw(String props, boolean no_channel, boolean jmx) throws Exception {
+    public Draw(String props, boolean no_channel, boolean jmx, boolean use_state) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
+        this.use_state=use_state;
         if(no_channel)
             return;
 
@@ -75,6 +78,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
        String           props=null;
        boolean          no_channel=false;
        boolean          jmx=false;
+       boolean          use_state=false;
        String           group_name=null;
 
         for(int i=0; i < args.length; i++) {
@@ -98,13 +102,17 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                 group_name=args[++i];
                 continue;
             }
+            if("-state".equals(args[i])) {
+                use_state=true;
+                continue;
+            }
 
             help();
             return;
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx);
+            draw=new Draw(props, no_channel, jmx, use_state);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -118,7 +126,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
-                           " [-groupname <name>]");
+                           " [-groupname <name>] [-state]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                            "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +
@@ -145,10 +153,11 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                             "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
                 JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
             }
+
         }
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        panel=new DrawPanel();
+        panel=new DrawPanel(use_state);
         panel.setBackground(background_color);
         sub_panel=new JPanel();
         mainFrame.getContentPane().add("Center", panel);
@@ -168,6 +177,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         mainFrame.pack();
         mainFrame.setLocation(15, 25);
         mainFrame.setBounds(new Rectangle(250, 250));
+
+        if(!no_channel && use_state) {
+            channel.getState(null, 5000);
+        }
         mainFrame.setVisible(true);
     }
 
@@ -243,6 +256,14 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     }
 
 
+    public byte[] getState() {
+        return panel.getState();
+    }
+
+    public void setState(byte[] state) {
+        panel.setState(state);
+
+    }
 
     /* --------------- Callbacks --------------- */
 
@@ -327,13 +348,18 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     private class DrawPanel extends JPanel implements MouseMotionListener {
-        final Dimension        preferred_size=new Dimension(235, 170);
-        Image            img=null; // for drawing pixels
-        Dimension        d, imgsize=null;
-        Graphics         gr=null;
+        final Dimension         preferred_size=new Dimension(235, 170);
+        Image                   img=null; // for drawing pixels
+        Dimension               d, imgsize=null;
+        Graphics                gr=null;
+        final Map<Point,Color>  state;
 
 
-        public DrawPanel() {
+        public DrawPanel(boolean use_state) {
+            if(use_state)
+                state=new LinkedHashMap();
+            else
+                state=null;
             createOffscreenImage();
             addMouseMotionListener(this);
             addComponentListener(new ComponentAdapter() {
@@ -345,15 +371,34 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
 
+        public byte[] getState() {
+            byte[] retval=null;
+            if(state == null) return null;
+            synchronized(state) {
+                try {
+                    retval=Util.objectToByteBuffer(state);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+            return retval;
+        }
+
 
         final void createOffscreenImage() {
             d=getSize();
             if(img == null || imgsize == null || imgsize.width != d.width || imgsize.height != d.height) {
                 img=createImage(d.width, d.height);
-                if(img != null)
+                if(img != null) {
                     gr=img.getGraphics();
+                    if(gr != null && state != null) {
+                        drawState();
+                    }
+                }
                 imgsize=d;
             }
+            repaint();
         }
 
 
@@ -392,9 +437,15 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
          */
         public void drawPoint(DrawCommand c) {
             if(c == null || gr == null) return;
-            gr.setColor(new Color(c.r, c.g, c.b));
+            Color col=new Color(c.r, c.g, c.b);
+            gr.setColor(col);
             gr.fillOval(c.x, c.y, 10, 10);
             repaint();
+            if(state != null) {
+                synchronized(state) {
+                    state.put(new Point(c.x, c.y), col);
+                }
+            }
         }
 
 
@@ -402,6 +453,46 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         public void clear() {
             if(gr == null) return;
             gr.clearRect(0, 0, getSize().width, getSize().height);
+            repaint();
+            if(state != null) {
+                synchronized(state) {
+                    state.clear();
+                }
+            }
+        }
+
+
+        public void setState(byte[] buf) {
+            synchronized(state) {
+                try {
+                    Map tmp=(Map)Util.objectFromByteBuffer(buf);
+                    state.clear();
+                    state.putAll(tmp);
+                    System.out.println("received state: " + buf.length + " bytes, " + state.size() + " entries");
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+
+        /** Draw the entire panel from the state */
+        public void drawState() {
+            // clear();
+            Map.Entry entry;
+            Point pt;
+            Color col;
+            synchronized(state) {
+                for(Iterator it=state.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    pt=(Point)entry.getKey();
+                    col=(Color)entry.getValue();
+                    gr.setColor(col);
+                    gr.fillOval(pt.x, pt.y, 10, 10);
+
+                }
+            }
             repaint();
         }
 
@@ -419,10 +510,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
     }
-
-
-
-
 
 }
 
