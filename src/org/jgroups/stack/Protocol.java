@@ -38,7 +38,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.47 2006/12/28 09:34:31 belaban Exp $
+ * @version $Id: Protocol.java,v 1.48 2006/12/28 10:25:25 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -293,6 +293,12 @@ public abstract class Protocol {
         passUp(evt);
     }
 
+
+    /** Temporary method, will be changed to up() */
+    public Object upcall(Event evt) {
+        return up_prot.upcall(evt);
+    }
+
     /**
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
@@ -303,6 +309,12 @@ public abstract class Protocol {
      */
     public void down(Event evt) {
         passDown(evt);
+    }
+
+
+    /** Temporary method, will be changed to down() */
+    public Object downcall(Event evt) {
+        return down_prot.downcall(evt);
     }
 
 
