@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.19 2006/05/02 09:03:28 belaban Exp $
+// $Id: Digest.java,v 1.20 2006/12/28 10:15:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -292,7 +292,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
         if(senders == null) return "[]";
         Map.Entry entry;
@@ -320,7 +320,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public String printHighSeqnos() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
         Map.Entry entry;
         Address key;
@@ -345,7 +345,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public String printHighSeqnosSeen() {
-       StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
         Map.Entry entry;
         Address key;
