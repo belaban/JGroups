@@ -1,13 +1,12 @@
 package org.jgroups.jmx;
 
-import org.jgroups.stack.ProtocolObserver;
 
 import java.util.Properties;
 import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.9 2006/11/17 13:39:18 belaban Exp $
+ * @version $Id: Protocol.java,v 1.10 2006/12/28 09:05:48 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -83,10 +82,6 @@ public class Protocol implements ProtocolMBean {
      */
     public boolean getDownThread() {
         return false;
-    }
-
-    public void setObserver(ProtocolObserver observer) {
-        prot.setObserver(observer);
     }
 
     public void create() throws Exception {

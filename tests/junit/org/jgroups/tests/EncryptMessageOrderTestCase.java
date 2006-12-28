@@ -7,7 +7,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.debug.Debugger;
 
 import java.util.Iterator;
 import java.util.Vector;
@@ -22,13 +21,10 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.2 2006/11/17 13:39:21 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.3 2006/12/28 09:05:49 belaban Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
- 
-	public static boolean USE_DEBUGGER=false;
-	 
     public static int MESSAGE_NUMBER=5 * 100;
 
     public static boolean SLEEP_BETWEEN_SENDING=false;
@@ -53,11 +49,9 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
     protected JChannel channel1;
     protected PullPushAdapter adapter1;
-    protected Debugger debugger1;
 
     protected JChannel channel2;
     protected PullPushAdapter adapter2;
-    protected Debugger debugger2;
 
     /**
      * Print selected options before test starts.
@@ -90,11 +84,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
         adapter1=new PullPushAdapter(channel1);
 
-        if(USE_DEBUGGER) {
-            debugger1=new Debugger(channel1, "channel 1");
-            debugger1.start();
-        }
-
         // sleep one second before second member joins
         try {
             Thread.sleep(1000);
@@ -107,11 +96,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
             System.out.println("channel2 connected, view is " + channel2.getView());
 
             adapter2=new PullPushAdapter(channel2);
-
-            if(USE_DEBUGGER) {
-                debugger2=new Debugger(channel2, "channel 2");
-                debugger2.start();
-            }
 
             // sleep one second before processing continues
             try {
@@ -161,15 +145,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
             final Vector normalMessages=new Vector(MESSAGE_NUMBER);
             final Vector tooQuickMessages=new Vector();
             final Vector tooSlowMessages=new Vector();
-
-            if(USE_DEBUGGER) {
-                System.out.println("Press any key to continue...");
-                try {
-                    System.in.read();
-                }
-                catch(java.io.IOException ioex) {
-                }
-            }
 
             adapter1.setListener(new MessageListener() {
                 private boolean started=false;
@@ -333,14 +308,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
         System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
         System.out.println("Total memory: " + Runtime.getRuntime().totalMemory());
 
-        if(USE_DEBUGGER) {
-            System.out.println("Press any key to finish...");
-            try {
-                System.in.read();
-            }
-            catch(java.io.IOException ioex) {
-            }
-        }
         assertTrue("Message ordering is incorrect - check log output",(!orderCounterFailure));
     }
 
@@ -381,10 +348,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
             }
            
-            else if("-debug".equals(args[i])) {
-                USE_DEBUGGER=true;
-
-            }
             else if("-help".equals(args[i])) {
                 help();
                 return;
@@ -396,7 +359,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
     static void help() {
         System.out.println("EncryptOrderTest [-help] [-sleep <sleep time between sends (ms)>] " +
-                " [-msg_num <number of msgs to send>] [-debug]");
+                " [-msg_num <number of msgs to send>]");
     }
 
 }

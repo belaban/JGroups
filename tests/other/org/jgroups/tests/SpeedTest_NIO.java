@@ -1,12 +1,11 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest_NIO.java,v 1.2 2006/11/17 13:39:21 belaban Exp $
+// $Id: SpeedTest_NIO.java,v 1.3 2006/12/28 09:05:49 belaban Exp $
 
 
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.debug.Debugger;
 import org.jgroups.util.Util;
 
 import java.net.DatagramPacket;
@@ -31,7 +30,7 @@ import java.nio.ByteBuffer;
  * @author Bela Ban
  */
 public class SpeedTest_NIO {
-    static long start, stop;
+    static long start=0, stop=0;
 
 
     public static void main(String[] args) {
@@ -47,8 +46,6 @@ public class SpeedTest_NIO {
         String props=null, loopback_props;
         String group_name="SpeedTest-Group";
         Message send_msg;
-        boolean debug=false;
-        Debugger debugger=null;
         long sleep_time=1; // sleep in msecs between msg sends
         boolean busy_sleep=false;
         boolean yield=false;
@@ -106,10 +103,6 @@ public class SpeedTest_NIO {
                 props=args[++i];
                 continue;
             }
-            if("-debug".equals(args[i])) {
-                debug=true;
-                continue;
-            }
             if("-busy_sleep".equals(args[i])) {
                 busy_sleep=true;
                 continue;
@@ -133,7 +126,6 @@ public class SpeedTest_NIO {
 
         System.out.println("jg       = " + jg +
                 "\nloopback = " + loopback +
-                "\ndebug    = " + debug +
                 "\nsleep    = " + sleep_time +
                 "\nbusy_sleep=" + busy_sleep +
                 "\nyield=" + yield +
@@ -153,10 +145,6 @@ public class SpeedTest_NIO {
             if(jg) {
                 channel=new JChannel(props);
                 channel.connect(group_name);
-                if(debug) {
-                    debugger=new Debugger(channel);
-                    debugger.start();
-                }
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");
@@ -164,10 +152,6 @@ public class SpeedTest_NIO {
                 sock.joinGroup(group_addr);
             }
 
-            if(debug) {
-                System.out.println("Press key to start");
-                System.in.read();
-            }
             receiver=new Receiver(sock, channel, matrix, jg);
             receiver.start();
 
@@ -259,8 +243,8 @@ public class SpeedTest_NIO {
 
     static void help() {
         System.out.println("SpeedTest [-help] [-num_msgs <num>] [-sleep <sleeptime in msecs between messages>] " +
-                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug]");
-        System.out.println("Options -props and -debug are only valid if -jg is used");
+                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>]");
+        System.out.println("Options -props are only valid if -jg is used");
     }
 
 

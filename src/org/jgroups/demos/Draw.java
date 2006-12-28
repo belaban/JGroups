@@ -1,11 +1,10 @@
-// $Id: Draw.java,v 1.35 2006/12/11 08:21:29 belaban Exp $
+// $Id: Draw.java,v 1.36 2006/12/28 09:05:48 belaban Exp $
 
 
 package org.jgroups.demos;
 
 
 import org.jgroups.*;
-import org.jgroups.debug.Debugger;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
@@ -27,7 +26,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
-    Debugger                       debugger=null;
     final boolean                  first=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
@@ -41,7 +39,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     boolean                        jmx;
 
 
-    public Draw(String props, boolean debug, boolean no_channel, boolean jmx) throws Exception {
+    public Draw(String props, boolean no_channel, boolean jmx) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         if(no_channel)
@@ -49,10 +47,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
         channel=new JChannel(props);
         // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
-        if(debug) {
-            debugger=new Debugger((JChannel)channel);
-            debugger.start();
-        }
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
@@ -79,7 +73,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
    public static void main(String[] args) {
        Draw             draw=null;
        String           props=null;
-       boolean          debug=false;
        boolean          no_channel=false;
        boolean          jmx=false;
        String           group_name=null;
@@ -88,10 +81,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             if("-help".equals(args[i])) {
                 help();
                 return;
-            }
-            if("-debug".equals(args[i])) {
-                debug=true;
-                continue;
             }
             if("-props".equals(args[i])) {
                 props=args[++i];
@@ -115,7 +104,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
         try {
-            draw=new Draw(props, debug, no_channel, jmx);
+            draw=new Draw(props, no_channel, jmx);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -128,9 +117,8 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     static void help() {
-        System.out.println("\nDraw [-help] [-debug] [-no_channel] [-props <protocol stack definition>]" +
+        System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
                            " [-groupname <name>]");
-        System.out.println("-debug: brings up a visual debugger");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                            "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +

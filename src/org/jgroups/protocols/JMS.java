@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.16 2006/12/08 07:11:34 belaban Exp $ 
+// $Id: JMS.java,v 1.17 2006/12/28 09:05:48 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -257,12 +257,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                     if(log.isDebugEnabled()) log.debug("Message is " + msg +
                         ", headers are " + msg.getHeaders ());
 
-                /* Because Protocol.Up() is never called by this bottommost layer,
-                 * we call Up() directly in the observer. This allows e.g.
-                 * PerfObserver to get the time of reception of a message */
-                if(observer != null)
-                    observer.up(evt);
-
                 passUp(evt);
             }
         } catch(javax.jms.JMSException ex) {
@@ -333,12 +327,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
 
         // extract message
         Message msg=(Message)evt.getArg();
-
-        // Because we don't call Protocol.passDown(), we notify the observer
-        // directly (e.g. PerfObserver).
-        // This way, we still have performance numbers for UDP
-        if(observer != null)
-                observer.passDown(evt);
 
         // publish the message to the topic
         sendMessage(msg);

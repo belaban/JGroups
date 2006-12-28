@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.26 2006/10/11 14:39:13 belaban Exp $
+// $Id: ENCRYPT.java,v 1.27 2006/12/28 09:05:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -86,6 +86,15 @@ import java.util.WeakHashMap;
 
 
 public class ENCRYPT extends Protocol {
+    Observer observer;
+
+    interface Observer {
+		boolean up(Event evt);
+		boolean passUp(Event evt);
+		boolean down(Event evt);
+		boolean passDown(Event evt);
+    }
+
 
     static final String DEFAULT_SYM_ALGO = "Blowfish";
     // address info
@@ -160,6 +169,10 @@ public class ENCRYPT extends Protocol {
         return "ENCRYPT";
     }
 
+
+    public void setObserver(Observer o) {
+        observer=o;
+    }
 
     /*
       * GetAlgorithm: Get the algorithm name from "algorithm/mode/padding"
@@ -499,6 +512,9 @@ public class ENCRYPT extends Protocol {
     public void up(Event evt)
     {
 
+        if(observer != null)
+            observer.up(evt);
+
         switch (evt.getType()) {
 
             // we need to know what our address is
@@ -530,6 +546,12 @@ public class ENCRYPT extends Protocol {
         }
 
         passUp(evt);
+    }
+
+    public void passUp(Event evt) {
+        if(observer != null)
+            observer.passUp(evt);
+        super.passUp(evt);
     }
 
 
@@ -948,6 +970,10 @@ public class ENCRYPT extends Protocol {
       */
     public void down(Event evt)
     {
+        if(observer != null)
+            observer.down(evt);
+
+
         switch (evt.getType()) {
 
             case Event.MSG :
@@ -985,7 +1011,11 @@ public class ENCRYPT extends Protocol {
         passDown(evt);
     }
 
-
+    public void passDown(Event evt) {
+        if(observer != null)
+            observer.passDown(evt);
+        super.passDown(evt);
+    }
 
 
     /**

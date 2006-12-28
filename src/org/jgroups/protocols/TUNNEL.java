@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.28 2006/12/12 10:17:43 belaban Exp $
+// $Id: TUNNEL.java,v 1.29 2006/12/28 09:05:48 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -211,10 +211,6 @@ public class TUNNEL extends Protocol implements Runnable {
             // copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
 
-            /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
-               This allows e.g. PerfObserver to get the time of reception of a message */
-            if(observer != null)
-                observer.up(evt);
             if(trace) log.trace("looped back local message " + copy);
             passUp(evt);
             if(dest != null && !dest.isMulticastAddress())

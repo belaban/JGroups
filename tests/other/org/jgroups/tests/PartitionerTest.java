@@ -5,7 +5,6 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.debug.Debugger;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -52,7 +51,6 @@ public class PartitionerTest extends JFrame implements Runnable {
             "VIEW_ENFORCER:" +
             "QUEUE";
     JChannel channel;
-    Debugger debugger;
 
     boolean connected=false;
     Hashtable ht=new Hashtable();
@@ -107,7 +105,7 @@ public class PartitionerTest extends JFrame implements Runnable {
      * Initializes the channel and application threads
      */
 
-    void init() {
+    final void init() {
         try {
             channel.connect("prova");
             connected=true;

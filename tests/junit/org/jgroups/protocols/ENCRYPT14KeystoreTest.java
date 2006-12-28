@@ -11,7 +11,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolObserver;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -216,7 +215,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT,symVersion));
 		Event event = new Event(Event.MSG,msg);
 		encrypt.up(event);
-		assertEquals(observer.getUpMessages().size(),0);
+		assertEquals(0, observer.getUpMessages().size());
 
 	}
 	
@@ -257,7 +256,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		Message msg = new Message(null,null,encodedBytes);
 		Event event = new Event(Event.MSG,msg);
 		encrypt.up(event);
-		assertEquals(observer.getUpMessages().size(),0);
+		assertEquals(0, observer.getUpMessages().size());
 	
 
 
@@ -285,7 +284,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 	
 		Event event = new Event(Event.MSG,null);
 		encrypt.up(event);
-		assertEquals(observer.getUpMessages().size(),1);
+		assertEquals(1, observer.getUpMessages().size());
 	
 
 
@@ -313,12 +312,12 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		Message msg = new Message(null,null,null);
 		Event event = new Event(Event.MSG,msg);
 		encrypt.up(event);
-		assertEquals(observer.getUpMessages().size(),1);
+		assertEquals(1, observer.getUpMessages().size());
 	
 
 
 	}
-	static class MockObserver implements ProtocolObserver {
+	static class MockObserver implements ENCRYPT.Observer {
 
 		private Map upMessages = new HashMap();
 		private Map downMessages = new HashMap();
@@ -412,7 +411,7 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		}
 	}
 	
-	class MockAddress implements Address{
+	static class MockAddress implements Address{
 
 		private static final long serialVersionUID = -2044466632514705356L;
 

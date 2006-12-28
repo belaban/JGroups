@@ -10,7 +10,6 @@ import junit.framework.TestCase;
 import org.jgroups.*;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolObserver;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -252,11 +251,11 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		Event sent = (Event)observer.getUpMessages().get("message1");
 		
 		
-		assertEquals(new String(((Message)sent.getArg()).getBuffer()),"hello");
+		assertEquals("hello", new String(((Message)sent.getArg()).getBuffer()));
 		
 		sent = (Event)observer.getUpMessages().get("message2");
 		
-		assertEquals(new String(((Message)sent.getArg()).getBuffer()),"hello2");
+		assertEquals("hello2", new String(((Message)sent.getArg()).getBuffer()));
 	
 		
 	}
@@ -330,8 +329,8 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		// get the resulting message from the peer - should be a key request
 		
 		Event sent = (Event)peerObserver.getDownMessages().get("message0");
-		
-		assertTrue(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT.EncryptHeader.KEY)).getType() == ENCRYPT.EncryptHeader.KEY_REQUEST);
+
+        assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
 		assertEquals(new String(((Message)sent.getArg()).getBuffer()),new String(peer.getKpair().getPublic().getEncoded()));
 		
 		// send this event to server
@@ -342,7 +341,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
 		
 		//assert that reply is the session key encrypted with peer's public key
-		assertTrue(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT.EncryptHeader.KEY)).getType() == ENCRYPT.EncryptHeader.SECRETKEY);
+        assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
 
 	
 		assertNotSame(peer.getDesKey(),server.getDesKey());
@@ -368,11 +367,11 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		Event tempEvt = (Event)peerObserver.getUpMessages().get("message2");
 		
 		
-		assertEquals(new String(((Message)tempEvt.getArg()).getBuffer()),"hello");
+		assertEquals("hello", new String(((Message)tempEvt.getArg()).getBuffer()));
 		
 		tempEvt = (Event)peerObserver.getUpMessages().get("message3");
 		
-		assertEquals(new String(((Message)tempEvt.getArg()).getBuffer()),"hello2");
+		assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
 	
 		
 		
@@ -469,7 +468,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		Event sent = (Event)peerObserver.getDownMessages().get("message0");
 		
 		// ensure type and that request contains peers pub key
-		assertTrue(((EncryptHeader)((Message)sent.getArg()).getHeader(ENCRYPT.EncryptHeader.KEY)).getType() == ENCRYPT.EncryptHeader.KEY_REQUEST);
+        assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
 		assertEquals(new String(((Message)sent.getArg()).getBuffer()),new String(peer.getKpair().getPublic().getEncoded()));
 		
 		//assume that server is no longer available and peer2 is new server
@@ -492,7 +491,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
 		
 		//assert that reply is the session key encrypted with peer's public key
-		assertTrue(((EncryptHeader)((Message)reply.getArg()).getHeader(ENCRYPT.EncryptHeader.KEY)).getType() == ENCRYPT.EncryptHeader.SECRETKEY);
+        assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
 
 	
 		assertNotSame(peer.getDesKey(),peer2.getDesKey());
@@ -524,7 +523,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		Event tempEvt = (Event)peerObserver.getUpMessages().get("message2");
 		
 		
-		assertEquals(new String(((Message)tempEvt.getArg()).getBuffer()),"hello2");
+		assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
 		
 
 		
@@ -533,7 +532,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
 	
 
-	static class MockObserver implements ProtocolObserver {
+	static class MockObserver implements ENCRYPT.Observer {
 
 		private Map upMessages = new HashMap();
 		private Map downMessages = new HashMap();
@@ -677,11 +676,8 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		
 		public boolean equals(Object obj){
 			MockAddress address = (MockAddress)obj;
-			if (address.name.equals(this.name)){
-				return true;
-			}
-			return false;
-		}
+            return address.name.equals(this.name);
+        }
 
         public void writeTo(DataOutputStream out) throws IOException {
         }

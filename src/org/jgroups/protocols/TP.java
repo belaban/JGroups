@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.98 2006/12/27 10:02:05 belaban Exp $
+ * @version $Id: TP.java,v 1.99 2006/12/28 09:05:48 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -921,11 +921,6 @@ public abstract class TP extends Protocol {
             msg.putHeader(name, header);
         }
 
-        // Because we don't call Protocol.passDown(), we notify the observer directly (e.g. PerfObserver).
-        // This way, we still have performance numbers for TP
-        if(observer != null)
-            observer.passDown(evt);
-
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
         if(trace) {
             StringBuilder sb=new StringBuilder("sending msg to ").append(msg.getDest()).
@@ -1141,11 +1136,6 @@ public abstract class TP extends Protocol {
             StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
             log.trace(sb);
         }
-
-        /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
-        * This allows e.g. PerfObserver to get the time of reception of a message */
-        if(observer != null)
-            observer.up(evt);
 
         hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
         if(hdr != null) {
@@ -1628,11 +1618,6 @@ public abstract class TP extends Protocol {
                 StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
                 log.trace(sb);
             }
-
-            /* Because Protocol.up() is never called by this bottommost layer, we call up() directly in the observer.
-               This allows e.g. PerfObserver to get the time of reception of a message */
-            if(observer != null)
-                observer.up(evt);
 
             passUp(evt);
         }
