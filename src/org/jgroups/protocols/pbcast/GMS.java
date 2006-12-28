@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.77 2006/12/28 09:34:30 belaban Exp $
+ * @version $Id: GMS.java,v 1.78 2006/12/28 10:25:24 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -42,7 +42,6 @@ public class GMS extends Protocol {
     private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
-    private final Promise     digest_promise=new Promise();  // holds result of GET_DIGEST event
     private final Promise     flush_promise = new Promise();
     boolean 				  use_flush=false;
     private final Hashtable   impls=new Hashtable(3);
@@ -597,17 +596,7 @@ public class GMS extends Protocol {
     /** Sends down a GET_DIGEST event and waits for the GET_DIGEST_OK response, or
      timeout, whichever occurs first */
     public Digest getDigest() {
-        Digest ret=null;
-
-        digest_promise.reset();
-        passDown(Event.GET_DIGEST_EVT);
-        try {
-            ret=(Digest)digest_promise.getResultWithTimeout(digest_timeout);
-        }
-        catch(TimeoutException e) {
-            if(log.isErrorEnabled()) log.error("digest could not be fetched from below");
-        }
-        return ret;
+        return (Digest)downcall(Event.GET_DIGEST_EVT);
     }
 
     boolean startFlush(View new_view,int numberOfAttempts){
@@ -736,11 +725,6 @@ public class GMS extends Protocol {
             case Event.CONNECT_OK:     // sent by someone else, but WE are responsible for sending this !
             case Event.DISCONNECT_OK:  // dito (e.g. sent by TP layer). Don't send up the stack
                 return;
-
-
-            case Event.GET_DIGEST_OK:
-                digest_promise.setResult(evt.getArg());
-                return; // don't pass further up
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
@@ -1225,7 +1209,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.77 2006/12/28 09:34:30 belaban Exp $
+     * @version $Id: GMS.java,v 1.78 2006/12/28 10:25:24 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
