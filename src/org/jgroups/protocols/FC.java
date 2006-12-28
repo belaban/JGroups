@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.58 2006/12/22 14:45:52 belaban Exp $
+ * @version $Id: FC.java,v 1.59 2006/12/28 09:34:31 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -307,14 +307,14 @@ public class FC extends Protocol {
      * because we don't have enough credits to send to member P. However, if member P crashed, we need to unblock !
      * @param evt
      */
-    protected void receiveDownEvent(Event evt) {
-        if(evt.getType() == Event.VIEW_CHANGE) {
-            View v=(View)evt.getArg();
-            Vector mbrs=v.getMembers();
-            handleViewChange(mbrs);
-        }
-        super.receiveDownEvent(evt);
-    }
+//    protected void receiveDownEvent(Event evt) {
+//        if(evt.getType() == Event.VIEW_CHANGE) {
+//            View v=(View)evt.getArg();
+//            Vector mbrs=v.getMembers();
+//            handleViewChange(mbrs);
+//        }
+//        super.receiveDownEvent(evt);
+//    }
 
     public void down(Event evt) {
         switch(evt.getType()) {

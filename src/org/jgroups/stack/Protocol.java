@@ -38,7 +38,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.46 2006/12/27 16:31:18 belaban Exp $
+ * @version $Id: Protocol.java,v 1.47 2006/12/28 09:34:31 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -263,33 +263,12 @@ public abstract class Protocol {
 
 
 
-
-    /**
-     * Internal method, should not be called by clients. Used by ProtocolStack. I would have
-     * used the 'friends' modifier, but this is available only in C++ ... If the up_handler thread
-     * is not available (down_thread == false), then directly call the up() method: we will run on the
-     * caller's thread (e.g. the protocol layer below us).
-     */
-    protected void receiveUpEvent(Event evt) {
-        up(evt);
-    }
-
-    /**
-     * Internal method, should not be called by clients. Used by ProtocolStack. I would have
-     * used the 'friends' modifier, but this is available only in C++ ... If the down_handler thread
-     * is not available (down_thread == false), then directly call the down() method: we will run on the
-     * caller's thread (e.g. the protocol layer above us).
-     */
-    protected void receiveDownEvent(Event evt) {
-        down(evt);
-    }
-
     /**
      * Causes the event to be forwarded to the next layer up in the hierarchy. Typically called
      * by the implementation of <code>Up</code> (when done).
      */
     public void passUp(Event evt) {
-        up_prot.receiveUpEvent(evt);
+        up_prot.up(evt);
     }
 
     /**
@@ -297,7 +276,7 @@ public abstract class Protocol {
      * by the implementation of <code>Down</code> (when done).
      */
     public void passDown(Event evt) {
-        down_prot.receiveDownEvent(evt);
+        down_prot.down(evt);
     }
 
 

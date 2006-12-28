@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.17 2006/12/27 14:53:33 belaban Exp $
+// $Id: GMS.java,v 1.18 2006/12/28 09:34:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -644,15 +644,6 @@ public class GMS extends RpcProtocol implements Runnable {
     }
 
 
-    // Priority handling, otherwise GMS.down(DISCONNECT) would block !
-    // Similar to FLUSH protocol
-    public void receiveDownEvent(Event evt) {
-        if(evt.getType() == Event.BLOCK_OK) {
-            passDown(evt);
-            return;
-        }
-        super.receiveDownEvent(evt);
-    }
 
 
     /**

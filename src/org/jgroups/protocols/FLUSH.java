@@ -1,4 +1,4 @@
-// $Id: FLUSH.java,v 1.11 2006/11/17 13:39:19 belaban Exp $
+// $Id: FLUSH.java,v 1.12 2006/12/28 09:34:31 belaban Exp $
 
 
 
@@ -345,58 +345,42 @@ public class FLUSH extends RpcProtocol {
        @return boolean Defaults to true. If false, event will not be passed down the stack.
     */
     public boolean handleDownEvent(Event evt) {
-	Vector    dests;
-	FlushRsp  rsp;
+        Vector    dests;
+        FlushRsp  rsp;
 
-	switch(evt.getType()) {
-	case Event.FLUSH:
-	    dests=(Vector)evt.getArg();
-	    if(dests == null) dests=new Vector();
-	    rsp=flush(dests);
-	    passUp(new Event(Event.FLUSH_OK, rsp));
-	    return false; // don't pass down
+        switch(evt.getType()) {
+            case Event.FLUSH:
+                dests=(Vector)evt.getArg();
+                if(dests == null) dests=new Vector();
+                rsp=flush(dests);
+                passUp(new Event(Event.FLUSH_OK, rsp));
+                return false; // don't pass down
 
-	case Event.BECOME_SERVER:
-	    is_server=true;
-	    break;
+            case Event.BECOME_SERVER:
+                is_server=true;
+                break;
 
-	case Event.VIEW_CHANGE:
-	    blocked=false;
+            case Event.VIEW_CHANGE:
+                blocked=false;
 
-	    Vector tmp=((View)evt.getArg()).getMembers();
-	    if(tmp != null) {
-		mbrs.removeAllElements();
-		for(int i=0; i < tmp.size(); i++)
-		    mbrs.addElement(tmp.elementAt(i));
-	    }
-	    break;
-	}
-	return true;
-    }
+                Vector tmp=((View)evt.getArg()).getMembers();
+                if(tmp != null) {
+                    mbrs.removeAllElements();
+                    for(int i=0; i < tmp.size(); i++)
+                        mbrs.addElement(tmp.elementAt(i));
+                }
+                break;
 
-
-
-
-
-    /**
-       The default handling adds the event to the down-queue where events are handled in order of
-       addition by a thread. However, there exists a deadlock between the FLUSH and BLOCK_OK down
-       events: when a FLUSH event is received, a BLOCK is sent up, which triggers a BLOCK_OK event
-       to be sent down to be handled by the FLUSH layer. However, the FLUSH layer's thread is still
-       processing the FLUSH down event and is therefore blocked, waiting for a BLOCK_OK event.
-       Therefore, the BLOCK_OK event has to 'preempt' the FLUSH event processing. This is done by
-       overriding this method: when a BLOCK_OK event is received, it is processed immediately
-       (in parallel to the FLUSH event), which causes the FLUSH event processing to return.
-    */
-    public void receiveDownEvent(Event evt) {
-        if(evt.getType() == Event.BLOCK_OK) { // priority handling, otherwise FLUSH would block !
-            synchronized(block_mutex) {
-                block_mutex.notifyAll();
-            }
-            return;
+            case Event.BLOCK_OK:
+                synchronized(block_mutex) {
+                    block_mutex.notifyAll();
+                }
+                return false;
         }
-        super.receiveDownEvent(evt);
+        return true;
     }
+
+
 
 
 
