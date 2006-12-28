@@ -1,13 +1,11 @@
 package org.jgroups.jmx;
 
-import org.jgroups.stack.ProtocolObserver;
-
 import java.util.Map;
 import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.7 2005/08/16 12:58:58 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.8 2006/12/28 09:05:48 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
@@ -24,7 +22,6 @@ public interface ProtocolMBean {
     Map dumpStats();
     boolean getUpThread();
     boolean getDownThread();
-    void setObserver(ProtocolObserver observer);
     void create() throws Exception;
     void start() throws Exception;
     void stop();

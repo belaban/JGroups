@@ -5,7 +5,6 @@ import org.jgroups.JChannel;
 import org.jgroups.JChannelFactory;
 import org.jgroups.blocks.DistributedHashtable;
 import org.jgroups.blocks.ReplicatedHashtable;
-import org.jgroups.debug.Debugger;
 
 import java.util.Hashtable;
 import java.util.Map;
@@ -62,8 +61,7 @@ public class HashtableTest {
 	Hashtable            ht;
 	int                  i;
 	byte[]               buf;
-	boolean              use_replicated_hashtable=false, debug=false;
-	Debugger             debugger=null;
+	boolean              use_replicated_hashtable=false;
 
 
 	/*
@@ -137,9 +135,6 @@ public class HashtableTest {
 		props=args[++i];
 		continue;
 	    }
-	    if("-debug".equals(args[i])) {
-		debug=true;
-	    }
 	}
 
 
@@ -150,21 +145,13 @@ public class HashtableTest {
 	try {
 	    if(use_replicated_hashtable) {
 		ht=new ReplicatedHashtable("HashtableTest", new JChannelFactory(), props, 1000);
-		if(debug) {
-		    debugger=new Debugger((JChannel)((ReplicatedHashtable)ht).getChannel());
-		}
 		((ReplicatedHashtable)ht).addNotifier(new Notifier(NUM_ITEMS));
 	    }
 	    else {
 		ht=new DistributedHashtable("HashtableTest", new JChannelFactory(), props, 1000);
-		if(debug) {
-		    debugger=new Debugger((JChannel)((DistributedHashtable)ht).getChannel());
-		}
 		// ((DistributedHashtable)ht).addNotifier(new MyNotifier());
 	    }
-	    if(debugger != null)
-		debugger.start();
-	    
+
 	    System.out.println("Hashtable already has " + ht.size() + " items");
 
 	    System.out.print("Press key to insert " + NUM_ITEMS + " 1k items into DistributedHashtable");
@@ -195,7 +182,7 @@ public class HashtableTest {
 
 
     static void help() {
-	System.out.println("HashtableTest [-help] [-use_rht] [-props <properties>] [-debug]");
+	System.out.println("HashtableTest [-help] [-use_rht] [-props <properties>]");
     }
 
 }

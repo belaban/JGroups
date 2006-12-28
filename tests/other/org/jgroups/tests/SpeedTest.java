@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.19 2006/11/17 13:39:21 belaban Exp $
+// $Id: SpeedTest.java,v 1.20 2006/12/28 09:05:49 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -9,7 +9,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
-import org.jgroups.debug.Debugger;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
 
@@ -29,10 +28,10 @@ import java.net.MulticastSocket;
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
  * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
- * @version $Id: SpeedTest.java,v 1.19 2006/11/17 13:39:21 belaban Exp $
+ * @version $Id: SpeedTest.java,v 1.20 2006/12/28 09:05:49 belaban Exp $
  */
 public class SpeedTest {
-    static long start, stop;
+    static long start=0, stop=0;
     private static final String LOOPBACK="LOOPBACK(down_thread=false;up_thread=false)";
 
 
@@ -47,8 +46,7 @@ public class SpeedTest {
         JChannel channel=null;
         String group_name="SpeedTest-Group";
         Message send_msg;
-        boolean debug=false, busy_sleep=false, yield=false, loopback=false;
-        Debugger debugger=null;
+        boolean busy_sleep=false, yield=false, loopback=false;
         long sleep_time=1; // sleep in msecs between msg sends
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(64);
         String props;
@@ -89,10 +87,6 @@ public class SpeedTest {
                 props=args[++i];
                 continue;
             }
-            if("-debug".equals(args[i])) {
-                debug=true;
-                continue;
-            }
             if("-busy_sleep".equals(args[i])) {
                 busy_sleep=true;
                 continue;
@@ -116,7 +110,6 @@ public class SpeedTest {
 
         System.out.println("jg       = " + jg +
                 "\nloopback = " + loopback +
-                "\ndebug    = " + debug +
                 "\nsleep    = " + sleep_time +
                 "\nbusy_sleep=" + busy_sleep +
                 "\nyield=" + yield +
@@ -143,20 +136,12 @@ public class SpeedTest {
                 channel=new JChannel(props);
                 // System.out.println("props:\n" + channel.getProperties());
                 channel.connect(group_name);
-                if(debug) {
-                    debugger=new Debugger(channel);
-                    debugger.start();
-                }
             }
             else {
                 group_addr=InetAddress.getByName("224.0.0.36");
                 sock=new DatagramSocket();
             }
 
-            if(debug) {
-                System.out.println("Press key to start");
-                System.in.read();
-            }
             receiver=new Receiver(group_addr, group_port, channel, matrix, jg);
             receiver.start();
 
@@ -255,8 +240,8 @@ public class SpeedTest {
 
     static void help() {
         System.out.println("SpeedTest [-help] [-num_msgs <num>] [-sleep <sleeptime in msecs between messages>] " +
-                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>] [-debug]");
-        System.out.println("Options -props and -debug are only valid if -jg is used");
+                "[-busy_sleep] [-yield] [-jg] [-loopback] [-props <channel properties>]");
+        System.out.println("Options -props and are only valid if -jg is used");
     }
 
 

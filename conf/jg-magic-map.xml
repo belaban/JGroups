@@ -63,12 +63,6 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.PerfHeader</class-name>
-        <preload>true</preload>
-        <magic-number>11</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
         <class-name>org.jgroups.protocols.PIGGYBACK$PiggybackHeader</class-name>
         <preload>true</preload>
         <magic-number>12</magic-number>
