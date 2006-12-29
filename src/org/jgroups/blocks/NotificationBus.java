@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.11 2006/05/25 12:10:18 belaban Exp $
+// $Id: NotificationBus.java,v 1.12 2006/12/29 08:11:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -213,7 +213,13 @@ public class NotificationBus implements Receiver {
 
             info=new Info(Info.GET_CACHE_REQ);
             msg=new Message(dst, null, info);
-            channel.down(new Event(Event.MSG, msg));
+            try {
+                channel.send(msg);
+            }
+            catch(Exception e) {
+                log.error("failed sending message", e);
+                return null;
+            }
 
             start=System.currentTimeMillis();
             cache=(Serializable) get_cache_promise.getResult(timeout);
