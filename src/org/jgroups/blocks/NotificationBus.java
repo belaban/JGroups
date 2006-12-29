@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.12 2006/12/29 08:11:00 belaban Exp $
+// $Id: NotificationBus.java,v 1.13 2006/12/29 08:15:06 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -262,9 +262,8 @@ public class NotificationBus implements Receiver {
         try {
             obj=msg.getObject();
             if(!(obj instanceof Info)) {
-
-                    if(log.isErrorEnabled()) log.error("expected an instance of Info (received " +
-                                                             obj.getClass().getName() + ')');
+                if(log.isErrorEnabled()) log.error("expected an instance of Info (received " +
+                        obj.getClass().getName() + ')');
                 return;
             }
             info=(Info) obj;
@@ -289,8 +288,7 @@ public class NotificationBus implements Receiver {
             }
         }
         catch(Throwable ex) {
-
-                if(log.isErrorEnabled()) log.error("exception=" + ex);
+            if(log.isErrorEnabled()) log.error("exception=" + ex);
         }
     }
 
@@ -371,7 +369,7 @@ public class NotificationBus implements Receiver {
     }
 
 
-    void handleCacheRequest(Address sender) {
+    void handleCacheRequest(Address sender) throws ChannelException {
         Serializable cache=null;
         Message msg;
         Info info;
@@ -388,7 +386,7 @@ public class NotificationBus implements Receiver {
             info=new Info(Info.GET_CACHE_RSP, cache);
             msg=new Message(sender, null, info);
             if(log.isInfoEnabled()) log.info("[" + getLocalAddress() + "] returning cache to " + sender);
-            channel.down(new Event(Event.MSG, msg));
+            channel.send(msg);
         }
     }
 
