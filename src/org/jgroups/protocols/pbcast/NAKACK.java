@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.89 2006/12/28 10:25:24 belaban Exp $
+// $Id: NAKACK.java,v 1.90 2006/12/30 19:31:12 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -685,13 +685,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 seqno=msg_id;
             }
             catch(Throwable t) {
-                if(t instanceof Error)
-                    throw (Error)t;
-                if(t instanceof RuntimeException)
-                    throw (RuntimeException)t;
-                else {
-                    throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
-                }
+                throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
             }
         }
 
