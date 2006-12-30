@@ -751,7 +751,8 @@ public class Test implements Receiver {
             if(t != null && t.isAlive()) {
                 Thread tmp=t;
                 t=null;
-                tmp.interrupt();
+                if(tmp != null)
+                    tmp.interrupt();
             }
         }
 
