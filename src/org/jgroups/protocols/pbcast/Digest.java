@@ -1,8 +1,7 @@
-// $Id: Digest.java,v 1.20 2006/12/28 10:15:34 belaban Exp $
+// $Id: Digest.java,v 1.21 2006/12/31 13:38:14 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
@@ -14,6 +13,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -32,7 +32,7 @@ import java.util.Set;
  */
 public class Digest implements Externalizable, Streamable {
     /** Map<Address, Entry> */
-    Map    senders=null;
+    Map<Address,Entry>    senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
     static final boolean warn=log.isWarnEnabled();
 
@@ -51,8 +51,6 @@ public class Digest implements Externalizable, Streamable {
         if(obj == null)
             return false;
         Digest other=(Digest)obj;
-        if(senders == null && other.senders == null)
-            return true;
         return senders.equals(other.senders);
     }
 
@@ -110,11 +108,11 @@ public class Digest implements Externalizable, Streamable {
     }
 
     public Entry get(Address sender) {
-        return (Entry)senders.get(sender);
+        return senders.get(sender);
     }
 
     public boolean set(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null)
             return false;
         entry.low_seqno=low_seqno;
@@ -160,7 +158,7 @@ public class Digest implements Externalizable, Streamable {
             if(log.isErrorEnabled()) log.error("sender == null");
             return;
         }
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null) {
             add(sender, low_seqno, high_seqno, high_seqno_seen);
         }
@@ -200,7 +198,7 @@ public class Digest implements Externalizable, Streamable {
      * Increments the sender's high_seqno by 1.
      */
     public void incrementHighSeqno(Address sender) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null)
             return;
         entry.high_seqno++;
@@ -220,7 +218,7 @@ public class Digest implements Externalizable, Streamable {
      * retransmission from the dead member.
      */
     public void resetAt(Address sender) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry != null)
             entry.reset();
     }
@@ -231,7 +229,7 @@ public class Digest implements Externalizable, Streamable {
     }
 
     public long lowSeqnoAt(Address sender) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null)
             return -1;
         else
@@ -240,7 +238,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public long highSeqnoAt(Address sender) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null)
             return -1;
         else
@@ -249,7 +247,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public long highSeqnoSeenAt(Address sender) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry == null)
             return -1;
         else
@@ -258,19 +256,19 @@ public class Digest implements Externalizable, Streamable {
 
 
     public void setHighSeqnoAt(Address sender, long high_seqno) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry != null)
             entry.high_seqno=high_seqno;
     }
 
     public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry != null)
             entry.high_seqno_seen=high_seqno_seen;
     }
 
     public void setHighestDeliveredAndSeenSeqnos(Address sender, long high_seqno, long high_seqno_seen) {
-        Entry entry=(Entry)senders.get(sender);
+        Entry entry=senders.get(sender);
         if(entry != null) {
             entry.high_seqno=high_seqno;
             entry.high_seqno_seen=high_seqno_seen;
@@ -280,12 +278,12 @@ public class Digest implements Externalizable, Streamable {
 
     public Digest copy() {
         Digest ret=new Digest(senders.size());
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Entry tmp;
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            tmp=(Entry)entry.getValue();
-            ret.add((Address)entry.getKey(), tmp.low_seqno, tmp.high_seqno, tmp.high_seqno_seen);
+            tmp=entry.getValue();
+            ret.add(entry.getKey(), tmp.low_seqno, tmp.high_seqno, tmp.high_seqno_seen);
         }
         return ret;
     }
@@ -295,14 +293,14 @@ public class Digest implements Externalizable, Streamable {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
         if(senders == null) return "[]";
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            key=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
+            key=entry.getKey();
+            val=entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -322,14 +320,14 @@ public class Digest implements Externalizable, Streamable {
     public String printHighSeqnos() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            key=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
+            key=entry.getKey();
+            val=entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -347,14 +345,14 @@ public class Digest implements Externalizable, Streamable {
     public String printHighSeqnosSeen() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            key=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
+            key=entry.getKey();
+            val=entry.getValue();
             if(!first) {
                 sb.append(", ");
             }
@@ -380,13 +378,13 @@ public class Digest implements Externalizable, Streamable {
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeShort(senders.size());
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
-            key=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
+            key=entry.getKey();
+            val=entry.getValue();
             Util.writeAddress(key, out);
             out.writeLong(val.low_seqno);
             out.writeLong(val.high_seqno);
@@ -409,7 +407,7 @@ public class Digest implements Externalizable, Streamable {
     public long serializedSize() {
         long retval=Global.SHORT_SIZE; // number of elements in 'senders'
         if(senders.size() > 0) {
-            Address addr=(Address)senders.keySet().iterator().next();
+            Address addr=senders.keySet().iterator().next();
             int len=addr.size() +
                     2 * Global.BYTE_SIZE; // presence byte, IpAddress vs other address
             len+=3 * Global.LONG_SIZE; // 3 longs in one Entry
@@ -419,7 +417,7 @@ public class Digest implements Externalizable, Streamable {
     }
 
     private static Map createSenders(int size) {
-        return new ConcurrentReaderHashMap(size);
+        return new ConcurrentHashMap(size);
     }
 
 
