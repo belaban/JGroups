@@ -1,15 +1,16 @@
 package org.jgroups.tests;
 
-import EDU.oswego.cs.dl.util.concurrent.ReentrantLock;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
  * Tests the ReentrantLock
  * @author Bela Ban
- * @version $Id: ReentrantLockTest.java,v 1.2 2006/08/31 14:08:49 belaban Exp $
+ * @version $Id: ReentrantLockTest.java,v 1.3 2006/12/31 14:43:05 belaban Exp $
  */
 public class ReentrantLockTest extends TestCase {
     ReentrantLock lock;
@@ -32,45 +33,37 @@ public class ReentrantLockTest extends TestCase {
 
 
     public void testAcquireLock() {
-        try {
-            lock.acquire();
-            assertEquals(1, lock.holds());
-            lock.acquire();
-            assertEquals(2, lock.holds());
-            release(lock);
-            assertEquals(1, lock.holds());
-            release(lock);
-            assertEquals(0, lock.holds());
-        }
-        catch(InterruptedException e) {
-            e.printStackTrace();
-        }
+        lock.lock();
+        assertEquals(1, lock.getHoldCount());
+        lock.lock();
+        assertEquals(2, lock.getHoldCount());
+        release(lock);
+        assertEquals(1, lock.getHoldCount());
+        release(lock);
+        assertEquals(0, lock.getHoldCount());
     }
 
     public void testAcquireLock2() {
-        try {
-            lock.acquire();
-            assertEquals(1, lock.holds());
-            lock.acquire();
-            assertEquals(2, lock.holds());
-            releaseAll(lock);
-            assertEquals(0, lock.holds());
-        }
-        catch(InterruptedException e) {
-            e.printStackTrace();
-        }
+        lock.lock();
+        assertEquals(1, lock.getHoldCount());
+        lock.lock();
+        assertEquals(2, lock.getHoldCount());
+        releaseAll(lock);
+        assertEquals(0, lock.getHoldCount());
     }
 
     private void release(ReentrantLock lock) {
-        if(lock != null && lock.holds() > 0)
-            lock.release();
+        if(lock != null && lock.getHoldCount() > 0)
+            lock.unlock();
     }
 
     private void releaseAll(ReentrantLock lock) {
         if(lock != null) {
-            long holds=lock.holds();
-            if(holds > 0)
-                lock.release(holds);
+            long holds=lock.getHoldCount();
+            if(holds > 0) {
+                for(int i=0; i < holds; i++)
+                    lock.unlock();
+            }
         }
     }
 
