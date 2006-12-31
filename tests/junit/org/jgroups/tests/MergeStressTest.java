@@ -1,24 +1,25 @@
-// $Id: MergeStressTest.java,v 1.4 2005/12/22 14:27:51 belaban Exp $
+// $Id: MergeStressTest.java,v 1.5 2006/12/31 14:53:01 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
+import java.util.concurrent.CyclicBarrier;
+
 
 /**
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.4 2005/12/22 14:27:51 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.5 2006/12/31 14:53:01 belaban Exp $
  */
 public class MergeStressTest extends TestCase {
-    static CyclicBarrier    start_connecting=null;
+    static CyclicBarrier start_connecting=null;
     static CyclicBarrier    received_all_views=null;
     static CyclicBarrier    start_disconnecting=null;
     static CyclicBarrier    disconnected=null;
@@ -69,11 +70,11 @@ public class MergeStressTest extends TestCase {
 
         // signal the threads to start connecting to their channels
         Util.sleep(1000);
-        start_connecting.barrier();
+        start_connecting.await();
         start=System.currentTimeMillis();
 
         try {
-            received_all_views.barrier();
+            received_all_views.await();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
 
@@ -91,8 +92,8 @@ public class MergeStressTest extends TestCase {
             fail(ex.toString());
         }
         finally {
-            start_disconnecting.barrier();
-            disconnected.barrier();
+            start_disconnecting.await();
+            disconnected.await();
         }
     }
 
@@ -159,7 +160,7 @@ public class MergeStressTest extends TestCase {
             View view;
 
             try {
-                start_connecting.barrier();
+                start_connecting.await();
                 ch=new JChannel(props);
                 ch.setReceiver(this);
                 log("connecting to channel");
@@ -179,15 +180,15 @@ public class MergeStressTest extends TestCase {
                 }
 
                 log("reached " + num_members + " members");
-                received_all_views.barrier();
+                received_all_views.await();
 
-                start_disconnecting.barrier();
+                start_disconnecting.await();
                 start=System.currentTimeMillis();
                 ch.shutdown();
                 stop=System.currentTimeMillis();
 
                 log(my_addr + " shut down in " + (stop-start) + " msecs");
-                disconnected.barrier();
+                disconnected.await();
             }
             catch(Exception e) {
                 e.printStackTrace();
@@ -199,8 +200,7 @@ public class MergeStressTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(MergeStressTest.class);
-        return s;
+        return new TestSuite(MergeStressTest.class);
     }
 
     public static void main(String[] args) {
