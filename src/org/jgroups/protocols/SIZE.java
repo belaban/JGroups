@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.16 2006/10/11 14:42:06 belaban Exp $
+// $Id: SIZE.java,v 1.17 2006/12/31 06:26:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -102,7 +102,7 @@ public class SIZE extends Protocol {
             }
             if(print_msg) {
                 if(trace)
-                    log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
+                    log.trace("headers are " + msg.printHeaders() + ", payload size=" + payload_size);
             }
             break;
         }
@@ -135,7 +135,7 @@ public class SIZE extends Protocol {
             }
             if(print_msg) {
                 if(trace)
-                    log.trace("headers are " + msg.getHeaders() + ", payload size=" + payload_size);
+                    log.trace("headers are " + msg.printHeaders() + ", payload size=" + payload_size);
             }
             break;
         }
@@ -167,8 +167,7 @@ public class SIZE extends Protocol {
     int numHeaders(Message msg) {
         if(msg == null)
             return 0;
-        Map hdrs=msg.getHeaders();
-        return hdrs !=null? hdrs.size() : 0;
+        return msg.getNumHeaders();
     }
 
 

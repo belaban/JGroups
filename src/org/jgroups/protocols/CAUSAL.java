@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.9 2006/12/18 06:40:31 belaban Exp $
+// $Id: CAUSAL.java,v 1.10 2006/12/31 06:26:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.9 $
+ *  @version $Revision: 1.10 $
  *
  **/
 
@@ -973,11 +973,11 @@ public class CAUSAL extends Protocol
             }
             
             if (currentView.isCausallyNext(messageVector)) {
-                if (log.isDebugEnabled()) log.debug("passing up message "+msg+", headers are "+msg.getHeaders()+", local vector is "+currentView.timeVectorString());
+                if (log.isDebugEnabled()) log.debug("passing up message "+msg+", headers are "+msg.printHeaders()+", local vector is "+currentView.timeVectorString());
                 passUp(evt);
                 currentView.max(messageVector);
             } else  {
-                if (log.isDebugEnabled()) log.debug("queuing message "+msg+", headers are "+msg.getHeaders());
+                if (log.isDebugEnabled()) log.debug("queuing message "+msg+", headers are "+msg.printHeaders());
                 messageVector.setAssociatedMessage(msg);
                 addToDelayQueue(messageVector);
             }
@@ -988,7 +988,7 @@ public class CAUSAL extends Protocol
                     currentView.isCausallyNext((queuedVector = (TransportedVectorTime) upwardWaitingQueue.getFirst()))) {
                 upwardWaitingQueue.remove(queuedVector);
                 Message tmp=queuedVector.getAssociatedMessage();
-                if (log.isDebugEnabled()) log.debug("released message "+tmp+", headers are "+tmp.getHeaders());
+                if (log.isDebugEnabled()) log.debug("released message "+tmp+", headers are "+tmp.printHeaders());
                 passUp(new Event(Event.MSG, tmp));
                 currentView.max(queuedVector);
             }

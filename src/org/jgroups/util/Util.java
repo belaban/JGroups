@@ -27,7 +27,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.109 2006/12/20 16:41:20 belaban Exp $
+ * @version $Id: Util.java,v 1.110 2006/12/31 06:26:59 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -944,7 +944,7 @@ public class Util {
                     if(type == Event.MSG) {
                         s+="[";
                         Message m=(Message)event.getArg();
-                        Map headers=m.getHeaders();
+                        Map headers=new HashMap(m.getHeaders());
                         for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
                             Object headerKey=i.next();
                             Object value=headers.get(headerKey);

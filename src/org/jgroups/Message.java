@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.60 2006/12/31 05:46:27 belaban Exp $
+// $Id: Message.java,v 1.61 2006/12/31 06:26:58 belaban Exp $
 
 package org.jgroups;
 
@@ -16,6 +16,7 @@ import java.io.*;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.Collections;
 
 
 /**
@@ -259,9 +260,18 @@ public class Message implements Externalizable, Streamable {
         return length;
     }
 
-    /** Returns a reference to the headers hashmap, which is <em>mutable</em> */
+    /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
+     * modify the returned map will cause a runtime exception */
     public Map getHeaders() {
-        return headers;
+        return Collections.unmodifiableMap(headers);
+    }
+
+    public String printHeaders() {
+        return headers.toString();
+    }
+
+    public int getNumHeaders() {
+        return headers.size();
     }
 
     final public void setObject(Serializable obj) {
