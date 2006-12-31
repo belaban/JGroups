@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.20 2006/12/31 13:25:03 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.21 2006/12/31 13:25:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -180,9 +180,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
         public void retransmit(long seqno, Message msg) {
-
-                if(log.isDebugEnabled()) log.debug("seqno=" + seqno);
-
+            if(log.isDebugEnabled()) log.debug("seqno=" + seqno);
             curr_time = System.currentTimeMillis();
         }
     }
