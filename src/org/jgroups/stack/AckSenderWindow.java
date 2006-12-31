@@ -1,9 +1,8 @@
-// $Id: AckSenderWindow.java,v 1.21 2006/12/31 13:25:27 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.22 2006/12/31 13:25:49 belaban Exp $
 
 package org.jgroups.stack;
 
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
@@ -11,7 +10,6 @@ import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
