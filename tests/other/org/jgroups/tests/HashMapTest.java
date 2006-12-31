@@ -3,9 +3,6 @@ package org.jgroups.tests;
 //import gnu.trove.TLongObjectHashMap;
 //import gnu.trove.THashMap;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -13,7 +10,7 @@ import java.util.TreeMap;
 
 /**
  * @author Bela Ban
- * @version $Id: HashMapTest.java,v 1.5 2005/09/02 14:27:38 belaban Exp $
+ * @version $Id: HashMapTest.java,v 1.6 2006/12/31 12:52:50 belaban Exp $
  */
 public class HashMapTest {
 
@@ -29,7 +26,9 @@ public class HashMapTest {
             return;
         }
         HashMapTest t=new HashMapTest();
-        Class[] classes=new Class[]{HashMap.class, TreeMap.class, ConcurrentReaderHashMap.class, ConcurrentHashMap.class};
+        Class[] classes=new Class[]{HashMap.class,
+                TreeMap.class,
+                java.util.concurrent.ConcurrentHashMap.class};
         Map[] maps=new Map[classes.length];
 
         System.out.println("\nTesting creation times");
@@ -47,31 +46,7 @@ public class HashMapTest {
         }
     }
 
-   /* private void start3(THashMap m, int num) {
-        long start, stop;
 
-        start=System.currentTimeMillis();
-        for(int i=0; i < num; i++) {
-            m.put(new Long(i), "bla");
-        }
-
-        stop=System.currentTimeMillis();
-        System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
-        m.clear();
-    }
-
-    private void start2(TLongObjectHashMap m, int num) {
-        long start, stop;
-
-        start=System.currentTimeMillis();
-        for(int i=0; i < num; i++) {
-            m.put(i, "bla");
-        }
-
-        stop=System.currentTimeMillis();
-        System.out.println("Took " + (stop-start) + "ms to insert " + m.size() + " elements into " + m.getClass().getName());
-        m.clear();
-    }*/
 
     private void testCreation(Class cl, int num) throws IllegalAccessException, InstantiationException {
         long start, stop;
