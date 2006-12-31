@@ -12,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.10 2006/12/19 08:51:47 belaban Exp $
+ * @version $Id: Data.java,v 1.11 2006/12/31 06:17:01 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;
@@ -21,6 +21,7 @@ public class Data implements Streamable {
     final static byte RESULTS          = 4; // sent when a receiver has received all messages
     final static byte FINAL_RESULTS    = 5; // sent when a sender is done
     final static byte FINAL_RESULTS_OK = 6; // sent when we know the everyone has received FINAL_MSGS
+    final static byte START            = 7; // start sending messages
 
     public Data() {
         ;
@@ -149,7 +150,7 @@ public class Data implements Streamable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append('[');
         switch(type) {
         case DISCOVERY_REQ: sb.append("DISCOVERY_REQ"); break;
@@ -158,6 +159,7 @@ public class Data implements Streamable {
         case RESULTS:       sb.append("RESULTS"); break;
         case FINAL_RESULTS: sb.append("FINAL_RESULTS"); break;
         case FINAL_RESULTS_OK: sb.append("FINAL_RESULTS_OK"); break;
+        case START:            sb.append("START"); break;
         default:            sb.append("<unknown>"); break;
         }
         sb.append("] ");

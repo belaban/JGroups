@@ -71,10 +71,14 @@ public class Test implements Receiver {
     /** Number of ms to wait at the receiver to simulate processing of the received message (0 == don't wait) */
     long            processing_delay=0;
 
+    final           Set start_msgs_received=new HashSet(12);
 
     FileWriter      output=null;
 
     static  NumberFormat f;
+
+
+
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -186,7 +190,7 @@ public class Test implements Receiver {
     }
 
     private String printProperties() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Properties p=System.getProperties();
         for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
@@ -286,6 +290,14 @@ public class Test implements Receiver {
                     publisher.stop();
                     synchronized(this) {
                         this.notifyAll();
+                    }
+                    break;
+
+                case Data.START:
+                    synchronized(start_msgs_received) {
+                        if(start_msgs_received.add(sender)){
+                            start_msgs_received.notifyAll();
+                        }
                     }
                     break;
 
@@ -453,7 +465,7 @@ public class Test implements Receiver {
         MemberInfo  val;
         double      combined_msgs_sec, tmp=0;
         long        combined_tp;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("\n-- results:\n");
 
         for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
@@ -540,7 +552,7 @@ public class Test implements Receiver {
 
     public String dumpTransportStats() {
         Map stats=transport.dumpStats();
-        StringBuffer sb=new StringBuffer(128);
+        StringBuilder sb=new StringBuilder(128);
         if(stats != null) {
             Map.Entry entry;
             String key;
@@ -591,12 +603,34 @@ public class Test implements Receiver {
 
         synchronized(members) {
             heard_from.addAll(members);
-            System.out.println("-- members: " + members.size());
+            // System.out.println("-- members: " + members.size());
         }
 
         synchronized(final_results_ok_list) {
             final_results_ok_list.addAll(members);
         }
+    }
+
+
+    void waitForAllOKs() throws Exception {
+        // System.out.println("-- waiting for " + num_members + " START messages");
+        sendStarted();
+        boolean received_all_start_msgs=false;
+        while(!received_all_start_msgs) {
+            synchronized(start_msgs_received) {
+                received_all_start_msgs=start_msgs_received.size() >= num_members;
+                if(!received_all_start_msgs)
+                    start_msgs_received.wait(2000);
+            }
+            if(!received_all_start_msgs) {
+                sendStarted();
+            }
+        }
+        System.out.println("-- READY (" + start_msgs_received.size() + " acks)\n");
+    }
+
+    void sendStarted() throws Exception {
+        transport.send(null, generatePayload(new Data(Data.START), null), true);
     }
 
     void sendDiscoveryRequest() throws Exception {
@@ -690,6 +724,7 @@ public class Test implements Receiver {
             t=new Test();
             t.start(config, verbose, jmx, output);
             t.runDiscoveryPhase();
+            t.waitForAllOKs();
             if(sender) {
                 t.sendMessages(interval, interval_nanos, busy_sleep);
             }
