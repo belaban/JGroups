@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -27,7 +28,6 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.ReentrantLock;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending messages 
@@ -258,7 +258,7 @@ public class FLUSH extends Protocol
       {         
          case Event.MSG :
             Message msg = (Message) evt.getArg();
-            FlushHeader fh = (FlushHeader) msg.removeHeader(getName());
+            FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS)
             {
                break;
@@ -342,7 +342,7 @@ public class FLUSH extends Protocol
       {
          case Event.MSG :
             msg = (Message) evt.getArg();
-            FlushHeader fh = (FlushHeader) msg.removeHeader(getName());
+            FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null)
             {
                flushPhase.lock();
@@ -424,7 +424,7 @@ public class FLUSH extends Protocol
                   }
                   else if (fh.type == FlushHeader.STOP_FLUSH_OK)
                   {
-                     onStopFlushOk(msg.getSrc(),fh.viewID);
+                     onStopFlushOk(msg.getSrc());
                   }
                   else if (fh.type == FlushHeader.FLUSH_COMPLETED)
                   {
@@ -718,7 +718,7 @@ public class FLUSH extends Protocol
       }
    }
    
-   private void onStopFlushOk(Address address, long viewID)
+   private void onStopFlushOk(Address address)
    {
 
       boolean stopFlushOkCompleted = false;
@@ -824,19 +824,12 @@ public class FLUSH extends Protocol
       
       public void lock()
       {
-         try
-         {
-            lock.acquire();
-         }
-         catch (InterruptedException e)
-         {            
-            e.printStackTrace();
-         }
+          lock.lock();
       }
       
       public void release()
       {
-         lock.release();
+         lock.unlock();
       }
       
       public void setFirstPhase(boolean inFirstPhase)

@@ -1,9 +1,7 @@
-// $Id: TOTAL.java,v 1.14 2006/12/22 13:07:13 belaban Exp $
+// $Id: TOTAL.java,v 1.15 2006/12/31 15:07:18 belaban Exp $
 package org.jgroups.protocols;
 
 
-import EDU.oswego.cs.dl.util.concurrent.ReadWriteLock;
-import EDU.oswego.cs.dl.util.concurrent.WriterPreferenceReadWriteLock;
 import org.jgroups.*;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
@@ -12,6 +10,8 @@ import org.jgroups.util.Streamable;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -138,7 +138,7 @@ public class TOTAL extends Protocol {
          * For debugging purposes
          */
         public String toString() {
-            StringBuffer buffer=new StringBuffer();
+            StringBuilder buffer=new StringBuilder();
             String typeName;
             buffer.append("[TOTAL.Header");
             switch(type) {
@@ -263,7 +263,7 @@ public class TOTAL extends Protocol {
     /**
      * The state lock allowing multiple reads or a single write
      */
-    private final ReadWriteLock stateLock=new WriterPreferenceReadWriteLock();
+    private final ReadWriteLock stateLock=new ReentrantReadWriteLock();
     /**
      * Protocol layer message-sending state
      */
@@ -300,7 +300,7 @@ public class TOTAL extends Protocol {
      * <p/>
      * sent localSeqID -> Broadcast msg to be sent.
      */
-    private SortedMap reqTbl;
+    private final SortedMap reqTbl=new TreeMap();
     /**
      * The list of received broadcast messages that haven't yet been delivered
      * to the layer above. The entries are stored in increasing sequence ID,
@@ -308,7 +308,7 @@ public class TOTAL extends Protocol {
      * <p/>
      * seqID -> Received broadcast msg
      */
-    private SortedMap upTbl;
+    private final SortedMap upTbl=new TreeMap();
     /**
      * Retranmitter for pending broadcast requests
      */
@@ -390,7 +390,7 @@ public class TOTAL extends Protocol {
 
         synchronized(upTbl) {
             while((msg=(Message)upTbl.remove(new Long(seqID + 1))) != null) {
-                header=(Header)msg.removeHeader(getName());
+                header=(Header)msg.getHeader(getName());
                 if(header.localSequenceID != NULL_ID) passUp(new Event(Event.MSG, msg));
                 ++seqID;
             }
@@ -426,7 +426,7 @@ public class TOTAL extends Protocol {
                                  "] from " + addrToString(msg.getSrc()));
                     continue;
                 }
-                header=(Header)msg.removeHeader(getName());
+                header=(Header)msg.getHeader(getName());
                 if(header.localSequenceID == NULL_ID) continue;
                 _sendBcastRequest(msg, header.localSequenceID);
             }
@@ -519,7 +519,7 @@ public class TOTAL extends Protocol {
      * @param msg the received unicast message
      */
     private void _recvUcast(Message msg) {
-        msg.removeHeader(getName());
+        msg.getHeader(getName());
     }
 
     /**
@@ -635,18 +635,14 @@ public class TOTAL extends Protocol {
      */
     private void _retransmitBcastRequest(long seqID) {
         // *** Get a shared lock
+        stateLock.readLock().lock();
         try {
-            stateLock.readLock().acquire();
-            try {
-                if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + ']');
-                _transmitBcastRequest(seqID);
-            }
-            finally {
-                stateLock.readLock().release();
-            }
+            if(log.isInfoEnabled()) log.info("Retransmit BCAST_REQ[" + seqID + ']');
+            _transmitBcastRequest(seqID);
+
         }
-        catch(InterruptedException e) {
-            log.error("failed acquiring a read lock", e);
+        finally {
+            stateLock.readLock().unlock();
         }
     }
 
@@ -663,20 +659,14 @@ public class TOTAL extends Protocol {
      */
     private boolean _upBlock() {
         // *** Get an exclusive lock
+        stateLock.writeLock().lock();
         try {
-            stateLock.writeLock().acquire();
-            try {
-                state=FLUSH;
-                // *** Revoke the exclusive lock
-            }
-            finally {
-                stateLock.writeLock().release();
-            }
+            state=FLUSH;
+            // *** Revoke the exclusive lock
         }
-        catch(InterruptedException e) {
-            log.error("failed acquiring the write lock", e);
+        finally {
+            stateLock.writeLock().unlock();
         }
-
         return (true);
     }
 
@@ -693,30 +683,29 @@ public class TOTAL extends Protocol {
         Header header;
 
         // *** Get a shared lock
+        stateLock.readLock().lock();
         try {
-            stateLock.readLock().acquire();
-            try {
 
-                // If NULL_STATE, shouldn't receive any msg on the up queue!
-                if(state == NULL_STATE) {
-                    if(log.isErrorEnabled()) log.error("Up msg in NULL_STATE");
-                    return (false);
-                }
+            // If NULL_STATE, shouldn't receive any msg on the up queue!
+            if(state == NULL_STATE) {
+                if(log.isErrorEnabled()) log.error("Up msg in NULL_STATE");
+                return (false);
+            }
 
-                // Peek the header:
-                //
-                // (UCAST) A unicast message - Send up the stack
-                // (BCAST) A broadcast message - Handle specially
-                // (REQ) A broadcast request - Handle specially
-                // (REP) A broadcast reply from the sequencer - Handle specially
-                msg=(Message)event.getArg();
-                if(!((obj=msg.getHeader(getName())) instanceof TOTAL.Header)) {
-                    if(log.isErrorEnabled()) log.error("No TOTAL.Header found");
-                    return (false);
-                }
-                header=(Header)obj;
+            // Peek the header:
+            //
+            // (UCAST) A unicast message - Send up the stack
+            // (BCAST) A broadcast message - Handle specially
+            // (REQ) A broadcast request - Handle specially
+            // (REP) A broadcast reply from the sequencer - Handle specially
+            msg=(Message)event.getArg();
+            if(!((obj=msg.getHeader(getName())) instanceof TOTAL.Header)) {
+                if(log.isErrorEnabled()) log.error("No TOTAL.Header found");
+                return (false);
+            }
+            header=(Header)obj;
 
-                switch(header.type) {
+            switch(header.type) {
                 case Header.UCAST:
                     _recvUcast(msg);
                     return (true);
@@ -732,19 +721,13 @@ public class TOTAL extends Protocol {
                 default:
                     if(log.isErrorEnabled()) log.error("Unknown header type");
                     return (false);
-                }
-
-                // ** Revoke the shared lock
             }
-            finally {
-                stateLock.readLock().release();
-            }
+            // ** Revoke the shared lock
         }
-        catch(InterruptedException e) {
-            if(log.isErrorEnabled()) log.error(e.getMessage());
+        finally {
+            stateLock.readLock().unlock();
         }
 
-        return (true);
     }
 
 
@@ -756,17 +739,12 @@ public class TOTAL extends Protocol {
      */
     private boolean _upSetLocalAddress(Event event) {
         // *** Get an exclusive lock
+        stateLock.writeLock().lock();
         try {
-            stateLock.writeLock().acquire();
-            try {
-                addr=(Address)event.getArg();
-            }
-            finally {
-                stateLock.writeLock().release();
-            }
+            addr=(Address)event.getArg();
         }
-        catch(InterruptedException e) {
-            log.error(e.getMessage());
+        finally {
+            stateLock.writeLock().unlock();
         }
         return (true);
     }
@@ -783,40 +761,33 @@ public class TOTAL extends Protocol {
         Object oldSequencerAddr;
 
         // *** Get an exclusive lock
+        stateLock.writeLock().lock();
         try {
-            stateLock.writeLock().acquire();
-            try {
+            state=RUN;
 
-                state=RUN;
-
-                // i. See if this member is the sequencer
-                // ii. If this is the sequencer, reset the sequencer's sequence ID
-                // iii. Reset the last received sequence ID
-                //
-                // iv. Replay undelivered bcasts: Put all the undelivered bcasts
-                // sent by us back to the req queue and discard the rest
-                oldSequencerAddr=sequencerAddr;
-                sequencerAddr=
-                        (Address)((View)event.getArg()).getMembers().elementAt(0);
-                if(addr.equals(sequencerAddr)) {
-                    sequencerSeqID=NULL_ID;
-                    if((oldSequencerAddr == null) ||
-                            (!addr.equals(oldSequencerAddr)))
-                        if(log.isInfoEnabled()) log.info("I'm the new sequencer");
-                }
-                seqID=NULL_ID;
-                _replayBcast();
-
-                // *** Revoke the exclusive lock
+            // i. See if this member is the sequencer
+            // ii. If this is the sequencer, reset the sequencer's sequence ID
+            // iii. Reset the last received sequence ID
+            //
+            // iv. Replay undelivered bcasts: Put all the undelivered bcasts
+            // sent by us back to the req queue and discard the rest
+            oldSequencerAddr=sequencerAddr;
+            sequencerAddr=
+                    (Address)((View)event.getArg()).getMembers().elementAt(0);
+            if(addr.equals(sequencerAddr)) {
+                sequencerSeqID=NULL_ID;
+                if((oldSequencerAddr == null) ||
+                        (!addr.equals(oldSequencerAddr)))
+                    if(log.isInfoEnabled()) log.info("I'm the new sequencer");
             }
-            finally {
-                stateLock.writeLock().release();
-            }
-        }
-        catch(InterruptedException e) {
-            log.error(e.getMessage());
-        }
+            seqID=NULL_ID;
+            _replayBcast();
 
+            // *** Revoke the exclusive lock
+        }
+        finally {
+            stateLock.writeLock().unlock();
+        }
         return (true);
     }
 
@@ -836,19 +807,13 @@ public class TOTAL extends Protocol {
      */
     private boolean downBlockOk() {
         // *** Get an exclusive lock
+        stateLock.writeLock().lock();
         try {
-            stateLock.writeLock().acquire();
-            try {
-                state=BLOCK;
-            }
-            finally {
-                stateLock.writeLock().release();
-            }
+            state=BLOCK;
         }
-        catch(InterruptedException e) {
-            log.error(e.getMessage());
+        finally {
+            stateLock.writeLock().unlock();
         }
-
         return (true);
     }
 
@@ -871,41 +836,33 @@ public class TOTAL extends Protocol {
         Event retval=null;
 
         // *** Get a shared lock
+        stateLock.readLock().lock();
         try {
-            stateLock.readLock().acquire();
-            try {
-
-                // i. Discard all msgs, if in NULL_STATE
-                // ii. Discard all msgs, if blocked
-                if(state == NULL_STATE) {
-                    if(log.isErrorEnabled()) log.error("Discard msg in NULL_STATE");
-                    return null;
-                }
-                if(state == BLOCK) {
-                    if(log.isErrorEnabled()) log.error("Blocked, discard msg");
-                    return null;
-                }
-
-                msg=(Message)event.getArg();
-                if(msg.getDest() == null) {
-                    _sendBcastRequest(msg);
-                    return null;
-                }
-                else {
-                    msg=_sendUcast(msg);
-                    Event tmpEvt=new Event(event.getType(), msg);
-                    retval=tmpEvt;
-                }
-
-                // ** Revoke the shared lock
+            // i. Discard all msgs, if in NULL_STATE
+            // ii. Discard all msgs, if blocked
+            if(state == NULL_STATE) {
+                if(log.isErrorEnabled()) log.error("Discard msg in NULL_STATE");
+                return null;
             }
-            finally {
-                stateLock.readLock().release();
+            if(state == BLOCK) {
+                if(log.isErrorEnabled()) log.error("Blocked, discard msg");
+                return null;
             }
+
+            msg=(Message)event.getArg();
+            if(msg.getDest() == null) {
+                _sendBcastRequest(msg);
+                return null;
+            }
+            else {
+                msg=_sendUcast(msg);
+                retval=new Event(event.getType(), msg);
+            }
+            // ** Revoke the shared lock
         }
-        catch(InterruptedException e) {
-            log.error(e.getMessage());
-        }
+        finally {
+                stateLock.readLock().unlock();
+            }
 
         return retval;
     }
@@ -920,9 +877,6 @@ public class TOTAL extends Protocol {
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("TOTAL.start(): timer is null");
-
-        reqTbl=new TreeMap();
-        upTbl=new TreeMap();
         retransmitter=new AckSenderWindow(new Command(), AVG_RETRANSMIT_INTERVAL);
     }
 
@@ -934,21 +888,16 @@ public class TOTAL extends Protocol {
      * sequence this member's addr is not guaranteed to be the same
      */
     public void stop() {
+        stateLock.writeLock().lock();
         try {
-            stateLock.writeLock().acquire();
-            try {
-                state=NULL_STATE;
-                retransmitter.reset();
-                reqTbl.clear();
-                upTbl.clear();
-                addr=null;
-            }
-            finally {
-                stateLock.writeLock().release();
-            }
+            state=NULL_STATE;
+            retransmitter.reset();
+            reqTbl.clear();
+            upTbl.clear();
+            addr=null;
         }
-        catch(InterruptedException e) {
-            log.error(e.getMessage());
+        finally {
+            stateLock.writeLock().unlock();
         }
     }
 
