@@ -1,9 +1,7 @@
-// $Id: Message.java,v 1.62 2006/12/31 06:47:02 belaban Exp $
 
 package org.jgroups;
 
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
@@ -14,6 +12,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
@@ -26,6 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
+ * @version $Id: Message.java,v 1.63 2006/12/31 07:38:21 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -68,7 +68,7 @@ public class Message implements Externalizable, Streamable {
     static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
 
     /** Map<Address,Address>. Maintains mappings to canonical addresses */
-    private static final Map canonicalAddresses=new ConcurrentReaderHashMap();
+    private static final ConcurrentHashMap<Address,Address> canonicalAddresses=new ConcurrentHashMap();
     private static final boolean DISABLE_CANONICALIZATION;
 
     static {
@@ -911,14 +911,11 @@ public class Message implements Externalizable, Streamable {
         // do not synchronize between get/put on the canonical map to avoid cost of contention
         // this can allow multiple equivalent addresses to leak out, but it's worth the cost savings
         try {
-            result=(Address)canonicalAddresses.get(nonCanonicalAddress);
+            result=canonicalAddresses.putIfAbsent(nonCanonicalAddress, nonCanonicalAddress);
+            return result != null? result : nonCanonicalAddress;
         }
         catch(NullPointerException npe) {
             // no action needed
-        }
-        if(result == null) {
-            result=nonCanonicalAddress;
-            canonicalAddresses.put(nonCanonicalAddress, result);
         }
         return result;
     }
