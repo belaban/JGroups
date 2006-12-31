@@ -1,10 +1,8 @@
-// $Id: ConnectStressTest.java,v 1.16 2006/05/19 11:23:27 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.17 2006/12/31 14:54:23 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import EDU.oswego.cs.dl.util.concurrent.BrokenBarrierException;
-import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -12,15 +10,17 @@ import org.jgroups.*;
 import org.jgroups.util.Util;
 
 import java.util.Vector;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.16 2006/05/19 11:23:27 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.17 2006/12/31 14:54:23 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
-    static CyclicBarrier  start_connecting=null;
+    static CyclicBarrier start_connecting=null;
     static CyclicBarrier  connected=null;
     static CyclicBarrier  received_all_views=null;
     static CyclicBarrier  start_disconnecting=null;
@@ -83,15 +83,15 @@ public class ConnectStressTest extends TestCase {
         }
 
         // signal the threads to start connecting to their channels
-        start_connecting.barrier();
+        start_connecting.await();
         start=System.currentTimeMillis();
 
         try {
-            connected.barrier();
+            connected.await();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to connect");
 
-            received_all_views.barrier();
+            received_all_views.await();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
 
@@ -113,11 +113,11 @@ public class ConnectStressTest extends TestCase {
     }
 
     public void testConcurrentLeaves() throws Exception {
-        start_disconnecting.barrier();
+        start_disconnecting.await();
         long start, stop;
         start=System.currentTimeMillis();
 
-        disconnected.barrier();
+        disconnected.await();
         stop=System.currentTimeMillis();
         System.out.println("-- took " + (stop-start) + " msecs for " + NUM + " threads to disconnect");
 
@@ -169,7 +169,7 @@ public class ConnectStressTest extends TestCase {
             try {
                 ch=new JChannel(props);
 
-                start_connecting.barrier();
+                start_connecting.await();
 
                 long start=System.currentTimeMillis(), stop;
                 ch.connect(groupname);
@@ -180,7 +180,7 @@ public class ConnectStressTest extends TestCase {
                 log(my_addr + " connected in " + total_connect_time + " msecs (" +
                     view.getMembers().size() + " members). VID=" + view.getVid());
 
-                connected.barrier();
+                connected.await();
 
                 int num_members=0;
                 while(true) {
@@ -198,15 +198,15 @@ public class ConnectStressTest extends TestCase {
                     Util.sleep(2000);
                 }
                 log("reached " + num_members + " members");
-                received_all_views.barrier();
+                received_all_views.await();
 
-                start_disconnecting.barrier();
+                start_disconnecting.await();
                 start=System.currentTimeMillis();
                 ch.disconnect();
                 stop=System.currentTimeMillis();
 
                 log(my_addr + " disconnected in " + (stop-start) + " msecs");
-                disconnected.barrier();
+                disconnected.await();
             }
             catch(BrokenBarrierException e) {
                 e.printStackTrace();

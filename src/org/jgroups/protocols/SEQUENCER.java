@@ -1,7 +1,6 @@
 
 package org.jgroups.protocols;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
@@ -9,12 +8,13 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.11 2006/09/14 07:27:53 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.12 2006/12/31 14:58:40 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -286,7 +286,7 @@ public class SEQUENCER extends Protocol {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer(64);
+            StringBuilder sb=new StringBuilder(64);
             sb.append(printType());
             if(tag != null)
                 sb.append(" (tag=").append(tag).append(")");

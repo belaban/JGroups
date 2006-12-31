@@ -2,7 +2,6 @@
 package org.jgroups.tests;
 
 
-import EDU.oswego.cs.dl.util.concurrent.CyclicBarrier;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -10,14 +9,16 @@ import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 
+import java.util.concurrent.CyclicBarrier;
+
 
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.2 2006/05/04 12:28:45 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.3 2006/12/31 14:53:38 belaban Exp $
  */
 public class DisconnectStressTest extends TestCase {
-    static CyclicBarrier    all_disconnected=null;
+    static CyclicBarrier all_disconnected=null;
     static CyclicBarrier    start_disconnecting=null;
     static final int        NUM=30;
     static final long       TIMEOUT=50000;
@@ -64,9 +65,9 @@ public class DisconnectStressTest extends TestCase {
         }
 
         log("DISCONNECTING");
-        start_disconnecting.barrier(); // causes all channels to disconnect
+        start_disconnecting.await(); // causes all channels to disconnect
 
-        all_disconnected.barrier();  // notification when all threads have disconnected
+        all_disconnected.await();  // notification when all threads have disconnected
     }
 
 
@@ -112,14 +113,14 @@ public class DisconnectStressTest extends TestCase {
                 log(my_addr + " connected in " + total_connect_time + " msecs (" +
                     view.getMembers().size() + " members). VID=" + ch.getView());
 
-                start_disconnecting.barrier();
+                start_disconnecting.await();
 
                 start=System.currentTimeMillis();
                 ch.disconnect();
                 stop=System.currentTimeMillis();
 
                 log(my_addr + " disconnected in " + (stop-start) + " msecs");
-                all_disconnected.barrier();
+                all_disconnected.await();
             }
             catch(Exception e) {
                 e.printStackTrace();
