@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.29 2006/12/28 09:05:48 belaban Exp $
+// $Id: TUNNEL.java,v 1.30 2006/12/31 06:26:58 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -199,7 +199,7 @@ public class TUNNEL extends Protocol implements Runnable {
             msg.setSrc(local_addr);
 
         if(trace)
-            log.trace(msg + ", hdrs: " + msg.getHeaders());
+            log.trace(msg + ", hdrs: " + msg.printHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
         // If multicast message, loopback a copy directly to us (but still multicast). Once we receive this,
@@ -307,7 +307,7 @@ public class TUNNEL extends Protocol implements Runnable {
         }
 
          if(trace)
-             log.trace(msg + ", hdrs: " + msg.getHeaders());
+             log.trace(msg + ", hdrs: " + msg.printHeaders());
 
         /* Discard all messages destined for a channel with a different name */
 

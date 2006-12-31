@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.17 2006/12/28 09:05:48 belaban Exp $ 
+// $Id: JMS.java,v 1.18 2006/12/31 06:26:58 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -255,7 +255,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
 
                  // +++ remove
                     if(log.isDebugEnabled()) log.debug("Message is " + msg +
-                        ", headers are " + msg.getHeaders ());
+                        ", headers are " + msg.printHeaders());
 
                 passUp(evt);
             }

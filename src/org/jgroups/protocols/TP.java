@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.99 2006/12/28 09:05:48 belaban Exp $
+ * @version $Id: TP.java,v 1.100 2006/12/31 06:26:58 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -924,7 +924,7 @@ public abstract class TP extends Protocol {
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
         if(trace) {
             StringBuilder sb=new StringBuilder("sending msg to ").append(msg.getDest()).
-                    append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
+                    append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.printHeaders());
             log.trace(sb.toString());
         }
 
@@ -1133,7 +1133,7 @@ public abstract class TP extends Protocol {
 
         evt=new Event(Event.MSG, msg);
         if(trace) {
-            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
+            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
             log.trace(sb);
         }
 
@@ -1155,7 +1155,7 @@ public abstract class TP extends Protocol {
         else {
             if(trace)
                 log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
-                          append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
+                          append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
             return;
         }
         passUp(evt);
@@ -1609,13 +1609,13 @@ public abstract class TP extends Protocol {
             else {
                 if(trace)
                     log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
-                            append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
+                            append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
                 return;
             }
 
             Event evt=new Event(Event.MSG, msg);
             if(trace) {
-                StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
+                StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
                 log.trace(sb);
             }
 

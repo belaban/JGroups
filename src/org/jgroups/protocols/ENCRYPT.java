@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.27 2006/12/28 09:05:48 belaban Exp $
+// $Id: ENCRYPT.java,v 1.28 2006/12/31 06:26:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -643,7 +643,7 @@ public class ENCRYPT extends Protocol {
         {
             if (log.isTraceEnabled())
                 log.trace("dropping message as ENCRYPT header is null  or has not been recognized, msg will not be passed up, " +
-                        "headers are " + msg.getHeaders());
+                        "headers are " + msg.printHeaders());
             return;
         }
 

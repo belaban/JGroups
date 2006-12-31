@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.5 2006/09/09 13:16:19 belaban Exp $
+// $Id: StreamableTest.java,v 1.6 2006/12/31 06:26:59 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -254,7 +254,7 @@ public class StreamableTest extends TestCase {
     }
 
     private int getNumHeaders(Message msg) {
-        return msg.getHeaders() != null? msg.getHeaders().size() : 0;
+        return msg.getNumHeaders();
     }
 
 
