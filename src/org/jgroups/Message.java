@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.58 2006/12/19 12:53:12 belaban Exp $
+// $Id: Message.java,v 1.59 2006/12/31 05:41:16 belaban Exp $
 
 package org.jgroups;
 
@@ -332,7 +332,7 @@ public class Message implements Externalizable, Streamable {
      */
     public Header removeHeader(String key) {
         // return (Header)headers.remove(key);
-        return getHeader(key);
+        return (Header)headers.get(key);
     }
 
     /**
