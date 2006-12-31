@@ -1,6 +1,5 @@
 package org.jgroups.tests.perf;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
@@ -12,6 +11,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**  You start the test by running this class.
  * @author Bela Ban (belaban@yahoo.com)
@@ -25,7 +25,7 @@ public class Test implements Receiver {
     Object          local_addr=null;
 
     /** Map<Object,MemberInfo> members. Keys=member addresses, value=MemberInfo */
-    Map             senders=new ConcurrentReaderHashMap(10);
+    Map             senders=new ConcurrentHashMap(10);
 
     /** Keeps track of members. ArrayList<SocketAddress> */
     final ArrayList       members=new ArrayList();
@@ -391,7 +391,7 @@ public class Test implements Receiver {
 
     private void sendFinalResults() throws Exception {
         Data d=new Data(Data.FINAL_RESULTS);
-        d.results=new ConcurrentReaderHashMap(this.results);
+        d.results=new ConcurrentHashMap(this.results);
         final byte[] buf=generatePayload(d, null);
         transport.send(null, buf, true);
     }

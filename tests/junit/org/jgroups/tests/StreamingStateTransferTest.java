@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Semaphore;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -20,7 +21,6 @@ import org.jgroups.JChannelFactory;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
 /**
  * Tests streaming state transfer.
@@ -247,7 +247,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
 
    protected class StreamingStateTransferApplication extends PushChannelApplicationWithSemaphore
    {            
-      private Map stateMap = new HashMap();
+      private final Map stateMap = new HashMap();
       
       public static final int COUNT = 25;      
       
