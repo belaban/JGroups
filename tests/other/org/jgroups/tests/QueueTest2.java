@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.util.Queue;
-import org.jgroups.util.Queue2;
 import org.jgroups.util.QueueClosedException;
 
 import java.util.LinkedList;
@@ -105,29 +104,6 @@ public class QueueTest2 {
     }
 
 
-        public static class JgQueue2 extends Queue2 implements Queueable {
-
-        public void addElement(Object o) {
-            try {
-                add(o);
-            }
-            catch(QueueClosedException e) {
-                e.printStackTrace();
-            }
-        }
-
-        public Object removeElement() {
-            try {
-                return remove();
-            }
-            catch(QueueClosedException e) {
-                e.printStackTrace();
-                return null;
-            }
-        }
-    }
-
-
 
     public static class MyQueue extends LinkedList implements Queueable {
         final Object mutex=new Object();
@@ -186,9 +162,6 @@ public class QueueTest2 {
 
             Queueable q=new JgQueue();
             qt.start(q, "based on org.jgroups.util.Queue");
-
-            q=new JgQueue2();
-            qt.start(q, "based on org.jgroups.util.Queue2 (using util.concurrent Mutexes and CondVars)");
 
             q=new MyQueue();
             qt.start(q, "based on java.util.LinkedList");
