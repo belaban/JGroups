@@ -1,17 +1,14 @@
 package org.jgroups.jmx.protocols;
 
-import org.jgroups.stack.Protocol;
 import org.jgroups.Address;
+import org.jgroups.stack.Protocol;
 
 import java.net.UnknownHostException;
 import java.util.List;
 
-import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
-import EDU.oswego.cs.dl.util.concurrent.BoundedLinkedQueue;
-
 /**
  * @author Bela Ban
- * @version $Id: TP.java,v 1.11 2006/12/20 16:28:55 belaban Exp $
+ * @version $Id: TP.java,v 1.12 2006/12/31 14:23:29 belaban Exp $
  */
 public class TP extends org.jgroups.jmx.Protocol implements TPMBean {
     org.jgroups.protocols.TP tp;

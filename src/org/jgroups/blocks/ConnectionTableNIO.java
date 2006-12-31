@@ -1,12 +1,12 @@
-// $Id: ConnectionTableNIO.java,v 1.24 2006/09/18 18:00:37 bstansberry Exp $
+// $Id: ConnectionTableNIO.java,v 1.25 2006/12/31 14:21:57 belaban Exp $
 
 package org.jgroups.blocks;
 
-import EDU.oswego.cs.dl.util.concurrent.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -17,6 +17,7 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.concurrent.*;
 
 /**
  * Manages incoming and outgoing TCP connections. For each outgoing message to destination P, if there
@@ -342,7 +343,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       else
       {
          // Create worker thread pool for processing incoming buffers
-         PooledExecutor requestProcessors = new PooledExecutor(new BoundedBuffer(getProcessorQueueSize()), getProcessorMaxThreads());
+          ThreadPoolExecutor requestProcessors = new ThreadPoolExecutor(getProcessorMinThreads(), getProcessorMaxThreads(),
+                                                                        getProcessorKeepAliveTime(), TimeUnit.MILLISECONDS,
+                                                                        new LinkedBlockingQueue(getProcessorQueueSize()));
+
           requestProcessors.setThreadFactory(new ThreadFactory() {
               public Thread newThread(Runnable runnable) {
                   Thread new_thread=new Thread(thread_group, runnable);
@@ -352,10 +356,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   return new_thread;
               }
           });
-         requestProcessors.setMinimumPoolSize(getProcessorMinThreads());
-         requestProcessors.setKeepAliveTime(getProcessorKeepAliveTime());
-         requestProcessors.waitWhenBlocked();
-         requestProcessors.createThreads(getProcessorThreads());
          m_requestProcessors = requestProcessors;
       }
 
@@ -402,12 +402,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       }
 
       // Stop the callback thread pool
-      if(m_requestProcessors instanceof PooledExecutor)
-         ((PooledExecutor)m_requestProcessors).shutdownNow();
+      if(m_requestProcessors instanceof ThreadPoolExecutor)
+         ((ThreadPoolExecutor)m_requestProcessors).shutdownNow();
 
-       if(m_requestProcessors instanceof PooledExecutor) {
+       if(m_requestProcessors instanceof ThreadPoolExecutor) {
            try {
-               ((PooledExecutor)m_requestProcessors).awaitTerminationAfterShutdown(1000);
+               ((ThreadPoolExecutor)m_requestProcessors).awaitTermination(1000, TimeUnit.MILLISECONDS);
            }
            catch(InterruptedException e) {
            }
@@ -669,7 +669,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    // ReadHandler has selector to deal with read, it runs in seperated thread
    private static class ReadHandler implements Runnable {
       private final Selector SELECTOR = initHandler();
-      private final LinkedQueue QUEUE = new LinkedQueue();
+      private final LinkedBlockingQueue QUEUE = new LinkedBlockingQueue();
       private final ConnectionTableNIO connectTable;
 
       ReadHandler(ConnectionTableNIO ct) {
@@ -775,7 +775,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             Object o;
             try
             {
-               o = QUEUE.poll(0); // get a connection
+               o = QUEUE.poll(0L, TimeUnit.MILLISECONDS); // get a connection
             } catch (InterruptedException e)
             {
                if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
@@ -1002,16 +1002,16 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       void doSend(byte[] buffie, int offset, int length) throws Exception
       {
-         FutureResult result = new FutureResult();
+         MyFuture result = new MyFuture(null, null);
          m_writeHandler.write(sock_ch, ByteBuffer.wrap(buffie, offset, length), result, m_selectorWriteHandler);
-         Exception ex = result.getException();
-         if (ex != null)
+          Object ex = result.get();
+         if (ex instanceof Exception)
          {
-            if (LOG.isErrorEnabled())
-               LOG.error("failed sending message", ex);
-            if (ex.getCause() instanceof IOException)
-               throw (IOException) ex.getCause();
-            throw ex;
+             if (LOG.isErrorEnabled())
+                 LOG.error("failed sending message", (Exception)ex);
+             if (((Exception)ex).getCause() instanceof IOException)
+                 throw (IOException) ((Exception)ex).getCause();
+             throw (Exception)ex;
          }
          result.get();
       }
@@ -1058,8 +1058,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     * Handle writing to non-blocking NIO connection.
     */
    private static class WriteHandler implements Runnable {
-      // Create a queue for write requests
-      private final LinkedQueue QUEUE = new LinkedQueue();
+      // Create a queue for write requests (unbounded)
+      private final LinkedBlockingQueue QUEUE = new LinkedBlockingQueue();
 
       private final Selector SELECTOR = initSelector();
       private int m_pendingChannels;                 // count of the number of channels that have pending writes
@@ -1122,7 +1122,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        * @param notification may be specified if you want to know how many bytes were written and know if an exception
        *                     occurred.
        */
-      private void write(SocketChannel channel, ByteBuffer buffer, FutureResult notification, SelectorWriteHandler hdlr) throws InterruptedException
+      private void write(SocketChannel channel, ByteBuffer buffer, MyFuture notification, SelectorWriteHandler hdlr) throws InterruptedException
       {
          QUEUE.put(new WriteRequest(channel, buffer, notification, hdlr));
       }
@@ -1193,7 +1193,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                Object o;
 
                // When there are no more commands in the Queue, we will hit the blocking code after this loop.
-               while (null != (o = QUEUE.poll(0)))
+               while (null != (o = QUEUE.poll(0L, TimeUnit.MILLISECONDS)))
                {
                   if (o instanceof Shutdown)    // Stop the thread
                   {
@@ -1383,7 +1383,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          return getCurrentRequest().getBuffer();
       }
 
-      FutureResult getCallback()
+      MyFuture getCallback()
       {
          return getCurrentRequest().getCallback();
       }
@@ -1457,10 +1457,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    public static class WriteRequest {
       private final SocketChannel m_channel;
       private final ByteBuffer m_buffer;
-      private final FutureResult m_callback;
+      private final MyFuture m_callback;
       private final SelectorWriteHandler m_hdlr;
 
-      WriteRequest(SocketChannel channel, ByteBuffer buffer, FutureResult callback, SelectorWriteHandler hdlr)
+      WriteRequest(SocketChannel channel, ByteBuffer buffer, MyFuture callback, SelectorWriteHandler hdlr)
       {
          m_channel = channel;
          m_buffer = buffer;
@@ -1483,11 +1483,32 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          return m_buffer;
       }
 
-      FutureResult getCallback()
+      MyFuture getCallback()
       {
          return m_callback;
       }
 
    }
+
+
+    public static class MyFuture extends FutureTask {
+        public MyFuture(Callable callable) {
+            super(callable);
+        }
+
+        public MyFuture(Runnable runnable, Object result) {
+            super(runnable, result);
+        }
+
+
+        protected void set(Object o) {
+            super.set(o);
+        }
+
+
+        protected void setException(Throwable t) {
+            super.setException(t);
+        }
+    }
 
 }
