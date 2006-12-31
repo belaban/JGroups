@@ -6,10 +6,13 @@ import junit.framework.TestSuite;
 
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
-import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+
 /**
- * Test playground for util.concurrent.PooledExecutor
+ * Test playground for java.util.concurrent.ThreadPoolExecutor
  * 
  * 
  * @author Vladimir Blagojevic
@@ -18,15 +21,12 @@ import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
  */
 
 public class TestPoolExecutor extends TestCase{
-    static int count;
+    static int count=0;
     private final Object poolLock = new Object();
  
     public void testPool() throws InterruptedException {
     	long keepAlive = 30*1000;
-        PooledExecutor executor = new PooledExecutor(5);
-        executor.setMinimumPoolSize(1);
-        executor.waitWhenBlocked();
-        executor.setKeepAliveTime(keepAlive);
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(1, 5, keepAlive, TimeUnit.MILLISECONDS, new LinkedBlockingQueue(10));
         executor.setThreadFactory(new ThreadFactory() {
             public Thread newThread(final Runnable command) {
             	synchronized (poolLock) {
@@ -44,10 +44,10 @@ public class TestPoolExecutor extends TestCase{
         });
  
         for (int i = 0; i < 30; i++) {
-            final int count = i;
+            final int cnt = i;
             executor.execute(new Runnable() {
                 public void run() {
-                    System.out.println("Runnable " + count + " running");
+                    System.out.println("Runnable " + cnt + " running");
                     //use timing here that approximates how long 
                     //this thread needs to run
                     Util.sleep(3000);
@@ -59,7 +59,7 @@ public class TestPoolExecutor extends TestCase{
             Util.sleep(1000);
         }
  
-        executor.shutdownAfterProcessingCurrentlyQueuedTasks(); 
+        executor.shutdown();
         //see if all threads are stop/recycled
         Util.sleep(keepAlive);
     }
