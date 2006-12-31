@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.19 2006/02/08 08:47:43 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.20 2006/12/31 13:25:03 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -13,6 +13,8 @@ import org.jgroups.util.Util;
 
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -25,11 +27,11 @@ import java.util.TreeSet;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    RetransmitCommand   retransmit_command = null;   // called to request XMIT of msg
-    final Map           msgs=new ConcurrentReaderHashMap();        // keys: seqnos (Long), values: Messages
-    long[]              interval = new long[]{400,800,1200,1600};
-    final Retransmitter retransmitter;
-    static    final Log log=LogFactory.getLog(AckSenderWindow.class);
+    RetransmitCommand       retransmit_command = null;   // called to request XMIT of msg
+    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap();        // keys: seqnos (Long), values: Messages
+    long[]                  interval = new long[]{400,800,1200,1600};
+    final Retransmitter     retransmitter;
+    static final Log        log=LogFactory.getLog(AckSenderWindow.class);
 
 
     public interface RetransmitCommand {
@@ -93,10 +95,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      */
     public void add(long seqno, Message msg) {
         Long tmp=new Long(seqno);
-        synchronized(msgs) {  // the contains() and put() should be atomic
-            if(!msgs.containsKey(tmp))
-                msgs.put(tmp, msg);
-        }
+        msgs.putIfAbsent(tmp, msg);
         retransmitter.add(seqno, seqno);
     }
 
@@ -117,7 +116,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ");
         TreeSet keys=new TreeSet(msgs.keySet());
         if(keys.size() > 0)
@@ -129,7 +128,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     public String printDetails() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ").
                 append(new TreeSet(msgs.keySet()));
         return sb.toString();
@@ -144,7 +143,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                 log.trace(new StringBuffer("retransmitting messages ").append(first_seqno).
                           append(" - ").append(last_seqno).append(" from ").append(sender));
             for(long i = first_seqno; i <= last_seqno; i++) {
-                if((msg = (Message) msgs.get(new Long(i))) != null) { // find the message to retransmit
+                if((msg=msgs.get(new Long(i))) != null) { // find the message to retransmit
                     retransmit_command.retransmit(i, msg);
                 }
             }
