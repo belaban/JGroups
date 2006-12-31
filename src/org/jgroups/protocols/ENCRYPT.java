@@ -1,8 +1,7 @@
-// $Id: ENCRYPT.java,v 1.28 2006/12/31 06:26:58 belaban Exp $
+// $Id: ENCRYPT.java,v 1.29 2006/12/31 14:50:20 belaban Exp $
 
 package org.jgroups.protocols;
 
-import EDU.oswego.cs.dl.util.concurrent.LinkedQueue;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
@@ -21,6 +20,9 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
 import java.util.Properties;
 import java.util.WeakHashMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -148,10 +150,10 @@ public class ENCRYPT extends Protocol {
     private boolean queue_down = false;
 
     // queue to hold upcoming messages while key negotiation is happening
-    private LinkedQueue upMessageQueue = new LinkedQueue();
+    private BlockingQueue upMessageQueue = new LinkedBlockingQueue();
 
 //	 queue to hold downcoming messages while key negotiation is happening
-    private LinkedQueue downMessageQueue = new LinkedQueue();
+    private BlockingQueue downMessageQueue = new LinkedBlockingQueue();
     // decrypting cypher for secret key requests
     private Cipher asymCipher;
 
@@ -176,7 +178,7 @@ public class ENCRYPT extends Protocol {
 
     /*
       * GetAlgorithm: Get the algorithm name from "algorithm/mode/padding"
-      *  taken from original ENCRYPT file
+      *  taken m original ENCRYPT file
       */
     private String getAlgorithm(String s)
     {
@@ -344,9 +346,7 @@ public class ENCRYPT extends Protocol {
      * @throws CertificateException
      * @throws UnrecoverableKeyException
      */
-    private void initConfiguredKey() throws KeyStoreException, Exception,
-                                            IOException, NoSuchAlgorithmException, CertificateException,
-                                            UnrecoverableKeyException
+    private void initConfiguredKey() throws Exception
     {
         InputStream inputStream = null;
         // must not use default keystore type - as does not support secret keys
@@ -457,7 +457,7 @@ public class ENCRYPT extends Protocol {
         symVersion = new String(digest.digest(), "UTF-8");
         if (log.isInfoEnabled()) {
             // log.info(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes) " +symVersion);
-            StringBuffer sb=new StringBuffer(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes) ");
+            StringBuilder sb=new StringBuilder(" Initialized symmetric ciphers with secret key (" + symVersion.length() + " bytes) ");
             char[] arr=symVersion.toCharArray();
             for(int i=0; i < arr.length; i++) {
                 char c=arr[i];
@@ -753,12 +753,12 @@ public class ENCRYPT extends Protocol {
      * @throws QueueClosedException
      * @throws Exception
      */
-    private  void drainUpQueue() throws QueueClosedException, Exception
+    private  void drainUpQueue() throws Exception
     {
         //we do not synchronize here as we only have one up thread so we should never get an issue
         //synchronized(upLock){
         Event tmp =null;
-        while ((tmp = (Event)upMessageQueue.poll(0L)) != null){
+        while ((tmp = (Event)upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
             if (tmp != null){
                 Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
 
@@ -1022,12 +1022,12 @@ public class ENCRYPT extends Protocol {
      * @throws Exception
      * @throws QueueClosedException
      */
-    private void drainDownQueue() throws Exception, QueueClosedException
+    private void drainDownQueue() throws Exception
     {
         //	we do not synchronize here as we only have one down thread so we should never get an issue
         //  first lets replay any oustanding events
         Event tmp =null;
-        while((tmp = (Event)downMessageQueue.poll(0L) )!= null){
+        while((tmp = (Event)downMessageQueue.poll(0L, TimeUnit.MILLISECONDS) )!= null){
             sendDown(tmp);
         }
     }
@@ -1135,7 +1135,7 @@ public class ENCRYPT extends Protocol {
       */
     private String formatArray(byte[] array)
     {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf=new StringBuilder();
         for (int i = 0; i < array.length; i++)
         {
             buf.append(Integer.toHexString(array[i]));
@@ -1406,12 +1406,8 @@ public class ENCRYPT extends Protocol {
 		 */
         public boolean equals(Object obj)
         {
-            if (obj instanceof EncryptHeader)
-            {
-                return ((((EncryptHeader) obj).getType() == type) && ((((EncryptHeader) obj)
-                        .getVersion().equals(version))));
-            }
-            return false;
+            return obj instanceof EncryptHeader && ((((EncryptHeader)obj).getType() == type) && ((((EncryptHeader)obj)
+                    .getVersion().equals(version))));
         }
 
 

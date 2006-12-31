@@ -23,6 +23,10 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.Vector;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
@@ -39,8 +43,6 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
-import EDU.oswego.cs.dl.util.concurrent.ThreadFactory;
 
 /**
  * <code>STREAMING_STATE_TRANSFER</code>, as its name implies, allows a streaming 
@@ -499,12 +501,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       passUp(new Event(Event.RESUME));
    }
 
-   private PooledExecutor setupThreadPool()
+   private ThreadPoolExecutor setupThreadPool()
    {
-      PooledExecutor threadPool = new PooledExecutor(max_pool);
-      threadPool.waitWhenBlocked();
-      threadPool.setMinimumPoolSize(1);
-      threadPool.setKeepAliveTime(pool_thread_keep_alive);
+      ThreadPoolExecutor threadPool = new ThreadPoolExecutor(1, max_pool, pool_thread_keep_alive, TimeUnit.MILLISECONDS,
+                                                             new LinkedBlockingQueue(10));
       threadPool.setThreadFactory(new ThreadFactory()
       {
 
@@ -757,7 +757,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private class StateProviderThreadSpawner implements Runnable
    {
-      PooledExecutor pool;
+      ThreadPoolExecutor pool;
 
       ServerSocket serverSocket;
 
@@ -767,7 +767,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
       volatile boolean running = true;
 
-      public StateProviderThreadSpawner(PooledExecutor pool, ServerSocket stateServingSocket)
+      public StateProviderThreadSpawner(ThreadPoolExecutor pool, ServerSocket stateServingSocket)
       {
          super();
          this.pool = pool;
@@ -810,10 +810,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                      log.warn("Spawning socket from server socket finished abnormaly", e);
                   }
                }
-            }
-            catch (InterruptedException e)
-            {
-               // should not happen
             }
          }
       }
@@ -859,7 +855,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             try
             {
                //TODO use some system wide timeout eventually
-               pool.awaitTerminationAfterShutdown(5000);
+               pool.awaitTermination(5000, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignored)
             {

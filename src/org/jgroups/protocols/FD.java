@@ -1,9 +1,8 @@
-// $Id: FD.java,v 1.42 2006/12/12 08:40:39 belaban Exp $
+// $Id: FD.java,v 1.43 2006/12/31 14:51:13 belaban Exp $
 
 package org.jgroups.protocols;
 
 
-import EDU.oswego.cs.dl.util.concurrent.CopyOnWriteArrayList;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -11,6 +10,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -29,7 +29,7 @@ import java.util.List;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.42 $
+ * @version $Revision: 1.43 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -76,7 +76,7 @@ public class FD extends Protocol {
     public boolean isShun() {return shun;}
     public void setShun(boolean flag) {this.shun=flag;}
     public String printSuspectHistory() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
             sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
         }
@@ -206,7 +206,7 @@ public class FD extends Protocol {
                     break;  // message did not originate from FD layer, just pass up
                 }
 
-                hdr=(FdHeader)msg.removeHeader(name);
+                hdr=(FdHeader)msg.getHeader(name);
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
@@ -618,7 +618,7 @@ public class FD extends Protocol {
         /** Removes all elements from suspected_mbrs that are <em>not</em> in the new membership */
         void adjustSuspectedMembers(List new_mbrship) {
             if(new_mbrship == null || new_mbrship.size() == 0) return;
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             synchronized(suspected_mbrs) {
                 sb.append("suspected_mbrs: ").append(suspected_mbrs);
                 suspected_mbrs.retainAll(new_mbrship);
