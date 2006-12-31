@@ -12,6 +12,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.Semaphore;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -33,12 +34,11 @@ import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.21 2006/12/04 19:28:09 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.22 2006/12/31 07:47:28 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {

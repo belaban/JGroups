@@ -1,38 +1,22 @@
 package org.jgroups.tests;
 
+import junit.framework.TestCase;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.mux.MuxChannel;
+import org.jgroups.util.Util;
+
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadInfo;
 import java.lang.management.ThreadMXBean;
-import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.StringTokenizer;
+import java.util.*;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.ExtendedReceiver;
-import org.jgroups.JChannel;
-import org.jgroups.JChannelFactory;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.mux.MuxChannel;
-import org.jgroups.util.Util;
-
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
 /**
  * 
@@ -43,10 +27,6 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
  */
 public class ChannelTestBase extends TestCase
 {
-   
-   private static final String TEST_CASES = "tests";
-   private static final String ANT_PROPERTY = "${tests}";
-   private static final String DELIMITER = ",";
    
    protected final static Random RANDOM = new Random();
    
@@ -181,7 +161,7 @@ public class ChannelTestBase extends TestCase
       boolean pickNextLetter = false;
       for (int i = 0; i < totalMuxAppCount; i++)
       {  
-         pickNextLetter = (i%muxFactoryCount == 0)?true:false;         
+         pickNextLetter =(i % muxFactoryCount == 0);
          if(pickNextLetter)
          {
             startLetter++;
@@ -416,7 +396,7 @@ public class ChannelTestBase extends TestCase
          thread = new Thread(this, getName());
          thread.start();
          Address a = getLocalAddress();
-         boolean connected = a != null ? true : false;
+         boolean connected =a != null;
          if (connected)
          {
             log.info("Thread for channel " + a + "[" + getName() + "] started");
@@ -449,7 +429,7 @@ public class ChannelTestBase extends TestCase
             thread.interrupt();
          }
          Address a = getLocalAddress();
-         boolean connected = a != null ? true : false;
+         boolean connected =a != null;
          if (connected)
          {
             log.info("Closing channel " + a + "[" + getName() + "]");
@@ -614,7 +594,7 @@ public class ChannelTestBase extends TestCase
          boolean acquired = false;
          try
          {
-            acquired = semaphore.attempt(60000);
+            acquired = semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
             if (!acquired)
             {
                throw new Exception(name + " cannot acquire semaphore");
@@ -707,7 +687,7 @@ public class ChannelTestBase extends TestCase
    }
 
    /**
-    * Loops, continually calling {@link #areViewsComplete(MemberRetrievable[])}
+    * Loops, continually calling {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
     * until it either returns true or <code>timeout</code> ms have elapsed.
     *
     * @param channels  channels which must all have consistent views
@@ -726,7 +706,7 @@ public class ChannelTestBase extends TestCase
    }
    
    /**
-    * Loops, continually calling {@link #areViewsComplete(MemberRetrievable[])}
+    * Loops, continually calling {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
     * until it either returns true or <code>timeout</code> ms have elapsed.
     *
     * @param channels  channels which must all have consistent views
@@ -778,8 +758,8 @@ public class ChannelTestBase extends TestCase
       else if (memberCount < members.size())
       {
          // This is an exceptional condition
-         StringBuffer sb = new StringBuffer("Channel at address ");
-         sb.append(channel.getLocalAddress());
+          StringBuilder sb=new StringBuilder("Channel at address ");
+          sb.append(channel.getLocalAddress());
          sb.append(" had ");
          sb.append(members.size());
          sb.append(" members; expecting ");
@@ -824,7 +804,7 @@ public class ChannelTestBase extends TestCase
          boolean acquired = false;
          try
          {
-            acquired = semaphore.attempt(timeout);
+            acquired = semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
          }
          catch (InterruptedException e)
          {
@@ -861,8 +841,9 @@ public class ChannelTestBase extends TestCase
    /* CAUTION: JDK 5 specific code */
    private String dumpThreads()
    {
-      StringBuffer sb = new StringBuffer();
-      ThreadMXBean bean = ManagementFactory.getThreadMXBean();
+      StringBuffer sb;
+       sb=new StringBuffer();
+       ThreadMXBean bean = ManagementFactory.getThreadMXBean();
       long[] ids = bean.getAllThreadIds();
       ThreadInfo[] threads = bean.getThreadInfo(ids, 20);
       for (int i = 0; i < threads.length; i++)

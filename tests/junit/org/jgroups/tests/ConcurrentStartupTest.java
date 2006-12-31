@@ -9,6 +9,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.Semaphore;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -19,12 +20,11 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
 
-import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.19 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.20 2006/12/31 07:46:32 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
