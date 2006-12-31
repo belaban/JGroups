@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.8 2005/05/30 16:15:11 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.9 2006/12/31 15:31:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -138,7 +138,6 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
             }
             if("-trace".equals(args[i])) {
                 trace=true;
-                continue;
             }
         }
 
