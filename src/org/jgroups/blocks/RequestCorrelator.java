@@ -1,8 +1,7 @@
-// $Id: RequestCorrelator.java,v 1.32 2006/12/19 12:53:11 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.33 2006/12/31 13:13:43 belaban Exp $
 
 package org.jgroups.blocks;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
@@ -13,9 +12,11 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
-
-
+import java.util.Iterator;
+import java.util.List;
+import java.util.Stack;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -41,7 +42,8 @@ public class RequestCorrelator {
     protected Object transport=null;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final Map requests=new ConcurrentReaderHashMap();
+    protected final ConcurrentMap<Long,RspCollector> requests=new ConcurrentHashMap();
+
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
     protected RequestHandler request_handler=null;
@@ -281,7 +283,7 @@ public class RequestCorrelator {
                 new_call_stack.push(local_addr);
                 hdr.callStack=new_call_stack;
             }
-            addEntry(hdr.id, new RequestEntry(coll));
+            addEntry(hdr.id, coll);
         }
         msg.putHeader(name, hdr);
 
@@ -415,18 +417,14 @@ public class RequestCorrelator {
      * wait for its response.
      */
     public void receiveSuspect(Address mbr) {
-        RequestEntry entry;
-        // ArrayList    copy;
-
         if(mbr == null) return;
         if(log.isDebugEnabled()) log.debug("suspect=" + mbr);
 
         // copy so we don't run into bug #761804 - Bela June 27 2003
         // copy=new ArrayList(requests.values()); // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
-        for(Iterator it=requests.values().iterator(); it.hasNext();) {
-            entry=(RequestEntry)it.next();
-            if(entry.coll != null)
-                entry.coll.suspect(mbr);
+        for(RspCollector coll: requests.values()) {
+            if(coll != null)
+                coll.suspect(mbr);
         }
     }
 
@@ -439,15 +437,12 @@ public class RequestCorrelator {
      *
      */
     public void receiveView(View new_view) {
-        RequestEntry entry;
         // ArrayList    copy;
-
         // copy so we don't run into bug #761804 - Bela June 27 2003
         // copy=new ArrayList(requests.values());  // removed because ConcurrentReaderHashMap can tolerate concurrent mods (bela May 8 2006)
-        for(Iterator it=requests.values().iterator(); it.hasNext();) {
-            entry=(RequestEntry)it.next();
-            if(entry.coll != null)
-                entry.coll.viewChange(new_view);
+        for(RspCollector coll: requests.values()) {
+            if(coll != null)
+                coll.viewChange(new_view);
         }
     }
 
@@ -537,7 +532,7 @@ public class RequestCorrelator {
 
             case Header.RSP:
                 msg.getHeader(name);
-                RspCollector coll=findEntry(hdr.id);
+                RspCollector coll=requests.get(Long.valueOf(hdr.id));
                 if(coll != null) {
                     Address sender=msg.getSrc();
                     Object retval=null;
@@ -582,14 +577,9 @@ public class RequestCorrelator {
      * Add an association of:<br>
      * ID -> <tt>RspCollector</tt>
      */
-    private void addEntry(long id, RequestEntry entry) {
+    private void addEntry(long id, RspCollector coll) {
         Long id_obj = new Long(id);
-        synchronized(requests) {
-            if(!requests.containsKey(id_obj))
-                requests.put(id_obj, entry);
-            else
-                if(log.isWarnEnabled()) log.warn("entry " + entry + " for request-id=" + id + " already present !");
-        }
+        requests.putIfAbsent(id_obj, coll);
     }
 
 
@@ -607,19 +597,6 @@ public class RequestCorrelator {
         requests.remove(id_obj);
     }
 
-
-    /**
-     * @param id the ID of the corresponding <tt>RspCollector</tt>
-     *
-     * @return the <tt>RspCollector</tt> associated with the given ID
-     */
-    private RspCollector findEntry(long id) {
-        Long id_obj = new Long(id);
-        RequestEntry entry;
-
-        entry=(RequestEntry)requests.get(id_obj);
-        return((entry != null)? entry.coll:null);
-    }
 
 
     /**
@@ -706,19 +683,6 @@ public class RequestCorrelator {
 
 
     /**
-     * Associates an ID with an <tt>RspCollector</tt>
-     */
-    private static class RequestEntry {
-        public RspCollector coll;
-
-        public RequestEntry(RspCollector coll) {
-            this.coll = coll;
-        }
-    }
-
-
-
-    /**
      * The header for <tt>RequestCorrelator</tt> messages
      */
     public static final class Header extends org.jgroups.Header implements Streamable {
@@ -767,7 +731,7 @@ public class RequestCorrelator {
         /**
          */
         public String toString() {
-            StringBuffer ret=new StringBuffer();
+            StringBuilder ret=new StringBuilder();
             ret.append("[Header: name=" + corrName + ", type=");
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
@@ -939,7 +903,7 @@ public class RequestCorrelator {
         public void run() { handleRequest(req); }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             if(req != null)
                 sb.append("req=" + req + ", headers=" + req.printObjectHeaders());
             return sb.toString();
