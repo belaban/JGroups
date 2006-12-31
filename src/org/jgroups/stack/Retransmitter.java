@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.10 2005/11/03 11:42:59 belaban Exp $
+// $Id: Retransmitter.java,v 1.11 2006/12/31 13:28:37 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class Retransmitter {
 
@@ -35,7 +35,7 @@ public class Retransmitter {
     private static final long SUSPEND_TIMEOUT=2000;
 
     private Address              sender=null;
-    private final LinkedList     msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
+    private final List<Entry>    msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
     private RetransmitCommand    cmd=null;
     private boolean              retransmitter_owned;
     private TimeScheduler        retransmitter=null;
@@ -183,7 +183,7 @@ public class Retransmitter {
     public String toString() {
         synchronized(msgs) {
             int size=size();
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(size).append(" messages to retransmit: ").append(msgs);
             return sb.toString();
         }
@@ -370,7 +370,7 @@ public class Retransmitter {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             synchronized(list) {
                 long[] range;
                 boolean first=true;
