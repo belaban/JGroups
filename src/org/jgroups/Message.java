@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.61 2006/12/31 06:26:58 belaban Exp $
+// $Id: Message.java,v 1.62 2006/12/31 06:47:02 belaban Exp $
 
 package org.jgroups;
 
@@ -13,10 +13,8 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Collections;
+import java.util.*;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -44,6 +42,8 @@ public class Message implements Externalizable, Streamable {
 
     /** Map<String,Header> */
     protected Map headers;
+
+    protected final transient ReentrantReadWriteLock header_lock=new ReentrantReadWriteLock();
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
@@ -267,11 +267,23 @@ public class Message implements Externalizable, Streamable {
     }
 
     public String printHeaders() {
-        return headers.toString();
+        header_lock.readLock().lock();
+        try {
+            return headers.toString();
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
     }
 
     public int getNumHeaders() {
-        return headers.size();
+        header_lock.readLock().lock();
+        try {
+            return headers.size();
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
     }
 
     final public void setObject(Serializable obj) {
@@ -323,14 +335,26 @@ public class Message implements Externalizable, Streamable {
     public void reset() {
         dest_addr=src_addr=null;
         setBuffer(null);
-        headers.clear();
+        header_lock.writeLock().lock();
+        try {
+            headers.clear();
+        }
+        finally {
+            header_lock.writeLock().unlock();
+        }
     }
 
     /*---------------------- Used by protocol layers ----------------------*/
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        headers.put(key, hdr);
+        header_lock.writeLock().lock();
+        try {
+            headers.put(key, hdr);
+        }
+        finally {
+            header_lock.writeLock().unlock();
+        }
     }
 
     /**
@@ -342,18 +366,36 @@ public class Message implements Externalizable, Streamable {
      */
     public Header removeHeader(String key) {
         // return (Header)headers.remove(key);
-        return (Header)headers.get(key);
+        header_lock.readLock().lock();
+        try {
+            return (Header)headers.get(key);
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
     }
 
     /**
      * @deprecated
      */
     public void removeHeaders() {
-        headers.clear();
+        header_lock.writeLock().lock();
+        try {
+            headers.clear();
+        }
+        finally {
+            header_lock.writeLock().unlock();
+        }
     }
 
     public Header getHeader(String key) {
-        return (Header)headers.get(key);
+        header_lock.readLock().lock();
+        try {
+            return (Header)headers.get(key);
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
     }
     /*---------------------------------------------------------------------*/
 
@@ -380,7 +422,13 @@ public class Message implements Externalizable, Streamable {
             retval.setBuffer(buf, offset, length);
         }
 
-        retval.headers=createHeaders(headers);
+        header_lock.readLock().lock();
+        try {
+            retval.headers=createHeaders(headers);
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
         return retval;
     }
 
@@ -408,7 +456,7 @@ public class Message implements Externalizable, Streamable {
             ret.append(src_addr);
 
         int size;
-        if(headers != null && (size=headers.size()) > 0)
+        if((size=getNumHeaders()) > 0)
             ret.append(" (").append(size).append(" headers)");
 
         ret.append(", size=");
@@ -463,14 +511,17 @@ public class Message implements Externalizable, Streamable {
                 + (buf != null? Global.INT_SIZE : 0); // if buf != null 4 bytes for length
 
         // if(dest_addr != null)
-           // retval+=dest_addr.size();
+        // retval+=dest_addr.size();
         if(src_addr != null)
             retval+=(src_addr).size();
 
-            Map.Entry entry;
-            String key;
-            Header hdr;
-            retval+=Global.SHORT_SIZE; // size (short)
+        Map.Entry entry;
+        String key;
+        Header hdr;
+        retval+=Global.SHORT_SIZE; // size (short)
+
+        header_lock.readLock().lock();
+        try {
             for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 key=(String)entry.getKey();
@@ -479,6 +530,10 @@ public class Message implements Externalizable, Streamable {
                 retval+=5; // 1 for presence of magic number, 4 for magic number
                 retval+=hdr.size();
             }
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
         return retval;
     }
 
@@ -487,10 +542,17 @@ public class Message implements Externalizable, Streamable {
         StringBuilder sb=new StringBuilder();
         Map.Entry entry;
 
+
         if(headers != null) {
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
+            header_lock.readLock().lock();
+            try {
+                for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+                    entry=(Map.Entry)it.next();
+                    sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
+                }
+            }
+            finally {
+                header_lock.readLock().unlock();
             }
         }
         return sb.toString();
@@ -530,13 +592,19 @@ public class Message implements Externalizable, Streamable {
             out.write(buf, offset, length);
         }
 
-        len=headers.size();
-        out.writeInt(len);
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            out.writeUTF((String)entry.getKey());
-            hdr=(Externalizable)entry.getValue();
-            Marshaller.write(hdr, out);
+        header_lock.readLock().lock();
+        try {
+            len=headers.size();
+            out.writeInt(len);
+            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                out.writeUTF((String)entry.getKey());
+                hdr=(Externalizable)entry.getValue();
+                Marshaller.write(hdr, out);
+            }
+        }
+        finally {
+            header_lock.readLock().unlock();
         }
     }
 
@@ -568,10 +636,16 @@ public class Message implements Externalizable, Streamable {
         }
 
         int len=in.readInt();
-        while(len-- > 0) {
-            Object key=in.readUTF();
-            Object value=Marshaller.read(in);
-            headers.put(key, value);
+        header_lock.writeLock().lock();
+        try {
+            while(len-- > 0) {
+                Object key=in.readUTF();
+                Object value=Marshaller.read(in);
+                headers.put(key, value);
+            }
+        }
+        finally {
+            header_lock.writeLock().unlock();
         }
     }
 
@@ -816,12 +890,12 @@ public class Message implements Externalizable, Streamable {
     }
 
     private static Map createHeaders(int size) {
-        return size > 0? new ConcurrentReaderHashMap(size) : new ConcurrentReaderHashMap();
+        return size > 0? new HashMap(size) : new HashMap();
     }
 
 
     private static Map createHeaders(Map m) {
-        return new ConcurrentReaderHashMap(m);
+        return new HashMap(m);
     }
 
     /** canonicalize addresses to some extent.  There are race conditions
