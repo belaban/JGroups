@@ -1,10 +1,6 @@
 
 package org.jgroups.protocols;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentReaderHashMap;
-import EDU.oswego.cs.dl.util.concurrent.Sync;
-import EDU.oswego.cs.dl.util.concurrent.ReentrantLock;
-import EDU.oswego.cs.dl.util.concurrent.CondVar;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
@@ -13,6 +9,12 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+
 
 /**
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
@@ -25,25 +27,24 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.59 2006/12/28 09:34:31 belaban Exp $
+ * @version $Id: FC.java,v 1.60 2006/12/31 13:55:50 belaban Exp $
  */
 public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
-    final Map sent=new HashMap(11);
+    final Map<Address,Long> sent=new HashMap(11);
     // final Map sent=new ConcurrentHashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
-    final Map received=new ConcurrentReaderHashMap(11);
-    // final Map received=new ConcurrentHashMap(11);
+    final Map<Address,Long> received=new ConcurrentHashMap(11);
 
 
     /** List of members from whom we expect credits */
-    final List creditors=new ArrayList(11);
+    final List<Address> creditors=new ArrayList(11);
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
@@ -75,10 +76,10 @@ public class FC extends Protocol {
     private long lowest_credit=max_credits;
 
     /** Lock to be used with the Condvar below */
-    final Sync lock=new ReentrantLock();
+    final Lock lock=new ReentrantLock();
 
     /** Mutex to block on down() */
-    final CondVar mutex=new CondVar(lock);
+    final Condition mutex=lock.newCondition();
 
     static final String name="FC";
 
@@ -182,7 +183,7 @@ public class FC extends Protocol {
     }
 
     public String printCredits() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
     }
@@ -208,25 +209,24 @@ public class FC extends Protocol {
 
     /** Allows to unblock a blocked sender from an external program, e.g. JMX */
     public void unblock() {
-        if(Util.acquire(lock)) {
-            try {
-                if(trace)
-                    log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
+        lock.lock();
+        try {
+            if(trace)
+                log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
-                Map.Entry entry;
-                for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
-                    entry.setValue(max_credits_constant);
-                }
+            Map.Entry entry;
+            for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                entry.setValue(max_credits_constant);
+            }
 
-                lowest_credit=computeLowestCredit(sent);
-                creditors.clear();
-                insufficient_credit=false;
-                mutex.broadcast();
-            }
-            finally {
-                Util.release(lock);
-            }
+            lowest_credit=computeLowestCredit(sent);
+            creditors.clear();
+            insufficient_credit=false;
+            mutex.signalAll();
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -277,27 +277,26 @@ public class FC extends Protocol {
 
     public void start() throws Exception {
         super.start();
-        lock.acquire();
+        lock.lock();
         try {
             running=true;
             insufficient_credit=false;
             lowest_credit=max_credits;
         }
         finally {
-            lock.release();
+            lock.unlock();
         }
     }
 
     public void stop() {
         super.stop();
-        if(Util.acquire(lock)) {
-            try {
-                running=false;
-                mutex.broadcast(); // notify all threads waiting on the mutex that we are done
-            }
-            finally {
-                Util.release(lock);
-            }
+        lock.lock();
+        try {
+            running=false;
+            mutex.signalAll(); // notify all threads waiting on the mutex that we are done
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -382,47 +381,50 @@ public class FC extends Protocol {
         int     length=msg.getLength();
         Address dest=msg.getDest();
 
-        if(Util.acquire(lock)) {
-            try {
-                if(lowest_credit <= length) {
-                    determineCreditors(dest, length);
-                    insufficient_credit=true;
-                    num_blockings++;
-                    start_blocking=System.currentTimeMillis();
-                    while(insufficient_credit && running) {
-                        try {mutex.timedwait(max_block_time);} catch(InterruptedException e) {}
-                        if(insufficient_credit && running) {
-                            // we need to send the credit requests down *without* holding the lock, otherwise we might
-                            // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                            Util.release(lock);
-                            try {
-                                if(trace)
-                                    log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
-                                for(int i=0; i < creditors.size(); i++) {
-                                    sendCreditRequest((Address)creditors.get(i));
-                                }
-                            }
-                            finally {
-                                Util.acquire(lock);
+        lock.lock();
+        try {
+            if(lowest_credit <= length) {
+                determineCreditors(dest, length);
+                insufficient_credit=true;
+                num_blockings++;
+                start_blocking=System.currentTimeMillis();
+                while(insufficient_credit && running) {
+                    try {mutex.await(max_block_time, TimeUnit.MILLISECONDS);}
+                    catch(InterruptedException e) {
+                        // set the interrupted flag again, so the caller's thread can handle the interrupt as well
+                        Thread.currentThread().interrupt();
+                    }
+                    if(insufficient_credit && running) {
+                        // we need to send the credit requests down *without* holding the lock, otherwise we might
+                        // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+                        lock.unlock();
+                        try {
+                            if(trace)
+                                log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
+                            for(int i=0; i < creditors.size(); i++) {
+                                sendCreditRequest(creditors.get(i));
                             }
                         }
+                        finally {
+                            lock.lock();
+                        }
                     }
-                    stop_blocking=System.currentTimeMillis();
-                    long block_time=stop_blocking - start_blocking;
-                    if(trace)
-                        log.trace("total time blocked: " + block_time + " ms");
-                    total_time_blocking+=block_time;
-                    last_blockings.add(new Long(block_time));
                 }
-                else {
-                    long tmp=decrementCredit(sent, dest, length);
-                    if(tmp != -1)
-                        lowest_credit=Math.min(tmp, lowest_credit);
-                }
+                stop_blocking=System.currentTimeMillis();
+                long block_time=stop_blocking - start_blocking;
+                if(trace)
+                    log.trace("total time blocked: " + block_time + " ms");
+                total_time_blocking+=block_time;
+                last_blockings.add(new Long(block_time));
             }
-            finally {
-                Util.release(lock);
+            else {
+                long tmp=decrementCredit(sent, dest, length);
+                if(tmp != -1)
+                    lowest_credit=Math.min(tmp, lowest_credit);
             }
+        }
+        finally {
+            lock.unlock();
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
@@ -452,7 +454,7 @@ public class FC extends Protocol {
             }
         }
         else {
-            credits=(Long)sent.get(dest);
+            credits=sent.get(dest);
             if(credits != null && credits.longValue() <= length) {
                 if(!creditors.contains(dest))
                     creditors.add(dest);
@@ -504,33 +506,32 @@ public class FC extends Protocol {
         if(sender == null) return;
         StringBuffer sb=null;
 
-        if(Util.acquire(lock)) {
-            try {
-                if(trace) {
-                    Long old_credit=(Long)sent.get(sender);
-                    sb=new StringBuffer();
-                    sb.append("received credit from ").append(sender).append(", old credit was ").
-                            append(old_credit).append(", new credits are ").append(max_credits).
-                            append(".\nCreditors before are: ").append(creditors);
-                }
+        lock.lock();
+        try {
+            if(trace) {
+                Long old_credit=sent.get(sender);
+                sb=new StringBuffer();
+                sb.append("received credit from ").append(sender).append(", old credit was ").
+                        append(old_credit).append(", new credits are ").append(max_credits).
+                        append(".\nCreditors before are: ").append(creditors);
+            }
 
-                sent.put(sender, max_credits_constant);
-                lowest_credit=computeLowestCredit(sent);
-                if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
-                    creditors.remove(sender);
-                    if(trace) {
-                        sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
-                        log.trace(sb.toString());
-                    }
-                }
-                if(insufficient_credit && lowest_credit > 0 && creditors.size() == 0) {
-                    insufficient_credit=false;
-                    mutex.broadcast();
+            sent.put(sender, max_credits_constant);
+            lowest_credit=computeLowestCredit(sent);
+            if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
+                creditors.remove(sender);
+                if(trace) {
+                    sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
+                    log.trace(sb.toString());
                 }
             }
-            finally {
-                Util.release(lock);
+            if(insufficient_credit && lowest_credit > 0 && creditors.size() == 0) {
+                insufficient_credit=false;
+                mutex.signalAll();
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -591,53 +592,52 @@ public class FC extends Protocol {
         if(mbrs == null) return;
         if(trace) log.trace("new membership: " + mbrs);
 
-        if(Util.acquire(lock)) {
-            try {
-                // add members not in membership to received and sent hashmap (with full credits)
-                for(int i=0; i < mbrs.size(); i++) {
-                    addr=(Address) mbrs.elementAt(i);
-                    if(!received.containsKey(addr))
-                        received.put(addr, max_credits_constant);
-                    if(!sent.containsKey(addr))
-                        sent.put(addr, max_credits_constant);
-                }
-                // remove members that left
-                for(Iterator it=received.keySet().iterator(); it.hasNext();) {
-                    addr=(Address) it.next();
-                    if(!mbrs.contains(addr))
-                        it.remove();
-                }
-
-                // remove members that left
-                for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
-                    addr=(Address)it.next();
-                    if(!mbrs.contains(addr))
-                        it.remove(); // modified the underlying map
-                }
-
-                // remove all creditors which are not in the new view
-                for(int i=0; i < creditors.size(); i++) {
-                    Address creditor=(Address)creditors.get(i);
-                    if(!mbrs.contains(creditor))
-                        creditors.remove(creditor);
-                }
-
-                if(trace) log.trace("creditors are " + creditors);
-                if(insufficient_credit && creditors.size() == 0) {
-                    lowest_credit=computeLowestCredit(sent);
-                    insufficient_credit=false;
-                    mutex.broadcast();
-                }
+        lock.lock();
+        try {
+            // add members not in membership to received and sent hashmap (with full credits)
+            for(int i=0; i < mbrs.size(); i++) {
+                addr=(Address) mbrs.elementAt(i);
+                if(!received.containsKey(addr))
+                    received.put(addr, max_credits_constant);
+                if(!sent.containsKey(addr))
+                    sent.put(addr, max_credits_constant);
             }
-            finally {
-                Util.release(lock);
+            // remove members that left
+            for(Iterator it=received.keySet().iterator(); it.hasNext();) {
+                addr=(Address) it.next();
+                if(!mbrs.contains(addr))
+                    it.remove();
             }
+
+            // remove members that left
+            for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
+                addr=(Address)it.next();
+                if(!mbrs.contains(addr))
+                    it.remove(); // modified the underlying map
+            }
+
+            // remove all creditors which are not in the new view
+            for(int i=0; i < creditors.size(); i++) {
+                Address creditor=creditors.get(i);
+                if(!mbrs.contains(creditor))
+                    creditors.remove(creditor);
+            }
+
+            if(trace) log.trace("creditors are " + creditors);
+            if(insufficient_credit && creditors.size() == 0) {
+                lowest_credit=computeLowestCredit(sent);
+                insufficient_credit=false;
+                mutex.signalAll();
+            }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
     private static String printMap(Map m) {
         Map.Entry entry;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
