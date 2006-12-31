@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.69 2006/12/18 09:23:43 belaban Exp $
+// $Id: UNICAST.java,v 1.70 2006/12/31 13:22:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -64,7 +64,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     public String getMembers() {return members != null? members.toString() : "[]";}
     public String printConnections() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Map.Entry entry;
         for(Iterator it=connections.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
@@ -613,7 +613,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             if(sent_msgs != null)
                 sb.append("sent_msgs=").append(sent_msgs).append('\n');
             if(received_msgs != null)
