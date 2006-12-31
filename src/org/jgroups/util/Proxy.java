@@ -1,13 +1,10 @@
-// $Id: Proxy.java,v 1.2 2005/07/17 11:33:58 chrislott Exp $
+// $Id: Proxy.java,v 1.3 2006/12/31 14:27:58 belaban Exp $
 
 package org.jgroups.util;
 
-import EDU.oswego.cs.dl.util.concurrent.Executor;
-import EDU.oswego.cs.dl.util.concurrent.PooledExecutor;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import java.io.*;
 import java.net.*;
@@ -17,7 +14,10 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.*;
-
+import java.util.concurrent.Executor;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -66,13 +66,14 @@ import java.util.*;
  * @author Bela Ban
  */
 public class Proxy {
-    InetAddress    local=null, remote=null;
-    int            local_port=0, remote_port=0;
-    static boolean verbose=false;
-    static boolean debug=false;
-    String         mapping_file=null; // contains a list of src and dest host:port pairs
-    final HashMap        mappings=new HashMap(); // keys=MyInetSocketAddr (src), values=MyInetSocketAddr (dest)
-    Executor       executor; // maintains a thread pool
+    InetAddress           local=null, remote=null;
+    int                   local_port=0, remote_port=0;
+    static boolean        verbose=false;
+    static boolean        debug=false;
+    String                mapping_file=null; // contains a list of src and dest host:port pairs
+    final HashMap         mappings=new HashMap(); // keys=MyInetSocketAddr (src), values=MyInetSocketAddr (dest)
+    Executor              executor; // maintains a thread pool
+    static final int      MIN_THREAD_POOL_SIZE=2;
     static final int      MAX_THREAD_POOL_SIZE=64; // for processing requests
     static final int      BUFSIZE=1024; // size of data transfer buffer
 
@@ -128,7 +129,8 @@ public class Proxy {
         selector=Selector.open();
 
         // Create a thread pool (Executor)
-        executor=new PooledExecutor(MAX_THREAD_POOL_SIZE);
+        executor=new ThreadPoolExecutor(MIN_THREAD_POOL_SIZE, MAX_THREAD_POOL_SIZE, 30000, TimeUnit.MILLISECONDS,
+                                        new LinkedBlockingQueue(1000));
 
         for (Iterator it=mappings.keySet().iterator(); it.hasNext();) {
             key=(MyInetSocketAddress) it.next();
@@ -291,7 +293,6 @@ public class Proxy {
                     }
                     catch (Exception ex) {
                         ex.printStackTrace();
-                        return;
                     }
                     finally {
                         close(sel, in_channel, out_channel);
@@ -354,7 +355,7 @@ public class Proxy {
     }
 
     String toString(SocketChannel ch) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Socket sock;
 
         if (ch == null)
@@ -366,7 +367,8 @@ public class Proxy {
     }
 
     String toString(InetSocketAddress addr) {
-        StringBuffer sb=new StringBuffer();
+        StringBuffer sb;
+        sb=new StringBuffer();
 
         if (addr == null)
             return null;
@@ -378,7 +380,8 @@ public class Proxy {
 
     
     static String printRelayedData(String from, String to, int num_bytes) {
-        StringBuffer sb=new StringBuffer();
+        StringBuffer sb;
+        sb=new StringBuffer();
         sb.append("\n[PROXY] ").append(from);
         sb.append(" to ").append(to);
         sb.append(" (").append(num_bytes).append(" bytes)");
@@ -457,7 +460,7 @@ public class Proxy {
     }
 
     String printSelectionOps(SelectionKey key) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         if ((key.readyOps() & SelectionKey.OP_ACCEPT) !=0)
             sb.append("OP_ACCEPT ");
         if ((key.readyOps() & SelectionKey.OP_CONNECT) !=0)
@@ -778,8 +781,7 @@ public class Proxy {
 
         Socket createSSLSocket(InetSocketAddress addr) throws Exception {
             SSLSocketFactory sslsocketfactory = (SSLSocketFactory)SSLSocketFactory.getDefault();
-            SSLSocket        sslsocket = (SSLSocket)sslsocketfactory.createSocket(addr.getAddress(), addr.getPort());
-            return sslsocket;
+            return sslsocketfactory.createSocket(addr.getAddress(), addr.getPort());
         }
 
         ServerSocket createServerSocket(InetSocketAddress addr) throws Exception {
@@ -789,8 +791,8 @@ public class Proxy {
         ServerSocket createSSLServerSocket(InetSocketAddress addr) throws Exception {
             SSLServerSocketFactory sslserversocketfactory =
                 (SSLServerSocketFactory)SSLServerSocketFactory.getDefault();
-            SSLServerSocket sslserversocket =
-                (SSLServerSocket)sslserversocketfactory.createServerSocket(addr.getPort(), 10, addr.getAddress());
+            SSLServerSocket sslserversocket;
+            sslserversocket=(SSLServerSocket)sslserversocketfactory.createServerSocket(addr.getPort(), 10, addr.getAddress());
             return sslserversocket;
         }
     }
