@@ -1,4 +1,4 @@
-// $Id: Message.java,v 1.59 2006/12/31 05:41:16 belaban Exp $
+// $Id: Message.java,v 1.60 2006/12/31 05:46:27 belaban Exp $
 
 package org.jgroups;
 
@@ -385,7 +385,7 @@ public class Message implements Externalizable, Streamable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer(64);
+        StringBuilder ret=new StringBuilder(64);
         ret.append("[dst: ");
         if(dest_addr == null)
             ret.append("<null>");
@@ -474,7 +474,7 @@ public class Message implements Externalizable, Streamable {
 
 
     public String printObjectHeaders() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Map.Entry entry;
 
         if(headers != null) {
@@ -700,7 +700,7 @@ public class Message implements Externalizable, Streamable {
     /* ----------------------------------- Private methods ------------------------------- */
 
     private String flagsToString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
         if(isFlagSet(OOB)) {
             if(!first)
