@@ -1,7 +1,6 @@
 package org.jgroups.util;
 
 import org.apache.commons.logging.LogFactory;
-import org.apache.commons.logging.Log;
 import org.jgroups.*;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
@@ -21,13 +20,11 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 
-import EDU.oswego.cs.dl.util.concurrent.Sync;
-
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.111 2006/12/31 13:55:51 belaban Exp $
+ * @version $Id: Util.java,v 1.112 2006/12/31 14:31:00 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -903,7 +900,7 @@ public class Util {
      * to follow the evolution of the queue's content in time.
      */
     public static String dumpQueue(Queue q) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         LinkedList values=q.values();
         if(values.size() == 0) {
             sb.append("empty");
@@ -1059,7 +1056,7 @@ public class Util {
 
 
     public static String activeThreads() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Thread threads[]=new Thread[Thread.activeCount()];
         Thread.enumerate(threads);
         sb.append("------- Threads -------\n");
@@ -1274,7 +1271,7 @@ public class Util {
 
 
     public static String array2String(long[] array) {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
@@ -1286,7 +1283,7 @@ public class Util {
     }
 
     public static String array2String(int[] array) {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
@@ -1298,7 +1295,7 @@ public class Util {
     }
 
     public static String array2String(boolean[] array) {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
@@ -1309,7 +1306,7 @@ public class Util {
     }
 
     public static String array2String(Object[] array) {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
 
         if(array != null) {
             for(int i=0; i < array.length; i++)
@@ -1383,7 +1380,7 @@ public class Util {
 
 
     public static String printMembers(Vector v) {
-        StringBuffer sb=new StringBuffer("(");
+        StringBuilder sb=new StringBuilder("(");
         boolean first=true;
         Object el;
 
@@ -1721,7 +1718,7 @@ public class Util {
 
     public static String shortName(String hostname) {
         int index;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
 
         if(hostname == null) return null;
 
@@ -1735,7 +1732,7 @@ public class Util {
 
     public static String shortName(InetAddress hostname) {
         if(hostname == null) return null;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         if(resolve_dns)
             sb.append(hostname.getHostName());
         else
@@ -1886,7 +1883,7 @@ public class Util {
     }
 
     public static String memStats(boolean gc) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Runtime rt=Runtime.getRuntime();
         if(gc)
             rt.gc();
@@ -2027,9 +2024,7 @@ public class Util {
                     return false;
             }
             tmp=tmp.trim().toLowerCase();
-            if(tmp.equals("false") || tmp.equals("no") || tmp.equals("off"))
-                return false;
-            else return tmp.equals("true") || tmp.equals("yes") || tmp.equals("on");
+            return !(tmp.equals("false") || tmp.equals("no") || tmp.equals("off")) && (tmp.equals("true") || tmp.equals("yes") || tmp.equals("on"));
         }
         catch(SecurityException ex) {
             return false;
@@ -2128,7 +2123,7 @@ public class Util {
 
     public static String generateList(Collection c, String separator) {
         if(c == null) return null;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
 
         for(Iterator it=c.iterator(); it.hasNext();) {
@@ -2175,7 +2170,7 @@ public class Util {
         String tmp=getProperty(val.substring(start_index +2, end_index));
         if(tmp == null)
             return val;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(val.substring(0, start_index));
         sb.append(tmp);
         sb.append(val.substring(end_index+1));
