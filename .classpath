@@ -10,7 +10,6 @@
 	<classpathentry kind="lib" path="lib/bcprov-jdk14-117.jar"/>
 	<classpathentry kind="lib" path="lib/bsh-1.2b3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
-	<classpathentry kind="lib" path="lib/concurrent.jar"/>
 	<classpathentry kind="lib" path="lib/jms.jar"/>
 	<classpathentry kind="lib" path="lib/jmxri.jar"/>
 	<classpathentry kind="lib" path="lib/junit.jar"/>
