@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.17 2006/09/09 13:16:35 belaban Exp $$
+// $Id: SizeTest.java,v 1.18 2007/01/03 15:57:24 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -112,8 +112,21 @@ public class SizeTest extends TestCase {
 
     public void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
-        Digest digest=new Digest(2);
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        Map map=new HashMap();
+        map.put(addr, new Digest.Entry(100, 200, 205));
+        Digest digest=new Digest(map);
+        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
+        _testSize(hdr);
+
+        hdr=new STABLE.StableHeader(STABLE.StableHeader.STABILITY, null);
+        _testSize(hdr);
+    }
+
+    public void testStableHeader2() throws Exception {
+        org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
+        IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        MutableDigest digest=new MutableDigest(2);
         digest.add(addr, 100, 200, 205);
         hdr=new STABLE.StableHeader(STABLE.StableHeader.STABLE_GOSSIP, digest);
         _testSize(hdr);
@@ -214,7 +227,7 @@ public class SizeTest extends TestCase {
     public void testMergeView3() throws Exception {
         Vector m1, m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
-        View v1, v2, v3, v4, v5, view_all;
+        View v1, v2, v3, v4, view_all;
 
         a=new IpAddress(1000);
         b=new IpAddress(2000);
@@ -272,7 +285,7 @@ public class SizeTest extends TestCase {
         members.add(new IpAddress(1111));
         members.add(new IpAddress(2222));
         View v=new View(new IpAddress(1234), 322649, members);
-        Digest d=new Digest(3);
+        MutableDigest d=new MutableDigest(3);
         d.add(new IpAddress(3524), 1,2,3);
         d.add(new IpAddress(1324), 3,4,5);
         rsp=new JoinRsp();
@@ -323,7 +336,7 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
 
 
-        Digest digest=new Digest(2);
+        MutableDigest digest=new MutableDigest(2);
         digest.add(addr, 100, 200, 205);
         digest.add(new IpAddress(2314), 102, 104, 105);
         hdr=new STATE_TRANSFER.StateHeader(STATE_TRANSFER.StateHeader.STATE_RSP, addr, 322649, digest);

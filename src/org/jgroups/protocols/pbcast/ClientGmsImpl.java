@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.35 2006/12/12 09:09:56 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.36 2007/01/03 15:57:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.35 $
+ * @version $Revision: 1.36 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -57,7 +57,6 @@ public class ClientGmsImpl extends GmsImpl {
     public void join(Address mbr) {
         Address coord;
         JoinRsp rsp;
-        Digest  tmp_digest;
         View    tmp_view;
         leaving=false;
 
@@ -133,7 +132,7 @@ public class ClientGmsImpl extends GmsImpl {
                         throw new SecurityException(failure);
 
                     // 2. Install digest
-                    tmp_digest=rsp.getDigest();
+                    MutableDigest tmp_digest=new MutableDigest(rsp.getDigest());
                     tmp_view=rsp.getView();
                     if(tmp_digest == null || tmp_view == null) {
                         if(log.isErrorEnabled())
@@ -142,6 +141,7 @@ public class ClientGmsImpl extends GmsImpl {
                     }
                     else {
                         tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
+                        tmp_digest.seal();
                         gms.setDigest(tmp_digest);
 
                         if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view +
@@ -365,8 +365,7 @@ public class ClientGmsImpl extends GmsImpl {
         Vector mbrs=new Vector(1);
 
         // set the initial digest (since I'm the first member)
-        initial_digest=new Digest(1);             // 1 member (it's only me)
-        initial_digest.add(gms.local_addr, 0, 0); // initial seqno mcast by me will be 1 (highest seen +1)
+        initial_digest=new Digest(gms.local_addr, 0, 0); // initial seqno mcast by me will be 1 (highest seen +1)
         gms.setDigest(initial_digest);
 
         view_id=new ViewId(mbr);       // create singleton view with mbr as only member

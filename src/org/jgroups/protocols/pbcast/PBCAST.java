@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.16 2006/04/23 12:52:53 belaban Exp $
+// $Id: PBCAST.java,v 1.17 2007/01/03 15:57:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -30,7 +30,7 @@ public class PBCAST extends Protocol implements Runnable {
     Address local_addr=null;
     final Hashtable digest=new Hashtable();   // stores all messages from members (key: member, val: NakReceiverWindow)
     Thread gossip_thread=null;
-    GossipHandler gossip_handler=null;      // removes gossips and other requests from queue and handles them
+    private GossipHandler gossip_handler=null;      // removes gossips and other requests from queue and handles them
     final Queue gossip_queue=new Queue(); // (bounded) queue for incoming gossip requests
     int max_queue=100;            // max elements in gossip_queue (bounded buffer)
     long gossip_interval=5000;     // gossip every 5 seconds
@@ -92,13 +92,12 @@ public class PBCAST extends Protocol implements Runnable {
                 }
 
                 if(m.getHeader(getName()) instanceof PbcastHeader)
-                    hdr=(PbcastHeader) m.removeHeader(getName());
+                    hdr=(PbcastHeader) m.getHeader(getName());
                 else {
                     sender=m.getSrc();
-
-                        if(log.isErrorEnabled()) log.error("PbcastHeader expected, but received header of type " +
-                                                   m.getHeader(getName()).getClass().getName() + " from " + sender +
-                                                   ". Passing event up unchanged");
+                    if(log.isErrorEnabled()) log.error("PbcastHeader expected, but received header of type " +
+                            m.getHeader(getName()).getClass().getName() + " from " + sender +
+                            ". Passing event up unchanged");
                     break;
                 }
 
@@ -378,7 +377,7 @@ public class PBCAST extends Protocol implements Runnable {
 
             // Try to remove as many message as possible and send them up the stack
             while((tmpmsg=win.remove()) != null) {
-                tmpmsg.removeHeader(getName()); // need to remove header again, so upper protocols don't get confused
+                tmpmsg.getHeader(getName()); // need to remove header again, so upper protocols don't get confused
                 passUp(new Event(Event.MSG, tmpmsg));
             }
 
@@ -404,21 +403,21 @@ public class PBCAST extends Protocol implements Runnable {
      * 5 is missing. If there are no message, the highest seen seqno is -1.
      */
     Digest getDigest() {
-        Digest ret=new Digest(digest.size());
         long highest_seqno, lowest_seqno;
         Address key;
         NakReceiverWindow win;
 
+        Map map=new HashMap(digest.size());
         for(Enumeration e=digest.keys(); e.hasMoreElements();) {
             key=(Address) e.nextElement();
             win=(NakReceiverWindow) digest.get(key);
             lowest_seqno=win.getLowestSeen();
             highest_seqno=win.getHighestSeen();
-            ret.add(key, lowest_seqno, highest_seqno);
+            map.put(key, new Digest.Entry(lowest_seqno, highest_seqno));
         }
 
-        if(log.isInfoEnabled()) log.info("digest is " + ret);
-
+        Digest ret=new Digest(map);
+        if(log.isTraceEnabled()) log.trace("digest is " + ret);
         return ret;
     }
 
@@ -451,7 +450,7 @@ public class PBCAST extends Protocol implements Runnable {
                     continue;
                 }
                 val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-                tmp_seqno=val.high_seqno;
+                tmp_seqno=val.getHigh();
                 digest.put(sender, new NakReceiverWindow(sender, tmp_seqno + 1)); // next to expect, digest had *last* seen !
             }
         }
@@ -462,7 +461,7 @@ public class PBCAST extends Protocol implements Runnable {
         long highest_seqno;
         Address key;
         NakReceiverWindow win;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
 
         for(Enumeration e=digest.keys(); e.hasMoreElements();) {
             key=(Address) e.nextElement();
@@ -475,7 +474,7 @@ public class PBCAST extends Protocol implements Runnable {
 
 
     String printIncomingMessageQueue() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         NakReceiverWindow win;
 
         win=(NakReceiverWindow) digest.get(local_addr);
@@ -653,8 +652,8 @@ public class PBCAST extends Protocol implements Runnable {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            their_low=val.low_seqno;
-            their_high=val.high_seqno;
+            their_low=val.getLow();
+            their_high=val.getHigh();
             if(their_low == 0 && their_high == 0)
                 continue; // won't have any messages for this sender, don't even re-send
 
@@ -784,7 +783,7 @@ public class PBCAST extends Protocol implements Runnable {
 
         for(Enumeration e=xmit_msgs.elements(); e.hasMoreElements();) {
             m=(Message) e.nextElement();
-            hdr=(PbcastHeader) m.removeHeader(getName());
+            hdr=(PbcastHeader)m.getHeader(getName());
             if(hdr == null) {
                 log.warn("header is null, ignoring message");
             }
@@ -798,7 +797,7 @@ public class PBCAST extends Protocol implements Runnable {
 
 
     String printXmitReqs(Hashtable xmit_reqs) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Address key;
         boolean first=true;
 
@@ -835,7 +834,7 @@ public class PBCAST extends Protocol implements Runnable {
                                                    " not found in our message digest, skipping");
                 continue;
             }
-            tmp_seqno=val.high_seqno;
+            tmp_seqno=val.getHigh();
             tmp_seqno=Math.max(tmp_seqno - gc_lag, 0);
             if(tmp_seqno <= 0) {
                 continue;
