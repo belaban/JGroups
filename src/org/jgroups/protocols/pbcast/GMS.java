@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.78 2006/12/28 10:25:24 belaban Exp $
+ * @version $Id: GMS.java,v 1.79 2007/01/03 10:51:21 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -39,7 +39,6 @@ public class GMS extends Protocol {
     long                      join_retry_timeout=2000;
     long 					  flush_timeout=4000;
     long                      leave_timeout=5000;
-    private long              digest_timeout=0;              // time to wait for a digest (from PBCAST). should be fast
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Promise     flush_promise = new Promise();
@@ -873,7 +872,7 @@ public class GMS extends Protocol {
 
         str=props.getProperty("digest_timeout");          // time to wait for GET_DIGEST_OK from PBCAST
         if(str != null) {
-            digest_timeout=Long.parseLong(str);
+            log.warn("digest_timeout has been deprecated and its value will be ignored");
             props.remove("digest_timeout");
         }
 
@@ -1209,7 +1208,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.78 2006/12/28 10:25:24 belaban Exp $
+     * @version $Id: GMS.java,v 1.79 2007/01/03 10:51:21 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
