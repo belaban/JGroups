@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.21 2006/12/31 13:38:14 belaban Exp $
+// $Id: Digest.java,v 1.22 2007/01/03 10:50:39 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -14,6 +14,7 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -32,15 +33,15 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class Digest implements Externalizable, Streamable {
     /** Map<Address, Entry> */
-    Map<Address,Entry>    senders=null;
+    ConcurrentMap<Address,Entry> senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
     static final boolean warn=log.isWarnEnabled();
 
 
 
-
+    /** Used for externalization */
     public Digest() {
-    } // used for externalization
+    }
 
     public Digest(int size) {
         senders=createSenders(size);
@@ -220,7 +221,7 @@ public class Digest implements Externalizable, Streamable {
     public void resetAt(Address sender) {
         Entry entry=senders.get(sender);
         if(entry != null)
-            entry.reset();
+            senders.put(sender, new Entry());
     }
 
 
@@ -373,7 +374,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        senders=(Map)in.readObject();
+        senders=(ConcurrentMap)in.readObject();
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
@@ -416,14 +417,14 @@ public class Digest implements Externalizable, Streamable {
         return retval;
     }
 
-    private static Map createSenders(int size) {
+    private static ConcurrentMap createSenders(int size) {
         return new ConcurrentHashMap(size);
     }
 
 
     /**
      * Class keeping track of the lowest and highest sequence numbers delivered, and the highest
-     * sequence numbers received, per member
+     * sequence numbers received, per member. This class is immutable
      */
     public static class Entry implements Externalizable {
         public long low_seqno, high_seqno, high_seqno_seen=-1;
@@ -459,11 +460,6 @@ public class Digest implements Externalizable, Streamable {
         public String toString() {
             return new StringBuffer("low=").append(low_seqno).append(", high=").append(high_seqno).
                     append(", highest seen=").append(high_seqno_seen).toString();
-        }
-
-        public void reset() {
-            low_seqno=high_seqno=0;
-            high_seqno_seen=-1;
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
