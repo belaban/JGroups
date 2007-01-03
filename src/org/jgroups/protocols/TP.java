@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.100 2006/12/31 06:26:58 belaban Exp $
+ * @version $Id: TP.java,v 1.101 2007/01/03 16:40:06 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -60,7 +60,7 @@ public abstract class TP extends Protocol {
     boolean         use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages
-     * @deprecated  Use {@link receive_on_all_interfaces} instead */
+     * @deprecated  Use {@link #receive_on_all_interfaces} instead */
     boolean         bind_to_all_interfaces=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
@@ -620,20 +620,20 @@ public abstract class TP extends Protocol {
 
         str=props.getProperty("use_local_host");
         if(str != null) {
-            use_local_host=new Boolean(str).booleanValue();
+            use_local_host=Boolean.parseBoolean(str);
             props.remove("use_local_host");
         }
 
         str=props.getProperty("bind_to_all_interfaces");
         if(str != null) {
-            receive_on_all_interfaces=new Boolean(str).booleanValue();
+            receive_on_all_interfaces=Boolean.parseBoolean(str);
             props.remove("bind_to_all_interfaces");
             log.warn("bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead");
         }
 
         str=props.getProperty("receive_on_all_interfaces");
         if(str != null) {
-            receive_on_all_interfaces=new Boolean(str).booleanValue();
+            receive_on_all_interfaces=Boolean.parseBoolean(str);
             props.remove("receive_on_all_interfaces");
         }
 
@@ -651,7 +651,7 @@ public abstract class TP extends Protocol {
 
         str=props.getProperty("send_on_all_interfaces");
         if(str != null) {
-            send_on_all_interfaces=new Boolean(str).booleanValue();
+            send_on_all_interfaces=Boolean.parseBoolean(str);
             props.remove("send_on_all_interfaces");
         }
 
@@ -1108,7 +1108,7 @@ public abstract class TP extends Protocol {
                 else
                     handleIncomingMessage(msg);
             }
-            if(incoming_msg_queue != null && msgs.size() > 0)
+            if(incoming_msg_queue != null && !msgs.isEmpty())
                 incoming_msg_queue.addAll(msgs);
         }
         catch(QueueClosedException closed_ex) {
@@ -1806,7 +1806,7 @@ public abstract class TP extends Protocol {
             Map copy;
 
             synchronized(msgs) {
-                if(msgs.size() == 0)
+                if(msgs.isEmpty())
                     return;
                 copy=new HashMap(msgs);
                 if(trace) {
