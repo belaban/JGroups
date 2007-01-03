@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.50 2006/12/19 12:53:11 belaban Exp $
+// $Id: STABLE.java,v 1.51 2007/01/03 15:57:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -36,44 +36,44 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class STABLE extends Protocol {
-    Address             local_addr=null;
-    final Vector        mbrs=new Vector();
-    final Digest        digest=new Digest(10);        // keeps track of the highest seqnos from all members
-    final Digest        latest_local_digest=new Digest(10); // keeps track of the latest digests received from NAKACK
-    final Vector        heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
+    Address              local_addr=null;
+    final Vector         mbrs=new Vector();
+    final MutableDigest  digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    final MutableDigest  latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
+    final Vector         heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
-    long                desired_avg_gossip=20000;
+    long                 desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
      * small number (> 0 !) if <code>max_bytes</code> is used */
-    long                stability_delay=6000;
+    long                 stability_delay=6000;
     private StabilitySendTask   stability_task=null;
-    final Object        stability_mutex=new Object();   // to synchronize on stability_task
+    final Object         stability_mutex=new Object();   // to synchronize on stability_task
     private volatile StableTask  stable_task=null;               // bcasts periodic STABLE message (added to timer below)
-    final Object        stable_task_mutex=new Object(); // to sync on stable_task
-    TimeScheduler       timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
-    static final String name="STABLE";
+    final Object         stable_task_mutex=new Object(); // to sync on stable_task
+    TimeScheduler        timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
+    static final String  name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
-    long                max_bytes=0;
+    long                 max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
-    long                num_bytes_received=0;
+    long                 num_bytes_received=0;
 
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
-    boolean             suspended=false;
+    boolean              suspended=false;
 
-    boolean             initialized=false;
+    boolean              initialized=false;
 
-    private ResumeTask  resume_task=null;
-    final Object        resume_task_mutex=new Object();
+    private ResumeTask   resume_task=null;
+    final Object         resume_task_mutex=new Object();
 
     /** Number of gossip messages */
-    int                 num_gossips=0;
+    int                  num_gossips=0;
     
     private static final long MAX_SUSPEND_TIME=200000;
 
@@ -312,7 +312,7 @@ public class STABLE extends Protocol {
 
 
     /** Digest and members are guaranteed to be non-null */
-    private static void adjustSenders(Digest d, Vector members) {
+    private static void adjustSenders(MutableDigest d, Vector members) {
         synchronized(d) {
             // 1. remove all members from digest who are not in the view
             Iterator it=d.senders.keySet().iterator();
@@ -375,8 +375,8 @@ public class STABLE extends Protocol {
             entry=(Map.Entry)it.next();
             mbr=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            highest_seqno=val.high_seqno;
-            highest_seen_seqno=val.high_seqno_seen;
+            highest_seqno=val.getHigh();
+            highest_seen_seqno=val.getHighSeen();
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
             my_highest_seqno=digest.highSeqnoAt(mbr);
@@ -693,7 +693,7 @@ public class STABLE extends Protocol {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append('[');
             sb.append(type2String(type));
             sb.append("]: digest is ");

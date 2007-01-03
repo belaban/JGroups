@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.55 2006/12/12 09:09:56 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.56 2007/01/03 15:57:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -349,17 +349,18 @@ public class CoordGmsImpl extends GmsImpl {
             // of those messages if he misses them
             if(joining_mbrs) {
                 gms.passDown(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
-                Digest d=null, tmp=gms.getDigest(); // get existing digest
+                Digest tmp=gms.getDigest(); // get existing digest
+                MutableDigest join_digest=null;
                 if(tmp == null)
                     log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
                 else {
                     // create a new digest, which contains the new member
-                    d=new Digest(tmp.size() + new_mbrs.size());
-                    d.add(tmp); // add the existing digest to the new one
+                    join_digest=new MutableDigest(tmp.size() + new_mbrs.size());
+                    join_digest.add(tmp); // add the existing digest to the new one
                     for(Iterator i=new_mbrs.iterator(); i.hasNext();)
-                        d.add((Address)i.next(), 0, 0); // ... and add the new members. their first seqno will be 1
+                        join_digest.add((Address)i.next(), 0, 0); // ... and add the new members. their first seqno will be 1
                 }
-                join_rsp=new JoinRsp(new_view, d);
+                join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
@@ -565,10 +566,10 @@ public class CoordGmsImpl extends GmsImpl {
      * seqnos for duplicate digests.<p>
      * After merging all members into a Membership and subsequent sorting, the first member of the sorted membership
      * will be the new coordinator.
-     * @param v A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
+     * @param merge_rsps A list of MergeData items. Elements with merge_rejected=true were removed before. Is guaranteed
      *          not to be null and to contain at least 1 member.
      */
-    private MergeData consolidateMergeData(Vector v) {
+    private MergeData consolidateMergeData(Vector<MergeData> merge_rsps) {
         MergeData ret;
         MergeData tmp_data;
         long logical_time=0; // for new_vid
@@ -577,13 +578,12 @@ public class CoordGmsImpl extends GmsImpl {
         View tmp_view;
         Membership new_mbrs=new Membership();
         int num_mbrs;
-        Digest new_digest;
         Address new_coord;
         Vector subgroups=new Vector(11);
         // contains a list of Views, each View is a subgroup
 
-        for(int i=0; i < v.size(); i++) {
-            tmp_data=(MergeData)v.elementAt(i);
+        for(int i=0; i < merge_rsps.size(); i++) {
+            tmp_data=merge_rsps.elementAt(i);
             if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
             tmp_view=tmp_data.getView();
             if(tmp_view != null) {
@@ -614,7 +614,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
 
         // determine the new digest
-        new_digest=consolidateDigests(v, num_mbrs);
+        Digest new_digest=consolidateDigests(merge_rsps, num_mbrs);
         if(new_digest == null) {
             if(log.isErrorEnabled()) log.error("digest could not be consolidated");
             return null;
@@ -628,12 +628,13 @@ public class CoordGmsImpl extends GmsImpl {
      * Merge all digests into one. For each sender, the new value is min(low_seqno), max(high_seqno),
      * max(high_seqno_seen)
      */
-    private Digest consolidateDigests(Vector v, int num_mbrs) {
+    private Digest consolidateDigests(Vector<MergeData> merge_rsps, int num_mbrs) {
         MergeData data;
-        Digest tmp_digest, retval=new Digest(num_mbrs);
+        Digest tmp_digest;
+        MutableDigest retval=new MutableDigest(num_mbrs);
 
-        for(int i=0; i < v.size(); i++) {
-            data=(MergeData)v.elementAt(i);
+        for(int i=0; i < merge_rsps.size(); i++) {
+            data=merge_rsps.elementAt(i);
             tmp_digest=data.getDigest();
             if(tmp_digest == null) {
                 if(log.isErrorEnabled()) log.error("tmp_digest == null; skipping");
@@ -641,7 +642,7 @@ public class CoordGmsImpl extends GmsImpl {
             }
             retval.merge(tmp_digest);
         }
-        return retval;
+        return retval.copy();
     }
 
     /**

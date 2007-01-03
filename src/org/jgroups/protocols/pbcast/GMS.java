@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.79 2007/01/03 10:51:21 belaban Exp $
+ * @version $Id: GMS.java,v 1.80 2007/01/03 15:57:22 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -380,7 +380,7 @@ public class GMS extends Protocol {
         ViewId    vid=new_view.getVid();
         int       size=-1;
 
-        if(members == null || members.size() == 0)
+        if(members == null || members.isEmpty())
             members=new_view.getMembers();
 
         if(log.isTraceEnabled())
@@ -482,7 +482,7 @@ public class GMS extends Protocol {
             view_id=vid.copy();
 
             // Set the membership. Take into account joining members
-            if(mbrs != null && mbrs.size() > 0) {
+            if(mbrs != null && !mbrs.isEmpty()) {
                 members.set(mbrs);
                 tmp_members.set(members);
                 joining.removeAll(mbrs);  // remove all members in mbrs from joining
@@ -931,7 +931,7 @@ public class GMS extends Protocol {
         }
 
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -1208,7 +1208,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.79 2007/01/03 10:51:21 belaban Exp $
+     * @version $Id: GMS.java,v 1.80 2007/01/03 15:57:22 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

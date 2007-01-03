@@ -1,4 +1,4 @@
-//$Id: TOTAL_TOKEN.java,v 1.14 2006/04/28 15:25:00 belaban Exp $
+//$Id: TOTAL_TOKEN.java,v 1.15 2007/01/03 15:57:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ import java.util.*;
  *
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
- *@version $Revision: 1.14 $
+ *@version $Revision: 1.15 $
  *
  *@see org.jgroups.protocols.ring.RingNodeFlowControl
  *@see org.jgroups.protocols.ring.RingNode
@@ -319,14 +319,15 @@ public class TOTAL_TOKEN extends RpcProtocol
          case Event.GET_DIGEST:
          case Event.GET_DIGEST_STATE:
 
-            Digest d = new Digest(members.size());
+             Map<Address, Digest.Entry> map=new HashMap(members.size());
             Address sender = null;
             //all members have same digest :)
             for (int j = 0; j < members.size(); j++)
             {
                sender = (Address) members.elementAt(j);
-               d.add(sender, highestSeenSeq, highestSeenSeq);
+                map.put(sender, new Digest.Entry(highestSeenSeq, highestSeenSeq));
             }
+             Digest d=new Digest(map);
             passUp(new Event(Event.GET_DIGEST_OK, d));
             return false;
          case Event.SET_DIGEST:

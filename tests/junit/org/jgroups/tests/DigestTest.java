@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.6 2006/08/31 13:48:13 belaban Exp $
+// $Id: DigestTest.java,v 1.7 2007/01/03 15:57:24 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,15 +7,20 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.protocols.pbcast.Digest;
+import org.jgroups.protocols.pbcast.MutableDigest;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.Address;
 
 import java.io.*;
+import java.util.Map;
+import java.util.HashMap;
 
 
 public class DigestTest extends TestCase {
-    Digest d, d2;
-    IpAddress a1, a2, a3;
+    Digest         d, d2;
+    MutableDigest  md;
+    IpAddress      a1, a2, a3;
 
     public DigestTest(String name) {
         super(name);
@@ -24,13 +29,15 @@ public class DigestTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        d=new Digest(3);
+        Map<Address, Digest.Entry> map=new HashMap();
         a1=new IpAddress(5555);
         a2=new IpAddress(6666);
         a3=new IpAddress(7777);
-        d.add(a1, 4, 500, 501);
-        d.add(a2, 25, 26, 26);
-        d.add(a3, 20, 25, 33);
+        map.put(a1, new Digest.Entry(4, 500, 501));
+        map.put(a2, new Digest.Entry(25, 26, 26));
+        map.put(a3, new Digest.Entry(20, 25, 33));
+        d=new Digest(map);
+        md=new MutableDigest(map);
     }
 
     public void testSize() {
@@ -43,32 +50,104 @@ public class DigestTest extends TestCase {
         System.out.println("d: " + d + "\nd2= " + d2);
         assertEquals(d, d);
         assertEquals(d, d2);
-        d2.incrementHighSeqno(a1);
-        assertFalse(d.equals(d2));
+    }
+
+    public void testEquals2() {
+        md=new MutableDigest(d);
+        System.out.println("d: " + d + "\nmd= " + md);
+        assertEquals(d, d);
+        assertEquals(d, md);
+        md.incrementHighSeqno(a1);
+        System.out.println("d: " + d + "\nmd= " + md);
+        assertFalse(d.equals(md));
+    }
+
+
+    public void testMutability() {
+        Digest md2=md;
+        assertEquals(md, md2);
+        md.incrementHighSeqno(a2);
+        assertEquals(md, md2);
+    }
+
+    public void testImmutability() {
+        MutableDigest tmp=new MutableDigest(d);
+        assertEquals(d, tmp);
+        tmp.incrementHighSeqno(a2);
+        assertFalse(d.equals(tmp));
+    }
+
+
+    public void testImmutability2() {
+        Digest tmp=d.copy();
+        assertEquals(d, tmp);
+    }
+
+    public void testImmutability3() {
+        Digest tmp=new Digest(d);
+        assertEquals(tmp, d);
+    }
+
+    public void testImmutability4() {
+        Digest copy=md.copy();
+        assertEquals(copy, md);
+        md.incrementHighSeqno(a1);
+        assertFalse(copy.equals(md));
+    }
+
+    public void testSeal() {
+        MutableDigest tmp=new MutableDigest(3);
+        tmp.add(a2, 1,2,3);
+        assertEquals(1, tmp.size());
+        tmp.seal();
+        try {
+            tmp.add(a2, 4,5,6);
+            fail("should run into an exception");
+        }
+        catch(IllegalAccessError e) {
+            System.out.println("received exception \"" + e.toString() + "\" - as expected");
+        }
+        assertEquals(1, tmp.size());
+    }
+
+
+    public void testSeal2() {
+        md.incrementHighSeqno(a1);
+        md.seal();
+        try {
+            md.incrementHighSeqno(a3);
+            fail("should run into an exception");
+        }
+        catch(IllegalAccessError e) {
+            System.out.println("received exception \"" + e.toString() + "\" - as expected");
+        }
+
+        MutableDigest tmp=new MutableDigest(md);
+        tmp.incrementHighSeqno(a3);
     }
 
     public void testAdd() {
-        assertEquals(3, d.size());
-        d.add(a1, 100, 200, 201);
-        assertEquals(3, d.size());
-        d.add(new IpAddress(14526), 1,2,3);
-        assertEquals(4, d.size());
+        assertEquals(3, md.size());
+        md.add(a1, 100, 200, 201);
+        assertEquals(3, md.size());
+        md.add(new IpAddress(14526), 1,2,3);
+        assertEquals(4, md.size());
     }
 
     public void testAddDigest() {
-        d2=d.copy();
-        d.add(d2);
-        assertEquals(3, d.size());
+        Digest tmp=md.copy();
+        md.add(tmp);
+        assertEquals(3, md.size());
     }
 
     public void testAddDigest2() {
-        d2=new Digest(4);
-        d2.add(new IpAddress(1111), 1,2,3);
-        d2.add(new IpAddress(2222), 1,2,3);
-        d2.add(new IpAddress(5555), 1,2,3);
-        d2.add(new IpAddress(6666), 1,2,3);
-        d.add(d2);
-        assertEquals(5, d.size());
+        MutableDigest tmp=new MutableDigest(4);
+        tmp.add(new IpAddress(1111), 1,2,3);
+        tmp.add(new IpAddress(2222), 1,2,3);
+        tmp.add(new IpAddress(5555), 1,2,3);
+        tmp.add(new IpAddress(6666), 1,2,3);
+        md.add(tmp);
+        assertEquals(5, md.size());
     }
 
     public void testGet() {
@@ -82,36 +161,41 @@ public class DigestTest extends TestCase {
     }
 
     public void testIncrementHighSeqno() {
-        d2=new Digest(3);
-        d2.add(a1, 1, 100);
-        d2.add(a2, 3, 300);
-        d2.add(a3, 7, 700);
+        md=new MutableDigest(3);
+        md.add(a1, 1, 100);
+        md.add(a2, 3, 300);
+        md.add(a3, 7, 700);
 
-        long tmp=d2.highSeqnoAt(a1);
-        d2.incrementHighSeqno(a1);
-        assertEquals(d2.highSeqnoAt(a1), tmp+1);
+        long tmp=md.highSeqnoAt(a1);
+        md.incrementHighSeqno(a1);
+        assertEquals(md.highSeqnoAt(a1), tmp+1);
 
-        tmp=d2.highSeqnoAt(a2);
-        d2.incrementHighSeqno(a2);
-        assertEquals(d2.highSeqnoAt(a2), tmp+1);
+        tmp=md.highSeqnoAt(a2);
+        md.incrementHighSeqno(a2);
+        assertEquals(md.highSeqnoAt(a2), tmp+1);
 
-        tmp=d2.highSeqnoAt(a3);
-        d2.incrementHighSeqno(a3);
-        assertEquals(d2.highSeqnoAt(a3), tmp+1);
+        tmp=md.highSeqnoAt(a3);
+        md.incrementHighSeqno(a3);
+        assertEquals(md.highSeqnoAt(a3), tmp+1);
     }
 
 
     public void testConstructor() {
-        assertEquals(3, d.size());
-        d.clear();
-        assertEquals(0, d.size());
-        d.clear();
-        assertEquals(0, d.size());
+        assertEquals(3, md.size());
+        md.clear();
+        assertEquals(0, md.size());
+        md.clear();
+        assertEquals(0, md.size());
     }
 
 
     public void testConstructor2() {
         Digest dd=new Digest(3);
+        assertEquals(0, dd.size());
+    }
+
+    public void testConstructor3() {
+        Digest dd=new MutableDigest(3);
         assertEquals(0, dd.size());
     }
 
@@ -125,10 +209,10 @@ public class DigestTest extends TestCase {
 
 
     public void testResetAt() {
-        d.resetAt(a1);
-        assertEquals(0, d.lowSeqnoAt(a1));
-        assertEquals(0, d.highSeqnoAt(a1));
-        assertEquals(d.highSeqnoSeenAt(a1), -1);
+        md.resetAt(a1);
+        assertEquals(0, md.lowSeqnoAt(a1));
+        assertEquals(0, md.highSeqnoAt(a1));
+        assertEquals(md.highSeqnoSeenAt(a1), -1);
     }
 
 
@@ -145,10 +229,30 @@ public class DigestTest extends TestCase {
         assertEquals(25, d.highSeqnoAt(a3));
     }
 
+    public void testSetHighSeqnoAt() {
+        assertEquals(500, md.highSeqnoAt(a1));
+        md.setHighSeqnoAt(a1, 555);
+        assertEquals(555, md.highSeqnoAt(a1));
+    }
+
     public void testHighSeqnoSeenAt() {
         assertEquals(501, d.highSeqnoSeenAt(a1));
         assertEquals(26, d.highSeqnoSeenAt(a2));
         assertEquals(33, d.highSeqnoSeenAt(a3));
+    }
+
+    public void testSetHighSeenSeqnoAt() {
+        assertEquals(26, md.highSeqnoSeenAt(a2));
+        md.setHighSeqnoSeenAt(a2, 100);
+        assertEquals(100, md.highSeqnoSeenAt(a2));
+    }
+
+    public void testSetHighestDeliveredAndSeenSeqnoAt() {
+        assertEquals(500, d.highSeqnoAt(a1));
+        assertEquals(501, md.highSeqnoSeenAt(a1));
+        md.setHighestDeliveredAndSeenSeqnos(a1, 10, 20);
+        assertEquals(10, md.highSeqnoAt(a1));
+        assertEquals(20, md.highSeqnoSeenAt(a1));
     }
 
     public void testCopy() {
@@ -161,8 +265,45 @@ public class DigestTest extends TestCase {
     }
 
 
+    public void testCopy2() {
+        Digest tmp=d.copy();
+        assertEquals(tmp, d);
+    }
+
+
+
+
+    public void testMerge() {
+        Map map=new HashMap();
+        map.put(a1, new Digest.Entry(3, 499, 502));
+        map.put(a2, new Digest.Entry(20, 26, 27));
+        map.put(a3, new Digest.Entry(21, 26, 35));
+        MutableDigest digest=new MutableDigest(map);
+
+        System.out.println("d: " + d);
+        System.out.println("digest: " + digest);
+        
+        digest.merge(d);
+        System.out.println("merged digest: " + digest);
+
+        assertEquals(3, d.size());
+        assertEquals(3, digest.size());
+
+        assertEquals(3, digest.lowSeqnoAt(a1));
+        assertEquals(500, digest.highSeqnoAt(a1));
+        assertEquals(502, digest.highSeqnoSeenAt(a1));
+
+        assertEquals(20, digest.lowSeqnoAt(a2));
+        assertEquals(26, digest.highSeqnoAt(a2));
+        assertEquals(27, digest.highSeqnoSeenAt(a2));
+
+        assertEquals(20, digest.lowSeqnoAt(a3));
+        assertEquals(26, digest.highSeqnoAt(a3));
+        assertEquals(35, digest.highSeqnoSeenAt(a3));
+    }
+
     public void testNonConflictingMerge() {
-        Digest cons_d=new Digest(5);
+        MutableDigest cons_d=new  MutableDigest(5);
         IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
 
         cons_d.add(ip1, 1, 10, 10);
@@ -193,27 +334,27 @@ public class DigestTest extends TestCase {
 
 
     public void testConflictingMerge() {
-        Digest new_d=new Digest(2);
+        MutableDigest new_d=new MutableDigest(2);
         new_d.add(a1, 5, 450, 501);
         new_d.add(a3, 18, 28, 35);
         //System.out.println("\nd before: " + d);
         //System.out.println("new_: " + new_d);
-        d.merge(new_d);
+        md.merge(new_d);
 
-        assertEquals(3, d.size());
+        assertEquals(3, md.size());
         //System.out.println("d after: " + d);
 
-        assertEquals(4, d.lowSeqnoAt(a1));  // low_seqno should *not* have changed
-        assertEquals(500, d.highSeqnoAt(a1));  // high_seqno should *not* have changed
-        assertEquals(501, d.highSeqnoSeenAt(a1));  // high_seqno_seen should *not* have changed
+        assertEquals(4, md.lowSeqnoAt(a1));  // low_seqno should *not* have changed
+        assertEquals(500, md.highSeqnoAt(a1));  // high_seqno should *not* have changed
+        assertEquals(501, md.highSeqnoSeenAt(a1));  // high_seqno_seen should *not* have changed
 
-        assertEquals(25, d.lowSeqnoAt(a2));  // low_seqno should *not* have changed
-        assertEquals(26, d.highSeqnoAt(a2));  // high_seqno should *not* have changed
-        assertEquals(26, d.highSeqnoSeenAt(a2));  // high_seqno_seen should *not* have changed
+        assertEquals(25, md.lowSeqnoAt(a2));  // low_seqno should *not* have changed
+        assertEquals(26, md.highSeqnoAt(a2));  // high_seqno should *not* have changed
+        assertEquals(26, md.highSeqnoSeenAt(a2));  // high_seqno_seen should *not* have changed
 
-        assertEquals(18, d.lowSeqnoAt(a3));  // low_seqno should *not* have changed
-        assertEquals(28, d.highSeqnoAt(a3));  // high_seqno should *not* have changed
-        assertEquals(35, d.highSeqnoSeenAt(a3));  // high_seqno_seen should *not* have changed
+        assertEquals(18, md.lowSeqnoAt(a3));  // low_seqno should *not* have changed
+        assertEquals(28, md.highSeqnoAt(a3));  // high_seqno should *not* have changed
+        assertEquals(35, md.highSeqnoSeenAt(a3));  // high_seqno_seen should *not* have changed
     }
 
 
@@ -237,18 +378,19 @@ public class DigestTest extends TestCase {
     }
 
     public void testSameSendersNotIdentical() {
-        d2=new Digest(3);
-        d2.add(a1, 4, 500, 501);
-        d2.add(a3, 20, 25, 33);
-        d2.add(a2, 25, 26, 26);
-        assertTrue(d.sameSenders(d2));
+        MutableDigest tmp=new MutableDigest(3);
+        tmp.add(a1, 4, 500, 501);
+        tmp.add(a3, 20, 25, 33);
+        tmp.add(a2, 25, 26, 26);
+        assertTrue(md.sameSenders(tmp));
+        assertTrue(d.sameSenders(tmp));
     }
 
     public void testSameSendersNotSameLength() {
-        d2=new Digest(3);
-        d2.add(a1, 4, 500, 501);
-        d2.add(a2, 25, 26, 26);
-        assertFalse(d.sameSenders(d2));
+        md=new MutableDigest(3);
+        md.add(a1, 4, 500, 501);
+        md.add(a2, 25, 26, 26);
+        assertFalse(d.sameSenders(md));
     }
 
 

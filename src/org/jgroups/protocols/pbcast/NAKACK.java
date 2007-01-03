@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.90 2006/12/30 19:31:12 belaban Exp $
+// $Id: NAKACK.java,v 1.91 2007/01/03 15:57:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -980,11 +980,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the highest seqno received from P is added to the digest.
      */
     private Digest getDigest() {
-        Digest digest;
         Address sender;
         Range range;
 
-        digest=new Digest(members.size());
+        Map<Address,Digest.Entry> map=new HashMap(members.size());
         for(int i=0; i < members.size(); i++) {
             sender=(Address)members.elementAt(i);
             range=getLowestAndHighestSeqno(sender, false);  // get the highest received seqno
@@ -994,9 +993,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            digest.add(sender, range.low, range.high);  // add another entry to the digest
+            map.put(sender, new Digest.Entry(range.low, range.high));
         }
-        return digest;
+        return new Digest(map);
     }
 
 
@@ -1007,12 +1006,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * whether the last seqno from a sender was received (see "Last Message Dropped" topic in DESIGN).
      */
     private Digest getDigestHighestDeliveredMsgs() {
-        Digest digest;
         Address sender;
         Range range;
         long high_seqno_seen;
 
-        digest=new Digest(members.size());
+        Map<Address,Digest.Entry> map=new HashMap(members.size());
         for(int i=0; i < members.size(); i++) {
             sender=(Address)members.elementAt(i);
             range=getLowestAndHighestSeqno(sender, true);  // get the highest deliverable seqno
@@ -1023,8 +1021,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
             }
             high_seqno_seen=getHighSeqnoSeen(sender);
-            digest.add(sender, range.low, range.high, high_seqno_seen);  // add another entry to the digest
+            map.put(sender, new Digest.Entry(range.low, range.high, high_seqno_seen));
         }
+
+        Digest digest=new Digest(map);
         return digest;
     }
 
@@ -1033,8 +1033,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Creates a NakReceiverWindow for each sender in the digest according to the sender's seqno. If NRW already exists,
      * reset it.
      */
-    private void setDigest(Digest d) {
-        if(d == null || d.senders == null) {
+    private void setDigest(Digest digest) {
+        if(digest == null) {
             if(log.isErrorEnabled()) {
                 log.error("digest or digest.senders is null");
             }
@@ -1049,7 +1049,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long initial_seqno;
         NakReceiverWindow win;
 
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
@@ -1060,7 +1060,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            initial_seqno=val.high_seqno;
+            initial_seqno=val.getHigh();
             win=createNakReceiverWindow(sender, initial_seqno);
             synchronized(received_msgs) {
                 received_msgs.put(sender, win);
@@ -1074,8 +1074,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * already exists, sets its seqno to be the max of the seqno and the seqno of the member in the digest. If no entry
      * exists, create one with the initial seqno set to the seqno of the member in the digest.
      */
-    private void mergeDigest(Digest d) {
-        if(d == null || d.senders == null) {
+    private void mergeDigest(Digest digest) {
+        if(digest == null) {
             if(log.isErrorEnabled()) {
                 log.error("digest or digest.senders is null");
             }
@@ -1088,7 +1088,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win;
         long initial_seqno;
 
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
@@ -1099,7 +1099,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            initial_seqno=val.high_seqno;
+            initial_seqno=val.getHigh();
             synchronized(received_msgs) {
                 win=(NakReceiverWindow)received_msgs.get(sender);
                 if(win == null) {
@@ -1226,14 +1226,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         org.jgroups.protocols.pbcast.Digest.Entry val;
         long high_seqno_delivered, high_seqno_received;
 
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=d.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
             if(sender == null)
                 continue;
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
-            high_seqno_delivered=val.high_seqno;
-            high_seqno_received=val.high_seqno_seen;
+            high_seqno_delivered=val.getHigh();
+            high_seqno_received=val.getHighSeen();
 
 
             // check whether the last seqno received for a sender P in the stability vector is > last seqno

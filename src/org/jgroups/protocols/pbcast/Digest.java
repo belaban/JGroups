@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.22 2007/01/03 10:50:39 belaban Exp $
+// $Id: Digest.java,v 1.23 2007/01/03 15:57:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -10,9 +10,7 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -33,7 +31,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class Digest implements Externalizable, Streamable {
     /** Map<Address, Entry> */
-    ConcurrentMap<Address,Entry> senders=null;
+    protected ConcurrentMap<Address,Entry> senders=null;
     protected static final Log log=LogFactory.getLog(Digest.class);
     static final boolean warn=log.isWarnEnabled();
 
@@ -47,6 +45,31 @@ public class Digest implements Externalizable, Streamable {
         senders=createSenders(size);
     }
 
+    /** Creates a new digest from an existing map by copying the keys and values from map */
+    public Digest(Map map) {
+        senders=createSenders(map);
+    }
+    
+
+    public Digest(Digest d) {
+        this(d.senders);
+    }
+
+
+    public Digest(Address sender, long low, long high, long high_seen) {
+        senders=createSenders(1);
+        senders.put(sender, new Entry(low, high, high_seen));
+    }
+
+    public Digest(Address sender, long low, long high) {
+        senders=createSenders(1);
+        senders.put(sender, new Entry(low, high));
+    }
+
+    /** Returns an unmodifiable map, so modifications will result in exceptions */
+    public Map<Address, Entry> getSenders() {
+        return Collections.unmodifiableMap(senders);
+    }
 
     public boolean equals(Object obj) {
         if(obj == null)
@@ -56,127 +79,13 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-
-
-    public void add(Address sender, long low_seqno, long high_seqno) {
-        add(sender, low_seqno, high_seqno, -1);
-    }
-
-
-    public void add(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        add(sender, new Entry(low_seqno, high_seqno, high_seqno_seen));
-    }
-
-    private void add(Address sender, Entry entry) {
-        if(sender == null || entry == null) {
-            if(log.isErrorEnabled())
-                log.error("sender (" + sender + ") or entry (" + entry + ")is null, will not add entry");
-            return;
-        }
-        Object retval=senders.put(sender, entry);
-        if(retval != null && warn)
-            log.warn("entry for " + sender + " was overwritten with " + entry);
-    }
-
-
-    public void add(Digest d) {
-        if(d != null) {
-            Map.Entry entry;
-            Address key;
-            Entry val;
-            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=(Address)entry.getKey();
-                val=(Entry)entry.getValue();
-                add(key, val.low_seqno, val.high_seqno, val.high_seqno_seen);
-            }
-        }
-    }
-
-    public void replace(Digest d) {
-        if(d != null) {
-            Map.Entry entry;
-            Address key;
-            Entry val;
-            clear();
-            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=(Address)entry.getKey();
-                val=(Entry)entry.getValue();
-                add(key, val.low_seqno, val.high_seqno, val.high_seqno_seen);
-            }
-        }
-    }
-
-    public Entry get(Address sender) {
-        return senders.get(sender);
-    }
-
-    public boolean set(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        Entry entry=senders.get(sender);
-        if(entry == null)
-            return false;
-        entry.low_seqno=low_seqno;
-        entry.high_seqno=high_seqno;
-        entry.high_seqno_seen=high_seqno_seen;
-        return true;
-    }
-
-    /**
-     * Adds a digest to this digest. This digest must have enough space to add the other digest; otherwise an error
-     * message will be written. For each sender in the other digest, the merge() method will be called.
-     */
-    public void merge(Digest d) {
-        if(d == null) {
-            if(log.isErrorEnabled()) log.error("digest to be merged with is null");
-            return;
-        }
-        Map.Entry entry;
-        Address sender;
-        Entry val;
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sender=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
-            if(val != null) {
-                merge(sender, val.low_seqno, val.high_seqno, val.high_seqno_seen);
-            }
-        }
-    }
-
-
-    /**
-     * Similar to add(), but if the sender already exists, its seqnos will be modified (no new entry) as follows:
-     * <ol>
-     * <li>this.low_seqno=min(this.low_seqno, low_seqno)
-     * <li>this.high_seqno=max(this.high_seqno, high_seqno)
-     * <li>this.high_seqno_seen=max(this.high_seqno_seen, high_seqno_seen)
-     * </ol>
-     * If the sender doesn not exist, a new entry will be added (provided there is enough space)
-     */
-    public void merge(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("sender == null");
-            return;
-        }
-        Entry entry=senders.get(sender);
-        if(entry == null) {
-            add(sender, low_seqno, high_seqno, high_seqno_seen);
-        }
-        else {
-            if(low_seqno < entry.low_seqno)
-                entry.low_seqno=low_seqno;
-            if(high_seqno > entry.high_seqno)
-                entry.high_seqno=high_seqno;
-            if(high_seqno_seen > entry.high_seqno_seen)
-                entry.high_seqno_seen=high_seqno_seen;
-        }
-    }
-
-
-
     public boolean contains(Address sender) {
         return senders.containsKey(sender);
+    }
+
+    /** Returns the Entry for the given sender. Note that Entry is immutable */
+    public Entry get(Address sender) {
+        return senders.get(sender);
     }
 
 
@@ -195,39 +104,10 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    /** 
-     * Increments the sender's high_seqno by 1.
-     */
-    public void incrementHighSeqno(Address sender) {
-        Entry entry=senders.get(sender);
-        if(entry == null)
-            return;
-        entry.high_seqno++;
-    }
-
-
     public int size() {
         return senders.size();
     }
 
-
-
-
-    /**
-     * Resets the seqnos for the sender at 'index' to 0. This happens when a member has left the group,
-     * but it is still in the digest. Resetting its seqnos ensures that no-one will request a message
-     * retransmission from the dead member.
-     */
-    public void resetAt(Address sender) {
-        Entry entry=senders.get(sender);
-        if(entry != null)
-            senders.put(sender, new Entry());
-    }
-
-
-    public void clear() {
-        senders.clear();
-    }
 
     public long lowSeqnoAt(Address sender) {
         Entry entry=senders.get(sender);
@@ -256,37 +136,8 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    public void setHighSeqnoAt(Address sender, long high_seqno) {
-        Entry entry=senders.get(sender);
-        if(entry != null)
-            entry.high_seqno=high_seqno;
-    }
-
-    public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
-        Entry entry=senders.get(sender);
-        if(entry != null)
-            entry.high_seqno_seen=high_seqno_seen;
-    }
-
-    public void setHighestDeliveredAndSeenSeqnos(Address sender, long high_seqno, long high_seqno_seen) {
-        Entry entry=senders.get(sender);
-        if(entry != null) {
-            entry.high_seqno=high_seqno;
-            entry.high_seqno_seen=high_seqno_seen;
-        }
-    }
-
-
     public Digest copy() {
-        Digest ret=new Digest(senders.size());
-        Map.Entry<Address,Entry> entry;
-        Entry tmp;
-        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            tmp=entry.getValue();
-            ret.add(entry.getKey(), tmp.low_seqno, tmp.high_seqno, tmp.high_seqno_seen);
-        }
-        return ret;
+        return new Digest(senders);
     }
 
 
@@ -372,7 +223,6 @@ public class Digest implements Externalizable, Streamable {
         out.writeObject(senders);
     }
 
-
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         senders=(ConcurrentMap)in.readObject();
     }
@@ -396,12 +246,13 @@ public class Digest implements Externalizable, Streamable {
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         short size=in.readShort();
-        senders=createSenders(size);
+        Map<Address,Entry> tmp=new HashMap(size);
         Address key;
         for(int i=0; i < size; i++) {
             key=Util.readAddress(in);
-            add(key, in.readLong(), in.readLong(), in.readLong());
+            tmp.put(key, new Entry(in.readLong(), in.readLong(), in.readLong()));
         }
+        senders=createSenders(tmp);
     }
 
 
@@ -421,13 +272,18 @@ public class Digest implements Externalizable, Streamable {
         return new ConcurrentHashMap(size);
     }
 
+    private static ConcurrentMap createSenders(Map map) {
+        return new ConcurrentHashMap(map);
+    }
+
+
 
     /**
      * Class keeping track of the lowest and highest sequence numbers delivered, and the highest
      * sequence numbers received, per member. This class is immutable
      */
     public static class Entry implements Externalizable {
-        public long low_seqno, high_seqno, high_seqno_seen=-1;
+        private long low_seqno, high_seqno, high_seqno_seen=-1;
 
         public Entry() {
         }
@@ -451,6 +307,9 @@ public class Digest implements Externalizable, Streamable {
             }
         }
 
+        public final long getLow() {return low_seqno;}
+        public final long getHigh() {return high_seqno;}
+        public final long getHighSeen() {return high_seqno_seen;}
 
         public boolean equals(Object obj) {
             Entry other=(Entry)obj;
