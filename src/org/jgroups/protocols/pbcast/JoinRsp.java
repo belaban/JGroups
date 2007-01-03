@@ -1,4 +1,4 @@
-// $Id: JoinRsp.java,v 1.10 2006/01/14 14:00:33 belaban Exp $
+// $Id: JoinRsp.java,v 1.11 2007/01/03 14:22:37 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -14,11 +14,14 @@ import java.io.IOException;
 import java.io.DataInputStream;
 
 
+/**
+ * Result of a JOIN request (sent by the GMS client). Instances of this class are immutable.
+ */
 public class JoinRsp implements Serializable, Streamable {
-    View view=null;
-    Digest digest=null;
+    private View view=null;
+    private Digest digest=null;
     /** only set if JOIN failed, e.g. in AUTH */
-    String fail_reason=null;
+    private String fail_reason=null;
     private static final long serialVersionUID = -212620440767943314L;
 
 
@@ -36,11 +39,11 @@ public class JoinRsp implements Serializable, Streamable {
         this.fail_reason=fail_reason;
     }
 
-    View getView() {
+    public View getView() {
         return view;
     }
 
-    Digest getDigest() {
+    public Digest getDigest() {
         return digest;
     }
 
@@ -79,7 +82,7 @@ public class JoinRsp implements Serializable, Streamable {
     }
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("view: ");
         if(view == null)
             sb.append("<null>");
