@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.91 2007/01/03 15:57:23 belaban Exp $
+// $Id: NAKACK.java,v 1.92 2007/01/03 16:22:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -281,9 +281,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        if(props.size() > 0) {
-            log.error("NAKACK.setProperties(): these properties are not recognized: " + props);
-
+        if(!props.isEmpty()) {
+            log.error("these properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -839,7 +838,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             len=m.size();
             size+=len;
-            if(size > max_xmit_size && list.size() > 0) { // changed from >= to > (yaron-r, bug #943709)
+            if(size > max_xmit_size && !list.isEmpty()) { // changed from >= to > (yaron-r, bug #943709)
                 // yaronr: added &&listSize()>0 since protocols between FRAG and NAKACK add headers, and message exceeds size.
 
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
@@ -860,7 +859,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             list.add(tmp);
         }
 
-        if(list.size() > 0) {
+        if(!list.isEmpty()) {
             if(trace)
                 log.trace("xmitting msgs [" + marker + '-' + last_seqno + "] to " + xmit_requester);
             sendXmitRsp(xmit_requester, (LinkedList)list.clone(), marker, last_seqno);
@@ -881,7 +880,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private void sendXmitRsp(Address dest, LinkedList xmit_list, long first_seqno, long last_seqno) {
         Buffer buf;
-        if(xmit_list == null || xmit_list.size() == 0) {
+        if(xmit_list == null || xmit_list.isEmpty()) {
             if(log.isErrorEnabled())
                 log.error("xmit_list is empty");
             return;
@@ -1024,8 +1023,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             map.put(sender, new Digest.Entry(range.low, range.high, high_seqno_seen));
         }
 
-        Digest digest=new Digest(map);
-        return digest;
+        return new Digest(map);
     }
 
 
@@ -1396,8 +1394,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         StringBuilder sb=new StringBuilder();
         Long min_seqno, max_seqno;
         synchronized(sent_msgs) {
-            min_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.firstKey() : new Long(0);
-            max_seqno=sent_msgs.size() > 0 ? (Long)sent_msgs.lastKey() : new Long(0);
+            min_seqno=!sent_msgs.isEmpty()? (Long)sent_msgs.firstKey() : new Long(0);
+            max_seqno=!sent_msgs.isEmpty()? (Long)sent_msgs.lastKey() : new Long(0);
         }
         sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (").append(sent_msgs.size()).append(")");
         return sb.toString();
