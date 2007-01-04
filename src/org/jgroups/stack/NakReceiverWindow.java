@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.32 2006/12/31 15:31:20 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.33 2007/01/04 12:18:54 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -284,7 +284,7 @@ public class NakReceiverWindow {
 
         lock.writeLock().lock();
         try {
-            while(received_msgs.size() > 0) {
+            while(!received_msgs.isEmpty()) {
                 key=(Long)received_msgs.firstKey();
                 retval=(Message)received_msgs.get(key);
                 if(retval != null) { // message exists and is ready for delivery
@@ -326,7 +326,7 @@ public class NakReceiverWindow {
             // we need to remove all seqnos *including* seqno: because headMap() *excludes* seqno, we
             // simply increment it, so we have to correct behavior
             SortedMap m=delivered_msgs.headMap(new Long(seqno +1));
-            if(m.size() > 0)
+            if(!m.isEmpty())
                 lowest_seen=Math.max(lowest_seen, ((Long)m.lastKey()).longValue());
             m.clear(); // removes entries from delivered_msgs
         }
@@ -627,7 +627,7 @@ public class NakReceiverWindow {
         StringBuilder sb=new StringBuilder();
         Long min=null, max=null;
 
-        if(delivered_msgs.size() > 0) {
+        if(!delivered_msgs.isEmpty()) {
             try {min=(Long)delivered_msgs.firstKey();} catch(NoSuchElementException ex) {}
             try {max=(Long)delivered_msgs.lastKey();}  catch(NoSuchElementException ex) {}
         }
@@ -645,7 +645,7 @@ public class NakReceiverWindow {
     String printReceivedMessages() {
         StringBuilder sb=new StringBuilder();
         sb.append('[');
-        if(received_msgs.size() > 0) {
+        if(!received_msgs.isEmpty()) {
             Long first=null, last=null;
             try {first=(Long)received_msgs.firstKey();} catch(NoSuchElementException ex) {}
             try {last=(Long)received_msgs.lastKey();}   catch(NoSuchElementException ex) {}
@@ -689,7 +689,7 @@ public class NakReceiverWindow {
         */
 
         // The lowest seqno is the first seqno of the delivered messages
-        if(delivered_msgs.size() > 0) {
+        if(!delivered_msgs.isEmpty()) {
             try {
                 lowest_seqno=(Long)delivered_msgs.firstKey();
                 if(lowest_seqno != null)
@@ -700,7 +700,7 @@ public class NakReceiverWindow {
         }
         // If no elements in delivered messages (e.g. due to message garbage collection), use the received messages
         else {
-            if(received_msgs.size() > 0) {
+            if(!received_msgs.isEmpty()) {
                 try {
                     lowest_seqno=(Long)received_msgs.firstKey();
                     if(received_msgs.get(lowest_seqno) != null) { // only set lowest_seen if we *have* a msg
