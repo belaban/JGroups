@@ -6,7 +6,6 @@ import org.jgroups.Channel;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
-import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 
 import java.io.DataInputStream;
@@ -14,6 +13,7 @@ import java.io.IOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.*;
 
 
@@ -42,8 +42,9 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.101 2007/01/03 16:40:06 belaban Exp $
+ * @version $Id: TP.java,v 1.102 2007/01/04 17:36:46 belaban Exp $
  */
+@SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
 
 
@@ -96,8 +97,8 @@ public abstract class TP extends Protocol {
 
     /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
-    final ExposedBufferedOutputStream  buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
-    final ExposedDataOutputStream      dos=new ExposedDataOutputStream(buf_out_stream);
+    final ExposedBufferedOutputStream buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
+    final ExposedDataOutputStream dos=new ExposedDataOutputStream(buf_out_stream);
 
     final ExposedByteArrayInputStream  in_stream=new ExposedByteArrayInputStream(new byte[]{'0'});
     final ExposedBufferedInputStream   buf_in_stream=new ExposedBufferedInputStream(in_stream);
@@ -1053,10 +1054,10 @@ public abstract class TP extends Protocol {
      */
     private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
         Message                msg=null;
-        List                   l=null;  // used if bundling is enabled
         short                  version;
         boolean                is_message_list, multicast;
         byte                   flags;
+        List<Message>          msgs;
 
         try {
             synchronized(in_stream) {
@@ -1082,19 +1083,15 @@ public abstract class TP extends Protocol {
                 is_message_list=(flags & LIST) == LIST;
                 multicast=(flags & MULTICAST) == MULTICAST;
 
-                if(is_message_list)
-                    l=bufferToList(dis, dest, multicast);
-                else
-                    msg=bufferToMessage(dis, dest, sender, multicast);
-            }
 
-            LinkedList msgs=new LinkedList();
-            if(is_message_list) {
-                for(Enumeration en=l.elements(); en.hasMoreElements();)
-                    msgs.add(en.nextElement());
+                if(is_message_list)
+                    msgs=readMessageList(dis, dest, multicast);
+                else {
+                    msg=bufferToMessage(dis, dest, sender, multicast);
+                    msgs=new LinkedList();
+                    msgs.add(msg);
+                }
             }
-            else
-                msgs.add(msg);
 
             Address src;
             for(Iterator it=msgs.iterator(); it.hasNext();) {
@@ -1110,9 +1107,6 @@ public abstract class TP extends Protocol {
             }
             if(incoming_msg_queue != null && !msgs.isEmpty())
                 incoming_msg_queue.addAll(msgs);
-        }
-        catch(QueueClosedException closed_ex) {
-            ; // swallow exception
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
@@ -1232,12 +1226,10 @@ public abstract class TP extends Protocol {
 
 
 
-    private Buffer listToBuffer(List l, boolean multicast) throws Exception {
-        Buffer retval;
+    private void writeMessageList(List<Message> msgs, boolean multicast) throws Exception {
         Address src;
-        Message msg;
         byte flags=0;
-        int len=l != null? l.size() : 0;
+        int len=msgs != null? msgs.size() : 0;
         boolean src_written=false;
         out_stream.reset();
         buf_out_stream.reset(out_stream.getCapacity());
@@ -1248,24 +1240,19 @@ public abstract class TP extends Protocol {
             flags+=MULTICAST;
         dos.writeByte(flags);
         dos.writeInt(len);
-        for(Enumeration en=l.elements(); en.hasMoreElements();) {
-            msg=(Message)en.nextElement();
+        for(Message msg: msgs) {
             src=msg.getSrc();
             if(!src_written) {
                 Util.writeAddress(src, dos);
                 src_written=true;
             }
-            // msg.setSrc(null);
             msg.writeTo(dos);
-            // msg.setSrc(src);
         }
         dos.flush();
-        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        return retval;
     }
 
-    private List bufferToList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
-        List                    l=new List();
+    private List<Message> readMessageList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
+        List                    list=new LinkedList();
         DataInputStream         in=null;
         int                     len;
         Message                 msg;
@@ -1279,9 +1266,9 @@ public abstract class TP extends Protocol {
                 msg.readFrom(instream);
                 postUnmarshallingList(msg, dest, multicast);
                 msg.setSrc(src);
-                l.add(msg);
+                list.add(msg);
             }
-            return l;
+            return list;
         }
         finally {
             Util.close(in);
@@ -1393,21 +1380,21 @@ public abstract class TP extends Protocol {
             String tmp, prefix=Global.THREAD_PREFIX;
             if(incoming_packet_handler != null) {
                 tmp=incoming_packet_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + channel_name + ")";
                     incoming_packet_handler.setName(tmp);
                 }
             }
             if(incoming_msg_handler != null) {
                 tmp=incoming_msg_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + channel_name + ")";
                     incoming_msg_handler.setName(tmp);
                 }
             }
             if(diag_handler != null) {
                 tmp=diag_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + channel_name + ")";
                     diag_handler.setName(tmp);
                 }
@@ -1554,20 +1541,17 @@ public abstract class TP extends Protocol {
                 is_message_list=(flags & LIST) == LIST;
                 multicast=(flags & MULTICAST) == MULTICAST;
 
-                Message msg;
                 if(is_message_list) { // used if message bundling is enabled
-                    List l=bufferToList(dis, dest, multicast);
-                    for(Enumeration en=l.elements(); en.hasMoreElements();) {
-                        msg=(Message)en.nextElement();
+                    List<Message> msgs=readMessageList(dis, dest, multicast);
+                    for(Message msg: msgs) {
                         if(msg.isFlagSet(Message.OOB)) {
                             log.warn("bundled message should not be marked as OOB");
-                            System.out.println("");
                         }
                         handleMyMessage(msg, multicast);
                     }
                 }
                 else {
-                    msg=bufferToMessage(dis, dest, sender, multicast);
+                    Message msg=bufferToMessage(dis, dest, sender, multicast);
                     handleMyMessage(msg, multicast);
                 }
             }
@@ -1742,11 +1726,11 @@ public abstract class TP extends Protocol {
 
     private class Bundler {
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-        final HashMap       msgs=new HashMap(36);
-        long                count=0;    // current number of bytes accumulated
-        int                 num_msgs=0;
-        long                start=0;
-        BundlingTimer       bundling_timer=null;
+        final Map<Address,List<Message>>  msgs=new HashMap(36);
+        long                              count=0;    // current number of bytes accumulated
+        int                               num_msgs=0;
+        long                              start=0;
+        BundlingTimer                     bundling_timer=null;
 
 
         private void send(Message msg, Address dest) throws Exception {
@@ -1786,9 +1770,9 @@ public abstract class TP extends Protocol {
         private void addMessage(Message msg, Address dest) { // no sync needed, never called by multiple threads concurrently
             List    tmp;
             synchronized(msgs) {
-                tmp=(List)msgs.get(dest);
+                tmp=msgs.get(dest);
                 if(tmp == null) {
-                    tmp=new List();
+                    tmp=new LinkedList();
                     msgs.put(dest, tmp);
                 }
                 tmp.add(msg);
@@ -1802,7 +1786,6 @@ public abstract class TP extends Protocol {
             Map.Entry      entry;
             Address        dst;
             Buffer         buffer;
-            List           l;
             Map copy;
 
             synchronized(msgs) {
@@ -1828,14 +1811,15 @@ public abstract class TP extends Protocol {
                 boolean multicast;
                 for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
                     entry=(Map.Entry)it.next();
-                    l=(List)entry.getValue();
-                    if(l.size() == 0)
+                    List list=(List)entry.getValue();
+                    if(list.isEmpty())
                         continue;
                     dst=(Address)entry.getKey();
                     multicast=dst == null || dst.isMulticastAddress();
                     synchronized(out_stream) {
                         try {
-                            buffer=listToBuffer(l, multicast);
+                            writeMessageList(list, multicast); // flushes output stream when done
+                            buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
                             doSend(buffer, dst, multicast);
                         }
                         catch(Throwable e) {
