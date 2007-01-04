@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.92 2007/01/03 16:22:44 belaban Exp $
+// $Id: NAKACK.java,v 1.93 2007/01/04 14:48:50 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -825,12 +825,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     StringBuffer sb=new StringBuffer();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in ").append((amISender? "sent" : "received")).append(" msgs. ");
+                    sb.append(" not found in ").append((amISender? "sent" : "received")).append(" msgs ");
                     if(win != null) {
-                        sb.append("Received messages from ").append(original_sender).append(": ").append(win.toString());
+                        sb.append("from ").append(original_sender).append(": ").append(win.toString());
                     }
                     else {
-                        sb.append("\nSent messages: ").append(printSentMsgs());
+                        sb.append(printSentMsgs());
                     }
                     log.error(sb);
                 }
