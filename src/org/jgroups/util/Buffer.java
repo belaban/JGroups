@@ -1,14 +1,15 @@
 package org.jgroups.util;
 
 /**
- * Buffer with an offset and length. Will be replaced with NIO equivalent once JDK 1.4 becomes baseline
+ * Buffer with an offset and length. Will be replaced with NIO equivalent once JDK 1.4 becomes baseline. This class is
+ * immutable
  * @author Bela Ban
- * @version $Id: Buffer.java,v 1.4 2005/09/06 09:53:53 belaban Exp $
+ * @version $Id: Buffer.java,v 1.5 2007/01/04 12:11:09 belaban Exp $
  */
 public class Buffer {
-    byte[] buf;
-    int offset;
-    int length;
+    private final byte[] buf;
+    private final int offset;
+    private final int length;
 
     public Buffer(byte[] buf, int offset, int length) {
         this.buf=buf;
@@ -20,24 +21,12 @@ public class Buffer {
         return buf;
     }
 
-    public void setBuf(byte[] buf) {
-        this.buf=buf;
-    }
-
     public int getOffset() {
         return offset;
     }
 
-    public void setOffset(int offset) {
-        this.offset=offset;
-    }
-
     public int getLength() {
         return length;
-    }
-
-    public void setLength(int length) {
-        this.length=length;
     }
 
     public Buffer copy() {
@@ -49,7 +38,7 @@ public class Buffer {
     }
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(length).append(" bytes");
         if(offset > 0)
             sb.append(" (offset=").append(offset).append(")");
