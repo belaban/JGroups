@@ -1,4 +1,4 @@
-// $Id: GMS.java,v 1.18 2006/12/28 09:34:31 belaban Exp $
+// $Id: GMS.java,v 1.19 2007/01/04 16:50:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -144,16 +144,15 @@ public class GMS extends RpcProtocol implements Runnable {
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
     public View getNextView(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
-        Vector members;
         long vid;
         View v;
         Membership tmp_mbrs;
         Vector mbrs_to_remove=new Vector();
 
-        if(old_mbrs != null && old_mbrs.size() > 0)
+        if(old_mbrs != null && !old_mbrs.isEmpty())
             for(int i=0; i < old_mbrs.size(); i++)
                 mbrs_to_remove.addElement(old_mbrs.elementAt(i));
-        if(suspected_mbrs != null && suspected_mbrs.size() > 0)
+        if(suspected_mbrs != null && !suspected_mbrs.isEmpty())
             for(int i=0; i < suspected_mbrs.size(); i++)
                 if(!mbrs_to_remove.contains(suspected_mbrs.elementAt(i)))
                     mbrs_to_remove.addElement(suspected_mbrs.elementAt(i));
@@ -163,8 +162,8 @@ public class GMS extends RpcProtocol implements Runnable {
             ltime=vid;
             tmp_mbrs=this.mbrs.copy();
             tmp_mbrs.merge(new_mbrs, mbrs_to_remove);
-            members=(Vector)tmp_mbrs.getMembers().clone();
-            v=new View(local_addr, vid, members);
+            Vector tmp=(Vector)tmp_mbrs.getMembers().clone();
+            v=new View(local_addr, vid, tmp);
             return v;
         }
     }
@@ -177,7 +176,7 @@ public class GMS extends RpcProtocol implements Runnable {
      */
     Vector computeFlushDestination(Vector suspected_mbrs) {
         Vector ret=mbrs.getMembers(); // *copy* of current membership
-        if(suspected_mbrs != null && suspected_mbrs.size() > 0)
+        if(suspected_mbrs != null && !suspected_mbrs.isEmpty())
             for(int i=0; i < suspected_mbrs.size(); i++)
                 ret.removeElement(suspected_mbrs.elementAt(i));
         return ret;
@@ -228,7 +227,7 @@ public class GMS extends RpcProtocol implements Runnable {
         if(suspected_mbrs == null)
             suspected_mbrs=new Vector();
 
-        while(flush_dest.size() > 0) {
+        while(!flush_dest.isEmpty()) {
             flush_rsp=null;
             synchronized(flush_mutex) {
                 passDown(new Event(Event.FLUSH, flush_dest));  // send FLUSH to members in flush_dest
@@ -245,7 +244,7 @@ public class GMS extends RpcProtocol implements Runnable {
             }
 
             if(rebroadcast_unstable_msgs && flush_rsp.unstable_msgs != null &&
-                    flush_rsp.unstable_msgs.size() > 0) {
+                    !flush_rsp.unstable_msgs.isEmpty()) {
                 Message m;
                 for(int i=0; i < flush_rsp.unstable_msgs.size(); i++) {
                     m=(Message)flush_rsp.unstable_msgs.elementAt(i);
@@ -271,7 +270,7 @@ public class GMS extends RpcProtocol implements Runnable {
 
 
         // Rebroadcast unstable messages
-        if(rebroadcast_unstable_msgs && rebroadcast_msgs.size() > 0) {
+        if(rebroadcast_unstable_msgs && !rebroadcast_msgs.isEmpty()) {
 
                 if(log.isInfoEnabled()) log.info("re-broadcasting unstable messages (" +
                         rebroadcast_msgs.size() + ')');
@@ -398,7 +397,7 @@ public class GMS extends RpcProtocol implements Runnable {
                 }
             }
 
-            if(mbrs != null && mbrs.size() > 0)
+            if(mbrs != null && !mbrs.isEmpty())
                 this.mbrs.set(mbrs);
 
 
@@ -542,9 +541,7 @@ public class GMS extends RpcProtocol implements Runnable {
         if(up_protocol == null)
             return false;
         prot_name=up_protocol.getName();
-        if(prot_name != null && "VIEW_ENFORCER".equals(prot_name))
-            return true;
-        return checkForViewEnforcer(up_protocol.getUpProtocol());
+        return prot_name != null && "VIEW_ENFORCER".equals(prot_name) || checkForViewEnforcer(up_protocol.getUpProtocol());
     }
 
 
@@ -707,9 +704,8 @@ public class GMS extends RpcProtocol implements Runnable {
             props.remove("disable_initial_coord");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("GMS.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
