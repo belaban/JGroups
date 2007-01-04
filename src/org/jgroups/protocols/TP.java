@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.103 2007/01/04 18:39:30 belaban Exp $
+ * @version $Id: TP.java,v 1.104 2007/01/04 19:28:33 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -157,7 +157,7 @@ public abstract class TP extends Protocol {
     boolean oob_thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
     int oob_thread_pool_queue_max_size=500;
-    /** Possible values are "Wait", "Abort", "Discard", "DiscardOldest". These values might change once we switch to
+    /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
     String oob_thread_pool_rejection_policy="Run";
 
@@ -180,7 +180,7 @@ public abstract class TP extends Protocol {
     boolean thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
     int thread_pool_queue_max_size=500;
-    /** Possible values are "Wait", "Abort", "Discard", "DiscardOldest". These values might change once we switch to
+    /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
     String thread_pool_rejection_policy="Run";
 
@@ -755,7 +755,7 @@ public abstract class TP extends Protocol {
         if(str != null) {
             str=str.toLowerCase().trim();
             oob_thread_pool_rejection_policy=str;
-            if(!(str.equals("run") || str.equals("wait") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
+            if(!(str.equals("run") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
                 log.error("rejection policy of " + str + " is unknown");
                 return false;
             }
@@ -806,7 +806,7 @@ public abstract class TP extends Protocol {
         if(str != null) {
             str=str.toLowerCase().trim();
             thread_pool_rejection_policy=str;
-            if(!(str.equals("run") || str.equals("wait") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
+            if(!(str.equals("run") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
                 log.error("rejection policy of " + str + " is unknown");
                 return false;
             }
