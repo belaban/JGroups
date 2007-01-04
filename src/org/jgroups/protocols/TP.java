@@ -15,7 +15,7 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.*;
-
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -42,7 +42,7 @@ import java.util.concurrent.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.102 2007/01/04 17:36:46 belaban Exp $
+ * @version $Id: TP.java,v 1.103 2007/01/04 18:39:30 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1729,28 +1729,37 @@ public abstract class TP extends Protocol {
         final Map<Address,List<Message>>  msgs=new HashMap(36);
         long                              count=0;    // current number of bytes accumulated
         int                               num_msgs=0;
-        long                              start=0;
+        long                              last_bundle_time;
         BundlingTimer                     bundling_timer=null;
+        final ReentrantLock               lock=new ReentrantLock();
 
 
         private void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
             checkLength(length);
+            Map<Address,List<Message>> bundled_msgs=null;
 
-            synchronized(this) {
-                if(start == 0)
-                    start=System.currentTimeMillis();
+            lock.lock();
+            try {
                 if(count + length >= max_bundle_size) {
                     cancelTimer();
-                    bundleAndSend();  // clears msgs and resets num_msgs
+                    bundled_msgs=removeBundledMessages();
                 }
 
                 addMessage(msg, dest);
                 count+=length;
                 startTimer(); // start timer if not running
             }
+            finally {
+                lock.unlock();
+            }
+
+            if(bundled_msgs != null) {
+                sendBundledMessages(bundled_msgs);
+            }
         }
 
+        
         /** Never called concurrently with cancelTimer - no need for synchronization */
         private void startTimer() {
             if(bundling_timer == null || bundling_timer.cancelled()) {
@@ -1767,69 +1776,64 @@ public abstract class TP extends Protocol {
             }
         }
 
-        private void addMessage(Message msg, Address dest) { // no sync needed, never called by multiple threads concurrently
-            List    tmp;
-            synchronized(msgs) {
-                tmp=msgs.get(dest);
-                if(tmp == null) {
-                    tmp=new LinkedList();
-                    msgs.put(dest, tmp);
-                }
-                tmp.add(msg);
-                num_msgs++;
+        private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
+            List<Message> tmp=msgs.get(dest);
+            if(tmp == null) {
+                tmp=new LinkedList();
+                msgs.put(dest, tmp);
             }
+            tmp.add(msg);
+            num_msgs++;
         }
 
 
-
-        private void bundleAndSend() {
-            Map.Entry      entry;
-            Address        dst;
-            Buffer         buffer;
-            Map copy;
-
-            synchronized(msgs) {
-                if(msgs.isEmpty())
-                    return;
-                copy=new HashMap(msgs);
-                if(trace) {
-                    long stop=System.currentTimeMillis();
-                    double percentage=100.0 / max_bundle_size * count;
-                    StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
-                    num_msgs=0;
-                    sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size), collected in "+
-                            + (stop-start) + "ms) to ").append(copy.size()).
-                            append(" destination(s)");
-                    if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
-                    log.trace(sb.toString());
+        /** Must always be called with lock held */
+        private Map<Address,List<Message>> removeBundledMessages() {
+            if(msgs.isEmpty())
+                return null;
+            Map<Address,List<Message>> copy=new HashMap(msgs);
+            if(trace) {
+                long stop=System.currentTimeMillis();
+                double percentage=100.0 / max_bundle_size * count;
+                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                num_msgs=0;
+                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                if(last_bundle_time > 0) {
+                    sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
                 }
-                msgs.clear();
-                count=0;
+                sb.append(" to ").append(copy.size()).append(" destination(s)");
+                if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
+                log.trace(sb.toString());
             }
+            msgs.clear();
+            count=0;
+            last_bundle_time=System.currentTimeMillis();
+            return copy;
+        }
 
-            try {
-                boolean multicast;
-                for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
-                    List list=(List)entry.getValue();
-                    if(list.isEmpty())
-                        continue;
-                    dst=(Address)entry.getKey();
-                    multicast=dst == null || dst.isMulticastAddress();
-                    synchronized(out_stream) {
-                        try {
-                            writeMessageList(list, multicast); // flushes output stream when done
-                            buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-                            doSend(buffer, dst, multicast);
-                        }
-                        catch(Throwable e) {
-                            if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
-                        }
+
+        private void sendBundledMessages(Map<Address,List<Message>> msgs) {
+            boolean   multicast;
+            Buffer    buffer;
+            Map.Entry entry;
+            Address   dst;
+            for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                List<Message> list=(List)entry.getValue();
+                if(list.isEmpty())
+                    continue;
+                dst=(Address)entry.getKey();
+                multicast=dst == null || dst.isMulticastAddress();
+                synchronized(out_stream) {
+                    try {
+                        writeMessageList(list, multicast); // flushes output stream when done
+                        buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+                        doSend(buffer, dst, multicast);
+                    }
+                    catch(Throwable e) {
+                        if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
                     }
                 }
-            }
-            finally {
-                start=0;
             }
         }
 
@@ -1857,7 +1861,17 @@ public abstract class TP extends Protocol {
             }
 
             public void run() {
-                bundleAndSend();
+                Map<Address,List<Message>> msgs=null;
+                lock.lock();
+                try {
+                    msgs=removeBundledMessages();
+                }
+                finally {
+                    lock.unlock();
+                }
+
+                if(msgs != null)
+                    sendBundledMessages(msgs);
                 cancelled=true;
             }
         }
