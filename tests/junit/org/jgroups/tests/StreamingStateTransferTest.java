@@ -81,36 +81,6 @@ public class StreamingStateTransferTest extends ChannelTestBase
       }           
    }
    
-   public void testStateTransferWithCoordinatorCrash()
-   {
-      String channelNames [] = null;
-      //mux applications on top of same channel have to have unique name
-      if(isMuxChannelUsed())
-      {
-         channelNames = createMuxApplicationNames(1);         
-      }
-      else
-      {
-         channelNames = new String[]{"A", "B", "C", "D", "E", "F"};        
-      }
-      transferHelper(channelNames,true,false,false);      
-   }
-   
-   public void testStateTransferWithCoordinatorCrashLargeState()
-   {
-      String channelNames [] = null;
-      //mux applications on top of same channel have to have unique name
-      if(isMuxChannelUsed())
-      {
-         channelNames = createMuxApplicationNames(1);         
-      }
-      else
-      {
-         channelNames = new String[]{"A", "B", "C", "D", "E"};        
-      }
-      transferHelper(channelNames,true,true,false);      
-   }
-   
    public void transferHelper(String channelNames[], boolean useDispatcher)
    {
       transferHelper(channelNames,false,false,useDispatcher);
