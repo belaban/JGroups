@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.125 2006/12/15 17:04:11 belaban Exp $
+ * @version $Id: UDP.java,v 1.126 2007/01/04 17:40:12 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -221,7 +221,7 @@ public class UDP extends TP implements Runnable {
         Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
         Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -282,7 +282,7 @@ public class UDP extends TP implements Runnable {
     }
 
     public String getInfo() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("group_addr=").append(mcast_addr_name).append(':').append(mcast_port).append("\n");
         return sb.toString();
     }
@@ -466,7 +466,7 @@ public class UDP extends TP implements Runnable {
             tmp_addr=InetAddress.getByName(mcast_addr_name);
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
 
-            if(receive_on_all_interfaces || (receive_interfaces != null && receive_interfaces.size() > 0)) {
+            if(receive_on_all_interfaces || (receive_interfaces != null && !receive_interfaces.isEmpty())) {
                 List interfaces;
                 if(receive_interfaces != null)
                     interfaces=receive_interfaces;
@@ -481,7 +481,7 @@ public class UDP extends TP implements Runnable {
             }
 
             // 3b. Create mcast sender socket
-            if(send_on_all_interfaces || (send_interfaces != null && send_interfaces.size() > 0)) {
+            if(send_on_all_interfaces || (send_interfaces != null && !send_interfaces.isEmpty())) {
                 List interfaces;
                 NetworkInterface intf;
                 if(send_interfaces != null)
@@ -631,7 +631,7 @@ public class UDP extends TP implements Runnable {
 
 
     private String dumpSocketInfo() throws Exception {
-        StringBuffer sb=new StringBuffer(128);
+        StringBuilder sb=new StringBuilder(128);
         sb.append("local_addr=").append(local_addr);
         sb.append(", mcast_addr=").append(mcast_addr);
         sb.append(", bind_addr=").append(bind_addr);
@@ -829,14 +829,14 @@ public class UDP extends TP implements Runnable {
             String tmp, prefix=Global.THREAD_PREFIX;
             if(mcast_receiver != null) {
                 tmp=mcast_receiver.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + channel_name + ")";
                     mcast_receiver.setName(tmp);
                 }
             }
             if(ucast_receiver != null) {
                 tmp=ucast_receiver.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + channel_name + ")";
                     ucast_receiver.setName(tmp);
                 }
