@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.93 2007/01/04 14:48:50 belaban Exp $
+// $Id: NAKACK.java,v 1.94 2007/01/04 17:05:39 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -896,7 +896,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             buf=Util.msgListToByteBuffer(xmit_list);
             Message msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
-            msg.setFlag(Message.OOB);
+            // changed Bela Jan 4 2007: we should use OOB for retransmitted messages, otherwise we tax the OOB thread pool
+            // too much
+            // msg.setFlag(Message.OOB);
             msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
             passDown(new Event(Event.MSG, msg));
         }
