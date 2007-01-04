@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.48 2006/12/22 14:45:51 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.49 2007/01/04 21:46:02 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -195,7 +195,12 @@ public class STATE_TRANSFER extends Protocol {
                        successfulFlush = startFlush(flush_timeout, 5);
                     }
                     if (successfulFlush){
-                       log.info("Successful flush at " + local_addr);
+                       if(log.isInfoEnabled())
+                          log.info("Successful flush at " + local_addr);
+                    }
+                    else{
+                       if(use_flush && log.isWarnEnabled())
+                          log.warn("Could not get successful flush from " + local_addr);                      
                     }
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
@@ -446,18 +451,19 @@ public class STATE_TRANSFER extends Protocol {
             successfulFlush = r.booleanValue();            
         }
         catch(TimeoutException e) {
-           log.warn("Initiator of flush and state requesting member " + local_addr
+           if(log.isInfoEnabled())
+              log.info("Initiator of flush and state requesting member " + local_addr
                  + " timed out waiting for flush responses after " 
                  + flush_timeout + " msec");
         }
         
         if(!successfulFlush && numberOfAttempts>0){
-           long backOffSleepTime = Util.random(5000);
+           long backOffSleepTime = Util.random(5);
            if(log.isInfoEnabled())               
-              log.info("Flush in progress detected at " + local_addr + ". Backing off for "
-                    + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+              log.info("Flush in progress or timeout detected at " + local_addr + ". Backing off for "
+                    + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
            
-           Util.sleepRandom(backOffSleepTime);
+           Util.sleepRandom(backOffSleepTime*1000);
            successfulFlush = startFlush(flush_timeout,--numberOfAttempts);            
         }              
         return successfulFlush;

@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.80 2007/01/03 15:57:22 belaban Exp $
+ * @version $Id: GMS.java,v 1.81 2007/01/04 21:46:02 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -613,18 +613,19 @@ public class GMS extends Protocol {
             successfulFlush = r.booleanValue();
          }
          catch (TimeoutException e){
-            log.warn("GMS coordinator " + local_addr + " timed out waiting for flush responses after " + flush_timeout
+            if(log.isInfoEnabled())
+               log.info("GMS coordinator " + local_addr + " timed out waiting for flush responses after " + flush_timeout
                   + " msec");
          }
 
          if (!successfulFlush && numberOfAttempts > 0){
 
-            long backOffSleepTime = Util.random(5000);
+            long backOffSleepTime = Util.random(5);
             if(log.isInfoEnabled())
-               log.info("Flush in progress detected at GMS coordinator " + local_addr + ". Backing off for "
-                     + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+               log.info("Flush in progress or timeout detected at GMS coordinator " + local_addr + ". Backing off for "
+                     + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
 
-            Util.sleepRandom(backOffSleepTime);
+            Util.sleepRandom(backOffSleepTime*1000);
             successfulFlush = startFlush(new_view, --numberOfAttempts);
          }
        }
@@ -1208,7 +1209,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.80 2007/01/03 15:57:22 belaban Exp $
+     * @version $Id: GMS.java,v 1.81 2007/01/04 21:46:02 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;
@@ -1415,6 +1416,9 @@ public class GMS extends Protocol {
                            boolean successfulFlush = startFlush(firstReq.view, 3);
                            if (successfulFlush){
                               log.info("Successful GMS flush by coordinator at " + getLocalAddress());
+                           }
+                           else {
+                              log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
                            }
                         }
                         castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);

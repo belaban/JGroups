@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.56 2007/01/03 15:57:22 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.57 2007/01/04 21:46:02 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -378,7 +378,12 @@ public class CoordGmsImpl extends GmsImpl {
                 // (below in finally clause) and members are allowed to send messages again                                      
                 boolean successfulFlush = gms.startFlush(new_view, 3);                
                 if (successfulFlush){
-                   log.info("Successful GMS flush by coordinator at " + gms.getLocalAddress());
+                   if(log.isInfoEnabled())
+                      log.info("Successful GMS flush by coordinator at " + gms.getLocalAddress());
+                }
+                else {
+                   if(log.isWarnEnabled())
+                      log.warn("GMS flush by coordinator at " + gms.getLocalAddress() + " failed");
                 }
                 sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
                 gms.castViewChangeWithDest(new_view, null, tmp_mbrs);

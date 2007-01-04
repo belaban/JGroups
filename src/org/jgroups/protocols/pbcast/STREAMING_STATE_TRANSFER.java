@@ -324,12 +324,21 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             else
             {
                boolean successfulFlush = false;
-               if(use_flush) {
+               if (use_flush)
+               {
                   successfulFlush = startFlush(flush_timeout, 5);
                }
                if (successfulFlush)
                {
-                  log.info("Successful flush at " + local_addr);
+               	  if(log.isInfoEnabled())	
+                  	log.info("Successful flush at " + local_addr);
+               }
+               else
+               {
+                  if (use_flush && log.isWarnEnabled())
+                  {
+                     log.warn("Could not get successful flush from " + local_addr);
+                  }
                }
                Message state_req = new Message(target, null, null);
                state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ, local_addr, info.state_id));
@@ -479,18 +488,19 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
       catch (TimeoutException e)
       {
-         log.warn("Initiator of flush and state requesting member " + local_addr
+         if(log.isInfoEnabled())
+            log.info("Initiator of flush and state requesting member " + local_addr
                + " timed out waiting for flush responses after " + flush_timeout + " msec");
       }
 
       if (!successfulFlush && numberOfAttempts > 0)
       {
-         long backOffSleepTime = Util.random(5000);
+         long backOffSleepTime = Util.random(5);
          if(log.isInfoEnabled())               
-            log.info("Flush in progress detected at " + local_addr + ". Backing off for "
-                  + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
+            log.info("Flush in progress or timeout detected at " + local_addr + ". Backing off for "
+                  + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
          
-         Util.sleepRandom(backOffSleepTime);      
+         Util.sleepRandom(backOffSleepTime*1000);      
          successfulFlush = startFlush(flush_timeout, --numberOfAttempts);
       }     
       return successfulFlush;
