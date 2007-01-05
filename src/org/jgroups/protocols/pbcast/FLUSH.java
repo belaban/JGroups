@@ -161,7 +161,7 @@ public class FLUSH extends Protocol
       block_timeout = Util.parseLong(props, "block_timeout", block_timeout);
       auto_flush_conf = Util.parseBoolean(props, "auto_flush_conf", auto_flush_conf);
 
-      if (props.size() > 0)
+      if (!props.isEmpty())
       {
          log.error("the following properties are not recognized: " + props);
          return false;
@@ -337,11 +337,10 @@ public class FLUSH extends Protocol
    public void up(Event evt)
    {
 
-      Message msg = null;
       switch (evt.getType())
       {
          case Event.MSG :
-            msg = (Message) evt.getArg();
+            Message msg = (Message) evt.getArg();
             FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null)
             {

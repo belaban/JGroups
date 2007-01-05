@@ -188,7 +188,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       max_pool = Util.parseInt(props, "max_pool", 5);
       pool_thread_keep_alive = Util.parseLong(props, "pool_thread_keep_alive", 1000 * 30); //30 sec
       use_reading_thread = Util.parseBoolean(props, "use_reading_thread", false);
-      if (props.size() > 0)
+      if (!props.isEmpty())
       {
          log.error("the following properties are not recognized: " + props);
 
@@ -288,8 +288,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    public void down(Event evt)
    {
-      Address target;
-      StateTransferInfo info;
 
       switch (evt.getType())
       {
@@ -300,7 +298,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             break;
 
          case Event.GET_STATE :
-            info = (StateTransferInfo) evt.getArg();
+             StateTransferInfo info = (StateTransferInfo) evt.getArg();
+             Address target;
             if (info.target == null)
             {
                target = determineCoordinator();
@@ -568,7 +567,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
       synchronized (members)
       {
-         old_coord = (Address) (members.size() > 0 ? members.firstElement() : null);
+         old_coord = (Address) (!members.isEmpty()? members.firstElement() : null);
          members.clear();
          members.addAll(new_members);
 
