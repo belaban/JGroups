@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.43 2006/12/31 14:51:13 belaban Exp $
+// $Id: FD.java,v 1.44 2007/01/05 16:00:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.43 $
+ * @version $Revision: 1.44 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -106,7 +106,7 @@ public class FD extends Protocol {
             props.remove("shun");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -181,10 +181,6 @@ public class FD extends Protocol {
 
 
     public void up(Event evt) {
-        Message msg;
-        FdHeader hdr;
-        Object sender, tmphdr;
-
         switch(evt.getType()) {
 
             case Event.SET_LOCAL_ADDRESS:
@@ -192,9 +188,10 @@ public class FD extends Protocol {
                 break;
 
             case Event.MSG:
-                msg=(Message)evt.getArg();
-                tmphdr=msg.getHeader(name);
-                if(tmphdr == null || !(tmphdr instanceof FdHeader)) {
+                Message msg=(Message)evt.getArg();
+                Object tmphdr=msg.getHeader(name);
+                if(!(tmphdr instanceof FdHeader)) {
+                    Object sender;
                     if(ping_dest != null && (sender=msg.getSrc()) != null) {
                         if(ping_dest.equals(sender)) {
                             last_ack=System.currentTimeMillis();
@@ -206,7 +203,7 @@ public class FD extends Protocol {
                     break;  // message did not originate from FD layer, just pass up
                 }
 
-                hdr=(FdHeader)msg.getHeader(name);
+                FdHeader hdr=(FdHeader)msg.getHeader(name);
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
@@ -279,14 +276,12 @@ public class FD extends Protocol {
 
 
     public void down(Event evt) {
-        View v;
-
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
                 passDown(evt);
                 stop();
                 synchronized(this) {
-                    v=(View)evt.getArg();
+                    View v=(View)evt.getArg();
                     members.clear();
                     members.addAll(v.getMembers());
                     bcast_task.adjustSuspectedMembers(members);
@@ -603,7 +598,7 @@ public class FD extends Protocol {
             if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeElement(suspected_mbr);
-                if(suspected_mbrs.size() == 0)
+                if(suspected_mbrs.isEmpty())
                     stopBroadcastTask();
             }
         }
@@ -617,12 +612,12 @@ public class FD extends Protocol {
 
         /** Removes all elements from suspected_mbrs that are <em>not</em> in the new membership */
         void adjustSuspectedMembers(List new_mbrship) {
-            if(new_mbrship == null || new_mbrship.size() == 0) return;
+            if(new_mbrship == null || new_mbrship.isEmpty()) return;
             StringBuilder sb=new StringBuilder();
             synchronized(suspected_mbrs) {
                 sb.append("suspected_mbrs: ").append(suspected_mbrs);
                 suspected_mbrs.retainAll(new_mbrship);
-                if(suspected_mbrs.size() == 0)
+                if(suspected_mbrs.isEmpty())
                     stopBroadcastTask();
                 sb.append(", after adjustment: ").append(suspected_mbrs);
                 log.debug(sb.toString());
@@ -660,7 +655,7 @@ public class FD extends Protocol {
             FD.FdHeader hdr;
 
             synchronized(suspected_members) {
-                if(suspected_members.size() == 0) {
+                if(suspected_members.isEmpty()) {
                     stop();
                     if(log.isDebugEnabled()) log.debug("task done (no suspected members)");
                     return;
