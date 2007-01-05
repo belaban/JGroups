@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.16 2006/12/20 15:50:33 belaban Exp $
+ * @version $Id: Global.java,v 1.17 2007/01/05 14:11:25 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -19,6 +19,8 @@ public class Global {
     public static final int SHORT_SIZE = Short.SIZE   / 8; // 2
     public static final int INT_SIZE   = Integer.SIZE / 8; // 4
     public static final int LONG_SIZE  = Long.SIZE    / 8; // 8
+
+    public static final Object NULL=new Object();
 
     public static final String BIND_ADDR="jgroups.bind_addr";
     public static final String BIND_ADDR_OLD="bind.address";
