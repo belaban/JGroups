@@ -12,6 +12,8 @@ import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.BrokenBarrierException;
 
 /**  You start the test by running this class.
  * @author Bela Ban (belaban@yahoo.com)
@@ -88,13 +90,14 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean verbose, boolean jmx, String output) throws Exception {
+    public void start(Properties c, boolean verbose, boolean jmx, String output, int num_threads) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
         String          key, val;
         StringTokenizer st;
         Properties      tmp=new Properties();
+        long num_msgs=0;
 
         if(output != null)
             this.output=new FileWriter(output, false);
@@ -119,6 +122,10 @@ public class Test implements Receiver {
         tmp.putAll(c);
         this.config=tmp;
 
+        num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
+        if(num_threads > 0 && num_msgs % num_threads != 0)
+            throw new IllegalArgumentException("num_msgs (" + num_msgs + ") must be devisible by num_threads (" + num_threads + ")");
+
         StringBuffer sb=new StringBuffer();
         sb.append("\n\n----------------------- TEST -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
@@ -138,7 +145,7 @@ public class Test implements Receiver {
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
         num_senders=Integer.parseInt(this.config.getProperty("num_senders"));
-        long num_msgs=Long.parseLong(this.config.getProperty("num_msgs"));
+        num_msgs=Long.parseLong(this.config.getProperty("num_msgs"));
         this.num_msgs_expected=num_senders * num_msgs;
         sender=Boolean.valueOf(this.config.getProperty("sender")).booleanValue();
         msg_size=Long.parseLong(this.config.getProperty("msg_size"));
@@ -148,6 +155,9 @@ public class Test implements Receiver {
         tmp2=this.config.getProperty("log_interval");
         if(tmp2 != null)
             log_interval=Long.parseLong(tmp2);
+
+        if(num_threads > 0 && log_interval % num_threads != 0)
+            throw new IllegalArgumentException("log_interval (" + log_interval + ") must be divisible by num_threads (" + num_threads + ")");
 
         sb=new StringBuffer();
         sb.append("\n##### msgs_received");
@@ -161,7 +171,7 @@ public class Test implements Receiver {
         if(jmx) {
             this.config.setProperty("jmx", "true");
         }
-        this.jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
+        this.jmx=Boolean.valueOf(this.config.getProperty("jmx")).booleanValue();
 
         String tmp3=this.config.getProperty("processing_delay");
         if(tmp3 != null)
@@ -243,10 +253,8 @@ public class Test implements Receiver {
                             this.members.add(sender);
                             System.out.println("-- " + sender + " joined");
                             if(d.sender) {
-                                synchronized(this.members) {
-                                    if(!this.senders.containsKey(sender)) {
-                                        this.senders.put(sender, new MemberInfo(d.num_msgs));
-                                    }
+                                if(!this.senders.containsKey(sender)) {
+                                    this.senders.put(sender, new MemberInfo(d.num_msgs));
                                 }
                             }
                             this.members.notifyAll();
@@ -257,7 +265,7 @@ public class Test implements Receiver {
                 case Data.RESULTS:
                     results.put(sender, d.result);
                     heard_from.remove(sender);
-                    if(heard_from.size() == 0) {
+                    if(heard_from.isEmpty()) {
                         for(int i=0; i < 3; i++) {
                             sendFinalResults();
                             Util.sleep(300);
@@ -274,7 +282,7 @@ public class Test implements Receiver {
                     boolean done=false;
                     synchronized(final_results_ok_list) {
                         final_results_ok_list.remove(sender);
-                        if(final_results_ok_list.size() == 0)
+                        if(final_results_ok_list.isEmpty())
                             done=true;
                     }
 
@@ -411,31 +419,104 @@ public class Test implements Receiver {
     }
 
 
-    void sendMessages(long interval, int nanos, boolean busy_sleep) throws Exception {
+    void sendMessages(long interval, int nanos, boolean busy_sleep, int num_threads) throws Exception {
         long total_msgs=0;
         int msgSize=Integer.parseInt(config.getProperty("msg_size"));
         int num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
-        // int logInterval=Integer.parseInt(config.getProperty("log_interval"));
         byte[] buf=new byte[msgSize];
         for(int k=0; k < msgSize; k++)
             buf[k]='.';
         Data d=new Data(Data.DATA);
         byte[] payload=generatePayload(d, buf);
-        System.out.println("-- sending " + num_msgs + " " + Util.printBytes(msgSize) + " messages");
-        for(int i=0; i < num_msgs; i++) {
-            transport.send(null, payload, false);
-            total_msgs++;
-            if(total_msgs % log_interval == 0) {
-                System.out.println("++ sent " + total_msgs);
+        StringBuilder sb=new StringBuilder();
+        sb.append("-- sending ").append(num_msgs).append(" ").append(Util.printBytes(msgSize)).append(" messages");
+        if(num_threads > 0)
+            sb.append(" in ").append(num_threads).append(" threads");
+        System.out.println(sb);
+
+        if(num_threads > 0) {
+            int number=num_msgs / num_threads;
+            long thread_interval=log_interval / num_threads;
+            CyclicBarrier barrier=new CyclicBarrier(num_threads +1);
+            Thread[] threads=new Thread[num_threads];
+            for(int i=0; i < threads.length; i++) {
+                threads[i]=new Sender(barrier, number, payload, interval, nanos, busy_sleep, thread_interval);
+                threads[i].setName("thread-" + (i+1));
+                threads[i].start();
             }
-            if(interval > 0 || nanos > 0) {
-                if(busy_sleep)
-                    Util.sleep(interval, busy_sleep);
-                else
-                    Util.sleep(interval, nanos);
+            barrier.await();
+        }
+        else {
+            for(int i=0; i < num_msgs; i++) {
+                transport.send(null, payload, false);
+                total_msgs++;
+                if(total_msgs % log_interval == 0) {
+                    System.out.println("++ sent " + total_msgs);
+                }
+                if(interval > 0 || nanos > 0) {
+                    if(busy_sleep)
+                        Util.sleep(interval, busy_sleep);
+                    else
+                        Util.sleep(interval, nanos);
+                }
             }
         }
     }
+
+
+    class Sender extends Thread {
+        CyclicBarrier barrier;
+        int num_msgs=0;
+        byte[] payload;
+        long total_msgs=0;
+        long interval=0;
+        boolean busy_sleep=false;
+        int nanos=0;
+        long thread_interval;
+
+        Sender(CyclicBarrier barrier, int num_msgs, byte[] payload, long interval, int nanos, boolean busy_sleep, long thread_interval) {
+            this.barrier=barrier;
+            this.num_msgs=num_msgs;
+            this.payload=payload;
+            this.interval=interval;
+            this.nanos=nanos;
+            this.busy_sleep=busy_sleep;
+            this.thread_interval=thread_interval;
+        }
+
+        public void run() {
+            try {
+                barrier.await();
+            }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+                return;
+            }
+            catch(BrokenBarrierException e) {
+                e.printStackTrace();
+                return;
+            }
+            System.out.println("-- [" + getName() + "] sending " + num_msgs + " msgs");
+            for(int i=0; i < num_msgs; i++) {
+                try {
+                    transport.send(null, payload, false);
+                    total_msgs++;
+                    if(total_msgs % log_interval == 0) {
+                        System.out.println("++ sent " + total_msgs + " [" + getName() + "]");
+                    }
+                    if(interval > 0 || nanos > 0) {
+                        if(busy_sleep)
+                            Util.sleep(interval, busy_sleep);
+                        else
+                            Util.sleep(interval, nanos);
+                    }
+                }
+                catch(Exception e) {
+                }
+            }
+        }
+    }
+
 
 
     byte[] generatePayload(Data d, byte[] buf) throws Exception {
@@ -658,6 +739,7 @@ public class Test implements Receiver {
         long interval=0;
         int interval_nanos=0;
         boolean busy_sleep=false;
+        int num_threads=0;
 
         for(int i=0; i < args.length; i++) {
             if("-sender".equals(args[i])) {
@@ -692,6 +774,10 @@ public class Test implements Receiver {
                 dump_stats=true;
                 continue;
             }
+            if("-num_threads".equals(args[i])) {
+                num_threads=Integer.parseInt(args[++i]);
+                continue;
+            }
             if("-interval".equals(args[i])) {
                 interval=Long.parseLong(args[++i]);
                 continue;
@@ -712,21 +798,14 @@ public class Test implements Receiver {
             return;
         }
 
+  
         try {
-
-            /*int prio=Thread.currentThread().getPriority();
-            System.out.println("current thread: " + Thread.currentThread() + ", prio: " + prio);
-
-            Thread.currentThread().setPriority(Thread.MAX_PRIORITY);
-            prio=Thread.currentThread().getPriority();
-            System.out.println("current thread: " + Thread.currentThread() + ", prio: " + prio);*/
-
             t=new Test();
-            t.start(config, verbose, jmx, output);
+            t.start(config, verbose, jmx, output, num_threads);
             t.runDiscoveryPhase();
             t.waitForAllOKs();
             if(sender) {
-                t.sendMessages(interval, interval_nanos, busy_sleep);
+                t.sendMessages(interval, interval_nanos, busy_sleep, num_threads);
             }
             synchronized(t) {
                 while(t.receivedFinalResults() == false) {
@@ -770,7 +849,7 @@ public class Test implements Receiver {
 
 
     private class ResultsPublisher implements Runnable {
-        final long interval=1000;
+        static final long interval=1000;
         boolean running=true;
         Thread t;
 
