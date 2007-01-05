@@ -1,0 +1,23 @@
+
+// Version: $Id: SimpleFlowControl.txt,v 1.1 2007/01/05 12:04:27 belaban Exp $
+// Author: Bela Ban
+
+
+Simple Flow control (SFC)
+=========================
+
+SFC is a simple flow control protocol for group (= multipoint) messages.
+
+Every sender has max_credits bytes for sending multicast messages to the group.
+
+Every multicast message (we don't consider unicast messages) decrements max_credits by its size.
+When max_credits falls below 0, the sender asks all receivers for new credits and blocks
+until *all* credits have been received from all members.
+
+When the receiver receives a credit request, it checks whether it has received max_credits bytes from the requester since
+the last credit request. If yes, it sends new credits to the requester and resets the max_credits for the requester.
+Else, it takes a note of the credit request from P and - when max_credits bytes have finally been received from P - it
+sends the credits to P and resets max_credits for P
+
+
+
