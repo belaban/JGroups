@@ -9,6 +9,7 @@ import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -25,7 +26,7 @@ import java.util.*;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.26 2006/12/19 12:53:12 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.27 2007/01/05 15:51:59 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -44,9 +45,9 @@ public class FRAG2 extends Protocol {
     private final Vector               members=new Vector(11);
     private static final String        name="FRAG2";
 
-    long num_sent_msgs=0;
+    AtomicLong num_sent_msgs=new AtomicLong(0);
+    AtomicLong num_received_msgs=new AtomicLong(0);
     long num_sent_frags=0;
-    long num_received_msgs=0;
     long num_received_frags=0;
 
 
@@ -58,9 +59,9 @@ public class FRAG2 extends Protocol {
     public void setFragSize(int s) {frag_size=s;}
     public int getOverhead() {return overhead;}
     public void setOverhead(int o) {overhead=o;}
-    public long getNumberOfSentMessages() {return num_sent_msgs;}
+    public long getNumberOfSentMessages() {return num_sent_msgs.get();}
     public long getNumberOfSentFragments() {return num_sent_frags;}
-    public long getNumberOfReceivedMessages() {return num_received_msgs;}
+    public long getNumberOfReceivedMessages() {return num_received_msgs.get();}
     public long getNumberOfReceivedFragments() {return num_received_frags;}
 
 
@@ -96,7 +97,7 @@ public class FRAG2 extends Protocol {
         if(log.isInfoEnabled())
             log.info("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("FRAG2.setProperties(): the following properties are not recognized: " + props);
             return false;
         }
@@ -106,7 +107,9 @@ public class FRAG2 extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_sent_msgs=num_sent_frags=num_received_msgs=num_received_frags=0;
+        num_sent_msgs.set(0);
+        num_sent_frags=num_received_frags=0;
+        num_received_msgs.set(0);
     }
 
 
@@ -121,9 +124,7 @@ public class FRAG2 extends Protocol {
         case Event.MSG:
             Message msg=(Message)evt.getArg();
             long size=msg.getLength();
-            synchronized(this) {
-                num_sent_msgs++;
-            }
+            num_sent_msgs.incrementAndGet();
             if(size > frag_size) {
                 if(trace) {
                     StringBuilder sb=new StringBuilder("message's buffer size is ");
@@ -183,7 +184,7 @@ public class FRAG2 extends Protocol {
                 return;
             }
             else {
-                num_received_msgs++;
+                num_received_msgs.incrementAndGet();
             }
             break;
 
@@ -280,7 +281,7 @@ public class FRAG2 extends Protocol {
             try {
                 if(trace) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
-                num_received_msgs++;
+                num_received_msgs.incrementAndGet();
                 passUp(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
