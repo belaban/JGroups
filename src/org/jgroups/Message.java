@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.66 2007/01/05 14:48:58 belaban Exp $
+ * @version $Id: Message.java,v 1.67 2007/01/05 14:49:51 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -349,7 +349,6 @@ public class Message implements Externalizable, Streamable {
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
     public Header removeHeader(String key) {
-        // return (Header)headers.remove(key);
         header_lock.readLock().lock();
         try {
             return (Header)headers.get(key);
@@ -359,18 +358,7 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
-    /**
-     * @deprecated
-     */
-    public void removeHeaders() {
-        header_lock.writeLock().lock();
-        try {
-            headers.clear();
-        }
-        finally {
-            header_lock.writeLock().unlock();
-        }
-    }
+
 
     public Header getHeader(String key) {
         header_lock.readLock().lock();
