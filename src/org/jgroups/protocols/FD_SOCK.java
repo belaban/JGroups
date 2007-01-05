@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.53 2006/12/22 14:45:52 belaban Exp $
+// $Id: FD_SOCK.java,v 1.54 2007/01/05 16:17:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -192,9 +192,6 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public void up(Event evt) {
-        Message msg;
-        FdHeader hdr;
-
         switch(evt.getType()) {
 
         case Event.SET_LOCAL_ADDRESS:
@@ -202,8 +199,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             break;
 
         case Event.MSG:
-            msg=(Message) evt.getArg();
-            hdr=(FdHeader) msg.getHeader(name);
+            Message msg=(Message) evt.getArg();
+            FdHeader hdr=(FdHeader) msg.getHeader(name);
             if(hdr == null)
                 break;  // message did not originate from FD_SOCK layer, just pass up
 
@@ -304,9 +301,6 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public void down(Event evt) {
-        Address mbr, tmp_ping_dest;
-        View v;
-
         switch(evt.getType()) {
 
             case Event.UNSUSPECT:
@@ -349,7 +343,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
 
             case Event.VIEW_CHANGE:
-                v=(View) evt.getArg();
+                View v=(View) evt.getArg();
                 Vector new_mbrs=v.getMembers();
                 passDown(evt);
 
@@ -380,6 +374,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
 
                     // 3. Remove all entries in 'cache' which are not in the new membership
+                    Address mbr;
                     for(Enumeration e=cache.keys(); e.hasMoreElements();) {
                         mbr=(Address) e.nextElement();
                         if(!members.contains(mbr))
@@ -389,7 +384,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(members.size() > 1) {
                         synchronized(pinger_mutex) {
                             if(pinger_thread != null && pinger_thread.isAlive()) {
-                                tmp_ping_dest=determinePingDest();
+                                Address tmp_ping_dest=determinePingDest();
                                 if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
                                     interruptPingerThread(); // allows the thread to use the new socket
                                 }
@@ -524,7 +519,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(group_name != null) {
                 String tmp, prefix=Global.THREAD_PREFIX;
                 tmp=pinger_thread.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + group_name + ")";
                     pinger_thread.setName(tmp);
                 }
@@ -598,7 +593,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(group_name != null) {
                 String tmp, prefix=Global.THREAD_PREFIX;
                 tmp=srv_sock_handler.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + group_name + ")";
                     srv_sock_handler.setName(tmp);
                 }
@@ -817,7 +812,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     Address determineCoordinator() {
-        return members.size() > 0 ? (Address) members.elementAt(0) : null;
+        return !members.isEmpty()? (Address) members.elementAt(0) : null;
     }
 
 
@@ -877,7 +872,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(type2String(type));
             if(mbr != null)
                 sb.append(", mbr=").append(mbr);
@@ -1174,7 +1169,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     suspected_mbrs.addElement(mbr);
                     if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ')');
                 }
-                if(stopped && suspected_mbrs.size() > 0) {
+                if(stopped && !suspected_mbrs.isEmpty()) {
                     stopped=false;
                     timer.add(this, true);
                 }
@@ -1187,7 +1182,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
                 suspected_mbrs.removeElement(suspected_mbr);
-                if(suspected_mbrs.size() == 0)
+                if(suspected_mbrs.isEmpty())
                     stopped=true;
             }
         }
@@ -1207,7 +1202,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         public void adjustSuspectedMembers(Vector new_mbrship) {
             Address suspected_mbr;
 
-            if(new_mbrship == null || new_mbrship.size() == 0) return;
+            if(new_mbrship == null || new_mbrship.isEmpty()) return;
             synchronized(suspected_mbrs) {
                 for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
                     suspected_mbr=(Address) it.next();
@@ -1217,7 +1212,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                             log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ')');
                     }
                 }
-                if(suspected_mbrs.size() == 0)
+                if(suspected_mbrs.isEmpty())
                     stopped=true;
             }
         }
@@ -1241,7 +1236,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 log.debug("broadcasting SUSPECT message (suspected_mbrs=" + suspected_mbrs + ") to group");
 
             synchronized(suspected_mbrs) {
-                if(suspected_mbrs.size() == 0) {
+                if(suspected_mbrs.isEmpty()) {
                     stopped=true;
                     if(log.isDebugEnabled()) log.debug("task done (no suspected members)");
                     return;
