@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.61 2007/01/05 14:38:11 belaban Exp $
+ * @version $Id: FC.java,v 1.62 2007/01/05 14:39:10 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -267,7 +267,7 @@ public class FC extends Protocol {
 
         Util.checkBufferSize("FC.max_credits", max_credits);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -519,14 +519,14 @@ public class FC extends Protocol {
 
             sent.put(sender, max_credits_constant);
             lowest_credit=computeLowestCredit(sent);
-            if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
+            if(!creditors.isEmpty()) {  // we are blocked because we expect credit from one or more members
                 creditors.remove(sender);
                 if(trace) {
                     sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
                     log.trace(sb.toString());
                 }
             }
-            if(insufficient_credit && lowest_credit > 0 && creditors.size() == 0) {
+            if(insufficient_credit && lowest_credit > 0 && creditors.isEmpty()) {
                 insufficient_credit=false;
                 mutex.signalAll();
             }
@@ -625,7 +625,7 @@ public class FC extends Protocol {
             }
 
             if(trace) log.trace("creditors are " + creditors);
-            if(insufficient_credit && creditors.size() == 0) {
+            if(insufficient_credit && creditors.isEmpty()) {
                 lowest_credit=computeLowestCredit(sent);
                 insufficient_credit=false;
                 mutex.signalAll();
