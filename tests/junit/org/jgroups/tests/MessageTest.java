@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.14 2006/12/08 09:22:17 belaban Exp $
+// $Id: MessageTest.java,v 1.15 2007/01/05 14:48:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -170,14 +170,7 @@ public class MessageTest extends TestCase {
         assertEquals(s2, s1);
     }
 
-    public void testReset() {
-        m1=new Message(null, null, "Bela Ban");
-        m1.reset();
-        assertEquals(0, m1.getOffset());
-        assertEquals(0, m1.getLength());
-        assertNull(m1.getBuffer());
-        assertNull(m1.getRawBuffer());
-    }
+
 
     public void testCopy() {
         m1=new Message(null, null, "Bela Ban");
