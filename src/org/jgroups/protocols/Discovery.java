@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.18 2006/12/22 14:45:52 belaban Exp $
+ * @version $Id: Discovery.java,v 1.19 2007/01/05 15:54:31 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -134,7 +134,7 @@ public abstract class Discovery extends Protocol {
                 num_ping_requests=1;
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             StringBuffer sb=new StringBuffer();
             for(Enumeration e=props.propertyNames(); e.hasMoreElements();) {
                 sb.append(e.nextElement().toString());
@@ -176,9 +176,9 @@ public abstract class Discovery extends Protocol {
 
     public String findInitialMembersAsString() {
         Vector results=findInitialMembers();
-        if(results == null || results.size() == 0) return "<empty>";
+        if(results == null || results.isEmpty()) return "<empty>";
         PingRsp rsp;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Iterator it=results.iterator(); it.hasNext();) {
             rsp=(PingRsp)it.next();
             sb.append(rsp).append("\n");
@@ -232,7 +232,7 @@ public abstract class Discovery extends Protocol {
                     return;
                 }
                 synchronized(members) {
-                    coord=members.size() > 0 ? (Address)members.firstElement() : local_addr;
+                    coord=!members.isEmpty()? (Address)members.firstElement() : local_addr;
                 }
 
                 PingRsp ping_rsp=new PingRsp(local_addr, coord, is_server);

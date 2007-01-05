@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.31 2006/12/12 10:17:43 belaban Exp $
+// $Id: MERGE2.java,v 1.32 2007/01/05 15:55:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -108,7 +108,7 @@ public class MERGE2 extends Protocol {
             props.remove("use_separate_thread");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -151,9 +151,6 @@ public class MERGE2 extends Protocol {
 
 
     public void down(Event evt) {
-        Vector mbrs;
-        Address coord;
-
         switch(evt.getType()) {
 
             case Event.CONNECT:
@@ -168,12 +165,12 @@ public class MERGE2 extends Protocol {
 
             case Event.VIEW_CHANGE:
                 passDown(evt);
-                mbrs=((View)evt.getArg()).getMembers();
-                if(mbrs == null || mbrs.size() == 0 || local_addr == null) {
+                Vector mbrs=((View)evt.getArg()).getMembers();
+                if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     stopTask();
                     break;
                 }
-                coord=(Address)mbrs.elementAt(0);
+                Address coord=(Address)mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     is_coord=true;
                     startTask(); // start task if we became coordinator (doesn't start if already running)
@@ -204,7 +201,7 @@ public class MERGE2 extends Protocol {
             if(group_name != null) {
                 String tmp, prefix=Global.THREAD_PREFIX;
                 tmp=task.getName();
-                if(tmp != null && tmp.indexOf(prefix) == -1) {
+                if(tmp != null && !tmp.contains(prefix)) {
                     tmp+=prefix + group_name + ")";
                     task.setName(tmp);
                 }
