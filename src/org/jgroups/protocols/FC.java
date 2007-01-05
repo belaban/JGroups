@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.60 2006/12/31 13:55:50 belaban Exp $
+ * @version $Id: FC.java,v 1.61 2007/01/05 14:38:11 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -379,11 +379,11 @@ public class FC extends Protocol {
     private void handleDownMessage(Event evt) {
         Message msg=(Message)evt.getArg();
         int     length=msg.getLength();
-        Address dest=msg.getDest();
 
         lock.lock();
         try {
             if(lowest_credit <= length) {
+                Address dest=msg.getDest();
                 determineCreditors(dest, length);
                 insufficient_credit=true;
                 num_blockings++;
@@ -418,6 +418,7 @@ public class FC extends Protocol {
                 last_blockings.add(new Long(block_time));
             }
             else {
+                Address dest=msg.getDest();
                 long tmp=decrementCredit(sent, dest, length);
                 if(tmp != -1)
                     lowest_credit=Math.min(tmp, lowest_credit);
@@ -476,7 +477,7 @@ public class FC extends Protocol {
         Long    val;
 
         if(multicast) {
-            if(m.size() == 0)
+            if(m.isEmpty())
                 return -1;
             Map.Entry entry;
             for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
