@@ -2,17 +2,16 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
 import java.net.InetAddress;
-import java.net.UnknownHostException;
 import java.net.NetworkInterface;
-import java.lang.reflect.Method;
+import java.net.UnknownHostException;
+import java.util.*;
 
 
 /**
@@ -20,7 +19,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.23 2006/12/22 14:45:52 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.24 2007/01/05 16:09:04 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -32,7 +31,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private InetAddress bind_addr;          // interface for ICMP pings
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface intf=null;
-    private Method      is_reacheable;
     static final String name="VERIFY_SUSPECT";
 
 
@@ -79,19 +77,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(str != null) {
             use_icmp=Boolean.valueOf(str).booleanValue();
             props.remove("use_icmp");
-
-            try { // only test for the (JDK 5 method) if use_icmp is true
-                is_reacheable=InetAddress.class.getMethod("isReachable", new Class[]{NetworkInterface.class, int.class, int.class});
-            }
-            catch(NoSuchMethodException e) {
-                // log.error("didn't find InetAddress.isReachable() method - requires JDK 5 or higher");
-                Error error= new NoSuchMethodError("didn't find InetAddress.isReachable() method - requires JDK 5 or higher");
-                error.initCause(e);
-                throw error;
-            }
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -100,9 +88,6 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
     public void up(Event evt) {
-        Address suspected_mbr;
-        Message msg, rsp;
-
         switch(evt.getType()) {
 
             case Event.SET_LOCAL_ADDRESS:
@@ -110,7 +95,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 break;
 
             case Event.SUSPECT:  // it all starts here ...
-                suspected_mbr=(Address)evt.getArg();
+                Address suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
                     if(log.isErrorEnabled()) log.error("suspected member is null");
                     return;
@@ -130,7 +115,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
 
             case Event.MSG:
-                msg=(Message)evt.getArg();
+                Message msg=(Message)evt.getArg();
                 VerifyHeader hdr=(VerifyHeader)msg.getHeader(name);
                 if(hdr == null)
                     break;
@@ -140,6 +125,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                             if(log.isErrorEnabled()) log.error("ARE_YOU_DEAD: hdr.from is null");
                         }
                         else {
+                            Message rsp;
                             for(int i=0; i < num_msgs; i++) {
                                 rsp=new Message(hdr.from, null, null);
                                 rsp.setFlag(Message.OOB);
@@ -180,7 +166,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         Address mbr;
         long val, curr_time, diff;
 
-        while(timer != null && Thread.currentThread().equals(timer) && suspects.size() > 0) {
+        while(timer != null && Thread.currentThread().equals(timer) && !suspects.isEmpty()) {
             diff=0;
 
             List tmp=null;
@@ -201,7 +187,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     diff=Math.max(diff, timeout - diff);
                 }
             }
-            if(tmp != null && tmp.size() > 0) {
+            if(tmp != null && !tmp.isEmpty()) {
                 for(Iterator it=tmp.iterator(); it.hasNext();)
                     passUp(new Event(Event.SUSPECT, it.next()));
             }
@@ -250,12 +236,9 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             if(trace)
                 log.trace("pinging host " + suspected_mbr + " using interface " + intf);
             long start=System.currentTimeMillis(), stop;
-            Boolean rc=(Boolean)is_reacheable.invoke(host,
-                                                     new Object[]{intf,
-                                                             new Integer(0), // 0 == use the default TTL
-                                                             new Integer((int)timeout)});
+            boolean rc=host.isReachable(intf, 0, (int)timeout);
             stop=System.currentTimeMillis();
-            if(rc.booleanValue()) { // success
+            if(rc) { // success
                 if(trace)
                     log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
             }
