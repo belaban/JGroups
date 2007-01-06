@@ -1,6 +1,9 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -10,7 +13,6 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Map;
 
 /**
  * Shared base class for tcpip protocols
@@ -132,7 +134,7 @@ public abstract class BasicTCP extends TP {
 
         str=props.getProperty("tcp_nodelay");
         if(str != null) {
-            tcp_nodelay=new Boolean(str).booleanValue();
+            tcp_nodelay=Boolean.parseBoolean(str);
             props.remove("tcp_nodelay");
         }
 
@@ -204,7 +206,7 @@ public abstract class BasicTCP extends TP {
     }
 
     public String getInfo() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("connections: ").append(printConnections()).append("\n");
         return sb.toString();
     }
