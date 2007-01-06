@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.105 2007/01/06 23:32:18 belaban Exp $
+ * @version $Id: TP.java,v 1.106 2007/01/06 23:41:17 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -98,8 +98,7 @@ public abstract class TP extends Protocol {
 
 
     final ExposedByteArrayInputStream  in_stream=new ExposedByteArrayInputStream(new byte[]{'0'});
-    final ExposedBufferedInputStream   buf_in_stream=new ExposedBufferedInputStream(in_stream);
-    final DataInputStream              dis=new DataInputStream(buf_in_stream);
+    final DataInputStream              dis=new DataInputStream(in_stream);
 
 
     /** If true, messages sent to self are treated specially: unicast messages are
@@ -1059,7 +1058,6 @@ public abstract class TP extends Protocol {
         try {
             synchronized(in_stream) {
                 in_stream.setData(data, offset, length);
-                buf_in_stream.reset(length);
                 version=dis.readShort();
                 if(Version.compareTo(version) == false) {
                     if(warn) {
@@ -1163,20 +1161,17 @@ public abstract class TP extends Protocol {
         }
 
         ExposedByteArrayOutputStream out_stream=null;
-        ExposedBufferedOutputStream  buf_out_stream=null;
         ExposedDataOutputStream      dos=null;
         Buffer                       buf;
         try {
             out_stream=new ExposedByteArrayOutputStream(1024);
-            buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
-            dos=new ExposedDataOutputStream(buf_out_stream);
+            dos=new ExposedDataOutputStream(out_stream);
             writeMessage(msg, dos, multicast);
             dos.flush();
             buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         }
         finally {
             Util.close(dos);
-            Util.close(buf_out_stream);
             Util.close(out_stream);
         }
         doSend(buf, dest, multicast);
@@ -1503,13 +1498,11 @@ public abstract class TP extends Protocol {
             boolean                      is_message_list, multicast;
             byte                         flags;
             ExposedByteArrayInputStream  in_stream=null;
-            ExposedBufferedInputStream   buf_in_stream=null;
             DataInputStream              dis=null;
 
             try {
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
-                buf_in_stream=new ExposedBufferedInputStream(in_stream);
-                dis=new DataInputStream(buf_in_stream);
+                dis=new DataInputStream(in_stream);
                 version=dis.readShort();
                 if(Version.compareTo(version) == false) {
                     if(warn) {
@@ -1550,7 +1543,6 @@ public abstract class TP extends Protocol {
             }
             finally {
                 Util.close(dis);
-                Util.close(buf_in_stream);
                 Util.close(in_stream);
             }
         }
@@ -1808,8 +1800,7 @@ public abstract class TP extends Protocol {
             Address   dst;
 
             ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
-            ExposedBufferedOutputStream  buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
-            ExposedDataOutputStream      dos=new ExposedDataOutputStream(buf_out_stream);
+            ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
             for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
@@ -1821,7 +1812,6 @@ public abstract class TP extends Protocol {
                 synchronized(out_stream) {
                     try {
                         out_stream.reset();
-                        buf_out_stream.reset(out_stream.getCapacity());
                         dos.reset();
                         writeMessageList(list, dos, multicast); // flushes output stream when done
                         dos.flush();
