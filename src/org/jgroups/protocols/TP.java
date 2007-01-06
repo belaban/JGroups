@@ -10,6 +10,7 @@ import org.jgroups.util.Queue;
 
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.DataOutputStream;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
@@ -42,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.104 2007/01/04 19:28:33 belaban Exp $
+ * @version $Id: TP.java,v 1.105 2007/01/06 23:32:18 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -95,10 +96,6 @@ public abstract class TP extends Protocol {
 
     protected View            view=null;
 
-    /** Pre-allocated byte stream. Used for marshalling messages. Will grow as needed */
-    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
-    final ExposedBufferedOutputStream buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
-    final ExposedDataOutputStream dos=new ExposedDataOutputStream(buf_out_stream);
 
     final ExposedByteArrayInputStream  in_stream=new ExposedByteArrayInputStream(new byte[]{'0'});
     final ExposedBufferedInputStream   buf_in_stream=new ExposedBufferedInputStream(in_stream);
@@ -1087,7 +1084,7 @@ public abstract class TP extends Protocol {
                 if(is_message_list)
                     msgs=readMessageList(dis, dest, multicast);
                 else {
-                    msg=bufferToMessage(dis, dest, sender, multicast);
+                    msg=readMessage(dis, dest, sender, multicast);
                     msgs=new LinkedList();
                     msgs.add(msg);
                 }
@@ -1165,13 +1162,24 @@ public abstract class TP extends Protocol {
             return;
         }
 
-        // Needs to be synchronized because we can have possible concurrent access, e.g.
-        // Discovery uses a separate thread to send out discovery messages
-        Buffer   buf;
-        synchronized(out_stream) {
-            buf=messageToBuffer(msg, multicast);
-            doSend(buf, dest, multicast);
+        ExposedByteArrayOutputStream out_stream=null;
+        ExposedBufferedOutputStream  buf_out_stream=null;
+        ExposedDataOutputStream      dos=null;
+        Buffer                       buf;
+        try {
+            out_stream=new ExposedByteArrayOutputStream(1024);
+            buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
+            dos=new ExposedDataOutputStream(buf_out_stream);
+            writeMessage(msg, dos, multicast);
+            dos.flush();
+            buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         }
+        finally {
+            Util.close(dos);
+            Util.close(buf_out_stream);
+            Util.close(out_stream);
+        }
+        doSend(buf, dest, multicast);
     }
 
 
@@ -1196,28 +1204,18 @@ public abstract class TP extends Protocol {
      * @return
      * @throws java.io.IOException
      */
-    private Buffer messageToBuffer(Message msg, boolean multicast) throws Exception {
-        Buffer retval;
+    private void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
         byte flags=0;
-
-        out_stream.reset();
-        buf_out_stream.reset(out_stream.getCapacity());
-        dos.reset();
         dos.writeShort(Version.version); // write the version
         if(multicast)
             flags+=MULTICAST;
         if(msg.isFlagSet(Message.OOB))
             flags+=OOB;
         dos.writeByte(flags);
-        // preMarshalling(msg, dest, src);  // allows for optimization by subclass
         msg.writeTo(dos);
-        // postMarshalling(msg, dest, src); // allows for optimization by subclass
-        dos.flush();
-        retval=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        return retval;
     }
 
-    private Message bufferToMessage(DataInputStream instream, Address dest, Address sender, boolean multicast) throws Exception {
+    private Message readMessage(DataInputStream instream, Address dest, Address sender, boolean multicast) throws Exception {
         Message msg=new Message(false); // don't create headers, readFrom() will do this
         msg.readFrom(instream);
         postUnmarshalling(msg, dest, sender, multicast); // allows for optimization by subclass
@@ -1226,14 +1224,12 @@ public abstract class TP extends Protocol {
 
 
 
-    private void writeMessageList(List<Message> msgs, boolean multicast) throws Exception {
+    private void writeMessageList(List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
         Address src;
         byte flags=0;
         int len=msgs != null? msgs.size() : 0;
         boolean src_written=false;
-        out_stream.reset();
-        buf_out_stream.reset(out_stream.getCapacity());
-        dos.reset();
+
         dos.writeShort(Version.version);
         flags+=LIST;
         if(multicast)
@@ -1248,31 +1244,24 @@ public abstract class TP extends Protocol {
             }
             msg.writeTo(dos);
         }
-        dos.flush();
     }
 
     private List<Message> readMessageList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
         List                    list=new LinkedList();
-        DataInputStream         in=null;
         int                     len;
         Message                 msg;
         Address                 src;
 
-        try {
-            len=instream.readInt();
-            src=Util.readAddress(instream);
-            for(int i=0; i < len; i++) {
-                msg=new Message(false); // don't create headers, readFrom() will do this
-                msg.readFrom(instream);
-                postUnmarshallingList(msg, dest, multicast);
-                msg.setSrc(src);
-                list.add(msg);
-            }
-            return list;
+        len=instream.readInt();
+        src=Util.readAddress(instream);
+        for(int i=0; i < len; i++) {
+            msg=new Message(false); // don't create headers, readFrom() will do this
+            msg.readFrom(instream);
+            postUnmarshallingList(msg, dest, multicast);
+            msg.setSrc(src);
+            list.add(msg);
         }
-        finally {
-            Util.close(in);
-        }
+        return list;
     }
 
 
@@ -1551,7 +1540,7 @@ public abstract class TP extends Protocol {
                     }
                 }
                 else {
-                    Message msg=bufferToMessage(dis, dest, sender, multicast);
+                    Message msg=readMessage(dis, dest, sender, multicast);
                     handleMyMessage(msg, multicast);
                 }
             }
@@ -1817,6 +1806,11 @@ public abstract class TP extends Protocol {
             Buffer    buffer;
             Map.Entry entry;
             Address   dst;
+
+            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
+            ExposedBufferedOutputStream  buf_out_stream=new ExposedBufferedOutputStream(out_stream, 1024);
+            ExposedDataOutputStream      dos=new ExposedDataOutputStream(buf_out_stream);
+
             for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 List<Message> list=(List)entry.getValue();
@@ -1826,7 +1820,11 @@ public abstract class TP extends Protocol {
                 multicast=dst == null || dst.isMulticastAddress();
                 synchronized(out_stream) {
                     try {
-                        writeMessageList(list, multicast); // flushes output stream when done
+                        out_stream.reset();
+                        buf_out_stream.reset(out_stream.getCapacity());
+                        dos.reset();
+                        writeMessageList(list, dos, multicast); // flushes output stream when done
+                        dos.flush();
                         buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
                         doSend(buffer, dst, multicast);
                     }
