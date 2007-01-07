@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.107 2007/01/07 00:00:27 belaban Exp $
+ * @version $Id: TP.java,v 1.108 2007/01/07 00:17:25 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1164,17 +1164,10 @@ public abstract class TP extends Protocol {
         ExposedByteArrayOutputStream out_stream=null;
         ExposedDataOutputStream      dos=null;
         Buffer                       buf;
-        try {
-            out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-            dos=new ExposedDataOutputStream(out_stream);
-            writeMessage(msg, dos, multicast);
-            dos.flush();
-            buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        }
-        finally {
-            Util.close(dos);
-            Util.close(out_stream);
-        }
+        out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+        dos=new ExposedDataOutputStream(out_stream);
+        writeMessage(msg, dos, multicast);
+        buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
         doSend(buf, dest, multicast);
     }
 
@@ -1543,10 +1536,6 @@ public abstract class TP extends Protocol {
                 if(log.isErrorEnabled())
                     log.error("failed handling incoming message", t);
             }
-            finally {
-                Util.close(dis);
-                Util.close(in_stream);
-            }
         }
 
 
@@ -1816,7 +1805,6 @@ public abstract class TP extends Protocol {
                         out_stream.reset();
                         dos.reset();
                         writeMessageList(list, dos, multicast); // flushes output stream when done
-                        dos.flush();
                         buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
                         doSend(buffer, dst, multicast);
                     }
