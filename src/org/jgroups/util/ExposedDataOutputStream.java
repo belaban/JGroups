@@ -5,7 +5,7 @@ import java.io.OutputStream;
 
 /**
  * @author Bela Ban
- * @version $Id: ExposedDataOutputStream.java,v 1.1 2005/07/25 15:53:37 belaban Exp $
+ * @version $Id: ExposedDataOutputStream.java,v 1.2 2007/01/07 01:25:25 belaban Exp $
  */
 public class ExposedDataOutputStream extends DataOutputStream {
     /**
@@ -23,5 +23,9 @@ public class ExposedDataOutputStream extends DataOutputStream {
 
     public void reset() {
         written=0;
+    }
+
+    public OutputStream getOutputStream() {
+        return out;
     }
 }
