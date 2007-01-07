@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.106 2007/01/06 23:41:17 belaban Exp $
+ * @version $Id: TP.java,v 1.107 2007/01/07 00:00:27 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -226,6 +226,7 @@ public abstract class TP extends Protocol {
 
     static  NumberFormat f;
     private static final long POOL_SHUTDOWN_WAIT_TIME=3000;
+    private static final int INITIAL_BUFSIZE=1024;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -1164,7 +1165,7 @@ public abstract class TP extends Protocol {
         ExposedDataOutputStream      dos=null;
         Buffer                       buf;
         try {
-            out_stream=new ExposedByteArrayOutputStream(1024);
+            out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
             dos=new ExposedDataOutputStream(out_stream);
             writeMessage(msg, dos, multicast);
             dos.flush();
@@ -1491,6 +1492,7 @@ public abstract class TP extends Protocol {
             this.offset=offset;
             this.length=length;
         }
+        
 
         /** Code copied from handleIncomingPacket */
         public void run() {
@@ -1799,7 +1801,7 @@ public abstract class TP extends Protocol {
             Map.Entry entry;
             Address   dst;
 
-            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(1024);
+            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
             ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
             for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
