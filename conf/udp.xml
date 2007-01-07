@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.14 2007/01/07 01:18:31 belaban Exp $
+  version: $Id: udp.xml,v 1.15 2007/01/07 01:25:59 belaban Exp $
 -->
 
 <config>
@@ -22,7 +22,6 @@
          use_incoming_packet_handler="true"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_bundling="true"
-         outgoing_buffer_pool_size="10"
          enable_diagnostics="true"
 
          use_concurrent_stack="true"
