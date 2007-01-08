@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
@@ -16,7 +17,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.1 2007/01/08 09:58:29 belaban Exp $
+ * @version $Id: SFC.java,v 1.2 2007/01/08 11:12:52 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -26,26 +27,29 @@ public class SFC extends Protocol {
 
     private Long MAX_CREDITS;
 
-    private static final Long ZERO=new Long(0);
+    private static final Long ZERO_CREDITS=new Long(0);
 
     /** Current number of credits available to send */
+    @GuardedBy("lock")
     private long curr_credits_available=max_credits;
 
     /** Map which keeps track of bytes received from senders */
+    @GuardedBy("received_lock")
     private final Map<Address,Long> received=new HashMap<Address,Long>(12);
 
-    /** Lock protecting access to received and pending_requesters */
-    private final Lock received_lock=new ReentrantLock();
-
     /** Set of members which have requested credits but from whom we have not yet received max_credits bytes */
+    @GuardedBy("received_lock")
     private final Set<Address> pending_requesters=new HashSet<Address>();
 
     /** Set of members from whom we haven't yet received credits */
+    @GuardedBy("lock")
     private final Set<Address> pending_creditors=new HashSet<Address>();
 
 
-
     private final Lock lock=new ReentrantLock();
+    /** Lock protecting access to received and pending_requesters */
+    private final Lock received_lock=new ReentrantLock();
+
 
     /** Used to wait for and signal when credits become available again */
     private final Condition credits_available=lock.newCondition();
@@ -181,7 +185,7 @@ public class SFC extends Protocol {
                 if(dest != null && !dest.isMulticastAddress()) // we don't handle unicast messages
                     break;
 
-                handleMessage(msg, dest, sender);
+                handleMessage(msg, sender);
                 break;
 
             case Event.VIEW_CHANGE:
@@ -213,7 +217,7 @@ public class SFC extends Protocol {
     }
 
 
-    private void handleMessage(Message msg, Address dest, Address sender) {
+    private void handleMessage(Message msg, Address sender) {
         int len=msg.getLength(); // we don't care about headers, this is faster than size()
 
         Long new_val;
@@ -235,7 +239,7 @@ public class SFC extends Protocol {
                     && pending_requesters.contains(sender)
                     && new_val.longValue() >= max_credits) {
                 pending_requesters.remove(sender);
-                received.put(sender, ZERO);
+                received.put(sender, ZERO_CREDITS);
                 send_credit_response=true;
             }
         }
@@ -246,24 +250,63 @@ public class SFC extends Protocol {
         if(send_credit_response) // send outside of the monitor
             sendCreditResponse(sender);
     }
-
-
-    private void handleCreditResponse(Address sender) {
-
-    }
+    
 
     private void handleCreditRequest(Address sender) {
+        boolean send_credit_response=false;
 
+        received_lock.lock();
+        try {
+            Long credits=received.get(sender);
+            if(credits == null) {
+                if(log.isErrorEnabled())
+                    log.error("received credit request from " + sender + ", but sender is not in received hashmap;" +
+                            " adding it");
+                send_credit_response=true;
+            }
+            else {
+                if(credits.longValue() < max_credits) {
+                    pending_requesters.add(sender);
+                }
+                else {
+                    send_credit_response=true;
+
+                }
+            }
+            if(send_credit_response)
+                received.put(sender, ZERO_CREDITS);
+        }
+        finally{
+            received_lock.unlock();
+        }
+
+        if(send_credit_response)
+            sendCreditResponse(sender);
+    }
+
+    private void handleCreditResponse(Address sender) {
+        lock.lock();
+        try {
+            if(pending_creditors.remove(sender) && pending_creditors.isEmpty()) {
+                curr_credits_available=max_credits;
+                credits_available.signalAll();
+            }
+        }
+        finally{
+            lock.unlock();
+        }
     }
 
     private void sendCreditRequest() {
         Message credit_req=new Message();
+        credit_req.setFlag(Message.OOB);
         credit_req.putHeader(name, new Header(Header.CREDIT_REQUEST));
         passDown(new Event(Event.MSG, credit_req));
     }
 
     private void sendCreditResponse(Address dest) {
         Message credit_rsp=new Message(dest);
+        credit_rsp.setFlag(Message.OOB);
         Header hdr=new Header(Header.REPLENISH);
         credit_rsp.putHeader(name, hdr);
         passDown(new Event(Event.MSG, credit_rsp));
