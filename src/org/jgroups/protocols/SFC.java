@@ -17,7 +17,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.2 2007/01/08 11:12:52 belaban Exp $
+ * @version $Id: SFC.java,v 1.3 2007/01/08 13:19:08 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -31,7 +31,7 @@ public class SFC extends Protocol {
 
     /** Current number of credits available to send */
     @GuardedBy("lock")
-    private long curr_credits_available=max_credits;
+    private long curr_credits_available;
 
     /** Map which keeps track of bytes received from senders */
     @GuardedBy("received_lock")
@@ -54,10 +54,12 @@ public class SFC extends Protocol {
     /** Used to wait for and signal when credits become available again */
     private final Condition credits_available=lock.newCondition();
 
-    private final List members=new LinkedList();
+    private final List<Address> members=new LinkedList<Address>();
 
 
     private boolean running=true;
+
+    private final boolean trace=log.isTraceEnabled();
 
 
 
@@ -99,6 +101,7 @@ public class SFC extends Protocol {
 
         Util.checkBufferSize("SFC.max_credits", max_credits);
         MAX_CREDITS=new Long(max_credits);
+        curr_credits_available=max_credits;
 
         if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
@@ -121,6 +124,8 @@ public class SFC extends Protocol {
                 lock.lock();
                 try {
                     while(curr_credits_available <=0 && running) {
+                        if(trace)
+                            log.trace("blocking (current credits=" + curr_credits_available + ")");
                         try {
                             credits_available.await(); // will be signalled when we have credit responses from all members
                         }
@@ -144,12 +149,19 @@ public class SFC extends Protocol {
                 finally {
                     lock.unlock();
                 }
-                if(send_credit_request)
+                if(send_credit_request) {
+                    if(trace)
+                        log.trace("sending credit request to group");
                     sendCreditRequest(); // do this outside of the lock
+                }
                 break;
 
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
+                break;
+
+            case Event.SUSPECT:
+                handleSuspect((Address)evt.getArg());
                 break;
         }
 
@@ -191,6 +203,10 @@ public class SFC extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
+
+            case Event.SUSPECT:
+                handleSuspect((Address)evt.getArg());
+                break;
         }
         passUp(evt);
     }
@@ -231,8 +247,11 @@ public class SFC extends Protocol {
                 received.put(sender, new_val);
             }
             else {
-                new_val=received.put(sender, credits.longValue() + len);
+                new_val=credits.longValue() + len;
+                received.put(sender, new_val);
             }
+            if(trace)
+                log.trace("received " + len + " bytes from " + sender + ": total=" + new_val + " bytes");
 
             // see whether we have any pending credit requests
             if(!pending_requesters.isEmpty()
@@ -257,20 +276,25 @@ public class SFC extends Protocol {
 
         received_lock.lock();
         try {
-            Long credits=received.get(sender);
-            if(credits == null) {
+            Long bytes=received.get(sender);
+
+            if(trace)
+                log.trace("received credit request from " + sender + ", we have so far received " + bytes + " from it");
+
+            if(bytes == null) {
                 if(log.isErrorEnabled())
                     log.error("received credit request from " + sender + ", but sender is not in received hashmap;" +
                             " adding it");
                 send_credit_response=true;
             }
             else {
-                if(credits.longValue() < max_credits) {
+                if(bytes.longValue() < max_credits) {
+                    if(trace)
+                        log.trace("adding " + sender + " to pending credit requesters");
                     pending_requesters.add(sender);
                 }
                 else {
                     send_credit_response=true;
-
                 }
             }
             if(send_credit_response)
@@ -280,8 +304,11 @@ public class SFC extends Protocol {
             received_lock.unlock();
         }
 
-        if(send_credit_response)
+        if(send_credit_response) {
+            if(trace)
+                log.trace("sending credit response to " + sender);
             sendCreditResponse(sender);
+        }
     }
 
     private void handleCreditResponse(Address sender) {
@@ -289,12 +316,65 @@ public class SFC extends Protocol {
         try {
             if(pending_creditors.remove(sender) && pending_creditors.isEmpty()) {
                 curr_credits_available=max_credits;
+                if(trace)
+                    log.trace("replenished credits to " + curr_credits_available);
                 credits_available.signalAll();
             }
         }
         finally{
             lock.unlock();
         }
+    }
+
+
+
+    private void handleViewChange(View view) {
+        List<Address> mbrs=view != null? view.getMembers() : null;
+        if(mbrs != null) {
+            synchronized(members) {
+                members.clear();
+                members.addAll(mbrs);
+            }
+        }
+
+        lock.lock();
+        try {
+            // remove all members which left from pending_creditors
+            if(pending_creditors.retainAll(members) && pending_creditors.isEmpty()) {
+                // the collection was changed and is empty now as a result of retainAll()
+                curr_credits_available=max_credits;
+                if(trace)
+                    log.trace("replenished credits to " + curr_credits_available);
+                credits_available.signalAll();
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+
+        received_lock.lock();
+        try {
+            // remove left members
+            received.keySet().retainAll(members);
+
+            // add new members with *full* credits (see doc/design/SimpleFlowControl.txt for reason)
+            for(Address mbr: members) {
+                if(!received.containsKey(mbr))
+                    received.put(mbr, MAX_CREDITS);
+            }
+
+            // remove left members from pending credit requesters
+            pending_requesters.retainAll(members);
+        }
+        finally{
+            received_lock.unlock();
+        }
+    }
+
+
+    private void handleSuspect(Address suspected_mbr) {
+        // this is the same as a credit response - we cannot block forever for a crashed member
+        handleCreditResponse(suspected_mbr);
     }
 
     private void sendCreditRequest() {
@@ -312,17 +392,7 @@ public class SFC extends Protocol {
         passDown(new Event(Event.MSG, credit_rsp));
     }
 
-    private void handleViewChange(View view) {
-        List mbrs=view != null? view.getMembers() : null;
-        if(mbrs != null) {
-            synchronized(members) {
-                members.clear();
-                members.addAll(mbrs);
-            }
-        }
 
-        // todo: add new members to received, remove left members from received
-    }
 
     public static class Header extends org.jgroups.Header implements Streamable {
         public static final byte CREDIT_REQUEST = 1; // the sender of the message is the requester
