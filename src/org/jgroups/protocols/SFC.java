@@ -17,7 +17,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.3 2007/01/08 13:19:08 belaban Exp $
+ * @version $Id: SFC.java,v 1.4 2007/01/08 15:20:07 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -56,11 +56,9 @@ public class SFC extends Protocol {
 
     private final List<Address> members=new LinkedList<Address>();
 
-
     private boolean running=true;
 
-    private final boolean trace=log.isTraceEnabled();
-
+    @GuardedBy("lock") long start, stop;
 
 
 
@@ -130,6 +128,8 @@ public class SFC extends Protocol {
                             credits_available.await(); // will be signalled when we have credit responses from all members
                         }
                         catch(InterruptedException e) {
+                            if(warn)
+                                log.warn("thread was interrupted", e);
                             Thread.currentThread().interrupt(); // pass the exception on to the  caller
                             return;
                         }
@@ -143,7 +143,6 @@ public class SFC extends Protocol {
                             pending_creditors.addAll(members);
                         }
                         send_credit_request=true;
-
                     }
                 }
                 finally {
@@ -152,6 +151,7 @@ public class SFC extends Protocol {
                 if(send_credit_request) {
                     if(trace)
                         log.trace("sending credit request to group");
+                    start=System.nanoTime(); // only 1 thread is here at any given time
                     sendCreditRequest(); // do this outside of the lock
                 }
                 break;
@@ -250,14 +250,16 @@ public class SFC extends Protocol {
                 new_val=credits.longValue() + len;
                 received.put(sender, new_val);
             }
-            if(trace)
-                log.trace("received " + len + " bytes from " + sender + ": total=" + new_val + " bytes");
+            // if(trace)
+              //  log.trace("received " + len + " bytes from " + sender + ": total=" + new_val + " bytes");
 
             // see whether we have any pending credit requests
             if(!pending_requesters.isEmpty()
                     && pending_requesters.contains(sender)
                     && new_val.longValue() >= max_credits) {
                 pending_requesters.remove(sender);
+                if(trace)
+                    log.trace("removed " + sender + " from credit requesters; sending credits");
                 received.put(sender, ZERO_CREDITS);
                 send_credit_response=true;
             }
@@ -277,7 +279,6 @@ public class SFC extends Protocol {
         received_lock.lock();
         try {
             Long bytes=received.get(sender);
-
             if(trace)
                 log.trace("received credit request from " + sender + ", we have so far received " + bytes + " from it");
 
@@ -305,8 +306,6 @@ public class SFC extends Protocol {
         }
 
         if(send_credit_response) {
-            if(trace)
-                log.trace("sending credit response to " + sender);
             sendCreditResponse(sender);
         }
     }
@@ -316,8 +315,11 @@ public class SFC extends Protocol {
         try {
             if(pending_creditors.remove(sender) && pending_creditors.isEmpty()) {
                 curr_credits_available=max_credits;
+                stop=System.nanoTime();
                 if(trace)
-                    log.trace("replenished credits to " + curr_credits_available);
+                    log.trace("replenished credits to " + curr_credits_available +
+                            " (total blocking time=" + ((stop-start)/1000L/1000L) + " ms)");
+                // System.out.println("replenished credits to " + curr_credits_available + " (total blocking time=" + ((stop-start)/1000L) + " us)");
                 credits_available.signalAll();
             }
         }
@@ -389,6 +391,8 @@ public class SFC extends Protocol {
         credit_rsp.setFlag(Message.OOB);
         Header hdr=new Header(Header.REPLENISH);
         credit_rsp.putHeader(name, hdr);
+        if(trace)
+            log.trace("sending credit response to " + dest);
         passDown(new Event(Event.MSG, credit_rsp));
     }
 
