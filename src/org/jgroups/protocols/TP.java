@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.108 2007/01/07 00:17:25 belaban Exp $
+ * @version $Id: TP.java,v 1.109 2007/01/08 07:54:52 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -134,6 +134,15 @@ public abstract class TP extends Protocol {
 
     boolean use_concurrent_stack=true;
     ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
+
+    /**
+     * Names the current thread. Valid values are "pcsl":
+     * p: include the pool name, e.g. "Incoming thread-1"
+     * c: include the cluster name, e.g. "MyCluster"
+     * s: include the sender of the currently processed message, e.g. "192.168.5.2:1234"
+     * l: include the local address of the current member, e.g. "192.168.5.1:5678"
+     */
+    private ThreadNamingPattern thread_naming_pattern;
 
 
     /** ================================== OOB thread pool ============================== */
@@ -514,7 +523,7 @@ public abstract class TP extends Protocol {
             diag_handler.start();
         }
 
-        if(use_incoming_packet_handler) {
+        if(use_incoming_packet_handler && !use_concurrent_stack) {
             incoming_packet_queue=new Queue();
             incoming_packet_handler=new IncomingPacketHandler();
             incoming_packet_handler.start();
@@ -709,7 +718,11 @@ public abstract class TP extends Protocol {
             props.remove("use_concurrent_stack");
         }
 
-
+        str=props.getProperty("thread_naming_pattern");
+        if(str != null) {
+            thread_naming_pattern=new ThreadNamingPattern(str);
+            props.remove("thread_naming_pattern");
+        }
 
         // ======================================= OOB thread pool =========================================
         str=props.getProperty("oob_thread_pool.enabled");
@@ -1415,7 +1428,33 @@ public abstract class TP extends Protocol {
         }
     }
 
+    private String renameRunningThread(Address sender) {
+        Thread runner=Thread.currentThread();
+        String oldName=runner.getName();
 
+        StringBuilder threadName=new StringBuilder();
+        if(thread_naming_pattern.isIncludePoolName()) {
+            threadName.append(oldName);
+        }
+        if(thread_naming_pattern.isIncludeChannelAddress()) {
+            if(threadName.length() > 0)
+                threadName.append(',');
+            threadName.append(getLocalAddress());
+        }
+        if(thread_naming_pattern.isIncludeClusterName()) {
+            if(threadName.length() > 0)
+                threadName.append(',');
+            threadName.append(getChannelName());
+        }
+        if(thread_naming_pattern.isIncludeSenderAddress()) {
+            if(threadName.length() > 0)
+                threadName.append(',');
+            threadName.append(sender);
+        }
+
+        runner.setName(threadName.toString());
+        return oldName;
+    }
 
     protected void handleConfigEvent(HashMap map) {
         if(map == null) return;
@@ -1494,8 +1533,11 @@ public abstract class TP extends Protocol {
             byte                         flags;
             ExposedByteArrayInputStream  in_stream=null;
             DataInputStream              dis=null;
+            String                       old_thread_name=null;
 
             try {
+                if(thread_naming_pattern != null)
+                    old_thread_name=renameRunningThread(sender);
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
                 dis=new DataInputStream(in_stream);
                 version=dis.readShort();
@@ -1535,6 +1577,10 @@ public abstract class TP extends Protocol {
             catch(Throwable t) {
                 if(log.isErrorEnabled())
                     log.error("failed handling incoming message", t);
+            }
+            finally {
+                if(old_thread_name != null)
+                    Thread.currentThread().setName(old_thread_name);
             }
         }
 
@@ -1921,6 +1967,36 @@ public abstract class TP extends Protocol {
                     log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
                 }
             }
+        }
+    }
+
+    private static class ThreadNamingPattern {
+        final boolean includePoolName;
+        final boolean includeClusterName;
+        final boolean includeSenderAddress;
+        final boolean includeChannelAddress;
+
+        public ThreadNamingPattern(String pattern) {
+            includePoolName=pattern.contains("p");
+            includeClusterName=pattern.contains("c");
+            includeSenderAddress=pattern.contains("s");
+            includeChannelAddress=pattern.contains("l");
+        }
+
+        public boolean isIncludeChannelAddress() {
+            return includeChannelAddress;
+        }
+
+        public boolean isIncludeClusterName() {
+            return includeClusterName;
+        }
+
+        public boolean isIncludeSenderAddress() {
+            return includeSenderAddress;
+        }
+
+        public boolean isIncludePoolName() {
+            return includePoolName;
         }
     }
 
