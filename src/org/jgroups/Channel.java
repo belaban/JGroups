@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.25 2006/10/26 15:07:34 belaban Exp $
+// $Id: Channel.java,v 1.26 2007/01/08 12:06:09 belaban Exp $
 
 package org.jgroups;
 
@@ -75,7 +75,7 @@ public abstract class Channel implements Transport {
      A new channel has to be created first.
      @see Channel#disconnect
      */
-    abstract public void connect(String cluster_name) throws ChannelException, ChannelClosedException;
+    abstract public void connect(String cluster_name) throws ChannelException;
 
 
     /**

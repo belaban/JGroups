@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.112 2006/12/22 13:53:12 belaban Exp $
+ * @version $Id: JChannel.java,v 1.113 2007/01/08 12:06:25 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -345,7 +345,7 @@ public class JChannel extends Channel {
      * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      *                                   A new channel has to be created first.
      */
-    public synchronized void connect(String cluster_name) throws ChannelException, ChannelClosedException {
+    public synchronized void connect(String cluster_name) throws ChannelException {
         /*make sure the channel is not closed*/
         checkClosed();
 
