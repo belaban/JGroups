@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.112 2006/12/31 14:31:00 belaban Exp $
+ * @version $Id: Util.java,v 1.113 2007/01/08 12:09:18 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -541,10 +541,10 @@ public class Util {
      * @throws IllegalAccessException
      * @throws InstantiationException
      */
-    public static Collection readAddresses(DataInputStream in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
+    public static Collection<Address> readAddresses(DataInputStream in, Class cl) throws IOException, IllegalAccessException, InstantiationException {
         short length=in.readShort();
         if(length < 0) return null;
-        Collection retval=(Collection)cl.newInstance();
+        Collection<Address> retval=(Collection<Address>)cl.newInstance();
         Address addr;
         for(int i=0; i < length; i++) {
             addr=Util.readAddress(in);
