@@ -1,4 +1,3 @@
-// $Id: View.java,v 1.14 2007/01/08 12:09:55 belaban Exp $
 
 package org.jgroups;
 
@@ -17,7 +16,9 @@ import java.util.Vector;
  * These adresses are ordered, and the first address is always the coordinator of the view.
  * This way, each member of the group knows who the new coordinator will be if the current one
  * crashes or leaves the group.
- * The views are sent between members using the VIEW_CHANGE event.
+ * The views are sent between members using the VIEW_CHANGE event
+ * @author Bela Ban
+ * @version $Id: View.java,v 1.15 2007/01/08 12:10:30 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
