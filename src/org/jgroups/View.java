@@ -1,4 +1,4 @@
-// $Id: View.java,v 1.13 2006/12/09 21:58:19 belaban Exp $
+// $Id: View.java,v 1.14 2007/01/08 12:09:55 belaban Exp $
 
 package org.jgroups;
 
@@ -33,7 +33,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * the second member will be the new coordinator if the current one disappears
      * or leaves the group.
      */
-    protected Vector members=null;
+    protected Vector<Address> members=null;
 
 
     /**
@@ -49,7 +49,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param vid     The view id of this view (can not be null)
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(ViewId vid, Vector members) {
+    public View(ViewId vid, Vector<Address> members) {
         this.vid=vid;
         this.members=members;
     }
@@ -62,7 +62,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * @param id      The lamport timestamp of this view
      * @param members Contains a list of all the members in the view, can be empty but not null.
      */
-    public View(Address creator, long id, Vector members) {
+    public View(Address creator, long id, Vector<Address> members) {
         this(new ViewId(creator, id), members);
     }
 
@@ -94,7 +94,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      *
      * @return a reference to the ordered list of members in this view
      */
-    public Vector getMembers() {
+    public Vector<Address> getMembers() {
         return Util.unmodifiableVector(members);
     }
 
@@ -106,10 +106,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      *         if the argument mbr is null, this operation returns false
      */
     public boolean containsMember(Address mbr) {
-        if(mbr == null || members == null) {
-            return false;
-        }
-        return members.contains(mbr);
+        return !(mbr == null || members == null) && members.contains(mbr);
     }
 
 
@@ -150,7 +147,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector members2=members != null ? (Vector)members.clone() : null;
+        Vector<Address> members2=members != null ? (Vector<Address>)members.clone() : null;
         return new View(vid2, members2);
     }
 
@@ -159,7 +156,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      * debug only
      */
     public String printDetails() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         ret.append(vid).append("\n\t");
         if(members != null) {
             for(int i=0; i < members.size(); i++) {
@@ -172,7 +169,7 @@ public class View implements Externalizable, Cloneable, Streamable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer(64);
+        StringBuilder ret=new StringBuilder(64);
         ret.append(vid).append(" ").append(members);
         return ret.toString();
     }
@@ -186,9 +183,11 @@ public class View implements Externalizable, Cloneable, Streamable {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vid=(ViewId)in.readObject();
-        members=(Vector)in.readObject();
+        members=(Vector<Address>)in.readObject();
     }
 
+
+    
 
     public void writeTo(DataOutputStream out) throws IOException {
         // vid
@@ -203,6 +202,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         Util.writeAddresses(members, out);
     }
 
+    
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         boolean b;
@@ -214,7 +214,7 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
 
         // members:
-        members=(Vector)Util.readAddresses(in, Vector.class);
+        members=(Vector<Address>)Util.readAddresses(in, Vector.class);
     }
 
     public int serializedSize() {
