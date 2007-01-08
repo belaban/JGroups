@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.38 2006/12/31 06:26:59 belaban Exp $
+// $Id: Draw.java,v 1.39 2007/01/08 07:34:11 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -27,7 +27,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     String                         groupname="DrawGroupDemo";
     private Channel                channel=null;
     private int                    member_size=1;
-    final boolean                  first=true;
+    static final boolean           first=true;
     private JFrame                 mainFrame=null;
     private JPanel                 sub_panel=null;
     private DrawPanel              panel=null;
@@ -35,7 +35,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     private final Random           random=new Random(System.currentTimeMillis());
     private final Font             default_font=new Font("Helvetica",Font.PLAIN,12);
     private final Color            draw_color=selectColor();
-    private final Color background_color=Color.white;
+    private static final Color     background_color=Color.white;
     boolean                        no_channel=false;
     boolean                        jmx;
     private boolean                use_state=false;
@@ -419,7 +419,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             try {
                 byte[] buf=Util.streamableToByteBuffer(comm);
                 channel.send(new Message(null, null, buf));
-                Thread.yield(); // gives the repainter some breath
             }
             catch(Exception ex) {
                 System.err.println(ex);
