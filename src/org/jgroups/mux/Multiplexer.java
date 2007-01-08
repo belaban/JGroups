@@ -16,7 +16,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.35.2.2 2006/12/11 11:20:17 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.35.2.3 2007/01/08 21:00:16 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -545,13 +545,33 @@ public class Multiplexer implements UpHandler {
         }
         return null;
     }
-
-    public Address getServiceCoordinator(String service_id) {
-        List hosts=(List)service_state.get(service_id);
-        if(hosts == null || hosts.size() == 0)
-            return null;
-        return (Address)hosts.get(0);
-    }
+    
+    /**
+    *
+    * Returns an Address of a state provider for a given service_id.
+    *  
+    * If preferredTarget is a member of a service view for a given service_id 
+    * then preferredTarget is returned. Otherwise, service view coordinator is 
+    * returned if such node exists. If service view is empty for a given service_id 
+    * null is returned.  
+    *
+    * @param preferredTarget
+    * @param service_id
+    * @return
+    */
+   public Address getStateProvider(Address preferredTarget, String service_id) {
+       Address result = null;      
+       List hosts = (List)service_state.get(service_id);       
+       if(hosts != null && !hosts.isEmpty()){
+          if(hosts.contains(preferredTarget)){
+             result = preferredTarget;
+          }
+          else{
+             result = (Address)hosts.get(0);
+          }          
+       }
+       return result;       
+   }
 
     private void sendServiceMessage(byte type, String service, Address host,boolean bypassFlush) throws Exception {
         if(host == null)
