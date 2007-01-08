@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.22 2006/09/27 19:21:53 vlada Exp $
+// $Id: PullPushAdapter.java,v 1.23 2007/01/08 08:20:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -358,7 +358,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 l.viewAccepted(v);
             }
             catch(Throwable ex) {
-                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + " of view(" + v + ")", ex);
             }
         }
     }
@@ -373,7 +373,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 l.suspect(suspected_mbr);
             }
             catch(Throwable ex) {
-                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + " of suspect(" + suspected_mbr + ")", ex);
             }
         }
     }
@@ -387,7 +387,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                 l.block();
             }
             catch(Throwable ex) {
-                if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
+                if(log.isErrorEnabled()) log.error("exception notifying " + l + " of block()", ex);
             }
         }
     }
@@ -402,7 +402,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
                  ((ExtendedMembershipListener)l).unblock();
               }
               catch(Throwable ex) {
-                  if(log.isErrorEnabled()) log.error("exception notifying " + l + ": " + ex);
+                  if(log.isErrorEnabled()) log.error("exception notifying " + l + " of unblock()", ex);
               }
            }
        }
