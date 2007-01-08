@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.26 2006/09/28 15:12:14 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.26.2.1 2007/01/08 21:00:16 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -226,7 +226,10 @@ public class MuxChannel extends JChannel {
 
         // we're usig service views, so we need to find the first host in the cluster on which our service runs
         // http://jira.jboss.com/jira/browse/JGRP-247
-        Address service_view_coordinator=mux.getServiceCoordinator(id);
+        //
+        // unless service runs on a specified target node
+        // http://jira.jboss.com/jira/browse/JGRP-401
+        Address service_view_coordinator=mux.getStateProvider(target,id);
         Address tmp=getLocalAddress();
 
         if(service_view_coordinator != null)
