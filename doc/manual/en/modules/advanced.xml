@@ -1150,6 +1150,15 @@
                                     oldest entry in the queue. Note that these values might change, for example a
                                     "Wait" value might get added in the future.</entry>
                                 </row>
+                                <row>
+                                    <entry>thread_naming_pattern</entry>
+                                    <entry>Determines how threads are named that are running from thread pools in 
+                                    concurrent stack. Valid values include any combination of "pcsl" letters, where 
+                                    p includes a pool name in a compound thread name, c includes cluster name, s 
+                                    includes sender address, and finally l includes local address of the channel. 
+                                    By default, thread names are composed of corresponding pool name and a thread id.
+                                    </entry>
+                                </row>
                             </tbody>
                         </tgroup>
                     </table>
