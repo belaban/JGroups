@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.29 2006/12/31 14:50:20 belaban Exp $
+// $Id: ENCRYPT.java,v 1.30 2007/01/08 11:41:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -85,8 +86,6 @@ import java.util.concurrent.TimeUnit;
  * @author Steve Woodcock
  * @author Bela Ban
  */
-
-
 public class ENCRYPT extends Protocol {
     Observer observer;
 
@@ -109,7 +108,7 @@ public class ENCRYPT extends Protocol {
 
     // encryption properties in no supplied key mode
     String asymProvider = null;
-    final String symProvider = null;
+    static final String symProvider = null;
     String asymAlgorithm = "RSA";
     String symAlgorithm = DEFAULT_SYM_ALGO;
     int asymInit = 512; // initial public/private key length
@@ -303,11 +302,11 @@ public class ENCRYPT extends Protocol {
         str=props.getProperty("encrypt_entire_message");
         if(str != null)
         {
-            this.encrypt_entire_message=new Boolean(str).booleanValue();
+            this.encrypt_entire_message=Boolean.valueOf(str).booleanValue();
             props.remove("encrypt_entire_message");
         }
 
-        if (props.size() > 0)
+        if (!props.isEmpty())
         {
 
             if (log.isErrorEnabled())
