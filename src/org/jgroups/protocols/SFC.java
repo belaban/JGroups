@@ -18,7 +18,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.5 2007/01/09 09:06:36 belaban Exp $
+ * @version $Id: SFC.java,v 1.6 2007/01/09 10:19:22 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -65,7 +65,11 @@ public class SFC extends Protocol {
 
     // ---------------------- Management information -----------------------
     long              num_blockings=0;
-    long              num_replenishments=0;
+    long              num_bytes_sent=0;
+    long              num_credit_requests_sent=0;
+    long              num_credit_requests_received=0;
+    long              num_replenishments_received=0;
+    long              num_replenishments_sent=0;
     long              total_block_time=0;
     final BoundedList blockings=new BoundedList(50);
     double            avg_blocking_time=0;
@@ -73,15 +77,20 @@ public class SFC extends Protocol {
 
     public void resetStats() {
         super.resetStats();
-        num_blockings=total_block_time=num_replenishments=0;
+        num_blockings=total_block_time=num_replenishments_received=num_credit_requests_sent=num_bytes_sent=0;
+        num_replenishments_sent=num_credit_requests_received=0;
         avg_blocking_time=0;
         blockings.removeAll();
     }
 
     public long getMaxCredits() {return max_credits;}
     public long getCredits() {return curr_credits_available;}
+    public long getBytesSent() {return num_bytes_sent;}
     public long getBlockings() {return num_blockings;}
-    public long getReplenishments() {return num_replenishments;}
+    public long getCreditRequestsSent() {return num_credit_requests_sent;}
+    public long getCreditRequestsReceived() {return num_credit_requests_received;}
+    public long getReplenishmentsReceived() {return num_replenishments_received;}
+    public long getReplenishmentsSent() {return num_replenishments_sent;}
     public long getTotalBlockingTime() {return total_block_time;}
     public double getAverageBlockingTime() {return num_blockings == 0? 0 : total_block_time / num_blockings;}
 
@@ -194,7 +203,9 @@ public class SFC extends Protocol {
                     }
 
                     // when we get here, curr_credits_available is guaranteed to be > 0
-                    curr_credits_available-=msg.getLength(); // we'll block on insufficient credits on the next down() call
+                    int len=msg.getLength();
+                    num_bytes_sent+=len;
+                    curr_credits_available-=len; // we'll block on insufficient credits on the next down() call
                     if(curr_credits_available <=0) {
                         pending_creditors.clear();
                         synchronized(members) {
@@ -206,11 +217,17 @@ public class SFC extends Protocol {
                 finally {
                     lock.unlock();
                 }
+
+                // we don't need to protect send_credit_request because a thread above either (a) decrements the credits
+                // by the msg length and sets send_credit_request to true or (b) blocks because there are no credits
+                // available. So only 1 thread can ever set send_credit_request at any given time
                 if(send_credit_request) {
                     if(trace)
                         log.trace("sending credit request to group");
                     start=System.nanoTime(); // only 1 thread is here at any given time
+                    passDown(evt);       // send the message before the credit request
                     sendCreditRequest(); // do this outside of the lock
+                    return;
                 }
                 break;
 
@@ -336,9 +353,10 @@ public class SFC extends Protocol {
 
         received_lock.lock();
         try {
+            num_credit_requests_received++;
             Long bytes=received.get(sender);
             if(trace)
-                log.trace("received credit request from " + sender + ", we have so far received " + bytes + " from it");
+                log.trace("received credit request from " + sender + " (total received: " + bytes + " bytes");
 
             if(bytes == null) {
                 if(log.isErrorEnabled())
@@ -371,7 +389,7 @@ public class SFC extends Protocol {
     private void handleCreditResponse(Address sender) {
         lock.lock();
         try {
-            num_replenishments++;
+            num_replenishments_received++;
             if(pending_creditors.remove(sender) && pending_creditors.isEmpty()) {
                 curr_credits_available=max_credits;
                 stop=System.nanoTime();
@@ -442,8 +460,9 @@ public class SFC extends Protocol {
 
     private void sendCreditRequest() {
         Message credit_req=new Message();
-        credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
+        // credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
         credit_req.putHeader(name, new Header(Header.CREDIT_REQUEST));
+        num_credit_requests_sent++;
         passDown(new Event(Event.MSG, credit_req));
     }
 
@@ -454,6 +473,7 @@ public class SFC extends Protocol {
         credit_rsp.putHeader(name, hdr);
         if(trace)
             log.trace("sending credit response to " + dest);
+        num_replenishments_sent++;
         passDown(new Event(Event.MSG, credit_rsp));
     }
 
