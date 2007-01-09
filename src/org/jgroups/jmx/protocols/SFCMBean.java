@@ -4,13 +4,17 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: SFCMBean.java,v 1.1 2007/01/09 09:05:46 belaban Exp $
+ * @version $Id: SFCMBean.java,v 1.2 2007/01/09 10:19:22 belaban Exp $
  */
 public interface SFCMBean extends ProtocolMBean {
     long getMaxCredits();
     long getCredits();
+    long getBytesSent();
     long getBlockings();
-    long getReplenishments();
+    long getCreditRequestsReceived();
+    long getCreditRequestsSent();
+    long getReplenishmentsReceived();
+    long getReplenishmentsSent();
     long getTotalBlockingTime();
     double getAverageBlockingTime();
     String printBlockingTimes();

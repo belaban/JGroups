@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.1 2007/01/09 09:06:21 belaban Exp $
+ * @version $Id: SFC.java,v 1.2 2007/01/09 10:19:23 belaban Exp $
  */
 public class SFC extends Protocol implements SFCMBean {
     org.jgroups.protocols.SFC p;
@@ -33,6 +33,10 @@ public class SFC extends Protocol implements SFCMBean {
         return p.getMaxCredits();
     }
 
+    public long getBytesSent() {
+        return p.getBytesSent();
+    }
+
     public long getCredits() {
         return p.getCredits();
     }
@@ -41,8 +45,20 @@ public class SFC extends Protocol implements SFCMBean {
         return p.getBlockings();
     }
 
-    public long getReplenishments() {
-        return p.getReplenishments();
+    public long getCreditRequestsReceived() {
+        return p.getCreditRequestsReceived();
+    }
+
+    public long getCreditRequestsSent() {
+        return p.getCreditRequestsSent();
+    }
+
+    public long getReplenishmentsReceived() {
+        return p.getReplenishmentsReceived();
+    }
+
+    public long getReplenishmentsSent() {
+        return p.getReplenishmentsSent();
     }
 
     public long getTotalBlockingTime() {
