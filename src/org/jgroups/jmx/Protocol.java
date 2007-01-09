@@ -6,7 +6,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.10 2006/12/28 09:05:48 belaban Exp $
+ * @version $Id: Protocol.java,v 1.11 2007/01/09 09:05:59 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -70,18 +70,6 @@ public class Protocol implements ProtocolMBean {
 
     public Map dumpStats() {
         return prot.dumpStats();
-    }
-
-    public boolean getUpThread() {
-        return prot.upThreadEnabled();
-    }
-
-    /**
-     * @deprecated down_threads have been removed, this is false by default
-     * @return boolean False by default
-     */
-    public boolean getDownThread() {
-        return false;
     }
 
     public void create() throws Exception {

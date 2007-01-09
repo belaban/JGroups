@@ -5,7 +5,7 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.8 2006/12/28 09:05:48 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.9 2007/01/09 09:06:10 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
@@ -20,8 +20,6 @@ public interface ProtocolMBean {
     void resetStats();
     String printStats();
     Map dumpStats();
-    boolean getUpThread();
-    boolean getDownThread();
     void create() throws Exception;
     void start() throws Exception;
     void stop();
