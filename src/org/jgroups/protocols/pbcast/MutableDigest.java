@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.1 2007/01/03 15:57:22 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.2 2007/01/09 15:47:54 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -73,7 +73,6 @@ public class MutableDigest extends Digest {
 
     public void replace(Digest d) {
         if(d != null) {
-            checkSealed();
             Map.Entry entry;
             Address key;
             Entry val;
