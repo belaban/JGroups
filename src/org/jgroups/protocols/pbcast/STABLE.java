@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.54 2007/01/09 16:02:30 belaban Exp $
+// $Id: STABLE.java,v 1.55 2007/01/09 16:22:22 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -806,6 +806,11 @@ public class STABLE extends Protocol {
 
             // asks the NAKACK protocol for the current digest
             Digest my_digest=(Digest)STABLE.super.downcall(Event.GET_DIGEST_STABLE_EVT);
+            if(my_digest == null) {
+                if(warn)
+                    log.warn("received null digest, skipped sending of stable message");
+                return;
+            }
             synchronized(latest_local_digest) {
                 latest_local_digest.replace(my_digest);
             }
