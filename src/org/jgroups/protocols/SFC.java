@@ -5,6 +5,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.BoundedList;
 
 import java.util.*;
 import java.util.concurrent.locks.Condition;
@@ -17,7 +18,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.4 2007/01/08 15:20:07 belaban Exp $
+ * @version $Id: SFC.java,v 1.5 2007/01/09 09:06:36 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -62,22 +63,28 @@ public class SFC extends Protocol {
 
 
 
+    // ---------------------- Management information -----------------------
+    long              num_blockings=0;
+    long              num_replenishments=0;
+    long              total_block_time=0;
+    final BoundedList blockings=new BoundedList(50);
+    double            avg_blocking_time=0;
 
-    public final String getName() {
-        return name;
-    }
 
     public void resetStats() {
         super.resetStats();
+        num_blockings=total_block_time=num_replenishments=0;
+        avg_blocking_time=0;
+        blockings.removeAll();
     }
 
-    public long getMaxCredits() {
-        return max_credits;
-    }
+    public long getMaxCredits() {return max_credits;}
+    public long getCredits() {return curr_credits_available;}
+    public long getBlockings() {return num_blockings;}
+    public long getReplenishments() {return num_replenishments;}
+    public long getTotalBlockingTime() {return total_block_time;}
+    public double getAverageBlockingTime() {return num_blockings == 0? 0 : total_block_time / num_blockings;}
 
-    public void setMaxCredits(long max_credits) {
-        this.max_credits=max_credits;
-    }
 
     public Map dumpStats() {
         Map retval=super.dumpStats();
@@ -86,7 +93,57 @@ public class SFC extends Protocol {
         return retval;
     }
 
+    public String printBlockingTimes() {
+        return blockings.toString();
+    }
 
+    public String printReceived() {
+        received_lock.lock();
+        try {
+            return received.toString();
+        }
+        finally {
+            received_lock.unlock();
+        }
+    }
+
+    public String printPendingCreditors() {
+        lock.lock();
+        try {
+            return pending_creditors.toString();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    public String printPendingRequesters() {
+        received_lock.lock();
+        try {
+            return pending_requesters.toString();
+        }
+        finally {
+            received_lock.unlock();
+        }
+    }
+
+    public void unblock() {
+        lock.lock();
+        try {
+            curr_credits_available=max_credits;
+            credits_available.signalAll();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+
+    // ------------------- End of management information ----------------------
+
+
+    public final String getName() {
+        return name;
+    }
 
     public boolean setProperties(Properties props) {
         String  str;
@@ -125,6 +182,7 @@ public class SFC extends Protocol {
                         if(trace)
                             log.trace("blocking (current credits=" + curr_credits_available + ")");
                         try {
+                            num_blockings++;
                             credits_available.await(); // will be signalled when we have credit responses from all members
                         }
                         catch(InterruptedException e) {
@@ -313,13 +371,16 @@ public class SFC extends Protocol {
     private void handleCreditResponse(Address sender) {
         lock.lock();
         try {
+            num_replenishments++;
             if(pending_creditors.remove(sender) && pending_creditors.isEmpty()) {
                 curr_credits_available=max_credits;
                 stop=System.nanoTime();
+                long diff=(stop-start)/1000000L;
                 if(trace)
                     log.trace("replenished credits to " + curr_credits_available +
-                            " (total blocking time=" + ((stop-start)/1000L/1000L) + " ms)");
-                // System.out.println("replenished credits to " + curr_credits_available + " (total blocking time=" + ((stop-start)/1000L) + " us)");
+                            " (total blocking time=" + diff + " ms)");
+                blockings.add(new Long(diff));
+                total_block_time+=diff;
                 credits_available.signalAll();
             }
         }
@@ -381,7 +442,7 @@ public class SFC extends Protocol {
 
     private void sendCreditRequest() {
         Message credit_req=new Message();
-        credit_req.setFlag(Message.OOB);
+        credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
         credit_req.putHeader(name, new Header(Header.CREDIT_REQUEST));
         passDown(new Event(Event.MSG, credit_req));
     }
