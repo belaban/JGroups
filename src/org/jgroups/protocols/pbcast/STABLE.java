@@ -1,9 +1,10 @@
-// $Id: STABLE.java,v 1.52 2007/01/09 11:40:18 belaban Exp $
+// $Id: STABLE.java,v 1.53 2007/01/09 12:48:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
@@ -14,8 +15,8 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-
-
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -36,46 +37,54 @@ import java.util.Vector;
  * @author Bela Ban
  */
 public class STABLE extends Protocol {
-    Address              local_addr=null;
-    final Vector         mbrs=new Vector();
-    final MutableDigest  digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
-    final MutableDigest  latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
-    final Vector         heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
+    private Address              local_addr=null;
+    private final Vector         mbrs=new Vector();
+
+
+    private final MutableDigest  digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    private final MutableDigest  latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
+    private final Vector         heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
-    long                 desired_avg_gossip=20000;
+    private long                 desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
      * small number (> 0 !) if <code>max_bytes</code> is used */
-    long                 stability_delay=6000;
+    private long                 stability_delay=6000;
+
+    @GuardedBy("stability_lock") 
     private StabilitySendTask   stability_task=null;
-    final Object         stability_mutex=new Object();   // to synchronize on stability_task
-    private volatile StableTask  stable_task=null;               // bcasts periodic STABLE message (added to timer below)
-    final Object         stable_task_mutex=new Object(); // to sync on stable_task
-    TimeScheduler        timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
-    static final String  name="STABLE";
+    private final Lock           stability_lock=new ReentrantLock();   // to synchronize on stability_task
+
+    @GuardedBy("stable_task_lock")
+    private StableTask   stable_task=null;               // bcasts periodic STABLE message (added to timer below)
+    private final Lock           stable_task_lock=new ReentrantLock(); // to sync on stable_task
+
+
+    private TimeScheduler        timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
+    private static final String  name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
-    long                 max_bytes=0;
+    private long                 max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
-    long                 num_bytes_received=0;
+    private long                 num_bytes_received=0;
 
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
-    boolean              suspended=false;
+    private boolean              suspended=false;
 
-    boolean              initialized=false;
+    private boolean              initialized=false;
 
     private ResumeTask   resume_task=null;
-    final Object         resume_task_mutex=new Object();
+    private final Object         resume_task_mutex=new Object();
 
-    int num_stable_msgs_sent=0;
-    int num_stable_msgs_received=0;
-    int num_stability_msgs_sent=0;
-    int num_stability_msgs_received=0;
+    private int num_stable_msgs_sent=0;
+    private int num_stable_msgs_received=0;
+    private int num_stability_msgs_sent=0;
+    private int num_stability_msgs_received=0;
     
     private static final long MAX_SUSPEND_TIME=200000;
 
@@ -438,37 +447,40 @@ public class STABLE extends Protocol {
     }
 
 
-    void startStableTask() {
-        // Here, double-checked locking works: we don't want to synchronize if the task already runs (which is the case
-        // 99% of the time). If stable_task gets nulled after the condition check, we return anyways, but just miss
-        // 1 cycle: on the next message or view, we will start the task
-        if(stable_task != null)
-            return;
-        synchronized(stable_task_mutex) {
+    private void startStableTask() {
+        stable_task_lock.lock();
+        try {
             if(stable_task != null && stable_task.running()) {
                 return;  // already running
             }
             stable_task=new StableTask();
             timer.add(stable_task, true); // fixed-rate scheduling
         }
+        finally {
+            stable_task_lock.unlock();
+        }
         if(trace)
             log.trace("stable task started");
     }
 
 
-    void stopStableTask() {
+    private void stopStableTask() {
         // contrary to startStableTask(), we don't need double-checked locking here because this method is not
         // called frequently
-        synchronized(stable_task_mutex) {
+        stable_task_lock.lock();
+        try {
             if(stable_task != null) {
                 stable_task.stop();
                 stable_task=null;
             }
         }
+        finally {
+            stable_task_lock.unlock();
+        }
     }
 
 
-    void startResumeTask(long max_suspend_time) {
+    private void startResumeTask(long max_suspend_time) {
         max_suspend_time=(long)(max_suspend_time * 1.1); // little slack
         if(max_suspend_time <= 0)
             max_suspend_time=MAX_SUSPEND_TIME;
@@ -487,7 +499,7 @@ public class STABLE extends Protocol {
     }
 
 
-    void stopResumeTask() {
+    private void stopResumeTask() {
         synchronized(resume_task_mutex) {
             if(resume_task != null) {
                 resume_task.stop();
@@ -497,24 +509,30 @@ public class STABLE extends Protocol {
     }
 
 
-    void startStabilityTask(Digest d, long delay) {
-        synchronized(stability_mutex) {
-            if(stability_task != null && stability_task.running()) {
-            }
-            else {
+    private void startStabilityTask(Digest d, long delay) {
+        stability_lock.lock();
+        try {
+            if(stability_task == null || !stability_task.running()) {
                 stability_task=new StabilitySendTask(d, delay); // runs only once
                 timer.add(stability_task, true);
             }
         }
+        finally {
+            stability_lock.unlock();
+        }
     }
 
 
-    void stopStabilityTask() {
-        synchronized(stability_mutex) {
+    private void stopStabilityTask() {
+        stability_lock.lock();
+        try {
             if(stability_task != null) {
                 stability_task.stop();
                 stability_task=null;
             }
+        }
+        finally {
+            stability_lock.unlock();
         }
     }
 
@@ -605,7 +623,7 @@ public class STABLE extends Protocol {
      discard S2.
      @param tmp A copy of te stability digest, so we don't need to copy it again
      */
-    void sendStabilityMessage(Digest tmp) {
+    private void sendStabilityMessage(Digest tmp) {
         long delay;
 
         if(suspended) {
@@ -622,7 +640,7 @@ public class STABLE extends Protocol {
     }
 
 
-    void handleStabilityMessage(Digest d, Address sender) {
+    private void handleStabilityMessage(Digest d, Address sender) {
         if(d == null) {
             if(log.isErrorEnabled()) log.error("stability digest is null");
             return;
@@ -886,7 +904,7 @@ public class STABLE extends Protocol {
         }
 
         public boolean cancelled() {
-            return running == false;
+            return !running;
         }
 
         public long nextInterval() {
