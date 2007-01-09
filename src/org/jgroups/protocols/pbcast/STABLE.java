@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.53 2007/01/09 12:48:05 belaban Exp $
+// $Id: STABLE.java,v 1.54 2007/01/09 16:02:30 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -29,9 +29,6 @@ import java.util.concurrent.locks.ReentrantLock;
  * min(entry[P], digest[P]). When messages from all members have been received, a stability
  * message is mcast, which causes all members to send a STABLE event up the stack (triggering garbage collection
  * in the NAKACK layer).<p>
- * The stable task now terminates after max_num_gossips if no messages or view changes have been sent or received
- * in the meantime. It will resume when messages are received. This effectively suspends sending superfluous
- * STABLE messages in the face of no activity.<br/>
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
@@ -53,7 +50,7 @@ public class STABLE extends Protocol {
     private long                 stability_delay=6000;
 
     @GuardedBy("stability_lock") 
-    private StabilitySendTask   stability_task=null;
+    private StabilitySendTask    stability_task=null;
     private final Lock           stability_lock=new ReentrantLock();   // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
@@ -232,8 +229,15 @@ public class STABLE extends Protocol {
                                     append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                         }
                         num_bytes_received=0;
-                        // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
-                        passDown(new Event(Event.GET_DIGEST_STABLE));
+
+                        // asks the NAKACK protocol for the current digest,
+                        Digest my_digest=(Digest)super.downcall(Event.GET_DIGEST_STABLE_EVT);
+                        synchronized(latest_local_digest) {
+                            latest_local_digest.replace(my_digest);
+                        }
+                        if(trace)
+                            log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+                        sendStableMessage(my_digest);
                     }
                 }
             }
@@ -252,16 +256,6 @@ public class STABLE extends Protocol {
                 if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
             }
             return;  // don't pass STABLE or STABILITY messages up the stack
-
-        case Event.GET_DIGEST_STABLE_OK:
-            Digest d=(Digest)evt.getArg();
-            synchronized(latest_local_digest) {
-                latest_local_digest.replace(d);
-            }
-            if(trace)
-                log.trace("setting latest_local_digest from NAKACK: " + d.printHighSeqnos());
-            sendStableMessage(d);
-            break;
 
         case Event.VIEW_CHANGE:
             View view=(View)evt.getArg();
@@ -810,8 +804,14 @@ public class STABLE extends Protocol {
                 return;
             }
 
-            // asks the NAKACK protocol for the current digest, reply event is GET_DIGEST_STABLE_OK (arg=digest)
-            passDown(new Event(Event.GET_DIGEST_STABLE));
+            // asks the NAKACK protocol for the current digest
+            Digest my_digest=(Digest)STABLE.super.downcall(Event.GET_DIGEST_STABLE_EVT);
+            synchronized(latest_local_digest) {
+                latest_local_digest.replace(my_digest);
+            }
+            if(trace)
+                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+            sendStableMessage(my_digest);
         }
 
         long computeSleepTime() {
