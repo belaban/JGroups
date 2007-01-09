@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.51 2007/01/03 15:57:22 belaban Exp $
+// $Id: STABLE.java,v 1.52 2007/01/09 11:40:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -72,8 +72,10 @@ public class STABLE extends Protocol {
     private ResumeTask   resume_task=null;
     final Object         resume_task_mutex=new Object();
 
-    /** Number of gossip messages */
-    int                  num_gossips=0;
+    int num_stable_msgs_sent=0;
+    int num_stable_msgs_received=0;
+    int num_stability_msgs_sent=0;
+    int num_stability_msgs_received=0;
     
     private static final long MAX_SUSPEND_TIME=200000;
 
@@ -98,11 +100,16 @@ public class STABLE extends Protocol {
         this.max_bytes=max_bytes;
     }
 
-    public int getNumberOfGossipMessages() {return num_gossips;}
+    public long getBytes() {return num_bytes_received;}
+    public int getStableSent() {return num_stable_msgs_sent;}
+    public int getStableReceived() {return num_stable_msgs_received;}
+    public int getStabilitySent() {return num_stability_msgs_sent;}
+    public int getStabilityReceived() {return num_stability_msgs_received;}
+
 
     public void resetStats() {
         super.resetStats();
-        num_gossips=0;
+        num_stability_msgs_received=num_stability_msgs_sent=num_stable_msgs_sent=num_stable_msgs_received=0;
     }
 
 
@@ -154,9 +161,8 @@ public class STABLE extends Protocol {
 
         Util.checkBufferSize("STABLE.max_bytes", max_bytes);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("these properties are not recognized: " + props);
-            
             return false;
         }
         return true;
@@ -397,7 +403,7 @@ public class STABLE extends Protocol {
 
 
     private void resetDigest(Vector new_members) {
-        if(new_members == null || new_members.size() == 0)
+        if(new_members == null || new_members.isEmpty())
             return;
         synchronized(heard_from) {
             heard_from.clear();
@@ -423,7 +429,7 @@ public class STABLE extends Protocol {
     private boolean removeFromHeardFromList(Address mbr) {
         synchronized(heard_from) {
             heard_from.remove(mbr);
-            if(heard_from.size() == 0) {
+            if(heard_from.isEmpty()) {
                 resetDigest(this.mbrs);
                 return true;
             }
@@ -546,6 +552,8 @@ public class STABLE extends Protocol {
             return;
         }
 
+        num_stable_msgs_received++;
+
         Digest copy;
         synchronized(digest) {
             boolean success=updateLocalDigest(d, sender);
@@ -576,11 +584,11 @@ public class STABLE extends Protocol {
         if(d != null && d.size() > 0) {
             if(trace)
                 log.trace("sending stable msg " + d.printHighSeqnos());
+            num_stable_msgs_sent++;
             Message msg=new Message(); // mcast message
             msg.setFlag(Message.OOB);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
-            num_gossips++;
             passDown(new Event(Event.MSG, msg));
         }
     }
@@ -646,6 +654,8 @@ public class STABLE extends Protocol {
             }
             return;
         }
+
+        num_stability_msgs_received++;
 
         resetDigest(mbrs);
 
@@ -850,6 +860,7 @@ public class STABLE extends Protocol {
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
                 if(trace) log.trace("sending stability msg " + d.printHighSeqnos());
+                num_stability_msgs_sent++;
                 passDown(new Event(Event.MSG, msg));
                 d=null;
             }
