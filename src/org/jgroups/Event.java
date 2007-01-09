@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.27 2006/12/22 13:33:56 belaban Exp $
+// $Id: Event.java,v 1.28 2007/01/09 13:18:19 belaban Exp $
 
 package org.jgroups;
 
@@ -197,6 +197,7 @@ public class Event {
 
     public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
+    public static final Event GET_DIGEST_STABLE_EVT = new Event(Event.GET_DIGEST_STABLE);
 
     public String toString() {
         StringBuilder ret=new StringBuilder(64);
