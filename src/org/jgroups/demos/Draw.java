@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.40 2007/01/10 08:36:48 belaban Exp $
+// $Id: Draw.java,v 1.41 2007/01/10 09:19:23 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -12,10 +12,8 @@ import javax.management.MBeanServer;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
+import java.io.*;
 
 
 /**
@@ -272,6 +270,35 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     }
 
+
+    public void getState(OutputStream ostream) {
+        try {
+            try {
+                panel.writeState(ostream);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+        finally {
+            Util.close(ostream);
+        }
+    }
+
+    public void setState(InputStream istream) {
+        try {
+            try {
+                panel.readState(istream);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
+        finally {
+            Util.close(istream);
+        }
+    }
+
     /* --------------- Callbacks --------------- */
 
 
@@ -393,6 +420,61 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
 
+        public void setState(byte[] buf) {
+            synchronized(state) {
+                try {
+                    Map tmp=(Map)Util.objectFromByteBuffer(buf);
+                    state.clear();
+                    state.putAll(tmp);
+                    System.out.println("received state: " + buf.length + " bytes, " + state.size() + " entries");
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        public void writeState(OutputStream outstream) throws IOException {
+            synchronized(state) {
+                if(state != null) {
+                    DataOutputStream dos=new DataOutputStream(outstream);
+                    dos.writeInt(state.size());
+                    Point point;
+                    Color col;
+                    for(Map.Entry<Point,Color> entry: state.entrySet()) {
+                        point=entry.getKey();
+                        col=entry.getValue();
+                        dos.writeInt(point.x);
+                        dos.writeInt(point.y);
+                        dos.writeInt(col.getRGB());
+                    }
+                    dos.flush();
+                }
+            }
+        }
+
+
+        public void readState(InputStream instream) throws IOException {
+            DataInputStream in=new DataInputStream(instream);
+            Map<Point,Color> new_state=new HashMap<Point,Color>();
+            int num=in.readInt();
+            Point point;
+            Color col;
+            for(int i=0; i < num; i++) {
+                point=new Point(in.readInt(), in.readInt());
+                col=new Color(in.readInt());
+                new_state.put(point, col);
+            }
+
+            if(new_state != null) {
+                synchronized(state) {
+                    state.clear();
+                    state.putAll(new_state);
+                }
+            }
+        }
+
+
         final void createOffscreenImage() {
             d=getSize();
             if(img == null || imgsize == null || imgsize.width != d.width || imgsize.height != d.height) {
@@ -468,19 +550,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
 
-        public void setState(byte[] buf) {
-            synchronized(state) {
-                try {
-                    Map tmp=(Map)Util.objectFromByteBuffer(buf);
-                    state.clear();
-                    state.putAll(tmp);
-                    System.out.println("received state: " + buf.length + " bytes, " + state.size() + " entries");
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }
+
 
 
         /** Draw the entire panel from the state */
