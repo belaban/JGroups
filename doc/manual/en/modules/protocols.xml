@@ -1162,9 +1162,78 @@
 
     <section>
         <title>Message stability</title>
+        <para>
+            To serve potential retransmission requests, a member has to store received messages until it is known
+            that every member in the cluster has received them. Message stability for a given message M means that M
+            has been seen by everyone in the cluster.
+        </para>
+        <para>
+            The stability protocol periodically (or when a ceryain number of bytes have been received) initiates a
+            consensus protocol, which multicasts a stable message containing the highest message numbers for a
+            given member. This is called a digest.
+        </para>
+        <para>
+            When everyone has received everybody else's stable messages, a digest is computed which consists of the
+            minimum sequence numbers of all received digests so far. This is the stability vector, and contain only
+            message sequence numbers that have been seen by everyone.
+        </para>
+        <para>
+            This stability vector is the broadcast to the group and everyone can remove messages from their
+            retransmission tables whose sequence numbers are smaller than the ones received in the stability vector.
+            These messages can then be garbage collected.
+        </para>
 
         <section>
             <title>STABLE</title>
+
+            <table>
+                <title>Properties</title>
+
+                <tgroup cols="2">
+                    <colspec align="left"/>
+
+                    <thead>
+                        <row>
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                        </row>
+                    </thead>
+                    <tbody>
+                        <row>
+                            <entry>desired_avg_gossip</entry>
+                            <entry>
+                                Interval in milliseconds at which a stable message is broadcast to the cluster. This
+                                is randomized to prevent all members from sending the message at the same time. If set
+                                to 0, it is disabled.
+                            </entry>
+                        </row>
+                    </tbody>
+                    <tbody>
+                        <row>
+                            <entry>max_bytes</entry>
+                            <entry>
+                                Maximum number of bytes received after which a stable message is broadcast to the cluster.
+                                A high number means fewer stability rounds which purge more messages. A smaller value
+                                means a higher frequency of stability rounds which purge fewer messages. This is
+                                similar to garbage collection in the JVM.
+                            </entry>
+                        </row>
+                    </tbody>
+                    <tbody>
+                        <row>
+                            <entry>stability_delay</entry>
+                            <entry>
+                                When sending a stability message, we wait a randomized time between 1 and stability_delay
+                                milliseconds before sending it. If, when about to send the message, a stability message
+                                is received, we cancel our own message. This is to prevent everyone from sending the
+                                message at the same time.
+                            </entry>
+                        </row>
+                    </tbody>
+
+                </tgroup>
+            </table>
+
         </section>
 
     </section>
