@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.27 2006/10/11 14:28:25 belaban Exp $
+// $Id: LargeState.java,v 1.28 2007/01/10 09:31:10 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -41,7 +41,7 @@ public class LargeState extends ExtendedReceiverAdapter {
     int      size=100000;
     int      total_received=0;
     final    Promise state_promise=new Promise();
-    final int STREAMING_CHUNK_SIZE=10000;
+    static final int STREAMING_CHUNK_SIZE=10000;
 
 
     public void start(boolean provider, int size, String props,boolean jmx) throws Exception {
