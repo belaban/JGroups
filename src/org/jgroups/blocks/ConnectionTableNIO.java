@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.25 2006/12/31 14:21:57 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.26 2007/01/10 19:38:19 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -63,8 +63,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
    // for a background thread to run the request.
-   private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
-    // A negative value means to wait forever
+   private long m_processor_keepAliveTime = Long.MAX_VALUE;              // PooledExecutor.setKeepAliveTime( milliseconds);
+    // negative value used to mean to wait forever, instead set to Long.MAX_VALUE to wait forever
 
 
 
@@ -209,9 +209,9 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
         this.m_processor_queueSize=m_processor_queueSize;
     }
 
-    public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
+    public long getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
 
-    public void setProcessorKeepAliveTime(int m_processor_keepAliveTime) {
+    public void setProcessorKeepAliveTime(long m_processor_keepAliveTime) {
         this.m_processor_keepAliveTime=m_processor_keepAliveTime;
     }
 
@@ -1002,7 +1002,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       void doSend(byte[] buffie, int offset, int length) throws Exception
       {
-         MyFuture result = new MyFuture(null, null);
+         MyFuture result = new MyFuture();
          m_writeHandler.write(sock_ch, ByteBuffer.wrap(buffie, offset, length), result, m_selectorWriteHandler);
           Object ex = result.get();
          if (ex instanceof Exception)
@@ -1490,16 +1490,19 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
    }
 
+    private static class NullCallable implements Callable {
 
-    public static class MyFuture extends FutureTask {
-        public MyFuture(Callable callable) {
-            super(callable);
+        public Object call() {
+            System.out.println("nullCallable.call invoked");
+            return null;
         }
+    }
+    static final NullCallable NULLCALL = new NullCallable();
 
-        public MyFuture(Runnable runnable, Object result) {
-            super(runnable, result);
+    public static class MyFuture extends FutureTask{  // make FutureTask work like the old FutureResult
+        public MyFuture() {
+            super(NULLCALL);
         }
-
 
         protected void set(Object o) {
             super.set(o);

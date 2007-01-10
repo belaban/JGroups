@@ -2,7 +2,7 @@ package org.jgroups.jmx.protocols;
 
 /**
  * @author Scott Marlow
- * @version $Id: TCP_NIO.java,v 1.1 2005/11/22 13:58:18 smarlownovell Exp $
+ * @version $Id: TCP_NIO.java,v 1.2 2007/01/10 19:38:18 smarlownovell Exp $
  */
 public class TCP_NIO  extends TCP implements TCP_NIOMBean {
 
@@ -44,7 +44,7 @@ public class TCP_NIO  extends TCP implements TCP_NIOMBean {
       return p.getProcessorQueueSize();
    }
 
-   public int getProcessorKeepAliveTime() {
+   public long getProcessorKeepAliveTime() {
       return p.getProcessorKeepAliveTime();
    }
 

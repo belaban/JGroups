@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.11 2006/10/02 06:47:53 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.12 2007/01/10 19:38:18 smarlownovell Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -91,7 +91,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
    public int getProcessorMinThreads() { return m_processor_minThreads;}
    public int getProcessorMaxThreads() { return m_processor_maxThreads;}
    public int getProcessorQueueSize() { return m_processor_queueSize; }
-   public int getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
+   public long getProcessorKeepAliveTime() { return m_processor_keepAliveTime; }
    public int getOpenConnections()      {return ct.getNumConnections();}
 
     
@@ -138,7 +138,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 
       str=props.getProperty("processor_keepAliveTime");
       if(str != null) {
-         m_processor_keepAliveTime=Integer.parseInt(str);
+         m_processor_keepAliveTime=Long.parseLong(str);
          props.remove("processor_keepAliveTime");
       }
 
@@ -154,7 +154,8 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
    private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
                                                             // for a background thread to run the request.
-   private int m_processor_keepAliveTime = -1;              // PooledExecutor.setKeepAliveTime( milliseconds);
-                                                            // A negative value means to wait forever
+   private long m_processor_keepAliveTime = Long.MAX_VALUE; // PooledExecutor.setKeepAliveTime( milliseconds);
+                                                            // negative value used to mean (before 2.5 release) to wait forever,
+                                                            // instead set to Long.MAX_VALUE to keep alive forever
    private ConnectionTableNIO ct;
 }
