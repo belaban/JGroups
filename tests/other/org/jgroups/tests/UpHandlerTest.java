@@ -1,4 +1,4 @@
-// $Id: UpHandlerTest.java,v 1.6 2005/05/30 16:15:12 belaban Exp $
+// $Id: UpHandlerTest.java,v 1.7 2007/01/10 09:45:58 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -19,27 +19,32 @@ public class UpHandlerTest implements UpHandler {
     Channel channel;
 
     public void start() throws Exception {
-	channel=new JChannel();
-	channel.setUpHandler(this);
-	channel.connect("UpHandlerTestGroup");
+        channel=new JChannel();
+        channel.setUpHandler(this);
+        channel.connect("UpHandlerTestGroup");
 
-	channel.send(new Message(null, null, "Hello".getBytes()));
-	Util.sleep(2000);
-	channel.close();
+        channel.send(new Message(null, null, "Hello".getBytes()));
+        Util.sleep(2000);
+        channel.close();
     }
 
 
     public void up(Event evt) {
-	System.out.println(evt);
+        System.out.println(evt);
     }
 
 
+    public Object upcall(Event evt) {
+        System.out.println(evt);
+        return null;
+    }
+
     public static void main(String[] args) {
-	try {
-	    new UpHandlerTest().start();
-	}
-	catch(Exception e) {
-	    System.err.println(e);
-	}
+        try {
+            new UpHandlerTest().start();
+        }
+        catch(Exception e) {
+            System.err.println(e);
+        }
     }
 }
