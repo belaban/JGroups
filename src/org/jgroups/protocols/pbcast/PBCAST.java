@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.18 2007/01/11 12:57:32 belaban Exp $
+// $Id: PBCAST.java,v 1.19 2007/01/11 13:05:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -41,7 +41,7 @@ public class PBCAST extends Protocol implements Runnable {
     int max_gossip_cache=100;     // number of gossips to keep until gossip list is purged
     int gc_lag=30;                // how many seqnos should we lag behind (see DESIGN)
     final Hashtable invalid_gossipers=new Hashtable(); // keys=Address, val=Integer (number of gossips from suspected mbrs)
-    final int max_invalid_gossips=2;    // max number of gossip from non-member before that member is shunned
+    static final int max_invalid_gossips=2;    // max number of gossip from non-member before that member is shunned
     Vector seen_list=null;
     boolean shun=false;               // whether invalid gossipers will be shunned or not
     boolean dynamic=true;             // whether to use dynamic or static gosssip_interval (overrides gossip_interval)
@@ -85,10 +85,9 @@ public class PBCAST extends Protocol implements Runnable {
 
                 // discard all multicast messages until we become operational (transition from joiner to member)
                 if(!operational) {
-
-                        if(log.isInfoEnabled()) log.info("event was discarded as I'm not yet operational. Event: " +
-                                                  Util.printEvent(evt));
-                    return;  // don't pass up
+                    if(log.isInfoEnabled()) log.info("event was discarded as I'm not yet operational. Event: " +
+                            Util.printEvent(evt));
+                    return null;  // don't pass up
                 }
 
                 if(m.getHeader(getName()) instanceof PbcastHeader)
@@ -104,7 +103,7 @@ public class PBCAST extends Protocol implements Runnable {
                 switch(hdr.type) {
                     case PbcastHeader.MCAST_MSG:  // messages are handled directly (high priority)
                         handleUpMessage(m, hdr);
-                        return;
+                        return null;
 
                         // all other requests are put in the bounded gossip queue (discarded if full). this helps to ensure
                         // that no 'gossip storms' will occur (overflowing the buffers and the network)
@@ -114,22 +113,21 @@ public class PBCAST extends Protocol implements Runnable {
                     case PbcastHeader.NOT_MEMBER:
                         try {
                             if(gossip_queue.size() >= max_queue) {
-
-                                    if(warn) log.warn("gossip request " +
-                                                              PbcastHeader.type2String(hdr.type) + " discarded because " +
-                                                              "gossip_queue is full (number of elements=" + gossip_queue.size() + ')');
-                                return;
+                                if(warn) log.warn("gossip request " +
+                                        PbcastHeader.type2String(hdr.type) + " discarded because " +
+                                        "gossip_queue is full (number of elements=" + gossip_queue.size() + ')');
+                                return null;
                             }
                             gossip_queue.add(new GossipEntry(hdr, m.getSrc(), m.getBuffer()));
                         }
                         catch(Exception ex) {
                             if(warn) log.warn("exception adding request to gossip_queue, details=" + ex);
                         }
-                        return;
+                        return null;
 
                     default:
                         if(log.isErrorEnabled()) log.error("type (" + hdr.type + ") of PbcastHeader not known !");
-                        return;
+                        return null;
                 }
 
             case Event.SET_LOCAL_ADDRESS:
@@ -137,7 +135,7 @@ public class PBCAST extends Protocol implements Runnable {
                 break;  // pass up
         }
 
-        passUp(evt);  // pass up by default
+        return passUp(evt);  // pass up by default
     }
 
 
@@ -180,11 +178,11 @@ public class PBCAST extends Protocol implements Runnable {
 
             case Event.SET_DIGEST:
                 setDigest((Digest) evt.getArg());
-                return;  // don't pass down
+                return null;  // don't pass down
 
             case Event.GET_DIGEST:  // don't pass down
                 passUp(new Event(Event.GET_DIGEST_OK, getDigest()));
-                return;
+                return null;
 
             case Event.GET_DIGEST_STATE:  // don't pass down
                 return getDigest();
@@ -205,7 +203,7 @@ public class PBCAST extends Protocol implements Runnable {
                 }
 
                 // delete all members in digest that are not in new membership list
-                if(mbrs.size() > 0) {
+                if(!mbrs.isEmpty()) {
                     synchronized(digest) {
                         for(Enumeration e=digest.keys(); e.hasMoreElements();) {
                             key=(Address) e.nextElement();
@@ -245,7 +243,7 @@ public class PBCAST extends Protocol implements Runnable {
                 break;
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
 
@@ -325,9 +323,8 @@ public class PBCAST extends Protocol implements Runnable {
             props.remove("gc_lag");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("PBCAST.setProperties(): the following properties are not recognized: " + props);
-            
             return false;
         }
         return true;
