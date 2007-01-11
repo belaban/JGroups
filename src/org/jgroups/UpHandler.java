@@ -1,4 +1,4 @@
-// $Id: UpHandler.java,v 1.2 2005/07/17 11:38:05 chrislott Exp $
+// $Id: UpHandler.java,v 1.3 2007/01/11 11:38:41 belaban Exp $
 
 package org.jgroups;
 
@@ -11,4 +11,6 @@ public interface UpHandler {
 	 * @param evt
 	 */
     void up(Event evt);
+
+    Object upcall(Event evt);
 }

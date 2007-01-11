@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.26 2007/01/08 12:06:09 belaban Exp $
+// $Id: Channel.java,v 1.27 2007/01/11 11:38:41 belaban Exp $
 
 package org.jgroups;
 
@@ -201,6 +201,10 @@ public abstract class Channel implements Transport {
     public void down(Event evt) {
     }
 
+
+    public Object downcall(Event evt) {
+        return null;
+    }
 
     /** Receives a message, a view change or a block event. By using <code>setOpt</code>, the
      type of objects to be received can be determined (e.g., not views and blocks, just

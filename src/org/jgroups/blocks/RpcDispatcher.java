@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.27 2006/12/11 08:24:13 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.28 2007/01/11 11:38:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -164,7 +164,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout, boolean use_anycasting) {
-        if(dests != null && dests.size() == 0) {
+        if(dests != null && dests.isEmpty()) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuffer("destination list of ").append(method_call.getName()).
@@ -258,7 +258,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             return e;
         }
 
-        if(body == null || !(body instanceof MethodCall)) {
+        if(!(body instanceof MethodCall)) {
             if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
             return null;
         }
