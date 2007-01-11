@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.34 2007/01/11 12:57:20 belaban Exp $
+ * @version $Id: FRAG.java,v 1.35 2007/01/11 16:21:54 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -71,7 +71,7 @@ public class FRAG extends Protocol {
             props.remove("frag_size");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("FRAG.setProperties(): the following properties are not recognized: " + props);
             return false;
         }
@@ -102,7 +102,7 @@ public class FRAG extends Protocol {
                     log.trace(sb.toString());
                 }
                 fragment(msg);  // Fragment and pass down
-                return;
+                return null;
             }
             break;
 
@@ -129,13 +129,13 @@ public class FRAG extends Protocol {
             break;
 
         case Event.CONFIG:
-            passDown(evt);
+            Object ret=passDown(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
-            return;
+            return ret;
         }
 
-        passDown(evt);  // Pass on to the layer below us
+        return passDown(evt);  // Pass on to the layer below us
     }
 
 
@@ -150,7 +150,7 @@ public class FRAG extends Protocol {
             FragHeader hdr=(FragHeader)msg.getHeader(name);
             if(hdr != null) { // needs to be defragmented
                 unfragment(msg, hdr); // Unfragment and possibly pass up
-                return;
+                return null;
             }
             else {
                 num_received_msgs++;
@@ -158,13 +158,13 @@ public class FRAG extends Protocol {
             break;
 
         case Event.CONFIG:
-            passUp(evt);
+            Object ret=passUp(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
-            return;
+            return ret;
         }
 
-        passUp(evt); // Pass up to the layer above us by default
+        return passUp(evt); // Pass up to the layer above us by default
     }
 
 

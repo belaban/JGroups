@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.12 2007/01/11 12:57:17 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.13 2007/01/11 16:22:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -66,9 +66,8 @@ public class FD_SIMPLE extends Protocol {
             props.remove("max_missed_hbs");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("FD_SIMPLE.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -101,7 +100,7 @@ public class FD_SIMPLE extends Protocol {
                 resetCounter(sender);
                 counter_reset=true;
 
-                hdr=(FdHeader)msg.removeHeader(name);
+                hdr=(FdHeader)msg.getHeader(name);
                 if(hdr == null)
                     break;
 
@@ -110,7 +109,7 @@ public class FD_SIMPLE extends Protocol {
                         rsp=new Message(sender);
                         rsp.putHeader(name, new FdHeader(FdHeader.I_AM_ALIVE));
                         passDown(new Event(Event.MSG, rsp));
-                        return; // don't pass up further
+                        return null; // don't pass up further
 
                     case FdHeader.I_AM_ALIVE:
                         if(log.isInfoEnabled()) log.info("received I_AM_ALIVE response from " + sender);
@@ -118,15 +117,15 @@ public class FD_SIMPLE extends Protocol {
                             task.receivedHeartbeatResponse(sender);
                         if(!counter_reset)
                             resetCounter(sender);
-                        return;
+                        return null;
 
                     default:
                         if(warn) log.warn("FdHeader type " + hdr.type + " not known");
-                        return;
+                        return null;
                 }
         }
 
-        passUp(evt);                                        // pass up to the layer above us
+        return passUp(evt);  // pass up to the layer above us
     }
 
 
@@ -166,7 +165,7 @@ public class FD_SIMPLE extends Protocol {
                 }
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
     
 
@@ -224,7 +223,7 @@ public class FD_SIMPLE extends Protocol {
 
 
     String printCounters() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Address key;
 
         for(Iterator it=counters.keySet().iterator(); it.hasNext();) {

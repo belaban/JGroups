@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.28 2007/01/11 12:57:22 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.29 2007/01/11 16:22:19 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -133,7 +133,7 @@ public class FRAG2 extends Protocol {
                     log.trace(sb.toString());
                 }
                 fragment(msg);  // Fragment and pass down
-                return;
+                return null;
             }
             break;
 
@@ -159,13 +159,13 @@ public class FRAG2 extends Protocol {
             break;
 
         case Event.CONFIG:
-            passDown(evt);
+            Object ret=passDown(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
-            return;
+            return ret;
         }
 
-        passDown(evt);  // Pass on to the layer below us
+        return passDown(evt);  // Pass on to the layer below us
     }
 
 
@@ -181,7 +181,7 @@ public class FRAG2 extends Protocol {
             FragHeader hdr=(FragHeader)msg.getHeader(name);
             if(hdr != null) { // needs to be defragmented
                 unfragment(msg, hdr); // Unfragment and possibly pass up
-                return;
+                return null;
             }
             else {
                 num_received_msgs.incrementAndGet();
@@ -189,13 +189,13 @@ public class FRAG2 extends Protocol {
             break;
 
         case Event.CONFIG:
-            passUp(evt);
+            Object ret=passUp(evt);
             if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
-            return;
+            return ret;
         }
 
-        passUp(evt); // Pass up to the layer above us by default
+        return passUp(evt); // Pass up to the layer above us by default
     }
 
 

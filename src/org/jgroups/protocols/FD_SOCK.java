@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.55 2007/01/11 12:57:18 belaban Exp $
+// $Id: FD_SOCK.java,v 1.56 2007/01/11 16:21:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -50,7 +50,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     String              group_name=null;                   // the name of the group (set on CONNECT, nulled on DISCONNECT)
 
-    /** @deprecated Use {@link bind_addr} instead */
+    /** @deprecated Use {@link #bind_addr} instead */
     InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
 
     private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
@@ -95,7 +95,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     public String printSuspectHistory() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
             sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
         }
@@ -132,7 +132,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         str=props.getProperty("keep_alive");
         if(str != null) {
-            keep_alive=new Boolean(str).booleanValue();
+            keep_alive=Boolean.parseBoolean(str);
             props.remove("keep_alive");
         }
 
@@ -156,7 +156,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             props.remove("bind_addr");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -227,11 +227,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 // If I have the sock for 'hdr.mbr', return it. Otherwise look it up in my cache and return it
             case FdHeader.WHO_HAS_SOCK:
                 if(local_addr != null && local_addr.equals(msg.getSrc()))
-                    return; // don't reply to WHO_HAS bcasts sent by me !
+                    return null; // don't reply to WHO_HAS bcasts sent by me !
 
                 if(hdr.mbr == null) {
                     if(log.isErrorEnabled()) log.error("hdr.mbr is null");
-                    return;
+                    return null;
                 }
 
                 if(trace) log.trace("who-has-sock " + hdr.mbr);
@@ -239,7 +239,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 // 1. Try my own address, maybe it's me whose socket is wanted
                 if(local_addr != null && local_addr.equals(hdr.mbr) && srv_sock_addr != null) {
                     sendIHaveSockMessage(msg.getSrc(), local_addr, srv_sock_addr);  // unicast message to msg.getSrc()
-                    return;
+                    return null;
                 }
 
                 // 2. If I don't have it, maybe it is in the cache
@@ -252,7 +252,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             case FdHeader.I_HAVE_SOCK:
                 if(hdr.mbr == null || hdr.sock_addr == null) {
                     if(log.isErrorEnabled()) log.error("[I_HAVE_SOCK]: hdr.mbr is null or hdr.sock_addr == null");
-                    return;
+                    return null;
                 }
 
                 // if(!cache.containsKey(hdr.mbr))
@@ -268,7 +268,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             case FdHeader.GET_CACHE:
                 if(hdr.mbr == null) {
                     if(log.isErrorEnabled()) log.error("(GET_CACHE): hdr.mbr == null");
-                    return;
+                    return null;
                 }
                 hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
                 hdr.cachedAddrs=(Hashtable) cache.clone();
@@ -281,12 +281,12 @@ public class FD_SOCK extends Protocol implements Runnable {
             case FdHeader.GET_CACHE_RSP:
                 if(hdr.cachedAddrs == null) {
                     if(log.isErrorEnabled()) log.error("(GET_CACHE_RSP): cache is null");
-                    return;
+                    return null;
                 }
                 get_cache_promise.setResult(hdr.cachedAddrs);
                 break;
             }
-            return;
+            return null;
 
             case Event.CONFIG:
                 if(bind_addr == null) {
@@ -296,7 +296,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
         }
 
-        passUp(evt);                                        // pass up to the layer above us
+        return passUp(evt);                                        // pass up to the layer above us
     }
 
 
@@ -398,12 +398,13 @@ public class FD_SOCK extends Protocol implements Runnable {
                         stopPingerThread();
                     }
                 }
-                break;
+                return null; // we already passed down the event above
 
             default:
-                passDown(evt);
-                break;
+                return passDown(evt);
         }
+
+        return passDown(evt);
     }
 
 

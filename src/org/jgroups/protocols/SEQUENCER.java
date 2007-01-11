@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.13 2007/01/11 12:57:17 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.14 2007/01/11 16:21:39 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -65,7 +65,7 @@ public class SEQUENCER extends Protocol {
     public boolean setProperties(Properties props) {
         super.setProperties(props);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -94,7 +94,7 @@ public class SEQUENCER extends Protocol {
                     else {
                         broadcast(msg);
                     }
-                    return; // don't pass down
+                    return null; // don't pass down
                 }
                 break;
 
@@ -102,7 +102,7 @@ public class SEQUENCER extends Protocol {
                 handleViewChange((View)evt.getArg());
                 break;
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
 
@@ -130,15 +130,15 @@ public class SEQUENCER extends Protocol {
                             if(log.isErrorEnabled())
                                 log.warn("I (" + local_addr + ") am not the coord and don't handle " +
                                         "FORWARD requests, ignoring request");
-                            return;
+                            return null;
                         }
                         broadcast(msg);
                         received_forwards++;
-                        return;
+                        return null;
                     case SequencerHeader.BCAST:
                         deliver(msg, hdr);  // deliver a copy and return (discard the original msg)
                         received_bcasts++;
-                        return;
+                        return null;
                 }
                 break;
 
@@ -147,7 +147,7 @@ public class SEQUENCER extends Protocol {
                 break;
         }
 
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -156,7 +156,7 @@ public class SEQUENCER extends Protocol {
 
     private void handleViewChange(View v) {
         Vector members=v.getMembers();
-        if(members.size() == 0) return;
+        if(members.isEmpty()) return;
 
         Address prev_coord=coord;
         coord=(Address)members.firstElement();
