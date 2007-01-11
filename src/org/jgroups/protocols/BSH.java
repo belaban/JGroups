@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.15 2007/01/11 12:57:13 belaban Exp $
+// $Id: BSH.java,v 1.16 2007/01/11 15:29:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -64,28 +64,27 @@ public class BSH extends Protocol {
 
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
-            h=msg.removeHeader(name);
-            if(h != null && h instanceof BshHeader) {
+            h=msg.getHeader(name);
+            if(h instanceof BshHeader) {
                 type=((BshHeader)h).type;
                 switch(type) {
                     case BshHeader.REQ:
                         handleRequest(msg.getSrc(), msg.getBuffer());
-                        return;
+                        return null;
                     case BshHeader.RSP:
                         msg.putHeader(name, h);
                         passUp(evt);
-                        return;
+                        return null;
                     case BshHeader.DESTROY_INTERPRETER:
                         destroyInterpreter();
-                        return;
+                        return null;
                     default:
-                        if(log.isErrorEnabled()) log.error("header type was not REQ as expected" +
-                                    " (was " + type + ')');
-                        return;
+                        if(log.isErrorEnabled()) log.error("header type was not REQ as expected (was " + type + ')');
+                        return null;
                 }
             }
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -198,7 +197,7 @@ public class BSH extends Protocol {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             if(type == REQ)
                 sb.append("REQ");
             else
