@@ -1,4 +1,4 @@
-// $Id: QUEUE.java,v 1.8 2005/08/08 12:45:43 belaban Exp $
+// $Id: QUEUE.java,v 1.9 2007/01/11 12:57:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -78,7 +78,7 @@ public class QUEUE extends Protocol {
        Queues or passes up events. No queue sync. necessary, as this method is never called
        concurrently.
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
 	Message msg;
 	Vector  event_list;  // to be passed up *before* replaying event queue
 	Event   e;
@@ -125,7 +125,7 @@ public class QUEUE extends Protocol {
 
 
     
-    public void down(Event evt) {
+    public Object down(Event evt) {
 	Message msg;
 	Vector  event_list;  // to be passed down *before* replaying event queue
 

@@ -252,7 +252,7 @@ public class FLUSH extends Protocol
 
    /* ------------------- end JMX attributes and operations --------------------- */
 
-   public void down(Event evt)
+   public Object down(Event evt)
    {
       switch (evt.getType())
       {         
@@ -334,7 +334,7 @@ public class FLUSH extends Protocol
       }
    }
 
-   public void up(Event evt)
+   public Object up(Event evt)
    {
 
       switch (evt.getType())

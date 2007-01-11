@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.32 2007/01/05 15:55:44 belaban Exp $
+// $Id: MERGE2.java,v 1.33 2007/01/11 12:57:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -130,7 +130,7 @@ public class MERGE2 extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.SET_LOCAL_ADDRESS:
@@ -150,7 +150,7 @@ public class MERGE2 extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
 
             case Event.CONNECT:

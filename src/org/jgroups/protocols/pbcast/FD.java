@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.9 2005/08/11 12:43:46 belaban Exp $
+// $Id: FD.java,v 1.10 2007/01/11 12:57:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -82,7 +82,7 @@ public class FD extends Protocol implements Runnable {
         stopChecker();
     }
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         Address sender;
 
@@ -103,7 +103,7 @@ public class FD extends Protocol implements Runnable {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         View v;
         Vector mbrs;
         Address mbr;

@@ -1,4 +1,4 @@
-// $Id: HDRS.java,v 1.2 2004/03/30 06:47:21 belaban Exp $
+// $Id: HDRS.java,v 1.3 2007/01/11 12:57:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ public class HDRS extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
  	if(evt.getType() == Event.MSG) {
  	    Message msg=(Message)evt.getArg();
  	    printMessage(msg, "up");
@@ -32,7 +32,7 @@ public class HDRS extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
  	if(evt.getType() == Event.MSG) {
  	    Message msg=(Message)evt.getArg();
  	    printMessage(msg, "down");

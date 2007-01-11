@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.12 2006/12/22 14:45:52 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.13 2007/01/11 12:57:21 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -116,7 +116,7 @@ public class VIEW_SYNC extends Protocol {
 //    }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         ViewSyncHeader hdr;
         int type=evt.getType();
@@ -157,7 +157,7 @@ public class VIEW_SYNC extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
         case Event.VIEW_CHANGE:
             View v=(View)evt.getArg();

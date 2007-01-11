@@ -11,7 +11,7 @@ import java.util.Properties;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.3 2006/12/13 12:03:37 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.4 2007/01/11 12:57:15 belaban Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
     long seqno=3; // drop 3
@@ -50,7 +50,7 @@ public class DISCARD_PAYLOAD extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         if(evt.getType() == Event.MSG) {
             Message msg=(Message)evt.getArg();
             if(msg.getLength() > 0) {

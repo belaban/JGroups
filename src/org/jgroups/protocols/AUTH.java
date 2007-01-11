@@ -94,7 +94,7 @@ public class AUTH extends Protocol{
      * the stack using <code>passDown()</code> or c) the event (or another event) is sent up
      * the stack using <code>passUp()</code>.
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
         if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)){
             if(log.isDebugEnabled()){
@@ -152,7 +152,7 @@ public class AUTH extends Protocol{
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
      * a new response event back up the stack using <code>passUp()</code>.
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
         if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)){
             if(log.isDebugEnabled()){

@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.9 2006/05/12 09:49:40 belaban Exp $
+// $Id: FragTest.java,v 1.10 2007/01/11 12:57:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -88,7 +88,7 @@ public class FragTest extends TestCase {
         }
 
 
-        public void up(Event evt) {
+        public Object up(Event evt) {
             Message msg=null;
             Address sender;
 

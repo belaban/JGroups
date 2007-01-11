@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.8 2007/01/10 09:44:54 belaban Exp $
+// $Id: Ping.java,v 1.9 2007/01/11 12:57:42 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -56,33 +56,8 @@ public class Ping implements UpHandler {
     }
 
 
-    /** UpHandler interface */
-    public void up(Event evt) {
-        Vector v;
-        PingRsp rsp;
 
-        if(evt.getType() == Event.FIND_INITIAL_MBRS_OK) {
-            v=(Vector)evt.getArg();
-
-            System.out.println("Found " + v.size() + " members");
-            for(int i=0; i < v.size(); i++) {
-                rsp=(PingRsp)v.elementAt(i);
-                System.out.println("Rsp #" + (i + 1) + ": " + rsp);
-            }
-
-            if(!v.isEmpty())
-                verifyCoordinator(v);
-
-            System.exit(1);
-        }
-        else {
-            if(print_all_events)
-                System.out.println(">> " + evt);
-        }
-    }
-
-
-    public Object upcall(Event evt) {
+    public Object up(Event evt) {
         Vector v;
         PingRsp rsp;
 

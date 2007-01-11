@@ -19,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.24 2007/01/05 16:09:04 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.25 2007/01/11 12:57:14 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -87,7 +87,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.SET_LOCAL_ADDRESS:

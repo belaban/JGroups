@@ -223,7 +223,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
    }
 
-   public void up(Event evt)
+   public Object up(Event evt)
    {
       switch (evt.getType())
       {
@@ -238,16 +238,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          case Event.VIEW_CHANGE :
             handleViewChange((View) evt.getArg());
             break;
-
-         case Event.GET_DIGEST_STATE_OK :
-            synchronized (state_requesters)
-            {
-               digest = (Digest) evt.getArg();
-               if (log.isDebugEnabled())
-                  log.debug("GET_DIGEST_STATE_OK: digest is " + digest);
-            }
-            respondToStateRequester();
-            return;
 
          case Event.MSG :
             Message msg = (Message) evt.getArg();
@@ -286,7 +276,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       passUp(evt);
    }
 
-   public void down(Event evt)
+   public Object down(Event evt)
    {
 
       switch (evt.getType())

@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.33 2006/12/19 12:53:12 belaban Exp $
+ * @version $Id: FRAG.java,v 1.34 2007/01/11 12:57:20 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -88,7 +88,7 @@ public class FRAG extends Protocol {
      * Fragment a packet if larger than frag_size (add a header). Otherwise just pass down. Only
      * add a header if framentation is needed !
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
 
         case Event.MSG:
@@ -142,7 +142,7 @@ public class FRAG extends Protocol {
     /**
      * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up the stack.
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
         case Event.MSG:

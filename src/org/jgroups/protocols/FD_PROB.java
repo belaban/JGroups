@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.10 2006/02/07 07:57:50 belaban Exp $
+// $Id: FD_PROB.java,v 1.11 2007/01/11 12:57:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -99,7 +99,7 @@ public class FD_PROB extends Protocol implements Runnable {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         FdHeader hdr=null;
         Object obj;
@@ -142,7 +142,7 @@ public class FD_PROB extends Protocol implements Runnable {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         int num_mbrs;
         Vector excluded_mbrs;
         FdEntry entry;

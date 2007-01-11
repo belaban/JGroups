@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.19 2007/01/05 15:54:31 belaban Exp $
+ * @version $Id: Discovery.java,v 1.20 2007/01/11 12:57:17 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -209,7 +209,7 @@ public abstract class Discovery extends Protocol {
      * @param evt - the event that has been sent from the layer below
      */
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg, rsp_msg;
         PingHeader rsp_hdr;
         PingRsp rsp;
@@ -290,7 +290,7 @@ public abstract class Discovery extends Protocol {
      * Event.BECOME_SERVER - called after client has joined and is fully working group member
      * Event.CONNECT, Event.DISCONNECT.
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
 
         switch(evt.getType()) {
 

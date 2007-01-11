@@ -18,7 +18,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.6 2007/01/09 10:19:22 belaban Exp $
+ * @version $Id: SFC.java,v 1.7 2007/01/11 12:57:21 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -176,7 +176,7 @@ public class SFC extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
@@ -245,7 +245,7 @@ public class SFC extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.MSG:

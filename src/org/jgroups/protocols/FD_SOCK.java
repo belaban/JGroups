@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.54 2007/01/05 16:17:44 belaban Exp $
+// $Id: FD_SOCK.java,v 1.55 2007/01/11 12:57:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -191,7 +191,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
         case Event.SET_LOCAL_ADDRESS:
@@ -300,7 +300,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
 
             case Event.UNSUSPECT:

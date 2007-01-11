@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.30 2007/01/08 11:41:21 belaban Exp $
+// $Id: ENCRYPT.java,v 1.31 2007/01/11 12:57:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -508,7 +508,7 @@ public class ENCRYPT extends Protocol {
     /* (non-Javadoc)
       * @see org.jgroups.stack.Protocol#up(org.jgroups.Event)
       */
-    public void up(Event evt)
+    public Object up(Event evt)
     {
 
         if(observer != null)
@@ -547,7 +547,7 @@ public class ENCRYPT extends Protocol {
         passUp(evt);
     }
 
-    public void passUp(Event evt) {
+    public Object passUp(Event evt) {
         if(observer != null)
             observer.passUp(evt);
         super.passUp(evt);
@@ -967,7 +967,7 @@ public class ENCRYPT extends Protocol {
     /* (non-Javadoc)
       * @see org.jgroups.stack.Protocol#down(org.jgroups.Event)
       */
-    public void down(Event evt)
+    public Object down(Event evt)
     {
         if(observer != null)
             observer.down(evt);
@@ -1010,7 +1010,7 @@ public class ENCRYPT extends Protocol {
         passDown(evt);
     }
 
-    public void passDown(Event evt) {
+    public Object passDown(Event evt) {
         if(observer != null)
             observer.passDown(evt);
         super.passDown(evt);

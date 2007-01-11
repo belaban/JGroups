@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.12 2006/12/13 14:21:48 belaban Exp $
+// $Id: MERGE3.java,v 1.13 2007/01/11 12:57:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -98,7 +98,7 @@ public class MERGE3 extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.MSG:
@@ -138,7 +138,7 @@ public class MERGE3 extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Vector tmp;
         Address coord;
 

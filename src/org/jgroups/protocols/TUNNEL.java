@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.30 2006/12/31 06:26:58 belaban Exp $
+// $Id: TUNNEL.java,v 1.31 2007/01/11 12:57:24 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -180,7 +180,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     /** Caller by the layer above this layer. We just pass it on to the router. */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Message      msg;
         TunnelHeader hdr;
         Address dest;

@@ -1,4 +1,4 @@
-// $Id: UpHandler.java,v 1.3 2007/01/11 11:38:41 belaban Exp $
+// $Id: UpHandler.java,v 1.4 2007/01/11 12:57:28 belaban Exp $
 
 package org.jgroups;
 
@@ -10,7 +10,5 @@ public interface UpHandler {
 	 * Invoked for all channel events except connection management and state transfer.
 	 * @param evt
 	 */
-    void up(Event evt);
-
-    Object upcall(Event evt);
+    Object up(Event evt);
 }

@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.62 2007/01/05 14:39:10 belaban Exp $
+ * @version $Id: FC.java,v 1.63 2007/01/11 12:57:17 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -315,7 +315,7 @@ public class FC extends Protocol {
 //        super.receiveDownEvent(evt);
 //    }
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
         case Event.MSG:
             handleDownMessage(evt);
@@ -327,7 +327,7 @@ public class FC extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.MSG:

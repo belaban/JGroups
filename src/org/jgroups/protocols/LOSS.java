@@ -1,4 +1,4 @@
-// $Id: LOSS.java,v 1.3 2004/09/23 16:29:41 belaban Exp $
+// $Id: LOSS.java,v 1.4 2007/01/11 12:57:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class LOSS extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
 	Message msg;
 	
 	switch(evt.getType()) {

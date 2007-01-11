@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.51 2007/01/11 11:38:47 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.52 2007/01/11 12:57:32 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -105,7 +105,7 @@ public class STATE_TRANSFER extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
         case Event.BECOME_SERVER:
@@ -119,16 +119,6 @@ public class STATE_TRANSFER extends Protocol {
         case Event.VIEW_CHANGE:
             handleViewChange((View)evt.getArg());
             break;
-
-        case Event.GET_DIGEST_STATE_OK:
-            synchronized(state_requesters) {
-                digest=(Digest)evt.getArg();
-                if(log.isDebugEnabled())
-                    log.debug("GET_DIGEST_STATE_OK: digest is " + digest + "\npassUp(GET_APPLSTATE)");
-
-                requestApplicationStates();
-            }
-            return;
 
         case Event.MSG:
             Message msg=(Message)evt.getArg();
@@ -157,7 +147,7 @@ public class STATE_TRANSFER extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
 
             case Event.TMP_VIEW:
@@ -321,7 +311,7 @@ public class STATE_TRANSFER extends Protocol {
         for(Iterator it=appl_ids.iterator(); it.hasNext();) {
             id=(String)it.next();
             StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
-            StateTransferInfo rsp=(StateTransferInfo)super.upcall(new Event(Event.GET_APPLSTATE, info));
+            StateTransferInfo rsp=(StateTransferInfo)passUp(new Event(Event.GET_APPLSTATE, info));
             sendApplicationStateResponse(rsp);
         }
     }
@@ -451,7 +441,7 @@ public class STATE_TRANSFER extends Protocol {
                 requestApplicationStates();
             }
             else if(empty){
-                digest=(Digest)super.downcall(new Event(Event.GET_DIGEST_STATE));
+                digest=(Digest)passDown(new Event(Event.GET_DIGEST_STATE));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
                 requestApplicationStates();

@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.14 2006/12/12 10:17:43 belaban Exp $
+// $Id: BSH.java,v 1.15 2007/01/11 12:57:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -57,7 +57,7 @@ public class BSH extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Header  h;
         Message msg;
         int     type;

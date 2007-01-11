@@ -1,4 +1,4 @@
-// $Id: UpHandlerTest.java,v 1.7 2007/01/10 09:45:58 belaban Exp $
+// $Id: UpHandlerTest.java,v 1.8 2007/01/11 12:57:42 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -29,12 +29,8 @@ public class UpHandlerTest implements UpHandler {
     }
 
 
-    public void up(Event evt) {
-        System.out.println(evt);
-    }
 
-
-    public Object upcall(Event evt) {
+    public Object up(Event evt) {
         System.out.println(evt);
         return null;
     }
