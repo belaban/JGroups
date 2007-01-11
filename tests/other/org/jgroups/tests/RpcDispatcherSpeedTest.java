@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 /**
  * Interactive test for measuring group RPCs using different invocation techniques.
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class RpcDispatcherSpeedTest implements MembershipListener {
     Channel             channel;
@@ -41,11 +41,13 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     final Class[]       EMPTY_CLASS_ARRAY=new Class[]{};
     final String[]      EMPTY_STRING_ARRAY=new String[]{};
     private long        sleep=0;
+    private boolean     async;
 
 
-    public RpcDispatcherSpeedTest(String props, boolean server, int num, int mode, boolean jmx, long sleep) throws NoSuchMethodException {
+    public RpcDispatcherSpeedTest(String props, boolean server, boolean async, int num, int mode, boolean jmx, long sleep) throws NoSuchMethodException {
         this.props=props;
         this.server=server;
+        this.async=async;
         this.num=num;
         this.mode=mode;
         this.jmx=jmx;
@@ -100,7 +102,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 }
             }
             else {
-                invokeRpcs(num, mode);
+                invokeRpcs(num, mode, async);
             }
         }
         catch(Throwable t) {
@@ -113,13 +115,15 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
     }
 
 
-    void invokeRpcs(int num, int mode) throws Exception {
+    void invokeRpcs(int num, int mode, boolean async) throws Exception {
         long    start, stop;
         int     show=num/10;
         Method measure_method=getClass().getMethod("measure", EMPTY_CLASS_ARRAY);
         MethodCall measure_method_call=new MethodCall(measure_method, EMPTY_OBJECT_ARRAY);
 
-        if(show <=0) show=1;
+        if(show <=0)
+            show=1;
+        int request_type=async ? GroupRequest.GET_NONE : GroupRequest.GET_ALL;
         start=System.currentTimeMillis();
         switch(mode) {
         case OLD:
@@ -129,7 +133,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                                        "measure",
                                        EMPTY_OBJECT_ARRAY,
                                        EMPTY_CLASS_ARRAY,
-                                       GroupRequest.GET_ALL, TIMEOUT);
+                                       request_type, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -138,7 +142,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         case METHOD:
             System.out.println("-- invoking " + num + " methods using mode=METHOD");
             for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, measure_method_call, GroupRequest.GET_ALL, TIMEOUT);
+                disp.callRemoteMethods(null, measure_method_call, request_type, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -150,7 +154,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 disp.callRemoteMethods(null, "measure",
                                        EMPTY_OBJECT_ARRAY,
                                        EMPTY_CLASS_ARRAY,
-                                       GroupRequest.GET_ALL,
+                                       request_type,
                                        TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
@@ -163,7 +167,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
                 disp.callRemoteMethods(null, "measure",
                                        EMPTY_OBJECT_ARRAY,
                                        EMPTY_STRING_ARRAY,
-                                       GroupRequest.GET_ALL,
+                                       request_type,
                                        TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
@@ -173,7 +177,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             System.out.println("-- invoking " + num + " methods using mode=ID");
             measure_method_call=new MethodCall((short)0, null);
             for(int i=1; i <= num; i++) {
-                disp.callRemoteMethods(null, measure_method_call, GroupRequest.GET_ALL, TIMEOUT);
+                disp.callRemoteMethods(null, measure_method_call, request_type, TIMEOUT);
                 if(i % show == 0)
                     System.out.println(i);
             }
@@ -219,6 +223,8 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
         long                   sleep=0;
         RpcDispatcherSpeedTest test;
         int                    mode=OLD;
+        boolean                async=false;
+
 
         for(int i=0; i < args.length; i++) {
             if("-props".equals(args[i])) {
@@ -227,6 +233,10 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
             }
             if("-server".equals(args[i])) {
                 server=true;
+                continue;
+            }
+            if("-async".equals(args[i])) {
+                async=true;
                 continue;
             }
             if("-num".equals(args[i])) {
@@ -267,7 +277,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
 
         try {
-            test=new RpcDispatcherSpeedTest(props, server, num, mode, jmx, sleep);
+            test=new RpcDispatcherSpeedTest(props, server, async, num, mode, jmx, sleep);
             test.start();
         }
         catch(Exception e) {
@@ -277,7 +287,7 @@ public class RpcDispatcherSpeedTest implements MembershipListener {
 
     static void help() {
         System.out.println("RpcDispatcherSpeedTest [-help] [-props <props>] " +
-                           "[-server] [-num <number of calls>] [-mode <mode>] [-jmx] [-sleep <ms>]");
+                           "[-server] [-async] [-num <number of calls>] [-mode <mode>] [-jmx] [-sleep <ms>]");
         System.out.println("mode can be either 'old', 'method', 'types', signature' or 'id'");
     }
 }
