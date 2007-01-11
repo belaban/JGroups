@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.20 2007/01/11 12:57:17 belaban Exp $
+ * @version $Id: Discovery.java,v 1.21 2007/01/11 13:28:11 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -221,15 +221,14 @@ public abstract class Discovery extends Protocol {
             msg=(Message)evt.getArg();
             PingHeader hdr=(PingHeader)msg.getHeader(getName());
             if(hdr == null) {
-                passUp(evt);
-                return;
+                return passUp(evt);
             }
 
             switch(hdr.type) {
 
             case PingHeader.GET_MBRS_REQ:   // return Rsp(local_addr, coord)
                 if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
-                    return;
+                    return null;
                 }
                 synchronized(members) {
                     coord=!members.isEmpty()? (Address)members.firstElement() : local_addr;
@@ -243,7 +242,7 @@ public abstract class Discovery extends Protocol {
                 if(trace)
                     log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", sending response " + rsp_hdr);
                 passDown(new Event(Event.MSG, rsp_msg));
-                return;
+                return null;
 
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
                 rsp=hdr.arg;
@@ -251,11 +250,11 @@ public abstract class Discovery extends Protocol {
                 if(trace)
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
                 ping_waiter.addResponse(rsp);
-                return;
+                return null;
 
             default:
                 if(warn) log.warn("got PING header with unknown type (" + hdr.type + ')');
-                return;
+                return null;
             }
 
 
@@ -274,6 +273,8 @@ public abstract class Discovery extends Protocol {
             passUp(evt);            // Pass up to the layer above us
             break;
         }
+
+        return null;
     }
 
 
@@ -298,7 +299,7 @@ public abstract class Discovery extends Protocol {
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
             num_discovery_requests++;
             ping_waiter.start();
-            break;
+            return null;
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
@@ -309,28 +310,25 @@ public abstract class Discovery extends Protocol {
                     members.addAll(tmp);
                 }
             }
-            passDown(evt);
-            break;
+            return passDown(evt);
 
         case Event.BECOME_SERVER: // called after client has joined and is fully working group member
             passDown(evt);
             is_server=true;
-            break;
+            return null;
 
         case Event.CONNECT:
             group_addr=(String)evt.getArg();
-            passDown(evt);
+            Object ret=passDown(evt);
             handleConnect();
-            break;
+            return ret;
 
         case Event.DISCONNECT:
             handleDisconnect();
-            passDown(evt);
-            break;
+            return passDown(evt);
 
         default:
-            passDown(evt);          // Pass on to the layer below us
-            break;
+            return passDown(evt);          // Pass on to the layer below us
         }
     }
 

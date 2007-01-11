@@ -37,7 +37,7 @@ public class MERGEFAST extends Protocol {
             handleViewChange((View)evt.getArg());
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
 

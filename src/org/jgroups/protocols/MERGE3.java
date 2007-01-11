@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.13 2007/01/11 12:57:17 belaban Exp $
+// $Id: MERGE3.java,v 1.14 2007/01/11 13:23:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -112,7 +112,7 @@ public class MERGE3 extends Protocol {
                         if(log.isDebugEnabled()) {
                             if(contains)
                                 log.debug("discarded duplicate announcement: " + hdr.coord_addr +
-                                          ", announcements=" + announcements);
+                                        ", announcements=" + announcements);
                             else
                                 log.debug("received announcement: " + hdr.coord_addr + ", announcements=" + announcements);
                         }
@@ -121,20 +121,17 @@ public class MERGE3 extends Protocol {
                             processAnnouncements();
                         }
                     }
+                    return null;
                 }
                 else
-                    passUp(evt);
-                break;
+                    return passUp(evt);
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                passUp(evt);
-                break;
-
-            default:
-                passUp(evt);            // Pass up to the layer above us
                 break;
         }
+
+        return passUp(evt);
     }
 
 
@@ -163,11 +160,8 @@ public class MERGE3 extends Protocol {
                     }
                 }
                 break;
-
-            default:
-                passDown(evt);          // Pass on to the layer below us
-                break;
         }
+        return passDown(evt);
     }
 
 

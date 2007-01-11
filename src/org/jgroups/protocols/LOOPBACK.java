@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.18 2007/01/11 12:57:20 belaban Exp $
+// $Id: LOOPBACK.java,v 1.19 2007/01/11 13:23:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -95,6 +95,7 @@ public class LOOPBACK extends Protocol {
             passUp(evt);
             break;
         }
+        return null;
     }
 
 
