@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.63 2007/01/11 12:57:17 belaban Exp $
+ * @version $Id: FC.java,v 1.64 2007/01/11 13:16:35 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -301,27 +301,13 @@ public class FC extends Protocol {
     }
 
 
-    /**
-     * We need to receive view changes concurrent to messages on the down events: a message might blocks, e.g.
-     * because we don't have enough credits to send to member P. However, if member P crashed, we need to unblock !
-     * @param evt
-     */
-//    protected void receiveDownEvent(Event evt) {
-//        if(evt.getType() == Event.VIEW_CHANGE) {
-//            View v=(View)evt.getArg();
-//            Vector mbrs=v.getMembers();
-//            handleViewChange(mbrs);
-//        }
-//        super.receiveDownEvent(evt);
-//    }
 
     public Object down(Event evt) {
         switch(evt.getType()) {
         case Event.MSG:
-            handleDownMessage(evt);
-            return;
+            return handleDownMessage(evt);
         }
-        passDown(evt); // this could potentially use the lower protocol's thread which may block
+        return passDown(evt); // this could potentially use the lower protocol's thread which may block
     }
 
 
@@ -351,13 +337,13 @@ public class FC extends Protocol {
                             log.error("header type " + hdr.type + " not known");
                             break;
                     }
-                    return; // don't pass message up
+                    return null; // don't pass message up
                 }
                 else {
                     Address sender=msg.getSrc();
                     boolean insufficient_credits=adjustCredit(msg, sender);
                     try {
-                        passUp(evt);
+                        return passUp(evt);
                     }
                     finally {
                         if(insufficient_credits) {
@@ -365,18 +351,17 @@ public class FC extends Protocol {
                             sendCredit(sender);
                         }
                     }
-                    return;
                 }
 
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
-    private void handleDownMessage(Event evt) {
+    private Object handleDownMessage(Event evt) {
         Message msg=(Message)evt.getArg();
         int     length=msg.getLength();
 
@@ -429,7 +414,7 @@ public class FC extends Protocol {
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
-        passDown(evt);
+        return passDown(evt);
     }
 
     /**

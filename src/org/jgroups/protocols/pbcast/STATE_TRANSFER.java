@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.52 2007/01/11 12:57:32 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.53 2007/01/11 13:08:51 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -140,9 +140,9 @@ public class STATE_TRANSFER extends Protocol {
                 if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
                 break;
             }
-            return;
+            return null;
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -199,7 +199,7 @@ public class STATE_TRANSFER extends Protocol {
                     start=System.currentTimeMillis();
                     passDown(new Event(Event.MSG, state_req));
                 }
-                return;                 // don't pass down any further !
+                return null;                 // don't pass down any further !
 
             case Event.GET_APPLSTATE_OK:
                 info=(StateTransferInfo)evt.getArg();
@@ -209,7 +209,7 @@ public class STATE_TRANSFER extends Protocol {
                     if(state_requesters.isEmpty()) {
                         if(warn)
                             log.warn("GET_APPLSTATE_OK: received application state, but there are no requesters !");
-                        return;
+                        return null;
                     }
                     if(isDigestNeeded()){
 	                    if(digest == null) {
@@ -254,7 +254,7 @@ public class STATE_TRANSFER extends Protocol {
                         state_requesters.remove(id);
                     }
                 }
-                return;             // don't pass down any further !
+                return null;             // don't pass down any further !
             case Event.SUSPEND_OK:
             	if(use_flush) {
             		flush_promise.setResult(Boolean.TRUE);
@@ -280,7 +280,7 @@ public class STATE_TRANSFER extends Protocol {
 
         }
 
-        passDown(evt);              // pass on to the layer below us
+        return passDown(evt);              // pass on to the layer below us
     }
 
 
