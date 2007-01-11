@@ -47,7 +47,7 @@ public class AUTH extends Protocol{
             }
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             //this should never happen as everything is read in to the AuthToken instance
             if(log.isErrorEnabled()){
                 log.error("AUTH.setProperties(): the following properties are not recognized: " + props);
@@ -140,8 +140,9 @@ public class AUTH extends Protocol{
             if(log.isDebugEnabled()){
                 log.debug("Message not a JOIN_REQ - ignoring it");
             }
-            passUp(evt);
+            return passUp(evt);
         }
+        return null;
     }
 
     /**
@@ -175,7 +176,7 @@ public class AUTH extends Protocol{
             }
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
     /**

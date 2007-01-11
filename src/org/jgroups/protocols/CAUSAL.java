@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.11 2007/01/11 12:57:22 belaban Exp $
+// $Id: CAUSAL.java,v 1.12 2007/01/11 13:13:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.11 $
+ *  @version $Revision: 1.12 $
  *
  **/
 
@@ -841,16 +841,14 @@ public class CAUSAL extends Protocol
         try {
             // If not a MSG, just pass down.
             if (evt.getType()!=Event.MSG) {
-                passDown(evt);
-                return;
+                return passDown(evt);
             }
             
             Message msg = (Message) evt.getArg();
             
             // If unicast, just pass down.
             if (msg.getDest()!=null && ! msg.getDest().isMulticastAddress()) {
-                passDown(evt);
-                return;
+                return passDown(evt);
             }
     
             // Multicast MSG:
@@ -871,12 +869,14 @@ public class CAUSAL extends Protocol
             
             if (tvt!=null) {
                 msg.putHeader(getName(), new CausalHeader(tvt));
-                passDown(evt);
+                return passDown(evt);
             }
         } catch (RuntimeException e) {
             if (debug) log.error("*** down: "+e.getMessage(), e);
             throw e;
         }
+
+        return null;
     }
     
     /**
@@ -893,16 +893,15 @@ public class CAUSAL extends Protocol
                     upViewChange(evt);
                     break;                    
                 case Event.MSG:
-                    upMsg(evt);                 
-                    break;                    
+                    return upMsg(evt);
                 default:
-                    passUp(evt);
-                    break;
-            }          
+                    return passUp(evt);
+            }
         } catch (RuntimeException e) {
             if (debug) log.error("*** up: "+e.getMessage(), e);
             throw e;
         }
+        return null;
     }
     
     private void upSetLocalAddress(Event evt) {
@@ -943,7 +942,7 @@ public class CAUSAL extends Protocol
         passUp(evt);
     }
     
-    private void upMsg(Event evt) {
+    private Object upMsg(Event evt) {
         Message msg = (Message) evt.getArg();
         Address src=msg.getSrc();
         
@@ -952,7 +951,7 @@ public class CAUSAL extends Protocol
 
         if (obj instanceof CausalNewViewHeader) {
             processNewViewSynchronization(src, (CausalNewViewHeader)obj, msg.getObject());           
-            return;
+            return null;
         }
         
         obj = msg.getHeader(getName());
@@ -960,8 +959,7 @@ public class CAUSAL extends Protocol
         if (!(obj instanceof CausalHeader)) {
             if((msg.getDest() == null || msg.getDest().isMulticastAddress()) 
                     && log.isErrorEnabled()) log.error("NO CAUSAL.Header found");
-            passUp(evt);
-            return;
+            return passUp(evt);
         }
         
         TransportedVectorTime messageVector = ((CausalHeader)obj).getVectorTime();
@@ -969,7 +967,7 @@ public class CAUSAL extends Protocol
         synchronized (lock) {
             if (currentView==null||currentView.getView().getIndex(src)<0) {
                 if (log.isDebugEnabled()) log.debug("Discarding "+obj+" from "+msg.getSrc());
-                return;
+                return null;
             }
             
             if (currentView.isCausallyNext(messageVector)) {
@@ -993,6 +991,7 @@ public class CAUSAL extends Protocol
                 currentView.max(queuedVector);
             }
         }
+        return null;
     }
     
     /**

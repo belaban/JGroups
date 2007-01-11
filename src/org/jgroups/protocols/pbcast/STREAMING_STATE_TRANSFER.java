@@ -260,7 +260,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                         log.error("type " + hdr.type + " not known in StateHeader");
                      break;
                }
-               return;
+               return null;
             }
             break;
          case Event.CONFIG :
@@ -273,7 +273,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }    
             break;
       }
-      passUp(evt);
+      return passUp(evt);
    }
 
    public Object down(Event evt)
@@ -342,7 +342,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                waiting_for_state_response = true;             
                passDown(new Event(Event.MSG, state_req));
             }
-            return; // don't pass down any further !
+            return null; // don't pass down any further !
 
          case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED :
             if (use_flush)
@@ -358,7 +358,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             if (log.isDebugEnabled())
                log.debug("passing down a RESUME_STABLE event");
             passDown(new Event(Event.RESUME_STABLE));
-            return;
+            return null;
          case Event.SUSPEND_OK :
             if (use_flush)
             {
@@ -387,7 +387,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             
       }
 
-      passDown(evt); // pass on to the layer below us
+      return passDown(evt); // pass on to the layer below us
    }
 
    /* --------------------------- Private Methods -------------------------------- */

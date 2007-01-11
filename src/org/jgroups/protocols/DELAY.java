@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.8 2007/01/11 12:57:14 belaban Exp $
+// $Id: DELAY.java,v 1.9 2007/01/11 13:14:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -44,9 +44,8 @@ public class DELAY extends Protocol {
             props.remove("out_delay");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("DELAY.setProperties(): these properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -65,7 +64,7 @@ public class DELAY extends Protocol {
                 break;
         }
 
-        passUp(evt);            // Pass up to the layer above us
+        return passUp(evt);            // Pass up to the layer above us
     }
 
 
@@ -81,7 +80,7 @@ public class DELAY extends Protocol {
                 break;
         }
 
-        passDown(evt);          // Pass on to the layer below us
+        return passDown(evt);          // Pass on to the layer below us
     }
 
 
