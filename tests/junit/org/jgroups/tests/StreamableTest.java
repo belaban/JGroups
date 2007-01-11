@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.6 2006/12/31 06:26:59 belaban Exp $
+// $Id: StreamableTest.java,v 1.7 2007/01/11 13:35:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,13 +6,12 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.util.Util;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.PingHeader;
-import org.jgroups.protocols.UdpHeader;
-import org.jgroups.protocols.WanPipeAddress;
 import org.jgroups.protocols.PingRsp;
+import org.jgroups.protocols.UdpHeader;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -153,17 +152,6 @@ public class StreamableTest extends TestCase {
         stream(msg);
     }
 
-    public void testDifferentAddress() throws Exception {
-        Address dest, src;
-        dest=new WanPipeAddress("foo");
-        src=new WanPipeAddress("foobar");
-        Message msg=new Message(dest, src, "Hello world".getBytes());
-        PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, false));
-        msg.putHeader("ping-header", hdr);
-        UdpHeader udp_hdr=new UdpHeader("bla");
-        msg.putHeader("udp-header", udp_hdr);
-        stream(msg);
-    }
 
 
     public void testMergeView() throws Exception {
@@ -277,8 +265,7 @@ public class StreamableTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(StreamableTest.class);
-        return s;
+        return new TestSuite(StreamableTest.class);
     }
 
     public static void main(String[] args) {
