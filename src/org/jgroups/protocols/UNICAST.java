@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.71 2007/01/11 12:57:16 belaban Exp $
+// $Id: UNICAST.java,v 1.72 2007/01/11 16:50:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -170,7 +170,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("loopback");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("these properties are not recognized: " + props);
             return false;
         }
@@ -214,7 +214,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             case UnicastHeader.DATA:      // received regular message
                 if(handleDataReceived(src, hdr.seqno, msg))
                     sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
-                return; // we pass the deliverable message up in handleDataReceived()
+                return null; // we pass the deliverable message up in handleDataReceived()
             case UnicastHeader.ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
                 break;
@@ -222,14 +222,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 log.error("UnicastHeader type " + hdr.type + " not known !");
                 break;
             }
-            return;
+            return null;
 
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address)evt.getArg();
             break;
         }
 
-        passUp(evt);   // Pass up to the layer above us
+        return passUp(evt);   // Pass up to the layer above us
     }
 
 
@@ -249,7 +249,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if(!started) {
                     if(warn)
                         log.warn("discarded message as start() has not yet been called, message: " + msg);
-                    return;
+                    return null;
                 }
 
                 // if the dest is self --> pass the message back up
@@ -258,14 +258,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     passUp(evt);
                     num_msgs_sent++;
                     num_bytes_sent+=msg.getLength();
-                    return;
+                    return null;
                 }
 
                 if(previous_members.contains(dst)) {
                     if(warn)
                         log.warn("discarding message to " + dst + " as this member left the group," +
                                 " previous_members=" + previous_members);
-                    return;
+                    return null;
                 }
 
                 Entry entry;
@@ -324,7 +324,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 msg=null;
-                return; // we already passed the msg down
+                return null; // we already passed the msg down
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
                 Vector new_members=((View)evt.getArg()).getMembers();
@@ -339,7 +339,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // Remove all connections for members that left between the current view and the new view
                 // See DESIGN for details
                 boolean rc;
-                if(use_gms && left_members.size() > 0) {
+                if(use_gms && !left_members.isEmpty()) {
                     Object mbr;
                     for(int i=0; i < left_members.size(); i++) {
                         mbr=left_members.elementAt(i);
@@ -370,7 +370,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
         }
 
-        passDown(evt);          // Pass on to the layer below us
+        return passDown(evt);          // Pass on to the layer below us
     }
 
 

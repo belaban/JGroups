@@ -1,4 +1,4 @@
-// $Id: HDRS.java,v 1.3 2007/01/11 12:57:17 belaban Exp $
+// $Id: HDRS.java,v 1.4 2007/01/11 16:51:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -15,30 +15,30 @@ public class HDRS extends Protocol {
 
 
     private void printMessage(Message msg, String label) {
-	System.out.println("------------------------- " + label + " ----------------------");
-	System.out.println(msg);
-	msg.printObjectHeaders();
-	System.out.println("--------------------------------------------------------------");
+        System.out.println("------------------------- " + label + " ----------------------");
+        System.out.println(msg);
+        msg.printObjectHeaders();
+        System.out.println("--------------------------------------------------------------");
     }
 
 
     public Object up(Event evt) {
- 	if(evt.getType() == Event.MSG) {
- 	    Message msg=(Message)evt.getArg();
- 	    printMessage(msg, "up");
- 	}
-	passUp(evt); // Pass up to the layer above us
+        if(evt.getType() == Event.MSG) {
+            Message msg=(Message)evt.getArg();
+            printMessage(msg, "up");
+        }
+        return passUp(evt); // Pass up to the layer above us
     }
 
 
 
     public Object down(Event evt) {
- 	if(evt.getType() == Event.MSG) {
- 	    Message msg=(Message)evt.getArg();
- 	    printMessage(msg, "down");
-	}
+        if(evt.getType() == Event.MSG) {
+            Message msg=(Message)evt.getArg();
+            printMessage(msg, "down");
+        }
 
-	passDown(evt);  // Pass on to the layer below us
+        return passDown(evt);  // Pass on to the layer below us
     }
 
 

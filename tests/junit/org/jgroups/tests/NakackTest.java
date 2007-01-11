@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.10 2007/01/11 12:57:43 belaban Exp $
+// $Id: NakackTest.java,v 1.11 2007/01/11 16:52:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,8 +15,8 @@ import java.util.Vector;
 
 
 public class NakackTest extends TestCase {
-    final long WAIT_TIME=5000;
-    public final long NUM_MSGS=10000;
+    static final long WAIT_TIME=5000;
+    public static final long NUM_MSGS=10000;
     long num_msgs_received=0;
     long num_msgs_sent=0;
 
@@ -79,7 +79,7 @@ public class NakackTest extends TestCase {
         long num_msgs=0;
         Hashtable senders=new Hashtable(); // sender --> highest seqno received so far
         NakackTest t=null;
-        Object mut=null;
+        final Object mut;
 
 
         CheckNoGaps(long seqno, NakackTest t, Object mut) {
@@ -100,19 +100,19 @@ public class NakackTest extends TestCase {
             Long s;
 
             if(evt == null)
-                return;
+                return null;
 
             if(evt.getType() == Event.SET_LOCAL_ADDRESS) {
                 System.out.println("local address is " + evt.getArg());
             }
 
             if(evt.getType() != Event.MSG)
-                return;
+                return null;
             msg=(Message)evt.getArg();
             sender=msg.getSrc();
             if(sender == null) {
                 log.error("NakackTest.CheckNoGaps.up(): sender is null; discarding msg");
-                return;
+                return null;
             }
             s=(Long)senders.get(sender);
             if(s == null) {
@@ -131,7 +131,7 @@ public class NakackTest extends TestCase {
                         System.out.println("PASS: received msg #" + received_seqno);
                     senders.put(sender, new Long(highest_seqno + 1));
                     num_msgs++;
-                    if(num_msgs >= t.NUM_MSGS) {
+                    if(num_msgs >= NakackTest.NUM_MSGS) {
                         synchronized(mut) {
                             t.num_msgs_received=num_msgs;
                             mut.notifyAll();
@@ -146,10 +146,8 @@ public class NakackTest extends TestCase {
             catch(Exception ex) {
                 log.error("NakackTest.CheckNoGaps.up(): " + ex);
             }
-
+            return passUp(evt);
         }
-
-
 
 
     }
