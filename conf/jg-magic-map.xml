@@ -21,18 +21,6 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD_PID$FdHeader</class-name>
-        <preload>true</preload>
-        <magic-number>4</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD_PROB$FdHeader</class-name>
-        <preload>true</preload>
-        <magic-number>5</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
         <class-name>org.jgroups.protocols.FD_SOCK$FdHeader</class-name>
         <preload>true</preload>
         <magic-number>6</magic-number>
@@ -45,27 +33,9 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.MERGE$MergeHeader</class-name>
-        <preload>true</preload>
-        <magic-number>8</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
         <class-name>org.jgroups.protocols.NakAckHeader</class-name>
         <preload>true</preload>
         <magic-number>9</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.PARTITIONER$PartitionerHeader</class-name>
-        <preload>true</preload>
-        <magic-number>10</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.PIGGYBACK$PiggybackHeader</class-name>
-        <preload>true</preload>
-        <magic-number>12</magic-number>
     </class>
     <class>
         <description>(Description goes here)</description>
@@ -78,30 +48,6 @@
         <class-name>org.jgroups.protocols.TcpHeader</class-name>
         <preload>true</preload>
         <magic-number>14</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TOTAL$Header</class-name>
-        <preload>true</preload>
-        <magic-number>15</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TOTAL_OLD$TotalHeader</class-name>
-        <preload>true</preload>
-        <magic-number>16</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TOTAL_TOKEN$TotalTokenHeader</class-name>
-        <preload>true</preload>
-        <magic-number>17</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TOTAL_TOKEN$RingTokenHeader</class-name>
-        <preload>true</preload>
-        <magic-number>18</magic-number>
     </class>
     <class>
         <description>(Description goes here)</description>
@@ -126,12 +72,6 @@
         <class-name>org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader</class-name>
         <preload>true</preload>
         <magic-number>22</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.WANPIPE$WanPipeHeader</class-name>
-        <preload>true</preload>
-        <magic-number>23</magic-number>
     </class>
     <class>
         <description>(Description goes here)</description>
@@ -246,12 +186,6 @@
         <class-name>org.jgroups.protocols.FC$FcHeader</class-name>
         <preload>true</preload>
         <magic-number>54</magic-number>
-    </class>
-    <class>
-        <description>bla</description>
-        <class-name>org.jgroups.protocols.WanPipeAddress</class-name>
-        <preload>true</preload>
-        <magic-number>55</magic-number>
     </class>
     <class>
         <description>TP Header</description>
