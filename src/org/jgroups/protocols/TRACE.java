@@ -1,4 +1,4 @@
-// $Id: TRACE.java,v 1.3 2007/01/11 12:57:17 belaban Exp $
+// $Id: TRACE.java,v 1.4 2007/01/11 16:50:34 belaban Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
@@ -15,23 +15,23 @@ public class TRACE extends Protocol {
     
 
     public Object up(Event evt) {
-	System.out.println("---------------- TRACE (received) ----------------------");
-	System.out.println(evt);
-	System.out.println("--------------------------------------------------------");
-	passUp(evt);
+        System.out.println("---------------- TRACE (received) ----------------------");
+        System.out.println(evt);
+        System.out.println("--------------------------------------------------------");
+        return passUp(evt);
     }
 
 
     public Object down(Event evt) {
-	System.out.println("------------------- TRACE (sent) -----------------------");
-	System.out.println(evt);
-	System.out.println("--------------------------------------------------------");
-	passDown(evt);
+        System.out.println("------------------- TRACE (sent) -----------------------");
+        System.out.println(evt);
+        System.out.println("--------------------------------------------------------");
+        return passDown(evt);
     }
 
 
     public String toString() {
-	return "Protocol TRACE";
+        return "Protocol TRACE";
     }
 
 

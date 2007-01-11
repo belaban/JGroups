@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.10 2007/01/11 12:57:43 belaban Exp $
+// $Id: FragTest.java,v 1.11 2007/01/11 16:52:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,9 +23,9 @@ import org.jgroups.util.Util;
  * @author Bela Ban
  */
 public class FragTest extends TestCase {
-    public final long NUM_MSGS=10;
-    public final int MSG_SIZE=100000;
-    public final int FRAG_SIZE=24000;
+    public static final long NUM_MSGS=10;
+    public static final int MSG_SIZE=100000;
+    public static final int FRAG_SIZE=24000;
 
 
     public FragTest(String name) {
@@ -93,14 +93,15 @@ public class FragTest extends TestCase {
             Address sender;
 
             if(evt == null || evt.getType() != Event.MSG)
-                return;
+                return null;
             msg=(Message)evt.getArg();
             sender=msg.getSrc();
             if(sender == null) {
                 log.error("FragTest.FragReceiver.up(): sender is null; discarding msg");
-                return;
+                return null;
             }
             System.out.println("Received msg from " + sender + " [" + msg.getLength() + " bytes]");
+            return null;
         }
 
     }

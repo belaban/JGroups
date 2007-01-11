@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.34 2007/01/11 13:23:14 belaban Exp $
+// $Id: MERGE2.java,v 1.35 2007/01/11 16:51:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -152,20 +152,18 @@ public class MERGE2 extends Protocol {
 
             case Event.CONNECT:
                 group_name=(String)evt.getArg();
-                passDown(evt);
-                break;
+                return passDown(evt);
 
             case Event.DISCONNECT:
                 group_name=null;
-                passDown(evt);
-                break;
+                return passDown(evt);
 
             case Event.VIEW_CHANGE:
-                passDown(evt);
+                Object ret=passDown(evt);
                 Vector mbrs=((View)evt.getArg()).getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     stopTask();
-                    break;
+                    return ret;
                 }
                 Address coord=(Address)mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
@@ -180,11 +178,10 @@ public class MERGE2 extends Protocol {
                     }
                     stopTask();
                 }
-                break;
+                return ret;
 
             default:
-                passDown(evt);          // Pass on to the layer below us
-                break;
+                return passDown(evt);          // Pass on to the layer below us
         }
     }
 

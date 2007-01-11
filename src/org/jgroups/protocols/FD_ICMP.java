@@ -20,7 +20,7 @@ import java.util.Properties;
  * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
  * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.6 2007/01/11 12:57:21 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.7 2007/01/11 16:50:30 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -82,7 +82,7 @@ public class FD_ICMP extends FD {
         }
 
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -105,7 +105,7 @@ public class FD_ICMP extends FD {
                 }
                 break;
         }
-        super.up(evt);
+        return super.up(evt);
     }
 
 

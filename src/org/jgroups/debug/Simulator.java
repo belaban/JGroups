@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.7 2007/01/11 12:57:30 belaban Exp $
+ * @version $Id: Simulator.java,v 1.8 2007/01/11 16:52:11 belaban Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -210,6 +210,7 @@ public class Simulator {
         public Object up(Event evt) {
             if(r != null)
                 r.receive(evt);
+            return null;
         }
 
         /** send to unicast or multicast destination */
@@ -219,6 +220,7 @@ public class Simulator {
             }
             catch(QueueClosedException e) {
             }
+            return null;
         }
     }
 

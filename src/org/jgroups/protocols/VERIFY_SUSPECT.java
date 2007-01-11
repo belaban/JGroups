@@ -19,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.25 2007/01/11 12:57:14 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.26 2007/01/11 16:51:27 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -98,20 +98,20 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 Address suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
                     if(log.isErrorEnabled()) log.error("suspected member is null");
-                    return;
+                    return null;
                 }
 
                 if(local_addr != null && local_addr.equals(suspected_mbr)) {
                     if(log.isTraceEnabled())
                         log.trace("I was suspected; ignoring SUSPECT message");
-                    return;
+                    return null;
                 }
 
                 if(!use_icmp)
                     verifySuspect(suspected_mbr);
                 else
                     verifySuspectWithICMP(suspected_mbr);
-                return;  // don't pass up; we will decide later (after verification) whether to pass it up
+                return null;  // don't pass up; we will decide later (after verification) whether to pass it up
 
 
             case Event.MSG:
@@ -133,16 +133,16 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                                 passDown(new Event(Event.MSG, rsp));
                             }
                         }
-                        return;
+                        return null;
                     case VerifyHeader.I_AM_NOT_DEAD:
                         if(hdr.from == null) {
                             if(log.isErrorEnabled()) log.error("I_AM_NOT_DEAD: hdr.from is null");
-                            return;
+                            return null;
                         }
                         unsuspect(hdr.from);
-                        return;
+                        return null;
                 }
-                return;
+                return null;
 
 
             case Event.CONFIG:
@@ -151,7 +151,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     bind_addr=(InetAddress)config.get("bind_addr");
                 }
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 

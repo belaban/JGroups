@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.31 2007/01/11 12:57:24 belaban Exp $
+// $Id: TUNNEL.java,v 1.32 2007/01/11 16:51:33 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -164,7 +164,7 @@ public class TUNNEL extends Protocol implements Runnable {
         if(bind_addr != null)
             stub.setBindAddress(bind_addr);
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             StringBuffer sb=new StringBuffer();
             for(Enumeration e=props.propertyNames(); e.hasMoreElements();) {
                 sb.append(e.nextElement().toString());
@@ -186,8 +186,7 @@ public class TUNNEL extends Protocol implements Runnable {
         Address dest;
 
         if(evt.getType() != Event.MSG) {
-            handleDownEvent(evt);
-            return;
+            return handleDownEvent(evt);
         }
 
         hdr=new TunnelHeader(channel_name);
@@ -214,7 +213,7 @@ public class TUNNEL extends Protocol implements Runnable {
             if(trace) log.trace("looped back local message " + copy);
             passUp(evt);
             if(dest != null && !dest.isMulticastAddress())
-                return;
+                return null;
         }
 
 
@@ -227,6 +226,7 @@ public class TUNNEL extends Protocol implements Runnable {
                 startReconnector();
             }
         }
+        return null;
     }
 
 
@@ -292,7 +292,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     public void handleIncomingMessage(Message msg) {
-        TunnelHeader hdr=(TunnelHeader)msg.removeHeader(getName());
+        TunnelHeader hdr=(TunnelHeader)msg.getHeader(getName());
 
         // discard my own multicast loopback copy
         if(loopback) {
@@ -319,7 +319,7 @@ public class TUNNEL extends Protocol implements Runnable {
     }
 
 
-    void handleDownEvent(Event evt) {
+    Object handleDownEvent(Event evt) {
         if(trace)
             log.trace(evt);
 
@@ -384,6 +384,7 @@ public class TUNNEL extends Protocol implements Runnable {
             handleConfigEvent((HashMap)evt.getArg());
             break;
         }
+        return null;
     }
 
     private void startReconnector() {

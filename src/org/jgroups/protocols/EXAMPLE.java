@@ -1,4 +1,4 @@
-// $Id: EXAMPLE.java,v 1.5 2007/01/11 12:57:14 belaban Exp $
+// $Id: EXAMPLE.java,v 1.6 2007/01/11 16:51:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -11,16 +11,15 @@ import java.io.Serializable;
 import java.util.Vector;
 
 
-
 class ExampleHeader implements Serializable {
-    private static final long serialVersionUID = -8802317525466899597L;
+    private static final long serialVersionUID=-8802317525466899597L;
     // your variables
 
     ExampleHeader() {
     }
 
     public String toString() {
-	return "[EXAMPLE: <variables> ]";
+        return "[EXAMPLE: <variables> ]";
     }
 }
 
@@ -30,66 +29,62 @@ class ExampleHeader implements Serializable {
  */
 
 public class EXAMPLE extends Protocol {
-    final Vector   members=new Vector();
+    final Vector members=new Vector();
 
-    /** All protocol names have to be unique ! */
-    public String  getName() {return "EXAMPLE";}
-
-
-
-
-
-    /** Just remove if you don't need to reset any state */
-    public static void reset() {}
+    /**
+     * All protocol names have to be unique !
+     */
+    public String getName() {
+        return "EXAMPLE";
+    }
 
 
+    /**
+     * Just remove if you don't need to reset any state
+     */
+    public static void reset() {
+    }
 
 
     public Object up(Event evt) {
-	Message msg;
+        Message msg;
 
-	switch(evt.getType()) {
+        switch(evt.getType()) {
 
-	case Event.MSG:
-	    msg=(Message)evt.getArg();
-	    // Do something with the event, e.g. extract the message and remove a header.
-	    // Optionally pass up
-	    break;
-	}
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                // Do something with the event, e.g. extract the message and remove a header.
+                // Optionally pass up
+                break;
+        }
 
-	passUp(evt);            // Pass up to the layer above us
+        return passUp(evt);            // Pass up to the layer above us
     }
-
-
-
 
 
     public Object down(Event evt) {
-	Message msg;
 
-	switch(evt.getType()) {
-	case Event.TMP_VIEW:
-	case Event.VIEW_CHANGE:
-	    Vector new_members=((View)evt.getArg()).getMembers();
-	    synchronized(members) {
-		members.removeAllElements();
-		if(new_members != null && new_members.size() > 0)
-		    for(int i=0; i < new_members.size(); i++)
-			members.addElement(new_members.elementAt(i));
-	    }
-	    passDown(evt);
-	    break;
+        switch(evt.getType()) {
+            case Event.TMP_VIEW:
+            case Event.VIEW_CHANGE:
+                Vector new_members=((View)evt.getArg()).getMembers();
+                synchronized(members) {
+                    members.removeAllElements();
+                    if(new_members != null && !new_members.isEmpty())
+                        for(int i=0; i < new_members.size(); i++)
+                            members.addElement(new_members.elementAt(i));
+                }
+                return passDown(evt);
 
-	case Event.MSG:
-	    msg=(Message)evt.getArg();
-	    // Do something with the event, e.g. add a header to the message
-	    // Optionally pass down
-	    break;
-	}
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                // Do something with the event, e.g. add a header to the message
+                // Optionally pass down
+                break;
+        }
 
-	passDown(evt);          // Pass on to the layer below us
+        return passDown(evt);          // Pass on to the layer below us
     }
-
 
 
 }

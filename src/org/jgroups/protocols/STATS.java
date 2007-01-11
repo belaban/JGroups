@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.6 2007/01/11 12:57:17 belaban Exp $
+ * @version $Id: STATS.java,v 1.7 2007/01/11 16:51:00 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -33,7 +33,7 @@ public class STATS extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -71,7 +71,7 @@ public class STATS extends Protocol {
         else if(evt.getType() == Event.VIEW_CHANGE) {
             handleViewChange((View)evt.getArg());
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -84,14 +84,14 @@ public class STATS extends Protocol {
         else if(evt.getType() == Event.VIEW_CHANGE) {
             handleViewChange((View)evt.getArg());
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
 
     public String printStats() {
         Map.Entry entry;
         Object key, val;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("sent:\n");
         for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
@@ -182,7 +182,7 @@ public class STATS extends Protocol {
         long msgs, bytes, ucasts, mcasts, ucast_bytes, mcast_bytes;
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(msgs).append(" (").append(bytes).append(" bytes)");
             sb.append(": ").append(ucasts).append(" ucasts (").append(ucast_bytes).append(" bytes), ");
             sb.append(mcasts).append(" mcasts (").append(mcast_bytes).append(" bytes)");

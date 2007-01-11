@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.13 2007/01/11 12:57:21 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.14 2007/01/11 16:51:15 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -78,7 +78,7 @@ public class VIEW_SYNC extends Protocol {
             props.remove("avg_send_interval");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("these properties are not recognized: " + props);
             return false;
         }
@@ -123,48 +123,48 @@ public class VIEW_SYNC extends Protocol {
 
         switch(type) {
 
-        case Event.MSG:
-            msg=(Message)evt.getArg();
-            hdr=(ViewSyncHeader)msg.getHeader(name);
-            if(hdr == null)
-                break;
-            Address sender=msg.getSrc();
-            switch(hdr.type) {
-            case ViewSyncHeader.VIEW_SYNC:
-                handleView(hdr.view, sender);
-                break;
-            case ViewSyncHeader.VIEW_SYNC_REQ:
-                if(!sender.equals(local_addr))
-                    sendView();
-                break;
-            default:
-                if(log.isErrorEnabled()) log.error("ViewSyncHeader type " + hdr.type + " not known");
-            }
-            return;
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                hdr=(ViewSyncHeader)msg.getHeader(name);
+                if(hdr == null)
+                    break;
+                Address sender=msg.getSrc();
+                switch(hdr.type) {
+                    case ViewSyncHeader.VIEW_SYNC:
+                        handleView(hdr.view, sender);
+                        break;
+                    case ViewSyncHeader.VIEW_SYNC_REQ:
+                        if(!sender.equals(local_addr))
+                            sendView();
+                        break;
+                    default:
+                        if(log.isErrorEnabled()) log.error("ViewSyncHeader type " + hdr.type + " not known");
+                }
+                return null;
 
+            case Event.VIEW_CHANGE:
+                View view=(View)evt.getArg();
+                handleViewChange(view);
+                break;
 
-        case Event.VIEW_CHANGE:
-            View view=(View)evt.getArg();
-            handleViewChange(view);
-            break;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
         }
-        passUp(evt);
+
+        return passUp(evt);
     }
 
 
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-        case Event.VIEW_CHANGE:
-            View v=(View)evt.getArg();
-            handleViewChange(v);
-            break;
+            case Event.VIEW_CHANGE:
+                View v=(View)evt.getArg();
+                handleViewChange(v);
+                break;
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
 
@@ -189,7 +189,7 @@ public class VIEW_SYNC extends Protocol {
             Message view_change=new Message(local_addr, local_addr, null);
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
-            view_change.putHeader(GMS.name, hdr);
+            view_change.putHeader(name, hdr);
             passUp(new Event(Event.MSG, view_change));
             num_views_adjusted++;
         }
@@ -298,10 +298,7 @@ public class VIEW_SYNC extends Protocol {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
-            sb.append('[');
-            sb.append(type2String(type));
-            sb.append("]");
+            StringBuilder sb=new StringBuilder("[").append(type2String(type)).append("]");
             if(view != null)
                 sb.append(", view= ").append(view);
             return sb.toString();

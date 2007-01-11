@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.18 2007/01/11 12:57:19 belaban Exp $
+// $Id: SIZE.java,v 1.19 2007/01/11 16:51:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -67,7 +67,7 @@ public class SIZE extends Protocol {
             props.remove("min_size");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
 
             return false;
@@ -106,7 +106,7 @@ public class SIZE extends Protocol {
             break;
         }
 
-        passUp(evt);            // pass up to the layer above us
+        return passUp(evt);            // pass up to the layer above us
     }
 
 
@@ -139,7 +139,7 @@ public class SIZE extends Protocol {
             break;
         }
 
-        passDown(evt);          // Pass on to the layer below us
+        return passDown(evt);          // Pass on to the layer below us
     }
 
 

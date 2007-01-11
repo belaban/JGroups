@@ -1,4 +1,4 @@
-// $Id: DUMMY_TP.java,v 1.2 2007/01/11 12:57:13 belaban Exp $
+// $Id: DUMMY_TP.java,v 1.3 2007/01/11 16:50:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,7 @@ import org.jgroups.stack.Protocol;
  * Dummy transport, returns a fake local address and responds to CONNECT with CONNECT_OK.
  * Compared to LOOPBACK, this discards everything
  * @author Bela Ban
- * @version $Id: DUMMY_TP.java,v 1.2 2007/01/11 12:57:13 belaban Exp $
+ * @version $Id: DUMMY_TP.java,v 1.3 2007/01/11 16:50:25 belaban Exp $
  */
 public class DUMMY_TP extends Protocol {
     private Address local_addr=null;
@@ -55,13 +55,12 @@ public class DUMMY_TP extends Protocol {
         switch(evt.getType()) {
 
         case Event.CONNECT:
-            passUp(new Event(Event.CONNECT_OK));
-            break;
+            return passUp(new Event(Event.CONNECT_OK));
 
         case Event.DISCONNECT:
-            passUp(new Event(Event.DISCONNECT_OK));
-            break;
+            return passUp(new Event(Event.DISCONNECT_OK));
         }
+        return passDown(evt);
     }
 
 
