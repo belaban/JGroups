@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.83 2007/01/11 12:57:33 belaban Exp $
+ * @version $Id: GMS.java,v 1.84 2007/01/11 13:42:11 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -669,7 +669,7 @@ public class GMS extends Protocol {
                             log.debug("received LEAVE_REQ for " + hdr.mbr + " from " + msg.getSrc());
                         if(hdr.mbr == null) {
                             if(log.isErrorEnabled()) log.error("LEAVE_REQ's mbr field is null");
-                            return;
+                            return null;
                         }
                         view_handler.add(new Request(Request.LEAVE, hdr.mbr, false, null));
                         break;
@@ -679,7 +679,7 @@ public class GMS extends Protocol {
                     case GmsHeader.VIEW:
                         if(hdr.view == null) {
                             if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
-                            return;
+                            return null;
                         }
 
                         // send VIEW_ACK to sender of view
@@ -697,7 +697,7 @@ public class GMS extends Protocol {
                     case GmsHeader.VIEW_ACK:
                         Object sender=msg.getSrc();
                         ack_collector.ack(sender);
-                        return; // don't pass further up
+                        return null; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
@@ -720,11 +720,11 @@ public class GMS extends Protocol {
                     default:
                         if(log.isErrorEnabled()) log.error("GmsHeader with type=" + hdr.type + " not known");
                 }
-                return;  // don't pass up
+                return null;  // don't pass up
 
             case Event.CONNECT_OK:     // sent by someone else, but WE are responsible for sending this !
             case Event.DISCONNECT_OK:  // dito (e.g. sent by TP layer). Don't send up the stack
-                return;
+                return null;
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
@@ -743,15 +743,16 @@ public class GMS extends Protocol {
 
             case Event.UNSUSPECT:
                 impl.unsuspect((Address)evt.getArg());
-                return;                              // discard
+                return null;                              // discard
 
             case Event.MERGE:
                 view_handler.add(new Request(Request.MERGE, null, false, (Vector)evt.getArg()));
-                return;                              // don't pass up
+                return null;                              // don't pass up
         }
 
         if(impl.handleUpEvent(evt))
-            passUp(evt);
+            return passUp(evt);
+        return null;
     }
 
 
@@ -790,7 +791,7 @@ public class GMS extends Protocol {
                     arg=e;
                 }
                 passUp(new Event(Event.CONNECT_OK, arg));
-                return;                              // don't pass down: was already passed down
+                return null;                              // don't pass down: was already passed down
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
@@ -820,7 +821,7 @@ public class GMS extends Protocol {
                break;
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
 
@@ -1209,7 +1210,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.83 2007/01/11 12:57:33 belaban Exp $
+     * @version $Id: GMS.java,v 1.84 2007/01/11 13:42:11 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

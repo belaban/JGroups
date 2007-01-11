@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.56 2007/01/11 12:57:32 belaban Exp $
+// $Id: STABLE.java,v 1.57 2007/01/11 13:44:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -255,7 +255,7 @@ public class STABLE extends Protocol {
             default:
                 if(log.isErrorEnabled()) log.error("StableHeader type " + hdr.type + " not known");
             }
-            return;  // don't pass STABLE or STABILITY messages up the stack
+            return null;  // don't pass STABLE or STABILITY messages up the stack
 
         case Event.VIEW_CHANGE:
             View view=(View)evt.getArg();
@@ -266,7 +266,7 @@ public class STABLE extends Protocol {
             local_addr=(Address)evt.getArg();
             break;
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -291,7 +291,7 @@ public class STABLE extends Protocol {
             resume();
             break;
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
 

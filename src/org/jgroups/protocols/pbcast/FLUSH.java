@@ -283,17 +283,17 @@ public class FLUSH extends Protocol
 
          case Event.SUSPEND :            
             attemptSuspend(evt);
-            return;
+            return null;
 
          case Event.RESUME :
             onResume();
-            return;
+            return null;
 
          case Event.BLOCK_OK:
             blockok_promise.setResult(Boolean.TRUE);
-            return;
+            return null;
       }
-      passDown(evt);
+      return passDown(evt);
    }
 
    private void blockMessageDuringFlush()
@@ -436,7 +436,7 @@ public class FLUSH extends Protocol
                   if (log.isDebugEnabled())
                      log.debug(localAddress + " received outdated FLUSH message " + fh + ",ignoring it.");
                }
-               return; //do not pass FLUSH msg up
+               return null; //do not pass FLUSH msg up
             }
             break;
 
@@ -457,7 +457,7 @@ public class FLUSH extends Protocol
                   log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
                
                passUp(new Event(Event.UNBLOCK));
-               return;
+               return null;
             }
             break;
 
@@ -471,15 +471,15 @@ public class FLUSH extends Protocol
 
          case Event.SUSPEND :           
             attemptSuspend(evt);
-            return;
+            return null;
 
          case Event.RESUME :
             onResume();
-            return;
+            return null;
 
       }
 
-      passUp(evt);
+      return passUp(evt);
    }
 
    public Vector providedDownServices()
