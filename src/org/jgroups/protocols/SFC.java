@@ -18,7 +18,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.7 2007/01/11 12:57:21 belaban Exp $
+ * @version $Id: SFC.java,v 1.8 2007/01/11 16:30:38 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -198,7 +198,7 @@ public class SFC extends Protocol {
                             if(warn)
                                 log.warn("thread was interrupted", e);
                             Thread.currentThread().interrupt(); // pass the exception on to the  caller
-                            return;
+                            return null;
                         }
                     }
 
@@ -225,9 +225,9 @@ public class SFC extends Protocol {
                     if(trace)
                         log.trace("sending credit request to group");
                     start=System.nanoTime(); // only 1 thread is here at any given time
-                    passDown(evt);       // send the message before the credit request
+                    Object ret=passDown(evt);       // send the message before the credit request
                     sendCreditRequest(); // do this outside of the lock
-                    return;
+                    return ret;
                 }
                 break;
 
@@ -240,7 +240,7 @@ public class SFC extends Protocol {
                 break;
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
 
@@ -265,7 +265,7 @@ public class SFC extends Protocol {
                                 log.error("unknown header type " + hdr.type);
                             break;
                     }
-                    return; // we don't pass the request further up
+                    return null; // we don't pass the request further up
                 }
 
                 Address dest=msg.getDest();
@@ -283,7 +283,7 @@ public class SFC extends Protocol {
                 handleSuspect((Address)evt.getArg());
                 break;
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 

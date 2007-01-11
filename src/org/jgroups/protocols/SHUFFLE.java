@@ -41,7 +41,7 @@ public class SHUFFLE extends Protocol implements Runnable {
             props.remove("name");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("DUMMY.setProperties(): these properties are not recognized: " + props);
 
             return false;
@@ -59,15 +59,15 @@ public class SHUFFLE extends Protocol implements Runnable {
 
         switch (evt.getType()) {
 
-	case Event.MSG:
-            msg=(Message)evt.getArg();
-            // Do something with the event, e.g. extract the message and remove a header.
-            // Optionally pass up
-            messages.add(msg);
-            return;
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                // Do something with the event, e.g. extract the message and remove a header.
+                // Optionally pass up
+                messages.add(msg);
+                return null;
         }
 
-        passUp(evt);            // Pass up to the layer above us
+        return passUp(evt);            // Pass up to the layer above us
     }
 
 
@@ -102,7 +102,7 @@ public class SHUFFLE extends Protocol implements Runnable {
     public void run() {
         Message msg;
         while (messagesHandler != null) {
-            if ( messages.size() > 0 ) {
+            if (!messages.isEmpty()) {
                 msg = (Message) messages.remove(rnd(messages.size()));
                 passUp(new Event(Event.MSG,msg));
             }
