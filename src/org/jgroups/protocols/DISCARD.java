@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.11 2007/01/11 12:57:14 belaban Exp $
+// $Id: DISCARD.java,v 1.12 2007/01/11 15:30:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -59,9 +59,8 @@ public class DISCARD extends Protocol {
         }
 
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -87,14 +86,13 @@ public class DISCARD extends Protocol {
                     else {
                         if(log.isTraceEnabled()) log.trace("dropping message");
                         num_up++;
-                        return;
+                        return null;
                     }
                 }
             }
         }
 
-
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -115,13 +113,13 @@ public class DISCARD extends Protocol {
                         if(log.isTraceEnabled())
                             log.trace("dropping message");
                         num_down++;
-                        return;
+                        return null;
                     }
                 }
             }
-
         }
-        passDown(evt);
+
+        return passDown(evt);
     }
 
     public void resetStats() {
