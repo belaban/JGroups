@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.17 2007/01/11 12:57:15 belaban Exp $
+// $Id: SMACK.java,v 1.18 2007/01/11 16:30:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -99,9 +99,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
         }
 
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("SMACK.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -138,18 +137,17 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
 
             case Event.CONNECT_OK:
-                passUp(evt);
+                Object ret=passUp(evt);
                 sender_win=new AckMcastSenderWindow(this, timeout);
 
                 // send join announcement
                 Message join_msg=new Message();
                 join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
                 passDown(new Event(Event.MSG, join_msg));
-                return;
+                return ret;
 
             case Event.SUSPECT:
-
-                    if(log.isInfoEnabled()) log.info("removing suspected member " + evt.getArg());
+                if(log.isInfoEnabled()) log.info("removing suspected member " + evt.getArg());
                 removeMember((Address)evt.getArg());
                 break;
 
@@ -157,7 +155,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 Message msg=(Message)evt.getArg(), tmp_msg;
                 if(msg == null) break;
                 sender=msg.getSrc();
-                SmackHeader hdr=(SmackHeader)msg.removeHeader(name);
+                SmackHeader hdr=(SmackHeader)msg.getHeader(name);
                 if(hdr == null) // is probably a unicast message
                     break;
                 switch(hdr.type) {
@@ -196,7 +194,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
                             passUp(new Event(Event.MSG, tmp_msg));
                         }
-                        return;
+                        return null;
 
                     case SmackHeader.ACK:
                         addMember(msg.getSrc());
@@ -204,7 +202,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         sender_win.clearStableMessages();
                         if(trace)
                             log.trace("received ack for #" + hdr.seqno + " from " + msg.getSrc());
-                        return;
+                        return null;
 
                     case SmackHeader.JOIN_ANNOUNCEMENT:
 
@@ -216,14 +214,12 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                             passDown(new Event(Event.MSG, join_rsp));
                         }
                         addMember(sender);
-                        return;
+                        return null;
 
                     case SmackHeader.LEAVE_ANNOUNCEMENT:
-
-                            if(log.isInfoEnabled()) log.info("received leave announcement by " + msg.getSrc());
-
+                        if(log.isInfoEnabled()) log.info("received leave announcement by " + msg.getSrc());
                         removeMember(sender);
-                        return;
+                        return null;
 
                     default:
                         if(warn) log.warn("detected SmackHeader with invalid type: " + hdr);
@@ -232,7 +228,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
         }
 
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -277,7 +273,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
         }
 
-        passDown(evt);
+        return passDown(evt);
     }
 
 
