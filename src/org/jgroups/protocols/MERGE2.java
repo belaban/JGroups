@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.33 2007/01/11 12:57:24 belaban Exp $
+// $Id: MERGE2.java,v 1.34 2007/01/11 13:23:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -135,17 +135,14 @@ public class MERGE2 extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                passUp(evt);
-                break;
+                return passUp(evt);
 
             case Event.FIND_INITIAL_MBRS_OK:
                 find_promise.setResult(evt.getArg());
-                passUp(evt); // could be needed by GMS
-                break;
+                return passUp(evt); // could be needed by GMS
 
             default:
-                passUp(evt);            // Pass up to the layer above us
-                break;
+                return passUp(evt);            // Pass up to the layer above us
         }
     }
 
