@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.31 2007/01/11 12:57:21 belaban Exp $
+// $Id: ENCRYPT.java,v 1.32 2007/01/11 15:41:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -539,18 +539,18 @@ public class ENCRYPT extends Protocol {
                 {
                     log.warn("exception occurred decrypting message", e);
                 }
-                return;
+                return null;
             default :
                 break;
         }
 
-        passUp(evt);
+        return passUp(evt);
     }
 
     public Object passUp(Event evt) {
         if(observer != null)
             observer.passUp(evt);
-        super.passUp(evt);
+        return super.passUp(evt);
     }
 
 
@@ -562,7 +562,7 @@ public class ENCRYPT extends Protocol {
             return;
         }
         // otherwise get keyserver from view controller
-        Address tmpKeyServer = (Address)view.getMembers().get(0);
+        Address tmpKeyServer = view.getMembers().get(0);
 
         //I am new keyserver - either first member of group or old key server is no more and
         // I have been voted new controller
@@ -972,7 +972,6 @@ public class ENCRYPT extends Protocol {
         if(observer != null)
             observer.down(evt);
 
-
         switch (evt.getType()) {
 
             case Event.MSG :
@@ -994,7 +993,7 @@ public class ENCRYPT extends Protocol {
                 {
                     log.warn("unable to send down event " + e);
                 }
-                return;
+                return null;
 
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
@@ -1007,13 +1006,13 @@ public class ENCRYPT extends Protocol {
             default :
                 break;
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
     public Object passDown(Event evt) {
         if(observer != null)
             observer.passDown(evt);
-        super.passDown(evt);
+        return super.passDown(evt);
     }
 
 

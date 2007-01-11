@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.45 2007/01/11 12:57:16 belaban Exp $
+// $Id: FD.java,v 1.46 2007/01/11 15:41:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.45 $
+ * @version $Revision: 1.46 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -189,8 +189,8 @@ public class FD extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                Object tmphdr=msg.getHeader(name);
-                if(!(tmphdr instanceof FdHeader)) {
+                FdHeader hdr=(FdHeader)msg.getHeader(name);
+                if(hdr == null) {
                     Object sender;
                     if(ping_dest != null && (sender=msg.getSrc()) != null) {
                         if(ping_dest.equals(sender)) {
@@ -203,7 +203,7 @@ public class FD extends Protocol {
                     break;  // message did not originate from FD layer, just pass up
                 }
 
-                FdHeader hdr=(FdHeader)msg.getHeader(name);
+
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
@@ -266,9 +266,9 @@ public class FD extends Protocol {
                         }
                         break;
                 }
-                return;
+                return null;
         }
-        passUp(evt); // pass up to the layer above us
+        return passUp(evt); // pass up to the layer above us
     }
 
 
@@ -297,17 +297,13 @@ public class FD extends Protocol {
                         }
                     }
                 }
-                break;
+                return null;
 
             case Event.UNSUSPECT:
                 unsuspect((Address)evt.getArg());
-                passDown(evt);
-                break;
-
-            default:
-                passDown(evt);
-                break;
+                return passDown(evt);
         }
+        return passDown(evt);
     }
 
 
