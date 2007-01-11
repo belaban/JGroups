@@ -11,7 +11,7 @@ import java.util.Properties;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.4 2007/01/11 12:57:15 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.5 2007/01/11 16:22:05 belaban Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
     long seqno=3; // drop 3
@@ -42,7 +42,7 @@ public class DISCARD_PAYLOAD extends Protocol {
             props.remove("duplicate");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("these properties are not recognized: " + props);
             return false;
         }
@@ -63,7 +63,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                             synchronized(this) {
                                 if(num_discards < 3) {
                                     num_discards++;
-                                    return;
+                                    return null;
                                 }
                             }
                         }
@@ -77,6 +77,6 @@ public class DISCARD_PAYLOAD extends Protocol {
                 }
             }
         }
-        super.up(evt);
+        return passUp(evt);
     }
 }

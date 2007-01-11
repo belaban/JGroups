@@ -51,7 +51,7 @@ public class MERGEFAST extends Protocol {
                 if(is_coord == false) // only handle message if we are coordinator
                     break;
                 Message msg=(Message)evt.getArg();
-                MergefastHeader hdr=(MergefastHeader)msg.removeHeader(name);
+                MergefastHeader hdr=(MergefastHeader)msg.getHeader(name);
                 passUp(evt);
                 if(hdr != null && local_addr != null) {
                     Address other_coord=hdr.coord;
@@ -59,12 +59,12 @@ public class MERGEFAST extends Protocol {
                         sendUpMerge(new Address[]{local_addr, other_coord});
                     }
                 }
-                return; // event was already passed up
+                return null; // event was already passed up
             case Event.VIEW_CHANGE:
                 handleViewChange((View)evt.getArg());
                 break;
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
 
@@ -73,7 +73,7 @@ public class MERGEFAST extends Protocol {
         if(local_addr == null)
             return;
         mbrs=v.getMembers();
-        is_coord=mbrs != null && mbrs.size() > 0 && local_addr.equals(mbrs.firstElement());
+        is_coord=mbrs != null && !mbrs.isEmpty() && local_addr.equals(mbrs.firstElement());
     }
 
     /**

@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.19 2007/01/11 12:57:14 belaban Exp $ 
+// $Id: JMS.java,v 1.20 2007/01/11 16:21:37 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -194,7 +194,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             return false;
         }
 
-        return props.size() == 0;
+        return props.isEmpty();
     }
 
 
@@ -276,7 +276,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * 
      * @param evt event to handle.
      */
-    protected void handleDownEvent(Event evt) {
+    protected Object handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
             // we do not need this at present time, maybe in the future
@@ -304,6 +304,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                 passUp(new Event(Event.DISCONNECT_OK));
                 break;
         }
+        return null;
     }
 
     /**
@@ -315,14 +316,12 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      */
     public Object down(Event evt) {
 
-            if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" +
-                group_addr + ", time=" + System.currentTimeMillis() + 
-                ", hdrs are " + Util.printEvent(evt));
+        if(log.isTraceEnabled())
+            log.trace("event is " + evt + ", group_addr=" + group_addr + ", hdrs are " + Util.printEvent(evt));
 
         // handle all non-message events
-        if(evt.getType() != Event.MSG) { 
-                handleDownEvent(evt);
-                return;
+        if(evt.getType() != Event.MSG) {
+            return handleDownEvent(evt);
         }
 
         // extract message
@@ -330,7 +329,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
 
         // publish the message to the topic
         sendMessage(msg);
-
+        return null;
     }
 
 
@@ -641,11 +640,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             if (this.isMCast) 
                 return this.isMCast == that.isMCast;
             else
-            if (this.address == null || that.address == null)
-                return false;
-            else
-                return this.address.equals(that.address) &&
-                    this.isMCast == that.isMCast;
+                return !(this.address == null || that.address == null) && this.address.equals(that.address) &&
+                        this.isMCast == that.isMCast;
         }
 
         /**

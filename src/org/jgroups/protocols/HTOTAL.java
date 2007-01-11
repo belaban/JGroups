@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.5 2007/01/11 12:57:16 belaban Exp $
+// $Id: HTOTAL.java,v 1.6 2007/01/11 16:22:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -15,9 +15,10 @@ import java.util.Vector;
 /**
  * Implementation of UTO-TCP as designed by EPFL. Implements chaining algorithm: each sender sends the message
  * to a coordinator who then forwards it to its neighbor on the right, who then forwards it to its neighbor to the right
- * etc.
+ * etc.<p/>
+ * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.5 2007/01/11 12:57:16 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.6 2007/01/11 16:22:20 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -47,9 +48,8 @@ public class HTOTAL extends Protocol {
             props.remove("use_multipoint_forwarding");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("TCP.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -70,11 +70,11 @@ public class HTOTAL extends Protocol {
                     msg.setSrc(local_addr);
                     forwardTo(coord, msg);
                 }
-                return; // handled here, don't pass down by default
+                return null; // handled here, don't pass down by default
             }
             break;
         }
-        passDown(evt);
+        return passDown(evt);
     }
 
     public Object up(Event evt) {
@@ -106,10 +106,9 @@ public class HTOTAL extends Protocol {
             msg.setDest(hdr.dest); // set destination to be the original destination
             msg.setSrc(hdr.src);   // set sender to be the original sender (important for retransmission requests)
 
-            passUp(evt); // <-- we modify msg directly inside evt
-            return;
+            return passUp(evt); // <-- we modify msg directly inside evt
         }
-        passUp(evt);
+        return passUp(evt);
     }
 
     private void forwardTo(Address destination, Message msg) {
@@ -133,7 +132,7 @@ public class HTOTAL extends Protocol {
         mbrs.clear();
         mbrs.addAll(v.getMembers());
 
-        coord=(Address)(mbrs != null && mbrs.size() > 0? mbrs.firstElement() : null);
+        coord=(Address)(mbrs != null && !mbrs.isEmpty()? mbrs.firstElement() : null);
         is_coord=coord != null && local_addr != null && coord.equals(local_addr);
 
         if(mbrs == null || mbrs.size() < 2 || local_addr == null)
