@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.50 2007/01/05 14:11:50 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.51 2007/01/11 11:38:47 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -316,13 +316,69 @@ public class STATE_TRANSFER extends Protocol {
 	}
 
     private void requestApplicationStates() {
+        Set appl_ids=new HashSet(state_requesters.keySet());
+        String id;
+        for(Iterator it=appl_ids.iterator(); it.hasNext();) {
+            id=(String)it.next();
+            StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
+            StateTransferInfo rsp=(StateTransferInfo)super.upcall(new Event(Event.GET_APPLSTATE, info));
+            sendApplicationStateResponse(rsp);
+        }
+    }
+
+
+    private void sendApplicationStateResponse(StateTransferInfo rsp) {
+        byte[]          state=rsp.state;
+        String          id=rsp.state_id;
+        List<Message>   responses=null;
+
         synchronized(state_requesters) {
-            Set appl_ids=new HashSet(state_requesters.keySet());
-            String id;
-            for(Iterator it=appl_ids.iterator(); it.hasNext();) {
-                id=(String)it.next();
-                StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
-                passUp(new Event(Event.GET_APPLSTATE, info));
+            if(state_requesters.isEmpty()) {
+                if(warn)
+                    log.warn("GET_APPLSTATE_OK: received application state, but there are no requesters !");
+                return;
+            }
+            if(stats) {
+                num_state_reqs++;
+                if(state != null)
+                    num_bytes_sent+=state.length;
+                avg_state_size=num_bytes_sent / num_state_reqs;
+            }
+
+            Set requesters=(Set)state_requesters.get(id);
+            if(requesters == null || requesters.isEmpty()) {
+                log.warn("received state for id=" + id + ", but there are no requesters for this ID");
+            }
+            else {
+                Address requester;
+                responses=new LinkedList<Message>();
+                for(Iterator it=requesters.iterator(); it.hasNext();) {
+                    requester=(Address)it.next();
+                    Message state_rsp=new Message(requester, null, state);
+                    StateHeader hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest, id);
+                    state_rsp.putHeader(name, hdr);
+                    responses.add(state_rsp);
+                }
+                state_requesters.remove(id);
+            }
+        }
+
+        if(responses != null && !responses.isEmpty()) {
+            for(Message state_rsp: responses) {
+                if(trace)
+                    log.trace("sending state for ID=" + id + " to " + state_rsp.getDest() + " (" + state.length + " bytes)");
+                passDown(new Event(Event.MSG, state_rsp));
+
+                // This has to be done in a separate thread, so we don't block on FC
+                // (see http://jira.jboss.com/jira/browse/JGRP-225 for details). This will be reverted once
+                // we have the threadless stack  (http://jira.jboss.com/jira/browse/JGRP-181)
+                // and out-of-band messages (http://jira.jboss.com/jira/browse/JGRP-205)
+//                new Thread() {
+//                    public void run() {
+//                        passDown(new Event(Event.MSG, state_rsp));
+//                    }
+//                }.start();
+                // passDown(new Event(Event.MSG, state_rsp));
             }
         }
     }
@@ -395,9 +451,10 @@ public class STATE_TRANSFER extends Protocol {
                 requestApplicationStates();
             }
             else if(empty){
-                digest=null;
-                if(log.isDebugEnabled()) log.debug("passing down GET_DIGEST_STATE");
-                passDown(new Event(Event.GET_DIGEST_STATE));
+                digest=(Digest)super.downcall(new Event(Event.GET_DIGEST_STATE));
+                if(log.isDebugEnabled())
+                    log.debug("digest is " + digest + ", getting application state");
+                requestApplicationStates();
             }
         }
     }

@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.33 2006/12/31 13:13:43 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.34 2007/01/11 11:38:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -343,12 +343,16 @@ public class RequestCorrelator {
      * handler registered (calling its <code>handle()</code> method), in the
      * second case, the corresponding response collector is looked up and
      * the message delivered.
+     * @param evt The event to be received
+     * @return Whether or not the event was consumed. If true, don't pass message up, else pass it up
      */
-    public void receive(Event evt) {
+    public boolean receive(Event evt) {
         switch(evt.getType()) {
+
         case Event.SUSPECT:     // don't wait for responses from faulty members
             receiveSuspect((Address)evt.getArg());
             break;
+
         case Event.VIEW_CHANGE: // adjust number of responses to wait for
             receiveView((View)evt.getArg());
             break;
@@ -356,15 +360,17 @@ public class RequestCorrelator {
         case Event.SET_LOCAL_ADDRESS:
             setLocalAddress((Address)evt.getArg());
             break;
+
         case Event.MSG:
-            if(!receiveMessage((Message)evt.getArg()))
-                return;
+            if(receiveMessage((Message)evt.getArg()))
+                return true; // message was consumed, don't pass it up
             break;
         }
-        if(transport instanceof Protocol)
-            ((Protocol)transport).passUp(evt);
-        else
-            if(log.isErrorEnabled()) log.error("we do not pass up messages via Transport");
+//        if(transport instanceof Protocol)
+//            ((Protocol)transport).passUp(evt);
+//        else
+//            if(log.isErrorEnabled()) log.error("we do not pass up messages via Transport");
+        return false;
     }
 
 
@@ -450,28 +456,25 @@ public class RequestCorrelator {
     /**
      * Handles a message coming from a layer below
      *
-     * @return true if the event should be forwarded further up, otherwise false (message was consumed)
+     * @return true if the message was consumed, don't pass it further up, else false
      */
     public boolean receiveMessage(Message msg) {
-        Object tmpHdr;
 
         // i. If header is not an instance of request correlator header, ignore
         //
         // ii. Check whether the message was sent by a request correlator with
         // the same name (there may be multiple request correlators in the same
         // protocol stack...)
-        tmpHdr=msg.getHeader(name);
-        if(tmpHdr == null || !(tmpHdr instanceof Header)) {
-            return true;
-        }
+        Header hdr=(Header)msg.getHeader(name);
+        if(hdr == null)
+            return false;
 
-        Header hdr=(Header)tmpHdr;
         if(hdr.corrName == null || !hdr.corrName.equals(name)) {
             if(log.isTraceEnabled()) {
                 log.trace(new StringBuffer("name of request correlator header (").append(hdr.corrName).
                           append(") is different from ours (").append(name).append("). Msg not accepted, passed up"));
             }
-            return true;
+            return false;
         }
 
         // If the header contains a destination list, and we are not part of it, then we discard the
@@ -483,7 +486,7 @@ public class RequestCorrelator {
                           append(" as we are not part of destination list (local_addr=").
                           append(local_addr).append(", hdr=").append(hdr).append(')'));
             }
-            return false;
+            return true; // don't pass this message further up
         }
 
 
@@ -502,7 +505,7 @@ public class RequestCorrelator {
                     if(log.isWarnEnabled()) {
                         log.warn("there is no request handler installed to deliver request !");
                     }
-                    return false;
+                    return true;
                 }
 
                 if(deadlock_detection) {
@@ -512,7 +515,7 @@ public class RequestCorrelator {
                         break;
                     }
 
-                    Request req=new Request(msg);
+                    Request req=new Request(msg, hdr);
                     java.util.Stack stack=hdr.callStack;
                     if(hdr.rsp_expected && stack != null && local_addr != null) {
                         if(stack.contains(local_addr)) {
@@ -527,7 +530,7 @@ public class RequestCorrelator {
                     break;
                 }
 
-                handleRequest(msg);
+                handleRequest(msg, hdr);
                 break;
 
             case Header.RSP:
@@ -559,7 +562,7 @@ public class RequestCorrelator {
                 break;
         }
 
-        return false;
+        return true; // message was consumed
     }
 
     public Address getLocalAddress() {
@@ -604,19 +607,18 @@ public class RequestCorrelator {
      *
      * @param req the request msg
      */
-    private void handleRequest(Message req) {
+    private void handleRequest(Message req, Header hdr) {
         Object        retval;
         byte[]        rsp_buf;
-        Header        hdr, rsp_hdr;
+        Header        rsp_hdr;
         Message       rsp;
 
-        // i. Remove the request correlator header from the msg and pass it to
+        // i. Get the request correlator header from the msg and pass it to
         // the registered handler
         //
         // ii. If a reply is expected, pack the return value from the request
         // handler to a reply msg and send it back. The reply msg has the same
         // ID as the request and the name of the sender request correlator
-        hdr=(Header)req.getHeader(name);
 
         if(log.isTraceEnabled()) {
             log.trace(new StringBuffer("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
@@ -835,7 +837,7 @@ public class RequestCorrelator {
             retval+=Global.BYTE_SIZE; // presence
             if(callStack != null) {
                 retval+=Global.SHORT_SIZE; // number of elements
-                if(callStack.size() > 0) {
+                if(!callStack.isEmpty()) {
                     Address mbr=(Address)callStack.firstElement();
                     retval+=callStack.size() * (Util.size(mbr));
                 }
@@ -844,7 +846,6 @@ public class RequestCorrelator {
             retval+=Util.size(dest_mbrs);
             return retval;
         }
-
     }
 
 
@@ -897,10 +898,11 @@ public class RequestCorrelator {
      * dispatcher
      */
     private class Request implements Runnable {
-        public final Message req;
+        final Message req;
+        final Header hdr;
 
-        public Request(Message req) { this.req=req; }
-        public void run() { handleRequest(req); }
+        public Request(Message req, Header hdr) { this.req=req; this.hdr=hdr;}
+        public void run() { handleRequest(req, hdr); }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();

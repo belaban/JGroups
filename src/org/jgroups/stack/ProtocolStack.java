@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.34 2006/12/28 09:34:31 belaban Exp $
+// $Id: ProtocolStack.java,v 1.35 2007/01/11 11:38:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -331,7 +331,9 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-
+    public Object upcall(Event evt) {
+        return channel.upcall(evt);
+    }
 
     public void down(Event evt) {
         if(top_prot != null)
@@ -341,8 +343,9 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-
-
+    public Object downcall(Event evt) {
+        return top_prot.downcall(evt);
+    }
 
     /** Override with null functionality: we don't need any threads to be started ! */
     public void startWork() {}
