@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.21 2006/04/13 08:14:20 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.22 2007/01/11 12:57:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -152,7 +152,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.BECOME_SERVER:
@@ -182,7 +182,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Object coord, state;
         Vector event_list;
         StateTransferInfo info;

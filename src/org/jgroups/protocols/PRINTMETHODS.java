@@ -1,4 +1,4 @@
-// $Id: PRINTMETHODS.java,v 1.3 2004/03/30 06:47:21 belaban Exp $
+// $Id: PRINTMETHODS.java,v 1.4 2007/01/11 12:57:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,7 +16,7 @@ public class PRINTMETHODS extends Protocol {
     public String        getName()             {return "PRINTMETHODS";}
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
 	Object       obj=null;
 	byte[]       buf;
     	Message      msg;
@@ -39,7 +39,7 @@ public class PRINTMETHODS extends Protocol {
     
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
 	Object       obj=null;
 	byte[]       buf;
 	Message      msg;

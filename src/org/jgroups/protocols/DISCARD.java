@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.10 2005/08/24 13:12:04 belaban Exp $
+// $Id: DISCARD.java,v 1.11 2007/01/11 12:57:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -68,7 +68,7 @@ public class DISCARD extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         double r;
 
@@ -98,7 +98,7 @@ public class DISCARD extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Message msg;
         double r;
 

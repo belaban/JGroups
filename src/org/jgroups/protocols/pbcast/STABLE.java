@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.55 2007/01/09 16:22:22 belaban Exp $
+// $Id: STABLE.java,v 1.56 2007/01/11 12:57:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -207,7 +207,7 @@ public class STABLE extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         StableHeader hdr;
         int type=evt.getType();
@@ -231,7 +231,7 @@ public class STABLE extends Protocol {
                         num_bytes_received=0;
 
                         // asks the NAKACK protocol for the current digest,
-                        Digest my_digest=(Digest)super.downcall(Event.GET_DIGEST_STABLE_EVT);
+                        Digest my_digest=(Digest)passDown(Event.GET_DIGEST_STABLE_EVT);
                         synchronized(latest_local_digest) {
                             latest_local_digest.replace(my_digest);
                         }
@@ -272,7 +272,7 @@ public class STABLE extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
         case Event.VIEW_CHANGE:
             View v=(View)evt.getArg();
@@ -805,7 +805,7 @@ public class STABLE extends Protocol {
             }
 
             // asks the NAKACK protocol for the current digest
-            Digest my_digest=(Digest)STABLE.super.downcall(Event.GET_DIGEST_STABLE_EVT);
+            Digest my_digest=(Digest)passDown(Event.GET_DIGEST_STABLE_EVT);
             if(my_digest == null) {
                 if(warn)
                     log.warn("received null digest, skipped sending of stable message");

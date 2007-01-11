@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.17 2007/01/03 15:57:22 belaban Exp $
+// $Id: PBCAST.java,v 1.18 2007/01/11 12:57:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -70,7 +70,7 @@ public class PBCAST extends Protocol implements Runnable {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message m;
         PbcastHeader hdr;
         Address sender=null;
@@ -141,7 +141,7 @@ public class PBCAST extends Protocol implements Runnable {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         PbcastHeader hdr;
         Message m, copy;
         View v;
@@ -187,8 +187,7 @@ public class PBCAST extends Protocol implements Runnable {
                 return;
 
             case Event.GET_DIGEST_STATE:  // don't pass down
-                passUp(new Event(Event.GET_DIGEST_STATE_OK, getDigest()));
-                return;
+                return getDigest();
 
             case Event.VIEW_CHANGE:
                 v=(View) evt.getArg();

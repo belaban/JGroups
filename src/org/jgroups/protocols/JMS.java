@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.18 2006/12/31 06:26:58 belaban Exp $ 
+// $Id: JMS.java,v 1.19 2007/01/11 12:57:14 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -313,7 +313,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * 
      * @param evt event to process.
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
 
             if(log.isInfoEnabled()) log.info("event is " + evt + ", group_addr=" +
                 group_addr + ", time=" + System.currentTimeMillis() + 

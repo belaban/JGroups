@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.9 2006/12/12 10:17:43 belaban Exp $
+// $Id: NakackTest.java,v 1.10 2007/01/11 12:57:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -93,7 +93,7 @@ public class NakackTest extends TestCase {
         }
 
 
-        public void up(Event evt) {
+        public Object up(Event evt) {
             Message msg=null;
             Address sender;
             long highest_seqno, received_seqno;

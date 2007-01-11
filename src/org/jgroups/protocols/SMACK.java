@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.16 2006/12/13 12:40:56 belaban Exp $
+// $Id: SMACK.java,v 1.17 2007/01/11 12:57:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -122,7 +122,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Address sender;
 
         switch(evt.getType()) {
@@ -236,7 +236,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Message leave_msg;
 
         switch(evt.getType()) {

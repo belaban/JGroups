@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.9 2006/12/22 13:37:12 belaban Exp $
+// $Id: ProtocolTester.java,v 1.10 2007/01/11 12:57:30 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -147,7 +147,7 @@ public class ProtocolTester {
         }
 
 
-        public void up(Event evt) {
+        public Object up(Event evt) {
             System.out.println("Harness.up(): " + evt);
         }
 

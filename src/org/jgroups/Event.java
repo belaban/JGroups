@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.29 2007/01/09 16:08:18 belaban Exp $
+// $Id: Event.java,v 1.30 2007/01/11 12:57:29 belaban Exp $
 
 package org.jgroups;
 
@@ -51,7 +51,6 @@ public class Event {
     public static final int GET_DIGEST_OK             = 40;  // arg = Digest (response to GET_DIGEST)
     public static final int SET_DIGEST                = 41;  // arg = Digest
     public static final int GET_DIGEST_STATE          = 42;  // see ./JavaStack/Protocols/pbcast/DESIGN for explanantion
-    public static final int GET_DIGEST_STATE_OK       = 43;  // see ./JavaStack/Protocols/pbcast/DESIGN for explanantion
     public static final int SET_PARTITIONS            = 44;  // arg = Hashtable of addresses and numbers
     public static final int MERGE_DENIED              = 45;  // Passed down from gms when a merge attempt fails
     public static final int EXIT                      = 46;  // received when member was forced out of the group
@@ -161,7 +160,6 @@ public class Event {
             case GET_DIGEST_OK:          return "GET_DIGEST_OK";
             case SET_DIGEST:             return "SET_DIGEST";
             case GET_DIGEST_STATE:       return "GET_DIGEST_STATE";
-            case GET_DIGEST_STATE_OK:    return "GET_DIGEST_STATE_OK";
             case SET_PARTITIONS:         return "SET_PARTITIONS"; // Added by gianlucac@tin.it to support PARTITIONER
             case MERGE:                  return "MERGE"; // Added by gianlucac@tin.it to support partitions merging in GMS
             case MERGE_DENIED:           return "MERGE_DENIED";// as above

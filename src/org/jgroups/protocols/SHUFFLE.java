@@ -54,7 +54,7 @@ public class SHUFFLE extends Protocol implements Runnable {
      * retrieves them.
      */
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
 
         switch (evt.getType()) {

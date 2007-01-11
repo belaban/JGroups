@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.13 2006/10/11 14:40:26 belaban Exp $
+// $Id: MERGE.java,v 1.14 2007/01/11 12:57:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -103,7 +103,7 @@ public class MERGE extends Protocol implements Runnable {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         Object obj;
         MergeHeader hdr;
@@ -167,7 +167,7 @@ public class MERGE extends Protocol implements Runnable {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
 
         switch(evt.getType()) {
 

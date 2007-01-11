@@ -1,4 +1,4 @@
-// $Id: EXAMPLE.java,v 1.4 2005/08/08 12:45:42 belaban Exp $
+// $Id: EXAMPLE.java,v 1.5 2007/01/11 12:57:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ public class EXAMPLE extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
 	Message msg;
 
 	switch(evt.getType()) {
@@ -64,7 +64,7 @@ public class EXAMPLE extends Protocol {
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
 	Message msg;
 
 	switch(evt.getType()) {

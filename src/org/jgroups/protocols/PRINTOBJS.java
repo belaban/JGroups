@@ -1,4 +1,4 @@
-// $Id: PRINTOBJS.java,v 1.4 2005/05/30 14:31:07 belaban Exp $
+// $Id: PRINTOBJS.java,v 1.5 2007/01/11 12:57:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ public class PRINTOBJS extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Object obj=null;
         byte[] buf;
         Message msg;
@@ -58,7 +58,7 @@ public class PRINTOBJS extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Object obj=null;
         byte[] buf;
         Message msg;

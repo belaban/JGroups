@@ -1,4 +1,4 @@
-// $Id: FD_PID.java,v 1.8 2005/08/11 12:43:47 belaban Exp $
+// $Id: FD_PID.java,v 1.9 2007/01/11 12:57:23 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -117,7 +117,7 @@ public class FD_PID extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         FdHeader hdr=null;
         Object tmphdr;
@@ -232,7 +232,7 @@ public class FD_PID extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Integer pid;
         Address mbr, tmp_ping_dest;
         View v;

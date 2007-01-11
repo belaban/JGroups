@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.111 2007/01/09 13:13:59 belaban Exp $
+ * @version $Id: TP.java,v 1.112 2007/01/11 12:57:19 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -902,7 +902,7 @@ public abstract class TP extends Protocol {
      * handle the UP event.
      * @param evt - the event being send from the stack
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
         case Event.CONFIG:
             passUp(evt);
@@ -919,7 +919,7 @@ public abstract class TP extends Protocol {
      * then removes the Message from the send queue, performs a conversion and adds the
      * modified Message to the send queue of the layer below it, by calling down()).
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         if(evt.getType() != Event.MSG) {  // unless it is a message handle it and respond
             handleDownEvent(evt);
             return;

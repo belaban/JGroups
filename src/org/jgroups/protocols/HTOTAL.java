@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.4 2005/09/01 11:41:00 belaban Exp $
+// $Id: HTOTAL.java,v 1.5 2007/01/11 12:57:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -17,7 +17,7 @@ import java.util.Vector;
  * to a coordinator who then forwards it to its neighbor on the right, who then forwards it to its neighbor to the right
  * etc.
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.4 2005/09/01 11:41:00 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.5 2007/01/11 12:57:16 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -55,7 +55,7 @@ public class HTOTAL extends Protocol {
         return true;
     }
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
         case Event.VIEW_CHANGE:
             determineCoordinatorAndNextMember((View)evt.getArg());
@@ -77,7 +77,7 @@ public class HTOTAL extends Protocol {
         passDown(evt);
     }
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address)evt.getArg();

@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.17 2006/12/31 06:26:58 belaban Exp $
+// $Id: SIZE.java,v 1.18 2007/01/11 12:57:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,7 +9,6 @@ import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -77,7 +76,7 @@ public class SIZE extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         int payload_size=0, serialized_size;
 
@@ -111,7 +110,7 @@ public class SIZE extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Message msg;
         int payload_size=0, serialized_size;
 

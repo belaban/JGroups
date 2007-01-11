@@ -24,7 +24,7 @@ public class MERGEFAST extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         if(is_coord == true && evt.getType() == Event.MSG && local_addr != null) {
             Message msg=(Message)evt.getArg();
             Address dest=msg.getDest();
@@ -42,7 +42,7 @@ public class MERGEFAST extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();

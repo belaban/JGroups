@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.27 2007/01/05 15:51:59 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.28 2007/01/11 12:57:22 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -118,7 +118,7 @@ public class FRAG2 extends Protocol {
      * Fragment a packet if larger than frag_size (add a header). Otherwise just pass down. Only
      * add a header if framentation is needed !
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
 
         case Event.MSG:
@@ -173,7 +173,7 @@ public class FRAG2 extends Protocol {
      * If event is a message, if it is fragmented, re-assemble fragments into big message and pass up
      * the stack.
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
         switch(evt.getType()) {
 
         case Event.MSG:

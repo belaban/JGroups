@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.13 2006/12/27 14:38:14 belaban Exp $
+// $Id: PERF_TP.java,v 1.14 2007/01/11 12:57:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,7 @@ import org.jgroups.stack.Protocol;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.13 2006/12/27 14:38:14 belaban Exp $
+ * @version $Id: PERF_TP.java,v 1.14 2007/01/11 12:57:24 belaban Exp $
  */
 public class PERF_TP extends Protocol {
     private Address local_addr=null;
@@ -86,7 +86,7 @@ public class PERF_TP extends Protocol {
      * then removes the Message from the send queue, performs a conversion and adds the
      * modified Message to the send queue of the layer below it, by calling Down).
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         Message msg;
         Address dest_addr;
 
@@ -125,7 +125,7 @@ public class PERF_TP extends Protocol {
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         Address dest_addr;
         switch(evt.getType()) {

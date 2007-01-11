@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.10 2006/12/31 06:26:58 belaban Exp $
+// $Id: CAUSAL.java,v 1.11 2007/01/11 12:57:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.10 $
+ *  @version $Revision: 1.11 $
  *
  **/
 
@@ -837,7 +837,7 @@ public class CAUSAL extends Protocol
      * Process a downward event.
      * @param evt The event.
      */
-    public void down(Event evt) {
+    public Object down(Event evt) {
         try {
             // If not a MSG, just pass down.
             if (evt.getType()!=Event.MSG) {
@@ -883,7 +883,7 @@ public class CAUSAL extends Protocol
      * Process an upward event.
      * @param evt The event.
      */
-    public void up(Event evt) {
+    public Object up(Event evt) {
         try {
             switch (evt.getType()) {
                 case Event.SET_LOCAL_ADDRESS:

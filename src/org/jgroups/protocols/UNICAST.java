@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.70 2006/12/31 13:22:54 belaban Exp $
+// $Id: UNICAST.java,v 1.71 2007/01/11 12:57:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -190,7 +190,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message        msg;
         Address        dst, src;
         UnicastHeader  hdr;
@@ -234,7 +234,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch (evt.getType()) {
 
             case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down

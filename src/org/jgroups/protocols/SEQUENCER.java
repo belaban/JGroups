@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.12 2006/12/31 14:58:40 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.13 2007/01/11 12:57:17 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -79,7 +79,7 @@ public class SEQUENCER extends Protocol {
     }
 
 
-    public void down(Event evt) {
+    public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
@@ -108,7 +108,7 @@ public class SEQUENCER extends Protocol {
 
 
 
-    public void up(Event evt) {
+    public Object up(Event evt) {
         Message msg;
         SequencerHeader hdr;
 
