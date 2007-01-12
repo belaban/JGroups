@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.53 2007/01/11 13:08:51 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.54 2007/01/12 13:43:11 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -280,7 +280,7 @@ public class STATE_TRANSFER extends Protocol {
 
         }
 
-        return passDown(evt);              // pass on to the layer below us
+        return super.down(evt);              // pass on to the layer below us
     }
 
 
