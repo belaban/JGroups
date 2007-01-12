@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.81 2007/01/12 12:00:59 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.82 2007/01/12 12:02:38 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -62,7 +62,7 @@
 	</patternset>
 	
 	<patternset id="one.test">	     
-		<include name="**/*${test}*"/>			
+		<include name="**/*${junit.dir}*"/>
 	</patternset>
 	
 	<patternset id="all.tests">	     
