@@ -38,7 +38,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.22 2006/12/31 07:47:28 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.23 2007/01/12 14:21:49 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -609,8 +609,8 @@ public class FlushTest extends ChannelTestBase
          // send timeout up and down the stack, so other protocols can use the same value too
          Map map = new HashMap();
          map.put("flush_timeout", new Long(0));
-         flush.passUp(new Event(Event.CONFIG, map));
-         flush.passDown(new Event(Event.CONFIG, map));
+         flush.getUpProtocol().up(new Event(Event.CONFIG, map));
+         flush.getDownProtocol().down(new Event(Event.CONFIG, map));
       }
       return ret;
    }

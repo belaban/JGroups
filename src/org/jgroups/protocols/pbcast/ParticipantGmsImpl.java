@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.22 2006/08/03 09:20:58 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.23 2007/01/12 14:21:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -200,7 +200,7 @@ public class ParticipantGmsImpl extends GmsImpl {
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr);
 
         msg.putHeader(gms.getName(), hdr);
-        gms.passDown(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
 

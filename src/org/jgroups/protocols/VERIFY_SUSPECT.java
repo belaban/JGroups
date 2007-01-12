@@ -19,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.26 2007/01/11 16:51:27 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.27 2007/01/12 14:19:23 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -130,7 +130,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                                 rsp=new Message(hdr.from, null, null);
                                 rsp.setFlag(Message.OOB);
                                 rsp.putHeader(name, new VerifyHeader(VerifyHeader.I_AM_NOT_DEAD, local_addr));
-                                passDown(new Event(Event.MSG, rsp));
+                                down_prot.down(new Event(Event.MSG, rsp));
                             }
                         }
                         return null;
@@ -151,7 +151,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     bind_addr=(InetAddress)config.get("bind_addr");
                 }
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -189,7 +189,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             }
             if(tmp != null && !tmp.isEmpty()) {
                 for(Iterator it=tmp.iterator(); it.hasNext();)
-                    passUp(new Event(Event.SUSPECT, it.next()));
+                    up_prot.up(new Event(Event.SUSPECT, it.next()));
             }
 
             if(diff > 0)
@@ -221,7 +221,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             msg=new Message(mbr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
         if(timer == null)
             startTimer();
@@ -247,7 +247,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     log.debug("could not ping " + suspected_mbr + " after " + (stop-start) + "ms; " +
                             "passing up SUSPECT event");
                 suspects.remove(suspected_mbr);
-                passUp(new Event(Event.SUSPECT, suspected_mbr));
+                up_prot.up(new Event(Event.SUSPECT, suspected_mbr));
             }
         }
         catch(Exception ex) {
@@ -267,8 +267,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             }
         }
         if(removed) {
-            passDown(new Event(Event.UNSUSPECT, mbr));
-            passUp(new Event(Event.UNSUSPECT, mbr));
+            down_prot.down(new Event(Event.UNSUSPECT, mbr));
+            up_prot.up(new Event(Event.UNSUSPECT, mbr));
         }
     }
 

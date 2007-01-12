@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.21 2007/01/12 13:33:22 belaban Exp $ 
+// $Id: JMS.java,v 1.22 2007/01/12 14:19:27 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -257,7 +257,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                     if(log.isDebugEnabled()) log.debug("Message is " + msg +
                         ", headers are " + msg.printHeaders());
 
-                passUp(evt);
+                up_prot.up(evt);
             }
         } catch(javax.jms.JMSException ex) {
             ex.printStackTrace();
@@ -292,7 +292,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
 
             case Event.GET_LOCAL_ADDRESS:
                 // return local address -> Event(SET_LOCAL_ADDRESS, local)
-                passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+                up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
                 break;
 
             case Event.CONNECT:
@@ -300,7 +300,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                 break;
 
             case Event.DISCONNECT:
-                passUp(new Event(Event.DISCONNECT_OK));
+                up_prot.up(new Event(Event.DISCONNECT_OK));
                 break;
         }
         return null;
@@ -469,7 +469,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
         
         connection.start();
 
-        passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
     /**

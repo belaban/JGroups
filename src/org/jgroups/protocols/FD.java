@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.46 2007/01/11 15:41:11 belaban Exp $
+// $Id: FD.java,v 1.47 2007/01/12 14:19:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.46 $
+ * @version $Revision: 1.47 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -253,8 +253,8 @@ public class FD extends Protocol {
                                     pingable_mbrs.remove(m);
                                     ping_dest=(Address)getPingDest(pingable_mbrs);
                                 }
-                                passUp(new Event(Event.SUSPECT, m));
-                                passDown(new Event(Event.SUSPECT, m));
+                                up_prot.up(new Event(Event.SUSPECT, m));
+                                down_prot.down(new Event(Event.SUSPECT, m));
                             }
                         }
                         break;
@@ -262,13 +262,13 @@ public class FD extends Protocol {
                     case FdHeader.NOT_MEMBER:
                         if(shun) {
                             if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
-                            passUp(new Event(Event.EXIT));
+                            up_prot.up(new Event(Event.EXIT));
                         }
                         break;
                 }
                 return null;
         }
-        return passUp(evt); // pass up to the layer above us
+        return up_prot.up(evt); // pass up to the layer above us
     }
 
 
@@ -278,7 +278,7 @@ public class FD extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                passDown(evt);
+                down_prot.down(evt);
                 stop();
                 synchronized(this) {
                     View v=(View)evt.getArg();
@@ -301,9 +301,9 @@ public class FD extends Protocol {
 
             case Event.UNSUSPECT:
                 unsuspect((Address)evt.getArg());
-                return passDown(evt);
+                return down_prot.down(evt);
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -313,7 +313,7 @@ public class FD extends Protocol {
         FdHeader tmp_hdr=new FdHeader(FdHeader.HEARTBEAT_ACK);
         tmp_hdr.from=local_addr;
         hb_ack.putHeader(name, tmp_hdr);
-        passDown(new Event(Event.MSG, hb_ack));
+        down_prot.down(new Event(Event.MSG, hb_ack));
     }
 
     private void unsuspect(Address mbr) {
@@ -341,7 +341,7 @@ public class FD extends Protocol {
                     shun_msg=new Message(hb_sender, null, null);
                     shun_msg.setFlag(Message.OOB);
                     shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
-                    passDown(new Event(Event.MSG, shun_msg));
+                    down_prot.down(new Event(Event.MSG, shun_msg));
                     invalid_pingers.remove(hb_sender);
                 }
                 else {
@@ -490,7 +490,7 @@ public class FD extends Protocol {
             hb_req.putHeader(name, new FdHeader(FdHeader.HEARTBEAT));  // send heartbeat request
             if(log.isDebugEnabled())
                 log.debug("sending are-you-alive msg to " + ping_dest + " (own address=" + local_addr + ')');
-            passDown(new Event(Event.MSG, hb_req));
+            down_prot.down(new Event(Event.MSG, hb_req));
             num_heartbeats++;
 
             // 2. If the time of the last heartbeat is > timeout and max_tries heartbeat messages have not been
@@ -666,7 +666,7 @@ public class FD extends Protocol {
             suspect_msg.putHeader(name, hdr);
             if(log.isDebugEnabled())
                 log.debug("broadcasting SUSPECT message [suspected_mbrs=" + suspected_members + "] to group");
-            passDown(new Event(Event.MSG, suspect_msg));
+            down_prot.down(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
         }
 

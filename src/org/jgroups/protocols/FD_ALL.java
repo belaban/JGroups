@@ -16,7 +16,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.7 2007/01/11 15:41:18 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.8 2007/01/12 14:19:25 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -180,20 +180,20 @@ public class FD_ALL extends Protocol {
 
                     case Header.SUSPECT:
                         if(trace) log.trace("[SUSPECT] suspect hdr is " + hdr);
-                        passDown(new Event(Event.SUSPECT, hdr.suspected_mbr));
-                        passUp(new Event(Event.SUSPECT, hdr.suspected_mbr));
+                        down_prot.down(new Event(Event.SUSPECT, hdr.suspected_mbr));
+                        up_prot.up(new Event(Event.SUSPECT, hdr.suspected_mbr));
                         break;
 
                     case Header.NOT_MEMBER:
                         if(shun) {
                             if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
-                            passUp(new Event(Event.EXIT));
+                            up_prot.up(new Event(Event.EXIT));
                         }
                         break;
                 }
                 return null;
         }
-        return passUp(evt); // pass up to the layer above us
+        return up_prot.up(evt); // pass up to the layer above us
     }
 
 
@@ -204,12 +204,12 @@ public class FD_ALL extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
-                passDown(evt);
+                down_prot.down(evt);
                 View v=(View)evt.getArg();
                 handleViewChange(v);
                 return null;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -331,7 +331,7 @@ public class FD_ALL extends Protocol {
                 shun_msg=new Message(sender, null, null);
                 shun_msg.setFlag(Message.OOB);
                 shun_msg.putHeader(name, new Header(Header.NOT_MEMBER));
-                passDown(new Event(Event.MSG, shun_msg));
+                down_prot.down(new Event(Event.MSG, shun_msg));
                 invalid_pingers.remove(sender);
             }
             else {
@@ -363,7 +363,7 @@ public class FD_ALL extends Protocol {
         suspect_msg.setFlag(Message.OOB);
         Header hdr=new Header(Header.SUSPECT, mbr);
         suspect_msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, suspect_msg));
+        down_prot.down(new Event(Event.MSG, suspect_msg));
         num_suspect_events++;
         suspect_history.add(mbr);
     }
@@ -458,7 +458,7 @@ public class FD_ALL extends Protocol {
             heartbeat.setFlag(Message.OOB);
             Header hdr=new Header(Header.HEARTBEAT);
             heartbeat.putHeader(name, hdr);
-            passDown(new Event(Event.MSG, heartbeat));
+            down_prot.down(new Event(Event.MSG, heartbeat));
             //if(trace)
               //  log.trace(local_addr + ": sent heartbeat to cluster");
             num_heartbeats_sent++;

@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.114 2007/01/12 13:33:32 belaban Exp $
+ * @version $Id: TP.java,v 1.115 2007/01/12 14:19:17 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -504,7 +504,7 @@ public abstract class TP extends Protocol {
         if(bind_addr != null) {
             Map m=new HashMap(1);
             m.put("bind_addr", bind_addr);
-            passUp(new Event(Event.CONFIG, m));
+            up_prot.up(new Event(Event.CONFIG, m));
         }
     }
 
@@ -568,7 +568,7 @@ public abstract class TP extends Protocol {
             bundler=new Bundler();
         }
 
-        passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
 
@@ -905,12 +905,12 @@ public abstract class TP extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
         case Event.CONFIG:
-            passUp(evt);
+            up_prot.up(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return null;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
     /**
@@ -945,11 +945,11 @@ public abstract class TP extends Protocol {
         boolean multicast=dest == null || dest.isMulticastAddress();
         if(loopback && (multicast || dest.equals(local_addr))) {
 
-            // we *have* to make a copy, or else passUp() might remove headers from msg which will then *not*
+            // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             Message copy=msg.copy();
             if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
-            passUp(new Event(Event.MSG, copy));
+            up_prot.up(new Event(Event.MSG, copy));
             if(!multicast)
                 return null;
         }
@@ -1161,7 +1161,7 @@ public abstract class TP extends Protocol {
                           append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
             return;
         }
-        passUp(evt);
+        up_prot.up(evt);
     }
 
 
@@ -1337,7 +1337,7 @@ public abstract class TP extends Protocol {
             break;
 
         case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
             break;
 
         case Event.CONNECT:
@@ -1348,7 +1348,7 @@ public abstract class TP extends Protocol {
 
         case Event.DISCONNECT:
             unsetThreadNames();
-            passUp(new Event(Event.DISCONNECT_OK));
+            up_prot.up(new Event(Event.DISCONNECT_OK));
             break;
 
         case Event.CONFIG:
@@ -1617,7 +1617,7 @@ public abstract class TP extends Protocol {
                 log.trace(sb);
             }
 
-            passUp(evt);
+            up_prot.up(evt);
         }
 
 

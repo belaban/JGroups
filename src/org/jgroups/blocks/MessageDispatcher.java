@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.68 2007/01/12 13:37:10 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.69 2007/01/12 14:22:04 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -709,9 +709,7 @@ public class MessageDispatcher implements RequestHandler {
         }
 
 
-        public Object passDown(Event evt) {
-            return down(evt);
-        }
+
 
 
 

@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.12 2007/01/11 13:13:58 belaban Exp $
+// $Id: CAUSAL.java,v 1.13 2007/01/12 14:20:01 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.12 $
+ *  @version $Revision: 1.13 $
  *
  **/
 
@@ -707,7 +707,7 @@ public class CAUSAL extends Protocol
                 if(update != null) {
                     log.warn("Sending sync update");
 
-                    passDown(new Event(Event.MSG, update));
+                    down_prot.down(new Event(Event.MSG, update));
                 }
 
                 synchronized(this) {
@@ -841,14 +841,14 @@ public class CAUSAL extends Protocol
         try {
             // If not a MSG, just pass down.
             if (evt.getType()!=Event.MSG) {
-                return passDown(evt);
+                return down_prot.down(evt);
             }
             
             Message msg = (Message) evt.getArg();
             
             // If unicast, just pass down.
             if (msg.getDest()!=null && ! msg.getDest().isMulticastAddress()) {
-                return passDown(evt);
+                return down_prot.down(evt);
             }
     
             // Multicast MSG:
@@ -869,7 +869,7 @@ public class CAUSAL extends Protocol
             
             if (tvt!=null) {
                 msg.putHeader(getName(), new CausalHeader(tvt));
-                return passDown(evt);
+                return down_prot.down(evt);
             }
         } catch (RuntimeException e) {
             if (debug) log.error("*** down: "+e.getMessage(), e);
@@ -895,7 +895,7 @@ public class CAUSAL extends Protocol
                 case Event.MSG:
                     return upMsg(evt);
                 default:
-                    return passUp(evt);
+                    return up_prot.up(evt);
             }
         } catch (RuntimeException e) {
             if (debug) log.error("*** up: "+e.getMessage(), e);
@@ -906,7 +906,7 @@ public class CAUSAL extends Protocol
     
     private void upSetLocalAddress(Event evt) {
         localAddress = (Address) evt.getArg();
-        passUp(evt);
+        up_prot.up(evt);
     }
    
     /**
@@ -939,7 +939,7 @@ public class CAUSAL extends Protocol
             newViewThread.start();
         }
         
-        passUp(evt);
+        up_prot.up(evt);
     }
     
     private Object upMsg(Event evt) {
@@ -959,7 +959,7 @@ public class CAUSAL extends Protocol
         if (!(obj instanceof CausalHeader)) {
             if((msg.getDest() == null || msg.getDest().isMulticastAddress()) 
                     && log.isErrorEnabled()) log.error("NO CAUSAL.Header found");
-            return passUp(evt);
+            return up_prot.up(evt);
         }
         
         TransportedVectorTime messageVector = ((CausalHeader)obj).getVectorTime();
@@ -972,7 +972,7 @@ public class CAUSAL extends Protocol
             
             if (currentView.isCausallyNext(messageVector)) {
                 if (log.isDebugEnabled()) log.debug("passing up message "+msg+", headers are "+msg.printHeaders()+", local vector is "+currentView.timeVectorString());
-                passUp(evt);
+                up_prot.up(evt);
                 currentView.max(messageVector);
             } else  {
                 if (log.isDebugEnabled()) log.debug("queuing message "+msg+", headers are "+msg.printHeaders());
@@ -987,7 +987,7 @@ public class CAUSAL extends Protocol
                 upwardWaitingQueue.remove(queuedVector);
                 Message tmp=queuedVector.getAssociatedMessage();
                 if (log.isDebugEnabled()) log.debug("released message "+tmp+", headers are "+tmp.printHeaders());
-                passUp(new Event(Event.MSG, tmp));
+                up_prot.up(new Event(Event.MSG, tmp));
                 currentView.max(queuedVector);
             }
         }
@@ -1017,7 +1017,7 @@ public class CAUSAL extends Protocol
                                 , new CausalNewViewHeader(currentView.getView().getViewId(), 0, true)); // It has the time already
                         update.setObject(new MissingIndexesMessage(Collections.EMPTY_LIST, Collections.EMPTY_LIST));
                         
-                        passDown(new Event(Event.MSG, update));
+                        down_prot.down(new Event(Event.MSG, update));
                     }
                     
                     if (Arrays.binarySearch(content.getMissingTimeIndexes(), localIndex)>=0) {

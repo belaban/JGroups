@@ -6,14 +6,10 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
-import org.jgroups.util.Queue;
 
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-
-
-
 
 
 /**
@@ -33,11 +29,11 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.49 2007/01/11 12:57:35 belaban Exp $
+ * @version $Id: Protocol.java,v 1.50 2007/01/12 14:21:46 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
-    private   Protocol         up_prot=null, down_prot=null;
+    protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
@@ -198,15 +194,6 @@ public abstract class Protocol {
     }
 
 
-    public Queue getUpQueue() {
-        throw new UnsupportedOperationException("queues were removed in 2.5");
-    }    // used by Debugger (ProtocolView)
-
-    public Queue getDownQueue() {
-        throw new UnsupportedOperationException("queues were removed in 2.5");
-    }  // used by Debugger (ProtocolView)
-
-
     /** List of events that are required to be answered by some layer above.
      @return Vector (of Integers) */
     public Vector requiredUpServices() {
@@ -263,8 +250,8 @@ public abstract class Protocol {
      * (e.g. removing headers from a MSG event type, or updating the internal membership list
      * when receiving a VIEW_CHANGE event).
      * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using <code>passDown()</code> or c) the event (or another event) is sent up
-     * the stack using <code>passUp()</code>.
+     * the stack using <code>down_prot.down()</code> or c) the event (or another event) is sent up
+     * the stack using <code>up_prot.up()</code>.
      */
     public Object up(Event evt) {
         return up_prot.up(evt);
@@ -275,30 +262,14 @@ public abstract class Protocol {
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
      * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using <code>passDown()</code>. In case of a GET_ADDRESS event (which tries to
+     * the stack using <code>down_prot.down()</code>. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>passUp()</code>.
+     * a new response event back up the stack using <code>up_prot.up()</code>.
      */
     public Object down(Event evt) {
         return down_prot.down(evt);
     }
 
-
-    /**
-     * Causes the event to be forwarded to the next layer up in the hierarchy. Typically called
-     * by the implementation of <code>Up</code> (when done).
-     */
-    public Object passUp(Event evt) {
-        return up_prot.up(evt);
-    }
-
-    /**
-     * Causes the event to be forwarded to the next layer down in the hierarchy.Typically called
-     * by the implementation of <code>Down</code> (when done).
-     */
-    public Object passDown(Event evt) {
-        return down_prot.down(evt);
-    }
 
 
 

@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.14 2007/01/11 16:51:15 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.15 2007/01/12 14:19:38 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -103,7 +103,7 @@ public class VIEW_SYNC extends Protocol {
         msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
         msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
 //    public void sendFakeViewForTestingOnly() {
@@ -152,7 +152,7 @@ public class VIEW_SYNC extends Protocol {
                 break;
         }
 
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -164,7 +164,7 @@ public class VIEW_SYNC extends Protocol {
                 handleViewChange(v);
                 break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -190,7 +190,7 @@ public class VIEW_SYNC extends Protocol {
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
             view_change.putHeader(name, hdr);
-            passUp(new Event(Event.MSG, view_change));
+            up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
         }
     }
@@ -214,7 +214,7 @@ public class VIEW_SYNC extends Protocol {
         msg.setFlag(Message.OOB);
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC, tmp);
         msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         num_views_sent++;
     }
 

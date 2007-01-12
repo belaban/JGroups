@@ -1,4 +1,4 @@
-// $Id: HDRS.java,v 1.4 2007/01/11 16:51:38 belaban Exp $
+// $Id: HDRS.java,v 1.5 2007/01/12 14:20:18 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ public class HDRS extends Protocol {
             Message msg=(Message)evt.getArg();
             printMessage(msg, "up");
         }
-        return passUp(evt); // Pass up to the layer above us
+        return up_prot.up(evt); // Pass up to the layer above us
     }
 
 
@@ -38,7 +38,7 @@ public class HDRS extends Protocol {
             printMessage(msg, "down");
         }
 
-        return passDown(evt);  // Pass on to the layer below us
+        return down_prot.down(evt);  // Pass on to the layer below us
     }
 
 

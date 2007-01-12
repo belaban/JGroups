@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.32 2007/01/11 15:41:09 belaban Exp $
+// $Id: ENCRYPT.java,v 1.33 2007/01/12 14:19:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -90,10 +90,10 @@ public class ENCRYPT extends Protocol {
     Observer observer;
 
     interface Observer {
-		boolean up(Event evt);
-		boolean passUp(Event evt);
-		boolean down(Event evt);
-		boolean passDown(Event evt);
+		void up(Event evt);
+		void passUp(Event evt);
+		void down(Event evt);
+		void passDown(Event evt);
     }
 
 
@@ -543,14 +543,13 @@ public class ENCRYPT extends Protocol {
             default :
                 break;
         }
-
-        return passUp(evt);
+        return passItUp(evt);
     }
 
-    public Object passUp(Event evt) {
+    public Object passItUp(Event evt) {
         if(observer != null)
             observer.passUp(evt);
-        return super.passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -626,12 +625,12 @@ public class ENCRYPT extends Protocol {
         {
             if (trace)
                 log.trace("null message - passing straight up");
-            passUp(evt);
+            passItUp(evt);
             return;
         }
 
         if(msg.getLength() == 0) {
-            passUp(evt);
+            passItUp(evt);
             return;
         }
 
@@ -657,7 +656,7 @@ public class ENCRYPT extends Protocol {
             if (!hdr.encrypt_entire_msg && ((Message)evt.getArg()).getLength() == 0) {
                 if (trace)
                     log.trace("passing up message as it has an empty buffer ");
-                passUp(evt);
+                passItUp(evt);
                 return;
             }
 
@@ -678,7 +677,7 @@ public class ENCRYPT extends Protocol {
                 if (tmpMsg != null){
                     if(trace)
                         log.trace("decrypted message " + tmpMsg);
-                    passUp(new Event(Event.MSG, tmpMsg));
+                    passItUp(new Event(Event.MSG, tmpMsg));
                 } else {
                     log.warn("Unrecognised cipher discarding message");
                 }
@@ -765,7 +764,7 @@ public class ENCRYPT extends Protocol {
                     if (trace){
                         log.trace("passing up message from drain " + msg);
                     }
-                    passUp(new Event(Event.MSG, msg));
+                    passItUp(new Event(Event.MSG, msg));
                 }else{
                     log.warn("discarding message in queue up drain as cannot decode it");
                 }
@@ -893,7 +892,7 @@ public class ENCRYPT extends Protocol {
         if (log.isDebugEnabled())
             log.debug(" Sending version " + getSymVersion()
                     + " encoded key to client");
-        passDown(new Event(Event.MSG, newMsg));
+        passItDown(new Event(Event.MSG, newMsg));
     }
 
 
@@ -940,7 +939,7 @@ public class ENCRYPT extends Protocol {
 //				EncryptHeader.SERVER_PUBKEY, getSymVersion()));
 //
 //
-//		passDown(new Event(Event.MSG, newMsg));
+//		down_prot.down(new Event(Event.MSG, newMsg));
 //		return pubKey;
 //	}
 
@@ -959,7 +958,7 @@ public class ENCRYPT extends Protocol {
 
         newMsg.putHeader(EncryptHeader.KEY, new EncryptHeader(
                 EncryptHeader.KEY_REQUEST, getSymVersion()));
-        passDown(new Event(Event.MSG, newMsg));
+        passItDown(new Event(Event.MSG, newMsg));
         return newMsg;
     }
 
@@ -1006,13 +1005,13 @@ public class ENCRYPT extends Protocol {
             default :
                 break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
-    public Object passDown(Event evt) {
+    public Object passItDown(Event evt) {
         if(observer != null)
             observer.passDown(evt);
-        return super.passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -1042,7 +1041,7 @@ public class ENCRYPT extends Protocol {
 
         Message msg = (Message) evt.getArg();
         if(msg.getLength() == 0) {
-            passDown(evt);
+            passItDown(evt);
             return;
         }
 
@@ -1056,7 +1055,7 @@ public class ENCRYPT extends Protocol {
             tmp.setBuffer(encrypted_msg);
             tmp.setSrc(local_addr);
             tmp.putHeader(EncryptHeader.KEY, hdr);
-            passDown(new Event(Event.MSG, tmp));
+            passItDown(new Event(Event.MSG, tmp));
             return;
         }
 
@@ -1067,7 +1066,7 @@ public class ENCRYPT extends Protocol {
         // copy neeeded because same message (object) may be retransmitted -> no double encryption
         Message msgEncrypted = msg.copy(false);
         msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getBuffer()));
-        passDown(new Event(Event.MSG, msgEncrypted));
+        passItDown(new Event(Event.MSG, msgEncrypted));
     }
 
 

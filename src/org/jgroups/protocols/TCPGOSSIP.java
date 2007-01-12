@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.21 2006/12/11 15:38:56 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.22 2007/01/12 14:20:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -116,14 +116,14 @@ public class TCPGOSSIP extends Discovery {
 
         if(group_addr == null) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
+            up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
         }
         if(trace) log.trace("fetching members from GossipRouter(s)");
         tmp_mbrs=gossip_client.getMembers(group_addr);
         if(tmp_mbrs == null || tmp_mbrs.size() == 0) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
-            passUp(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
+            up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
         }
         if(trace) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
@@ -139,7 +139,7 @@ public class TCPGOSSIP extends Discovery {
             copy=msg.copy();
             copy.setDest(mbr_addr);
             if(trace) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
-            passDown(new Event(Event.MSG, copy));
+            down_prot.down(new Event(Event.MSG, copy));
         }
     }
 

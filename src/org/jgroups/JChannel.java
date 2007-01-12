@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.116 2007/01/12 13:33:37 belaban Exp $
+ * @version $Id: JChannel.java,v 1.117 2007/01/12 14:21:07 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1203,12 +1203,7 @@ public class JChannel extends Channel {
                 break;
         }
 
-        if(prot_stack != null)
-            return prot_stack.down(evt);
-        else
-            if(log.isErrorEnabled()) log.error("no protocol stack available");
-
-        return null;
+        return prot_stack.down(evt);
     }
 
 

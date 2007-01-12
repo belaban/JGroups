@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.22 2007/01/12 13:33:25 belaban Exp $
+ * @version $Id: Discovery.java,v 1.23 2007/01/12 14:20:22 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -221,7 +221,7 @@ public abstract class Discovery extends Protocol {
             msg=(Message)evt.getArg();
             PingHeader hdr=(PingHeader)msg.getHeader(getName());
             if(hdr == null) {
-                return passUp(evt);
+                return up_prot.up(evt);
             }
 
             switch(hdr.type) {
@@ -241,7 +241,7 @@ public abstract class Discovery extends Protocol {
                 rsp_msg.putHeader(getName(), rsp_hdr);
                 if(trace)
                     log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", sending response " + rsp_hdr);
-                passDown(new Event(Event.MSG, rsp_msg));
+                down_prot.down(new Event(Event.MSG, rsp_msg));
                 return null;
 
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
@@ -258,13 +258,13 @@ public abstract class Discovery extends Protocol {
             }
 
         case Event.SET_LOCAL_ADDRESS:
-            passUp(evt);
+            up_prot.up(evt);
             local_addr=(Address)evt.getArg();
             localAddressSet(local_addr);
             break;
 
         default:
-            passUp(evt);            // Pass up to the layer above us
+            up_prot.up(evt);            // Pass up to the layer above us
             break;
         }
 
@@ -278,7 +278,7 @@ public abstract class Discovery extends Protocol {
      * the layer may need to add a header to it (or do nothing at all) before sending it down
      * the stack using <code>PassDown</code>. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>passUp()</code>.
+     * a new response event back up the stack using <code>up_prot.up()</code>.
      * The PING protocol is interested in several different down events,
      * Event.FIND_INITIAL_MBRS - sent by the GMS layer and expecting a GET_MBRS_OK
      * Event.TMP_VIEW and Event.VIEW_CHANGE - a view change event
@@ -304,25 +304,25 @@ public abstract class Discovery extends Protocol {
                     members.addAll(tmp);
                 }
             }
-            return passDown(evt);
+            return down_prot.down(evt);
 
         case Event.BECOME_SERVER: // called after client has joined and is fully working group member
-            passDown(evt);
+            down_prot.down(evt);
             is_server=true;
             return null;
 
         case Event.CONNECT:
             group_addr=(String)evt.getArg();
-            Object ret=passDown(evt);
+            Object ret=down_prot.down(evt);
             handleConnect();
             return ret;
 
         case Event.DISCONNECT:
             handleDisconnect();
-            return passDown(evt);
+            return down_prot.down(evt);
 
         default:
-            return passDown(evt);          // Pass on to the layer below us
+            return down_prot.down(evt);          // Pass on to the layer below us
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.19 2007/01/11 13:05:40 belaban Exp $
+// $Id: PBCAST.java,v 1.20 2007/01/12 14:21:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -135,7 +135,7 @@ public class PBCAST extends Protocol implements Runnable {
                 break;  // pass up
         }
 
-        return passUp(evt);  // pass up by default
+        return up_prot.up(evt);  // pass up by default
     }
 
 
@@ -181,7 +181,7 @@ public class PBCAST extends Protocol implements Runnable {
                 return null;  // don't pass down
 
             case Event.GET_DIGEST:  // don't pass down
-                passUp(new Event(Event.GET_DIGEST_OK, getDigest()));
+                up_prot.up(new Event(Event.GET_DIGEST_OK, getDigest()));
                 return null;
 
             case Event.GET_DIGEST_STATE:  // don't pass down
@@ -243,7 +243,7 @@ public class PBCAST extends Protocol implements Runnable {
                 break;
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -374,7 +374,7 @@ public class PBCAST extends Protocol implements Runnable {
             // Try to remove as many message as possible and send them up the stack
             while((tmpmsg=win.remove()) != null) {
                 tmpmsg.getHeader(getName()); // need to remove header again, so upper protocols don't get confused
-                passUp(new Event(Event.MSG, tmpmsg));
+                up_prot.up(new Event(Event.MSG, tmpmsg));
             }
 
             // Garbage collect messages if singleton member (because then we won't receive any gossips, triggering
@@ -546,7 +546,7 @@ public class PBCAST extends Protocol implements Runnable {
                 if(log.isInfoEnabled()) log.info("(from " + local_addr +
                            ") multicasting gossip " + gossip.shortForm() + " to all members");
 
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
         else {
             subset_mbrs=Util.pickSubset(current_mbrs, subset);
@@ -563,7 +563,7 @@ public class PBCAST extends Protocol implements Runnable {
                     if(log.isInfoEnabled()) log.info("(from " + local_addr +
                                ") sending gossip " + gossip.shortForm() + " to " + subset_mbrs);
 
-                passDown(new Event(Event.MSG, msg));
+                down_prot.down(new Event(Event.MSG, msg));
             }
         }
 
@@ -633,7 +633,7 @@ public class PBCAST extends Protocol implements Runnable {
            This ensures that we don't suspect them */
         seen_list=gossip.getSeenList();
         if(seen_list.size() > 0)
-            passDown(new Event(Event.HEARD_FROM, seen_list.clone()));
+            down_prot.down(new Event(Event.HEARD_FROM, seen_list.clone()));
 
 
 
@@ -695,7 +695,7 @@ public class PBCAST extends Protocol implements Runnable {
                 if(log.isInfoEnabled()) log.info("sending XMIT_REQ to " + gossip.sender);
             msg=new Message(gossip.sender, null, null);
             msg.putHeader(getName(), hdr);
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
 
 
@@ -722,7 +722,7 @@ public class PBCAST extends Protocol implements Runnable {
             msg=new Message(dest, null, null);
             hdr=new PbcastHeader(gossip.copy(), PbcastHeader.GOSSIP);
             msg.putHeader(getName(), hdr);
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
@@ -768,7 +768,7 @@ public class PBCAST extends Protocol implements Runnable {
             // create a msg with the List of xmit_msgs as contents, add header
             msg=new Message(requester, null, xmit_msgs);
             msg.putHeader(getName(), new PbcastHeader(PbcastHeader.XMIT_RSP));
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
@@ -859,7 +859,7 @@ public class PBCAST extends Protocol implements Runnable {
                                                                " is not member of " + members + " ! Telling it to leave group");
                 shun_msg=new Message(invalid_gossiper, null, null);
                 shun_msg.putHeader(getName(), new PbcastHeader(PbcastHeader.NOT_MEMBER));
-                passDown(new Event(Event.MSG, shun_msg));
+                down_prot.down(new Event(Event.MSG, shun_msg));
                 invalid_gossipers.remove(invalid_gossiper);
             }
             else {
@@ -988,7 +988,7 @@ public class PBCAST extends Protocol implements Runnable {
                         case PbcastHeader.NOT_MEMBER:  // we are shunned
                             if(shun) {
                                 if(log.isInfoEnabled()) log.info("I am being shunned. Will leave and re-join");
-                                passUp(new Event(Event.EXIT));
+                                up_prot.up(new Event(Event.EXIT));
                             }
                             break;
 

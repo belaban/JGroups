@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.17 2006/12/12 10:17:43 belaban Exp $
+// $Id: AUTOCONF.java,v 1.18 2007/01/12 14:19:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -48,8 +48,8 @@ public class AUTOCONF extends Protocol {
     public void start() throws Exception {
         if(config != null && config.size() > 0) {
             Event config_evt=new Event(Event.CONFIG, config);
-            passDown(config_evt);
-            passUp(config_evt);
+            down_prot.down(config_evt);
+            up_prot.up(config_evt);
         }
     }
 

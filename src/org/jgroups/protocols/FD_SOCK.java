@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.57 2007/01/12 13:33:26 belaban Exp $
+// $Id: FD_SOCK.java,v 1.58 2007/01/12 14:19:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -216,8 +216,8 @@ public class FD_SOCK extends Protocol implements Runnable {
                                 log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT message");
                             continue;
                         }
-                        passUp(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
-                        passDown(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
+                        up_prot.up(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
+                        down_prot.down(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
                     }
                 }
                 else
@@ -275,7 +275,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 msg=new Message(hdr.mbr, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
-                passDown(new Event(Event.MSG, msg));
+                down_prot.down(new Event(Event.MSG, msg));
                 break;
 
             case FdHeader.GET_CACHE_RSP:
@@ -296,7 +296,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
         }
 
-        return passUp(evt);                                        // pass up to the layer above us
+        return up_prot.up(evt);                                        // pass up to the layer above us
     }
 
 
@@ -308,7 +308,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
 
             case Event.CONNECT:
-                Object ret=passDown(evt);
+                Object ret=down_prot.down(evt);
                 group_name=(String)evt.getArg();
                 srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
@@ -345,7 +345,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.VIEW_CHANGE:
                 View v=(View) evt.getArg();
                 Vector new_mbrs=v.getMembers();
-                passDown(evt);
+                down_prot.down(evt);
 
                 synchronized(this) {
                     members.removeAllElements();
@@ -401,10 +401,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return null; // we already passed down the event above
 
             default:
-                return passDown(evt);
+                return down_prot.down(evt);
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -671,7 +671,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 msg=new Message(coord, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
-                passDown(new Event(Event.MSG, msg));
+                down_prot.down(new Event(Event.MSG, msg));
                 result=(Hashtable) get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
                     cache.putAll(result); // replace all entries (there should be none !) in cache with the new values
@@ -713,7 +713,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         suspect_msg=new Message();
         suspect_msg.setFlag(Message.OOB);
         suspect_msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, suspect_msg));
+        down_prot.down(new Event(Event.MSG, suspect_msg));
 
         // 2. Add to broadcast task and start latter (if not yet running). The task will end when
         //    suspected members are removed from the membership
@@ -738,7 +738,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbr=mbr;
         hdr.sock_addr=addr;
         msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
 
@@ -774,7 +774,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, ping_addr_req));
+        down_prot.down(new Event(Event.MSG, ping_addr_req));
         if(!running) return null;
         ret=(IpAddress)ping_addr_promise.getResult(3000);
         if(ret != null) {
@@ -788,7 +788,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, ping_addr_req));
+        down_prot.down(new Event(Event.MSG, ping_addr_req));
         ret=(IpAddress) ping_addr_promise.getResult(3000);
         return ret;
     }
@@ -1249,7 +1249,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.setFlag(Message.OOB);
             suspect_msg.putHeader(name, hdr);
-            passDown(new Event(Event.MSG, suspect_msg));
+            down_prot.down(new Event(Event.MSG, suspect_msg));
             if(log.isDebugEnabled()) log.debug("task done");
         }
     }

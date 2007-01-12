@@ -199,7 +199,7 @@ public abstract class BasicTCP extends TP {
             if(suspect_on_send_failure && members.contains(dest)) {
                 if(!suspected_mbrs.contains(dest)) {
                     suspected_mbrs.add(dest);
-                    passUp(new Event(Event.SUSPECT, dest));
+                    up_prot.up(new Event(Event.SUSPECT, dest));
                 }
             }
         }

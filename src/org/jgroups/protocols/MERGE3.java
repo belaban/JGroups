@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.14 2007/01/11 13:23:14 belaban Exp $
+// $Id: MERGE3.java,v 1.15 2007/01/12 14:20:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -124,14 +124,14 @@ public class MERGE3 extends Protocol {
                     return null;
                 }
                 else
-                    return passUp(evt);
+                    return up_prot.up(evt);
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 break;
         }
 
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -142,7 +142,7 @@ public class MERGE3 extends Protocol {
         switch(evt.getType()) {
 
             case Event.VIEW_CHANGE:
-                passDown(evt);
+                down_prot.down(evt);
                 tmp=((View)evt.getArg()).getMembers();
                 mbrs.clear();
                 mbrs.addAll(tmp);
@@ -161,7 +161,7 @@ public class MERGE3 extends Protocol {
                 }
                 break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -200,7 +200,7 @@ public class MERGE3 extends Protocol {
         Message coord_announcement=new Message(); // multicast to all
         CoordAnnouncement hdr=new CoordAnnouncement(coord);
         coord_announcement.putHeader(getName(), hdr);
-        passDown(new Event(Event.MSG, coord_announcement));
+        down_prot.down(new Event(Event.MSG, coord_announcement));
     }
 
     void processAnnouncements() {
@@ -213,14 +213,14 @@ public class MERGE3 extends Protocol {
                 if(use_separate_thread) {
                     Thread merge_notifier=new Thread(Util.getGlobalThreadGroup(), "merge notifier thread") {
                         public void run() {
-                            passUp(evt);
+                            up_prot.up(evt);
                         }
                     };
                     merge_notifier.setDaemon(true);
                     merge_notifier.start();
                 }
                 else {
-                    passUp(evt);
+                    up_prot.up(evt);
                 }
             }
             announcements.clear();

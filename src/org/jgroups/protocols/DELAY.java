@@ -1,4 +1,4 @@
-// $Id: DELAY.java,v 1.9 2007/01/11 13:14:36 belaban Exp $
+// $Id: DELAY.java,v 1.10 2007/01/12 14:19:35 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -64,7 +64,7 @@ public class DELAY extends Protocol {
                 break;
         }
 
-        return passUp(evt);            // Pass up to the layer above us
+        return up_prot.up(evt);            // Pass up to the layer above us
     }
 
 
@@ -80,7 +80,7 @@ public class DELAY extends Protocol {
                 break;
         }
 
-        return passDown(evt);          // Pass on to the layer below us
+        return down_prot.down(evt);          // Pass on to the layer below us
     }
 
 

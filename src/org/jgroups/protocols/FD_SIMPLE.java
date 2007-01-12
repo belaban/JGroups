@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.13 2007/01/11 16:22:18 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.14 2007/01/12 14:20:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -22,7 +22,7 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -108,7 +108,7 @@ public class FD_SIMPLE extends Protocol {
                     case FdHeader.ARE_YOU_ALIVE:                    // are-you-alive request, send i-am-alive response
                         rsp=new Message(sender);
                         rsp.putHeader(name, new FdHeader(FdHeader.I_AM_ALIVE));
-                        passDown(new Event(Event.MSG, rsp));
+                        down_prot.down(new Event(Event.MSG, rsp));
                         return null; // don't pass up further
 
                     case FdHeader.I_AM_ALIVE:
@@ -125,7 +125,7 @@ public class FD_SIMPLE extends Protocol {
                 }
         }
 
-        return passUp(evt);  // pass up to the layer above us
+        return up_prot.up(evt);  // pass up to the layer above us
     }
 
 
@@ -165,7 +165,7 @@ public class FD_SIMPLE extends Protocol {
                 }
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
     
 
@@ -331,7 +331,7 @@ public class FD_SIMPLE extends Protocol {
             promise.reset();
             msg=new Message(dest);
             msg.putHeader(name, new FdHeader(FdHeader.ARE_YOU_ALIVE));
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
 
             promise.getResult(timeout);
             num_missed_hbs=incrementCounter(dest);
@@ -340,7 +340,7 @@ public class FD_SIMPLE extends Protocol {
                 if(log.isInfoEnabled())
                     log.info("missed " + num_missed_hbs + " from " + dest +
                             ", suspecting member");
-                passUp(new Event(Event.SUSPECT, dest));
+                up_prot.up(new Event(Event.SUSPECT, dest));
             }
         }
     }

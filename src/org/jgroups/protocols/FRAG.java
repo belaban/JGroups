@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.35 2007/01/11 16:21:54 belaban Exp $
+ * @version $Id: FRAG.java,v 1.36 2007/01/12 14:19:30 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -129,13 +129,13 @@ public class FRAG extends Protocol {
             break;
 
         case Event.CONFIG:
-            Object ret=passDown(evt);
+            Object ret=down_prot.down(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return ret;
         }
 
-        return passDown(evt);  // Pass on to the layer below us
+        return down_prot.down(evt);  // Pass on to the layer below us
     }
 
 
@@ -158,13 +158,13 @@ public class FRAG extends Protocol {
             break;
 
         case Event.CONFIG:
-            Object ret=passUp(evt);
+            Object ret=up_prot.up(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return ret;
         }
 
-        return passUp(evt); // Pass up to the layer above us by default
+        return up_prot.up(evt); // Pass up to the layer above us by default
     }
 
 
@@ -219,7 +219,7 @@ public class FRAG extends Protocol {
                 hdr=new FragHeader(id, i, num_frags);
                 frag_msg.putHeader(name, hdr);
                 evt=new Event(Event.MSG, frag_msg);
-                passDown(evt);
+                down_prot.down(evt);
             }
         }
         catch(Exception e) {
@@ -267,7 +267,7 @@ public class FRAG extends Protocol {
                 if(trace) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 num_received_msgs++;
-                passUp(new Event(Event.MSG, assembled_msg));
+                up_prot.up(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
                 log.error("failed unfragmenting a message", e);

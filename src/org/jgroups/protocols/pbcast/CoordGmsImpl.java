@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.57 2007/01/04 21:46:02 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.58 2007/01/12 14:21:19 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -168,7 +168,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
-        gms.passDown(new Event(Event.ENABLE_UNICASTS_TO, sender));
+        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, sender));
         sendMergeResponse(sender, view, digest);
     }
 
@@ -348,7 +348,7 @@ public class CoordGmsImpl extends GmsImpl {
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
             // of those messages if he misses them
             if(joining_mbrs) {
-                gms.passDown(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
+                gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
                 Digest tmp=gms.getDigest(); // get existing digest
                 MutableDigest join_digest=null;
                 if(tmp == null)
@@ -369,7 +369,7 @@ public class CoordGmsImpl extends GmsImpl {
             // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
             // Check NAKACK's TMP_VIEW handling for details
             if(new_view != null)
-                gms.passDown(new Event(Event.TMP_VIEW, new_view));
+                gms.getDownProtocol().down(new Event(Event.TMP_VIEW, new_view));
 
             Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;         
             if(gms.use_flush) {
@@ -402,11 +402,11 @@ public class CoordGmsImpl extends GmsImpl {
         }
         finally {
             if(joining_mbrs)
-                gms.passDown(new Event(Event.RESUME_STABLE));
+                gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
             if(gms.use_flush)
                 gms.stopFlush(new_view);
             if(leaving) {
-                gms.passUp(new Event(Event.DISCONNECT_OK));
+                gms.getUpProtocol().up(new Event(Event.DISCONNECT_OK));
                 gms.initState(); // in case connect() is called again
             }
         }
@@ -470,7 +470,7 @@ public class CoordGmsImpl extends GmsImpl {
         Message m=new Message(dest, null, null);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
         m.putHeader(gms.getName(), hdr);
-        gms.passDown(new Event(Event.MSG, m));
+        gms.getDownProtocol().down(new Event(Event.MSG, m));
     }
 
     private void sendLeaveResponses(Collection c) {
@@ -478,7 +478,7 @@ public class CoordGmsImpl extends GmsImpl {
             Message msg=new Message((Address)i.next(), null, null); // send an ack to the leaving member
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
             msg.putHeader(gms.getName(), hdr);
-            gms.passDown(new Event(Event.MSG, msg));
+            gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
     }
 
@@ -519,14 +519,14 @@ public class CoordGmsImpl extends GmsImpl {
                 }
 
                 // this allows UNICAST to remove coord from previous_members in case of a merge
-                gms.passDown(new Event(Event.ENABLE_UNICASTS_TO, coord));
+                gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
                 msg=new Message(coord, null, null);
                 hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=merge_id;
                 msg.putHeader(gms.getName(), hdr);
-                gms.passDown(new Event(Event.MSG, msg));
+                gms.getDownProtocol().down(new Event(Event.MSG, msg));
             }
 
             // wait until num_rsps_expected >= num_rsps or timeout elapsed
@@ -686,7 +686,7 @@ public class CoordGmsImpl extends GmsImpl {
             hdr.my_digest=d;
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
-            gms.passDown(new Event(Event.MSG, msg));
+            gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
     }
 
@@ -701,7 +701,7 @@ public class CoordGmsImpl extends GmsImpl {
         hdr.my_digest=digest;
         msg.putHeader(gms.getName(), hdr);
         if(log.isDebugEnabled()) log.debug("response=" + hdr);
-        gms.passDown(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
 
@@ -720,7 +720,7 @@ public class CoordGmsImpl extends GmsImpl {
             hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
-            gms.passDown(new Event(Event.MSG, msg));
+            gms.getDownProtocol().down(new Event(Event.MSG, msg));
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.19 2007/01/12 13:33:34 belaban Exp $
+// $Id: SMACK.java,v 1.20 2007/01/12 14:19:48 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -155,7 +155,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         Message ack_msg=new Message(sender);
 
                         ack_msg.putHeader(name, new SmackHeader(SmackHeader.ACK, hdr.seqno));
-                        passDown(new Event(Event.MSG, ack_msg));
+                        down_prot.down(new Event(Event.MSG, ack_msg));
 
                         tmp_seqno=new Long(hdr.seqno);
 
@@ -172,7 +172,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
                         // http://jira.jboss.com/jira/browse/JGRP-379
                         if(msg.isFlagSet(Message.OOB) && added) {
-                            passUp(new Event(Event.MSG, msg));
+                            up_prot.up(new Event(Event.MSG, msg));
                         }
 
                         // now remove as many messages as possible
@@ -182,7 +182,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                                 continue;
                             }
 
-                            passUp(new Event(Event.MSG, tmp_msg));
+                            up_prot.up(new Event(Event.MSG, tmp_msg));
                         }
                         return null;
 
@@ -201,7 +201,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         if(!containsMember(sender)) {
                             Message join_rsp=new Message(sender);
                             join_rsp.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                            passDown(new Event(Event.MSG, join_rsp));
+                            down_prot.down(new Event(Event.MSG, join_rsp));
                         }
                         addMember(sender);
                         return null;
@@ -218,7 +218,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
         }
 
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -230,12 +230,12 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
             case Event.DISCONNECT:
                 leave_msg=new Message();
                 leave_msg.putHeader(name, new SmackHeader(SmackHeader.LEAVE_ANNOUNCEMENT, -1));
-                passDown(new Event(Event.MSG, leave_msg));
-                // passUp(new Event(Event.DISCONNECT_OK));
+                down_prot.down(new Event(Event.MSG, leave_msg));
+                // up_prot.up(new Event(Event.DISCONNECT_OK));
                 break;
 
             case Event.CONNECT:
-                //passUp(new Event(Event.CONNECT_OK));
+                //up_prot.up(new Event(Event.CONNECT_OK));
 
                 // Do not send JOIN_ANOUNCEMENT here, don't know yet if the transport is OK.
                 // Send it later when handling CONNECT_OK from below
@@ -244,16 +244,16 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 //                 // send join announcement
 //                 Message join_msg=new Message();
 //                 join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-//                 passDown(new Event(Event.MSG, join_msg));
+//                 down_prot.down(new Event(Event.MSG, join_msg));
 //                 return;
 
-                Object ret=passDown(evt);
+                Object ret=down_prot.down(evt);
                 sender_win=new AckMcastSenderWindow(this, timeout);
 
                 // send join announcement
                 Message join_msg=new Message();
                 join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                passDown(new Event(Event.MSG, join_msg));
+                down_prot.down(new Event(Event.MSG, join_msg));
                 return ret;
 
 
@@ -270,7 +270,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -281,7 +281,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
         msg.setDest(dest);
 
             if(log.isInfoEnabled()) log.info(seqno + ", msg=" + msg);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
     /* -------------------- End of Interface AckMcastSenderWindow.RetransmitCommand ---------------- */
@@ -361,8 +361,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 if(trace)
                     log.trace("added " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
-                passUp(new Event(Event.VIEW_CHANGE, new_view));
-                passDown(new Event(Event.VIEW_CHANGE, new_view));
+                up_prot.up(new Event(Event.VIEW_CHANGE, new_view));
+                down_prot.down(new Event(Event.VIEW_CHANGE, new_view));
             }
         }
     }
@@ -377,8 +377,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 if(trace)
                     log.trace("removed " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
-                passUp(new Event(Event.VIEW_CHANGE, new_view));
-                passDown(new Event(Event.VIEW_CHANGE, new_view));
+                up_prot.up(new Event(Event.VIEW_CHANGE, new_view));
+                down_prot.down(new Event(Event.VIEW_CHANGE, new_view));
                 if(sender_win != null)
                     sender_win.remove(mbr); // causes retransmissions to mbr to stop
             }

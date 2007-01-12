@@ -548,11 +548,10 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		private void storeDown(Event evt){
 			downMessages.put("message"+counter++,evt);
 		}
-        public boolean up(Event evt)
+        public void up(Event evt)
         {
             storeUp(evt);
             System.out.println("Up:"+evt.toString());
-            return true;
         }
 
 		/* (non-Javadoc)
@@ -565,35 +564,29 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 
 
 		/* (non-Javadoc)
-		 * @see org.jgroups.stack.ProtocolObserver#passUp(org.jgroups.Event)
+		 * @see org.jgroups.stack.ProtocolObserver#up_prot.up(org.jgroups.Event)
 		 */
-		public boolean passUp(Event evt)
+		public void passUp(Event evt)
 		{
 			storeUp(evt);
 			System.out.println("PassUp:"+evt.toString());
-			
-			return false;
 		}
 
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#down(org.jgroups.Event, int)
 		 */
-		public boolean down(Event evt)
+		public void down(Event evt)
 		{
 			System.out.println("down:"+evt.toString());
-			
-			return false;
 		}
 
 		/* (non-Javadoc)
-		 * @see org.jgroups.stack.ProtocolObserver#passDown(org.jgroups.Event)
+		 * @see org.jgroups.stack.ProtocolObserver#down_prot.down(org.jgroups.Event)
 		 */
-		public boolean passDown(Event evt)
+		public void passDown(Event evt)
 		{
 			storeDown(evt);
-			System.out.println("passdown:"+evt.toString());
-			
-			return false;
+			System.out.println("passDown:"+evt.toString());
 		}
 		
 		/**

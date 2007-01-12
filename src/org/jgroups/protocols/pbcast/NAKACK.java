@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.100 2007/01/11 13:05:23 belaban Exp $
+// $Id: NAKACK.java,v 1.101 2007/01/12 14:21:23 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -384,7 +384,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /**
-     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use <code>passDown()</code> in this
+     * <b>Callback</b>. Called by superclass when event may be handled.<p> <b>Do not use <code>down_prot.down()</code> in this
      * method as the event is passed down by default by the superclass after this method returns !</b>
      */
     public Object down(Event evt) {
@@ -423,7 +423,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return null;
 
             case Event.CONFIG:
-                Object retval=passDown(evt);
+                Object retval=down_prot.down(evt);
                 if(log.isDebugEnabled())
                     log.debug("received CONFIG event: " + evt.getArg());
                 handleConfigEvent((HashMap)evt.getArg());
@@ -462,7 +462,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 break;
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -534,14 +534,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             break;
 
         case Event.CONFIG:
-            passUp(evt);
+            up_prot.up(evt);
             if(log.isDebugEnabled()) {
                 log.debug("received CONFIG event: " + evt.getArg());
             }
             handleConfigEvent((HashMap)evt.getArg());
             return null;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -580,10 +580,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        try { // moved passDown() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+        try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
             if(trace)
                 log.trace("sending " + local_addr + "#" + msg_id);
-            passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
+            down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
         }
         catch(Throwable t) { // eat the exception, don't pass it up the stack
             if(warn) {
@@ -638,7 +638,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
         if(msg.isFlagSet(Message.OOB) && added) {
-            passUp(new Event(Event.MSG, msg));
+            up_prot.up(new Event(Event.MSG, msg));
         }
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
@@ -657,7 +657,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
                 // Changed by bela Jan 29 2003: not needed (see above)
                 //msg_to_deliver.removeHeader(getName());
-                passUp(new Event(Event.MSG, msg_to_deliver));
+                up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
         }
     }
@@ -792,7 +792,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             // too much
             // msg.setFlag(Message.OOB);
             msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
         catch(IOException ex) {
             log.error("failed marshalling xmit list", ex);
@@ -1202,7 +1202,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(trace)
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
-        passDown(new Event(Event.MSG, retransmit_msg));
+        down_prot.down(new Event(Event.MSG, retransmit_msg));
         if(stats) {
             xmit_reqs_sent+=last_seqno - first_seqno +1;
             updateStats(sent, dest, 1, 0, 0);

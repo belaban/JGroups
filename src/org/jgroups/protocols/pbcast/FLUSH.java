@@ -175,8 +175,8 @@ public class FLUSH extends Protocol
       {
          Map map = new HashMap();
          map.put("flush_timeout", new Long(timeout));
-         passUp(new Event(Event.CONFIG, map));
-         passDown(new Event(Event.CONFIG, map));
+         up_prot.up(new Event(Event.CONFIG, map));
+         down_prot.down(new Event(Event.CONFIG, map));
       }
    }
 
@@ -184,8 +184,8 @@ public class FLUSH extends Protocol
    {
       Map map = new HashMap();
       map.put("flush_supported", Boolean.TRUE);
-      passUp(new Event(Event.CONFIG, map));
-      passDown(new Event(Event.CONFIG, map));
+      up_prot.up(new Event(Event.CONFIG, map));
+      down_prot.down(new Event(Event.CONFIG, map));
 
       synchronized(sharedLock)
       {
@@ -293,7 +293,7 @@ public class FLUSH extends Protocol
             blockok_promise.setResult(Boolean.TRUE);
             return null;
       }
-      return passDown(evt);
+      return down_prot.down(evt);
    }
 
    private void blockMessageDuringFlush()
@@ -329,8 +329,8 @@ public class FLUSH extends Protocol
       if(shouldSuspendByItself)
       {
          log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");
-         passUp(new Event(Event.SUSPEND_OK));
-         passDown(new Event(Event.SUSPEND_OK));
+         up_prot.up(new Event(Event.SUSPEND_OK));
+         down_prot.down(new Event(Event.SUSPEND_OK));
       }
    }
 
@@ -410,8 +410,8 @@ public class FLUSH extends Protocol
                {
                   //abort current flush  
                   flushPhase.release();
-                  passUp(new Event(Event.SUSPEND_FAILED));
-                  passDown(new Event(Event.SUSPEND_FAILED));
+                  up_prot.up(new Event(Event.SUSPEND_FAILED));
+                  down_prot.down(new Event(Event.SUSPEND_FAILED));
 
                }
                else if (isCurrentFlushMessage(fh))
@@ -447,7 +447,7 @@ public class FLUSH extends Protocol
             boolean firstView = onViewChange(newView);
             boolean singletonMember = newView.size()==1 && newView.containsMember(localAddress);
             if(firstView && singletonMember){
-               passUp(evt);
+               up_prot.up(evt);
                synchronized (blockMutex)
                {
                   isBlockingFlushDown = false;
@@ -456,7 +456,7 @@ public class FLUSH extends Protocol
                if (log.isDebugEnabled())
                   log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
                
-               passUp(new Event(Event.UNBLOCK));
+               up_prot.up(new Event(Event.UNBLOCK));
                return null;
             }
             break;
@@ -479,7 +479,7 @@ public class FLUSH extends Protocol
 
       }
 
-      return passUp(evt);
+      return up_prot.up(evt);
    }
 
    public Vector providedDownServices()
@@ -505,8 +505,8 @@ public class FLUSH extends Protocol
       else
       {
          flushPhase.release();
-         passUp(new Event(Event.SUSPEND_FAILED));
-         passDown(new Event(Event.SUSPEND_FAILED));
+         up_prot.up(new Event(Event.SUSPEND_FAILED));
+         down_prot.down(new Event(Event.SUSPEND_FAILED));
       }
    }
    
@@ -514,7 +514,7 @@ public class FLUSH extends Protocol
    {
       Message reject = new Message(flushRequester, localAddress, null);
       reject.putHeader(getName(), new FlushHeader(FlushHeader.ABORT_FLUSH, viewId));
-      passDown(new Event(Event.MSG, reject));
+      down_prot.down(new Event(Event.MSG, reject));
    }
    
    private boolean sendBlockUpToChannel(long btimeout)
@@ -526,7 +526,7 @@ public class FLUSH extends Protocol
       {
          public void run()
          {
-            passUp(new Event(Event.BLOCK));
+            up_prot.up(new Event(Event.BLOCK));
          }
       }, "FLUSH block").start();
       
@@ -613,7 +613,7 @@ public class FLUSH extends Protocol
       //ack this STOP_FLUSH
       Message msg = new Message(null, localAddress, null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK,currentViewId()));      
-      passDown(new Event(Event.MSG, msg));
+      down_prot.down(new Event(Event.MSG, msg));
       
       if (log.isDebugEnabled())
          log.debug("Received STOP_FLUSH and sent STOP_FLUSH_OK from " + localAddress); 
@@ -640,12 +640,12 @@ public class FLUSH extends Protocol
       }
       if (participantsInFlush.isEmpty())
       {
-         passUp(new Event(Event.SUSPEND_OK));
-         passDown(new Event(Event.SUSPEND_OK));
+         up_prot.up(new Event(Event.SUSPEND_OK));
+         down_prot.down(new Event(Event.SUSPEND_OK));
       }
       else
       {
-         passDown(new Event(Event.MSG, msg));
+         down_prot.down(new Event(Event.MSG, msg));
          if (log.isDebugEnabled())
             log.debug("Received SUSPEND at " + localAddress + ", sent START_FLUSH to " + participantsInFlush);
       }
@@ -656,7 +656,7 @@ public class FLUSH extends Protocol
 	  long viewID = currentViewId();	
       Message msg = new Message(null, localAddress, null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH,viewID));
-      passDown(new Event(Event.MSG, msg));
+      down_prot.down(new Event(Event.MSG, msg));
       if (log.isDebugEnabled())
          log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
    }
@@ -680,7 +680,7 @@ public class FLUSH extends Protocol
       }
       Message msg = new Message(null, localAddress, null);
       msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK, fh.viewID));
-      passDown(new Event(Event.MSG, msg));
+      down_prot.down(new Event(Event.MSG, msg));
       if (log.isDebugEnabled())
          log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
    }
@@ -711,7 +711,7 @@ public class FLUSH extends Protocol
             isBlockingFlushDown = true;
          }
          m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
-         passDown(new Event(Event.MSG, m));
+         down_prot.down(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
             log.debug(localAddress + " is blocking FLUSH.down(). Sent FLUSH_COMPLETED message to " + flushCoordinator);
       }
@@ -756,7 +756,7 @@ public class FLUSH extends Protocol
             isBlockingFlushDown = false;
             blockMutex.notifyAll();
          }
-         passUp(new Event(Event.UNBLOCK));         
+         up_prot.up(new Event(Event.UNBLOCK));
       }     
    }
 
@@ -778,8 +778,8 @@ public class FLUSH extends Protocol
       {
          //needed for jmx operation startFlush(timeout);
          flush_promise.setResult(Boolean.TRUE);
-         passUp(new Event(Event.SUSPEND_OK));
-         passDown(new Event(Event.SUSPEND_OK));
+         up_prot.up(new Event(Event.SUSPEND_OK));
+         down_prot.down(new Event(Event.SUSPEND_OK));
          if (log.isDebugEnabled())
             log.debug("All FLUSH_COMPLETED received at " + localAddress + " sent SUSPEND_OK down/up");
       }
@@ -804,7 +804,7 @@ public class FLUSH extends Protocol
       if (flushOkCompleted)
       {
          m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
-         passDown(new Event(Event.MSG, m));
+         down_prot.down(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
             log.debug(localAddress + " sent FLUSH_COMPLETED message to " + flushCoordinator);
       }

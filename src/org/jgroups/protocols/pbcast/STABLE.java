@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.57 2007/01/11 13:44:25 belaban Exp $
+// $Id: STABLE.java,v 1.58 2007/01/12 14:21:21 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -231,7 +231,7 @@ public class STABLE extends Protocol {
                         num_bytes_received=0;
 
                         // asks the NAKACK protocol for the current digest,
-                        Digest my_digest=(Digest)passDown(Event.GET_DIGEST_STABLE_EVT);
+                        Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
                         synchronized(latest_local_digest) {
                             latest_local_digest.replace(my_digest);
                         }
@@ -266,7 +266,7 @@ public class STABLE extends Protocol {
             local_addr=(Address)evt.getArg();
             break;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -291,7 +291,7 @@ public class STABLE extends Protocol {
             resume();
             break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -601,7 +601,7 @@ public class STABLE extends Protocol {
             msg.setFlag(Message.OOB);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
@@ -672,7 +672,7 @@ public class STABLE extends Protocol {
         resetDigest(mbrs);
 
         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
-        passDown(new Event(Event.STABLE, d));
+        down_prot.down(new Event(Event.STABLE, d));
     }
 
 
@@ -805,7 +805,7 @@ public class STABLE extends Protocol {
             }
 
             // asks the NAKACK protocol for the current digest
-            Digest my_digest=(Digest)passDown(Event.GET_DIGEST_STABLE_EVT);
+            Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
             if(my_digest == null) {
                 if(warn)
                     log.warn("received null digest, skipped sending of stable message");
@@ -884,7 +884,7 @@ public class STABLE extends Protocol {
                 msg.putHeader(STABLE.name, hdr);
                 if(trace) log.trace("sending stability msg " + d.printHighSeqnos());
                 num_stability_msgs_sent++;
-                passDown(new Event(Event.MSG, msg));
+                down_prot.down(new Event(Event.MSG, msg));
                 d=null;
             }
             stopped=true; // run only once
