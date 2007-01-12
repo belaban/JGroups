@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.85 2007/01/12 13:33:43 belaban Exp $
+ * @version $Id: GMS.java,v 1.86 2007/01/12 14:21:28 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -394,7 +394,7 @@ public class GMS extends Protocol {
 
         ack_collector.reset(vid, members);
         size=ack_collector.size();
-        passDown(new Event(Event.MSG, view_change_msg));
+        down_prot.down(new Event(Event.MSG, view_change_msg));
 
         try {
             ack_collector.waitForAllAcks(view_ack_collection_timeout);
@@ -465,7 +465,7 @@ public class GMS extends Protocol {
                             ", current view is " + view + ")");
                 if(impl != null)
                     impl.handleExit();
-                passUp(new Event(Event.EXIT));
+                up_prot.up(new Event(Event.EXIT));
             }
             else {
                 if(warn) log.warn("I (" + local_addr + ") am not a member of view " + new_view + "; discarding view");
@@ -503,8 +503,8 @@ public class GMS extends Protocol {
             // Send VIEW_CHANGE event up and down the stack:
             Event view_event=new Event(Event.VIEW_CHANGE, new_view.clone());
             // changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
-            passUp(view_event);
-            passDown(view_event); // needed e.g. by failure detector or UDP
+            up_prot.up(view_event);
+            down_prot.down(view_event); // needed e.g. by failure detector or UDP
 
 
             coord=determineCoordinator();
@@ -582,20 +582,20 @@ public class GMS extends Protocol {
 
     /** Send down a SET_DIGEST event */
     public void setDigest(Digest d) {
-        passDown(new Event(Event.SET_DIGEST, d));
+        down_prot.down(new Event(Event.SET_DIGEST, d));
     }
 
 
     /** Send down a MERGE_DIGEST event */
     public void mergeDigest(Digest d) {
-        passDown(new Event(Event.MERGE_DIGEST, d));
+        down_prot.down(new Event(Event.MERGE_DIGEST, d));
     }
 
 
     /** Sends down a GET_DIGEST event and waits for the GET_DIGEST_OK response, or
      timeout, whichever occurs first */
     public Digest getDigest() {
-        return (Digest)passDown(Event.GET_DIGEST_EVT);
+        return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
     boolean startFlush(View new_view,int numberOfAttempts){
@@ -607,7 +607,7 @@ public class GMS extends Protocol {
        }
        else{
          flush_promise.reset();
-         passUp(new Event(Event.SUSPEND, new_view));
+         up_prot.up(new Event(Event.SUSPEND, new_view));
          try{
             Boolean r = (Boolean) flush_promise.getResultWithTimeout(flush_timeout);
             successfulFlush = r.booleanValue();
@@ -642,7 +642,7 @@ public class GMS extends Protocol {
 		if (log.isDebugEnabled()) {
 			log.debug("sending RESUME event");
 		}
-		passUp(new Event(Event.RESUME));
+		up_prot.up(new Event(Event.RESUME));
 	}
 
 
@@ -690,7 +690,7 @@ public class GMS extends Protocol {
                         view_ack.putHeader(name, tmphdr);
                         if(trace)
                             log.trace("sending VIEW_ACK to " + coord);
-                        passDown(new Event(Event.MSG, view_ack));
+                        down_prot.down(new Event(Event.MSG, view_ack));
                         impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
 
@@ -750,7 +750,7 @@ public class GMS extends Protocol {
         }
 
         if(impl.handleUpEvent(evt))
-            return passUp(evt);
+            return up_prot.up(evt);
         return null;
     }
 
@@ -780,7 +780,7 @@ public class GMS extends Protocol {
 
             case Event.CONNECT:
                 Object arg=null;
-                passDown(evt);
+                down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
                 try {
@@ -794,7 +794,7 @@ public class GMS extends Protocol {
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
                 if(!(impl instanceof CoordGmsImpl)) {
-                    passUp(new Event(Event.DISCONNECT_OK));
+                    up_prot.up(new Event(Event.DISCONNECT_OK));
                     initState(); // in case connect() is called again
                 }
                 break;       // pass down
@@ -819,7 +819,7 @@ public class GMS extends Protocol {
                break;
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -1208,7 +1208,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.85 2007/01/12 13:33:43 belaban Exp $
+     * @version $Id: GMS.java,v 1.86 2007/01/12 14:21:28 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

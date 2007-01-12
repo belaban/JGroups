@@ -1,4 +1,4 @@
-// $Id: TRACE.java,v 1.4 2007/01/11 16:50:34 belaban Exp $
+// $Id: TRACE.java,v 1.5 2007/01/12 14:20:24 belaban Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
@@ -18,7 +18,7 @@ public class TRACE extends Protocol {
         System.out.println("---------------- TRACE (received) ----------------------");
         System.out.println(evt);
         System.out.println("--------------------------------------------------------");
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -26,7 +26,7 @@ public class TRACE extends Protocol {
         System.out.println("------------------- TRACE (sent) -----------------------");
         System.out.println(evt);
         System.out.println("--------------------------------------------------------");
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 

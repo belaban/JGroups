@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.12 2007/01/12 14:20:19 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     Thread              t=null;
@@ -98,7 +98,7 @@ public class PingWaiter implements Runnable {
     public void run() {
         Vector responses=findInitialMembers();
         if(parent != null)
-            parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, responses));
+            parent.getUpProtocol().up(new Event(Event.FIND_INITIAL_MBRS_OK, responses));
     }
 
 

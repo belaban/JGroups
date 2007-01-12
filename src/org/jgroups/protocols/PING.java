@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.31 2006/12/11 15:38:56 belaban Exp $
+// $Id: PING.java,v 1.32 2007/01/12 14:20:49 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -164,10 +164,10 @@ public class PING extends Discovery {
                 // Set a temporary membership in the UDP layer, so that the following multicast
                 // will be sent to all of them
                 Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector(gossip_rsps)));
-                passDown(view_event); // needed e.g. by failure detector or UDP
+                down_prot.down(view_event); // needed e.g. by failure detector or UDP
             }
             else {
-                passUp(new Event(Event.FIND_INITIAL_MBRS_OK, null));
+                up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, null));
                 return;
             }
 
@@ -177,7 +177,7 @@ public class PING extends Discovery {
                     msg=new Message(dest, null, null);  // unicast msg
                     msg.setFlag(Message.OOB);
                     msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
-                    passDown(new Event(Event.MSG, msg));
+                    down_prot.down(new Event(Event.MSG, msg));
                 }
             }
 
@@ -198,7 +198,7 @@ public class PING extends Discovery {
                         msg.setDest(h);
                         if(trace)
                             log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                        passDown(new Event(Event.MSG, msg.copy()));
+                        down_prot.down(new Event(Event.MSG, msg.copy()));
                     }
                 }
             }
@@ -214,7 +214,7 @@ public class PING extends Discovery {
     }
 
     void sendMcastDiscoveryRequest(Message discovery_request) {
-        passDown(new Event(Event.MSG, discovery_request));
+        down_prot.down(new Event(Event.MSG, discovery_request));
     }
 
     /* -------------------------- Private methods ---------------------------- */

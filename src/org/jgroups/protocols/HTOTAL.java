@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.6 2007/01/11 16:22:20 belaban Exp $
+// $Id: HTOTAL.java,v 1.7 2007/01/12 14:20:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.6 2007/01/11 16:22:20 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.7 2007/01/12 14:20:16 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -74,7 +74,7 @@ public class HTOTAL extends Protocol {
             }
             break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
     public Object up(Event evt) {
@@ -95,7 +95,7 @@ public class HTOTAL extends Protocol {
             Message copy=msg.copy(false); // do not copy the buffer
             if(use_multipoint_forwarding) {
                 copy.setDest(null);
-                passDown(new Event(Event.MSG, copy));
+                down_prot.down(new Event(Event.MSG, copy));
             }
             else {
                 if(neighbor != null) {
@@ -106,9 +106,9 @@ public class HTOTAL extends Protocol {
             msg.setDest(hdr.dest); // set destination to be the original destination
             msg.setSrc(hdr.src);   // set sender to be the original sender (important for retransmission requests)
 
-            return passUp(evt); // <-- we modify msg directly inside evt
+            return up_prot.up(evt); // <-- we modify msg directly inside evt
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
     private void forwardTo(Address destination, Message msg) {
@@ -121,7 +121,7 @@ public class HTOTAL extends Protocol {
         msg.setDest(destination);
         if(trace)
             log.trace("forwarding message to " + destination + ", hdr=" + hdr);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
     }
 
 

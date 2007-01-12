@@ -67,7 +67,7 @@ public class SHUFFLE extends Protocol implements Runnable {
                 return null;
         }
 
-        return passUp(evt);            // Pass up to the layer above us
+        return up_prot.up(evt);            // Pass up to the layer above us
     }
 
 
@@ -104,7 +104,7 @@ public class SHUFFLE extends Protocol implements Runnable {
         while (messagesHandler != null) {
             if (!messages.isEmpty()) {
                 msg = (Message) messages.remove(rnd(messages.size()));
-                passUp(new Event(Event.MSG,msg));
+                up_prot.up(new Event(Event.MSG,msg));
             }
             if (messages.size() < 5) {
                 try {
@@ -119,7 +119,7 @@ public class SHUFFLE extends Protocol implements Runnable {
         Iterator iter = messages.iterator();
         while (iter.hasNext()) {
             msg = (Message) iter.next();
-            passUp(new Event(Event.MSG,msg));
+            up_prot.up(new Event(Event.MSG,msg));
         }
     }
 

@@ -91,8 +91,8 @@ public class AUTH extends Protocol{
      * (e.g. removing headers from a MSG event type, or updating the internal membership list
      * when receiving a VIEW_CHANGE event).
      * Finally the event is either a) discarded, or b) an event is sent down
-     * the stack using <code>passDown()</code> or c) the event (or another event) is sent up
-     * the stack using <code>passUp()</code>.
+     * the stack using <code>down_prot.down()</code> or c) the event (or another event) is sent up
+     * the stack using <code>up_prot.up()</code>.
      */
     public Object up(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
@@ -113,34 +113,34 @@ public class AUTH extends Protocol{
                         if(log.isDebugEnabled()){
                             log.debug("AUTH passing up event");
                         }
-                        passUp(evt);
+                        up_prot.up(evt);
                     }else{
                         //invalid token
                         if(log.isWarnEnabled()){
                             log.warn("AUTH failed to validate AuthHeader token");
                         }
-                        passDown(createFailureEvent(msg.getSrc(), "Authentication failed"));
+                        down_prot.down(createFailureEvent(msg.getSrc(), "Authentication failed"));
                     }
                 }else{
                     //Invalid AUTH Header - need to send failure message
                     if(log.isWarnEnabled()){
                         log.warn("AUTH failed to get valid AuthHeader from Message");
                     }
-                    passDown(createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
+                    down_prot.down(createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
                 }
             }else{
                 if(log.isDebugEnabled()){
                     log.debug("No AUTH Header Found");
                 }
                 //should be a failure
-                passDown(createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
+                down_prot.down(createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
             }
         }else{
             //if debug
             if(log.isDebugEnabled()){
                 log.debug("Message not a JOIN_REQ - ignoring it");
             }
-            return passUp(evt);
+            return up_prot.up(evt);
         }
         return null;
     }
@@ -149,9 +149,9 @@ public class AUTH extends Protocol{
      * An event is to be sent down the stack. The layer may want to examine its type and perform
      * some action on it, depending on the event's type. If the event is a message MSG, then
      * the layer may need to add a header to it (or do nothing at all) before sending it down
-     * the stack using <code>passDown()</code>. In case of a GET_ADDRESS event (which tries to
+     * the stack using <code>down_prot.down()</code>. In case of a GET_ADDRESS event (which tries to
      * retrieve the stack's address from one of the bottom layers), the layer may need to send
-     * a new response event back up the stack using <code>passUp()</code>.
+     * a new response event back up the stack using <code>up_prot.up()</code>.
      */
     public Object down(Event evt) {
         GMS.GmsHeader hdr = isJoinMessage(evt);
@@ -176,7 +176,7 @@ public class AUTH extends Protocol{
             }
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
     /**

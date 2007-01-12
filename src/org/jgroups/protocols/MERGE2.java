@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.35 2007/01/11 16:51:30 belaban Exp $
+// $Id: MERGE2.java,v 1.36 2007/01/12 14:20:55 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -135,14 +135,14 @@ public class MERGE2 extends Protocol {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
-                return passUp(evt);
+                return up_prot.up(evt);
 
             case Event.FIND_INITIAL_MBRS_OK:
                 find_promise.setResult(evt.getArg());
-                return passUp(evt); // could be needed by GMS
+                return up_prot.up(evt); // could be needed by GMS
 
             default:
-                return passUp(evt);            // Pass up to the layer above us
+                return up_prot.up(evt);            // Pass up to the layer above us
         }
     }
 
@@ -152,14 +152,14 @@ public class MERGE2 extends Protocol {
 
             case Event.CONNECT:
                 group_name=(String)evt.getArg();
-                return passDown(evt);
+                return down_prot.down(evt);
 
             case Event.DISCONNECT:
                 group_name=null;
-                return passDown(evt);
+                return down_prot.down(evt);
 
             case Event.VIEW_CHANGE:
-                Object ret=passDown(evt);
+                Object ret=down_prot.down(evt);
                 Vector mbrs=((View)evt.getArg()).getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     stopTask();
@@ -181,7 +181,7 @@ public class MERGE2 extends Protocol {
                 return ret;
 
             default:
-                return passDown(evt);          // Pass on to the layer below us
+                return down_prot.down(evt);          // Pass on to the layer below us
         }
     }
 
@@ -275,7 +275,7 @@ public class MERGE2 extends Protocol {
                     if(use_separate_thread) {
                         Thread merge_notifier=new Thread() {
                             public void run() {
-                                passUp(evt);
+                                up_prot.up(evt);
                             }
                         };
                         merge_notifier.setDaemon(true);
@@ -283,7 +283,7 @@ public class MERGE2 extends Protocol {
                         merge_notifier.start();
                     }
                     else {
-                        passUp(evt);
+                        up_prot.up(evt);
                     }
                 }
             }
@@ -306,7 +306,7 @@ public class MERGE2 extends Protocol {
         Vector findInitialMembers() {
             PingRsp tmp=new PingRsp(local_addr, local_addr, true);
             find_promise.reset();
-            passDown(Event.FIND_INITIAL_MBRS_EVT);
+            down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
             Vector retval=(Vector)find_promise.getResult(0); // wait indefinitely until response is received
             if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
                 retval.add(tmp);

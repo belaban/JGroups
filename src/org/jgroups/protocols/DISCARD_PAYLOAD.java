@@ -11,7 +11,7 @@ import java.util.Properties;
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.5 2007/01/11 16:22:05 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.6 2007/01/12 14:19:40 belaban Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
     long seqno=3; // drop 3
@@ -68,7 +68,7 @@ public class DISCARD_PAYLOAD extends Protocol {
                             }
                         }
                         if(val == duplicate) { // inject a duplicate message
-                            super.up(evt); // pass it up, will passed up a second time by the default passUp(evt)
+                            super.up(evt); // pass it up, will passed up a second time by the default up_prot.up(evt)
                         }
                     }
                 }
@@ -77,6 +77,6 @@ public class DISCARD_PAYLOAD extends Protocol {
                 }
             }
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 }

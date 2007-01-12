@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.18 2006/08/04 15:53:33 belaban Exp $
+// $Id: GmsImpl.java,v 1.19 2007/01/12 14:21:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -64,7 +64,7 @@ public abstract class GmsImpl {
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getName(), hdr);
         if(log.isDebugEnabled()) log.debug("response=" + hdr);
-        gms.passDown(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
 

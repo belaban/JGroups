@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.19 2007/01/11 16:51:09 belaban Exp $
+// $Id: SIZE.java,v 1.20 2007/01/12 14:19:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -106,7 +106,7 @@ public class SIZE extends Protocol {
             break;
         }
 
-        return passUp(evt);            // pass up to the layer above us
+        return up_prot.up(evt);            // pass up to the layer above us
     }
 
 
@@ -139,7 +139,7 @@ public class SIZE extends Protocol {
             break;
         }
 
-        return passDown(evt);          // Pass on to the layer below us
+        return down_prot.down(evt);          // Pass on to the layer below us
     }
 
 

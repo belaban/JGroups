@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.14 2007/01/11 16:21:39 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.15 2007/01/12 14:19:12 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -102,7 +102,7 @@ public class SEQUENCER extends Protocol {
                 handleViewChange((View)evt.getArg());
                 break;
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -147,7 +147,7 @@ public class SEQUENCER extends Protocol {
                 break;
         }
 
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -189,7 +189,7 @@ public class SEQUENCER extends Protocol {
             for(Iterator it=forward_table.values().iterator(); it.hasNext();) {
                 msg=(Message)it.next();
                 msg.setDest(coord);
-                passDown(new Event(Event.MSG, msg));
+                down_prot.down(new Event(Event.MSG, msg));
             }
         }
     }
@@ -200,7 +200,7 @@ public class SEQUENCER extends Protocol {
         synchronized(forward_table) {
             forward_table.put(new Long(seqno), msg);
         }
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         forwarded_msgs++;
     }
 
@@ -209,7 +209,7 @@ public class SEQUENCER extends Protocol {
         hdr.type=SequencerHeader.BCAST; // we change the type of header, but leave the tag intact
         msg.setDest(null); // mcast
         msg.setSrc(local_addr); // the coord is sending it - this will be replaced with sender in deliver()
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         bcast_msgs++;
     }
 
@@ -251,7 +251,7 @@ public class SEQUENCER extends Protocol {
         // pass a copy of the message up the stack
         Message tmp=msg.copy(true);
         tmp.setSrc(original_sender);
-        passUp(new Event(Event.MSG, tmp));
+        up_prot.up(new Event(Event.MSG, tmp));
     }
 
     /* ----------------------------- End of Private Methods -------------------------------- */

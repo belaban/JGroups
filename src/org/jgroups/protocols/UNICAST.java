@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.72 2007/01/11 16:50:41 belaban Exp $
+// $Id: UNICAST.java,v 1.73 2007/01/12 14:19:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -229,7 +229,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             break;
         }
 
-        return passUp(evt);   // Pass up to the layer above us
+        return up_prot.up(evt);   // Pass up to the layer above us
     }
 
 
@@ -255,7 +255,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // if the dest is self --> pass the message back up
                 if(local_addr != null && loopback && local_addr.equals(dst)) {
                     msg.setSrc(local_addr);
-                    passUp(evt);
+                    up_prot.up(evt);
                     num_msgs_sent++;
                     num_bytes_sent+=msg.getLength();
                     return null;
@@ -313,7 +313,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
                 // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
                 try {
-                    passDown(new Event(Event.MSG, tmp));
+                    down_prot.down(new Event(Event.MSG, tmp));
                     num_msgs_sent++;
                     num_bytes_sent+=msg.getLength();
                 }
@@ -370,7 +370,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
         }
 
-        return passDown(evt);          // Pass on to the layer below us
+        return down_prot.down(evt);          // Pass on to the layer below us
     }
 
 
@@ -430,7 +430,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(trace)
             log.trace("[" + local_addr + "] --> XMIT(" + dst + ": #" + seqno + ')');
 
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         num_xmit_requests_received++;
     }
 
@@ -480,7 +480,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
         if(msg.isFlagSet(Message.OOB) && added) {
-            passUp(new Event(Event.MSG, msg));
+            up_prot.up(new Event(Event.MSG, msg));
         }
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
@@ -498,7 +498,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if(m.isFlagSet(Message.OOB)) {
                     continue;
                 }
-                passUp(new Event(Event.MSG, m));
+                up_prot.up(new Event(Event.MSG, m));
             }
         }
         return true; // msg was successfully received - send an ack back to the sender
@@ -532,7 +532,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" --> ACK(").append(dst).
                       append(": #").append(seqno).append(')'));
-        passDown(new Event(Event.MSG, ack));
+        down_prot.down(new Event(Event.MSG, ack));
         num_acks_sent++;
     }
 

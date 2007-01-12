@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.30 2007/01/12 13:43:08 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.31 2007/01/12 14:20:14 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -159,13 +159,13 @@ public class FRAG2 extends Protocol {
             break;
 
         case Event.CONFIG:
-            Object ret=passDown(evt);
+            Object ret=down_prot.down(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return ret;
         }
 
-        return super.down(evt);  // Pass on to the layer below us
+        return down_prot.down(evt);  // Pass on to the layer below us
     }
 
 
@@ -189,13 +189,13 @@ public class FRAG2 extends Protocol {
             break;
 
         case Event.CONFIG:
-            Object ret=passUp(evt);
+            Object ret=up_prot.up(evt);
             if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return ret;
         }
 
-        return passUp(evt); // Pass up to the layer above us by default
+        return up_prot.up(evt); // Pass up to the layer above us by default
     }
 
 
@@ -244,7 +244,7 @@ public class FRAG2 extends Protocol {
                 hdr=new FragHeader(id, i, num_frags);
                 frag_msg.putHeader(name, hdr);
                 evt=new Event(Event.MSG, frag_msg);
-                passDown(evt);
+                down_prot.down(evt);
             }
         }
         catch(Exception e) {
@@ -282,7 +282,7 @@ public class FRAG2 extends Protocol {
                 if(trace) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 num_received_msgs.incrementAndGet();
-                passUp(new Event(Event.MSG, assembled_msg));
+                up_prot.up(new Event(Event.MSG, assembled_msg));
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("unfragmentation failed", e);

@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.34 2007/01/11 11:38:45 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.35 2007/01/12 14:22:01 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -102,7 +102,7 @@ public class RequestCorrelator {
      * request correlators are used.
      *
      * @param transport Used to send/pass up requests. Can be either a Transport (only send() will be
-     *                  used then), or a Protocol (passUp()/passDown() will be used)
+     *                  used then), or a Protocol (up_prot.up()/down_prot.down() will be used)
      *
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
@@ -134,7 +134,7 @@ public class RequestCorrelator {
      * request correlators are used.
      *
      * @param transport Used to send/pass up requests. Can be either a Transport (only send() will be
-     *                  used then), or a Protocol (passUp()/passDown() will be used)
+     *                  used then), or a Protocol (up_prot.up()/down_prot.down() will be used)
      *
      * @param handler Request handler. Method <code>handle(Message)</code>
      * will be called when a request is received.
@@ -294,11 +294,11 @@ public class RequestCorrelator {
                     Address mbr=(Address)it.next();
                     copy=msg.copy(true);
                     copy.setDest(mbr);
-                    ((Protocol)transport).passDown(new Event(Event.MSG, copy));
+                    ((Protocol)transport).getDownProtocol().down(new Event(Event.MSG, copy));
                 }
             }
             else {
-                ((Protocol)transport).passDown(new Event(Event.MSG, msg));
+                ((Protocol)transport).getDownProtocol().down(new Event(Event.MSG, msg));
             }
         }
         else if(transport instanceof Transport) {
@@ -367,7 +367,7 @@ public class RequestCorrelator {
             break;
         }
 //        if(transport instanceof Protocol)
-//            ((Protocol)transport).passUp(evt);
+//            ((Protocol)transport).getUpProtocol().up(evt);
 //        else
 //            if(log.isErrorEnabled()) log.error("we do not pass up messages via Transport");
         return false;
@@ -665,7 +665,7 @@ public class RequestCorrelator {
 
         try {
             if(transport instanceof Protocol)
-                ((Protocol)transport).passDown(new Event(Event.MSG, rsp));
+                ((Protocol)transport).getDownProtocol().down(new Event(Event.MSG, rsp));
             else if(transport instanceof Transport)
                 ((Transport)transport).send(rsp);
             else

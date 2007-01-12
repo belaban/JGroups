@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.29 2006/12/11 15:38:56 belaban Exp $
+// $Id: TCPPING.java,v 1.30 2007/01/12 14:20:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -101,7 +101,7 @@ public class TCPPING extends Discovery {
             msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, null));
 
             if(trace) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-            passDown(new Event(Event.MSG, msg));
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 

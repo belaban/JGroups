@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.65 2007/01/12 13:43:07 belaban Exp $
+ * @version $Id: FC.java,v 1.66 2007/01/12 14:19:04 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -307,7 +307,7 @@ public class FC extends Protocol {
         case Event.MSG:
             return handleDownMessage(evt);
         }
-        return super.down(evt); // this could potentially use the lower protocol's thread which may block
+        return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block
     }
 
 
@@ -343,7 +343,7 @@ public class FC extends Protocol {
                     Address sender=msg.getSrc();
                     boolean insufficient_credits=adjustCredit(msg, sender);
                     try {
-                        return passUp(evt);
+                        return up_prot.up(evt);
                     }
                     finally {
                         if(insufficient_credits) {
@@ -357,7 +357,7 @@ public class FC extends Protocol {
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -414,7 +414,7 @@ public class FC extends Protocol {
         }
 
         // send message - either after regular processing, or after blocking (when enough credits available again)
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
     /**
@@ -559,7 +559,7 @@ public class FC extends Protocol {
         Message  msg=new Message(dest, null, null);
         msg.setFlag(Message.OOB);
         msg.putHeader(name, REPLENISH_HDR);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
     }
 
@@ -568,7 +568,7 @@ public class FC extends Protocol {
     private void sendCreditRequest(final Address dest) {
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
-        passDown(new Event(Event.MSG, msg));
+        down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
     }
 

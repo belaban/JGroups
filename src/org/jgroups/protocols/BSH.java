@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.16 2007/01/11 15:29:02 belaban Exp $
+// $Id: BSH.java,v 1.17 2007/01/12 14:19:05 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -73,7 +73,7 @@ public class BSH extends Protocol {
                         return null;
                     case BshHeader.RSP:
                         msg.putHeader(name, h);
-                        passUp(evt);
+                        up_prot.up(evt);
                         return null;
                     case BshHeader.DESTROY_INTERPRETER:
                         destroyInterpreter();
@@ -84,7 +84,7 @@ public class BSH extends Protocol {
                 }
             }
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -143,7 +143,7 @@ public class BSH extends Protocol {
                 if(log.isInfoEnabled()) log.info("sending back response " +
                                                   retval + " to " + rsp.getDest());
             rsp.putHeader(name, new BshHeader(BshHeader.RSP));
-            passDown(new Event(Event.MSG, rsp));
+            down_prot.down(new Event(Event.MSG, rsp));
         }
     }
 

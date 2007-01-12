@@ -205,7 +205,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    public void start() throws Exception
    {
-      passUp(new Event(Event.CONFIG, map));
+      up_prot.up(new Event(Event.CONFIG, map));
       if(!flushProtocolInStack && use_flush)
       {
          log.warn("use_flush is true, however, FLUSH protocol not found in stack.");
@@ -273,7 +273,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }    
             break;
       }
-      return passUp(evt);
+      return up_prot.up(evt);
    }
 
    public Object down(Event evt)
@@ -308,7 +308,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             {
                if (log.isDebugEnabled())
                   log.debug("GET_STATE: first member (no state)");
-               passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
+               up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
             }
             else
             {
@@ -338,9 +338,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                // fixes bugs #943480 and #938584). Wake up when state has been received
                if (log.isDebugEnabled())
                   log.debug("passing down a SUSPEND_STABLE event");
-               passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
+               down_prot.down(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
                waiting_for_state_response = true;             
-               passDown(new Event(Event.MSG, state_req));
+               down_prot.down(new Event(Event.MSG, state_req));
             }
             return null; // don't pass down any further !
 
@@ -357,7 +357,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             // collection protocol (e.g. STABLE)
             if (log.isDebugEnabled())
                log.debug("passing down a RESUME_STABLE event");
-            passDown(new Event(Event.RESUME_STABLE));
+            down_prot.down(new Event(Event.RESUME_STABLE));
             return null;
          case Event.SUSPEND_OK :
             if (use_flush)
@@ -387,7 +387,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             
       }
 
-      return passDown(evt); // pass on to the layer below us
+      return down_prot.down(evt); // pass on to the layer below us
    }
 
    /* --------------------------- Private Methods -------------------------------- */
@@ -455,7 +455,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                if (log.isDebugEnabled())
                   log.debug("Responding to state requester " + requester + " with address "
                         + spawner.getServerSocketAddress() + " and digest " + digest);
-               passDown(new Event(Event.MSG, state_rsp));
+               down_prot.down(new Event(Event.MSG, state_rsp));
                if (stats)
                {
                   num_state_reqs++;
@@ -469,7 +469,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    {
       boolean successfulFlush = false;
       flush_promise.reset();
-      passUp(new Event(Event.SUSPEND));
+      up_prot.up(new Event(Event.SUSPEND));
       try
       {         
          Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
@@ -497,7 +497,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private void stopFlush()
    {
-      passUp(new Event(Event.RESUME));
+      up_prot.up(new Event(Event.RESUME));
    }
 
    private ThreadPoolExecutor setupThreadPool()
@@ -608,7 +608,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             digest = null;
             if (log.isDebugEnabled())
                log.debug("passing down GET_DIGEST_STATE");
-            passDown(new Event(Event.GET_DIGEST_STATE));
+            down_prot.down(new Event(Event.GET_DIGEST_STATE));
          }
       }
    }
@@ -628,7 +628,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          else
          {
             // set the digest (e.g.in NAKACK)
-            passDown(new Event(Event.SET_DIGEST, tmp_digest));
+            down_prot.down(new Event(Event.SET_DIGEST, tmp_digest));
          }
       }      
       connectToStateProvider(hdr);
@@ -723,7 +723,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             Message m = new Message(hdr.sender);
             StateHeader mhdr = new StateHeader(StateHeader.STATE_REMOVE_REQUESTER, local_addr, tmp_state_id);
             m.putHeader(NAME, mhdr);
-            passDown(new Event(Event.MSG, m));
+            down_prot.down(new Event(Event.MSG, m));
          }
          passStreamUp(sti);
       }
@@ -735,7 +735,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          public void run()
          {
-            passUp(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
          }
       };
       if (use_reading_thread)
@@ -888,7 +888,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
             wrapper = new StreamingOutputStreamWrapper(socket);
             StateTransferInfo sti = new StateTransferInfo(stateRequester, wrapper, state_id);
-            passUp(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
+            up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
          }
          catch (IOException e)
          {

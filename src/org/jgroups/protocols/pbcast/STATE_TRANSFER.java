@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.54 2007/01/12 13:43:11 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.55 2007/01/12 14:21:15 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -92,7 +92,7 @@ public class STATE_TRANSFER extends Protocol {
 
 
     public void start() throws Exception {
-        passUp(new Event(Event.CONFIG, map));
+        up_prot.up(new Event(Event.CONFIG, map));
         if(!flushProtocolInStack && use_flush){
            log.warn("use_flush property is true, however, FLUSH protocol not found in stack");
            use_flush = false;
@@ -142,7 +142,7 @@ public class STATE_TRANSFER extends Protocol {
             }
             return null;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -171,7 +171,7 @@ public class STATE_TRANSFER extends Protocol {
                 }
                 if(target == null) {
                     if(log.isDebugEnabled()) log.debug("GET_STATE: first member (no state)");
-                    passUp(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
+                    up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
                 else {
                     boolean successfulFlush = false;
@@ -194,10 +194,10 @@ public class STATE_TRANSFER extends Protocol {
                     // fixes bugs #943480 and #938584). Wake up when state has been received
                     if(log.isDebugEnabled())
                         log.debug("passing down a SUSPEND_STABLE event");
-                    passDown(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
+                    down_prot.down(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
                     waiting_for_state_response=true;
                     start=System.currentTimeMillis();
-                    passDown(new Event(Event.MSG, state_req));
+                    down_prot.down(new Event(Event.MSG, state_req));
                 }
                 return null;                 // don't pass down any further !
 
@@ -246,10 +246,10 @@ public class STATE_TRANSFER extends Protocol {
                             // and out-of-band messages (http://jira.jboss.com/jira/browse/JGRP-205)
                             new Thread() {
                                 public void run() {
-                                   passDown(new Event(Event.MSG, state_rsp));
+                                   down_prot.down(new Event(Event.MSG, state_rsp));
                                 }
                             }.start();
-                            // passDown(new Event(Event.MSG, state_rsp));
+                            // down_prot.down(new Event(Event.MSG, state_rsp));
                         }
                         state_requesters.remove(id);
                     }
@@ -280,7 +280,7 @@ public class STATE_TRANSFER extends Protocol {
 
         }
 
-        return super.down(evt);              // pass on to the layer below us
+        return down_prot.down(evt);              // pass on to the layer below us
     }
 
 
@@ -311,7 +311,7 @@ public class STATE_TRANSFER extends Protocol {
         for(Iterator it=appl_ids.iterator(); it.hasNext();) {
             id=(String)it.next();
             StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
-            StateTransferInfo rsp=(StateTransferInfo)passUp(new Event(Event.GET_APPLSTATE, info));
+            StateTransferInfo rsp=(StateTransferInfo)up_prot.up(new Event(Event.GET_APPLSTATE, info));
             sendApplicationStateResponse(rsp);
         }
     }
@@ -357,7 +357,7 @@ public class STATE_TRANSFER extends Protocol {
             for(Message state_rsp: responses) {
                 if(trace)
                     log.trace("sending state for ID=" + id + " to " + state_rsp.getDest() + " (" + state.length + " bytes)");
-                passDown(new Event(Event.MSG, state_rsp));
+                down_prot.down(new Event(Event.MSG, state_rsp));
 
                 // This has to be done in a separate thread, so we don't block on FC
                 // (see http://jira.jboss.com/jira/browse/JGRP-225 for details). This will be reverted once
@@ -365,10 +365,10 @@ public class STATE_TRANSFER extends Protocol {
                 // and out-of-band messages (http://jira.jboss.com/jira/browse/JGRP-205)
 //                new Thread() {
 //                    public void run() {
-//                        passDown(new Event(Event.MSG, state_rsp));
+//                        down_prot.down(new Event(Event.MSG, state_rsp));
 //                    }
 //                }.start();
-                // passDown(new Event(Event.MSG, state_rsp));
+                // down_prot.down(new Event(Event.MSG, state_rsp));
             }
         }
     }
@@ -441,7 +441,7 @@ public class STATE_TRANSFER extends Protocol {
                 requestApplicationStates();
             }
             else if(empty){
-                digest=(Digest)passDown(new Event(Event.GET_DIGEST_STATE));
+                digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST_STATE));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
                 requestApplicationStates();
@@ -463,7 +463,7 @@ public class STATE_TRANSFER extends Protocol {
 	                log.warn("digest received from " + sender + " is null, skipping setting digest !");
 	        }
 	        else
-	            passDown(new Event(Event.SET_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
+	            down_prot.down(new Event(Event.SET_DIGEST, tmp_digest)); // set the digest (e.g. in NAKACK)
         }
         stop=System.currentTimeMillis();
 
@@ -472,7 +472,7 @@ public class STATE_TRANSFER extends Protocol {
         // collection protocol (e.g. STABLE)
         if(log.isDebugEnabled())
             log.debug("passing down a RESUME_STABLE event");
-        passDown(new Event(Event.RESUME_STABLE));
+        down_prot.down(new Event(Event.RESUME_STABLE));
 
         if(state == null) {
             if(warn)
@@ -481,13 +481,13 @@ public class STATE_TRANSFER extends Protocol {
         else
             log.debug("received state, size=" + state.length + " bytes. Time=" + (stop-start) + " milliseconds");
         StateTransferInfo info=new StateTransferInfo(null, id, 0L, state);
-        passUp(new Event(Event.GET_STATE_OK, info));
+        up_prot.up(new Event(Event.GET_STATE_OK, info));
     }
 
     private boolean startFlush(long timeout,int numberOfAttempts) {
         boolean successfulFlush=false;
         flush_promise.reset();
-        passUp(new Event(Event.SUSPEND));
+        up_prot.up(new Event(Event.SUSPEND));
         try {            
             Boolean r = (Boolean)flush_promise.getResultWithTimeout(timeout);
             successfulFlush = r.booleanValue();            
@@ -512,7 +512,7 @@ public class STATE_TRANSFER extends Protocol {
     }
 
     private void stopFlush() {
-        passUp(new Event(Event.RESUME));
+        up_prot.up(new Event(Event.RESUME));
     }
 
 

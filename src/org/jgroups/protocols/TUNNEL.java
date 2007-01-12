@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.33 2007/01/12 13:33:34 belaban Exp $
+// $Id: TUNNEL.java,v 1.34 2007/01/12 14:20:56 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -93,7 +93,7 @@ public class TUNNEL extends Protocol implements Runnable {
     public void start() throws Exception {
         super.start();
         local_addr=stub.getLocalAddress();
-        passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
 
@@ -211,7 +211,7 @@ public class TUNNEL extends Protocol implements Runnable {
             evt=new Event(Event.MSG, copy);
 
             if(trace) log.trace("looped back local message " + copy);
-            passUp(evt);
+            up_prot.up(evt);
             if(dest != null && !dest.isMulticastAddress())
                 return null;
         }
@@ -315,7 +315,7 @@ public class TUNNEL extends Protocol implements Runnable {
         if(ch_name != null && !channel_name.equals(ch_name))
             return;
 
-        passUp(new Event(Event.MSG, msg));
+        up_prot.up(new Event(Event.MSG, msg));
     }
 
 
@@ -336,7 +336,7 @@ public class TUNNEL extends Protocol implements Runnable {
             break;
 
         case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
             break;
 
         case Event.SET_LOCAL_ADDRESS:
@@ -373,8 +373,8 @@ public class TUNNEL extends Protocol implements Runnable {
                 stub.disconnect();
             }
             teardownTunnel();
-            passUp(new Event(Event.DISCONNECT_OK));
-            passUp(new Event(Event.SET_LOCAL_ADDRESS, null));
+            up_prot.up(new Event(Event.DISCONNECT_OK));
+            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, null));
             local_addr=null;
             break;
 

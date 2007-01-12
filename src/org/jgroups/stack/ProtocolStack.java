@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.36 2007/01/11 12:57:38 belaban Exp $
+// $Id: ProtocolStack.java,v 1.37 2007/01/12 14:21:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -332,11 +332,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public Object down(Event evt) {
-        if(top_prot != null)
-            return top_prot.down(evt);
-        else
-            log.error("no down protocol available !");
-        return null;
+        return top_prot.down(evt);
     }
 
 

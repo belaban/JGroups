@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.20 2007/01/12 13:33:27 belaban Exp $
+// $Id: LOOPBACK.java,v 1.21 2007/01/12 14:19:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,7 +49,7 @@ public class LOOPBACK extends Protocol {
     }
 
     public void start() throws Exception {
-        passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
 
@@ -79,7 +79,7 @@ public class LOOPBACK extends Protocol {
             break;
 
         case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
             break;
 
         case Event.CONNECT:
@@ -87,11 +87,11 @@ public class LOOPBACK extends Protocol {
             break;
 
         case Event.DISCONNECT:
-            passUp(new Event(Event.DISCONNECT_OK));
+            up_prot.up(new Event(Event.DISCONNECT_OK));
             break;
 
         case Event.PERF:
-            passUp(evt);
+            up_prot.up(evt);
             break;
         }
         return null;

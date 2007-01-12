@@ -1,4 +1,4 @@
-// $Id: EXAMPLE.java,v 1.6 2007/01/11 16:51:25 belaban Exp $
+// $Id: EXAMPLE.java,v 1.7 2007/01/12 14:19:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -58,7 +58,7 @@ public class EXAMPLE extends Protocol {
                 break;
         }
 
-        return passUp(evt);            // Pass up to the layer above us
+        return up_prot.up(evt);            // Pass up to the layer above us
     }
 
 
@@ -74,7 +74,7 @@ public class EXAMPLE extends Protocol {
                         for(int i=0; i < new_members.size(); i++)
                             members.addElement(new_members.elementAt(i));
                 }
-                return passDown(evt);
+                return down_prot.down(evt);
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
@@ -83,7 +83,7 @@ public class EXAMPLE extends Protocol {
                 break;
         }
 
-        return passDown(evt);          // Pass on to the layer below us
+        return down_prot.down(evt);          // Pass on to the layer below us
     }
 
 

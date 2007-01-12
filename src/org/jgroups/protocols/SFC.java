@@ -18,7 +18,7 @@ import java.io.*;
  * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
  * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.8 2007/01/11 16:30:38 belaban Exp $
+ * @version $Id: SFC.java,v 1.9 2007/01/12 14:19:42 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -225,7 +225,7 @@ public class SFC extends Protocol {
                     if(trace)
                         log.trace("sending credit request to group");
                     start=System.nanoTime(); // only 1 thread is here at any given time
-                    Object ret=passDown(evt);       // send the message before the credit request
+                    Object ret=down_prot.down(evt);       // send the message before the credit request
                     sendCreditRequest(); // do this outside of the lock
                     return ret;
                 }
@@ -240,7 +240,7 @@ public class SFC extends Protocol {
                 break;
         }
 
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 
@@ -283,7 +283,7 @@ public class SFC extends Protocol {
                 handleSuspect((Address)evt.getArg());
                 break;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -463,7 +463,7 @@ public class SFC extends Protocol {
         // credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
         credit_req.putHeader(name, new Header(Header.CREDIT_REQUEST));
         num_credit_requests_sent++;
-        passDown(new Event(Event.MSG, credit_req));
+        down_prot.down(new Event(Event.MSG, credit_req));
     }
 
     private void sendCreditResponse(Address dest) {
@@ -474,7 +474,7 @@ public class SFC extends Protocol {
         if(trace)
             log.trace("sending credit response to " + dest);
         num_replenishments_sent++;
-        passDown(new Event(Event.MSG, credit_rsp));
+        down_prot.down(new Event(Event.MSG, credit_rsp));
     }
 
 

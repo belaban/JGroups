@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.7 2007/01/11 16:51:00 belaban Exp $
+ * @version $Id: STATS.java,v 1.8 2007/01/12 14:20:33 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -71,7 +71,7 @@ public class STATS extends Protocol {
         else if(evt.getType() == Event.VIEW_CHANGE) {
             handleViewChange((View)evt.getArg());
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
 
@@ -84,7 +84,7 @@ public class STATS extends Protocol {
         else if(evt.getType() == Event.VIEW_CHANGE) {
             handleViewChange((View)evt.getArg());
         }
-        return passDown(evt);
+        return down_prot.down(evt);
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.36 2007/01/03 15:57:22 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.37 2007/01/12 14:21:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.36 $
+ * @version $Revision: 1.37 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -157,10 +157,10 @@ public class ClientGmsImpl extends GmsImpl {
                         view_ack.setFlag(Message.OOB);
                         GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK, tmp_view);
                         view_ack.putHeader(GMS.name, tmphdr);
-                        gms.passDown(new Event(Event.MSG, view_ack));
+                        gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
 
-                        gms.passUp(new Event(Event.BECOME_SERVER));
-                        gms.passDown(new Event(Event.BECOME_SERVER));
+                        gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
+                        gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
                         return;
                     }
                 }
@@ -225,8 +225,8 @@ public class ClientGmsImpl extends GmsImpl {
         }
         gms.installView(new_view);
         gms.becomeParticipant();
-        gms.passUp(new Event(Event.BECOME_SERVER));
-        gms.passDown(new Event(Event.BECOME_SERVER));
+        gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
+        gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         return true;
     }
 
@@ -270,7 +270,7 @@ public class ClientGmsImpl extends GmsImpl {
         msg=new Message(coord, null, null);
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr);
         msg.putHeader(gms.getName(), hdr);
-        gms.passDown(new Event(Event.MSG, msg));
+        gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
 
@@ -284,9 +284,9 @@ public class ClientGmsImpl extends GmsImpl {
         synchronized(initial_mbrs) {
             initial_mbrs.removeAllElements();
             initial_mbrs_received=false;
-            gms.passDown(new Event(Event.FIND_INITIAL_MBRS));
+            gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
 
-            // the initial_mbrs_received flag is needed when passDown() is executed on the same thread, so when
+            // the initial_mbrs_received flag is needed when down_prot.down() is executed on the same thread, so when
             // it returns, a response might actually have been received (even though the initial_mbrs might still be empty)
             if(initial_mbrs_received == false) {
                 try {
@@ -373,8 +373,8 @@ public class ClientGmsImpl extends GmsImpl {
         gms.installView(new View(view_id, mbrs));
         gms.becomeCoordinator(); // not really necessary - installView() should do it
 
-        gms.passUp(new Event(Event.BECOME_SERVER));
-        gms.passDown(new Event(Event.BECOME_SERVER));
+        gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
+        gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
         if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
                                            ", impl is " + gms.getImpl().getClass().getName());
     }

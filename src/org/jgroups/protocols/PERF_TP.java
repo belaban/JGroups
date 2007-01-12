@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.16 2007/01/12 13:33:28 belaban Exp $
+// $Id: PERF_TP.java,v 1.17 2007/01/12 14:20:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,7 @@ import org.jgroups.stack.Protocol;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.16 2007/01/12 13:33:28 belaban Exp $
+ * @version $Id: PERF_TP.java,v 1.17 2007/01/12 14:20:34 belaban Exp $
  */
 public class PERF_TP extends Protocol {
     private Address local_addr=null;
@@ -76,7 +76,7 @@ public class PERF_TP extends Protocol {
     }
 
     public void start() throws Exception {
-        passUp(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
     }
 
 
@@ -115,12 +115,12 @@ public class PERF_TP extends Protocol {
             return null;
 
         case Event.DISCONNECT:
-            passUp(new Event(Event.DISCONNECT_OK));
+            up_prot.up(new Event(Event.DISCONNECT_OK));
             return null;
         }
 
         if(getDownProtocol() != null)
-            return passDown(evt);
+            return down_prot.down(evt);
         return null;
     }
 
@@ -149,7 +149,7 @@ public class PERF_TP extends Protocol {
             }
             return null;
         }
-        return passUp(evt);
+        return up_prot.up(evt);
     }
 
     /*--------------------------- End of Protocol interface -------------------------- */
