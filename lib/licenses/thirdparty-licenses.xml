@@ -55,14 +55,6 @@
             description='JMS interfaces. Used by the JMS protocol (runtime)'>
         <jar name='jms.jar' />
     </module>
-    <module name='JMX RI by SUN'
-            licenseType='bcl'
-            version='1.2.1'
-            projectHome='http://java.sun.com/products/JavaManagement'
-            description='JMX standard classes (javax.management.*), used by classes in org.jgroups.jmx. Will
-                     be removed when JDK 5 becomes baseline (runtime)'>
-        <jar name='jmxri.jar' />
-    </module>
     <module name='junit'
             licenseType='cpl-1.0'
             version='3.8.1'
