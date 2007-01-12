@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.30 2007/01/11 12:57:29 belaban Exp $
+// $Id: Event.java,v 1.31 2007/01/12 13:33:42 belaban Exp $
 
 package org.jgroups;
 
@@ -11,7 +11,6 @@ package org.jgroups;
 public class Event {
     public static final int MSG                       =  1;  // arg = Message
     public static final int CONNECT                   =  2;  // arg = group address (string)
-    public static final int CONNECT_OK                =  3;  // arg = null (or exception if JOIN failed)
     public static final int DISCONNECT                =  4;  // arg = member address (Address)
     public static final int DISCONNECT_OK             =  5;
     public static final int VIEW_CHANGE               =  6;  // arg = View (or MergeView in case of merge)
@@ -121,7 +120,6 @@ public class Event {
         switch(t) {
             case MSG:	                 return "MSG";
             case CONNECT:	             return "CONNECT";
-            case CONNECT_OK:	         return "CONNECT_OK";
             case DISCONNECT:	         return "DISCONNECT";
             case DISCONNECT_OK: 	     return "DISCONNECT_OK";
             case VIEW_CHANGE:	         return "VIEW_CHANGE";

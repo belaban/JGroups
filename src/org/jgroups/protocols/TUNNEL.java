@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.32 2007/01/11 16:51:33 belaban Exp $
+// $Id: TUNNEL.java,v 1.33 2007/01/12 13:33:34 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -347,6 +347,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
         case Event.CONNECT:
             channel_name=(String)evt.getArg();
+            Object ret=null;
             if(stub == null) {
                 if(log.isErrorEnabled()) log.error("CONNECT:  router stub is null!");
             }
@@ -364,9 +365,7 @@ public class TUNNEL extends Protocol implements Runnable {
             receiver=new Thread(this, "TUNNEL receiver thread");
             receiver.setDaemon(true);
             receiver.start();
-
-            passUp(new Event(Event.CONNECT_OK));
-            break;
+            return ret;
 
         case Event.DISCONNECT:
             if(receiver != null) {

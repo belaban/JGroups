@@ -233,8 +233,8 @@ public abstract class BasicTCP extends TP {
         receive(local_addr, sender, data, offset, length);
     }
 
-    protected void handleDownEvent(Event evt) {
-        super.handleDownEvent(evt);
+    protected Object handleDownEvent(Event evt) {
+        Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.removeAll();
             View v=(View)evt.getArg();
@@ -246,5 +246,6 @@ public abstract class BasicTCP extends TP {
         else if(evt.getType() == Event.UNSUSPECT) {
             suspected_mbrs.removeElement(evt.getArg());
         }
+        return ret;
     }
 }

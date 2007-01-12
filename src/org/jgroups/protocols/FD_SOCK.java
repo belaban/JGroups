@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.56 2007/01/11 16:21:55 belaban Exp $
+// $Id: FD_SOCK.java,v 1.57 2007/01/12 13:33:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -308,12 +308,12 @@ public class FD_SOCK extends Protocol implements Runnable {
                 break;
 
             case Event.CONNECT:
-                passDown(evt);
+                Object ret=passDown(evt);
                 group_name=(String)evt.getArg();
                 srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
-                break;
+                return ret;
 
             case Event.DISCONNECT:
                 group_name=null;
