@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.84 2007/01/11 13:42:11 belaban Exp $
+ * @version $Id: GMS.java,v 1.85 2007/01/12 13:33:43 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -722,7 +722,6 @@ public class GMS extends Protocol {
                 }
                 return null;  // don't pass up
 
-            case Event.CONNECT_OK:     // sent by someone else, but WE are responsible for sending this !
             case Event.DISCONNECT_OK:  // dito (e.g. sent by TP layer). Don't send up the stack
                 return null;
 
@@ -787,11 +786,10 @@ public class GMS extends Protocol {
                 try {
                     impl.join(local_addr);
                 }
-                catch(SecurityException e) {
+                catch(Throwable e) {
                     arg=e;
                 }
-                passUp(new Event(Event.CONNECT_OK, arg));
-                return null;                              // don't pass down: was already passed down
+                return arg;  // don't pass down: was already passed down
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
@@ -1210,7 +1208,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.84 2007/01/11 13:42:11 belaban Exp $
+     * @version $Id: GMS.java,v 1.85 2007/01/12 13:33:43 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                    thread;

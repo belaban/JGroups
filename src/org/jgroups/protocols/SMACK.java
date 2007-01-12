@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.18 2007/01/11 16:30:48 belaban Exp $
+// $Id: SMACK.java,v 1.19 2007/01/12 13:33:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -135,16 +135,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                                        "\n-------------------------------------------------------");
                 }
                 break;
-
-            case Event.CONNECT_OK:
-                Object ret=passUp(evt);
-                sender_win=new AckMcastSenderWindow(this, timeout);
-
-                // send join announcement
-                Message join_msg=new Message();
-                join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
-                passDown(new Event(Event.MSG, join_msg));
-                return ret;
 
             case Event.SUSPECT:
                 if(log.isInfoEnabled()) log.info("removing suspected member " + evt.getArg());
@@ -257,7 +247,14 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 //                 passDown(new Event(Event.MSG, join_msg));
 //                 return;
 
-                break;
+                Object ret=passDown(evt);
+                sender_win=new AckMcastSenderWindow(this, timeout);
+
+                // send join announcement
+                Message join_msg=new Message();
+                join_msg.putHeader(name, new SmackHeader(SmackHeader.JOIN_ANNOUNCEMENT, -1));
+                passDown(new Event(Event.MSG, join_msg));
+                return ret;
 
 
 // add a header with the current sequence number and increment seqno

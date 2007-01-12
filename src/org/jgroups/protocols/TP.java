@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.113 2007/01/11 13:47:10 belaban Exp $
+ * @version $Id: TP.java,v 1.114 2007/01/12 13:33:32 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -921,8 +921,7 @@ public abstract class TP extends Protocol {
      */
     public Object down(Event evt) {
         if(evt.getType() != Event.MSG) {  // unless it is a message handle it and respond
-            handleDownEvent(evt);
-            return null;
+            return handleDownEvent(evt);
         }
 
         Message msg=(Message)evt.getArg();
@@ -1324,7 +1323,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    protected void handleDownEvent(Event evt) {
+    protected Object handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
         case Event.TMP_VIEW:
@@ -1345,12 +1344,7 @@ public abstract class TP extends Protocol {
             channel_name=(String)evt.getArg();
             header=new TpHeader(channel_name);
             setThreadNames();
-
-            // removed March 18 2003 (bela), not needed (handled by GMS)
-            // changed July 2 2003 (bela): we discard CONNECT_OK at the GMS level anyway, this might
-            // be needed if we run without GMS though
-            passUp(new Event(Event.CONNECT_OK));
-            break;
+            return null;
 
         case Event.DISCONNECT:
             unsetThreadNames();
@@ -1362,6 +1356,7 @@ public abstract class TP extends Protocol {
             handleConfigEvent((HashMap)evt.getArg());
             break;
         }
+        return null;
     }
 
 

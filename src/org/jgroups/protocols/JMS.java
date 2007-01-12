@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.20 2007/01/11 16:21:37 belaban Exp $ 
+// $Id: JMS.java,v 1.21 2007/01/12 13:33:22 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -297,7 +297,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
 
             case Event.CONNECT:
                 group_addr=(String)evt.getArg();
-                passUp(new Event(Event.CONNECT_OK));
                 break;
 
             case Event.DISCONNECT:

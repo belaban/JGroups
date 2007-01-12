@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.115 2007/01/11 12:57:28 belaban Exp $
+ * @version $Id: JChannel.java,v 1.116 2007/01/12 13:33:37 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -97,9 +97,6 @@ public class JChannel extends Channel {
 
     /** To wait until a local address has been assigned */
     private final Promise local_addr_promise=new Promise();
-
-    /** To wait until we have connected successfully */
-    private final Promise connect_promise=new Promise();
 
     /** To wait until we have been disconnected from the channel */
     private final Promise disconnect_promise=new Promise();
@@ -389,15 +386,12 @@ public class JChannel extends Channel {
 
         // only connect if we are not a unicast channel
         if(cluster_name != null) {
-            connect_promise.reset();
 
             if(flush_supported)
                flush_unblock_promise.reset();
 
             Event connect_event=new Event(Event.CONNECT, cluster_name);
-            down(connect_event);
-
-            Object res=connect_promise.getResult();  // waits forever until connected (or channel is closed)
+            Object res=down(connect_event);  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
                 throw new ChannelException("connect() failed", (Throwable)res);
             }
@@ -995,10 +989,6 @@ public class JChannel extends Channel {
             }
             break;
 
-        case Event.CONNECT_OK:
-            connect_promise.setResult(evt.getArg());
-            break;
-
         case Event.SUSPEND_OK:
         	flush_promise.setResult(Boolean.TRUE);
         	break;
@@ -1276,7 +1266,6 @@ public class JChannel extends Channel {
         //if(mq != null && mq.closed())
           //  mq.reset();
 
-        connect_promise.reset();
         disconnect_promise.reset();
         connected=false;
     }
@@ -1568,7 +1557,7 @@ public class JChannel extends Channel {
         Vector mbrs=my_view != null? my_view.getMembers() : null;
         if(mbrs == null)
             return null;
-        if(mbrs.size() > 0)
+        if(!mbrs.isEmpty())
             return (Address)mbrs.firstElement();
         return null;
     }
