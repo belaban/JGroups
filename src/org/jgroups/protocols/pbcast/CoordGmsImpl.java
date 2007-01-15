@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.59 2007/01/15 15:59:33 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.60 2007/01/15 16:26:36 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -342,7 +342,6 @@ public class CoordGmsImpl extends GmsImpl {
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);
         try {           
-
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
