@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.23 2007/01/15 15:59:26 belaban Exp $ 
+// $Id: JMS.java,v 1.24 2007/01/15 16:33:13 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -288,11 +288,6 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                         for(int i=0; i < tmpvec.size(); i++)
                         members.addElement(tmpvec.elementAt(i));
                 }
-                break;
-
-            case Event.GET_LOCAL_ADDRESS:
-                // return local address -> Event(SET_LOCAL_ADDRESS, local)
-                up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
                 break;
 
             case Event.CONNECT:

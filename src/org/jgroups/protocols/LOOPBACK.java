@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.22 2007/01/15 15:59:27 belaban Exp $
+// $Id: LOOPBACK.java,v 1.23 2007/01/15 16:33:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -76,10 +76,6 @@ public class LOOPBACK extends Protocol {
             //rsp.setDest(local_addr);
             //rsp.setSrc(dest_addr != null ? dest_addr : local_addr);
             up(new Event(Event.MSG, rsp));
-            break;
-
-        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
             break;
 
         case Event.CONNECT:
