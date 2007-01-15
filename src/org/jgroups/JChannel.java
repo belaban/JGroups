@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.118 2007/01/15 15:47:52 belaban Exp $
+ * @version $Id: JChannel.java,v 1.119 2007/01/15 15:59:32 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -97,9 +97,6 @@ public class JChannel extends Channel {
 
     /** To wait until a local address has been assigned */
     private final Promise local_addr_promise=new Promise();
-
-    /** To wait until we have been disconnected from the channel */
-    private final Promise disconnect_promise=new Promise();
 
     private final Promise state_promise=new Promise();
 
@@ -432,7 +429,7 @@ public class JChannel extends Channel {
      * Otherwise the following actions happen in the listed order<BR>
      * <ol>
      * <li> The JChannel sends a DISCONNECT event down the protocol stack<BR>
-     * <li> Blocks until the channel to receives a DISCONNECT_OK event<BR>
+     * <li> Blocks until the event has returned<BR>
      * <li> Sends a STOP_QUEING event down the stack<BR>
      * <li> Stops the protocol stack by calling ProtocolStack.stop()<BR>
      * <li> Notifies the listener, if the listener is available<BR>
@@ -444,15 +441,9 @@ public class JChannel extends Channel {
         if(connected) {
 
             if(cluster_name != null) {
-
-                /* Send down a DISCONNECT event. The DISCONNECT event travels down to the GMS, where a
-                *  DISCONNECT_OK response is generated and sent up the stack. JChannel blocks until a
-                *  DISCONNECT_OK has been received, or until timeout has elapsed.
-                */
+                // Send down a DISCONNECT event, which travels down to the GMS, where a response is returned
                 Event disconnect_event=new Event(Event.DISCONNECT, local_addr);
-                disconnect_promise.reset();
                 down(disconnect_event);   // DISCONNECT is handled by each layer
-                disconnect_promise.getResult(); // wait for DISCONNECT_OK
             }
 
             // Just in case we use the QUEUE protocol and it is still blocked...
@@ -985,10 +976,6 @@ public class JChannel extends Channel {
         	flush_promise.setResult(Boolean.TRUE);
         	break;
 
-        case Event.DISCONNECT_OK:
-            disconnect_promise.setResult(Boolean.TRUE);
-            break;
-
         case Event.GET_STATE_OK:
             StateTransferInfo info=(StateTransferInfo)evt.getArg();
             byte[] state=info.state;
@@ -1252,8 +1239,6 @@ public class JChannel extends Channel {
         // changed by Bela Sept 25 2003
         //if(mq != null && mq.closed())
           //  mq.reset();
-
-        disconnect_promise.reset();
         connected=false;
     }
 
