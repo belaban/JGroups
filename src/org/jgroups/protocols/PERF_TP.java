@@ -1,4 +1,4 @@
-// $Id: PERF_TP.java,v 1.17 2007/01/12 14:20:34 belaban Exp $
+// $Id: PERF_TP.java,v 1.18 2007/01/15 15:59:27 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,7 @@ import org.jgroups.stack.Protocol;
 /**
  * Measures the time for a message to travel from the channel to the transport
  * @author Bela Ban
- * @version $Id: PERF_TP.java,v 1.17 2007/01/12 14:20:34 belaban Exp $
+ * @version $Id: PERF_TP.java,v 1.18 2007/01/15 15:59:27 belaban Exp $
  */
 public class PERF_TP extends Protocol {
     private Address local_addr=null;
@@ -112,10 +112,6 @@ public class PERF_TP extends Protocol {
             break;
 
         case Event.CONNECT:
-            return null;
-
-        case Event.DISCONNECT:
-            up_prot.up(new Event(Event.DISCONNECT_OK));
             return null;
         }
 

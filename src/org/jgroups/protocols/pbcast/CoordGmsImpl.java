@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.58 2007/01/12 14:21:19 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.59 2007/01/15 15:59:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -406,7 +406,6 @@ public class CoordGmsImpl extends GmsImpl {
             if(gms.use_flush)
                 gms.stopFlush(new_view);
             if(leaving) {
-                gms.getUpProtocol().up(new Event(Event.DISCONNECT_OK));
                 gms.initState(); // in case connect() is called again
             }
         }

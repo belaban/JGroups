@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.34 2007/01/12 14:20:56 belaban Exp $
+// $Id: TUNNEL.java,v 1.35 2007/01/15 15:59:26 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -373,7 +373,6 @@ public class TUNNEL extends Protocol implements Runnable {
                 stub.disconnect();
             }
             teardownTunnel();
-            up_prot.up(new Event(Event.DISCONNECT_OK));
             up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, null));
             local_addr=null;
             break;
