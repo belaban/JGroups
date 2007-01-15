@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.33 2007/01/15 16:33:17 belaban Exp $
+// $Id: Event.java,v 1.34 2007/01/15 16:36:03 belaban Exp $
 
 package org.jgroups;
 
@@ -27,8 +27,6 @@ public class Event {
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
     public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
-    public static final int START_QUEUEING            = 22;
-    public static final int STOP_QUEUEING             = 23;  // arg = Vector (event-list)
     public static final int SWITCH_NAK                = 24;
     public static final int SWITCH_NAK_ACK            = 25;
     public static final int SWITCH_OUT_OF_BAND        = 26;
@@ -133,8 +131,6 @@ public class Event {
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
             case STATE_RECEIVED:         return "STATE_RECEIVED";
-            case START_QUEUEING:         return "START_QUEUEING";
-            case STOP_QUEUEING:          return "STOP_QUEUEING";
             case SWITCH_NAK:             return "SWITCH_NAK";
             case SWITCH_NAK_ACK:         return "SWITCH_NAK_ACK";
             case SWITCH_OUT_OF_BAND:     return "SWITCH_OUT_OF_BAND";

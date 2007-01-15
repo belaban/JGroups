@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.119 2007/01/15 15:59:32 belaban Exp $
+ * @version $Id: JChannel.java,v 1.120 2007/01/15 16:36:02 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -445,9 +445,6 @@ public class JChannel extends Channel {
                 Event disconnect_event=new Event(Event.DISCONNECT, local_addr);
                 down(disconnect_event);   // DISCONNECT is handled by each layer
             }
-
-            // Just in case we use the QUEUE protocol and it is still blocked...
-            down(new Event(Event.STOP_QUEUEING));
 
             connected=false;
             try {
@@ -830,7 +827,6 @@ public class JChannel extends Channel {
      */
     public void blockOk() {
         down(new Event(Event.BLOCK_OK));
-        down(new Event(Event.START_QUEUEING));
     }
 
 
@@ -955,9 +951,6 @@ public class JChannel extends Channel {
             if(connected == false) {
                 connected=true;
             }
-
-            // unblock queueing of messages due to previous BLOCK event:
-            down(new Event(Event.STOP_QUEUEING));
             break;
 
         case Event.CONFIG:
@@ -1101,7 +1094,6 @@ public class JChannel extends Channel {
             case Event.BLOCK:
                 if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
                     down(new Event(Event.BLOCK_OK));
-                    down(new Event(Event.START_QUEUEING));
                     return null;
                 }
 
