@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.20 2007/01/12 14:19:48 belaban Exp $
+// $Id: SMACK.java,v 1.21 2007/01/15 15:47:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -235,10 +235,8 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 break;
 
             case Event.CONNECT:
-                //up_prot.up(new Event(Event.CONNECT_OK));
-
                 // Do not send JOIN_ANOUNCEMENT here, don't know yet if the transport is OK.
-                // Send it later when handling CONNECT_OK from below
+                // Send it later
 
 //                 sender_win=new AckMcastSenderWindow(this, timeout);
 //                 // send join announcement

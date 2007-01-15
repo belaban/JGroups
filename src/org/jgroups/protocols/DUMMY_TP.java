@@ -1,4 +1,4 @@
-// $Id: DUMMY_TP.java,v 1.5 2007/01/12 14:19:11 belaban Exp $
+// $Id: DUMMY_TP.java,v 1.6 2007/01/15 15:47:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -9,10 +9,10 @@ import org.jgroups.stack.Protocol;
 
 
 /**
- * Dummy transport, returns a fake local address and responds to CONNECT with CONNECT_OK.
+ * Dummy transport, returns a fake local address and responds to CONNECT.
  * Compared to LOOPBACK, this discards everything
  * @author Bela Ban
- * @version $Id: DUMMY_TP.java,v 1.5 2007/01/12 14:19:11 belaban Exp $
+ * @version $Id: DUMMY_TP.java,v 1.6 2007/01/15 15:47:50 belaban Exp $
  */
 public class DUMMY_TP extends Protocol {
     private Address local_addr=null;

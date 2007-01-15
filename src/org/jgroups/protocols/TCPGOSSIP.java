@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.22 2007/01/12 14:20:59 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.23 2007/01/15 15:47:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -97,13 +97,11 @@ public class TCPGOSSIP extends Discovery {
     public void handleConnectOK() {
         if(group_addr == null || local_addr == null) {
             if(log.isErrorEnabled())
-                log.error("[CONNECT_OK]: group_addr or local_addr is null. " +
-                          "cannot register with GossipRouter(s)");
+                log.error("group_addr or local_addr is null, cannot register with GossipRouter(s)");
         }
         else {
             if(trace)
-                log.trace("[CONNECT_OK]: registering " + local_addr +
-                          " under " + group_addr + " with GossipRouter");
+                log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
             gossip_client.register(group_addr, local_addr);
         }
     }
@@ -121,7 +119,7 @@ public class TCPGOSSIP extends Discovery {
         }
         if(trace) log.trace("fetching members from GossipRouter(s)");
         tmp_mbrs=gossip_client.getMembers(group_addr);
-        if(tmp_mbrs == null || tmp_mbrs.size() == 0) {
+        if(tmp_mbrs == null || tmp_mbrs.isEmpty()) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
             up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
