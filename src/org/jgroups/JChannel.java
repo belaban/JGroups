@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.117 2007/01/12 14:21:07 belaban Exp $
+ * @version $Id: JChannel.java,v 1.118 2007/01/15 15:47:52 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -333,9 +333,8 @@ public class JChannel extends Channel {
      * If the channel is already connected, an error message will be printed to the error log.
      * If the channel is closed a ChannelClosed exception will be thrown.
      * This method starts the protocol stack by calling ProtocolStack.start,
-     * then it sends an Event.CONNECT event down the stack and waits to receive a CONNECT_OK event.
-     * Once the CONNECT_OK event arrives from the protocol stack, any channel listeners are notified
-     * and the channel is considered connected.
+     * then it sends an Event.CONNECT event down the stack and waits for the return value.
+     * Once the call returns, the channel listeners are notified and the channel is considered connected.
      *
      * @param cluster_name A <code>String</code> denoting the group name. Cannot be null.
      * @exception ChannelException The protocol stack cannot be started
@@ -961,13 +960,6 @@ public class JChannel extends Channel {
              * connected=true because client can invoke channel.getView() in
              * viewAccepted() callback invoked on this thread
              * (see Event.VIEW_CHANGE handling below)
-             *
-             * We do not set connect_promise because we want to wait for
-             * CONNECT_OK and then return from user's JChannel.connect() call.
-             * This is important since we have to wait for Event.UNBLOCK after
-             * CONNECT_OK if blocks are turned on. See JChannel.connect() for
-             * details.
-             *
              */
             if(connected == false) {
                 connected=true;
