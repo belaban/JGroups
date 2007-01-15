@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.35 2007/01/15 15:59:26 belaban Exp $
+// $Id: TUNNEL.java,v 1.36 2007/01/15 16:33:14 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -333,10 +333,6 @@ public class TUNNEL extends Protocol implements Runnable {
                 for(int i=0; i < tmpvec.size(); i++)
                     members.addElement(tmpvec.elementAt(i));
             }
-            break;
-
-        case Event.GET_LOCAL_ADDRESS:   // return local address -> Event(SET_LOCAL_ADDRESS, local)
-            up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
             break;
 
         case Event.SET_LOCAL_ADDRESS:
