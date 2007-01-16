@@ -1,4 +1,3 @@
-// $Id: DiscardTest.java,v 1.9 2006/09/22 12:30:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,15 +14,15 @@ import org.jgroups.util.Util;
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.9 2006/09/22 12:30:45 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.10 2007/01/16 16:30:17 belaban Exp $
  */
 public class DiscardTest extends TestCase {
     JChannel ch1, ch2;
 
-    final String discard_props="discard.xml";             // located in JGroups/conf, needs to be in the classpath
-    final String fast_props="udp.xml"; // located in JGroups/conf, needs to be in the classpath
-    final long NUM_MSGS=10000;
-    final int  MSG_SIZE=1000;
+    static final String discard_props="discard.xml";             // located in JGroups/conf, needs to be in the classpath
+    static final String fast_props="udp.xml"; // located in JGroups/conf, needs to be in the classpath
+    static final long NUM_MSGS=10000;
+    static final int  MSG_SIZE=1000;
     private static final String GROUP="DiscardTestGroup";
     final Promise ch1_all_received=new Promise();
     final Promise ch2_all_received=new Promise();
@@ -98,7 +97,7 @@ public class DiscardTest extends TestCase {
     }
 
 
-    class MyReceiver extends ReceiverAdapter {
+    static class MyReceiver extends ReceiverAdapter {
         final Promise p;
         final long num_msgs_expected;
         long num_msgs=0;
