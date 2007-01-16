@@ -172,7 +172,7 @@ public abstract class BasicConnectionTable {
    }
 
    public String toString() {
-       StringBuffer ret=new StringBuffer();
+       StringBuilder ret=new StringBuilder();
        Address key;
        Connection val;
        Map.Entry entry;
@@ -323,7 +323,8 @@ public abstract class BasicConnectionTable {
            if(sock_addr != null)
                return sock_addr;
            if(sock != null) {
-               StringBuffer sb=new StringBuffer();
+               StringBuffer sb;
+               sb=new StringBuffer();
                sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort());
                sb.append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
                sock_addr=sb.toString();
@@ -393,6 +394,7 @@ public abstract class BasicConnectionTable {
                    tmp.join(MAX_JOIN_TIMEOUT);
                }
                catch(InterruptedException e) {
+                   Thread.currentThread().interrupt(); // set interrupt flag again
                }
                if(tmp.isAlive()) {
                    if(log.isWarnEnabled())
@@ -452,7 +454,9 @@ public abstract class BasicConnectionTable {
                        if(log.isErrorEnabled()) log.error("exception is " + ex2);
                    }
                }
-               catch(InterruptedException iex) {}
+               catch(InterruptedException iex) {
+                   Thread.currentThread().interrupt(); // set interrupt flag again
+               }
                catch(Throwable ex) {
                    if(log.isErrorEnabled()) log.error("exception is " + ex);
                }
@@ -606,7 +610,7 @@ public abstract class BasicConnectionTable {
 
 
        public String toString() {
-           StringBuffer ret=new StringBuffer();
+           StringBuilder ret=new StringBuilder();
            InetAddress local=null, remote=null;
            String local_str, remote_str;
 
@@ -667,6 +671,7 @@ public abstract class BasicConnectionTable {
                        tmp.join(MAX_JOIN_TIMEOUT);
                    }
                    catch(InterruptedException e) {
+                       Thread.currentThread().interrupt(); // set interrupt flag again
                    }
                    if(tmp.isAlive()) {
                        if(log.isWarnEnabled())
@@ -709,7 +714,7 @@ public abstract class BasicConnectionTable {
        }
 
        public void start() {
-           if(conns.size() == 0)
+           if(conns.isEmpty())
                return;
            if(t != null && !t.isAlive())
                t=null;
@@ -731,6 +736,7 @@ public abstract class BasicConnectionTable {
                    tmp.join(MAX_JOIN_TIMEOUT);
                }
                catch(InterruptedException e) {
+                   Thread.currentThread().interrupt(); // set interrupt flag again
                }
                if(tmp.isAlive()) {
                    if(log.isWarnEnabled())
@@ -753,7 +759,7 @@ public abstract class BasicConnectionTable {
                                             conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
                                             conn_expire_time);
 
-           while(conns.size() > 0 && t != null && t.equals(Thread.currentThread())) {
+           while(!conns.isEmpty() && t != null && t.equals(Thread.currentThread())) {
                Util.sleep(reaper_interval);
                if(t == null || !Thread.currentThread().equals(t))
                    break;
