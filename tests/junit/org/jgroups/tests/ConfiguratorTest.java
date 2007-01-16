@@ -3,13 +3,14 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.JChannel;
 
 import java.util.List;
 
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.2 2007/01/16 09:14:29 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.3 2007/01/16 12:52:12 belaban Exp $
  */
 public class ConfiguratorTest extends TestCase {
     ProtocolStack stack;
@@ -24,7 +25,12 @@ public class ConfiguratorTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        stack=new ProtocolStack(null, props);
+
+        JChannel mock_channel=new JChannel() {
+
+        };
+
+        stack=new ProtocolStack(mock_channel, props);
     }
 
 
