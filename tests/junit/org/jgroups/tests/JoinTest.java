@@ -16,7 +16,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.3 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.4 2007/01/16 16:56:10 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
@@ -37,10 +37,10 @@ public class JoinTest extends ChannelTestBase {
 
 
     public void tearDown() throws Exception {        
-        if(c1 != null)
-            c1.close();
         if(c2 != null)
             c2.close();
+        if(c1 != null)
+            c1.close();
         super.tearDown();
     }
 
@@ -84,13 +84,13 @@ public class JoinTest extends ChannelTestBase {
         c1.send(m1);
         c2.send(m2);
 
-        Util.sleep(200);
+        Util.sleep(2000);
         List c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
         System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
         assertNotNull(c1_list);
         assertNotNull(c2_list);
-        assertEquals(2, c1_list.size());
-        assertEquals(2, c2_list.size());
+        assertEquals("cl_list: " + c1_list, 2, c1_list.size());
+        assertEquals("c2_list: " + c2_list, 2, c2_list.size());
         assertTrue(c1_list.contains("message-1"));
         assertTrue(c2_list.contains("message-1"));
         assertTrue(c1_list.contains("message-2"));
