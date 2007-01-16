@@ -607,7 +607,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          {
             digest = null;
             if (log.isDebugEnabled())
-               log.debug("passing down GET_DIGEST_STATE");
+               log.debug("passing down GET_DIGEST");
             down_prot.down(new Event(Event.GET_DIGEST));
          }
       }
