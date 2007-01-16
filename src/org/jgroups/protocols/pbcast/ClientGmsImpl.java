@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.37 2007/01/12 14:21:35 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.38 2007/01/16 14:15:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.37 $
+ * @version $Revision: 1.38 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -244,7 +244,7 @@ public class ClientGmsImpl extends GmsImpl {
             case Event.FIND_INITIAL_MBRS_OK:
                 tmp=(Vector)evt.getArg();
                 synchronized(initial_mbrs) {
-                    if(tmp != null && tmp.size() > 0) {
+                    if(tmp != null && !tmp.isEmpty()) {
                         initial_mbrs.addAll(tmp);
                     }
                     initial_mbrs_received=true;
