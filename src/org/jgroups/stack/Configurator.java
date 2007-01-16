@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.23 2006/12/22 13:37:12 belaban Exp $
+// $Id: Configurator.java,v 1.24 2007/01/16 09:23:30 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -458,7 +458,7 @@ public class Configurator {
 
 
         public String toString() {
-            StringBuffer ret=new StringBuffer();
+            StringBuilder ret=new StringBuilder();
             ret.append('\n' + name + ':');
             if(up_reqs != null)
                 ret.append("\nRequires from above: " + printUpReqs());
@@ -476,7 +476,8 @@ public class Configurator {
 
 
         String printUpReqs() {
-            StringBuffer ret=new StringBuffer("[");
+            StringBuffer ret;
+            ret=new StringBuffer("[");
             if(up_reqs != null) {
                 for(int i=0; i < up_reqs.size(); i++) {
                     ret.append(Event.type2String(((Integer)up_reqs.elementAt(i)).intValue()) + ' ');
@@ -486,7 +487,7 @@ public class Configurator {
         }
 
         String printDownReqs() {
-            StringBuffer ret=new StringBuffer("[");
+            StringBuilder ret=new StringBuilder("[");
             if(down_reqs != null) {
                 for(int i=0; i < down_reqs.size(); i++) {
                     ret.append(Event.type2String(((Integer)down_reqs.elementAt(i)).intValue()) + ' ');
@@ -497,7 +498,7 @@ public class Configurator {
 
 
         String printUpProvides() {
-            StringBuffer ret=new StringBuffer("[");
+            StringBuilder ret=new StringBuilder("[");
             if(up_provides != null) {
                 for(int i=0; i < up_provides.size(); i++) {
                     ret.append(Event.type2String(((Integer)up_provides.elementAt(i)).intValue()) + ' ');
@@ -507,7 +508,7 @@ public class Configurator {
         }
 
         String printDownProvides() {
-            StringBuffer ret=new StringBuffer("[");
+            StringBuilder ret=new StringBuilder("[");
             if(down_provides != null) {
                 for(int i=0; i < down_provides.size(); i++)
                     ret.append(Event.type2String(((Integer)down_provides.elementAt(i)).intValue()) +
@@ -569,7 +570,7 @@ public class Configurator {
             /* "in_port=5555;out_port=6666" */
             if(properties_str != null) {
                 Vector components=parseComponentStrings(properties_str, ";");
-                if(components.size() > 0) {
+                if(!components.isEmpty()) {
                     for(int i=0; i < components.size(); i++) {
                         String name, value, comp=(String)components.elementAt(i);
                         index=comp.indexOf('=');
@@ -634,7 +635,7 @@ public class Configurator {
 
 
         public String toString() {
-            StringBuffer retval=new StringBuffer();
+            StringBuilder retval=new StringBuilder();
             retval.append("Protocol: ");
             if(protocol_name == null)
                 retval.append("<unknown>");
