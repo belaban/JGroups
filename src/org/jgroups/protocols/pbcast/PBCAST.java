@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.20 2007/01/12 14:21:13 belaban Exp $
+// $Id: PBCAST.java,v 1.21 2007/01/16 09:03:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -58,7 +58,6 @@ public class PBCAST extends Protocol implements Runnable {
         Vector retval=new Vector();
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
-        retval.addElement(new Integer(Event.GET_DIGEST_STATE));
         return retval;
     }
 
@@ -181,10 +180,6 @@ public class PBCAST extends Protocol implements Runnable {
                 return null;  // don't pass down
 
             case Event.GET_DIGEST:  // don't pass down
-                up_prot.up(new Event(Event.GET_DIGEST_OK, getDigest()));
-                return null;
-
-            case Event.GET_DIGEST_STATE:  // don't pass down
                 return getDigest();
 
             case Event.VIEW_CHANGE:

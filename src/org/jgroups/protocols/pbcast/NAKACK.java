@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.101 2007/01/12 14:21:23 belaban Exp $
+// $Id: NAKACK.java,v 1.102 2007/01/16 09:03:42 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -361,7 +361,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Vector retval=new Vector(5);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.GET_DIGEST_STABLE));
-        retval.addElement(new Integer(Event.GET_DIGEST_STATE));
         retval.addElement(new Integer(Event.SET_DIGEST));
         retval.addElement(new Integer(Event.MERGE_DIGEST));
         return retval;
@@ -410,9 +409,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.GET_DIGEST_STABLE:
                 return getDigestHighestDeliveredMsgs();
-
-            case Event.GET_DIGEST_STATE:
-                return getDigest();
 
             case Event.SET_DIGEST:
                 setDigest((Digest)evt.getArg());
