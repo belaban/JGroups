@@ -30,27 +30,21 @@ public class ENCRYPT14KeystoreTest extends TestCase {
    
 
 
-	public void testInitWrongKeystoreProperties()
-	{
-		
+	public void testInitWrongKeystoreProperties() {
 		Properties props = new Properties();
 		String defaultKeystore = "unkownKeystore.keystore";
 		props.put("key_store_name",defaultKeystore);
-
-		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
 		try {
 			encrypt.init();
 		} catch (Exception e){
-			System.out.println(e.getMessage());
+			System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
 			assertEquals("Unable to load keystore " + defaultKeystore + " ensure file is on classpath",e.getMessage());
 		}
-		
 	}
 
-	public void testInitKeystoreProperties()
-	{
+	public void testInitKeystoreProperties() throws Exception {
 		
 		Properties props = new Properties();
 		String defaultKeystore = "defaultStore.keystore";
@@ -59,17 +53,13 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			System.out.println(e.getMessage());
-		}
+        encrypt.init();
 		assertNotNull(encrypt.getSymDecodingCipher());
 		assertNotNull(encrypt.getSymEncodingCipher());
 
 	}
 
-	public void testMessageDownEncode() throws Exception{
+	public void testMessageDownEncode() throws Exception {
 		// initialise the encryption
 		Properties props = new Properties();
 		String defaultKeystore = "defaultStore.keystore";
@@ -78,23 +68,17 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		// use a second instance so we know we are not accidentally using internal key
+        encrypt.init();
+
+        // use a second instance so we know we are not accidentally using internal key
 		Properties props2 = new Properties();
 		props2.put("key_store_name",defaultKeystore);
 //		javax.
 		ENCRYPT encrypt2 = new ENCRYPT();
 		encrypt2.setProperties(props2);
-		try {
-			encrypt2.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		MockObserver observer = new MockObserver();
+        encrypt2.init();
+
+        MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
 		
 		encrypt.keyServer = true;
@@ -124,23 +108,17 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		// use a second instance so we know we are not accidentally using internal key
+        encrypt.init();
+
+        // use a second instance so we know we are not accidentally using internal key
 		Properties props2 = new Properties();
 		props2.put("key_store_name",defaultKeystore);
 //		javax.
 		ENCRYPT encrypt2 = new ENCRYPT();
 		encrypt2.setProperties(props2);
-		try {
-			encrypt2.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		MockObserver observer = new MockObserver();
+        encrypt2.init();
+
+        MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
 		
 		encrypt.keyServer = true;
@@ -176,27 +154,17 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
+        encrypt.init();
 		// use a second instance so we know we are not accidentally using internal key
 
-	
-		
-//		javax.
 		Properties props2 = new Properties();
 		ENCRYPT encrypt2 = new ENCRYPT();
 		props2.setProperty("key_store_name",defaultKeystore2);
 		
 		encrypt2.setProperties(props2);
-		try {
-			encrypt2.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		MockObserver observer = new MockObserver();
+        encrypt2.init();
+
+        MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
 		
 		encrypt.keyServer = true;
@@ -228,22 +196,16 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		// use a second instance so we know we are not accidentally using internal key
+        encrypt.init();
+
+        // use a second instance so we know we are not accidentally using internal key
 		Properties props2 = new Properties();
 		props2.put("key_store_name",defaultKeystore);
 //		javax.
 		ENCRYPT encrypt2 = new ENCRYPT();
 		encrypt2.setProperties(props2);
-		try {
-			encrypt2.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
+        encrypt2.init();
+
 		MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
 		
@@ -271,15 +233,10 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		
+        encrypt.init();
+
 		MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
-		
 		encrypt.keyServer = true;
 	
 		Event event = new Event(Event.MSG,null);
@@ -299,25 +256,18 @@ public class ENCRYPT14KeystoreTest extends TestCase {
 		//javax.
 		ENCRYPT encrypt = new ENCRYPT();
 		encrypt.setProperties(props);
-		try {
-			encrypt.init();
-		} catch (Exception e){
-			fail(e.getMessage());
-		}
-		
+        encrypt.init();
+
 		MockObserver observer = new MockObserver();
 		encrypt.setObserver(observer);
-		
 		encrypt.keyServer = true;
 		Message msg = new Message(null,null,null);
 		Event event = new Event(Event.MSG,msg);
 		encrypt.up(event);
 		assertEquals(1, observer.getUpMessages().size());
-	
-
-
 	}
-	static class MockObserver implements ENCRYPT.Observer {
+    
+    static class MockObserver implements ENCRYPT.Observer {
 
 		private Map upMessages = new HashMap();
 		private Map downMessages = new HashMap();
