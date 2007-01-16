@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.58 2007/01/12 14:21:21 belaban Exp $
+// $Id: STABLE.java,v 1.59 2007/01/16 14:12:26 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -67,7 +67,10 @@ public class STABLE extends Protocol {
     private long                 max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
+    @GuardedBy("received")
     private long                 num_bytes_received=0;
+
+    private Lock                 received=new ReentrantLock();
 
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
@@ -222,22 +225,32 @@ public class STABLE extends Protocol {
             if(max_bytes > 0) {
                 Address dest=msg.getDest();
                 if(dest == null || dest.isMulticastAddress()) {
-                    num_bytes_received+=(long)Math.max(msg.getLength(), 24);
-                    if(num_bytes_received >= max_bytes) {
-                        if(trace) {
-                            log.trace(new StringBuffer("max_bytes has been reached (").append(max_bytes).
-                                    append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
-                        }
-                        num_bytes_received=0;
+                    boolean unlocked=false;
+                    received.lock();
+                    try {
+                        num_bytes_received+=(long)msg.getLength();
+                        if(num_bytes_received >= max_bytes) {
+                            if(trace) {
+                                log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
+                                        append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
+                            }
+                            num_bytes_received=0;
+                            received.unlock();
+                            unlocked=true;
 
-                        // asks the NAKACK protocol for the current digest,
-                        Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
-                        synchronized(latest_local_digest) {
-                            latest_local_digest.replace(my_digest);
+                            // asks the NAKACK protocol for the current digest,
+                            Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+                            synchronized(latest_local_digest) {
+                                latest_local_digest.replace(my_digest);
+                            }
+                            if(trace)
+                                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+                            sendStableMessage(my_digest);
                         }
-                        if(trace)
-                            log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
-                        sendStableMessage(my_digest);
+                    }
+                    finally {
+                        if(!unlocked)
+                            received.unlock();
                     }
                 }
             }
