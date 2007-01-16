@@ -1,21 +1,19 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
 import java.util.List;
-import java.util.ArrayList;
 
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.1 2006/12/13 07:42:16 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.2 2007/01/16 09:14:29 belaban Exp $
  */
 public class ConfiguratorTest extends TestCase {
     ProtocolStack stack;
-    final String props="UDP(mcast_addr=225.1.2.3):PING:FD:NAKACK:UNICAST:FC";
+    static final String props="UDP(mcast_addr=225.1.2.3):PING:FD:pbcast.NAKACK:UNICAST:FC";
     final String[] names={"FC", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
     final String[] below={"FC", "UNICAST", "TRACE", "NAKACK", "FD", "PING", "UDP"};
     final String[] above={"FC", "TRACE", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
