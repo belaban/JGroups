@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.8 2006/03/27 08:34:24 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.9 2007/01/16 12:40:04 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -29,24 +29,7 @@ import org.jgroups.util.Util;
  */
 public class STATE_TRANSFER_Test extends TestCase {
 
-   public final static String CHANNEL_PROPS =
-      "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-      "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
-      "PING(timeout=2000;num_initial_members=3):" +
-      "MERGE2(min_interval=5000;max_interval=10000):" +
-      "FD_SOCK:" +
-      "VERIFY_SUSPECT(timeout=1500):" +
-      "UNICAST(timeout=600,1200,2400,4800):" +
-      "STABLE():" +
-      "NAKACK(retransmit_timeout=600,1200,2400,4800):" +
-      "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
-      "FLUSH():" +
-      "GMS(join_timeout=5000;join_retry_timeout=2000;" +
-      "print_local_addr=true):" +
-      "VIEW_ENFORCER:" +
-      "TOTAL:" +
-      "STATE_TRANSFER:" +
-      "QUEUE";
+   public final static String CHANNEL_PROPS ="udp.xml";
 
    public static final String GROUP_NAME = "jgroups.TEST_GROUP";
 

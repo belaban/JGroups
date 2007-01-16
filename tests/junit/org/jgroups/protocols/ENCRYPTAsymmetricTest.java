@@ -324,7 +324,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		// send to peer - which should have peer2 as its key server
 		peer.up(serverEvent);
 		// assert that peer\ keyserver address is now set
-		assertTrue(serverAddress == peer.getKeyServerAddr());
+		assertEquals(serverAddress, peer.getKeyServerAddr());
 		
 		// get the resulting message from the peer - should be a key request
 		
@@ -462,7 +462,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		peer.up(event);
 		
 		// assert that peer\ keyserver address is now set
-		assertTrue(peer2Address == peer.getKeyServerAddr());
+		assertEquals(peer2Address, peer.getKeyServerAddr());
 		
 		// get the resulting message from the peer - should be a key request to peer2		
 		Event sent = (Event)peerObserver.getDownMessages().get("message0");

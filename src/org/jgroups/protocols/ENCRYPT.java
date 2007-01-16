@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.33 2007/01/12 14:19:55 belaban Exp $
+// $Id: ENCRYPT.java,v 1.34 2007/01/16 12:40:02 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -510,10 +510,6 @@ public class ENCRYPT extends Protocol {
       */
     public Object up(Event evt)
     {
-
-        if(observer != null)
-            observer.up(evt);
-
         switch (evt.getType()) {
 
             // we need to know what our address is
@@ -549,7 +545,7 @@ public class ENCRYPT extends Protocol {
     public Object passItUp(Event evt) {
         if(observer != null)
             observer.passUp(evt);
-        return up_prot.up(evt);
+        return up_prot != null? up_prot.up(evt) : null;
     }
 
 
@@ -1011,7 +1007,7 @@ public class ENCRYPT extends Protocol {
     public Object passItDown(Event evt) {
         if(observer != null)
             observer.passDown(evt);
-        return down_prot.down(evt);
+        return down_prot != null? down_prot.down(evt) : null;
     }
 
 
