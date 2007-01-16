@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.34 2007/01/15 16:36:03 belaban Exp $
+// $Id: Event.java,v 1.35 2007/01/16 09:02:17 belaban Exp $
 
 package org.jgroups;
 
@@ -27,34 +27,15 @@ public class Event {
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
     public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
-    public static final int SWITCH_NAK                = 24;
-    public static final int SWITCH_NAK_ACK            = 25;
-    public static final int SWITCH_OUT_OF_BAND        = 26;
     public static final int FLUSH                     = 27;  // arg = Vector (destinatinon for FLUSH)
     public static final int FLUSH_OK                  = 28;  // arg = FlushRsp
-    public static final int DROP_NEXT_MSG             = 29;
     public static final int STABLE                    = 30;  // arg = long[] (stable seqnos for mbrs)
-    public static final int GET_MSG_DIGEST            = 31;  // arg = long[] (highest seqnos from mbrs)
-    public static final int GET_MSG_DIGEST_OK         = 32;  // arg = Digest
-    public static final int REBROADCAST_MSGS          = 33;  // arg = Vector (msgs with NakAckHeader)
-    public static final int REBROADCAST_MSGS_OK       = 34;
-    public static final int GET_MSGS_RECEIVED         = 35;
-    public static final int GET_MSGS_RECEIVED_OK      = 36;  // arg = long[] (highest deliverable seqnos)
-    public static final int GET_MSGS                  = 37;  // arg = long[][] (range of seqnos for each m.)
-    public static final int GET_MSGS_OK               = 38;  // arg = List
     public static final int GET_DIGEST                = 39;  //
-    public static final int GET_DIGEST_OK             = 40;  // arg = Digest (response to GET_DIGEST)
     public static final int SET_DIGEST                = 41;  // arg = Digest
-    public static final int GET_DIGEST_STATE          = 42;  // see ./JavaStack/Protocols/pbcast/DESIGN for explanantion
-    public static final int SET_PARTITIONS            = 44;  // arg = Hashtable of addresses and numbers
-    public static final int MERGE_DENIED              = 45;  // Passed down from gms when a merge attempt fails
     public static final int EXIT                      = 46;  // received when member was forced out of the group
     public static final int PERF                      = 47;  // for performance measurements
-    public static final int SUBVIEW_MERGE             = 48;  // arg = vector of addresses; see JGroups/EVS/Readme.txt
-    public static final int SUBVIEWSET_MERGE          = 49;  // arg = vector of addresses; see JGroups/EVS/Readme.txt
     public static final int HEARD_FROM                = 50;  // arg = Vector (list of Addresses)
     public static final int UNSUSPECT                 = 51;  // arg = Address (of unsuspected member)
-    public static final int SET_PID                   = 52;  // arg = Integer (process id)
     public static final int MERGE_DIGEST              = 53;  // arg = Digest
     public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
     public static final int GET_DIGEST_STABLE         = 57;
@@ -131,33 +112,16 @@ public class Event {
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
             case STATE_RECEIVED:         return "STATE_RECEIVED";
-            case SWITCH_NAK:             return "SWITCH_NAK";
-            case SWITCH_NAK_ACK:         return "SWITCH_NAK_ACK";
-            case SWITCH_OUT_OF_BAND:     return "SWITCH_OUT_OF_BAND";
             case FLUSH:                  return "FLUSH";
             case FLUSH_OK:               return "FLUSH_OK";
-            case DROP_NEXT_MSG:          return "DROP_NEXT_MSG";
             case STABLE:                 return "STABLE";
-            case GET_MSG_DIGEST:         return "GET_MSG_DIGEST";
-            case GET_MSG_DIGEST_OK:      return "GET_MSG_DIGEST_OK";
-            case REBROADCAST_MSGS:       return "REBROADCAST_MSGS";
-            case REBROADCAST_MSGS_OK:    return "REBROADCAST_MSGS_OK";
-            case GET_MSGS_RECEIVED:      return "GET_MSGS_RECEIVED";
-            case GET_MSGS_RECEIVED_OK:   return "GET_MSGS_RECEIVED_OK";
             case GET_DIGEST:             return "GET_DIGEST";
-            case GET_DIGEST_OK:          return "GET_DIGEST_OK";
             case SET_DIGEST:             return "SET_DIGEST";
-            case GET_DIGEST_STATE:       return "GET_DIGEST_STATE";
-            case SET_PARTITIONS:         return "SET_PARTITIONS"; // Added by gianlucac@tin.it to support PARTITIONER
             case MERGE:                  return "MERGE"; // Added by gianlucac@tin.it to support partitions merging in GMS
-            case MERGE_DENIED:           return "MERGE_DENIED";// as above
             case EXIT:                   return "EXIT";
             case PERF:                   return "PERF";
-            case SUBVIEW_MERGE:          return "SUBVIEW_MERGE";
-            case SUBVIEWSET_MERGE:       return "SUBVIEWSET_MERGE";
             case HEARD_FROM:             return "HEARD_FROM";
             case UNSUSPECT:              return "UNSUSPECT";
-            case SET_PID:                return "SET_PID";
             case MERGE_DIGEST:           return "MERGE_DIGEST";
             case CONFIG:                 return "CONFIG";
             case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
