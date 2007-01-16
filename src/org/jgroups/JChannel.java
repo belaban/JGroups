@@ -19,6 +19,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.Exchanger;
 
 /**
  * JChannel is a pure Java implementation of Channel.
@@ -67,7 +68,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.120 2007/01/15 16:36:02 belaban Exp $
+ * @version $Id: JChannel.java,v 1.121 2007/01/16 13:32:48 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -99,6 +100,8 @@ public class JChannel extends Channel {
     private final Promise local_addr_promise=new Promise();
 
     private final Promise state_promise=new Promise();
+
+    private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger();
 
     private final Promise flush_unblock_promise=new Promise();
 
@@ -894,8 +897,13 @@ public class JChannel extends Channel {
      *              (to send over the network).
      */
     public void returnState(byte[] state) {
-        StateTransferInfo info=new StateTransferInfo(null, null, 0L, state);
-        down(new Event(Event.GET_APPLSTATE_OK, info));
+        try {
+            StateTransferInfo info=new StateTransferInfo(null, null, 0L, state);
+            applstate_exchanger.exchange(info);
+        }
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
@@ -904,8 +912,13 @@ public class JChannel extends Channel {
      * @param state_id
      */
     public void returnState(byte[] state, String state_id) {
-        StateTransferInfo info=new StateTransferInfo(null, state_id, 0L, state);
-        down(new Event(Event.GET_APPLSTATE_OK, info));
+        try {
+            StateTransferInfo info=new StateTransferInfo(null, state_id, 0L, state);
+            applstate_exchanger.exchange(info);
+        }
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
 
@@ -1142,6 +1155,16 @@ public class JChannel extends Channel {
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("exception adding event " + evt + " to message queue", e);
+            }
+        }
+
+        if(type == Event.GET_APPLSTATE) {
+            try {
+                return applstate_exchanger.exchange(null);
+            }
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
             }
         }
         return null;

@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.35 2007/01/16 09:02:17 belaban Exp $
+// $Id: Event.java,v 1.36 2007/01/16 13:32:48 belaban Exp $
 
 package org.jgroups;
 
@@ -23,7 +23,6 @@ public class Event {
     public static final int TMP_VIEW                  = 15;  // arg = View
     public static final int BECOME_SERVER             = 16;  // sent when client has joined group
     public static final int GET_APPLSTATE             = 17;  // get state from appl (arg=StateTransferInfo)
-    public static final int GET_APPLSTATE_OK          = 18;  // arg = StateTranferInfo (includes state)
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
     public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
@@ -108,7 +107,6 @@ public class Event {
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";
-            case GET_APPLSTATE_OK:       return "GET_APPLSTATE_OK";
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
             case STATE_RECEIVED:         return "STATE_RECEIVED";
