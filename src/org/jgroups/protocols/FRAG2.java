@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.31 2007/01/12 14:20:14 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.32 2007/01/16 14:23:33 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -47,8 +47,8 @@ public class FRAG2 extends Protocol {
 
     AtomicLong num_sent_msgs=new AtomicLong(0);
     AtomicLong num_received_msgs=new AtomicLong(0);
-    long num_sent_frags=0;
-    long num_received_frags=0;
+    AtomicLong num_sent_frags=new AtomicLong(0);
+    AtomicLong num_received_frags=new AtomicLong(0);
 
 
     public final String getName() {
@@ -60,9 +60,9 @@ public class FRAG2 extends Protocol {
     public int getOverhead() {return overhead;}
     public void setOverhead(int o) {overhead=o;}
     public long getNumberOfSentMessages() {return num_sent_msgs.get();}
-    public long getNumberOfSentFragments() {return num_sent_frags;}
+    public long getNumberOfSentFragments() {return num_sent_frags.get();}
     public long getNumberOfReceivedMessages() {return num_received_msgs.get();}
-    public long getNumberOfReceivedFragments() {return num_received_frags;}
+    public long getNumberOfReceivedFragments() {return num_received_frags.get();}
 
 
     synchronized int getNextId() {
@@ -108,7 +108,8 @@ public class FRAG2 extends Protocol {
     public void resetStats() {
         super.resetStats();
         num_sent_msgs.set(0);
-        num_sent_frags=num_received_frags=0;
+        num_sent_frags.set(0);
+        num_received_frags.set(0);
         num_received_msgs.set(0);
     }
 
@@ -127,10 +128,8 @@ public class FRAG2 extends Protocol {
             num_sent_msgs.incrementAndGet();
             if(size > frag_size) {
                 if(trace) {
-                    StringBuilder sb=new StringBuilder("message's buffer size is ");
-                    sb.append(size).append(", will fragment ").append("(frag_size=");
-                    sb.append(frag_size).append(')');
-                    log.trace(sb.toString());
+                    log.trace(new StringBuilder("message's buffer size is ").append(size)
+                            .append(", will fragment ").append("(frag_size=").append(frag_size).append(')'));
                 }
                 fragment(msg);  // Fragment and pass down
                 return null;
@@ -225,9 +224,7 @@ public class FRAG2 extends Protocol {
             buffer=msg.getBuffer();
             fragments=Util.computeFragOffsets(buffer, frag_size);
             num_frags=fragments.size();
-            synchronized(this) {
-                num_sent_frags+=num_frags;
-            }
+            num_sent_frags.addAndGet(num_frags);
 
             if(trace) {
                 StringBuilder sb=new StringBuilder("fragmenting packet to ");
@@ -275,7 +272,7 @@ public class FRAG2 extends Protocol {
                 frag_table=fragment_list.get(sender);
             }
         }
-        num_received_frags++;
+        num_received_frags.incrementAndGet();
         assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
         if(assembled_msg != null) {
             try {
