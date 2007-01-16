@@ -155,7 +155,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    public Vector requiredDownServices()
    {
       Vector retval = new Vector();
-      retval.addElement(new Integer(Event.GET_DIGEST_STATE));
+      retval.addElement(new Integer(Event.GET_DIGEST));
       retval.addElement(new Integer(Event.SET_DIGEST));
       return retval;
    }
@@ -608,7 +608,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             digest = null;
             if (log.isDebugEnabled())
                log.debug("passing down GET_DIGEST_STATE");
-            down_prot.down(new Event(Event.GET_DIGEST_STATE));
+            down_prot.down(new Event(Event.GET_DIGEST));
          }
       }
    }
