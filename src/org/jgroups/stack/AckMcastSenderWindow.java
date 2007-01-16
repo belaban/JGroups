@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.10 2006/01/14 14:00:42 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.11 2007/01/16 16:41:02 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -460,39 +460,43 @@ public class AckMcastSenderWindow {
      * @param timeout Miliseconds to wait. 0 means wait indefinitely.
      */
     public void waitUntilAllAcksReceived(long timeout) {
-	long    time_to_wait, start_time, current_time;
-	Address suspect;
+        long    time_to_wait, start_time, current_time;
+        Address suspect;
 
-	// remove all suspected members from retransmission
-	for(Iterator it=suspects.iterator(); it.hasNext();) {
-	    suspect=(Address)it.next();
-	    remove(suspect);
-	}
+        // remove all suspected members from retransmission
+        for(Iterator it=suspects.iterator(); it.hasNext();) {
+            suspect=(Address)it.next();
+            remove(suspect);
+        }
 	
-	time_to_wait = timeout;
-	waiting     = true;
-	if (timeout <= 0) {
-	    synchronized(msgs) {
-		while(msgs.size() > 0)
-		    try { msgs.wait(); } catch(InterruptedException ex) {}
-	    }
-	} else {
-	    start_time = System.currentTimeMillis();
-	    synchronized(msgs) {
-		while(msgs.size() > 0) {
-		    current_time = System.currentTimeMillis();
-		    time_to_wait = timeout - (current_time - start_time);
-		    if (time_to_wait <= 0) break;
+        time_to_wait = timeout;
+        waiting     = true;
+        if (timeout <= 0) {
+            synchronized(msgs) {
+                while(!msgs.isEmpty()) {
+                    try { msgs.wait(); }
+                    catch(InterruptedException ex) {
+                    }
+                }
+            }
+        }
+        else {
+            start_time = System.currentTimeMillis();
+            synchronized(msgs) {
+                while(msgs.size() > 0) {
+                    current_time = System.currentTimeMillis();
+                    time_to_wait = timeout - (current_time - start_time);
+                    if (time_to_wait <= 0) break;
 		    
-		    try {
-			msgs.wait(time_to_wait);
-		    } catch(InterruptedException ex) {
-			if(log.isWarnEnabled()) log.warn(ex.toString());
-		    }
-		}
-	    }
-	}	
-	waiting = false;
+                    try {
+                        msgs.wait(time_to_wait);
+                    } catch(InterruptedException ex) {
+                        if(log.isWarnEnabled()) log.warn(ex.toString());
+                    }
+                }
+            }
+        }
+        waiting = false;
     }
 
 

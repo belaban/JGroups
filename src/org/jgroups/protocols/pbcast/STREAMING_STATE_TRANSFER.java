@@ -844,6 +844,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                }
                catch (InterruptedException ignored)
                {
+                   Thread.currentThread().interrupt(); // set interrupt flag again
                }
             }
 
@@ -858,6 +859,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }
             catch (InterruptedException ignored)
             {
+                Thread.currentThread().interrupt(); // set interrupt flag again
             }
          }
          if (log.isDebugEnabled())

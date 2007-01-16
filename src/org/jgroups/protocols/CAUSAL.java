@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.13 2007/01/12 14:20:01 belaban Exp $
+// $Id: CAUSAL.java,v 1.14 2007/01/16 16:37:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.13 $
+ *  @version $Revision: 1.14 $
  *
  **/
 
@@ -716,6 +716,7 @@ public class CAUSAL extends Protocol
                         wait(500);
                     }
                     catch(InterruptedException e) {
+                        Thread.currentThread().interrupt(); // set interrupt flag again
                         // Ignore
                         log.warn("Interrupted?!?", e);
                     }

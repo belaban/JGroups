@@ -317,6 +317,7 @@ public class FLUSH extends Protocol
             }
             catch (InterruptedException e)
             {
+                Thread.currentThread().interrupt(); // set interrupt flag again
             }
             if (isBlockingFlushDown)
             {
