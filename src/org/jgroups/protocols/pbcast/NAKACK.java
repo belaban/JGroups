@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.102 2007/01/16 09:03:42 belaban Exp $
+// $Id: NAKACK.java,v 1.103 2007/01/16 13:50:24 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -387,8 +387,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * method as the event is passed down by default by the superclass after this method returns !</b>
      */
     public Object down(Event evt) {
-        Vector  mbrs;
-
         switch(evt.getType()) {
 
             case Event.MSG:
@@ -427,7 +425,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.TMP_VIEW:
                 View tmp_view=(View)evt.getArg();
-                mbrs=tmp_view.getMembers();
+                Vector mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
                 adjustReceivers(false);
@@ -469,15 +467,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * method as the event is passed up by default by the superclass after this method returns !</b>
      */
     public Object up(Event evt) {
-        NakAckHeader hdr;
-        Message msg;
-
         switch(evt.getType()) {
 
-
         case Event.MSG:
-            msg=(Message)evt.getArg();
-            hdr=(NakAckHeader)msg.getHeader(name);
+            Message msg=(Message)evt.getArg();
+            NakAckHeader hdr=(NakAckHeader)msg.getHeader(name);
             if(hdr == null)
                 break;  // pass up (e.g. unicast msg)
 
