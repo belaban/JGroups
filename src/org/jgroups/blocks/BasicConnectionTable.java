@@ -1,25 +1,20 @@
 package org.jgroups.blocks;
 
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 
-import java.net.Socket;
+import java.io.*;
 import java.net.InetAddress;
-import java.net.SocketException;
 import java.net.ServerSocket;
-import java.io.DataOutputStream;
-import java.io.DataInputStream;
-import java.io.BufferedOutputStream;
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.EOFException;
+import java.net.Socket;
+import java.net.SocketException;
 import java.util.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Shared class for TCP connection tables.
@@ -313,10 +308,10 @@ public abstract class BasicConnectionTable {
        final Object     send_mutex=new Object();  // serialize sends
        long             last_access=System.currentTimeMillis(); // last time a message was sent or received
 
-       /** Queue<byte[]> of data to be sent to the peer of this connection */
-       Queue            send_queue=new Queue();
-       Sender           sender=new ConnectionTable.Connection.Sender();
-       boolean          is_running=false;
+       /** Bounded queue of data to be sent to the peer of this connection */
+       BlockingQueue<byte[]> send_queue=new LinkedBlockingQueue<byte[]>(1000);
+       Sender                sender=new Sender();
+       boolean               is_running=false;
 
 
        private String getSockAddress() {
@@ -346,6 +341,7 @@ public abstract class BasicConnectionTable {
                // bela Sept 7 2006
                out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
                in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
+               sender.start();
            }
            catch(Exception ex) {
                if(log.isErrorEnabled()) log.error("exception is " + ex);
@@ -421,12 +417,10 @@ public abstract class BasicConnectionTable {
                    // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
                    byte[] tmp=new byte[length];
                    System.arraycopy(data, offset, tmp, 0, length);
-                   send_queue.add(tmp);
-                   if(!sender.isRunning())
-                       sender.start();
+                   send_queue.put(tmp);
                }
-               catch(QueueClosedException e) {
-                   log.error("failed adding message to send_queue", e);
+               catch(InterruptedException e) {
+                   Thread.currentThread().interrupt();
                }
            }
            else
@@ -662,7 +656,7 @@ public abstract class BasicConnectionTable {
            void stop() {
                is_it_running=false;
                if(send_queue != null)
-                   send_queue.close(false);
+                   send_queue.clear();
                if(senderThread != null) {
                    Thread tmp=senderThread;
                    senderThread=null;
@@ -688,13 +682,13 @@ public abstract class BasicConnectionTable {
                byte[] data;
                while(senderThread != null && senderThread.equals(Thread.currentThread()) && is_it_running) {
                    try {
-                       data=(byte[])send_queue.remove();
+                       data=send_queue.take();
                        if(data == null)
                            continue;
                        _send(data, 0, data.length);
                    }
-                   catch(QueueClosedException e) {
-                       break;
+                   catch(InterruptedException e) {
+                       ;
                    }
                }
                is_it_running=false;
