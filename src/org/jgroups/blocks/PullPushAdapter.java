@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.23 2007/01/08 08:20:05 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.24 2007/01/18 16:21:54 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -32,6 +32,7 @@ import java.util.List;
  * receive the message.
  * @author Bela Ban
  * @version $Revision
+ * @deprecated Use {@link org.jgroups.Receiver} instead, this class will be removed in JGroups 3.0
  */
 public class PullPushAdapter implements Runnable, ChannelListener {
     protected Transport       transport=null;
