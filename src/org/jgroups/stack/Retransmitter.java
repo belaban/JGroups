@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.14 2007/01/18 18:17:34 belaban Exp $
+// $Id: Retransmitter.java,v 1.15 2007/01/18 18:26:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class Retransmitter {
 
@@ -93,15 +93,14 @@ public class Retransmitter {
      * If retransmitter thread is suspended, wake it up
      */
     public void add(long first_seqno, long last_seqno) {
-        Entry e;
-
         if(first_seqno > last_seqno) {
             long tmp=first_seqno;
             first_seqno=last_seqno;
             last_seqno=tmp;
         }
+
+        Entry e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
         synchronized(msgs) {
-            e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
             msgs.add(e);
             timer.add(e);
         }
