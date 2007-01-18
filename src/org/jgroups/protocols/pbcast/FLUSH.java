@@ -345,6 +345,11 @@ public class FLUSH extends Protocol
             FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null)
             {
+               if(fh.type == FlushHeader.FLUSH_BYPASS)
+               {
+                  break;
+                  //propel this msg up
+               }
                flushPhase.lock();
                if (fh.type == FlushHeader.START_FLUSH)
                {                             
