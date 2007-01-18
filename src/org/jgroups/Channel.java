@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.29 2007/01/18 06:00:18 belaban Exp $
+// $Id: Channel.java,v 1.30 2007/01/18 15:18:19 belaban Exp $
 
 package org.jgroups;
 
@@ -259,6 +259,7 @@ public abstract class Channel implements Transport {
      @exception TimeoutException Thrown when a timeout has occurred.
 
      @see #receive(long)
+     @deprecated Use a {@link Receiver} instead, this method will not be available in JGroups 3.0
      */
     abstract public Object peek(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException;
 
