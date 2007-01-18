@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.13 2007/01/16 16:41:02 belaban Exp $
+// $Id: Retransmitter.java,v 1.14 2007/01/18 18:17:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class Retransmitter {
 
@@ -38,7 +38,7 @@ public class Retransmitter {
     private final List<Entry>    msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
     private RetransmitCommand    cmd=null;
     private boolean              retransmitter_owned;
-    private TimeScheduler        retransmitter=null;
+    private TimeScheduler        timer=null;
     protected static final Log   log=LogFactory.getLog(Retransmitter.class);
 
 
@@ -103,7 +103,7 @@ public class Retransmitter {
         synchronized(msgs) {
             e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
             msgs.add(e);
-            retransmitter.add(e);
+            timer.add(e);
         }
     }
 
@@ -163,7 +163,7 @@ public class Retransmitter {
         synchronized(msgs) {
             if(retransmitter_owned) {
                 try {
-                    retransmitter.stop();
+                    timer.stop();
                 }
                 catch(InterruptedException ex) {
                     if(log.isErrorEnabled()) log.error("failed stopping retransmitter", ex);
@@ -221,7 +221,7 @@ public class Retransmitter {
         this.sender=sender;
         this.cmd=cmd;
         retransmitter_owned=sched_owned;
-        retransmitter=sched;
+        timer=sched;
     }
 
 
