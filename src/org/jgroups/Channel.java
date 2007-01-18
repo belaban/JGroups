@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.28 2007/01/11 12:57:28 belaban Exp $
+// $Id: Channel.java,v 1.29 2007/01/18 06:00:18 belaban Exp $
 
 package org.jgroups;
 
@@ -239,6 +239,7 @@ public abstract class Channel implements Transport {
      A new channel has to be created first.
 
      @exception TimeoutException Thrown when a timeout has occurred.
+     @deprecated Use a {@link Receiver} instead
      */
     abstract public Object receive(long timeout) throws ChannelNotConnectedException,
                                                         ChannelClosedException, TimeoutException;

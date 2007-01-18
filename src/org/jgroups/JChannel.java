@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.121 2007/01/16 13:32:48 belaban Exp $
+ * @version $Id: JChannel.java,v 1.122 2007/01/18 06:00:18 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -601,6 +601,7 @@ public class JChannel extends Channel {
      * @exception ChannelNotConnectedException
      * @exception ChannelClosedException
      * @see JChannel#peek
+     * @deprecated Use a {@link Receiver} instead
      */
     public Object receive(long timeout) throws ChannelNotConnectedException, ChannelClosedException, TimeoutException {
 
