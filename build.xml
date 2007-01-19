@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.83 2007/01/18 18:22:29 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.84 2007/01/19 16:13:18 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -397,6 +397,7 @@
 			<echo>@{text}</echo>
 			<echo>Using set: @{set}</echo>
 			<mkdir dir="${tmp.dir}/tests-results"/>
+	        <property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
 	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	        	
 	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
 	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
@@ -411,8 +412,10 @@
 		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
 		 		<sysproperty key="threadcount" value="${threadcount}" />
 	            <classpath refid="jg.classpath"/>
-	            <formatter type="xml" usefile="true"/>	        	
-	        	<batchtest todir="${tmp.dir}/tests-results">
+	            <formatter type="xml" usefile="true" unless="testname.ext"/>
+	            <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
+	            <formatter classname="${formatter.class}"  extension="-${testname.ext}.xml" if="testname.ext"/>
+	            <batchtest todir="${tmp.dir}/tests-results">
 	                <fileset dir="${junit.dir}">
 	                	<patternset refid="@{set}"/>
 	                </fileset>
