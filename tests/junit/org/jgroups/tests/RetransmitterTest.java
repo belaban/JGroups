@@ -1,4 +1,4 @@
-// $Id: RetransmitterTest.java,v 1.2 2005/08/29 11:52:22 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.3 2007/01/19 08:21:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -35,7 +35,7 @@ public class RetransmitterTest extends TestCase {
         xmitter.add(1, 1);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(size, 1);
+        assertEquals(1, size);
     }
 
     public void testEntry() {
@@ -99,7 +99,7 @@ public class RetransmitterTest extends TestCase {
     }
 
 
-    class MyXmitter implements Retransmitter.RetransmitCommand {
+    static class MyXmitter implements Retransmitter.RetransmitCommand {
 
         public void retransmit(long first_seqno, long last_seqno, Address sender) {
         }
