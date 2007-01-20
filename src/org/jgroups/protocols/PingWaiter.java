@@ -2,20 +2,26 @@ package org.jgroups.protocols;
 
 import org.jgroups.stack.Protocol;
 import org.jgroups.Event;
+import org.jgroups.util.Util;
+import org.jgroups.annotations.GuardedBy;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import java.util.List;
 import java.util.LinkedList;
 import java.util.Vector;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.12 2007/01/12 14:20:19 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.13 2007/01/20 11:55:00 belaban Exp $
  */
 public class PingWaiter implements Runnable {
-    Thread              t=null;
+    @GuardedBy("thread_lock")
+    Thread              thread=null;
+    private final Lock  thread_lock=new ReentrantLock();
     final List          rsps=new LinkedList();
     long                timeout=3000;
     int                 num_rsps=3;
@@ -43,22 +49,37 @@ public class PingWaiter implements Runnable {
 
 
 
-    public synchronized void start() {
-        // ping_sender.start();
-        if(t == null || !t.isAlive()) {
-            t=new Thread(this, "PingWaiter");
-            t.setDaemon(true);
-            t.start();
+    public void start() {
+        thread_lock.lock();
+        try {
+            if(thread == null || !thread.isAlive()) {
+                thread=new Thread(Util.getGlobalThreadGroup(), this, "PingWaiter");
+                thread.setDaemon(true);
+                thread.start();
+            }
+        }
+        finally {
+            thread_lock.unlock();
         }
     }
 
-    public synchronized void stop() {
-        if(ping_sender != null)
-            ping_sender.stop();
-        if(t != null) {
-            // Thread tmp=t;
-            t=null;
-            // tmp.interrupt();
+    public void stop() {
+        ping_sender.stop();
+
+        boolean stopped=false;
+        thread_lock.lock();
+        try {
+            if(thread != null) {
+                thread=null;
+                stopped=true;
+            }
+        }
+        finally {
+            thread_lock.unlock();
+        }
+
+        // moved this out of the thread_lock scope to prevent deadlock with findInitialMembers() (different order of lock acquisition)
+        if(stopped) {
             synchronized(rsps) {
                 rsps.notifyAll();
             }
@@ -66,9 +87,6 @@ public class PingWaiter implements Runnable {
     }
 
 
-    public synchronized boolean isRunning() {
-        return t != null && t.isAlive();
-    }
 
     public void addResponse(PingRsp rsp) {
         if(rsp != null) {
@@ -89,10 +107,6 @@ public class PingWaiter implements Runnable {
     }
 
 
-    public List getResponses() {
-        return rsps;
-    }
-
 
 
     public void run() {
@@ -106,9 +120,7 @@ public class PingWaiter implements Runnable {
         long start_time, time_to_wait;
 
         synchronized(rsps) {
-            if(rsps.size() > 0) {
-                rsps.clear();
-            }
+            rsps.clear();
 
             ping_sender.start();
 
@@ -116,9 +128,19 @@ public class PingWaiter implements Runnable {
             time_to_wait=timeout;
 
             try {
-                while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
+                while(true) {
+                    thread_lock.lock();
+                    try {
+                        boolean cond=rsps.size() < num_rsps && time_to_wait > 0 && thread != null && Thread.currentThread().equals(thread);
+                        if(!cond)
+                            break;
+                    }
+                    finally {
+                        thread_lock.unlock();
+                    }
+
                     if(trace) // +++ remove
-                        log.trace(new StringBuffer("waiting for initial members: time_to_wait=").append(time_to_wait)
+                        log.trace(new StringBuilder("waiting for initial members: time_to_wait=").append(time_to_wait)
                                   .append(", got ").append(rsps.size()).append(" rsps"));
 
                     try {
