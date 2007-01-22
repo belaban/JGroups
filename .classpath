@@ -14,5 +14,6 @@
 	<classpathentry kind="lib" path="lib/junit.jar"/>
 	<classpathentry kind="lib" path="lib/log4j.jar"/>
 	<classpathentry kind="lib" path="lib/xalan.jar"/>
+	<classpathentry kind="lib" path="conf"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
