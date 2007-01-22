@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.85 2007/01/22 17:18:15 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.86 2007/01/22 21:03:27 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -66,8 +66,8 @@
 	</patternset>
 	
 	<patternset id="all.tests">	     
-		<include name="org/jgroups/tests/**Test**"/>	
-		<exclude if="junit.excludes"/>
+		<include name="org/jgroups/tests/**Test**"/>		
+		<include name="org/jgroups/blocks/**Test**"/>		
 	</patternset>
 	
 	<patternset id="junit.excludes">	     
@@ -418,7 +418,8 @@
 	            <batchtest todir="${tmp.dir}/tests-results">
 	                <fileset dir="${junit.dir}">
 	                	<patternset refid="@{set}"/>
-	                </fileset>
+	                	<patternset refid="junit.excludes"/>
+	                </fileset>	           	
 	            </batchtest>	        	
 	        </junit>
 		</sequential>	
@@ -439,8 +440,38 @@
 			mux.factorycount=${mux.factorycount}
 			threadcount=${threadcount}	
 			test.verbose=${test.verbose}
+		 	testname.ext=${testname.ext}	
+		 	formatter.class=${formatter.class}
 		 </testrunner>
 	</target>
+	
+	<!-- 
+			 Runs entire testsuite for nightly Cruise Control builds. 		 
+		        	     
+	-->
+		
+	<target name="all-tests-cc" depends="makeKeystore" 
+			description="Runs entire testsuite for nightly Cruise Control builds">		 
+		
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>
+		 	<param name="channel.conf" value="udp.xml"/>
+		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
+		 	<param name="testname.ext" value="udp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		 </antcall>		
+		
+		
+		<antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>	
+		 	<param name="channel.conf" value="tcp.xml"/>
+		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>
+			<param name="testname.ext" value="tcp"/>
+			<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		</antcall>
+		
+	</target>
+	
 	
 	<!-- 
 		 Runs entire testsuite with default udp confguration specified by udp.xml. 		 
@@ -450,7 +481,7 @@
 	     test.verbose	     	     
 	-->
 	
-	<target name="all-tests-udp" 
+	<target name="all-tests-udp" depends="makeKeystore" 
 			description="Runs entire testsuite with default udp confguration specified by udp.xml">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>
@@ -470,7 +501,7 @@
 	     test.verbose	     	     
 	-->
 	
-	<target name="all-tests-mux-udp"
+	<target name="all-tests-mux-udp" depends="makeKeystore" 
 			description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>	
@@ -487,7 +518,7 @@
 	     test.verbose	     	     
 	-->
 	
-	<target name="all-tests-tcp"
+	<target name="all-tests-tcp" depends="makeKeystore" 
 			description="Runs entire testsuite with default tcp confguration specified by tcp.xml">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>	
@@ -507,7 +538,7 @@
 	     test.verbose		     
 	-->
 	
-	<target name="all-tests-mux-tcp"
+	<target name="all-tests-mux-tcp" depends="makeKeystore" 
 			description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>	
