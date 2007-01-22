@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.122 2007/01/18 06:00:18 belaban Exp $
+ * @version $Id: JChannel.java,v 1.123 2007/01/22 18:05:25 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -830,7 +830,7 @@ public class JChannel extends Channel {
      * Calling this method on a closed channel has no effect.
      */
     public void blockOk() {
-        down(new Event(Event.BLOCK_OK));
+        
     }
 
 
@@ -1106,9 +1106,8 @@ public class JChannel extends Channel {
 				break;
 
             case Event.BLOCK:
-                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
-                    down(new Event(Event.BLOCK_OK));
-                    return null;
+                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'                    
+                    return Boolean.TRUE;
                 }
 
                 if(receiver != null) {
@@ -1118,11 +1117,8 @@ public class JChannel extends Channel {
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
                             log.error("failed calling block() on receiver", t);
-                    }
-                    finally {
-                        blockOk();
-                    }
-                    return null;
+                    }                     
+                    return Boolean.TRUE;
                 }
                 break;
             case Event.UNBLOCK:

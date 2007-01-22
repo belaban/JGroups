@@ -16,7 +16,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.44 2007/01/17 07:18:34 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.45 2007/01/22 18:05:24 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -107,7 +107,7 @@ public class Multiplexer implements UpHandler {
     }
 
     /**
-     * Called by a MuxChannel when BLOCK_OK is sent down
+     * Called by a MuxChannel
      */
     public void blockOk() {
         block_ok_collector.increment();
