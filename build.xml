@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.84 2007/01/19 16:13:18 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.85 2007/01/22 17:18:15 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -492,7 +492,7 @@
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>	
 		 	<param name="channel.conf" value="tcp.xml"/>
-		 	<param name="channel.conf.flush" value="tcp.xml"/>	
+		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
 		 </antcall>
 	</target>
 	
