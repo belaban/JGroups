@@ -1,10 +1,10 @@
 package org.jgroups.blocks;
 
-import junit.framework.TestCase;
+import org.jgroups.tests.ChannelTestBase;
 
-public class RpcDispatcherAnycastMultipleCallsTest extends TestCase
+public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase
 {
-   private RpcDispatcherAnycastTestServerObject[] targets = null;
+   private RpcDispatcherAnycastServerObject[] targets = null;
 
    protected void tearDown() throws Exception {
        if(targets != null) {
@@ -59,10 +59,10 @@ public class RpcDispatcherAnycastMultipleCallsTest extends TestCase
    
 
    /**
-    * Simple test that creates n instances of {@link org.jgroups.blocks.RpcDispatcherAnycastTestServerObject}, each one creates a Channel
+    * Simple test that creates n instances of {@link org.jgroups.blocks.RpcDispatcherAnycastServerObject}, each one creates a Channel
     * and registers an RpcDispatcher.
     *
-    * This test then calls {@link org.jgroups.blocks.RpcDispatcherAnycastTestServerObject#callRemote(boolean, boolean)} once on each of the n instances
+    * This test then calls {@link org.jgroups.blocks.RpcDispatcherAnycastServerObject#callRemote(boolean, boolean)} once on each of the n instances
     * and then tests that the method calls have in fact been executed on each of the n instances.
     *
     * @param useAnycast if true, anycast is used for remote calls.
@@ -72,8 +72,10 @@ public class RpcDispatcherAnycastMultipleCallsTest extends TestCase
    private void performTest(boolean useAnycast, int n, boolean excludeSelf) throws Exception
    {
       // create n instances
-      targets = new RpcDispatcherAnycastTestServerObject[n];
-      for (int i=0; i<n; i++) targets[i] = new RpcDispatcherAnycastTestServerObject();
+      targets = new RpcDispatcherAnycastServerObject[n];
+      for (int i=0; i<n; i++){         
+         targets[i] = new RpcDispatcherAnycastServerObject(createChannel("A"));   
+      }
 
       // test that the target method has been invoked 0 times on each instance.
       for (int i=0; i<n; i++) assertEquals(0, targets[i].i);

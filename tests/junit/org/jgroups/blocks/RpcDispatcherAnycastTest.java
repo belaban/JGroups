@@ -1,48 +1,47 @@
 package org.jgroups.blocks;
 
+import java.util.Vector;
+
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
 import org.jgroups.Address;
-import org.jgroups.JChannel;
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-import java.util.Vector;
-
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.2 2006/12/11 08:24:46 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.3 2007/01/22 23:21:27 vlada Exp $
  */
-public class RpcDispatcherAnycastTest extends TestCase {
+public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
-    JChannel ch, ch2, ch3;
-    static String CONFIG="udp.xml";
+    Channel ch, ch2, ch3;  
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        CONFIG=System.getProperty("stack", CONFIG);
+    public void setUp() throws Exception {
+        super.setUp();       
 
-        ch=new JChannel(CONFIG);
+        ch=createChannel("A");
         ServerObject obj=new ServerObject(null);
         disp=new RpcDispatcher(ch, null, null, obj);
         ch.connect("demo");
         obj.setAddress(ch.getLocalAddress());
 
-        ch2=new JChannel(CONFIG);
+        ch2=createChannel("A");
         ServerObject obj2=new ServerObject(null);
         disp2=new RpcDispatcher(ch2, null, null, obj2);
         ch2.connect("demo");
         obj2.setAddress(ch2.getLocalAddress());
 
-        ch3=new JChannel(CONFIG);
+        ch3=createChannel("A");
         ServerObject obj3=new ServerObject(null);
         disp3=new RpcDispatcher(ch3, null, null, obj3);
         ch3.connect("demo");
         obj3.setAddress(ch3.getLocalAddress());
     }
 
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         super.tearDown();
 
 
