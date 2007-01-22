@@ -16,12 +16,10 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.4 2007/01/16 16:56:10 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.5 2007/01/22 19:33:01 vlada Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
-    static String STACK="udp.xml";
-
 
     public JoinTest(String name) {
         super(name);
@@ -29,8 +27,7 @@ public class JoinTest extends ChannelTestBase {
 
 
     public void setUp() throws Exception {
-        super.setUp();
-        STACK=System.getProperty("stack", STACK);
+        super.setUp();               
         c1=createChannel("A");
         c2=createChannel("A");
     }
