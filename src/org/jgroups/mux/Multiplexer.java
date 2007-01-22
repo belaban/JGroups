@@ -16,7 +16,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.45 2007/01/22 18:05:24 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.46 2007/01/22 21:04:23 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -25,8 +25,7 @@ public class Multiplexer implements UpHandler {
     static final Log log=LogFactory.getLog(Multiplexer.class);
     static final String SEPARATOR="::";
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
-    static final String NAME="MUX";
-    private final BlockOkCollector block_ok_collector=new BlockOkCollector();
+    static final String NAME="MUX";    
 
     private MergeView temp_merge_view=null;
 
@@ -105,14 +104,7 @@ public class Multiplexer implements UpHandler {
     public boolean stateTransferListenersPresent() {
         return state_transfer_listeners != null && !state_transfer_listeners.isEmpty();
     }
-
-    /**
-     * Called by a MuxChannel
-     */
-    public void blockOk() {
-        block_ok_collector.increment();
-    }
-
+    
     public synchronized void registerForStateTransfer(String appl_id, String substate_id) {
         String key=appl_id;
         if(substate_id != null && substate_id.length() > 0)
@@ -338,16 +330,10 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.BLOCK:
-                blocked=true;
-                int num_services=services.size();
-                if(num_services == 0) {
-                    channel.blockOk();
-                    return null;
-                }
-                block_ok_collector.reset();
-                passToAllMuxChannels(evt);
-                block_ok_collector.waitUntil(num_services);
-                channel.blockOk();
+                blocked=true;                
+                if(!services.isEmpty()) {
+                   passToAllMuxChannels(evt);                  
+                }                                           
                 return null;
 
             case Event.UNBLOCK: // process queued-up MergeViews
@@ -1002,34 +988,6 @@ public class Multiplexer implements UpHandler {
             if(tmp == null) {
                 services.put(id, ch);
             }
-        }
-    }
-
-
-    private static class BlockOkCollector {
-        int num_block_oks=0;
-
-        synchronized void reset() {
-            num_block_oks=0;
-        }
-
-        synchronized void increment() {
-            num_block_oks++;
-        }
-
-        synchronized void waitUntil(int num) {
-            while(num_block_oks < num) {
-                try {
-                    this.wait();
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                }
-            }
-        }
-
-        public String toString() {
-            return String.valueOf(num_block_oks);
         }
     }
 }
