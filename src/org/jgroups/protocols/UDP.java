@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123 2006/10/23 05:52:47 belaban Exp $
+ * @version $Id: UDP.java,v 1.123.2.1 2007/01/22 16:37:49 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -565,7 +565,7 @@ public class UDP extends TP implements Runnable {
 
     /** Creates a DatagramSocket with a random port. Because in certain operating systems, ports are reused,
      * we keep a list of the n last used ports, and avoid port reuse */
-    private DatagramSocket createEphemeralDatagramSocket() throws SocketException {
+    protected DatagramSocket createEphemeralDatagramSocket() throws SocketException {
         DatagramSocket tmp;
         int localPort=0;
         while(true) {
@@ -598,7 +598,7 @@ public class UDP extends TP implements Runnable {
      * @return DatagramSocket The newly created socket
      * @throws Exception
      */
-    private DatagramSocket createDatagramSocketWithBindPort() throws Exception {
+    protected DatagramSocket createDatagramSocketWithBindPort() throws Exception {
         DatagramSocket tmp=null;
         // 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
         int rcv_port=bind_port, max_port=bind_port + port_range;
