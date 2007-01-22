@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.36 2007/01/16 13:32:48 belaban Exp $
+// $Id: Event.java,v 1.37 2007/01/22 18:05:25 vlada Exp $
 
 package org.jgroups;
 
@@ -15,8 +15,7 @@ public class Event {
     public static final int VIEW_CHANGE               =  6;  // arg = View (or MergeView in case of merge)
     public static final int SET_LOCAL_ADDRESS         =  8;
     public static final int SUSPECT                   =  9;  // arg = Address of suspected member
-    public static final int BLOCK                     = 10;
-    public static final int BLOCK_OK                  = 11;
+    public static final int BLOCK                     = 10;    
     public static final int FIND_INITIAL_MBRS         = 12;
     public static final int FIND_INITIAL_MBRS_OK      = 13;  // arg = Vector of PingRsps
     public static final int MERGE                     = 14;  // arg = Vector of Objects
@@ -100,8 +99,7 @@ public class Event {
             case VIEW_CHANGE:	         return "VIEW_CHANGE";
             case SET_LOCAL_ADDRESS:	     return "SET_LOCAL_ADDRESS";
             case SUSPECT:                return "SUSPECT";
-            case BLOCK:	                 return "BLOCK";
-            case BLOCK_OK:               return "BLOCK_OK";
+            case BLOCK:	                 return "BLOCK";            
             case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
             case FIND_INITIAL_MBRS_OK:   return "FIND_INITIAL_MBRS_OK";
             case TMP_VIEW:	             return "TMP_VIEW";

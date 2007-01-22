@@ -14,6 +14,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.Address;
@@ -104,13 +105,6 @@ public class FLUSH extends Protocol
     */
    private long timeout = 8000;
 
-   /**
-    * Default timeout started when <code>Event.BLOCK</code> is passed to
-    * application. Response <code>Event.BLOCK_OK</code> should be received by
-    * application within timeout.
-    */
-   private long block_timeout = 10000;   
-
    // GuardedBy ("sharedLock")
    private boolean receivedFirstView = false;
 
@@ -127,7 +121,7 @@ public class FLUSH extends Protocol
 
    private final Promise flush_promise = new Promise();
 
-   private final Promise blockok_promise = new Promise();    
+   private final Exchanger<Boolean> blockExchange = new Exchanger<Boolean>();    
    
    private final FlushPhase flushPhase = new FlushPhase();
 
@@ -157,8 +151,7 @@ public class FLUSH extends Protocol
    public boolean setProperties(Properties props)
    {
       super.setProperties(props);
-      timeout = Util.parseLong(props, "timeout", timeout);
-      block_timeout = Util.parseLong(props, "block_timeout", block_timeout);
+      timeout = Util.parseLong(props, "timeout", timeout);    
       auto_flush_conf = Util.parseBoolean(props, "auto_flush_conf", auto_flush_conf);
 
       if (!props.isEmpty())
@@ -273,12 +266,7 @@ public class FLUSH extends Protocol
             break;
 
          case Event.CONNECT:
-            boolean successfulBlock = sendBlockUpToChannel(block_timeout);
-            if (successfulBlock && log.isDebugEnabled())
-            {
-               log.debug("Blocking of channel " + localAddress + " completed successfully");
-            }
-            
+            sendBlockUpToChannel();            
             break;
 
          case Event.SUSPEND :            
@@ -287,11 +275,7 @@ public class FLUSH extends Protocol
 
          case Event.RESUME :
             onResume();
-            return null;
-
-         case Event.BLOCK_OK:
-            blockok_promise.setResult(Boolean.TRUE);
-            return null;
+            return null;        
       }
       return down_prot.down(evt);
    }
@@ -357,11 +341,7 @@ public class FLUSH extends Protocol
                   {
                      flushPhase.setFirstPhase(true);
                      flushPhase.release();
-                     boolean successfulBlock = sendBlockUpToChannel(block_timeout);
-                     if (successfulBlock && log.isDebugEnabled())
-                     {
-                        log.debug("Blocking of channel " + localAddress + " completed successfully");
-                     }
+                     sendBlockUpToChannel();                     
                      onStartFlush(msg.getSrc(), fh);
                   }
                   else if (flushPhase.isInFirstPhase())
@@ -523,29 +503,32 @@ public class FLUSH extends Protocol
       down_prot.down(new Event(Event.MSG, reject));
    }
    
-   private boolean sendBlockUpToChannel(long btimeout)
+   private void sendBlockUpToChannel()
    {
-      boolean successfulBlock = false;
-      blockok_promise.reset();
-      
       new Thread(Util.getGlobalThreadGroup(), new Runnable()
       {
          public void run()
          {
-            up_prot.up(new Event(Event.BLOCK));
+            Boolean result = (Boolean) up_prot.up(new Event(Event.BLOCK));
+            try
+            {
+               blockExchange.exchange(result);
+            }
+            catch (InterruptedException e)
+            {
+               Thread.currentThread().interrupt();
+            }
          }
       }, "FLUSH block").start();
       
       try
       {
-         blockok_promise.getResultWithTimeout(btimeout);
-         successfulBlock = true;
+         blockExchange.exchange(null);
       }
-      catch (TimeoutException e)
+      catch (InterruptedException e)
       {
-         log.warn("Blocking of channel using BLOCK event timed out after " + btimeout + " msec.");
-      }
-      return successfulBlock;
+         Thread.currentThread().interrupt();
+      }            
    }
 
    private boolean isCurrentFlushMessage(FlushHeader fh)
