@@ -1,31 +1,29 @@
 package org.jgroups.blocks;
 
-import junit.framework.TestCase;
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import org.jgroups.JChannel;
-import org.jgroups.TimeoutException;
-import org.jgroups.ChannelException;
 
-import java.io.IOException;
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
+
 import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.2 2006/05/12 09:56:27 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.3 2007/01/22 23:21:26 vlada Exp $
  */
-public class RpcDispatcherExceptionTest extends TestCase {
+public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
-    JChannel channel;
+    Channel channel;
 
-    protected void setUp() throws Exception {
+    public void setUp() throws Exception {
         super.setUp();
-        channel=new JChannel();
+        channel=createChannel("A");
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("demo");
     }
 
-    protected void tearDown() throws Exception {
+    public void tearDown() throws Exception {
         super.tearDown();
         disp.stop();
         channel.close();

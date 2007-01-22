@@ -1,23 +1,24 @@
 package org.jgroups.blocks;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
+
+import org.jgroups.Channel;
 import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
 import org.jgroups.TimeoutException;
+import org.jgroups.tests.ChannelTestBase;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.3 2006/04/30 13:45:54 belaban Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.4 2007/01/22 23:21:26 vlada Exp $
  */
-public class RpcDispatcherUnicastMethodExceptionTest extends TestCase {
+public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
-    JChannel channel;
+    Channel channel;
 
     protected void setUp() throws Exception {
         super.setUp();
-        channel=new JChannel();
+        channel=createChannel("A");
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("demo");
     }
