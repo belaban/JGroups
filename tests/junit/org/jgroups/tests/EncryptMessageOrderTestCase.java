@@ -3,11 +3,15 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.Header;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -21,7 +25,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.3 2006/12/28 09:05:49 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.4 2007/01/23 17:19:33 vlada Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
@@ -310,6 +314,8 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
         assertTrue("Message ordering is incorrect - check log output",(!orderCounterFailure));
     }
+    
+    
 
     /**
      * Main method to start a test case from the command line. Parameters are:
@@ -361,5 +367,45 @@ public class EncryptMessageOrderTestCase extends TestCase {
         System.out.println("EncryptOrderTest [-help] [-sleep <sleep time between sends (ms)>] " +
                 " [-msg_num <number of msgs to send>]");
     }
+    
+    public static class EncryptOrderTestHeader extends Header{
+
+      long seqno = -1; // either reg. NAK_ACK_MSG or first_seqno in retransmissions
+
+      public EncryptOrderTestHeader(){}
+
+      public EncryptOrderTestHeader(long seqno){
+
+         this.seqno = seqno;
+      }
+
+      public long size(){
+         return 512;
+      }
+
+      public void writeExternal(ObjectOutput out) throws IOException{
+
+         out.writeLong(seqno);
+      }
+
+      public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
+
+         seqno = in.readLong();
+
+      }
+
+      public EncryptOrderTestHeader copy(){
+         EncryptOrderTestHeader ret = new EncryptOrderTestHeader(seqno);
+         return ret;
+      }
+
+      public String toString(){
+         StringBuffer ret = new StringBuffer();
+         ret.append("[ENCRYPT_ORDER_TEST: seqno=" + seqno);
+         ret.append(']');
+
+         return ret.toString();
+      }
+   }
 
 }
