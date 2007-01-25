@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.67 2007/01/05 14:49:51 belaban Exp $
+ * @version $Id: Message.java,v 1.68 2007/01/25 09:42:42 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -85,13 +85,8 @@ public class Message implements Externalizable, Streamable {
 
 
     /** Public constructor
-     *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
-     *              it is sent to the group (either to current group or to the group as given
-     *              in the string). If it is a Vector, then it contains a number of addresses
-     *              to which it must be sent. Otherwise, it contains a single destination.<p>
-     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
-     *              instance must know what types of addresses it expects and downcast
-     *              accordingly.
+     *  @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
+     *              Otherwise, it contains a single destination and is sent to that member.<p>
      */
     public Message(Address dest) {
         setDest(dest);
@@ -99,13 +94,8 @@ public class Message implements Externalizable, Streamable {
     }
 
     /** Public constructor
-     *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
-     *              it is sent to the group (either to current group or to the group as given
-     *              in the string). If it is a Vector, then it contains a number of addresses
-     *              to which it must be sent. Otherwise, it contains a single destination.<p>
-     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
-     *              instance must know what types of addresses it expects and downcast
-     *              accordingly.
+     *  @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
+     *              Otherwise, it contains a single destination and is sent to that member.<p>
      *  @param src  Address of sender
      *  @param buf  Message to be sent. Note that this buffer must not be modified (e.g. buf[0]=0 is
      *              not allowed), since we don't copy the contents on clopy() or clone().
@@ -120,13 +110,8 @@ public class Message implements Externalizable, Streamable {
      * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
      * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
      * we want to avoid copying. When the message is serialized, only the subset is serialized.
-     * @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
-     *              it is sent to the group (either to current group or to the group as given
-     *              in the string). If it is a Vector, then it contains a number of addresses
-     *              to which it must be sent. Otherwise, it contains a single destination.<p>
-     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
-     *              instance must know what types of addresses it expects and downcast
-     *              accordingly.
+     * @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
+     *             Otherwise, it contains a single destination and is sent to that member.<p>
      * @param src    Address of sender
      * @param buf    A reference to a byte buffer
      * @param offset The index into the byte buffer
@@ -141,17 +126,14 @@ public class Message implements Externalizable, Streamable {
 
 
     /** Public constructor
-     *  @param dest Address of receiver. If it is <em>null</em> or a <em>string</em>, then
-     *              it is sent to the group (either to current group or to the group as given
-     *              in the string). If it is a Vector, then it contains a number of addresses
-     *              to which it must be sent. Otherwise, it contains a single destination.<p>
-     *              Addresses are generally untyped (all are of type <em>Object</em>. A channel
-     *              instance must know what types of addresses it expects and downcast
-     *              accordingly.
+     *  @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
+     *              Otherwise, it contains a single destination and is sent to that member.<p>
      *  @param src  Address of sender
      *  @param obj  The object will be serialized into the byte buffer. <em>Object
-     *              has to be serializable </em>! Note that the resulting buffer must not be modified
-     *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().
+     *              has to be serializable </em>! The resulting buffer must not be modified
+     *              (e.g. buf[0]=0 is not allowed), since we don't copy the contents on clopy() or clone().<p/>
+     *              Note that this is a convenience method and JGroups will use default Java serialization to
+     *              serialize <code>obj</code> into a byte buffer.
      */
     public Message(Address dest, Address src, Serializable obj) {
         this(dest);
@@ -286,6 +268,9 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
+    /**
+     * Takes an object and uses Java serialization to generate the byte[] buffer which is set in the message.
+     */
     final public void setObject(Serializable obj) {
         if(obj == null) return;
         try {
@@ -297,6 +282,14 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
+    /**
+     * Uses Java serialization to create an object from the buffer of the message. Note that this is dangerous when
+     * using your own classloader, e.g. inside of an application server ! Most likely, JGroups will use the system
+     * classloader to deserialize the buffer into an object, whereas (for example) a web application will want to
+     * use the webapp's classloader, resulting in a ClassCastException. The recommended way is for the application to
+     * use their own serialization and only pass byte[] buffer to JGroups.
+     * @return
+     */
     final public Object getObject() {
         try {
             return Util.objectFromByteBuffer(buf, offset, length);
