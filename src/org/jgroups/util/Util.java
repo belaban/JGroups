@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.113 2007/01/08 12:09:18 belaban Exp $
+ * @version $Id: Util.java,v 1.114 2007/01/25 09:22:47 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -562,7 +562,7 @@ public class Util {
      */
     public static long size(Collection addrs) {
         int retval=Global.SHORT_SIZE; // number of elements
-        if(addrs != null && addrs.size() > 0) {
+        if(addrs != null && !addrs.isEmpty()) {
             Address addr=(Address)addrs.iterator().next();
             retval+=size(addr) * addrs.size();
         }
@@ -902,7 +902,7 @@ public class Util {
     public static String dumpQueue(Queue q) {
         StringBuilder sb=new StringBuilder();
         LinkedList values=q.values();
-        if(values.size() == 0) {
+        if(values.isEmpty()) {
             sb.append("empty");
         }
         else {
@@ -1340,7 +1340,7 @@ public class Util {
 
         tmp_mbrs=(Vector)members.clone();
 
-        for(int i=subset_size; i > 0 && tmp_mbrs.size() > 0; i--) {
+        for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
             index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
             ret.addElement(tmp_mbrs.elementAt(index));
             tmp_mbrs.removeElementAt(index);
@@ -1350,7 +1350,7 @@ public class Util {
     }
 
 
-    public static Object pickRandomElement(Vector list) {
+    public static Object pickRandomElement(List list) {
         if(list == null) return null;
         int size=list.size();
         int index=(int)((Math.random() * size * 10) % size);
@@ -1643,7 +1643,7 @@ public class Util {
             l=new Long(tok.nextToken());
             v.addElement(l);
         }
-        if(v.size() == 0) return null;
+        if(v.isEmpty()) return null;
         retval=new long[v.size()];
         for(int i=0; i < v.size(); i++)
             retval[i]=((Long)v.elementAt(i)).longValue();
@@ -2034,7 +2034,7 @@ public class Util {
 
     public static MBeanServer getMBeanServer() {
         ArrayList servers=MBeanServerFactory.findMBeanServer(null);
-        if(servers == null || servers.size() == 0)
+        if(servers == null || servers.isEmpty())
             return null;
 
         // return 'jboss' server if available
@@ -2149,7 +2149,7 @@ public class Util {
             return val;
         String retval=val, prev;
 
-        while(retval.indexOf("${") >= 0) { // handle multiple variables in val
+        while(retval.contains("${")) { // handle multiple variables in val
             prev=retval;
             retval=_substituteVar(retval);
             if(retval.equals(prev))
