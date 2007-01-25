@@ -1,8 +1,11 @@
-// $Id: NAKACK.java,v 1.103 2007/01/16 13:50:24 belaban Exp $
+// $Id: NAKACK.java,v 1.104 2007/01/25 09:23:13 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
@@ -10,6 +13,8 @@ import org.jgroups.util.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 
 /**
@@ -29,14 +34,14 @@ import java.util.*;
  * @author Bela Ban
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
-    private long[]        retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
-    private boolean       is_server=false;
-    private Address       local_addr=null;
-    private final Vector  members=new Vector(11);
-    private View          view;
-    private long          seqno=-1;                                  // current message sequence number (starts with 0)
-    private long          max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
-    private int           gc_lag=20;                                 // number of msgs garbage collection lags behind
+    private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    private boolean             is_server=false;
+    private Address             local_addr=null;
+    private final List<Address> members=new CopyOnWriteArrayList();
+    private View                view;
+    private long                seqno=-1;                                  // current message sequence number (starts with 0)
+    private long                max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
+    private int                 gc_lag=20;                                 // number of msgs garbage collection lags behind
 
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
@@ -828,14 +833,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * entries from received_msgs that are not in <code>members</code>
      */
     private void adjustReceivers(boolean remove) {
-        Address sender;
         NakReceiverWindow win;
 
         synchronized(received_msgs) {
             if(remove) {
                 // 1. Remove all senders in received_msgs that are not members anymore
                 for(Iterator it=received_msgs.keySet().iterator(); it.hasNext();) {
-                    sender=(Address)it.next();
+                    Address sender=(Address)it.next();
                     if(!members.contains(sender)) {
                         win=(NakReceiverWindow)received_msgs.get(sender);
                         win.reset();
@@ -848,13 +852,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
 
             // 2. Add newly joined members to received_msgs (starting seqno=0)
-           for(int i=0; i < members.size(); i++) {
-              sender=(Address)members.elementAt(i);
-              if(!received_msgs.containsKey(sender)) {
-                 win=createNakReceiverWindow(sender, 0);
-                 received_msgs.put(sender, win);
-              }
-           }
+            for(Address sender: members) {
+                if(!received_msgs.containsKey(sender)) {
+                    win=createNakReceiverWindow(sender, 0);
+                    received_msgs.put(sender, win);
+                }
+            }
         }
     }
 
@@ -863,12 +866,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the highest seqno received from P is added to the digest.
      */
     private Digest getDigest() {
-        Address sender;
         Range range;
 
         Map<Address,Digest.Entry> map=new HashMap(members.size());
-        for(int i=0; i < members.size(); i++) {
-            sender=(Address)members.elementAt(i);
+        for(Address sender: members) {
             range=getLowestAndHighestSeqno(sender, false);  // get the highest received seqno
             if(range == null) {
                 if(log.isErrorEnabled()) {
@@ -889,13 +890,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * whether the last seqno from a sender was received (see "Last Message Dropped" topic in DESIGN).
      */
     private Digest getDigestHighestDeliveredMsgs() {
-        Address sender;
         Range range;
         long high_seqno_seen;
 
         Map<Address,Digest.Entry> map=new HashMap(members.size());
-        for(int i=0; i < members.size(); i++) {
-            sender=(Address)members.elementAt(i);
+        for(Address sender: members) {
             range=getLowestAndHighestSeqno(sender, true);  // get the highest deliverable seqno
             if(range == null) {
                 if(log.isErrorEnabled()) {
