@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.86 2007/01/22 21:03:27 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.87 2007/01/26 14:48:49 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -468,6 +468,32 @@
 		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>
 			<param name="testname.ext" value="tcp"/>
 			<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		</antcall>
+		
+	</target>
+	
+	<!-- 
+			 Runs entire testsuite.
+			 
+			 Note: report generated will NOT contain results for all stacks.
+			 See all-tests-cc. 		 
+		        	     
+	-->
+		
+	<target name="all-tests" depends="makeKeystore" 
+			description="Runs entire testsuite">		 
+		
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>
+		 	<param name="channel.conf" value="udp.xml"/>
+		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
+		 </antcall>		
+		
+		
+		<antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>	
+		 	<param name="channel.conf" value="tcp.xml"/>
+		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
 		</antcall>
 		
 	</target>
