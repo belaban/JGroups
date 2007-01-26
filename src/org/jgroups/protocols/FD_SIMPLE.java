@@ -1,8 +1,9 @@
-// $Id: FD_SIMPLE.java,v 1.14 2007/01/12 14:20:58 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.15 2007/01/26 10:18:39 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
@@ -13,6 +14,10 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Properties;
 import java.util.Vector;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -22,12 +27,17 @@ import java.util.Vector;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
     TimeScheduler timer=null;
-    HeartbeatTask task=null;
+
+    final Lock    heartbeat_lock=new ReentrantLock();
+    @GuardedBy("heartbeat_lock")
+    Future        heartbeat_future=null;
+    HeartbeatTask task;
+
     long interval=3000;            // interval in msecs between are-you-alive messages
     long timeout=3000;             // time (in msecs) to wait for a response to are-you-alive
     final Vector members=new Vector();
@@ -75,9 +85,16 @@ public class FD_SIMPLE extends Protocol {
 
 
     public void stop() {
-        if(task != null) {
-            task.stop();
-            task=null;
+        heartbeat_lock.lock();
+        try {
+            if(heartbeat_future != null) {
+                heartbeat_future.cancel(true); // we need to interrupt the thread as it may call wait()
+                heartbeat_future=null;
+                task=null;
+            }
+        }
+        finally {
+            heartbeat_lock.unlock();
         }
     }
 
@@ -113,8 +130,14 @@ public class FD_SIMPLE extends Protocol {
 
                     case FdHeader.I_AM_ALIVE:
                         if(log.isInfoEnabled()) log.info("received I_AM_ALIVE response from " + sender);
-                        if(task != null)
-                            task.receivedHeartbeatResponse(sender);
+                        heartbeat_lock.lock();
+                        try {
+                            if(task != null)
+                                task.receivedHeartbeatResponse(sender);
+                        }
+                        finally {
+                            heartbeat_lock.unlock();
+                        }
                         if(!counter_reset)
                             resetCounter(sender);
                         return null;
@@ -141,17 +164,30 @@ public class FD_SIMPLE extends Protocol {
                 members.clear();
                 members.addAll(new_view.getMembers());
                 if(new_view.size() > 1) {
-                    if(task == null) {
-                        task=new HeartbeatTask();
-                        if(log.isInfoEnabled()) log.info("starting heartbeat task");
-                        timer.add(task, true);
+                    heartbeat_lock.lock();
+                    try {
+                        if(heartbeat_future == null || heartbeat_future.isDone()) {
+                            task=new HeartbeatTask();
+                            if(log.isInfoEnabled()) log.info("starting heartbeat task");
+                            timer.scheduleWithFixedDelay(task, interval, interval, TimeUnit.MILLISECONDS);
+                        }
+                    }
+                    finally {
+                        heartbeat_lock.unlock();
                     }
                 }
                 else {
-                    if(task != null) {
-                        if(log.isInfoEnabled()) log.info("stopping heartbeat task");
-                        task.stop(); // will be removed from TimeScheduler
-                        task=null;
+                    heartbeat_lock.lock();
+                    try {
+                        if(heartbeat_future != null) {
+                            if(log.isInfoEnabled()) log.info("stopping heartbeat task");
+                            heartbeat_future.cancel(true);
+                            heartbeat_future=null;
+                            task=null;
+                        }
+                    }
+                    finally {
+                        heartbeat_lock.unlock();
                     }
                 }
 
@@ -292,22 +328,10 @@ public class FD_SIMPLE extends Protocol {
     }
 
 
-    class HeartbeatTask implements TimeScheduler.Task {
-        boolean stopped=false;
+    class HeartbeatTask implements Runnable {
         final Promise promise=new Promise();
         Address dest=null;
 
-        void stop() {
-            stopped=true;
-        }
-
-        public boolean cancelled() {
-            return stopped;
-        }
-
-        public long nextInterval() {
-            return interval;
-        }
 
         public void receivedHeartbeatResponse(Address from) {
             if(from != null && dest != null && from.equals(dest))
@@ -325,8 +349,7 @@ public class FD_SIMPLE extends Protocol {
             }
 
             if(log.isInfoEnabled())
-                log.info("sending ARE_YOU_ALIVE message to " + dest +
-                        ", counters are\n" + printCounters());
+                log.info("sending ARE_YOU_ALIVE message to " + dest + ", counters are\n" + printCounters());
 
             promise.reset();
             msg=new Message(dest);
@@ -336,10 +359,8 @@ public class FD_SIMPLE extends Protocol {
             promise.getResult(timeout);
             num_missed_hbs=incrementCounter(dest);
             if(num_missed_hbs >= max_missed_hbs) {
-
                 if(log.isInfoEnabled())
-                    log.info("missed " + num_missed_hbs + " from " + dest +
-                            ", suspecting member");
+                    log.info("missed " + num_missed_hbs + " from " + dest + ", suspecting member");
                 up_prot.up(new Event(Event.SUSPECT, dest));
             }
         }

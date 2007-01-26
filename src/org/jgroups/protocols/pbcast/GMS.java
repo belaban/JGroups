@@ -2,15 +2,17 @@
 package org.jgroups.protocols.pbcast;
 
 
+import org.apache.commons.logging.Log;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
-import org.apache.commons.logging.Log;
 
 import java.io.*;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -18,7 +20,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.90 2007/01/17 13:18:33 belaban Exp $
+ * @version $Id: GMS.java,v 1.91 2007/01/26 10:18:40 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1202,20 +1204,20 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.90 2007/01/17 13:18:33 belaban Exp $
+     * @version $Id: GMS.java,v 1.91 2007/01/26 10:18:40 belaban Exp $
      */
     class ViewHandler implements Runnable {
-        Thread                    thread;
-        Queue                     q=new Queue(); // Queue<Request>
-        boolean                   suspended=false;
-        final static long         INTERVAL=5000;
-        private static final long MAX_COMPLETION_TIME=10000;
+        Thread                             thread;
+        Queue                              q=new Queue(); // Queue<Request>
+        boolean                            suspended=false;
+        final static long                  INTERVAL=5000;
+        private static final long          MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
-        private final BoundedList history=new BoundedList(20);
+        private final BoundedList          history=new BoundedList(20);
 
-        /** Map<Object,TimeScheduler.CancellableTask>. Keeps track of Resumer tasks which have not fired yet */
-        private final Map         resume_tasks=new HashMap();
-        private Object            merge_id=null;
+        /** Map<Object,Future>. Keeps track of Resumer tasks which have not fired yet */
+        private final Map<Object, Future>  resume_tasks=new HashMap<Object,Future>();
+        private Object                     merge_id=null;
 
 
         void add(Request req) {
@@ -1273,9 +1275,12 @@ public class GMS extends Protocol {
             q.close(true);
             if(trace)
                 log.trace("suspended ViewHandler");
-            Resumer r=new Resumer(resume_task_timeout, merge_id, resume_tasks, this);
-            resume_tasks.put(merge_id, r);
-            timer.add(r);
+            Resumer resumer=new Resumer(merge_id, resume_tasks, this);
+            Future future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
+            Future old_future=resume_tasks.put(merge_id, future);
+            if(old_future != null)
+                old_future.cancel(true);
+
         }
 
 
@@ -1291,9 +1296,9 @@ public class GMS extends Protocol {
                 return;
             }
             synchronized(resume_tasks) {
-                TimeScheduler.CancellableTask task=(TimeScheduler.CancellableTask)resume_tasks.get(merge_id);
-                if(task != null) {
-                    task.cancel();
+                Future future=resume_tasks.get(merge_id);
+                if(future != null) {
+                    future.cancel(false);
                     resume_tasks.remove(merge_id);
                 }
             }
@@ -1435,13 +1440,12 @@ public class GMS extends Protocol {
                 q.reset();
             if(unsuspend) {
                 suspended=false;
+                Future future;
                 synchronized(resume_tasks) {
-                    TimeScheduler.CancellableTask task=(TimeScheduler.CancellableTask)resume_tasks.get(merge_id);
-                    if(task != null) {
-                        task.cancel();
-                        resume_tasks.remove(merge_id);
-                    }
+                    future=resume_tasks.remove(merge_id);
                 }
+                if(future != null)
+                    future.cancel(true);
             }
             merge_id=null;
             if(thread == null || !thread.isAlive()) {
@@ -1455,11 +1459,9 @@ public class GMS extends Protocol {
 
         synchronized void stop(boolean flush) {
             q.close(flush);
-            TimeScheduler.CancellableTask task;
             synchronized(resume_tasks) {
-                for(Iterator it=resume_tasks.values().iterator(); it.hasNext();) {
-                    task=(TimeScheduler.CancellableTask)it.next();
-                    task.cancel();
+                for(Future future: resume_tasks.values()) {
+                    future.cancel(true);
                 }
                 resume_tasks.clear();
             }
@@ -1477,40 +1479,24 @@ public class GMS extends Protocol {
      * not be able to process new JOIN requests ! So, this is for peace of mind, although it most likely
      * will never be used...
      */
-    static class Resumer implements TimeScheduler.CancellableTask {
-        boolean           cancelled=false;
-        final long        interval;
-        final Object      token;
-        final Map         tasks;
-        final ViewHandler handler;
+    static class Resumer implements Runnable {
+        final Object                      token;
+        final Map<Object,Future> tasks;
+        final ViewHandler                 handler;
 
 
-        public Resumer(long interval, final Object token, final Map t, final ViewHandler handler) {
-            this.interval=interval;
+        public Resumer(final Object token, final Map<Object,Future> t, final ViewHandler handler) {
             this.token=token;
             this.tasks=t;
             this.handler=handler;
         }
 
-        public void cancel() {
-            cancelled=true;
-        }
-
-        public boolean cancelled() {
-            return cancelled;
-        }
-
-        public long nextInterval() {
-            return interval;
-        }
-
         public void run() {
-            TimeScheduler.CancellableTask t;
             boolean execute=true;
             synchronized(tasks) {
-                t=(TimeScheduler.CancellableTask)tasks.get(token);
-                if(t != null) {
-                    t.cancel();
+                Future future=tasks.get(token);
+                if(future != null) {
+                    future.cancel(false);
                     execute=true;
                 }
                 else {

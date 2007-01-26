@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.15 2007/01/18 18:26:57 belaban Exp $
+// $Id: Retransmitter.java,v 1.16 2007/01/26 10:18:41 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -9,6 +9,7 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.Future;
 
 
 /**
@@ -24,15 +25,13 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
 public class Retransmitter {
 
     private static final long SEC=1000;
     /** Default retransmit intervals (ms) - exponential approx. */
     private static long[] RETRANSMIT_TIMEOUTS={2 * SEC, 3 * SEC, 5 * SEC, 8 * SEC};
-    /** Default retransmit thread suspend timeout (ms) */
-    private static final long SUSPEND_TIMEOUT=2000;
 
     private Address              sender=null;
     private final List<Entry>    msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
@@ -75,7 +74,7 @@ public class Retransmitter {
      * @param cmd the retransmission callback reference
      */
     public Retransmitter(Address sender, RetransmitCommand cmd) {
-        init(sender, cmd, new TimeScheduler(SUSPEND_TIMEOUT), true);
+        init(sender, cmd, new TimeScheduler(), true);
     }
 
 
@@ -102,7 +101,7 @@ public class Retransmitter {
         Entry e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
         synchronized(msgs) {
             msgs.add(e);
-            timer.add(e);
+            e.doSchedule(timer); // Entry adds itself to the timer
         }
     }
 
@@ -231,25 +230,25 @@ public class Retransmitter {
     /**
      * The retransmit task executed by the scheduler in regular intervals
      */
-    private static abstract class Task implements TimeScheduler.Task {
+    private static abstract class Task implements TimeScheduler.Task, Runnable {
         private final Interval intervals;
-        private boolean cancelled;
+        private Future         future;
 
         protected Task(long[] intervals) {
             this.intervals=new Interval(intervals);
-            this.cancelled=false;
         }
 
         public long nextInterval() {
-            return (intervals.next());
+            return intervals.next();
         }
 
-        public boolean cancelled() {
-            return (cancelled);
+        public void doSchedule(TimeScheduler timer) {
+            future=timer.scheduleWithDynamicInterval(this);
         }
 
         public void cancel() {
-            cancelled=true;
+            if(future != null)
+                future.cancel(false);
         }
     }
 

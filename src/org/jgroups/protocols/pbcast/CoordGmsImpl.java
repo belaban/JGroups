@@ -1,12 +1,19 @@
-// $Id: CoordGmsImpl.java,v 1.60 2007/01/15 16:26:36 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.61 2007/01/26 10:18:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.util.TimeScheduler;
+import org.jgroups.annotations.GuardedBy;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.Vector;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -23,9 +30,10 @@ public class CoordGmsImpl extends GmsImpl {
 
     private Address          merge_leader=null;
 
-    private MergeCanceller   merge_canceller=null;
+    @GuardedBy("merge_canceller_lock")
+    private Future           merge_canceller_future=null;
 
-    private final Object     merge_canceller_mutex=new Object();
+    private final Lock       merge_canceller_lock=new ReentrantLock();
 
     /** the max time in ms to suspend message garbage collection */
     private final Long       MAX_SUSPEND_TIMEOUT=new Long(30000);
@@ -38,24 +46,38 @@ public class CoordGmsImpl extends GmsImpl {
 
     private void setMergeId(ViewId merge_id) {
         this.merge_id=merge_id;
-        synchronized(merge_canceller_mutex) {
-            if(this.merge_id != null) {
-                stopMergeCanceller();
-                merge_canceller=new MergeCanceller(this.merge_id, gms.merge_timeout);
-                gms.timer.add(merge_canceller);
+        if(this.merge_id != null) {
+            stopMergeCanceller();
+            startMergeCanceller();
+        }
+        else { // merge completed
+            stopMergeCanceller();
+        }
+    }
+
+    private void startMergeCanceller() {
+        merge_canceller_lock.lock();
+        try {
+            if(merge_canceller_future == null || merge_canceller_future.isDone()) {
+                MergeCanceller task=new MergeCanceller(this.merge_id, gms.merge_timeout);
+                merge_canceller_future=gms.timer.schedule(task, gms.merge_timeout, TimeUnit.MILLISECONDS);
             }
-            else { // merge completed
-                stopMergeCanceller();
-            }
+        }
+        finally {
+            merge_canceller_lock.unlock();
         }
     }
 
     private void stopMergeCanceller() {
-        synchronized(merge_canceller_mutex) {
-            if(merge_canceller != null) {
-                merge_canceller.cancel();
-                merge_canceller=null;
+        merge_canceller_lock.lock();
+        try {
+            if(merge_canceller_future != null) {
+                merge_canceller_future.cancel(true);
+                merge_canceller_future=null;
             }
+        }
+        finally {
+            merge_canceller_lock.unlock();
         }
     }
 
@@ -834,34 +856,21 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    private class MergeCanceller implements TimeScheduler.Task {
+    private class MergeCanceller implements Runnable {
         private Object my_merge_id=null;
         private long timeout;
-        private boolean cancelled=false;
 
         MergeCanceller(Object my_merge_id, long timeout) {
             this.my_merge_id=my_merge_id;
             this.timeout=timeout;
         }
 
-        public boolean cancelled() {
-            return cancelled;
-        }
-
-        public void cancel() {
-            cancelled=true;
-        }
-
-        public long nextInterval() {
-            return timeout;
-        }
 
         public void run() {
             if(merge_id != null && my_merge_id.equals(merge_id)) {
                 if(trace)
                     log.trace("cancelling merge due to timer timeout (" + timeout + " ms)");
                 cancelMerge();
-                cancelled=true;
             }
             else {
                 if(trace)

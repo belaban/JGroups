@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.59 2007/01/16 14:12:26 belaban Exp $
+// $Id: STABLE.java,v 1.60 2007/01/26 10:18:40 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -17,6 +17,8 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -49,12 +51,12 @@ public class STABLE extends Protocol {
      * small number (> 0 !) if <code>max_bytes</code> is used */
     private long                 stability_delay=6000;
 
-    @GuardedBy("stability_lock") 
-    private StabilitySendTask    stability_task=null;
+    @GuardedBy("stability_lock")
+    private Future               stability_task_future=null;
     private final Lock           stability_lock=new ReentrantLock();   // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
-    private StableTask   stable_task=null;               // bcasts periodic STABLE message (added to timer below)
+    private Future               stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
     private final Lock           stable_task_lock=new ReentrantLock(); // to sync on stable_task
 
 
@@ -78,7 +80,7 @@ public class STABLE extends Protocol {
 
     private boolean              initialized=false;
 
-    private ResumeTask   resume_task=null;
+    private Future               resume_task_future=null;
     private final Object         resume_task_mutex=new Object();
 
     private int num_stable_msgs_sent=0;
@@ -457,17 +459,16 @@ public class STABLE extends Protocol {
     private void startStableTask() {
         stable_task_lock.lock();
         try {
-            if(stable_task != null && stable_task.running()) {
-                return;  // already running
+            if(stable_task_future == null || stable_task_future.isDone()) {
+                StableTask stable_task=new StableTask();
+                stable_task_future=timer.scheduleWithDynamicInterval(stable_task, true);
+                if(trace)
+                    log.trace("stable task started");
             }
-            stable_task=new StableTask();
-            timer.add(stable_task, true); // fixed-rate scheduling
         }
         finally {
             stable_task_lock.unlock();
         }
-        if(trace)
-            log.trace("stable task started");
     }
 
 
@@ -476,9 +477,9 @@ public class STABLE extends Protocol {
         // called frequently
         stable_task_lock.lock();
         try {
-            if(stable_task != null) {
-                stable_task.stop();
-                stable_task=null;
+            if(stable_task_future != null) {
+                stable_task_future.cancel(false);
+                stable_task_future=null;
             }
         }
         finally {
@@ -493,24 +494,22 @@ public class STABLE extends Protocol {
             max_suspend_time=MAX_SUSPEND_TIME;
 
         synchronized(resume_task_mutex) {
-            if(resume_task != null && resume_task.running()) {
-                return;  // already running
-            }
-            else {
-                resume_task=new ResumeTask(max_suspend_time);
-                timer.add(resume_task, true); // fixed-rate scheduling
+            if(resume_task_future == null || resume_task_future.isDone()) {
+                ResumeTask resume_task=new ResumeTask();
+                resume_task_future=timer.schedule(resume_task, max_suspend_time, TimeUnit.MILLISECONDS); // fixed-rate scheduling
+                if(log.isDebugEnabled())
+                    log.debug("resume task started, max_suspend_time=" + max_suspend_time);
             }
         }
-        if(log.isDebugEnabled())
-            log.debug("resume task started, max_suspend_time=" + max_suspend_time);
+
     }
 
 
     private void stopResumeTask() {
         synchronized(resume_task_mutex) {
-            if(resume_task != null) {
-                resume_task.stop();
-                resume_task=null;
+            if(resume_task_future != null) {
+                resume_task_future.cancel(false);
+                resume_task_future=null;
             }
         }
     }
@@ -519,9 +518,9 @@ public class STABLE extends Protocol {
     private void startStabilityTask(Digest d, long delay) {
         stability_lock.lock();
         try {
-            if(stability_task == null || !stability_task.running()) {
-                stability_task=new StabilitySendTask(d, delay); // runs only once
-                timer.add(stability_task, true);
+            if(stability_task_future == null || stability_task_future.isDone()) {
+                StabilitySendTask stability_task=new StabilitySendTask(d); // runs only once
+                stability_task_future=timer.schedule(stability_task, delay, TimeUnit.MILLISECONDS);
             }
         }
         finally {
@@ -533,9 +532,9 @@ public class STABLE extends Protocol {
     private void stopStabilityTask() {
         stability_lock.lock();
         try {
-            if(stability_task != null) {
-                stability_task.stop();
-                stability_task=null;
+            if(stability_task_future != null) {
+                stability_task_future.cancel(false);
+                stability_task_future=null;
             }
         }
         finally {
@@ -781,10 +780,7 @@ public class STABLE extends Protocol {
 
 
     /**
-     Mcast periodic STABLE message. Interval between sends varies. Terminates after num_gossip_runs is 0.
-     However, UP or DOWN messages will reset num_gossip_runs to max_gossip_runs. This has the effect that the
-     stable_send task terminates only after a period of time within which no messages were either sent
-     or received
+     Mcast periodic STABLE message. Interval between sends varies.
      */
     private class StableTask implements TimeScheduler.Task {
         boolean stopped=false;
@@ -848,35 +844,13 @@ public class STABLE extends Protocol {
     /**
      * Multicasts a STABILITY message.
      */
-    private class StabilitySendTask implements TimeScheduler.Task {
+    private class StabilitySendTask implements Runnable {
         Digest   d=null;
         boolean  stopped=false;
-        long     delay=2000;
 
-
-        StabilitySendTask(Digest d, long delay) {
+        StabilitySendTask(Digest d) {
             this.d=d;
-            this.delay=delay;
         }
-
-        public boolean running() {
-            return !stopped;
-        }
-
-        public void stop() {
-            stopped=true;
-        }
-
-        public boolean cancelled() {
-            return stopped;
-        }
-
-
-        /** wait a random number of msecs (to give other a chance to send the STABILITY msg first) */
-        public long nextInterval() {
-            return delay;
-        }
-
 
         public void run() {
             Message msg;
@@ -905,28 +879,10 @@ public class STABLE extends Protocol {
     }
 
 
-    private class ResumeTask implements TimeScheduler.Task {
+    private class ResumeTask implements Runnable {
         boolean running=true;
-        long max_suspend_time=0;
 
-        ResumeTask(long max_suspend_time) {
-            this.max_suspend_time=max_suspend_time;
-        }
-
-        void stop() {
-            running=false;
-        }
-
-        public boolean running() {
-            return running;
-        }
-
-        public boolean cancelled() {
-            return !running;
-        }
-
-        public long nextInterval() {
-            return max_suspend_time;
+        ResumeTask() {
         }
 
         public void run() {
