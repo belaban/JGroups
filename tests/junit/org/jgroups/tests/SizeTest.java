@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.18 2007/01/03 15:57:24 belaban Exp $$
+// $Id: SizeTest.java,v 1.19 2007/01/26 10:18:40 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -92,7 +92,10 @@ public class SizeTest extends TestCase {
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, new IpAddress("127.0.0.1", 5555));
         _testSize(sockhdr);
 
-        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, suspects);
+        Set tmp=new HashSet();
+        tmp.add(a1);
+        tmp.add(a2);
+        sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, tmp);
         _testSize(sockhdr);
 
 

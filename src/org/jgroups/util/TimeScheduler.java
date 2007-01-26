@@ -1,14 +1,12 @@
-// $Id: TimeScheduler.java,v 1.14 2006/10/11 19:01:37 vlada Exp $
 
 package org.jgroups.util;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.Global;
 
-import java.util.Iterator;
-import java.util.SortedSet;
-import java.util.TreeSet;
+import java.util.concurrent.*;
 
 
 /**
@@ -40,460 +38,125 @@ import java.util.TreeSet;
  * suspended or stopped else has no effect. Once <tt>stop()</tt> is called,
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
+ * @author Bela Ban
+ * @version $Id: TimeScheduler.java,v 1.15 2007/01/26 10:18:42 belaban Exp $
  */
-public class TimeScheduler {
-    /**
-     * The interface that submitted tasks must implement
-     */
-    public interface Task {
-        /**
-         * @return true if task is cancelled and shouldn't be scheduled
-         *         again
-         */
-        boolean cancelled();
+public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
-        /**
-         * @return the next schedule interval
-         */
+    /** The interface that submitted tasks must implement */
+    public interface Task extends Runnable {
+        /** @return the next schedule interval. If <= 0 the task will not be re-scheduled */
         long nextInterval();
 
-        /**
-         * Execute the task
-         */
+        /** Execute the task */
         void run();
     }
 
-    public interface CancellableTask extends Task {
-        /**
-         * Cancels the task. After calling this, {@link #cancelled()} return true. If the task was already cancelled,
-         * this is a no-op
-         */
-        void cancel();
-    }
 
+    /** Number of milliseconds to wait for pool termination after shutdown */
+    private static final long TERMINATION_TIMEOUT=5000;
 
-    /**
-     * Internal task class.
-     */
-    private static class IntTask implements Comparable {
-        /**
-         * The user task
-         */
-        public final Task task;
-        /**
-         * The next execution time
-         */
-        public long sched;
-        /**
-         * Whether this task is scheduled fixed-delay or fixed-rate
-         */
-        public final boolean relative;
+    /** How many core threads */
+    private static int TIMER_DEFAULT_NUM_THREADS=5;
 
-        /**
-         * @param task     the task to schedule & execute
-         * @param sched    the next schedule
-         * @param relative whether scheduling for this task is soft or hard
-         *                 (see <tt>TimeScheduler.add()</tt>)
-         */
-        public IntTask(Task task, long sched, boolean relative) {
-            this.task=task;
-            this.sched=sched;
-            this.relative=relative;
-        }
-
-        /**
-         * @param obj the object to compare against
-         *            <p/>
-         *            <pre>
-         *            If obj is not instance of <tt>IntTask</tt>, then return -1
-         *            If obj is instance of <tt>IntTask</tt>, compare the
-         *            contained tasks' next execution times. If these times are equal,
-         *            then order them randomly <b>but</b> consistently!: return the diff
-         *            of their <tt>hashcode()</tt> values
-         *            </pre>
-         */
-        public int compareTo(Object obj) {
-            IntTask other;
-
-            if(!(obj instanceof IntTask)) return (-1);
-
-            other=(IntTask)obj;
-            if(sched < other.sched) return (-1);
-            if(sched > other.sched) return (1);
-            return (task.hashCode() - other.task.hashCode());
-        }
-
-        public String toString() {
-            if(task == null)
-                return "<unnamed>";
-            else
-                return task.getClass().getName();
-        }
-    }
-
-
-    /**
-     * The scheduler thread's main loop
-     */
-    private class Loop implements Runnable {
-        public void run() {
-            try {
-                _run();
-            }
-            catch(Throwable t) {
-                log.error("exception in loop", t);
-            }
-        }
-    }
-
-
-    /**
-     * The task queue used by the scheduler. Tasks are ordered in increasing
-     * order of their next execution time
-     */
-    private static class TaskQueue {
-        /**
-         * Sorted list of <tt>IntTask</tt>s
-         */
-        private final SortedSet set;
-
-        public TaskQueue() {
-            super();
-            set=new TreeSet();
-        }
-
-        public void add(IntTask t) {
-            set.add(t);
-        }
-
-        public void remove(IntTask t) {
-            set.remove(t);
-        }
-
-        public IntTask getFirst() {
-            return ((IntTask)set.first());
-        }
-
-        public void removeFirst() {
-            Iterator it=set.iterator();
-            it.next();
-            it.remove();
-        }
-
-        public void rescheduleFirst(long sched) {
-            Iterator it=set.iterator();
-            IntTask t=(IntTask)it.next();
-            it.remove();
-            t.sched=sched;
-            set.add(t);
-        }
-
-        public boolean isEmpty() {
-            return (set.isEmpty());
-        }
-
-        public void clear() {
-            set.clear();
-        }
-
-        public int size() {
-            return set.size();
-        }
-
-        public String toString() {
-            return set.toString();
-        }
-    }
-
-
-    /**
-     * Default suspend interval (ms)
-     */
-    private static final long SUSPEND_INTERVAL=30000;
-
-
-    /** if it takes more than this to run a task, we emit a warning */
-    private static final long MAX_EXECUTION_TIME=5000;
-
-
-    /**
-     * Thread is running
-     * <p/>
-     * A call to <code>start()</code> has no effect on the thread<br>
-     * A call to <code>stop()</code> will stop the thread<br>
-     * A call to <code>add()</code> has no effect on the thread
-     */
-    private static final int RUN=0;
-    /**
-     * Thread is suspended
-     * <p/>
-     * A call to <code>start()</code> will recreate the thread<br>
-     * A call to <code>stop()</code> will switch the state from suspended
-     * to stopped<br>
-     * A call to <code>add()</code> will recreate the thread <b>only</b>
-     * if it is suspended
-     */
-    private static final int SUSPEND=1;
-    /**
-     * A shutdown of the thread is in progress
-     * <p/>
-     * A call to <code>start()</code> has no effect on the thread<br>
-     * A call to <code>stop()</code> has no effect on the thread<br>
-     * A call to <code>add()</code> has no effect on the thread<br>
-     */
-    private static final int STOPPING=2;
-    /**
-     * Thread is stopped
-     * <p/>
-     * A call to <code>start()</code> will recreate the thread<br>
-     * A call to <code>stop()</code> has no effect on the thread<br>
-     * A call to <code>add()</code> has no effect on the thread<br>
-     */
-    private static final int STOP=3;
-
-    /**
-     * TimeScheduler thread name
-     */
-    private static final String THREAD_NAME="TimeScheduler.Thread";
-
-
-    /**
-     * The scheduler thread
-     */
-    private Thread thread=null;
-    /**
-     * The thread's running state
-     */
-    private int thread_state=SUSPEND;
-    /**
-     * Time that task queue is empty before suspending the scheduling
-     * thread
-     */
-    private long suspend_interval=SUSPEND_INTERVAL;
-    /**
-     * The task queue ordered according to task's next execution time
-     */
-    private final TaskQueue queue;
 
     protected static final Log log=LogFactory.getLog(TimeScheduler.class);
 
 
 
-    /**
-     * Set the thread state to running, create and start the thread
-     */
-    private void _start() {
-        thread_state=RUN;
-
-        // only start if not yet running
-        if(thread == null || !thread.isAlive()) {
-            thread=new Thread(Util.getGlobalThreadGroup(), new Loop(), THREAD_NAME);
-            thread.setDaemon(true);
-            thread.start();
+    static {
+        String tmp;
+        try {
+            tmp=System.getProperty(Global.TIMER_NUM_THREADS);
+            if(tmp != null)
+                TIMER_DEFAULT_NUM_THREADS=Integer.parseInt(tmp);
         }
-    }
-
-    /**
-     * Restart the suspended thread
-     */
-    private void _unsuspend() {
-        thread_state=RUN;
-
-        // only start if not yet running
-        if(thread == null || !thread.isAlive()) {
-            thread=new Thread(Util.getGlobalThreadGroup(), new Loop(), THREAD_NAME);
-            thread.setDaemon(true);
-            thread.start();
-        }
-    }
-
-    /**
-     * Set the thread state to suspended
-     */
-    private void _suspend() {
-        thread_state=SUSPEND;
-        thread=null;
-    }
-
-    /**
-     * Set the thread state to stopping
-     */
-    private void _stopping() {
-        thread_state=STOPPING;
-    }
-
-    /**
-     * Set the thread state to stopped
-     */
-    private void _stop() {
-        thread_state=STOP;
-        thread=null;
-    }
-
-
-    /**
-     * If the task queue is empty, sleep until a task comes in or if slept
-     * for too long, suspend the thread.
-     * <p/>
-     * Get the first task, if the running time hasn't been
-     * reached then wait a bit and retry. Else reschedule the task and then
-     * run it.
-     */
-    private void _run() {
-        IntTask intTask;
-        Task task;
-        long currTime, execTime, waitTime, intervalTime, schedTime;
-
-        while(true) {
-            synchronized(this) {
-                if(thread == null || thread.isInterrupted()) return;
-            }
-
-            synchronized(queue) {
-                while(true) {
-                    if(!queue.isEmpty()) break;
-                    try {
-                        queue.wait(suspend_interval);
-                    }
-                    catch(InterruptedException ex) {
-                        return;
-                    }
-                    if(!queue.isEmpty()) break;
-                    _suspend();
-                    return;
-                }
-
-                intTask=queue.getFirst();
-                synchronized(intTask) {
-                    task=intTask.task;
-                    if(task.cancelled()) {
-                        queue.removeFirst();
-                        continue;
-                    }
-                    currTime=System.currentTimeMillis();
-                    execTime=intTask.sched;
-                    if((waitTime=execTime - currTime) <= 0) {
-                        // Reschedule the task
-                        intervalTime=task.nextInterval();
-                        schedTime=intTask.relative ?
-                                currTime + intervalTime : execTime + intervalTime;
-                        queue.rescheduleFirst(schedTime);
-                    }
-                }
-                if(waitTime > 0) {
-                    //try { queue.wait(Math.min(waitTime, TICK_INTERVAL));
-                    try {
-                        queue.wait(waitTime);
-                    }
-                    catch(InterruptedException ex) {
-                        return;
-                    }
-                    continue;
-                }
-            }
-
-            long start=System.currentTimeMillis(), stop, diff;
-            try {
-                if(log.isDebugEnabled())
-                   log.debug("Running task " + task);
-                
-                task.run();
-                stop=System.currentTimeMillis();
-                diff=stop-start;
-                if(diff >= MAX_EXECUTION_TIME) {
-                    if(log.isWarnEnabled())
-                        log.warn("task " + task + " took " + diff + "ms to execute, " +
-                                "please check why it is taking so long. It is delaying other tasks");
-                }
-            }
-            catch(Throwable ex) {
-                log.error("failed running task " + task, ex);
-            }
+        catch(Exception e) {
+            log.error("could not set number of timer threads", e);
         }
     }
 
 
-    /**
-     * Create a scheduler that executes tasks in dynamically adjustable
-     * intervals
-     *
-     * @param suspend_interval the time that the scheduler will wait for
-     *                         at least one task to be placed in the task queue before suspending
-     *                         the scheduling thread
-     */
-    public TimeScheduler(long suspend_interval) {
-        super();
-        queue=new TaskQueue();
-        this.suspend_interval=suspend_interval;
-    }
+
 
     /**
-     * Create a scheduler that executes tasks in dynamically adjustable
-     * intervals
+     * Create a scheduler that executes tasks in dynamically adjustable intervals
      */
     public TimeScheduler() {
-        this(SUSPEND_INTERVAL);
+        this(TIMER_DEFAULT_NUM_THREADS);
     }
 
 
-    public void setSuspendInterval(long s) {
-        this.suspend_interval=s;
+    public TimeScheduler(int corePoolSize) {
+        super(corePoolSize);
     }
 
-    public long getSuspendInterval() {
-        return suspend_interval;
+    public TimeScheduler(int corePoolSize, RejectedExecutionHandler handler) {
+        super(corePoolSize, handler);
     }
+
+    public TimeScheduler(int corePoolSize, ThreadFactory threadFactory) {
+        super(corePoolSize, threadFactory);
+    }
+
+    public TimeScheduler(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
+        super(corePoolSize, threadFactory, handler);
+    }
+
+    public TimeScheduler(int corePoolSize, int maxPoolSize, long keepalive, TimeUnit unit, ThreadFactory factory) {
+        super(corePoolSize, factory);
+        setMaximumPoolSize(maxPoolSize);
+        setKeepAliveTime(keepalive, unit);
+    }
+
+    public TimeScheduler(int corePoolSize, int maxPoolSize, long keepalive, TimeUnit unit) {
+        super(corePoolSize);
+        setMaximumPoolSize(maxPoolSize);
+        setKeepAliveTime(keepalive, unit);
+    }
+
 
     public String dumpTaskQueue() {
-        return queue != null? queue.toString() : "<empty>";
+        return getQueue().toString();
     }
 
 
+
+
+
     /**
-     * Add a task for execution at adjustable intervals
-     *
-     * @param t        the task to execute
-     * @param relative scheduling scheme:
-     *                 <p/>
-     *                 <tt>true</tt>:<br>
-     *                 Task is rescheduled relative to the last time it <i>actually</i>
-     *                 started execution
-     *                 <p/>
-     *                 <tt>false</tt>:<br>
-     *                 Task is scheduled relative to its <i>last</i> execution schedule. This
-     *                 has the effect that the time between two consecutive executions of
-     *                 the task remains the same.
+     * Schedule a task for execution at varying intervals. After execution, the task will get rescheduled after
+     * {@link org.jgroups.util.TimeScheduler.Task#nextInterval()} milliseconds. The task is neve done until nextInterval()
+     * return a value <= 0 or the task is cancelled.
+     * @param task the task to execute
+     * @param relative scheduling scheme: <tt>true</tt>:<br>
+     * Task is rescheduled relative to the last time it <i>actually</i> started execution<p/>
+     * <tt>false</tt>:<br> Task is scheduled relative to its <i>last</i> execution schedule. This has the effect
+     * that the time between two consecutive executions of the task remains the same.<p/>
+     * Note that relative is always true; we always schedule the next execution relative to the last *actual*
+     * (not scheduled) execution
      */
-    public void add(Task t, boolean relative) {
-        long interval, sched;
+    public ScheduledFuture<?> scheduleWithDynamicInterval(Task task, boolean relative) {
+        if(task == null)
+            throw new NullPointerException();
 
-        if((interval=t.nextInterval()) < 0) return;
-        sched=System.currentTimeMillis() + interval;
+        if (isShutdown())
+            return null;
 
-        synchronized(queue) {
-            queue.add(new IntTask(t, sched, relative));
-            switch(thread_state) {
-                case RUN:
-                    queue.notifyAll();
-                    break;
-                case SUSPEND:
-                    _unsuspend();
-                    break;
-                case STOPPING:
-                    break;
-                case STOP:
-                    break;
-            }
-        }
+        TaskWrapper task_wrapper=new TaskWrapper(task);
+        task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
+        return new FutureWrapper(task_wrapper);
     }
+
+
+
 
     /**
      * Add a task for execution at adjustable intervals
-     *
      * @param t the task to execute
      */
-    public void add(Task t) {
-        add(t, true);
+    public ScheduledFuture<?> scheduleWithDynamicInterval(Task t) {
+        return scheduleWithDynamicInterval(t, true);
     }
 
     /**
@@ -501,7 +164,7 @@ public class TimeScheduler {
      * @return The number of tasks currently in the queue.
      */
     public int size() {
-        return queue.size();
+        return getQueue().size();
     }
 
 
@@ -509,20 +172,7 @@ public class TimeScheduler {
      * Start the scheduler, if it's suspended or stopped
      */
     public void start() {
-        synchronized(queue) {
-            switch(thread_state) {
-                case RUN:
-                    break;
-                case SUSPEND:
-                    _unsuspend();
-                    break;
-                case STOPPING:
-                    break;
-                case STOP:
-                    _start();
-                    break;
-            }
-        }
+        ;
     }
 
 
@@ -534,30 +184,92 @@ public class TimeScheduler {
      *                              to return
      */
     public void stop() throws InterruptedException {
-// i. Switch to STOPPING, interrupt thread
-// ii. Wait until thread ends
-// iii. Clear the task queue, switch to STOPPED,
-        synchronized(queue) {
-            switch(thread_state) {
-                case RUN:
-                    _stopping();
-                    break;
-                case SUSPEND:
-                    _stop();
+        shutdownNow();
+        awaitTermination(TERMINATION_TIMEOUT, TimeUnit.MILLISECONDS);
+    }
+
+
+    private class TaskWrapper implements Runnable {
+        Task               task;
+        ScheduledFuture<?> future; // cannot be null !
+
+
+        public TaskWrapper(Task task) {
+            this.task=task;
+        }
+
+        public ScheduledFuture<?> getFuture() {
+            return future;
+        }
+
+        public void run() {
+            try {
+                if(future != null && future.isCancelled())
                     return;
-                case STOPPING:
-                    return;
-                case STOP:
-                    return;
+                task.run();
             }
-            thread.interrupt();
+            catch(Throwable t) {
+                log.error("failed running task " + task, t);
+            }
+            if(!future.isCancelled()) {
+                doSchedule();
+            }
         }
 
-        thread.join();
 
-        synchronized(queue) {
-            queue.clear();
-            _stop();
+        public void doSchedule() {
+            long next_interval=task.nextInterval();
+            if(next_interval <= 0) {
+                if(log.isTraceEnabled())
+                    log.trace("task will not get rescheduled as interval is " + next_interval);
+            }
+            else {
+                future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
+            }
         }
+    }
+
+
+    private static class FutureWrapper<V> implements ScheduledFuture<V> {
+        TaskWrapper task_wrapper;
+
+
+        public FutureWrapper(TaskWrapper task_wrapper) {
+            this.task_wrapper=task_wrapper;
+        }
+
+        public long getDelay(TimeUnit unit) {
+            ScheduledFuture future=task_wrapper.getFuture();
+            return future != null? future.getDelay(unit) : -1;
+        }
+
+        public int compareTo(Delayed o) {
+            ScheduledFuture future=task_wrapper.getFuture();
+            return future != null? future.compareTo(o) : -1;
+        }
+
+        public boolean cancel(boolean mayInterruptIfRunning) {
+            ScheduledFuture future=task_wrapper.getFuture();
+            return future != null && future.cancel(mayInterruptIfRunning);
+        }
+
+        public boolean isCancelled() {
+            ScheduledFuture future=task_wrapper.getFuture();
+            return future != null && future.isCancelled();
+        }
+
+        public boolean isDone() {
+            ScheduledFuture future=task_wrapper.getFuture();
+            return future == null || future.isDone();
+        }
+
+        public V get() throws InterruptedException, ExecutionException {
+            return null;
+        }
+
+        public V get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+            return null;
+        }
+
     }
 }

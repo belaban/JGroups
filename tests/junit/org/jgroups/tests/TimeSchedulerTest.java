@@ -1,30 +1,31 @@
-// $Id: TimeSchedulerTest.java,v 1.9 2006/09/04 07:32:26 belaban Exp $
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.stack.Interval;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
 import org.jgroups.TimeoutException;
+import org.jgroups.stack.Interval;
+import org.jgroups.util.Promise;
+import org.jgroups.util.TimeScheduler;
 
+import java.util.Date;
 import java.util.HashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Test cases for TimeScheduler
- *
  * @author Bela Ban
+ * @version $Id: TimeSchedulerTest.java,v 1.10 2007/01/26 10:18:40 belaban Exp $
  */
 public class TimeSchedulerTest extends TestCase {
     TimeScheduler timer=null;
-    final int NUM_MSGS=1000;
-    long[] xmit_timeouts={1000, 2000, 4000, 8000};
-    double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
-    HashMap msgs=new HashMap(); // keys=seqnos (Long), values=Entries
+    static final int NUM_MSGS=1000;
+    static long[] xmit_timeouts={1000, 2000, 4000, 8000};
+    static double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
+    HashMap<Long,Entry> msgs=new HashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
 
 
     public TimeSchedulerTest(String name) {
@@ -47,32 +48,103 @@ public class TimeSchedulerTest extends TestCase {
     }
 
 
-    static private class ImmediateTask implements TimeScheduler.Task {
-        Promise p;
-        boolean executed=false;
+    public void testDynamicTask() throws InterruptedException {
+        TimeScheduler.Task task=new DynamicTask();
+        ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+        assertEquals(1, timer.getQueue().size());
 
-        public ImmediateTask(Promise p) {
-            this.p=p;
-        }
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
 
-        public boolean cancelled() {
-            return executed;
-        }
+        Thread.sleep(3000);
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
 
-        public long nextInterval() {
-            return 0;
-        }
-
-        public void run() {
-            p.setResult(Boolean.TRUE);
-            executed=true;
-        }
+        future.cancel(true);
+        assertTrue(future.isCancelled());
+        assertTrue(future.isDone());
     }
+
+
+
+    public void testDynamicTaskCancel() throws InterruptedException {
+
+        TimeScheduler.Task task=new DynamicTask();
+        ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
+
+        Thread.sleep(3000);
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
+
+        boolean success=future.cancel(true);
+        assertTrue(success);
+        assertTrue(future.isCancelled());
+        assertTrue(future.isDone());
+
+        success=future.cancel(true);
+        assertFalse(success); // we try to cancel an already cancelled task
+    }
+
+
+    public void testIsDone() throws InterruptedException {
+        TimeScheduler.Task task=new DynamicTask();
+        ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
+
+        Thread.sleep(3000);
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
+
+        future.cancel(true);
+        assertTrue(future.isCancelled());
+        assertTrue(future.isDone());
+    }
+
+    public void testIsDone2() throws InterruptedException {
+        TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000, -1});
+        ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+
+        assertFalse(future.isCancelled());
+        assertFalse(future.isDone());
+
+        Thread.sleep(3500);
+        assertFalse(future.isCancelled());
+        assertTrue(future.isDone());
+
+        boolean success=future.cancel(true);
+        if(success)
+            assertTrue(future.isCancelled());
+        else
+            assertFalse(future.isCancelled());
+        assertTrue(future.isDone());
+    }
+
+
+    public void testIsDone3() throws InterruptedException {
+        TimeScheduler.Task task=new DynamicTask(new long[]{-1});
+        ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
+        Thread.sleep(100);
+        assertFalse(future.isCancelled());
+        assertTrue(future.isDone());
+
+        boolean success=future.cancel(true);
+        if(success)
+            assertTrue(future.isCancelled());
+        else
+            assertFalse(future.isCancelled());
+        assertTrue(future.isDone());
+    }
+
 
     public void testImmediateExecution() {
         Promise p=new Promise();
         ImmediateTask task=new ImmediateTask(p);
-        timer.add(task);
+        timer.execute(task);
         try {
             long start=System.currentTimeMillis(), stop;
             p.getResultWithTimeout(5);
@@ -84,203 +156,136 @@ public class TimeSchedulerTest extends TestCase {
         }
     }
 
-//    class MyTask implements TimeScheduler.Task {
-//        String name;
-//        long timeout=0;
-//        boolean cancelled=false;
-//
-//        public MyTask(String name, long timeout) {
-//            this.name=name;
-//            this.timeout=timeout;
-//        }
-//
-//        public boolean cancelled() {
-//            return cancelled;
-//        }
-//
-//        public long nextInterval() {
-//            return timeout;
-//        }
-//
-//        public void run() {
-//            System.out.println("task " + name + " is run at " + System.currentTimeMillis());
-//            cancelled=true;
-//        }
-//    }
-//
-//    public void testSimpleSchedule() {
-//        TimeScheduler.Task t=new MyTask("one", 5000);
-//        System.out.println("adding new task at " + System.currentTimeMillis());
-//        timer.add(t, false);
-//        Util.sleep(12000);
-//    }
+
+    public void test2Tasks() throws InterruptedException {
+         int size;
+
+         System.out.println(System.currentTimeMillis() + ": adding task");
+         timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
+         size=timer.size();
+         System.out.println("queue size=" + size);
+         assertEquals(1, size);
+         Thread.sleep(1000);
+         size=timer.size();
+         System.out.println("queue size=" + size);
+         assertEquals(0, size);
+
+         Thread.sleep(1500);
+         System.out.println(System.currentTimeMillis() + ": adding task");
+         timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
+
+         System.out.println(System.currentTimeMillis() + ": adding task");
+         timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
+
+         System.out.println(System.currentTimeMillis() + ": adding task");
+         timer.schedule(new MyTask(), 500, TimeUnit.MILLISECONDS);
+
+         size=timer.size();
+         System.out.println("queue size=" + size);
+         assertEquals(3, size);
+
+         Thread.sleep(1000);
+         size=timer.size();
+         System.out.println("queue size=" + size);
+         assertEquals(0, size);
+     }
 
 
-    static class MyTask implements TimeScheduler.Task {
-        boolean done=false;
-        private long timeout=0;
 
-        MyTask(long timeout) {
-            this.timeout=timeout;
+
+
+     /**
+      * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
+      * more than 30% earlier or later than the scheduled retransmission time
+      */
+     public void testRetransmits() throws InterruptedException {
+         Entry entry;
+         int num_non_correct_entries=0;
+
+         // 1. Add NUM_MSGS messages:
+         System.out.println("-- adding " + NUM_MSGS + " messages:");
+         for(long i=0; i < NUM_MSGS; i++) {
+             entry=new Entry(i);
+             msgs.put(new Long(i), entry);
+             timer.scheduleWithDynamicInterval(entry);
+         }
+         System.out.println("-- done");
+
+         // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
+         System.out.println("-- waiting for 20 secs for all retransmits");
+         Thread.sleep(20000);
+
+         // 3. Check whether all Entries have correct retransmission times
+         for(long i=0; i < NUM_MSGS; i++) {
+             entry=msgs.get(new Long(i));
+             if(!entry.isCorrect()) {
+                 num_non_correct_entries++;
+             }
+         }
+
+         if(num_non_correct_entries > 0)
+             System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+         else {
+             for(long i=0; i < NUM_MSGS; i++) {
+                 entry=msgs.get(new Long(i));
+                 if(entry != null)
+                     System.out.println(i + ": " + entry);
+             }
+         }
+         assertEquals(0, num_non_correct_entries);
+     }
+
+
+
+
+    static private class ImmediateTask implements Runnable {
+        Promise p;
+
+        public ImmediateTask(Promise p) {
+            this.p=p;
         }
 
-        public boolean cancelled() {
-            return done;
+        public void run() {
+            p.setResult(Boolean.TRUE);
         }
+    }
 
-        public long nextInterval() {
-            return timeout;
-        }
-
+    static class MyTask implements Runnable {
         public void run() {
             System.out.println(System.currentTimeMillis() + ": this is MyTask running - done");
-            done=true;
         }
     }
 
-    static class StressTask implements TimeScheduler.Task {
-        boolean cancelled=false;
 
-        public void cancel() {
-            cancelled=true;
+    static class DynamicTask implements TimeScheduler.Task {
+        long[] times={1000,2000,4000};
+        int index=0;
+
+        public DynamicTask() {
         }
 
-        public boolean cancelled() {
-            return cancelled;
+        public DynamicTask(long[] times) {
+            this.times=times;
         }
 
         public long nextInterval() {
-            return 50;
+            if(index == times.length -1)
+                return times[index];
+            else
+                return times[index++];
         }
 
         public void run() {
-            System.out.println("executed");
+            System.out.println("dynamic task run at " + new Date());
         }
     }
 
-//
-//    public void testStress() {
-//        StressTask t;
-//
-//        for(int i=0; i < 1000; i++) {
-//            for(int j=0; j < 1000; j++) {
-//                t=new StressTask();
-//                timer.add(t);
-//                t.cancel();
-//            }
-//            System.out.println(i + ": " + timer.size());
-//            // Util.sleep(300);
-//        }
-//        for(int i=0; i < 10; i++) {
-//            System.out.println(timer.size());
-//            Util.sleep(500);
-//        }
-//    }
-
-    public void test2Tasks() {
-        int size;
-
-        System.out.println(System.currentTimeMillis() + ": adding task");
-        timer.add(new MyTask(500));
-        size=timer.size();
-        System.out.println("queue size=" + size);
-        assertEquals(1, size);
-        Util.sleep(1000);
-        size=timer.size();
-        System.out.println("queue size=" + size);
-        assertEquals(0, size);
-
-        Util.sleep(1500);
-        System.out.println(System.currentTimeMillis() + ": adding task");
-        timer.add(new MyTask(500));
-
-        System.out.println(System.currentTimeMillis() + ": adding task");
-        timer.add(new MyTask(500));
-
-        System.out.println(System.currentTimeMillis() + ": adding task");
-        timer.add(new MyTask(500));
-
-        size=timer.size();
-        System.out.println("queue size=" + size);
-        assertEquals(3, size);
-
-        Util.sleep(1000);
-        size=timer.size();
-        System.out.println("queue size=" + size);
-        assertEquals(0, size);
-    }
-
-
-//    public void testMultipleTasks() {
-//        timer.setSuspendInterval(5000);
-//        for(int i=0; i < 10; i++) {
-//            timer.add(new MyTask(1));
-//            Util.sleep(1000);
-//        }
-//        Util.sleep(100);
-//        assertEquals(timer.size(), 0);
-//        Util.sleep(60000);
-//    }
-
-
-    /**
-     * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
-     * more than 30% earlier or later than the scheduled retransmission time
-     */
-    public void testRetransmits() {
-        Entry entry;
-        int num_non_correct_entries=0;
 
 
 
 
-        // 1. Add NUM_MSGS messages:
-        System.out.println("-- adding " + NUM_MSGS + " messages:");
-        for(long i=0; i < NUM_MSGS; i++) {
-            entry=new Entry(i);
-            msgs.put(new Long(i), entry);
-            timer.add(entry);
-        }
-        System.out.println("-- done");
 
-        // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
-        System.out.println("-- waiting for 20 secs for all retransmits");
-        Util.sleep(20000);
-
-        // 3. Check whether all Entries have correct retransmission times
-        for(long i=0; i < NUM_MSGS; i++) {
-            entry=(Entry)msgs.get(new Long(i));
-            if(!entry.isCorrect()) {
-                num_non_correct_entries++;
-            }
-        }
-
-        if(num_non_correct_entries > 0)
-            System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
-        else {
-            for(long i=0; i < NUM_MSGS; i++) {
-                entry=(Entry)msgs.get(new Long(i));
-                if(entry != null)
-                    System.out.println(i + ": " + entry);
-            }
-        }
-        assertEquals(0, num_non_correct_entries);
-    }
-
-
-    public static Test suite() {
-        TestSuite suite;
-        suite=new TestSuite(TimeSchedulerTest.class);
-        return (suite);
-    }
-
-    public static void main(String[] args) {
-        String[] name={TimeSchedulerTest.class.getName()};
-        junit.textui.TestRunner.main(name);
-    }
-
-
-    class Entry implements TimeScheduler.Task {
+    private static class Entry implements TimeScheduler.Task {
         long start_time=0;  // time message was added
         long first_xmit=0;  // time between start_time and first_xmit should be ca. 1000ms
         long second_xmit=0; // time between first_xmit and second_xmit should be ca. 2000ms
@@ -296,13 +301,6 @@ public class TimeSchedulerTest extends TestCase {
             start_time=System.currentTimeMillis();
         }
 
-        public void cancel() {
-            cancelled=true;
-        }
-
-        public boolean cancelled() {
-            return cancelled;
-        }
 
         public long nextInterval() {
             return interval.next();
@@ -312,14 +310,14 @@ public class TimeSchedulerTest extends TestCase {
             if(first_xmit == 0)
                 first_xmit=System.currentTimeMillis();
             else
-                if(second_xmit == 0)
-                    second_xmit=System.currentTimeMillis();
-                else
-                    if(third_xmit == 0)
-                        third_xmit=System.currentTimeMillis();
-                    else
-                        if(fourth_xmit == 0)
-                            fourth_xmit=System.currentTimeMillis();
+            if(second_xmit == 0)
+                second_xmit=System.currentTimeMillis();
+            else
+            if(third_xmit == 0)
+                third_xmit=System.currentTimeMillis();
+            else
+            if(fourth_xmit == 0)
+                fourth_xmit=System.currentTimeMillis();
         }
 
 
@@ -365,10 +363,23 @@ public class TimeSchedulerTest extends TestCase {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(first_xmit - start_time).append(", ").append(second_xmit - first_xmit).append(", ");
             sb.append(third_xmit - second_xmit).append(", ").append(fourth_xmit - third_xmit);
             return sb.toString();
         }
+    }
+
+
+
+      public static Test suite() {
+        TestSuite suite;
+        suite=new TestSuite(TimeSchedulerTest.class);
+        return (suite);
+    }
+
+    public static void main(String[] args) {
+        String[] name={TimeSchedulerTest.class.getName()};
+        junit.textui.TestRunner.main(name);
     }
 }

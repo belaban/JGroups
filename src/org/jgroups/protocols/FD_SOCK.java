@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.58 2007/01/12 14:19:15 belaban Exp $
+// $Id: FD_SOCK.java,v 1.59 2007/01/26 10:18:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -14,6 +14,8 @@ import java.net.Socket;
 import java.net.UnknownHostException;
 import java.util.*;
 import java.util.List;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -209,15 +211,14 @@ public class FD_SOCK extends Protocol implements Runnable {
             case FdHeader.SUSPECT:
                 if(hdr.mbrs != null) {
                     if(log.isDebugEnabled()) log.debug("[SUSPECT] hdr=" + hdr);
-                    for(int i=0; i < hdr.mbrs.size(); i++) {
-                        Address m=(Address)hdr.mbrs.elementAt(i);
+                    for(Address m: hdr.mbrs) {
                         if(local_addr != null && m.equals(local_addr)) {
                             if(warn)
                                 log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT message");
                             continue;
                         }
-                        up_prot.up(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
-                        down_prot.down(new Event(Event.SUSPECT, hdr.mbrs.elementAt(i)));
+                        up_prot.up(new Event(Event.SUSPECT, m));
+                        down_prot.down(new Event(Event.SUSPECT, m));
                     }
                 }
                 else
@@ -708,8 +709,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         // 1. Send a SUSPECT message right away; the broadcast task will take some time to send it (sleeps first)
         hdr=new FdHeader(FdHeader.SUSPECT);
-        hdr.mbrs=new Vector(1);
-        hdr.mbrs.addElement(suspected_mbr);
+        hdr.mbrs=new HashSet(1);
+        hdr.mbrs.add(suspected_mbr);
         suspect_msg=new Message();
         suspect_msg.setFlag(Message.OOB);
         suspect_msg.putHeader(name, hdr);
@@ -845,8 +846,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         IpAddress sock_addr;          // set on I_HAVE_SOCK
 
         // Hashtable<Address,IpAddress>
-        Hashtable cachedAddrs=null;   // set on GET_CACHE_RSP
-        Vector    mbrs=null;          // set on SUSPECT (list of suspected members)
+        Map<Address,IpAddress>  cachedAddrs=null;   // set on GET_CACHE_RSP
+        Set<Address>            mbrs=null;          // set on SUSPECT (list of suspected members)
 
 
         public FdHeader() {
@@ -861,7 +862,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.mbr=mbr;
         }
 
-        public FdHeader(byte type, Vector mbrs) {
+        public FdHeader(byte type, Set mbrs) {
             this.type=type;
             this.mbrs=mbrs;
         }
@@ -918,7 +919,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             mbr=(Address) in.readObject();
             sock_addr=(IpAddress) in.readObject();
             cachedAddrs=(Hashtable) in.readObject();
-            mbrs=(Vector) in.readObject();
+            mbrs=(Set)in.readObject();
         }
 
         public long size() {
@@ -943,8 +944,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             retval+=Global.INT_SIZE; // mbrs size
             if(mbrs != null) {
-                for(int i=0; i < mbrs.size(); i++) {
-                    retval+=Util.size((Address)mbrs.elementAt(i));
+                for(Address m: mbrs) {
+                    retval+=Util.size(m);
                 }
             }
 
@@ -995,7 +996,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             size=in.readInt();
             if(size > 0) {
                 if(mbrs == null)
-                    mbrs=new Vector();
+                    mbrs=new HashSet();
                 for(int i=0; i < size; i++) {
                     Address addr=Util.readAddress(in);
                     mbrs.add(addr);
@@ -1156,9 +1157,9 @@ public class FD_SOCK extends Protocol implements Runnable {
      * sure they are retransmitted until a view has been received which doesn't contain the suspected members
      * any longer. Then the task terminates.
      */
-    private class BroadcastTask implements TimeScheduler.Task {
-        final Vector suspected_mbrs=new Vector(7);
-        boolean stopped=false;
+    private class BroadcastTask implements Runnable {
+        final Set<Address> suspected_mbrs=new HashSet<Address>();
+        Future             future;
 
 
         /** Adds a suspected member. Starts the task if not yet running */
@@ -1166,14 +1167,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(mbr == null) return;
             if(!members.contains(mbr)) return;
             synchronized(suspected_mbrs) {
-                if(!suspected_mbrs.contains(mbr)) {
-                    suspected_mbrs.addElement(mbr);
-                    if(log.isDebugEnabled()) log.debug("mbr=" + mbr + " (size=" + suspected_mbrs.size() + ')');
-                }
-                if(stopped && !suspected_mbrs.isEmpty()) {
-                    stopped=false;
-                    timer.add(this, true);
-                }
+                if(suspected_mbrs.add(mbr))
+                    startTask();
             }
         }
 
@@ -1182,17 +1177,31 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(suspected_mbr == null) return;
             if(log.isDebugEnabled()) log.debug("member is " + suspected_mbr);
             synchronized(suspected_mbrs) {
-                suspected_mbrs.removeElement(suspected_mbr);
-                if(suspected_mbrs.isEmpty())
-                    stopped=true;
+                suspected_mbrs.remove(suspected_mbr);
+                if(suspected_mbrs.isEmpty()) {
+                    stopTask();
+                }
             }
         }
 
 
         public void removeAll() {
             synchronized(suspected_mbrs) {
-                suspected_mbrs.removeAllElements();
-                stopped=true;
+                suspected_mbrs.clear();
+                stopTask();
+            }
+        }
+
+        private void startTask() {
+            if(future == null || future.isDone()) {
+                future=timer.scheduleWithFixedDelay(this, suspect_msg_interval, suspect_msg_interval, TimeUnit.MILLISECONDS);
+            }
+        }
+
+        private void stopTask() {
+            if(future != null) {
+                future.cancel(false);
+                future=null;
             }
         }
 
@@ -1214,18 +1223,8 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
                 }
                 if(suspected_mbrs.isEmpty())
-                    stopped=true;
+                    stopTask();
             }
-        }
-
-
-        public boolean cancelled() {
-            return stopped;
-        }
-
-
-        public long nextInterval() {
-            return suspect_msg_interval;
         }
 
 
@@ -1238,13 +1237,13 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             synchronized(suspected_mbrs) {
                 if(suspected_mbrs.isEmpty()) {
-                    stopped=true;
+                    stopTask();
                     if(log.isDebugEnabled()) log.debug("task done (no suspected members)");
                     return;
                 }
 
                 hdr=new FdHeader(FdHeader.SUSPECT);
-                hdr.mbrs=(Vector) suspected_mbrs.clone();
+                hdr.mbrs=new HashSet(suspected_mbrs);
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
             suspect_msg.setFlag(Message.OOB);

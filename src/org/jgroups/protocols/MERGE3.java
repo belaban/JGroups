@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.15 2007/01/12 14:20:21 belaban Exp $
+// $Id: MERGE3.java,v 1.16 2007/01/26 10:18:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,8 +12,7 @@ import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.*;
-
-
+import java.util.concurrent.Future;
 
 
 /**
@@ -39,6 +38,7 @@ public class MERGE3 extends Protocol {
     boolean is_coord=false;
     final Vector  mbrs=new Vector();
     TimeScheduler timer=null;
+    Future announcer_task_future=null;
     CoordinatorAnnouncer announcer_task=null;
     final Set announcements=Collections.synchronizedSet(new HashSet());
 
@@ -84,9 +84,8 @@ public class MERGE3 extends Protocol {
             props.remove("use_separate_thread");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("MERGE2.setProperties(): the following properties are not recognized: " + props);
-
             return false;
         }
         return true;
@@ -103,7 +102,7 @@ public class MERGE3 extends Protocol {
 
             case Event.MSG:
                 Message msg=(Message)evt.getArg();
-                CoordAnnouncement hdr=(CoordAnnouncement)msg.removeHeader(getName());
+                CoordAnnouncement hdr=(CoordAnnouncement)msg.getHeader(getName());
                 if(hdr != null) {
                     if(hdr.coord_addr != null && is_coord) {
                         boolean contains;
@@ -166,23 +165,24 @@ public class MERGE3 extends Protocol {
 
 
     void startCoordAnnouncerTask() {
-        if(announcer_task == null) {
+        if(announcer_task_future == null || announcer_task_future.isDone()) {
             announcements.add(local_addr);
             announcer_task=new CoordinatorAnnouncer();
-            timer.add(announcer_task);
+            announcer_task_future=timer.scheduleWithDynamicInterval(announcer_task);
             if(log.isDebugEnabled())
                 log.debug("coordinator announcement task started, announcements=" + announcements);
         }
     }
 
     void stopCoordAnnouncerTask() {
-        if(announcer_task != null) {
-            announcer_task.stop();
-            announcer_task=null;
-            announcements.clear();
-            if(log.isDebugEnabled())
-                log.debug("coordinator announcement task stopped");
+        if(announcer_task_future != null) {
+            announcer_task_future.cancel(false);
+            announcer_task_future=null;
         }
+        announcer_task=null;
+        announcements.clear();
+        if(log.isDebugEnabled())
+            log.debug("coordinator announcement task stopped");
     }
 
 

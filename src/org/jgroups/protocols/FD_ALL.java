@@ -2,11 +2,14 @@ package org.jgroups.protocols;
 
 import org.jgroups.stack.Protocol;
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.io.*;
@@ -16,7 +19,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.8 2007/01/12 14:19:25 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.9 2007/01/26 10:18:39 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -38,10 +41,12 @@ public class FD_ALL extends Protocol {
     TimeScheduler              timer=null;
 
     // task which multicasts HEARTBEAT message after 'interval' ms
-    private HeartbeatSender    heartbeat_sender=null;
+    @GuardedBy("lock")
+    private ScheduledFuture    heartbeat_sender_future=null;
 
     // task which checks for members exceeding timeout and suspects them
-    private TimeoutChecker     timeout_checker=null;
+    @GuardedBy("lock")
+    private ScheduledFuture    timeout_checker_future=null;
 
     private boolean            tasks_running=false;
 
@@ -114,7 +119,7 @@ public class FD_ALL extends Protocol {
             props.remove("msg_counts_as_heartbeat");
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -232,22 +237,8 @@ public class FD_ALL extends Protocol {
     private void startTimeoutChecker() {
         lock.lock();
         try {
-            if(timeout_checker == null) {
-                timeout_checker=new TimeoutChecker();
-                timer.add(timeout_checker);
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-    private void startHeartbeatSender() {
-        lock.lock();
-        try {
-            if(heartbeat_sender == null) {
-                heartbeat_sender=new HeartbeatSender();
-                timer.add(heartbeat_sender);
+            if(timeout_checker_future == null || timeout_checker_future.isDone()) {
+                timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), interval, interval, TimeUnit.MILLISECONDS);
             }
         }
         finally {
@@ -256,11 +247,24 @@ public class FD_ALL extends Protocol {
     }
 
     private void stopTimeoutChecker() {
+         lock.lock();
+         try {
+             if(timeout_checker_future != null) {
+                 timeout_checker_future.cancel(true);
+                 timeout_checker_future=null;
+             }
+         }
+         finally {
+             lock.unlock();
+         }
+     }
+
+
+    private void startHeartbeatSender() {
         lock.lock();
         try {
-            if(timeout_checker != null) {
-                timeout_checker.cancel();
-                timeout_checker=null;
+            if(heartbeat_sender_future == null || heartbeat_sender_future.isDone()) {
+                heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), interval, interval, TimeUnit.MILLISECONDS);
             }
         }
         finally {
@@ -268,18 +272,21 @@ public class FD_ALL extends Protocol {
         }
     }
 
-    private void stopHeartbeatSender() {
+     private void stopHeartbeatSender() {
         lock.lock();
         try {
-            if(heartbeat_sender != null) {
-                heartbeat_sender.cancel();
-                heartbeat_sender=null;
+            if(heartbeat_sender_future != null) {
+                heartbeat_sender_future.cancel(true);
+                heartbeat_sender_future=null;
             }
         }
         finally {
             lock.unlock();
         }
     }
+
+
+
 
 
 
@@ -438,20 +445,7 @@ public class FD_ALL extends Protocol {
     /**
      * Class which periodically multicasts a HEARTBEAT message to the cluster
      */
-    class HeartbeatSender implements TimeScheduler.CancellableTask {
-        boolean started=true;
-
-        public void cancel() {
-            started=false;
-        }
-
-        public boolean cancelled() {
-            return !started;
-        }
-
-        public long nextInterval() {
-            return interval;
-        }
+    class HeartbeatSender implements Runnable {
 
         public void run() {
             Message heartbeat=new Message(); // send to all
@@ -462,10 +456,6 @@ public class FD_ALL extends Protocol {
             //if(trace)
               //  log.trace(local_addr + ": sent heartbeat to cluster");
             num_heartbeats_sent++;
-        }
-
-        public String toString() {
-            return Boolean.toString(started);
         }
     }
 
