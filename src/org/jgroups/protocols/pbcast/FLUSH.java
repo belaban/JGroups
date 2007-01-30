@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
@@ -24,6 +25,7 @@ import org.jgroups.Message;
 import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.ViewId;
+import org.jgroups.protocols.pbcast.Digest.Entry;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
@@ -81,7 +83,7 @@ public class FLUSH extends Protocol
    private final Set flushOkSet;
 
    // GuardedBy ("sharedLock")
-   private final Set flushCompletedSet;
+   private final Map<Address,Digest> flushCompletedMap;
 
    // GuardedBy ("sharedLock")
    private final Set stopFlushOkSet;
@@ -137,7 +139,7 @@ public class FLUSH extends Protocol
       super();      
       currentView = new View(new ViewId(), new Vector());
       flushOkSet = new TreeSet();
-      flushCompletedSet = new TreeSet();
+      flushCompletedMap = new HashMap<Address, Digest>();
       stopFlushOkSet = new TreeSet();
       flushMembers = new ArrayList();
       suspected = new TreeSet();      
@@ -196,7 +198,7 @@ public class FLUSH extends Protocol
       synchronized (sharedLock)
       {
          currentView = new View(new ViewId(), new Vector());
-         flushCompletedSet.clear();
+         flushCompletedMap.clear();
          flushOkSet.clear();
          stopFlushOkSet.clear();
          flushMembers.clear();
@@ -412,8 +414,8 @@ public class FLUSH extends Protocol
                      onStopFlushOk(msg.getSrc());
                   }
                   else if (fh.type == FlushHeader.FLUSH_COMPLETED)
-                  {
-                     onFlushCompleted(msg.getSrc());
+                  {                     
+                     onFlushCompleted(msg.getSrc(),fh.digest);
                   }
                }
                else
@@ -656,7 +658,8 @@ public class FLUSH extends Protocol
       {
          startFlushTime = System.currentTimeMillis();
          numberOfFlushes += 1;
-      }            
+      }
+      boolean amIParticipant = false;
       synchronized (sharedLock)
       {         
          flushCoordinator = flushStarter;
@@ -666,26 +669,32 @@ public class FLUSH extends Protocol
             flushMembers.addAll(fh.flushParticipants);
          }        
          flushMembers.removeAll(suspected);
+         amIParticipant = flushMembers.contains(localAddress);
       }
-      Message msg = new Message(null, localAddress, null);
-      msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK, fh.viewID));
-      down_prot.down(new Event(Event.MSG, msg));
-      if (log.isDebugEnabled())
-         log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+      if (amIParticipant)
+      {
+         Message msg = new Message(null);
+         msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK, fh.viewID));
+         down_prot.down(new Event(Event.MSG, msg));
+         if (log.isDebugEnabled())
+            log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+      }
    }
 
    private void onFlushOk(Address address, long viewID)
    {
 
       boolean flushOkCompleted = false;
+      boolean amIParticipant = false;
       Message m = null;
       synchronized (sharedLock)
       {
+         amIParticipant = flushMembers.contains(address);
          flushOkSet.add(address);
          flushOkCompleted = flushOkSet.containsAll(flushMembers);
          if (flushOkCompleted)
          {
-            m = new Message(flushCoordinator, localAddress, null);
+            m = new Message(flushCoordinator);
          }
       }
 
@@ -693,13 +702,16 @@ public class FLUSH extends Protocol
          log.debug("At " + localAddress + " FLUSH_OK from " + address + ",completed " 
                + flushOkCompleted + ",  flushOkSet " + flushOkSet.toString());
 
-      if (flushOkCompleted)
+      if (flushOkCompleted && amIParticipant)
       {
          synchronized(blockMutex)
          {
             isBlockingFlushDown = true;
          }
-         m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
+         Digest digest = (Digest)down_prot.down(new Event(Event.GET_DIGEST));
+         FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID);
+         fh.addDigest(digest);         
+         m.putHeader(getName(),fh);
          down_prot.down(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
             log.debug(localAddress + " is blocking FLUSH.down(). Sent FLUSH_COMPLETED message to " + flushCoordinator);
@@ -726,7 +738,7 @@ public class FLUSH extends Protocol
       {         
          synchronized (sharedLock)
          {
-            flushCompletedSet.clear();
+            flushCompletedMap.clear();
             flushOkSet.clear();   
             stopFlushOkSet.clear();
             flushMembers.clear();
@@ -749,29 +761,95 @@ public class FLUSH extends Protocol
       }     
    }
 
-   private void onFlushCompleted(Address address)
+   private void onFlushCompleted(Address address,Digest digest)
    {
       boolean flushCompleted = false;
       synchronized (sharedLock)
       {
-         flushCompletedSet.add(address);
-         flushCompleted = flushCompletedSet.containsAll(flushMembers);
+         flushCompletedMap.put(address,digest);
+         if (flushCompletedMap.size() >= flushMembers.size())
+         {
+            flushCompleted = flushCompletedMap.keySet().containsAll(flushMembers);
+         }
       }
 
       if (log.isDebugEnabled())
          log.debug("At " + localAddress + " FLUSH_COMPLETED from " + address 
                + ",completed " + flushCompleted + ",flushCompleted "
-               + flushCompletedSet.toString());
-
+               + flushCompletedMap.keySet());
+      
       if (flushCompleted)
-      {
-         //needed for jmx operation startFlush(timeout);
-         flush_promise.setResult(Boolean.TRUE);
-         up_prot.up(new Event(Event.SUSPEND_OK));
-         down_prot.down(new Event(Event.SUSPEND_OK));
-         if (log.isDebugEnabled())
-            log.debug("All FLUSH_COMPLETED received at " + localAddress + " sent SUSPEND_OK down/up");
+      {         
+         List<Digest> gaps = findVirtualSynchronyGaps();
+         if(!gaps.isEmpty())
+         {
+            requestRetransmissions(gaps);
+            
+            //restart FLUSH
+            Message msg = new Message();
+            synchronized (sharedLock)
+            {
+               msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(), flushMembers));
+            }
+            if (log.isDebugEnabled())
+               log.debug("Repeating FLUSH due to virtual synchrony gap");
+            
+            down_prot.down(new Event(Event.MSG, msg));            
+         }
+         else
+         {
+            //needed for jmx operation startFlush(timeout);
+            flush_promise.setResult(Boolean.TRUE);
+            up_prot.up(new Event(Event.SUSPEND_OK));
+            down_prot.down(new Event(Event.SUSPEND_OK));
+            if (log.isDebugEnabled())
+               log.debug("All FLUSH_COMPLETED received at " + localAddress + " sent SUSPEND_OK down/up");   
+         }                             
       }
+   }
+
+   private void requestRetransmissions(List<Digest> gaps)
+   {
+      
+      for (Digest digest : gaps)
+      {
+         Map<Address, Entry> senders = digest.getSenders();
+         for (Address sender : senders.keySet())
+         {
+            Entry e = senders.get(sender);
+            Header hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, e.getLow(), e.getHigh(), sender);
+            Message retransmit_msg=new Message(sender, null, null);
+            retransmit_msg.setFlag(Message.OOB);      
+            retransmit_msg.putHeader("NAKACK", hdr);
+            down_prot.down(new Event(Event.MSG, retransmit_msg));                       
+         }
+      }
+      
+   }
+
+   private List<Digest> findVirtualSynchronyGaps()
+   {      
+      List<Digest> difference = new ArrayList<Digest>();
+      synchronized (sharedLock)
+      {
+         Collection<Digest> digests = flushCompletedMap.values();            
+         for (Digest digestEntryI : digests)
+         {
+            for (Digest digestEntryO : digests)
+            {
+               if (!digestEntryI.sameSenders(digestEntryO))
+               {
+                  log.warn("Digest " + digestEntryI + " is not the same as " + digestEntryO);
+                  Digest diff = digestEntryI.difference(digestEntryO);
+                  if(!difference.contains(diff) && diff.size()>0)
+                  {
+                     difference.add(diff);  
+                  }                  
+               }
+            }                          
+         }
+      }
+      return difference;
    }
 
    private void onSuspect(Address address)
@@ -873,6 +951,8 @@ public class FLUSH extends Protocol
       long viewID;
 
       Collection flushParticipants;
+      
+      Digest digest = null;
 
       public FlushHeader()
       {
@@ -894,6 +974,11 @@ public class FLUSH extends Protocol
          this.type = type;
          this.viewID = viewID;
          this.flushParticipants = flushView;
+      }
+      
+      public void addDigest(Digest digest)
+      {
+         this.digest = digest;
       }
 
       public String toString()
@@ -924,6 +1009,7 @@ public class FLUSH extends Protocol
          out.writeByte(type);
          out.writeLong(viewID);
          out.writeObject(flushParticipants);
+         out.writeObject(digest);
       }
 
       public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException
@@ -931,6 +1017,7 @@ public class FLUSH extends Protocol
          type = in.readByte();
          viewID = in.readLong();
          flushParticipants = (Collection) in.readObject();
+         digest = (Digest)in.readObject();
       }
 
       public void writeTo(DataOutputStream out) throws IOException
@@ -950,6 +1037,15 @@ public class FLUSH extends Protocol
          {
             out.writeShort(0);
          }
+         if(digest != null)
+         {
+            out.writeBoolean(true);
+            Util.writeStreamable(digest, out);
+         }
+         else
+         {
+            out.writeBoolean(false);
+         }
       }
 
       public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException
@@ -964,6 +1060,11 @@ public class FLUSH extends Protocol
             {
                flushParticipants.add(Util.readAddress(in));
             }
+         }
+         boolean hasDigest = in.readBoolean();
+         if(hasDigest)
+         {
+            digest = (Digest) Util.readStreamable(Digest.class, in);
          }
       }
    }
