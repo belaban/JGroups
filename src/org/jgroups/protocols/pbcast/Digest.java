@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.23 2007/01/03 15:57:22 belaban Exp $
+// $Id: Digest.java,v 1.24 2007/01/30 22:35:33 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -31,7 +31,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class Digest implements Externalizable, Streamable {
     /** Map<Address, Entry> */
-    protected ConcurrentMap<Address,Entry> senders=null;
+    protected final Map<Address,Entry> senders;
+    
     protected static final Log log=LogFactory.getLog(Digest.class);
     static final boolean warn=log.isWarnEnabled();
 
@@ -39,6 +40,7 @@ public class Digest implements Externalizable, Streamable {
 
     /** Used for externalization */
     public Digest() {
+       senders=createSenders(7);
     }
 
     public Digest(int size) {
@@ -46,7 +48,7 @@ public class Digest implements Externalizable, Streamable {
     }
 
     /** Creates a new digest from an existing map by copying the keys and values from map */
-    public Digest(Map map) {
+    public Digest(Map<Address, Entry> map) {
         senders=createSenders(map);
     }
     
@@ -95,12 +97,30 @@ public class Digest implements Externalizable, Streamable {
      * @return True if senders are the same, otherwise false.
      */
     public boolean sameSenders(Digest other) {
-        if(other == null) return false;
-        if(this.senders == null || other.senders == null) return false;
+        if(other == null) return false;        
         if(this.senders.size() != other.senders.size()) return false;
 
-        Set my_senders=senders.keySet(), other_senders=other.senders.keySet();
+        Set<Address> my_senders=senders.keySet(), other_senders=other.senders.keySet();
         return my_senders.equals(other_senders);
+    }
+    
+    public Digest difference(Digest other){
+       if(other == null) return copy();       
+       if(this.senders.size() != other.senders.size()) return new Digest();
+       
+       Map<Address,Entry> largerMap, smallerMap = null; 
+       if(this.senders.size() > other.senders.size()){
+          largerMap = this.senders;
+          smallerMap = other.senders;
+       }
+       else{
+          largerMap = other.senders;
+          smallerMap = this.senders;
+       }
+       
+       Digest largerDigestCopy = new Digest(largerMap);
+       largerDigestCopy.senders.keySet().removeAll(smallerMap.keySet());
+       return largerDigestCopy;
     }
 
 
@@ -141,16 +161,17 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
+    @SuppressWarnings("unchecked")
     public String toString() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
-        if(senders == null) return "[]";
+        if(senders.isEmpty()) return "[]";
         Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+            entry=(Map.Entry<Address, Entry>)it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -177,7 +198,7 @@ public class Digest implements Externalizable, Streamable {
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+            entry=(Map.Entry<Address, Entry>)it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -202,7 +223,7 @@ public class Digest implements Externalizable, Streamable {
         Entry val;
 
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+            entry=(Map.Entry<Address, Entry>)it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -224,7 +245,9 @@ public class Digest implements Externalizable, Streamable {
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        senders=(ConcurrentMap)in.readObject();
+        Map<Address, Entry> tmp = (Map<Address, Entry>)in.readObject();
+        senders.clear();
+        senders.putAll(tmp);
     }
 
     public void writeTo(DataOutputStream out) throws IOException {
@@ -233,7 +256,7 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
         for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+            entry=(Map.Entry<Address, Entry>)it.next();
             key=entry.getKey();
             val=entry.getValue();
             Util.writeAddress(key, out);
@@ -246,13 +269,14 @@ public class Digest implements Externalizable, Streamable {
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         short size=in.readShort();
-        Map<Address,Entry> tmp=new HashMap(size);
+        Map<Address,Entry> tmp=new HashMap<Address, Entry>(size);
         Address key;
         for(int i=0; i < size; i++) {
             key=Util.readAddress(in);
             tmp.put(key, new Entry(in.readLong(), in.readLong(), in.readLong()));
         }
-        senders=createSenders(tmp);
+        senders.clear();
+        senders.putAll(tmp);
     }
 
 
@@ -268,12 +292,12 @@ public class Digest implements Externalizable, Streamable {
         return retval;
     }
 
-    private static ConcurrentMap createSenders(int size) {
-        return new ConcurrentHashMap(size);
+    private static ConcurrentMap<Address,Entry> createSenders(int size) {
+        return new ConcurrentHashMap<Address,Entry>(size);
     }
 
-    private static ConcurrentMap createSenders(Map map) {
-        return new ConcurrentHashMap(map);
+    private static ConcurrentMap<Address,Entry> createSenders(Map<Address, Entry> map) {
+        return new ConcurrentHashMap<Address,Entry>(map);
     }
 
 
