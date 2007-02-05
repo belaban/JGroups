@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.7 2007/01/03 15:57:24 belaban Exp $
+// $Id: DigestTest.java,v 1.8 2007/02/05 09:58:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -29,7 +29,7 @@ public class DigestTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        Map<Address, Digest.Entry> map=new HashMap();
+        Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         a1=new IpAddress(5555);
         a2=new IpAddress(6666);
         a3=new IpAddress(7777);
@@ -274,7 +274,7 @@ public class DigestTest extends TestCase {
 
 
     public void testMerge() {
-        Map map=new HashMap();
+        Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(3, 499, 502));
         map.put(a2, new Digest.Entry(20, 26, 27));
         map.put(a3, new Digest.Entry(21, 26, 35));
