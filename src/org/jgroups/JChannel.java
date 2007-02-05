@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.123 2007/01/22 18:05:25 vlada Exp $
+ * @version $Id: JChannel.java,v 1.124 2007/02/05 15:53:23 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -989,8 +989,7 @@ public class JChannel extends Channel {
 
             state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
             if(up_handler != null) {
-                up_handler.up(evt);
-                return null;
+                return up_handler.up(evt);
             }
 
             if(state != null) {
@@ -1014,8 +1013,7 @@ public class JChannel extends Channel {
             //state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
 
             if(up_handler != null) {
-                up_handler.up(evt);
-                return null;
+                return up_handler.up(evt);
             }
 
             if(is != null) {
@@ -1050,12 +1048,12 @@ public class JChannel extends Channel {
 
         // If UpHandler is installed, pass all events to it and return (UpHandler is e.g. a building block)
         if(up_handler != null) {
-            up_handler.up(evt);
+            Object ret=up_handler.up(evt);
 
             if(type == Event.UNBLOCK){
                flush_unblock_promise.setResult(Boolean.TRUE);
             }
-            return null;
+            return ret;
         }
 
         switch(type) {
