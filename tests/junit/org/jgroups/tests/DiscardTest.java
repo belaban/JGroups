@@ -2,14 +2,10 @@
 package org.jgroups.tests;
 
 
-import java.util.Properties;
-
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.protocols.DISCARD;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
@@ -18,11 +14,13 @@ import org.jgroups.util.Util;
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.11 2007/01/23 19:00:39 vlada Exp $
+ * @version $Id: DiscardTest.java,v 1.12 2007/02/05 16:45:05 vlada Exp $
  */
-public class DiscardTest extends ChannelTestBase {
-    Channel ch1, ch2;
-    
+public class DiscardTest extends TestCase {
+    JChannel ch1, ch2;
+
+    static final String discard_props="discard.xml";             // located in JGroups/conf, needs to be in the classpath
+    static final String fast_props="udp.xml"; // located in JGroups/conf, needs to be in the classpath
     static final long NUM_MSGS=10000;
     static final int  MSG_SIZE=1000;
     private static final String GROUP="DiscardTestGroup";
@@ -41,29 +39,22 @@ public class DiscardTest extends ChannelTestBase {
     }
 
     public void testDiscardProperties() throws Exception {
-        _testLosslessReception(null);
+        _testLosslessReception(discard_props);
+    }
+
+    public void testFastProperties() throws Exception {
+        _testLosslessReception(fast_props);
     }
 
     public void _testLosslessReception(String props) throws Exception {
         Address ch1_addr, ch2_addr;
-        long start, stop;   
+        long start, stop;
 
-        Properties prop = new Properties();
-        prop.setProperty("down", "0.1");
-        prop.setProperty("up", "0.1");
-        
-        Protocol d = new DISCARD();
-        d.setProperties(prop);
-        
-        
-        ch1=createChannel("A");
-        if(ch1 instanceof JChannel)
-        {
-           ((JChannel)ch1).getProtocolStack().insertProtocol(d, ProtocolStack.BELOW, "NAKACK");
-        }       
+        System.setProperty("bind.address", "127.0.0.1");
+
+        ch1=new JChannel(props);
         ch1.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "ch1"));
-        ch2=createChannel("A");        
-        
+        ch2=new JChannel(props);
         ch2.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "ch2"));
 
         ch1.connect(GROUP);
@@ -145,6 +136,9 @@ public class DiscardTest extends ChannelTestBase {
         for(int i=0; i < buf.length; i++) buf[i]=(byte)'x';
         return new Message(null, null, buf);
     }
+
+
+
 
     public static Test suite() {
         return new TestSuite(DiscardTest.class);
