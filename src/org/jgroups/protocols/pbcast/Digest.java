@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.24 2007/01/30 22:35:33 vlada Exp $
+// $Id: Digest.java,v 1.25 2007/02/05 09:58:21 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -12,7 +12,6 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -161,7 +160,6 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    @SuppressWarnings("unchecked")
     public String toString() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
@@ -170,8 +168,8 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
 
-        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry<Address, Entry>)it.next();
+        for(Iterator<Map.Entry<Address,Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -197,8 +195,8 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
 
-        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry<Address, Entry>)it.next();
+        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -222,8 +220,8 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
 
-        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry<Address, Entry>)it.next();
+        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
             if(!first) {
@@ -282,7 +280,7 @@ public class Digest implements Externalizable, Streamable {
 
     public long serializedSize() {
         long retval=Global.SHORT_SIZE; // number of elements in 'senders'
-        if(senders.size() > 0) {
+        if(!senders.isEmpty()) {
             Address addr=senders.keySet().iterator().next();
             int len=addr.size() +
                     2 * Global.BYTE_SIZE; // presence byte, IpAddress vs other address
@@ -292,11 +290,11 @@ public class Digest implements Externalizable, Streamable {
         return retval;
     }
 
-    private static ConcurrentMap<Address,Entry> createSenders(int size) {
+    private static Map<Address, Entry> createSenders(int size) {
         return new ConcurrentHashMap<Address,Entry>(size);
     }
 
-    private static ConcurrentMap<Address,Entry> createSenders(Map<Address, Entry> map) {
+    private static Map<Address, Entry> createSenders(Map<Address, Entry> map) {
         return new ConcurrentHashMap<Address,Entry>(map);
     }
 
