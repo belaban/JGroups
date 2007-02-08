@@ -120,12 +120,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
    private boolean use_reading_thread;
 
-   private Promise flush_promise = new Promise();;
-
-   private volatile boolean use_flush;
-
-   private long flush_timeout = 4000;
-
    private final Object poolLock = new Object();
 
    private int threadCounter;
@@ -171,8 +165,17 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    public boolean setProperties(Properties props)
    {
       super.setProperties(props);
-      use_flush = Util.parseBoolean(props, "use_flush", false);            
-      flush_timeout = Util.parseLong(props, "flush_timeout", flush_timeout);
+      
+      String str=props.getProperty("use_flush");   
+      if(str != null) {
+          log.warn("use_flush has been deprecated and its value will be ignored");
+          props.remove("use_flush");
+      } 
+      str=props.getProperty("flush_timeout");   
+      if(str != null) {
+          log.warn("flush_timeout has been deprecated and its value will be ignored");
+          props.remove("flush_timeout");
+      } 
       
       try
       {
@@ -204,13 +207,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
    }
 
    public void start() throws Exception
-   {
-      up_prot.up(new Event(Event.CONFIG, map));
-      if(!flushProtocolInStack && use_flush)
-      {
-         log.warn("use_flush is true, however, FLUSH protocol not found in stack.");
-         use_flush = false;
-      }
+   {      
+      up_prot.up(new Event(Event.CONFIG, map));     
    }
 
    public void stop()
@@ -313,9 +311,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             else
             {
                boolean successfulFlush = false;
-               if (use_flush)
+               if (flushProtocolInStack)
                {
-                  successfulFlush = startFlush(flush_timeout, 5);
+                  successfulFlush = (Boolean)up_prot.up(new Event(Event.SUSPEND));
                }
                if (successfulFlush)
                {
@@ -324,7 +322,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                }
                else
                {
-                  if (use_flush && log.isWarnEnabled())
+                  if (flushProtocolInStack && log.isWarnEnabled())
                   {
                      log.warn("Could not get successful flush from " + local_addr);
                   }
@@ -345,9 +343,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             return null; // don't pass down any further !
 
          case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED :
-            if (use_flush)
+            if (flushProtocolInStack)
             {
-               stopFlush();
+            	up_prot.up(new Event(Event.RESUME));
             }
 
             if (log.isDebugEnabled())
@@ -358,30 +356,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             if (log.isDebugEnabled())
                log.debug("passing down a RESUME_STABLE event");
             down_prot.down(new Event(Event.RESUME_STABLE));
-            return null;
-         case Event.SUSPEND_OK :
-            if (use_flush)
-            {
-               flush_promise.setResult(Boolean.TRUE);
-            }
-            break;
-         case Event.SUSPEND_FAILED :
-            if (use_flush)
-            {                  
-               flush_promise.setResult(Boolean.FALSE);
-            }
-            break;      
+            return null;        
          case Event.CONFIG :
-            Map config = (Map) evt.getArg();           
-            if(config != null && config.containsKey("flush_timeout"))
-            {
-               Long ftimeout = (Long) config.get("flush_timeout");
-               use_flush = true;             
-               flush_timeout = ftimeout.longValue();                             
-            }
+            Map config = (Map) evt.getArg();                     
             if((config != null && !config.containsKey("flush_suported")))
             {                             
-               flushProtocolInStack = true;                              
+            	flushProtocolInStack = true;                           	                 
             }
             break;   
             
@@ -402,7 +382,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
     */
    private boolean isDigestNeeded()
    {
-      return !use_flush;
+      return !flushProtocolInStack;
    }
 
    private void respondToStateRequester()
@@ -465,40 +445,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
    }
 
-   private boolean startFlush(long timeout, int numberOfAttempts)
-   {
-      boolean successfulFlush = false;
-      flush_promise.reset();
-      up_prot.up(new Event(Event.SUSPEND));
-      try
-      {         
-         Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
-         successfulFlush = r.booleanValue();
-      }
-      catch (TimeoutException e)
-      {
-         if(log.isInfoEnabled())
-            log.info("Initiator of flush and state requesting member " + local_addr
-               + " timed out waiting for flush responses after " + flush_timeout + " msec");
-      }
-
-      if (!successfulFlush && numberOfAttempts > 0)
-      {
-         long backOffSleepTime = Util.random(5);
-         if(log.isInfoEnabled())               
-            log.info("Flush in progress or timeout detected at " + local_addr + ". Backing off for "
-                  + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
-         
-         Util.sleepRandom(backOffSleepTime*1000);      
-         successfulFlush = startFlush(flush_timeout, --numberOfAttempts);
-      }     
-      return successfulFlush;
-   }
-
-   private void stopFlush()
-   {
-      up_prot.up(new Event(Event.RESUME));
-   }
 
    private ThreadPoolExecutor setupThreadPool()
    {

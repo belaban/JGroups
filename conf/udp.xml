@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.16 2007/01/08 07:54:44 belaban Exp $
+  version: $Id: udp.xml,v 1.17 2007/02/08 14:35:31 vlada Exp $
 -->
 
 <config>
@@ -64,7 +64,7 @@
     <FC max_credits="20000000"
                     min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />
-    <!--pbcast.STREAMING_STATE_TRANSFER use_flush="true" use_reading_thread="true"/-->
+    <!--pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/-->
     <pbcast.STATE_TRANSFER  />
     <!-- pbcast.FLUSH  /-->
 </config>

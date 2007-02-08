@@ -127,11 +127,6 @@ public class FLUSH extends Protocol
    
    private final FlushPhase flushPhase = new FlushPhase();
 
-   /**
-    * If true configures timeout in GMS and STATE_TRANFER using FLUSH timeout value
-    */
-   private boolean auto_flush_conf = true;
-
 
 
    public FLUSH()
@@ -153,8 +148,13 @@ public class FLUSH extends Protocol
    public boolean setProperties(Properties props)
    {
       super.setProperties(props);
-      timeout = Util.parseLong(props, "timeout", timeout);    
-      auto_flush_conf = Util.parseBoolean(props, "auto_flush_conf", auto_flush_conf);
+      
+      timeout = Util.parseLong(props, "timeout", timeout); 
+      String str=props.getProperty("auto_flush_conf");   
+      if(str != null) {
+          log.warn("auto_flush_conf has been deprecated and its value will be ignored");
+          props.remove("auto_flush_conf");
+      }            
 
       if (!props.isEmpty())
       {
@@ -162,17 +162,6 @@ public class FLUSH extends Protocol
          return false;
       }
       return true;
-   }
-
-   public void init() throws Exception
-   {
-      if(auto_flush_conf)
-      {
-         Map map = new HashMap();
-         map.put("flush_timeout", new Long(timeout));
-         up_prot.up(new Event(Event.CONFIG, map));
-         down_prot.down(new Event(Event.CONFIG, map));
-      }
    }
 
    public void start() throws Exception
@@ -223,20 +212,43 @@ public class FLUSH extends Protocol
    {
       return numberOfFlushes;
    }
-
+   
    public boolean startFlush(long timeout)
    {
+	   return startFlush(new Event(Event.SUSPEND), timeout, 5);
+   }
+
+   private boolean startFlush(Event evt, long timeout, int numberOfAttempts)
+   {
       boolean successfulFlush = false;
-      down(new Event(Event.SUSPEND));
       flush_promise.reset();
+      View v = (View) evt.getArg();
+      if(log.isDebugEnabled())
+         log.debug("Received SUSPEND at " + localAddress + ", view is " + v);
+      
+      onSuspend(v);
       try
-      {
-         flush_promise.getResultWithTimeout(timeout);
-         successfulFlush = true;
+      {         
+         Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
+         successfulFlush = r.booleanValue();
       }
       catch (TimeoutException e)
       {
+         if(log.isInfoEnabled())
+            log.info("At " + localAddress
+               + " timed out waiting for flush responses after " + timeout + " msec");
       }
+
+      if (!successfulFlush && numberOfAttempts > 0)
+      {
+         long backOffSleepTime = Util.random(5);
+         backOffSleepTime = backOffSleepTime<2?backOffSleepTime+2:backOffSleepTime;
+         if(log.isInfoEnabled())               
+            log.info("At " + localAddress + ". Backing off for " + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
+         
+         Util.sleep(backOffSleepTime*1000);      
+         successfulFlush = startFlush(evt,timeout, --numberOfAttempts);
+      }     
       return successfulFlush;
    }
 
@@ -272,8 +284,7 @@ public class FLUSH extends Protocol
             break;
 
          case Event.SUSPEND :            
-            attemptSuspend(evt);
-            return null;
+            return startFlush(evt, 4000, 5);            
 
          case Event.RESUME :
             onResume();
@@ -315,9 +326,8 @@ public class FLUSH extends Protocol
       }
       if(shouldSuspendByItself)
       {
-         log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");
-         up_prot.up(new Event(Event.SUSPEND_OK));
-         down_prot.down(new Event(Event.SUSPEND_OK));
+         log.warn("unblocking FLUSH.down() at " + localAddress + " after timeout of " + (stop-start) + "ms");        
+         flush_promise.setResult(Boolean.TRUE);
       }
    }
 
@@ -398,9 +408,7 @@ public class FLUSH extends Protocol
                {
                   //abort current flush  
                   flushPhase.release();
-                  up_prot.up(new Event(Event.SUSPEND_FAILED));
-                  down_prot.down(new Event(Event.SUSPEND_FAILED));
-
+                  flush_promise.setResult(Boolean.FALSE);                 
                }
                else if (isCurrentFlushMessage(fh))
                {
@@ -458,8 +466,7 @@ public class FLUSH extends Protocol
             break;
 
          case Event.SUSPEND :           
-            attemptSuspend(evt);
-            return null;
+        	return startFlush(evt, 4000, 5);
 
          case Event.RESUME :
             onResume();
@@ -476,26 +483,6 @@ public class FLUSH extends Protocol
       retval.addElement(new Integer(Event.SUSPEND));
       retval.addElement(new Integer(Event.RESUME));
       return retval;
-   }
-   
-   private void attemptSuspend(Event evt)
-   {
-      View v = (View) evt.getArg();
-      if(log.isDebugEnabled())
-         log.debug("Received SUSPEND at " + localAddress + ", view is " + v);
-      
-      flushPhase.lock();
-      if (!flushPhase.isFlushInProgress())
-      {
-         flushPhase.release();
-         onSuspend(v);
-      }
-      else
-      {
-         flushPhase.release();
-         up_prot.up(new Event(Event.SUSPEND_FAILED));
-         down_prot.down(new Event(Event.SUSPEND_FAILED));
-      }
    }
    
    private void rejectFlush(long viewId, Address flushRequester)
@@ -630,9 +617,8 @@ public class FLUSH extends Protocol
          msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(), participantsInFlush));
       }
       if (participantsInFlush.isEmpty())
-      {
-         up_prot.up(new Event(Event.SUSPEND_OK));
-         down_prot.down(new Event(Event.SUSPEND_OK));
+      {    	 
+          flush_promise.setResult(Boolean.TRUE);
       }
       else
       {
@@ -797,11 +783,8 @@ public class FLUSH extends Protocol
             down_prot.down(new Event(Event.MSG, msg));            
          }
          else
-         {
-            //needed for jmx operation startFlush(timeout);
-            flush_promise.setResult(Boolean.TRUE);
-            up_prot.up(new Event(Event.SUSPEND_OK));
-            down_prot.down(new Event(Event.SUSPEND_OK));
+         {           
+            flush_promise.setResult(Boolean.TRUE);          
             if (log.isDebugEnabled())
                log.debug("All FLUSH_COMPLETED received at " + localAddress + " sent SUSPEND_OK down/up");   
          }                             

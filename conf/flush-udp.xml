@@ -22,6 +22,8 @@
          enable_diagnostics="true"
 
          use_concurrent_stack="true"
+         
+         thread_naming_pattern="pl"
 
          thread_pool.enabled="true"
          thread_pool.min_threads="1"
@@ -53,10 +55,10 @@
                    max_bytes="400000"/>   
     <pbcast.GMS print_local_addr="true" join_timeout="5000"
                 join_retry_timeout="2000" shun="false"
-                view_bundling="true" use_flush="true" flush_timeout="3000"/>
+                view_bundling="true"/>
     <FC max_credits="20000000" min_threshold="0.10"/>
     <FRAG2 frag_size="60000"/>
-    <pbcast.STREAMING_STATE_TRANSFER use_flush="true" flush_timeout="3000" use_reading_thread="true"/>
-    <!-- <pbcast.STATE_TRANSFER use_flush="true" flush_timeout="3000"/> -->
-    <pbcast.FLUSH timeout="0" auto_flush_conf="false"/>
+    <!-- <pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/> -->
+    <pbcast.STATE_TRANSFER/>
+    <pbcast.FLUSH timeout="0"/>
 </config>
