@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.124 2007/02/05 15:53:23 belaban Exp $
+ * @version $Id: JChannel.java,v 1.125 2007/02/08 14:35:30 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -104,8 +104,6 @@ public class JChannel extends Channel {
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger();
 
     private final Promise flush_unblock_promise=new Promise();
-
-    private final Promise flush_promise=new Promise();
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -979,10 +977,6 @@ public class JChannel extends Channel {
             }
             break;
 
-        case Event.SUSPEND_OK:
-        	flush_promise.setResult(Boolean.TRUE);
-        	break;
-
         case Event.GET_STATE_OK:
             StateTransferInfo info=(StateTransferInfo)evt.getArg();
             byte[] state=info.state;
@@ -1453,67 +1447,17 @@ public class JChannel extends Channel {
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
-    public boolean startFlush(long timeout, int numberOfAttempts, boolean automatic_resume) {
+    public boolean startFlush(long timeout, boolean automatic_resume) {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-
-        boolean successfulFlush = false;
-        flush_promise.reset();        
-        down(new Event(Event.SUSPEND));
-        try{  
-           Boolean r = null;
-           if(flush_promise.hasResult()){              
-              r = (Boolean)flush_promise.getResult();
-              successfulFlush = r.booleanValue();
-           }
-           else{              
-              r = (Boolean) flush_promise.getResultWithTimeout(timeout);
-              successfulFlush = r.booleanValue();
-           }
-        }
-        catch (TimeoutException e){
-           //it is normal to get timeouts - it is the final outcome that counts 
-           //we will just retry below
-           
-           if(log.isInfoEnabled())
-              log.info("JChannel.startFlush requested by " + local_addr
-                 + " timed out waiting for flush responses after " + timeout + " msec");
-        }
-
-        if (!successfulFlush && numberOfAttempts > 0){
-           long backOffSleepTime = Util.random(5000);
-           if(log.isInfoEnabled())               
-              log.info("Flush in progress detected at " + local_addr + ". Backing off for "
-                    + backOffSleepTime + " ms. Attempts left " + numberOfAttempts);
-           
-           Util.sleepRandom(backOffSleepTime);      
-           successfulFlush = startFlush(timeout, --numberOfAttempts ,automatic_resume);
-        }     
-
+        boolean successfulFlush = false;      
+        successfulFlush = (Boolean) down(new Event(Event.SUSPEND));
+        
         if(automatic_resume)
             stopFlush();
 
         return successfulFlush;              
-    }
-    
-    /**
-     * Will perform a flush of the system, ie. all pending messages are flushed out of the 
-     * system and all members ack their reception. After this call return, no member will 
-     * be sending any messages until {@link #stopFlush()} is called.
-     * <p>
-     * 
-     * In case of flush collisions random sleep time backoff algorithm is employed and 
-     * flush is reattempted for a default of three times. Therefore this method is guaranteed 
-     * to return after timeout*3 miliseconds.
-     *     
-     * @param timeout
-     * @param automatic_resume Call {@link #stopFlush()} after the flush
-     * @return true if FLUSH completed within the timeout
-     */
-    public boolean startFlush(long timeout, boolean automatic_resume) {       
-       int defaultNumberOfFlushAttempts = 3;
-       return startFlush(timeout,defaultNumberOfFlushAttempts, automatic_resume);
     }
 
     public void stopFlush() {

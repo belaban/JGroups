@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.62 2007/01/30 20:53:37 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.63 2007/02/08 14:35:30 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -387,11 +387,11 @@ public class CoordGmsImpl extends GmsImpl {
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
             Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;         
-            if(gms.use_flush) {
+            if(gms.flushProtocolInStack) {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
                 // (below in finally clause) and members are allowed to send messages again                                      
-                boolean successfulFlush = gms.startFlush(new_view, 3);                
+                boolean successfulFlush = gms.startFlush(new_view);                
                 if (successfulFlush){
                    if(log.isInfoEnabled())
                       log.info("Successful GMS flush by coordinator at " + gms.getLocalAddress());
@@ -418,7 +418,7 @@ public class CoordGmsImpl extends GmsImpl {
         finally {
             if(joining_mbrs)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
-            if(gms.use_flush)
+            if(gms.flushProtocolInStack)
                 gms.stopFlush(new_view);
             if(leaving) {
                 gms.initState(); // in case connect() is called again

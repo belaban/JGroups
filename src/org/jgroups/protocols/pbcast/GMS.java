@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.92 2007/01/30 20:53:37 vlada Exp $
+ * @version $Id: GMS.java,v 1.93 2007/02/08 14:35:30 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -39,12 +39,9 @@ public class GMS extends Protocol {
     private long              ltime=0;
     long                      join_timeout=5000;
     long                      join_retry_timeout=2000;
-    long 					  flush_timeout=4000;
     long                      leave_timeout=5000;
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
-    private final Promise     flush_promise = new Promise();
-    boolean 				  use_flush=false;
     private final Hashtable   impls=new Hashtable(3);
     private boolean           shun=false;
     boolean                   merge_leader=false;         // can I initiate a merge ?
@@ -200,11 +197,7 @@ public class GMS extends Protocol {
     }
 
     public void start() throws Exception {
-        if(impl != null) impl.start();
-        if(!flushProtocolInStack && use_flush){
-           log.warn("use_flush is true, however, FLUSH protocol not found in stack.");
-           use_flush = false;
-        }
+        if(impl != null) impl.start();        
     }
 
     public void stop() {
@@ -605,38 +598,8 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view,int numberOfAttempts){
-       boolean successfulFlush = false;
-       Vector membersInNewView = new_view.getMembers();
-       if(membersInNewView == null || membersInNewView.isEmpty()){
-          //there are no members to FLUSH
-          successfulFlush  = true;
-       }
-       else{
-         flush_promise.reset();
-         up_prot.up(new Event(Event.SUSPEND, new_view));
-         try{
-            Boolean r = (Boolean) flush_promise.getResultWithTimeout(flush_timeout);
-            successfulFlush = r.booleanValue();
-         }
-         catch (TimeoutException e){
-            if(log.isInfoEnabled())
-               log.info("GMS coordinator " + local_addr + " timed out waiting for flush responses after " + flush_timeout
-                  + " msec");
-         }
-
-         if (!successfulFlush && numberOfAttempts > 0){
-
-            long backOffSleepTime = Util.random(5);
-            if(log.isInfoEnabled())
-               log.info("Flush in progress or timeout detected at GMS coordinator " + local_addr + ". Backing off for "
-                     + backOffSleepTime + " sec. Attempts left " + numberOfAttempts);
-
-            Util.sleepRandom(backOffSleepTime*1000);
-            successfulFlush = startFlush(new_view, --numberOfAttempts);
-         }
-       }
-       return successfulFlush;
+    boolean startFlush(View new_view){
+         return (Boolean) up_prot.up(new Event(Event.SUSPEND, new_view));
     }
 
     void stopFlush(View view) {
@@ -799,23 +762,11 @@ public class GMS extends Protocol {
                 }
                 down_prot.down(evt); // notify the other protocols, but ignore the result
                 return null;
-            case Event.SUSPEND_OK:
-            	flush_promise.setResult(Boolean.TRUE);
-            	break;
-
-            case Event.SUSPEND_FAILED :
-                flush_promise.setResult(Boolean.FALSE);
-                break;
 
             case Event.CONFIG :
-               Map config = (Map) evt.getArg();
-               if(config != null && config.containsKey("flush_timeout")){
-                  Long ftimeout = (Long) config.get("flush_timeout");
-                  use_flush = true;
-                  flush_timeout = ftimeout.longValue();
-               }
+               Map config = (Map) evt.getArg();         
                if((config != null && !config.containsKey("flush_suported"))){
-                  flushProtocolInStack = true;
+            	   flushProtocolInStack = true;                  
                }
                break;
         }
@@ -906,18 +857,17 @@ public class GMS extends Protocol {
             num_prev_mbrs=Integer.parseInt(str);
             props.remove("num_prev_mbrs");
         }
-
-        str=props.getProperty("use_flush");
+        
+        str=props.getProperty("use_flush");   
         if(str != null) {
-            use_flush=Boolean.valueOf(str).booleanValue();
+            log.warn("use_flush has been deprecated and its value will be ignored");
             props.remove("use_flush");
-        }
-
-        str=props.getProperty("flush_timeout");
+        } 
+        str=props.getProperty("flush_timeout");   
         if(str != null) {
-        	flush_timeout=Long.parseLong(str);
+            log.warn("flush_timeout has been deprecated and its value will be ignored");
             props.remove("flush_timeout");
-        }
+        }  
 
         str=props.getProperty("view_bundling");
         if(str != null) {
@@ -1209,7 +1159,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.92 2007/01/30 20:53:37 vlada Exp $
+     * @version $Id: GMS.java,v 1.93 2007/02/08 14:35:30 vlada Exp $
      */
     class ViewHandler implements Runnable {
         Thread                             thread;
@@ -1416,8 +1366,8 @@ public class GMS extends Protocol {
                     if(requests.size() > 1)
                         log.error("more than one VIEW request to process, ignoring the others");
                     try {
-                        if (use_flush){
-                           boolean successfulFlush = startFlush(firstReq.view, 3);
+                        if (flushProtocolInStack){
+                           boolean successfulFlush = startFlush(firstReq.view);
                            if (successfulFlush){
                               log.info("Successful GMS flush by coordinator at " + getLocalAddress());
                            }
@@ -1428,7 +1378,7 @@ public class GMS extends Protocol {
                         castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);
                     }
                     finally {
-                        if(use_flush)
+                        if(flushProtocolInStack)
                             stopFlush(firstReq.view);
                     }
                     break;

@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.37 2007/01/22 18:05:25 vlada Exp $
+// $Id: Event.java,v 1.38 2007/02/08 14:35:30 vlada Exp $
 
 package org.jgroups;
 
@@ -40,15 +40,13 @@ public class Event {
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-    public static final int SUSPEND					  = 68;  // arg = View|null
-    public static final int SUSPEND_OK				  = 69;	 // arg = null
+    public static final int SUSPEND					  = 68;  // arg = View|null   
     public static final int RESUME					  = 70;  // arg = null
     public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
     public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
     public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED= 74;//arg=null
-    public static final int UNBLOCK                   =75;  //arg=null (indicate end of flush round)
-    public static final int SUSPEND_FAILED            =76;  // arg = null
+    public static final int UNBLOCK                   =75;  //arg=null (indicate end of flush round)   
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -124,15 +122,13 @@ public class Event {
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
-            case SUSPEND:        		 return "SUSPEND";
-            case SUSPEND_OK:             return "SUSPEND_OK";
+            case SUSPEND:        		 return "SUSPEND";          
             case RESUME:     			 return "RESUME";
             case STATE_TRANSFER_INPUTSTREAM: return "STATE_TRANSFER_INPUTSTREAM";
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
             case STATE_TRANSFER_OUTPUTSTREAM_CLOSED: return "STATE_TRANSFER_OUTPUTSTREAM_CLOSED";
-            case UNBLOCK:                return "UNBLOCK";
-            case SUSPEND_FAILED:         return "SUSPEND_FAILED";
+            case UNBLOCK:                return "UNBLOCK";           
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
