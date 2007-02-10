@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.48 2007/01/26 10:18:39 belaban Exp $
+// $Id: FD.java,v 1.49 2007/02/10 14:49:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.48 $
+ * @version $Revision: 1.49 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -230,20 +230,65 @@ public class FD extends Protocol {
                         break;                                     // don't pass up !
 
                     case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
+//                        if(ping_dest != null && ping_dest.equals(hdr.from)) {
+//                            last_ack=System.currentTimeMillis();
+//                            num_tries=0;
+//                            if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
+//                        }
+//                        else {
+//                            stop();
+//                            ping_dest=(Address)getPingDest(pingable_mbrs);
+//                            if(ping_dest != null) {
+//                                try {
+//                                    startMonitor();
+//                                }
+//                                catch(Exception ex) {
+//                                    if(warn) log.warn("exception when calling startMonitor(): " + ex);
+//                                }
+//                            }
+//                        }
+
+
                         if(ping_dest != null && ping_dest.equals(hdr.from)) {
                             last_ack=System.currentTimeMillis();
                             num_tries=0;
                             if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
                         }
                         else {
-                            stop();
-                            ping_dest=(Address)getPingDest(pingable_mbrs);
-                            if(ping_dest != null) {
-                                try {
-                                    startMonitor();
+                            /* modified by Luís Palma Nunes Mendes on 11 Aug 2006
+                             * By not doing this check, if we keep receiving HEARTBEAT_ACK messages from
+                             * other members than ping_dest, Monitor Thread would be restarted every time,
+                             * taking down the timeouts with it. This inhibits ping_dest Failure Detection.
+                             */
+                            synchronized(this) {
+                                Address previewNextPingDest = (Address)getPingDest(pingable_mbrs);
+                                /* We are only interested to stop or restart the monitor thread iff the current target ping_dest is going
+                                   change */
+                                if(log.isDebugEnabled()) log.debug("Recevied Ack. is invalid (was from: " + hdr.from + "), ");
+                                if ((previewNextPingDest != null && ping_dest != null && !previewNextPingDest.equals(ping_dest)) ||
+                                        (previewNextPingDest != null && ping_dest == null) ||
+                                        (previewNextPingDest == null && ping_dest != null)) {
+                                    stop();
+                                    ping_dest= previewNextPingDest;
+                                    if(log.isDebugEnabled())
+                                        log.debug("changing to a new destination: " + ping_dest);
+                                    if(ping_dest != null) {
+                                        try {
+                                            startMonitor();
+                                        }
+                                        catch(Exception ex) {
+                                            if(warn) log.warn("exception when calling startMonitor(): " + ex);
+                                        }
+                                    }
                                 }
-                                catch(Exception ex) {
-                                    if(warn) log.warn("exception when calling startMonitor(): " + ex);
+                                else if (ping_dest == null) {
+                                    if(trace)
+                                        log.trace("and ping_dest is null, stop Monitor");
+                                    stop();
+                                }
+                                else {
+                                    if(trace)
+                                        log.trace("but we must keep pinging same destination");
                                 }
                             }
                         }
