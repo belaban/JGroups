@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.16 2007/01/26 10:18:39 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.17 2007/02/12 13:57:10 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -209,16 +209,11 @@ public class VIEW_SYNC extends Protocol {
         my_view=(View)view.clone();
         my_vid=my_view.getVid();
         if(my_view.size() > 1) {
-            view_task_lock.lock();
-            try {
-                if(view_send_task_future == null || view_send_task_future.isDone())
-                    startViewSender();
-            }
-            finally {
-                view_task_lock.unlock();
-            }
+            startViewSender();
         }
-
+        else {
+            stopViewSender();
+        }
     }
 
     private void sendView() {
@@ -234,10 +229,18 @@ public class VIEW_SYNC extends Protocol {
 
     /** Starts with view_task_lock held, no need to acquire it again */
     void startViewSender() {
-        ViewSendTask view_send_task=new ViewSendTask();
-        timer.scheduleWithDynamicInterval(view_send_task, true); // fixed-rate scheduling
-        if(trace)
-            log.trace("view send task started");
+        view_task_lock.lock();
+        if(view_send_task_future != null && !view_send_task_future.isDone())
+            return;
+        try {
+            ViewSendTask view_send_task=new ViewSendTask();
+            view_send_task_future=timer.scheduleWithDynamicInterval(view_send_task, true); // fixed-rate scheduling
+            if(trace)
+                log.trace("view send task started");
+        }
+        finally {
+            view_task_lock.unlock();
+        }
     }
 
 
@@ -246,10 +249,10 @@ public class VIEW_SYNC extends Protocol {
         try {
             if(view_send_task_future != null) {
                 view_send_task_future.cancel(false);
+                view_send_task_future=null;
                 if(trace)
                     log.trace("view send task stopped");
             }
-            view_send_task_future=null;
         }
         finally {
             view_task_lock.unlock();
@@ -364,12 +367,6 @@ public class VIEW_SYNC extends Protocol {
      Periodically multicasts a View_SYNC message
      */
     private class ViewSendTask implements TimeScheduler.Task {
-        boolean stopped=false;
-
-
-        public boolean cancelled() {
-            return stopped;
-        }
 
         public long nextInterval() {
             long interval=computeSleepTime();
