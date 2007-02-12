@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.16 2007/01/26 10:18:39 belaban Exp $
+// $Id: MERGE3.java,v 1.17 2007/02/12 13:28:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -230,20 +230,6 @@ public class MERGE3 extends Protocol {
 
 
     class CoordinatorAnnouncer implements TimeScheduler.Task {
-        boolean cancelled=false;
-
-        public void start() {
-            cancelled=false;
-        }
-
-        public void stop() {
-            cancelled=true;
-        }
-
-        public boolean cancelled() {
-            return cancelled;
-        }
-
         public long nextInterval() {
             return computeInterval();
         }
