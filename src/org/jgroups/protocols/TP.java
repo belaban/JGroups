@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.121 2007/02/12 10:47:34 belaban Exp $
+ * @version $Id: TP.java,v 1.122 2007/02/12 13:33:10 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1864,15 +1864,6 @@ public abstract class TP extends Protocol {
         }
 
         private class BundlingTimer implements TimeScheduler.Task {
-            boolean cancelled=false;
-
-            void cancel() {
-                cancelled=true;
-            }
-
-            public boolean cancelled() {
-                return cancelled;
-            }
 
             public long nextInterval() {
                 return max_bundle_timeout;
@@ -1890,7 +1881,6 @@ public abstract class TP extends Protocol {
 
                 if(msgs != null)
                     sendBundledMessages(msgs);
-                cancelled=true;
             }
         }
     }
