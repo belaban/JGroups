@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.78 2006/11/28 17:45:59 belaban Exp $
+ * @version $Id: TP.java,v 1.77.2.1 2007/02/12 11:58:12 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -151,7 +151,7 @@ public abstract class TP extends Protocol {
 
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest datagram packet size in case of UDP */
-    int max_bundle_size=65535;
+    int max_bundle_size=AUTOCONF.senseMaxFragSizeStatic();
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
@@ -774,7 +774,7 @@ public abstract class TP extends Protocol {
             if(use_incoming_packet_handler) {
                 byte[] tmp=new byte[length];
                 System.arraycopy(data, offset, tmp, 0, length);
-                incoming_packet_queue.add(new IncomingQueueEntry(dest, sender, tmp, offset, length));
+                incoming_packet_queue.add(new IncomingQueueEntry(dest, sender, tmp, 0, length));
             }
             else
                 handleIncomingPacket(dest, sender, data, offset, length);
