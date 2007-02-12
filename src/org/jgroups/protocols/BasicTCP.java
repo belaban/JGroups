@@ -181,7 +181,7 @@ public abstract class BasicTCP extends TP {
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
+        if(trace) log.trace("dest=" + dest + " (" + length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
                 if(trace)
