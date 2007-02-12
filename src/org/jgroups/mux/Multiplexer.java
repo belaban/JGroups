@@ -16,7 +16,7 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.35.2.3 2007/01/08 21:00:16 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.35.2.4 2007/02/12 18:42:34 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -340,6 +340,7 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.BLOCK:
+            	temp_merge_view=null;
                 blocked=true;
                 int num_services=services.size();
                 if(num_services == 0) {
@@ -830,8 +831,7 @@ public class Multiplexer implements UpHandler {
 
         // merges service_responses with service_state and emits MergeViews for the services affected (MuxChannel)
         mergeServiceState(view, copy);
-        service_responses.clear();
-        temp_merge_view=null;
+        service_responses.clear();       
     }
 
     private int numResponses(Map m) {
@@ -882,9 +882,10 @@ public class Multiplexer implements UpHandler {
         for(Iterator it=modified_services.iterator(); it.hasNext();) {
             service=(String)it.next();
             MuxChannel ch=(MuxChannel)services.get(service);
-            my_services=(List)service_state.get(service);
-            MergeView v=(MergeView)view.clone();
-            v.getMembers().retainAll(my_services);
+            my_services=(List)service_state.get(service);            
+            Vector membersCopy = new Vector(view.getMembers());
+            membersCopy.retainAll(my_services);
+            MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());
             Event evt=new Event(Event.VIEW_CHANGE, v);
             ch.up(evt);
         }
