@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.15 2007/01/26 10:18:42 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.16 2007/02/12 12:30:46 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
@@ -86,41 +86,20 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
         this(TIMER_DEFAULT_NUM_THREADS);
     }
 
+    public TimeScheduler(ThreadFactory factory) {
+        super(TIMER_DEFAULT_NUM_THREADS, factory);
+    }
 
     public TimeScheduler(int corePoolSize) {
         super(corePoolSize);
     }
 
-    public TimeScheduler(int corePoolSize, RejectedExecutionHandler handler) {
-        super(corePoolSize, handler);
-    }
 
-    public TimeScheduler(int corePoolSize, ThreadFactory threadFactory) {
-        super(corePoolSize, threadFactory);
-    }
-
-    public TimeScheduler(int corePoolSize, ThreadFactory threadFactory, RejectedExecutionHandler handler) {
-        super(corePoolSize, threadFactory, handler);
-    }
-
-    public TimeScheduler(int corePoolSize, int maxPoolSize, long keepalive, TimeUnit unit, ThreadFactory factory) {
-        super(corePoolSize, factory);
-        setMaximumPoolSize(maxPoolSize);
-        setKeepAliveTime(keepalive, unit);
-    }
-
-    public TimeScheduler(int corePoolSize, int maxPoolSize, long keepalive, TimeUnit unit) {
-        super(corePoolSize);
-        setMaximumPoolSize(maxPoolSize);
-        setKeepAliveTime(keepalive, unit);
-    }
 
 
     public String dumpTaskQueue() {
         return getQueue().toString();
     }
-
-
 
 
 

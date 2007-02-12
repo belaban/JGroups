@@ -1,14 +1,14 @@
-// $Id: ProtocolStack.java,v 1.38 2007/01/26 10:18:41 belaban Exp $
+// $Id: ProtocolStack.java,v 1.39 2007/02/12 12:30:44 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.*;
-
-
+import java.util.concurrent.ThreadFactory;
 
 
 /**
@@ -27,7 +27,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private String                  setup_string;
     private JChannel                channel=null;
     private boolean                 stopped=true;
-    public final  TimeScheduler     timer=new TimeScheduler();
+    public final  TimeScheduler     timer;
     // final Promise                   ack_promise=new Promise();
 
     /** Used to sync on START/START_OK events for start()*/
@@ -45,11 +45,14 @@ public class ProtocolStack extends Protocol implements Transport {
         this.setup_string=setup_string;
         this.channel=channel;
         ClassConfigurator.getInstance(true); // will create the singleton
+        timer=createTimer();
     }
+
+
 
     /** Only used by Simulator; don't use */
     public ProtocolStack() {
-
+        timer=createTimer();
     }
 
 
@@ -339,7 +342,17 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /*----------------------- End of Protocol functionality ---------------------------*/
 
+    private TimeScheduler createTimer() {
+        ThreadFactory factory=new ThreadFactory() {
+            int num=1;
+            ThreadGroup timer_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Timers");
+            public Thread newThread(Runnable command) {
+                return new Thread(timer_thread_group, command, "Timer-" + num++);
+            }
+        };
 
+        return new TimeScheduler(factory);
+    }
 
 
 }
