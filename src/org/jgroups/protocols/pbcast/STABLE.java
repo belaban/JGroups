@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.60 2007/01/26 10:18:40 belaban Exp $
+// $Id: STABLE.java,v 1.61 2007/02/12 14:21:32 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -473,8 +473,6 @@ public class STABLE extends Protocol {
 
 
     private void stopStableTask() {
-        // contrary to startStableTask(), we don't need double-checked locking here because this method is not
-        // called frequently
         stable_task_lock.lock();
         try {
             if(stable_task_future != null) {
@@ -783,19 +781,6 @@ public class STABLE extends Protocol {
      Mcast periodic STABLE message. Interval between sends varies.
      */
     private class StableTask implements TimeScheduler.Task {
-        boolean stopped=false;
-
-        public void stop() {
-            stopped=true;
-        }
-
-        public boolean running() { // syntactic sugar
-            return !stopped;
-        }
-
-        public boolean cancelled() {
-            return stopped;
-        }
 
         public long nextInterval() {
             long interval=computeSleepTime();
@@ -846,7 +831,6 @@ public class STABLE extends Protocol {
      */
     private class StabilitySendTask implements Runnable {
         Digest   d=null;
-        boolean  stopped=false;
 
         StabilitySendTask(Digest d) {
             this.d=d;
@@ -860,11 +844,10 @@ public class STABLE extends Protocol {
                 if(log.isDebugEnabled()) {
                     log.debug("STABILITY message will not be sent as suspended=" + suspended);
                 }
-                stopped=true;
                 return;
             }
 
-            if(d != null && !stopped) {
+            if(d != null) {
                 msg=new Message();
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, d);
@@ -874,7 +857,6 @@ public class STABLE extends Protocol {
                 down_prot.down(new Event(Event.MSG, msg));
                 d=null;
             }
-            stopped=true; // run only once
         }
     }
 

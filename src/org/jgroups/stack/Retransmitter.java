@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.16 2007/01/26 10:18:41 belaban Exp $
+// $Id: Retransmitter.java,v 1.17 2007/02/12 14:27:22 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 public class Retransmitter {
 
@@ -230,7 +230,7 @@ public class Retransmitter {
     /**
      * The retransmit task executed by the scheduler in regular intervals
      */
-    private static abstract class Task implements TimeScheduler.Task, Runnable {
+    private static abstract class Task implements TimeScheduler.Task {
         private final Interval intervals;
         private Future         future;
 

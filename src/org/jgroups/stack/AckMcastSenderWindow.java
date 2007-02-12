@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  * retransmissions because of timeouts.
  * @author Bela Ban June 9 1999, 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: AckMcastSenderWindow.java,v 1.12 2007/01/26 10:18:41 belaban Exp $
+ * @version $Id: AckMcastSenderWindow.java,v 1.13 2007/02/12 14:25:54 belaban Exp $
  */
 public class AckMcastSenderWindow {
     /**
@@ -534,10 +534,6 @@ public class AckMcastSenderWindow {
             this.intervals=new Interval(intervals);
         }
 
-
-        public Future getFuture() {
-            return future;
-        }
 
         public void setFuture(Future future) {
             this.future=future;
