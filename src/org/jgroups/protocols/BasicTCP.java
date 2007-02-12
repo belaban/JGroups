@@ -1,6 +1,9 @@
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 
@@ -9,7 +12,6 @@ import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.Map;
 
 /**
  * Shared base class for tcpip protocols
@@ -174,7 +176,7 @@ public abstract class BasicTCP extends TP {
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(trace) log.trace("dest=" + dest + " (" + data.length + " bytes)");
+        if(trace) log.trace("dest=" + dest + " (" + length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
                 if(trace)
