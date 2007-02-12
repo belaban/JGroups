@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.39 2007/02/12 12:30:44 belaban Exp $
+// $Id: ProtocolStack.java,v 1.40 2007/02/12 23:39:49 vlada Exp $
 
 package org.jgroups.stack;
 
@@ -255,7 +255,12 @@ public class ProtocolStack extends Protocol implements Transport {
         if(top_prot != null) {
             conf.destroyProtocolStack(top_prot);           // destroys msg queues and threads
             top_prot=null;
+        }        
+        try {
+            timer.stop();
         }
+        catch(Exception ex) {
+        }        
     }
 
 
@@ -283,15 +288,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * <li>Calls stop() on the protocol
      * </ol>
      */
-    public void stopStack() {
-        if(timer != null) {
-            try {
-                timer.stop();
-            }
-            catch(Exception ex) {
-            }
-        }
-
+    public void stopStack() {       
         if(stopped) return;
         conf.stopProtocolStack(top_prot);
         stopped=true;
