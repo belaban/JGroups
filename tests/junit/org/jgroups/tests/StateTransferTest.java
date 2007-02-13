@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
@@ -22,24 +21,16 @@ import java.util.Set;
 /**
  * Tests correct state transfer while other members continue sending messages to the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.10 2006/09/22 12:33:12 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.11 2007/02/13 16:39:11 vlada Exp $
  */
-public class StateTransferTest extends TestCase {
+public class StateTransferTest extends ChannelTestBase {
     final int NUM=10000;
-    final int NUM_THREADS=2;
-    String props="udp.xml";
+    final int NUM_THREADS=2;   
 
 
     public StateTransferTest(String name) {
         super(name);
-    }
-    
-    protected void setUp() throws Exception {                    
-       props = System.getProperty("props",props);   
-       log("Using configuration file " + props);
-       super.setUp();
-    }
-
+    }    
 
     public void testStateTransferWhileSending() throws Exception {
         Worker[] workers=new Worker[NUM_THREADS];
@@ -82,6 +73,9 @@ public class StateTransferTest extends TestCase {
             Set s=m.keySet();
             assertEquals(keys, s);
         }
+        
+        log("all good,done.");
+        Util.sleep(2000);
     }
 
 
@@ -106,7 +100,7 @@ public class StateTransferTest extends TestCase {
         }
 
         void start() throws Exception {
-            ch=new JChannel(props);
+            ch=new JChannel(CHANNEL_CONFIG);
             ch.connect("StateTransferTest-Group");
             receiver=new Receiver(ch, promise);
             boolean rc=ch.getState(null, 10000);
