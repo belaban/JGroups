@@ -366,7 +366,7 @@ public class FLUSH extends Protocol
                         coordinator = flushCoordinator;
                      }
                      
-                     if(flushRequester.compareTo(coordinator)<0)
+                     if(coordinator == null || flushRequester.compareTo(coordinator)<0)
                      {                        
                         rejectFlush(fh.viewID, coordinator);
                         if(log.isDebugEnabled())
@@ -792,8 +792,7 @@ public class FLUSH extends Protocol
    }
 
    private void requestRetransmissions(List<Digest> gaps)
-   {
-      
+   {     	 
       for (Digest digest : gaps)
       {
          Map<Address, Entry> senders = digest.getSenders();
@@ -801,9 +800,10 @@ public class FLUSH extends Protocol
          {
             Entry e = senders.get(sender);
             Header hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, e.getLow(), e.getHigh(), sender);
-            Message retransmit_msg=new Message(sender, null, null);
+            Message retransmit_msg=new Message();
             retransmit_msg.setFlag(Message.OOB);      
             retransmit_msg.putHeader("NAKACK", hdr);
+            log.warn(localAddress + ": sending XMIT_REQ " + hdr + " to all");
             down_prot.down(new Event(Event.MSG, retransmit_msg));                       
          }
       }
@@ -819,16 +819,14 @@ public class FLUSH extends Protocol
          for (Digest digestEntryI : digests)
          {
             for (Digest digestEntryO : digests)
-            {
-               if (!digestEntryI.sameSenders(digestEntryO))
-               {
-                  log.warn("Digest " + digestEntryI + " is not the same as " + digestEntryO);
-                  Digest diff = digestEntryI.difference(digestEntryO);
-                  if(!difference.contains(diff) && diff.size()>0)
-                  {
-                     difference.add(diff);  
-                  }                  
-               }
+            {                           
+	           Digest diff = digestEntryI.difference(digestEntryO);	           
+	           if(!difference.contains(diff) && diff != Digest.EMPTY_DIGEST)
+	           {
+	        	  log.warn("Digest " + digestEntryI + " is not the same as " + digestEntryO);
+	        	  log.warn("Diff " + diff);
+	              difference.add(diff);  
+	           }                                
             }                          
          }
       }
@@ -853,7 +851,10 @@ public class FLUSH extends Protocol
       }
       if (flushOkCompleted)
       {
-         m.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID));
+    	 Digest digest = (Digest)down_prot.down(new Event(Event.GET_DIGEST));
+         FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID);
+         fh.addDigest(digest);         
+         m.putHeader(getName(),fh);          
          down_prot.down(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
             log.debug(localAddress + " sent FLUSH_COMPLETED message to " + flushCoordinator);

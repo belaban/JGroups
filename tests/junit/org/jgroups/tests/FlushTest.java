@@ -12,7 +12,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Vector;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -31,14 +33,16 @@ import org.jgroups.SetStateEvent;
 import org.jgroups.UnblockEvent;
 import org.jgroups.View;
 import org.jgroups.mux.MuxChannel;
+import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.23 2007/01/12 14:21:49 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.24 2007/02/14 21:52:49 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -102,7 +106,7 @@ public class FlushTest extends ChannelTestBase
    public void testSingleChannel() throws Exception
    {      
       Semaphore s = new Semaphore(1);
-      FlushTestReceiver receivers[] = new FlushTestReceiver[]{new FlushTestReceiver("c1", s, false)};
+      FlushTestReceiver receivers[] = new FlushTestReceiver[]{new FlushTestReceiver("c1", s,0, false)};
       receivers[0].start();
       s.release(1);
 
@@ -113,20 +117,10 @@ public class FlushTest extends ChannelTestBase
       sleepThread(1000);
 
       // Reacquire the semaphore tickets; when we have them all
-      // we know the threads are done         
-      try
-      {
-         acquireSemaphore(s, 60000, 1);
-      }
-      catch (Exception e)
-      {
-         e.printStackTrace();
-      }
-      finally
-      {
-         receivers[0].cleanup();
-         sleepThread(1000);
-      }
+      // we know the threads are done  
+      s.tryAcquire(1, 60, TimeUnit.SECONDS);      
+      receivers[0].cleanup();
+      sleepThread(1000);      
 
       checkEventSequence(receivers[0],false);
 
@@ -274,6 +268,106 @@ public class FlushTest extends ChannelTestBase
       }         
    }
    
+   public void testVirtualSync()
+   {
+	   String[] names = createApplicationNames(4);
+	   testVsyncGap(names);	   
+   }
+   
+   private void testVsyncGap(String names[])
+   {
+      int count = names.length;
+
+      ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);      
+      try
+      {
+         // Create a semaphore and take all its permits
+         Semaphore semaphore = new Semaphore(count);
+         semaphore.acquire(count);
+
+         // Create channels and their threads that will block on the semaphore        
+         for (int i = 0; i < count; i++)
+         {
+           
+        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false,true);                           
+            channels.add(channel);
+            channel.start();                                                                  
+            sleepThread(2000);
+         }
+
+         
+        
+         blockUntilViewsReceived(channels, 60000);  
+         
+         for (FlushTestReceiver receiver : channels) {
+        	Properties prop = new Properties();
+ 			prop.setProperty("up", "0.1");
+
+ 			Protocol d = new DISCARD();
+ 			d.setProperties(prop);
+
+ 			Channel channel = receiver.getChannel();
+ 			if (channel instanceof JChannel) 
+ 			{
+ 				((JChannel) channel).getProtocolStack().insertProtocol(d,
+ 						ProtocolStack.BELOW, "NAKACK");
+ 			}
+		 }
+         
+         FlushTestReceiver lastMember = (FlushTestReceiver) channels.get(count-1);
+         List<Address> ignoreList = new ArrayList<Address>();
+         ignoreList.add(lastMember.getLocalAddress());
+         Message msg = new Message();
+         msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
+         
+         lastMember.getChannel().send(msg);
+         
+         //Sleep to ensure all members receive discard message
+         sleepThread(10000);               
+         
+         semaphore.release(count);
+         
+         sleepThread(3000); 
+         
+         // Reacquire the semaphore tickets; when we have them all
+         // we know the threads are done         
+         semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
+              
+         //kill lsat member
+         FlushTestReceiver randomRecv = (FlushTestReceiver)channels.remove(count-1);  
+         log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
+         ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
+         randomRecv.cleanup();
+         
+         //let the view propagate and verify related asserts
+         sleepThread(2000);
+         closeAssert.verify(channels);
+         
+
+         //verify block/unblock/view/              
+
+         for (Iterator iter = channels.iterator(); iter.hasNext();)
+         {
+            FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
+            checkEventSequence(receiver,isMuxChannelUsed());                     
+         }         
+      }
+      catch (Exception ex)
+      {
+         log.warn("Exception encountered during test", ex);
+         fail("Exception encountered during test execution");
+      }
+      finally
+      {
+         for (Iterator iter = channels.iterator(); iter.hasNext();)
+         {
+            FlushTestReceiver app = (FlushTestReceiver) iter.next();
+            app.cleanup();
+            sleepThread(500);
+         }  
+      }      
+   }
+   
    private void testChannels(String names[], int muxFactoryCount, boolean useTransfer,Assertable a)
    {
       int count = names.length;
@@ -283,7 +377,7 @@ public class FlushTest extends ChannelTestBase
       {
          // Create a semaphore and take all its permits
          Semaphore semaphore = new Semaphore(count);
-         takeAllPermits(semaphore, count);
+         semaphore.acquire(count);
 
          // Create channels and their threads that will block on the semaphore        
          for (int i = 0; i < count; i++)
@@ -295,7 +389,7 @@ public class FlushTest extends ChannelTestBase
             }
             else
             {
-               channel = new FlushTestReceiver(names[i], semaphore, useTransfer);               
+               channel = new FlushTestReceiver(names[i], semaphore,0, useTransfer);               
             }
             channels.add(channel);
 
@@ -337,7 +431,7 @@ public class FlushTest extends ChannelTestBase
 
          // Reacquire the semaphore tickets; when we have them all
          // we know the threads are done         
-         acquireSemaphore(semaphore, 60000, count);    
+         semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
          
          //do general asserts about channels
          a.verify(channels);         
@@ -624,12 +718,19 @@ public class FlushTest extends ChannelTestBase
       List events;
 
       boolean shouldFetchState;
+      int msgCount = 0;
 
-      protected FlushTestReceiver(String name, Semaphore semaphore, boolean shouldFetchState) throws Exception
+      protected FlushTestReceiver(String name, Semaphore semaphore, int msgCount, boolean shouldFetchState) throws Exception
+      {
+         this(name,semaphore,msgCount,shouldFetchState,false);
+      }
+      
+      protected FlushTestReceiver(String name, Semaphore semaphore, int msgCount, boolean shouldFetchState, boolean insertDiscard) throws Exception
       {
          super(name, semaphore);
          this.shouldFetchState = shouldFetchState;
-         events = Collections.synchronizedList(new LinkedList());
+         this.msgCount = msgCount;
+         events = Collections.synchronizedList(new LinkedList());              
          channel.connect("test");
       }
       
@@ -720,6 +821,12 @@ public class FlushTest extends ChannelTestBase
          if (shouldFetchState)
          {
             channel.getState(null, 25000);
+         }
+         if (msgCount > 0)
+         {
+        	 for (int i = 0; i < msgCount; i++) {
+        		 channel.send(new Message());
+			 }
          }
       }
    }
