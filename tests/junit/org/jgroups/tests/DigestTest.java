@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.8 2007/02/05 09:58:21 belaban Exp $
+// $Id: DigestTest.java,v 1.9 2007/02/14 21:49:00 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -49,8 +49,56 @@ public class DigestTest extends TestCase {
         d2=d.copy();
         System.out.println("d: " + d + "\nd2= " + d2);
         assertEquals(d, d);
-        assertEquals(d, d2);
+        assertEquals(d, d2);                                               
     }
+    
+    public void testDifference(){
+    	
+		Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
+	    IpAddress a1=new IpAddress(5555);
+	    IpAddress a2=new IpAddress(6666);
+	    IpAddress a3=new IpAddress(7777);
+	    map.put(a1, new Digest.Entry(4, 500, 501));
+	    map.put(a2, new Digest.Entry(25, 26, 26));
+	    map.put(a3, new Digest.Entry(20, 25, 33));
+	    Digest digest =new Digest(map);
+	     
+	    Map<Address, Digest.Entry> map2=new HashMap<Address, Digest.Entry>();       
+	    map2.put(a1, new Digest.Entry(4, 500, 501));
+	    map2.put(a2, new Digest.Entry(25, 26, 26));
+	    map2.put(a3, new Digest.Entry(20, 37, 33));
+	    Digest digest2 =new Digest(map2);
+	     
+	    assertNotSame(digest, digest2);
+	    
+	    Digest diff = digest2.difference(digest);
+	    System.out.println(diff);
+	    assertTrue(diff.contains(a3));
+	    assertTrue(diff.size()==1);
+	    
+	    
+	    Map<Address, Digest.Entry> map3=new HashMap<Address, Digest.Entry>();       
+	    map3.put(a1, new Digest.Entry(4, 500, 501));
+	    map3.put(a2, new Digest.Entry(25, 26, 26));
+	    map3.put(a3, new Digest.Entry(20, 37, 33));
+	    map3.put(new IpAddress(8888), new Digest.Entry(1, 2, 3));
+	    Digest digest3 =new Digest(map3);
+	    
+	    diff = digest3.difference(digest);
+	    System.out.println(diff);	    
+	    assertTrue(diff.size()==2);
+	    
+	    diff = digest3.difference(digest2);
+	    System.out.println(diff);	    
+	    assertTrue(diff.size()==1);
+	    
+	    Digest diff2 = digest2.difference(digest3);
+	    System.out.println(diff2);	    
+	    assertTrue(diff2.size()==1);
+	    assertTrue(diff.equals(diff2));
+	    
+    }
+    
 
     public void testEquals2() {
         md=new MutableDigest(d);

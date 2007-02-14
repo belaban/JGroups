@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.25 2007/02/05 09:58:21 belaban Exp $
+// $Id: Digest.java,v 1.26 2007/02/14 21:49:00 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -29,6 +29,8 @@ import java.util.concurrent.ConcurrentHashMap;
  * @author Bela Ban
  */
 public class Digest implements Externalizable, Streamable {
+	
+	public static final Digest EMPTY_DIGEST = new Digest();
     /** Map<Address, Entry> */
     protected final Map<Address,Entry> senders;
     
@@ -105,21 +107,55 @@ public class Digest implements Externalizable, Streamable {
     
     public Digest difference(Digest other){
        if(other == null) return copy();       
-       if(this.senders.size() != other.senders.size()) return new Digest();
        
-       Map<Address,Entry> largerMap, smallerMap = null; 
-       if(this.senders.size() > other.senders.size()){
-          largerMap = this.senders;
-          smallerMap = other.senders;
+       Digest result = EMPTY_DIGEST;
+       if(this.equals(other))
+       {
+    	   return result;
        }
-       else{
-          largerMap = other.senders;
-          smallerMap = this.senders;
+       else
+       {
+    	   //find intersection and compare their entries
+    	   Map<Address,Entry> resultMap = new ConcurrentHashMap<Address, Entry>(7);
+    	   Set<Address>intersection = new TreeSet<Address>(this.senders.keySet());
+    	   intersection.retainAll(other.senders.keySet());
+    	   
+    	   for (Address address : intersection) {
+    		  Entry e1 = this.get(address); 
+		      Entry e2 = other.get(address);		      		     
+		      if(!e1.equals(e2))
+		      {
+		    	  long low = e1.low_seqno<e2.low_seqno?e1.low_seqno:e2.low_seqno;
+		    	  long high = e1.high_seqno>e2.high_seqno?e1.high_seqno:e2.high_seqno;
+		    	  Entry r = new Entry(low,high);
+		    	  resultMap.put(address,r);
+		      }		      		     
+		   }
+    	   
+    	   //any entries left in (this - intersection)?
+    	   //if yes, add them to result
+    	   if(intersection.size() != this.senders.keySet().size())
+    	   {
+    		   Set<Address>thisMinusInteresection = new TreeSet<Address>(this.senders.keySet());
+    		   thisMinusInteresection.removeAll(intersection);
+    		   for (Address address : thisMinusInteresection) {
+    			   resultMap.put(address, new Entry(this.get(address)));
+    		   }
+    	   }
+    	   
+    	   //any entries left in (other - intersection)?
+    	   //if yes, add them to result
+    	   if(intersection.size() != other.senders.keySet().size())
+    	   {
+    		   Set<Address>otherMinusInteresection = new TreeSet<Address>(other.senders.keySet());
+    		   otherMinusInteresection.removeAll(intersection);
+    		   for (Address address : otherMinusInteresection) {
+    			   resultMap.put(address, new Entry(other.get(address)));
+    		   }
+    	   }    
+	       result = new Digest(resultMap);	       
        }
-       
-       Digest largerDigestCopy = new Digest(largerMap);
-       largerDigestCopy.senders.keySet().removeAll(smallerMap.keySet());
-       return largerDigestCopy;
+       return result;
     }
 
 
