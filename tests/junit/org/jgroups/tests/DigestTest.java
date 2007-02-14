@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.9 2007/02/14 21:49:00 vlada Exp $
+// $Id: DigestTest.java,v 1.10 2007/02/14 22:32:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -55,9 +55,9 @@ public class DigestTest extends TestCase {
     public void testDifference(){
     	
 		Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
-	    IpAddress a1=new IpAddress(5555);
-	    IpAddress a2=new IpAddress(6666);
-	    IpAddress a3=new IpAddress(7777);
+	    a1=new IpAddress(5555);
+	    a2=new IpAddress(6666);
+	    a3=new IpAddress(7777);
 	    map.put(a1, new Digest.Entry(4, 500, 501));
 	    map.put(a2, new Digest.Entry(25, 26, 26));
 	    map.put(a3, new Digest.Entry(20, 25, 33));
@@ -74,7 +74,7 @@ public class DigestTest extends TestCase {
 	    Digest diff = digest2.difference(digest);
 	    System.out.println(diff);
 	    assertTrue(diff.contains(a3));
-	    assertTrue(diff.size()==1);
+        assertEquals(1, diff.size());
 	    
 	    
 	    Map<Address, Digest.Entry> map3=new HashMap<Address, Digest.Entry>();       
@@ -85,17 +85,17 @@ public class DigestTest extends TestCase {
 	    Digest digest3 =new Digest(map3);
 	    
 	    diff = digest3.difference(digest);
-	    System.out.println(diff);	    
-	    assertTrue(diff.size()==2);
+	    System.out.println(diff);
+        assertEquals(2, diff.size());
 	    
 	    diff = digest3.difference(digest2);
-	    System.out.println(diff);	    
-	    assertTrue(diff.size()==1);
+	    System.out.println(diff);
+        assertEquals(1, diff.size());
 	    
 	    Digest diff2 = digest2.difference(digest3);
-	    System.out.println(diff2);	    
-	    assertTrue(diff2.size()==1);
-	    assertTrue(diff.equals(diff2));
+	    System.out.println(diff2);
+        assertEquals(1, diff2.size());
+        assertEquals(diff, diff2);
 	    
     }
     
