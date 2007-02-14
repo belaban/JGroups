@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.105 2007/02/14 22:01:06 vlada Exp $
+// $Id: NAKACK.java,v 1.106 2007/02/14 22:37:38 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -566,9 +566,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         synchronized(sent_msgs) {
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
-                //JGRP-341 allow protocols above to attach NAKACK header
-                //so if header already present do not override it                
-                if(msg.getHeader(name) == null){
+                //JGRP-341 allow protocols above to attach NAKACK header, so if header already present do not override it
+                if(msg.getHeader(name) == null) {
                 	msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
                 }
                 sent_msgs.put(new Long(msg_id), msg);
