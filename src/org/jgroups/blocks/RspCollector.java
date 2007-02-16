@@ -1,4 +1,4 @@
-// $Id: RspCollector.java,v 1.3 2006/08/28 06:51:53 belaban Exp $
+// $Id: RspCollector.java,v 1.4 2007/02/16 09:06:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -8,7 +8,7 @@ import org.jgroups.View;
 
 
 public interface RspCollector {
-    void receiveResponse(Object response_value, Address sende);
+    void receiveResponse(Object response_value, Address sender);
     void suspect(Address mbr);
     void viewChange(View new_view);
 }
