@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.125 2007/02/08 14:35:30 vlada Exp $
+ * @version $Id: JChannel.java,v 1.126 2007/02/16 07:32:07 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -312,6 +312,11 @@ public class JChannel extends Channel {
     public long getReceivedMessages() {return received_msgs;}
     public long getReceivedBytes() {return received_bytes;}
     public int  getNumberOfTasksInTimer() {return prot_stack != null ? prot_stack.timer.size() : -1;}
+
+
+    public int getTimerThreads() {
+        return prot_stack != null? prot_stack.getTimerThreads() : -1;
+    }
 
     public String dumpTimerQueue() {
         return prot_stack != null? prot_stack.dumpTimerQueue() : "<n/a";

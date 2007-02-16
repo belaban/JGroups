@@ -8,7 +8,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelMBean.java,v 1.10 2006/04/28 15:39:41 belaban Exp $
+ * @version $Id: JChannelMBean.java,v 1.11 2007/02/16 07:32:10 belaban Exp $
  */
 public interface JChannelMBean {
     void create() throws Exception;
@@ -29,6 +29,7 @@ public interface JChannelMBean {
 
     int  getNumberOfTasksInTimer();
     String dumpTimerQueue();
+    int getTimerThreads();
 
     /** To configure via XML file */
     void setClusterConfig(Element el);

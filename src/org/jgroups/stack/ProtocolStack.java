@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.41 2007/02/16 06:50:58 belaban Exp $
+// $Id: ProtocolStack.java,v 1.42 2007/02/16 07:32:09 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -52,6 +52,10 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public Channel getChannel() {
         return channel;
+    }
+
+    public int getTimerThreads() {
+        return timer.getCorePoolSize();
     }
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,

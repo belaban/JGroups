@@ -1,6 +1,7 @@
 package org.jgroups.jmx;
 
 import org.jgroups.*;
+import org.jgroups.stack.ProtocolStack;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 import org.w3c.dom.NamedNodeMap;
@@ -15,7 +16,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.14 2006/08/10 08:05:00 belaban Exp $
+ * @version $Id: JChannel.java,v 1.15 2007/02/16 07:32:10 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -102,7 +103,7 @@ public class JChannel implements JChannelMBean {
     }
 
     public void setClusterConfig(Element config) {
-        StringBuffer buffer=new StringBuffer();
+        StringBuilder buffer=new StringBuilder();
         NodeList stack=config.getChildNodes();
         int length=stack.getLength();
 
@@ -226,6 +227,10 @@ public class JChannel implements JChannelMBean {
     public long getReceivedMessages() {return channel.getReceivedMessages();}
     public long getReceivedBytes() {return channel.getReceivedBytes();}
 
+
+    public int getTimerThreads() {
+        return channel.getTimerThreads();
+    }
 
     public void create() throws Exception {
         if(channel != null)
