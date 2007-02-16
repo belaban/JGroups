@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.28 2007/01/11 11:38:45 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.29 2007/02/16 08:57:17 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -164,6 +164,11 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout, boolean use_anycasting) {
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting, false);
+    }
+
+    public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout,
+                                     boolean use_anycasting, boolean oob) {
         if(dests != null && dests.isEmpty()) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
@@ -189,6 +194,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         }
 
         Message msg=new Message(null, null, buf);
+        if(oob)
+            msg.setFlag(Message.OOB);
         RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
@@ -209,6 +216,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
     public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout) throws Throwable {
+        return callRemoteMethod(dest, method_call, mode, timeout, false);
+    }
+
+    public Object callRemoteMethod(Address dest, MethodCall method_call, int mode, long timeout, boolean oob) throws Throwable {
         byte[]   buf=null;
         Message  msg=null;
         Object   retval=null;
@@ -218,6 +229,8 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
         buf=req_marshaller != null? req_marshaller.objectToByteBuffer(method_call) : Util.objectToByteBuffer(method_call);
         msg=new Message(dest, null, buf);
+        if(oob)
+            msg.setFlag(Message.OOB);
         retval=super.sendMessage(msg, mode, timeout);
         if(log.isTraceEnabled()) log.trace("retval: " + retval);
         if(retval instanceof Throwable)
