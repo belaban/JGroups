@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.40 2007/02/12 23:39:49 vlada Exp $
+// $Id: ProtocolStack.java,v 1.41 2007/02/16 06:50:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,13 +28,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private JChannel                channel=null;
     private boolean                 stopped=true;
     public final  TimeScheduler     timer;
-    // final Promise                   ack_promise=new Promise();
 
-    /** Used to sync on START/START_OK events for start()*/
-    // Promise                         start_promise=null;
-
-    /** used to sync on STOP/STOP_OK events for stop() */
-    // Promise                         stop_promise=null;
 
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
