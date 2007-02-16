@@ -9,12 +9,15 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadMXBean;
+import java.lang.management.ThreadInfo;
 
 
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2 2006/09/15 12:06:43 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.3 2007/02/16 11:55:43 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -95,18 +98,14 @@ public class ConnectionTableTest extends TestCase {
 
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        // System.out.println("thread:\n" + dumpThreads());
-        assertEquals(active_threads, current_active_threads);
+        assertEquals("threads:\n" + dumpThreads(), active_threads, current_active_threads);
     }
 
 
 
 
-    /* CAUTION: JDK 5 specific code
-
-
     private String dumpThreads() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         ThreadMXBean bean=ManagementFactory.getThreadMXBean();
         long[] ids=bean.getAllThreadIds();
         ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
@@ -126,7 +125,7 @@ public class ConnectionTableTest extends TestCase {
         }
         return sb.toString();
     }
-    */
+
 
     public static Test suite() {
         return new TestSuite(ConnectionTableTest.class);
