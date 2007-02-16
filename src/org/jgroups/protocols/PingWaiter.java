@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.13 2007/01/20 11:55:00 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.14 2007/02/16 08:13:27 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     @GuardedBy("thread_lock")
@@ -129,15 +129,9 @@ public class PingWaiter implements Runnable {
 
             try {
                 while(true) {
-                    thread_lock.lock();
-                    try {
-                        boolean cond=rsps.size() < num_rsps && time_to_wait > 0 && thread != null && Thread.currentThread().equals(thread);
-                        if(!cond)
-                            break;
-                    }
-                    finally {
-                        thread_lock.unlock();
-                    }
+                    boolean cond=rsps.size() < num_rsps && time_to_wait > 0 && thread != null && Thread.currentThread().equals(thread);
+                    if(!cond)
+                        break;
 
                     if(trace) // +++ remove
                         log.trace(new StringBuilder("waiting for initial members: time_to_wait=").append(time_to_wait)
