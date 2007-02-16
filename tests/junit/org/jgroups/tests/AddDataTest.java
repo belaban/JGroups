@@ -10,25 +10,20 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.7 2005/04/19 12:11:41 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.8 2007/02/16 12:18:58 belaban Exp $
  */
 public class AddDataTest extends TestCase {
     JChannel ch1, ch2;
     
-    String properties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32;down_thread=false;up_thread=false):" +
-            "PING(timeout=2000;num_initial_members=2;down_thread=false;up_thread=false):" +
-            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
-            "UNICAST(timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=true;down_thread=false;up_thread=false)";
+    String properties="udp.xml";
 
     String bundlingProperties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32;" +
-            "enable_bundling=true;max_bundle_size=3000;max_bundle_timeout=500;down_thread=false;up_thread=false):" +
-            "PING(timeout=2000;num_initial_members=2;down_thread=false;up_thread=false):" +
-            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
-            "UNICAST(timeout=600,1200,2400,4800;down_thread=false;up_thread=false):" +
+            "enable_bundling=true;max_bundle_size=3000;max_bundle_timeout=500):" +
+            "PING(timeout=2000;num_initial_members=2):" +
+            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800):" +
+            "UNICAST(timeout=600,1200,2400,4800):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=true;down_thread=false;up_thread=false)";
+            "shun=true;print_local_addr=true)";
 
 
 
@@ -106,7 +101,7 @@ public class AddDataTest extends TestCase {
                 IpAddress addr=(IpAddress)c.getLocalAddress();
                 System.out.println("address is " + addr);
                 assertNotNull(addr.getAdditionalData());
-                assertEquals(addr.getAdditionalData()[0], 'b');
+                assertEquals('b', addr.getAdditionalData()[0]);
                 c.close();
             }
         }
