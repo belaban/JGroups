@@ -12,10 +12,10 @@ import java.util.Vector;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.11 2005/08/11 12:43:47 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.11.10.1 2007/02/16 08:24:09 belaban Exp $
  */
 public class PingWaiter implements Runnable {
-    Thread              t=null;
+    Thread              thread=null;
     final List          rsps=new LinkedList();
     long                timeout=3000;
     int                 num_rsps=3;
@@ -45,19 +45,19 @@ public class PingWaiter implements Runnable {
 
     public synchronized void start() {
         // ping_sender.start();
-        if(t == null || !t.isAlive()) {
-            t=new Thread(this, "PingWaiter");
-            t.setDaemon(true);
-            t.start();
+        if(thread == null || !thread.isAlive()) {
+            thread=new Thread(this, "PingWaiter");
+            thread.setDaemon(true);
+            thread.start();
         }
     }
 
     public synchronized void stop() {
         if(ping_sender != null)
             ping_sender.stop();
-        if(t != null) {
+        if(thread != null) {
             // Thread tmp=t;
-            t=null;
+            thread=null;
             // tmp.interrupt();
             synchronized(rsps) {
                 rsps.notifyAll();
@@ -67,7 +67,7 @@ public class PingWaiter implements Runnable {
 
 
     public synchronized boolean isRunning() {
-        return t != null && t.isAlive();
+        return thread != null && thread.isAlive();
     }
 
     public void addResponse(PingRsp rsp) {
@@ -97,6 +97,9 @@ public class PingWaiter implements Runnable {
 
     public void run() {
         Vector responses=findInitialMembers();
+        synchronized(this) {
+            thread=null;
+        }
         if(parent != null)
             parent.passUp(new Event(Event.FIND_INITIAL_MBRS_OK, responses));
     }
@@ -116,7 +119,7 @@ public class PingWaiter implements Runnable {
             time_to_wait=timeout;
 
             try {
-                while(rsps.size() < num_rsps && time_to_wait > 0 && t != null) {
+                while(rsps.size() < num_rsps && time_to_wait > 0 && thread != null && Thread.currentThread().equals(thread)) {
                     if(trace) // +++ remove
                         log.trace(new StringBuffer("waiting for initial members: time_to_wait=").append(time_to_wait)
                                   .append(", got ").append(rsps.size()).append(" rsps"));
