@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.36 2007/01/16 09:23:30 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.37 2007/02/16 09:11:29 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -545,12 +545,7 @@ public class RequestCorrelator {
                     }
                     catch(Exception e) {
                         log.error("failed unmarshalling buffer into return value", e);
-                        try {
-                            retval=marshaller != null? marshaller.objectToByteBuffer(e) : Util.objectToByteBuffer(e);
-                        }
-                        catch(Exception e1) {
-                            log.error("failed marshalling exception " + e1 + " into buffer", e1);
-                        }
+                        retval=e;
                     }
                     coll.receiveResponse(retval, sender);
                 }
