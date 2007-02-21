@@ -1,0 +1,11 @@
+
+Release Notes JGroups 2.5
+=========================
+
+Version: $Id: ReleaseNotes-2.5.txt,v 1.1 2007/02/21 16:23:16 belaban Exp $
+Author: Bela Ban
+
+
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
