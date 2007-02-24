@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.26 2007/01/10 19:38:19 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.27 2007/02/24 03:49:49 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -17,6 +17,7 @@ import java.nio.channels.spi.SelectorProvider;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Set;
+import java.util.ConcurrentModificationException;
 import java.util.concurrent.*;
 
 /**
@@ -745,29 +746,39 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             if (events > 0)
             {   // there are read-ready channels
                Set readyKeys = SELECTOR.selectedKeys();
-               for (Iterator i = readyKeys.iterator(); i.hasNext();)
+               try
                {
-                  SelectionKey key = (SelectionKey) i.next();
-                  i.remove();
-                  // Do partial read and handle call back
-                  Connection conn = (Connection) key.attachment();
-                  try
-                  {
-                     if (conn.getSocketChannel().isOpen())
-                        readOnce(conn);
-                     else
-                     {  // socket connection is already closed, clean up connection state
-                        conn.closed();
-                     }
-                  } catch (IOException e)
-                  {
-                     if (LOG.isTraceEnabled()) LOG.trace("Read operation on socket failed" , e);
-                     // The connection must be bad, cancel the key, close socket, then
-                     // remove it from table!
-                     key.cancel();
-                     conn.destroy();
-                     conn.closed();
-                  }
+                   for (Iterator i = readyKeys.iterator(); i.hasNext();)
+                   {
+                      SelectionKey key = (SelectionKey) i.next();
+                      i.remove();
+                      // Do partial read and handle call back
+                      Connection conn = (Connection) key.attachment();
+                      if(conn != null && conn.getSocketChannel() != null)
+                      {
+                        try
+                        {
+                            if (conn.getSocketChannel().isOpen())
+                                readOnce(conn);
+                            else
+                            {  // socket connection is already closed, clean up connection state
+                                conn.closed();
+                            }
+                        } catch (IOException e)
+                        {
+                            if (LOG.isTraceEnabled()) LOG.trace("Read operation on socket failed" , e);
+                            // The connection must be bad, cancel the key, close socket, then
+                            // remove it from table!
+                            key.cancel();
+                            conn.destroy();
+                            conn.closed();
+                        }
+                      }
+                   }
+               }
+               catch(ConcurrentModificationException e) {
+                   if (LOG.isTraceEnabled()) LOG.trace("Selection set changed", e);
+                   // valid events should still be in the selection set the next time
                }
             }
 
@@ -1149,38 +1160,32 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       {
          Set keys = selector.selectedKeys();
          Object arr[] = keys.toArray();
-         for (int looper = 0; looper < arr.length; looper++)
-         {
-            SelectionKey key = (SelectionKey) arr[looper];
-            SelectorWriteHandler entry = (SelectorWriteHandler) key.attachment();
-            boolean needToDecrementPendingChannels = false;
-            try
-            {
-               if (0 == entry.write())
-               {  // write the buffer and if the remaining bytes is zero,
-                  // notify the caller of number of bytes written.
-                  entry.notifyObject(new Integer(entry.getBytesWritten()));
-                  // switch to next write buffer or clear interest bit on socket channel.
-                  if (!entry.next())
-                  {
-                     needToDecrementPendingChannels = true;
+          for (Object anArr : arr) {
+              SelectionKey key = (SelectionKey) anArr;
+              SelectorWriteHandler entry = (SelectorWriteHandler) key.attachment();
+              boolean needToDecrementPendingChannels = false;
+              try {
+                  if (0 == entry.write()) {  // write the buffer and if the remaining bytes is zero,
+                      // notify the caller of number of bytes written.
+                      entry.notifyObject(entry.getBytesWritten());
+                      // switch to next write buffer or clear interest bit on socket channel.
+                      if (!entry.next()) {
+                          needToDecrementPendingChannels = true;
+                      }
                   }
-               }
 
-            }
-            catch (IOException e)
-            {
-               needToDecrementPendingChannels = true;
-               // connection must of closed
-               handleChannelError( entry, e);
-            }
-            finally
-            {
-               if (needToDecrementPendingChannels)
-                  m_pendingChannels--;
-            }
-         }
-         keys.clear();
+              }
+              catch (IOException e) {
+                  needToDecrementPendingChannels = true;
+                  // connection must of closed
+                  handleChannelError(entry, e);
+              }
+              finally {
+                  if (needToDecrementPendingChannels)
+                      m_pendingChannels--;
+              }
+          }
+          keys.clear();
       }
 
       public void run()
