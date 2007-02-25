@@ -7,27 +7,46 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: tcp-nio.xml,v 1.4 2007/02/21 14:09:14 smarlownovell Exp $
+    version: $Id: tcp-nio.xml,v 1.5 2007/02/25 17:10:20 smarlownovell Exp $
 -->
 <config>
     <TCP_NIO
+            start_port="7800"
+            loopback="true"
             recv_buf_size="20000000"
             send_buf_size="640000"
-            loopback="false"
             discard_incompatible_packets="true"
             max_bundle_size="64000"
             max_bundle_timeout="30"
             use_incoming_packet_handler="true"
-            use_outgoing_packet_handler="false"
             enable_bundling="true"
-            start_port="7800"
             use_send_queues="false"
-            sock_conn_timeout="300" skip_suspected_members="true"
-            reader_threads="8"
-            writer_threads="8"
-            processor_threads="8"
-            processor_minThreads="8"
-            processor_maxThreads="8"
+         sock_conn_timeout="300"
+         skip_suspected_members="true"
+         
+         use_concurrent_stack="true"
+
+         thread_pool.enabled="true"
+         thread_pool.min_threads="1"
+         thread_pool.max_threads="25"
+         thread_pool.keep_alive_time="30000"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="10"
+         thread_pool.rejection_policy="Run"
+
+         oob_thread_pool.enabled="true"
+         oob_thread_pool.min_threads="1"
+         oob_thread_pool.max_threads="4"
+         oob_thread_pool.keep_alive_time="10000"
+         oob_thread_pool.queue_enabled="true"
+         oob_thread_pool.queue_max_size="10"
+         oob_thread_pool.rejection_policy="Run"
+
+            reader_threads="3"
+            writer_threads="3"
+            processor_threads="0"
+            processor_minThreads="0"
+            processor_maxThreads="0"
             processor_queueSize="100"
             processor_keepAliveTime="9223372036854775807"/>
     <TCPPING timeout="3000"
@@ -45,13 +64,13 @@
                    discard_delivered_msgs="true"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
+    <VIEW_SYNC avg_send_interval="60000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 join_retry_timeout="2000" shun="true"
                 view_bundling="true"/>
     <FC max_credits="2000000"
         min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />
-    <pbcast.STREAMING_STATE_TRANSFER use_flush="true" use_reading_thread="true"/>
-    <!-- pbcast.STATE_TRANSFER   use_flush="false"/ -->
-    <pbcast.FLUSH  />
+    <pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/>
+    <!-- pbcast.STATE_TRANSFER/> -->
 </config>
