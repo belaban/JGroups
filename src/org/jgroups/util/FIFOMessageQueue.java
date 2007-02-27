@@ -1,34 +1,40 @@
 package org.jgroups.util;
 
-import org.jgroups.Event;
-
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.LinkedList;
+import java.util.Map;
+import java.util.concurrent.*;
 
 /**
  * Blocking queue which can only process 1 message per sender concurrently, establishing FIFO order per sender.
  * @author Bela Ban
- * @version $Id: FIFOMessageQueue.java,v 1.1 2007/02/27 13:16:59 belaban Exp $
+ * @version $Id: FIFOMessageQueue.java,v 1.2 2007/02/27 17:12:30 belaban Exp $
  */
-public class FIFOMessageQueue {
+public class FIFOMessageQueue<K, V> {
     /** Used for consolidated takes */
-    final BlockingQueue<Event>        queue=new LinkedBlockingQueue<Event>();
+    final BlockingQueue<V>               queue=new LinkedBlockingQueue<V>();
     /** One queue per sender */
-    final ConcurrentMap<Object,Entry> queues=new ConcurrentHashMap();
+    final ConcurrentMap<K,Entry<V>> queues=new ConcurrentHashMap<K,Entry<V>>();
+
+    private int size=0;
 
 
-    public Event take() throws InterruptedException {
-        return queue.take();
+    public V take() throws InterruptedException {
+        V retval=queue.take();
+        size--;
+        return retval;
     }
 
-    public void put(Object dest, Event evt) throws InterruptedException {
-        Entry entry=queues.get(dest);
+    public V poll(long timeout) throws InterruptedException {
+        V retval=queue.poll(timeout, TimeUnit.MILLISECONDS);
+        size--;
+        return retval;
+    }
+
+    public void put(K dest, V el) throws InterruptedException {
+        Entry<V> entry=queues.get(dest);
         if(entry == null) {
             synchronized(queues) {
-                entry=new Entry();
+                entry=new Entry<V>();
                 queues.put(dest, entry);
             }
         }
@@ -39,34 +45,50 @@ public class FIFOMessageQueue {
                 add=true;
             }
             else {
-                entry.list.add(evt);
+                entry.list.add(el);
+                size++;
             }
         }
-        if(add)
-            queue.put(evt);
+        if(add) {
+            queue.put(el);
+            size++;
+        }
     }
 
 
-    public void done(Object dest) {
-        Entry entry=queues.get(dest);
+    public void done(K dest) {
+        Entry<V> entry=queues.get(dest);
         if(entry != null) {
-            Event evt=null;
+            V el=null;
             synchronized(entry) {
-                entry.ready=true;
+                // entry.ready=true;
                 if(!entry.list.isEmpty()) {
-                    evt=entry.list.remove(0);
+                    el=entry.list.removeFirst();
                 }
             }
-            if(evt != null)
-                queue.add(evt);
+            if(el != null)
+                queue.add(el);
         }
+    }
+
+    public int size() {
+        return size;
+    }
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        sb.append("queue: ").append(queue).append("\nqueues:\n");
+        for(Map.Entry<K,Entry<V>> entry: queues.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue().list).append("\n");
+        }
+        return sb.toString();
     }
 
 
 
-    static class Entry {
+    static class Entry<T> {
         boolean ready=true;
-        java.util.List<Event> list=new LinkedList<Event>();
+        LinkedList<T> list=new LinkedList<T>();
     }
     
 }
