@@ -48,6 +48,13 @@
             description='Apache commons logging. Used for logging (runtime)'>
         <jar name='commons-logging.jar' />
     </module>
+    <module name='creative-commons'
+            licenseType='creative-commons'
+            version='2.5'
+            projectHome='http://creativecommons.org/licenses/by/2.5/'
+            description='Annotations of JCIP'>
+        <jar name='none (part of src tree: org.jgroups.annotations)' />
+    </module>
     <module name='JMS'
             licenseType='bcl'
             version='1.02b'
