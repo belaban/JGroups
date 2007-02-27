@@ -1,16 +1,13 @@
 package org.jgroups.auth;
 
-import org.jgroups.util.Util;
-import org.jgroups.util.HashUtils;
 import org.jgroups.Message;
+import org.jgroups.util.Util;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.DataInputStream;
-import java.util.HashMap;
 import java.util.Properties;
-import java.security.NoSuchAlgorithmException;
-import java.security.MessageDigest;
+
 /**
  * <p>
  * This is an example of using a preshared token that is encrypted using an MD5/SHA hash for authentication purposes.  All members of the group have to have the same string value in the JGroups config.
@@ -69,9 +66,9 @@ public class MD5Token extends AuthToken {
         String hashedToken = null;
 
         if(hash_type.equalsIgnoreCase("SHA")){
-            hashedToken = HashUtils.sha(token);
+            hashedToken = Util.sha(token);
         }else{
-            hashedToken = HashUtils.md5(token);
+            hashedToken = Util.md5(token);
         }
 
         if(hashedToken == null){
