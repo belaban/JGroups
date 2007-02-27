@@ -19,12 +19,13 @@ import java.nio.channels.WritableByteChannel;
 import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
+import java.security.MessageDigest;
 
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.114 2007/01/25 09:22:47 belaban Exp $
+ * @version $Id: Util.java,v 1.115 2007/02/27 12:16:57 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -2192,6 +2193,54 @@ public class Util {
         return retval;
     }
 
+
+     /**
+     * Used to convert a byte array in to a java.lang.String object
+     * @param bytes the bytes to be converted
+     * @return the String representation
+     */
+    private static String getString(byte[] bytes) {
+        StringBuffer sb = new StringBuffer();
+        for (int i = 0; i < bytes.length; i++) {
+            byte b = bytes[i];
+            sb.append(0x00FF & b);
+            if (i + 1 < bytes.length) {
+                sb.append("-");
+            }
+        }
+        return sb.toString();
+    }
+
+
+    /**
+     * Converts a java.lang.String in to a MD5 hashed String
+     * @param source the source String
+     * @return the MD5 hashed version of the string
+     */
+    public static String md5(String source) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] bytes = md.digest(source.getBytes());
+            return getString(bytes);
+        } catch (Exception e) {
+            return null;
+        }
+    }
+    /**
+     * Converts a java.lang.String in to a SHA hashed String
+     * @param source the source String
+     * @return the MD5 hashed version of the string
+     */
+    public static String sha(String source) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA");
+            byte[] bytes = md.digest(source.getBytes());
+            return getString(bytes);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
 
 }
