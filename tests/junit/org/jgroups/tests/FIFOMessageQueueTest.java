@@ -7,10 +7,12 @@ import org.jgroups.util.Util;
 
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
+import java.util.LinkedList;
+import java.util.Collections;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.1 2007/02/27 17:12:47 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.2 2007/02/27 17:32:27 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
@@ -75,10 +77,10 @@ public class FIFOMessageQueueTest extends TestCase {
 
     public void testOrderingMultipleThreads() throws BrokenBarrierException, InterruptedException {
         CyclicBarrier barrier=new CyclicBarrier(4);
-        int NUM=5;
-        Producer p1=new Producer(queue, "s1",  1, NUM, barrier);
-        Producer p2=new Producer(queue, "s2", 10, NUM, barrier);
-        Producer p3=new Producer(queue, "s3", 20, NUM, barrier);
+        int NUM=500;
+        Producer p1=new Producer(queue, "s1",    1, NUM, barrier);
+        Producer p2=new Producer(queue, "s2", 1001, NUM, barrier);
+        Producer p3=new Producer(queue, "s3", 2001, NUM, barrier);
 
         p1.start();
         p2.start();
@@ -89,22 +91,58 @@ public class FIFOMessageQueueTest extends TestCase {
         p1.join();
         p2.join();
         p3.join();
-        System.out.println("queue: " + queue);
+        System.out.println("queue: " + queue.size() + " elements");
         assertEquals(NUM * 3, queue.size());
     }
 
     public void testOrderingMultipleThreadsWithTakes() throws BrokenBarrierException, InterruptedException {
         testOrderingMultipleThreads();
         int ret;
+        LinkedList<Integer> list=new LinkedList<Integer>();
 
         int size=queue.size();
         for(int i=0; i < size; i++) {
             ret=queue.take();
-            System.out.print(ret + " ");
+            list.add(ret);
             queue.done("s1");
             queue.done("s2");
             queue.done("s3");
         }
+
+        System.out.println("analyzing returned values for correct ordering");
+        LinkedList one=new LinkedList(), two=new LinkedList(), three=new LinkedList();
+        for(int val: list) {
+            if(val < 1000) {
+                one.add(val);
+                continue;
+            }
+            if(val > 1000 && val <= 2000) {
+                two.add(val);
+                continue;
+            }
+            if(val > 2000) {
+                three.add(val);
+            }
+        }
+
+        int len=one.size();
+        assertEquals(len, two.size());
+        assertEquals(len, three.size());
+
+
+        LinkedList sorted_one=new LinkedList(one);
+        Collections.sort(sorted_one);
+        assertEquals("one: " + one + ", sorted: " + sorted_one, one, sorted_one);
+
+        LinkedList sorted_two=new LinkedList(two);
+        Collections.sort(sorted_two);
+        assertEquals("two: " + two + ", sorted: " + sorted_two, two, sorted_two);
+
+        LinkedList sorted_three=new LinkedList(three);
+        Collections.sort(sorted_three);
+        assertEquals("three: " + three + ", sorted: " + sorted_three, three, sorted_three);
+
+        System.out.println("OK - all 3 collections are ordered");
     }
 
 
@@ -134,7 +172,7 @@ public class FIFOMessageQueueTest extends TestCase {
             }
             for(int i=start_num; i <= num_msgs+start_num-1; i++) {
                 try {
-                    Util.sleepRandom(50);
+                    // Util.sleepRandom(50);
                     queue.put(key, i);
                 }
                 catch(InterruptedException e) {
