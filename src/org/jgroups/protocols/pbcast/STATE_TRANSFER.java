@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.58 2007/02/08 14:35:29 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.59 2007/02/28 10:21:26 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -516,7 +516,13 @@ public class STATE_TRANSFER extends Protocol {
             out.writeLong(id);
             out.writeByte(type);
             out.writeObject(my_digest);
-            out.writeUTF(state_id);
+            if(state_id == null) {
+                out.writeBoolean(false);
+            }
+            else {
+                out.writeBoolean(true);
+                out.writeUTF(state_id);
+            }
         }
 
 
@@ -525,7 +531,8 @@ public class STATE_TRANSFER extends Protocol {
             id=in.readLong();
             type=in.readByte();
             my_digest=(Digest)in.readObject();
-            state_id=in.readUTF();
+            if(in.readBoolean())
+                state_id=in.readUTF();
         }
 
 
