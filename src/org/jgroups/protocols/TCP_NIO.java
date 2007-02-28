@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.12 2007/01/10 19:38:18 smarlownovell Exp $
+ * @version $Id: TCP_NIO.java,v 1.13 2007/02/28 03:03:22 smarlownovell Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -145,13 +145,13 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
       return super.setProperties(props);
    }
 
-   private int m_reader_threads = 8;
+   private int m_reader_threads = 3;
 
-   private int m_writer_threads = 8;
+   private int m_writer_threads = 3;
 
-   private int m_processor_threads = 10;                    // PooledExecutor.createThreads()
-   private int m_processor_minThreads = 10;                 // PooledExecutor.setMinimumPoolSize()
-   private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
+   private int m_processor_threads = 5;                    // PooledExecutor.createThreads()
+   private int m_processor_minThreads = 5;                 // PooledExecutor.setMinimumPoolSize()
+   private int m_processor_maxThreads = 5;                 // PooledExecutor.setMaxThreads()
    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
                                                             // for a background thread to run the request.
    private long m_processor_keepAliveTime = Long.MAX_VALUE; // PooledExecutor.setKeepAliveTime( milliseconds);

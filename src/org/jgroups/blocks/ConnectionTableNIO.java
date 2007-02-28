@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.27 2007/02/24 03:49:49 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.28 2007/02/28 03:02:32 smarlownovell Exp $
 
 package org.jgroups.blocks;
 
@@ -55,13 +55,13 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
    private final LinkedList m_backGroundThreads = new LinkedList();  // Collection of all created threads
 
-   private int m_reader_threads = 8;
+   private int m_reader_threads = 3;
 
-   private int m_writer_threads = 8;
+   private int m_writer_threads = 3;
 
-   private int m_processor_threads = 10;                    // PooledExecutor.createThreads()
-   private int m_processor_minThreads = 10;                 // PooledExecutor.setMinimumPoolSize()
-   private int m_processor_maxThreads = 10;                 // PooledExecutor.setMaxThreads()
+   private int m_processor_threads = 5;                    // PooledExecutor.createThreads()
+   private int m_processor_minThreads = 5;                 // PooledExecutor.setMinimumPoolSize()
+   private int m_processor_maxThreads = 5;                 // PooledExecutor.setMaxThreads()
    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
    // for a background thread to run the request.
    private long m_processor_keepAliveTime = Long.MAX_VALUE;              // PooledExecutor.setKeepAliveTime( milliseconds);
@@ -230,6 +230,11 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          conn = (Connection) conns.get(dest);
          if (conn == null)
          {
+//Thread.dumpStack();
+//System.out.println("getconnection failed to find " + ((IpAddress)dest).toString() + " conns size= "+conns.size());
+// for(Iterator iter = conns.keySet().iterator(); iter.hasNext(); ) {
+//     System.out.println("keyset key=" + iter.next());
+// }
             InetSocketAddress destAddress = new InetSocketAddress(((IpAddress) dest).getIpAddress(),
                ((IpAddress) dest).getPort());
             sock_ch = SocketChannel.open(destAddress);
