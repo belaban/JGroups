@@ -707,8 +707,16 @@ public abstract class BasicConnectionTable {
            ;
        }
 
+       // return true if we have zero connections
+       private boolean haveZeroConnections() {
+           synchronized(conns) {
+               return conns.isEmpty();
+           }
+       }
+
        public void start() {
-           if(conns.isEmpty())
+
+           if(haveZeroConnections())
                return;
            if(t != null && !t.isAlive())
                t=null;
@@ -753,7 +761,7 @@ public abstract class BasicConnectionTable {
                                             conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
                                             conn_expire_time);
 
-           while(!conns.isEmpty() && t != null && t.equals(Thread.currentThread())) {
+           while(!haveZeroConnections() && t != null && t.equals(Thread.currentThread())) {
                Util.sleep(reaper_interval);
                if(t == null || !Thread.currentThread().equals(t))
                    break;
