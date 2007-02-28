@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.37 2007/01/11 19:37:38 vlada Exp $
+// $Id: JChannelFactory.java,v 1.38 2007/02/28 08:45:08 belaban Exp $
 
 package org.jgroups;
 
@@ -38,11 +38,11 @@ public class JChannelFactory implements ChannelFactory {
 
     /** Map<String,String>. Hashmap which maps stack names to JGroups configurations. Keys are stack names, values are
      * plain JGroups stack configs. This is (re-)populated whenever a setMultiplexerConfig() method is called */
-    private final Map stacks=new HashMap();
+    private final Map<String,String> stacks=new HashMap<String,String>();
 
     /** Map<String,Entry>, maintains mapping between stack names (e.g. "udp") and Entries, which contain a JChannel and
      * a Multiplexer */
-    private final Map channels=new HashMap();
+    private final Map<String,Entry> channels=new HashMap<String,Entry>();
 
     private String config=null;
 
@@ -272,7 +272,7 @@ public class JChannelFactory implements ChannelFactory {
             throw new IllegalArgumentException("stack name and service ID have to be non null");
         Entry entry;
         synchronized(channels) {
-            entry=(Entry)channels.get(stack_name);
+            entry=channels.get(stack_name);
             if(entry == null) {
                 entry=new Entry();
                 channels.put(stack_name, entry);
@@ -309,7 +309,7 @@ public class JChannelFactory implements ChannelFactory {
    public boolean hasMuxChannel(String stack_name, String id){
        Entry entry = null;
        synchronized(channels) {
-          entry=(Entry)channels.get(stack_name);          
+          entry=channels.get(stack_name);
        }
        if(entry!= null){          
           synchronized(entry) {
@@ -338,7 +338,7 @@ public class JChannelFactory implements ChannelFactory {
     public void connect(MuxChannel ch) throws ChannelException {
         Entry entry;
         synchronized(channels) {
-            entry=(Entry)channels.get(ch.getStackName());
+            entry=channels.get(ch.getStackName());
         }
         if(entry != null) {
             synchronized(entry) {
@@ -391,7 +391,7 @@ public class JChannelFactory implements ChannelFactory {
         Entry entry;
 
         synchronized(channels) {
-            entry=(Entry)channels.get(ch.getStackName());
+            entry=channels.get(ch.getStackName());
         }
         if(entry != null) {
             synchronized(entry) {
@@ -428,7 +428,7 @@ public class JChannelFactory implements ChannelFactory {
         boolean all_closed=false;
 
         synchronized(channels) {
-            entry=(Entry)channels.get(stack_name);
+            entry=channels.get(stack_name);
         }
         if(entry != null) {
             synchronized(entry) {
@@ -479,7 +479,7 @@ public class JChannelFactory implements ChannelFactory {
         boolean all_closed=false;
 
         synchronized(channels) {
-            entry=(Entry)channels.get(stack_name);
+            entry=channels.get(stack_name);
             if(entry != null) {
                 synchronized(entry) {
                     Multiplexer mux=entry.multiplexer;
@@ -503,8 +503,6 @@ public class JChannelFactory implements ChannelFactory {
                               entry.channel.stopFlush();
                         }
                         all_closed=mux.shutdown(); // closes JChannel if all MuxChannels are in closed state
-
-                        //mux.unregister(ch.getId());
                     }
                 }
                 if(all_closed) {
@@ -525,7 +523,7 @@ public class JChannelFactory implements ChannelFactory {
     public void open(MuxChannel ch) throws ChannelException {
         Entry entry;
         synchronized(channels) {
-            entry=(Entry)channels.get(ch.getStackName());
+            entry=channels.get(ch.getStackName());
         }
         if(entry != null) {
             synchronized(entry) {
@@ -597,7 +595,7 @@ public class JChannelFactory implements ChannelFactory {
     public String dumpChannels() {
         if(channels == null)
             return null;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Iterator it=channels.entrySet().iterator(); it.hasNext();) {
             Map.Entry entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(": ").append(((Entry)entry.getValue()).multiplexer.getServiceIds()).append("\n");
@@ -673,14 +671,7 @@ public class JChannelFactory implements ChannelFactory {
                 String val=conf.getProtocolStackString();
                 this.stacks.put(st_name, val);
             }
-            //System.out.println(" - OK");
         }
-//        System.out.println("stacks: ");
-//        for(Iterator it=stacks.entrySet().iterator(); it.hasNext();) {
-//            Map.Entry entry=(Map.Entry)it.next();
-//            System.out.println("key: " + entry.getKey());
-//            System.out.println("val: " + entry.getValue() + "\n");
-//        }
     }
 
     /**
@@ -689,7 +680,7 @@ public class JChannelFactory implements ChannelFactory {
      * @return The protocol stack config as a plain string
      */
     private String getConfig(String stack_name) throws Exception {
-        String cfg=(String)stacks.get(stack_name);
+        String cfg=stacks.get(stack_name);
         if(cfg == null)
             throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
         return cfg;
