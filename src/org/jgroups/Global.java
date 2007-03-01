@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.20 2007/01/26 10:18:41 belaban Exp $
+ * @version $Id: Global.java,v 1.21 2007/03/01 09:29:38 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -36,7 +36,7 @@ public class Global {
 
     public static final String MPING_MCAST_ADDR="jgroups.mping.mcast_addr";
     public static final String MPING_MCAST_PORT="jgroups.mping.mcast_port";
-    public static final String  MPING_IP_TTL="jgroups.mping.ip_ttl";
+    public static final String MPING_IP_TTL="jgroups.mping.ip_ttl";
 
     public static final String MAGIC_NUMBER_FILE="jgroups.conf.magic_number_file";
     public static final String RESOLVE_DNS="jgroups.resolve_dns";
@@ -46,4 +46,9 @@ public class Global {
     public static final String SCHEDULER_MAX_THREADS="jgroups.scheduler.max_threads";
 
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
+
+    public static final String MUX_ENABLED="jgroups.mux.enabled";
+    public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
+    public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
+    public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
 }
