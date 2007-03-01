@@ -1,43 +1,61 @@
 package org.jgroups.util;
 
+import org.jgroups.Address;
+
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.*;
 
 /**
- * Blocking queue which can only process 1 message per sender concurrently, establishing FIFO order per sender.
+ * Blocking queue which can only process 1 message per service concurrently, establishing FIFO order per sender. Example:
+ * if message A1, A2, A3, B1, B2 (where A and B are service names for services on top of a Multiplexer) arrive at the
+ * same time, then this class will deliver A1 and B1 concurrently (ie. pass them up to the thread pool for processing).
+ * Only when A1 is done will A2 be processed, same for B2: it will get processed when B1 is done. Thus, messages
+ * for different services are processed concurrently; messages from the same service are processed FIFO.
  * @author Bela Ban
- * @version $Id: FIFOMessageQueue.java,v 1.2 2007/02/27 17:12:30 belaban Exp $
+ * @version $Id: FIFOMessageQueue.java,v 1.3 2007/03/01 16:56:10 belaban Exp $
  */
 public class FIFOMessageQueue<K, V> {
     /** Used for consolidated takes */
-    final BlockingQueue<V>               queue=new LinkedBlockingQueue<V>();
-    /** One queue per sender */
-    final ConcurrentMap<K,Entry<V>> queues=new ConcurrentHashMap<K,Entry<V>>();
+    final BlockingQueue<V>                       queue=new LinkedBlockingQueue<V>();
+
+    /** One queue per sender and destination. This is a two level hashmap, with sender's addresses as keys and hashmaps
+     * as values. Those hashmaps have destinations (K) as keys and Entries (list of Vs) as values */
+    final ConcurrentMap<Address,ConcurrentMap<K,Entry<V>>> queues=new ConcurrentHashMap<Address,ConcurrentMap<K,Entry<V>>>();
 
     private int size=0;
 
 
     public V take() throws InterruptedException {
         V retval=queue.take();
-        size--;
+        if(retval != null)
+            size--;
         return retval;
     }
+
 
     public V poll(long timeout) throws InterruptedException {
         V retval=queue.poll(timeout, TimeUnit.MILLISECONDS);
-        size--;
+        if(retval != null)
+            size--;
         return retval;
     }
 
-    public void put(K dest, V el) throws InterruptedException {
-        Entry<V> entry=queues.get(dest);
-        if(entry == null) {
-            synchronized(queues) {
-                entry=new Entry<V>();
-                queues.put(dest, entry);
-            }
+
+
+    public void put(Address sender, K dest, V el) throws InterruptedException {
+        ConcurrentMap<K,Entry<V>> dests=queues.get(sender);
+        if(dests == null) {
+            dests=new ConcurrentHashMap<K,Entry<V>>();
+            queues.putIfAbsent(sender, dests);
         }
+
+        Entry<V> entry=dests.get(dest);
+        if(entry == null) {
+            entry=new Entry<V>();
+            dests.putIfAbsent(dest, entry);
+        }
+
         boolean add=false;
         synchronized(entry) {
             if(entry.ready) {
@@ -56,12 +74,14 @@ public class FIFOMessageQueue<K, V> {
     }
 
 
-    public void done(K dest) {
-        Entry<V> entry=queues.get(dest);
+    public void done(Address sender, K dest) {
+        Map<K,Entry<V>> dests=queues.get(sender);
+        if(dests == null) return;
+
+        Entry<V> entry=dests.get(dest);
         if(entry != null) {
             V el=null;
             synchronized(entry) {
-                // entry.ready=true;
                 if(!entry.list.isEmpty()) {
                     el=entry.list.removeFirst();
                 }
@@ -78,8 +98,11 @@ public class FIFOMessageQueue<K, V> {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append("queue: ").append(queue).append("\nqueues:\n");
-        for(Map.Entry<K,Entry<V>> entry: queues.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue().list).append("\n");
+        for(ConcurrentMap.Entry<Address,ConcurrentMap<K,Entry<V>>> entry: queues.entrySet()) {
+            sb.append("sender ").append(entry.getKey()).append(":\n");
+            for(Map.Entry<K,Entry<V>> entry2: entry.getValue().entrySet()) {
+                sb.append(entry2.getKey()).append(": ").append(entry2.getValue().list).append("\n");
+            }
         }
         return sb.toString();
     }
