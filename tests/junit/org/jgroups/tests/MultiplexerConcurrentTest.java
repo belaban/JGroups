@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.1 2007/03/01 09:28:50 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.2 2007/03/01 09:54:43 belaban Exp $
  */
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
@@ -40,6 +40,15 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
             s1.close();
         if(s2 != null)
             s2.close();
+
+        if(s21 != null) {
+            s21.close();
+            s21=null;
+        }
+        if(s11 != null) {
+            s11.close();
+            s11=null;
+        }
         if(s1 != null) {
             assertFalse(((MuxChannel)s1).getChannel().isOpen());
             assertFalse(((MuxChannel)s1).getChannel().isConnected());
@@ -49,14 +58,6 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
             assertFalse(((MuxChannel)s2).getChannel().isConnected());
         }
         s1=s2=null;
-        if(s21 != null) {
-            s21.close();
-            s21=null;
-        }
-        if(s11 != null) {
-            s11.close();
-            s11=null;
-        }
         super.tearDown();
     }
 
