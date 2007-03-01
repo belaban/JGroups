@@ -14,13 +14,12 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.3 2007/03/01 17:40:30 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.4 2007/03/01 17:44:28 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
     String s1="s1", s2="s2", s3="s3";
     private static final Address a1, a2;
-
 
     static {
         a1=new IpAddress(5000);
@@ -314,7 +313,7 @@ public class FIFOMessageQueueTest extends TestCase {
         }
 
         System.out.println("analyzing returned values for correct ordering");
-        LinkedList one=new LinkedList(), two=new LinkedList(), three=new LinkedList();
+        LinkedList<Integer> one=new LinkedList<Integer>(), two=new LinkedList<Integer>(), three=new LinkedList<Integer>();
         for(int val: list) {
             if(val < 1000) {
                 one.add(val);
@@ -334,15 +333,15 @@ public class FIFOMessageQueueTest extends TestCase {
         assertEquals(len, three.size());
 
 
-        LinkedList sorted_one=new LinkedList(one);
+        LinkedList<Integer> sorted_one=new LinkedList<Integer>(one);
         Collections.sort(sorted_one);
         assertEquals("one: " + one + ", sorted: " + sorted_one, one, sorted_one);
 
-        LinkedList sorted_two=new LinkedList(two);
+        LinkedList<Integer> sorted_two=new LinkedList<Integer>(two);
         Collections.sort(sorted_two);
         assertEquals("two: " + two + ", sorted: " + sorted_two, two, sorted_two);
 
-        LinkedList sorted_three=new LinkedList(three);
+        LinkedList<Integer> sorted_three=new LinkedList<Integer>(three);
         Collections.sort(sorted_three);
         assertEquals("three: " + three + ", sorted: " + sorted_three, three, sorted_three);
 
