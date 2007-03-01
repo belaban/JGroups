@@ -2,21 +2,30 @@ package org.jgroups.tests;
 
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.FIFOMessageQueue;
 import org.jgroups.util.Util;
 
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
-import java.util.LinkedList;
-import java.util.Collections;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.2 2007/02/27 17:32:27 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.3 2007/03/01 17:40:30 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
     String s1="s1", s2="s2", s3="s3";
+    private static final Address a1, a2;
+
+
+    static {
+        a1=new IpAddress(5000);
+        a2=new IpAddress(6000);
+    }
 
     public void setUp() throws Exception {
         super.setUp();
@@ -28,48 +37,243 @@ public class FIFOMessageQueueTest extends TestCase {
     }
 
 
+    public void testPollFromEmptyQueue() throws InterruptedException {
+        assertEquals(0, queue.size());
+        Integer ret=queue.poll(5);
+        assertNull(ret);
+        assertEquals("queue.size() should be 0, but is " + queue.size(), 0, queue.size());
+    }
+
+    public void testTakeFollowedByPut() throws InterruptedException {
+        assertEquals(0, queue.size());
+
+        new Thread() {
+
+            public void run() {
+                Util.sleep(1000);
+                try {
+                    queue.put(a1, s1, 1);
+                }
+                catch(InterruptedException e) {
+
+                }
+            }
+        }.start();
+
+        Integer ret=queue.take();
+        assertNotNull(ret);
+        assertEquals(1, ret.intValue());
+        assertEquals("queue.size() should be 0, but is " + queue.size(), 0, queue.size());
+    }
+
     public void testSimplePutAndTake() throws InterruptedException {
-        queue.put(s1, 1);
+        queue.put(a1, s1, 1);
         assertEquals(1, queue.size());
         int ret=queue.take();
         assertEquals(1, ret);
         assertEquals(0, queue.size());
     }
 
+    public void testSimplePutAndTakeMultipleSenders() throws InterruptedException {
+        queue.put(a1, s1, 1);
+        queue.put(a2, s1, 2);
+        System.out.println("queue is:\n" + queue);
+        assertEquals(2, queue.size());
+        int ret=queue.take();
+        assertEquals(1, ret);
+        assertEquals(1, queue.size());
+        ret=queue.take();
+        assertEquals(2, ret);
+        assertEquals(0, queue.size());
+    }
+
     public void testMultiplePutsAndTakes() throws InterruptedException {
         for(int i=1; i <= 5; i++)
-            queue.put(s1, i);
+            queue.put(a1, s1, i);
         System.out.println("queue is " + queue);
         assertEquals(5, queue.size());
         for(int i=1; i <= 5; i++) {
             int ret=queue.take();
             assertEquals(i, ret);
             assertEquals(5-i, queue.size());
-            queue.done(s1);
+            queue.done(a1, s1);
         }
         assertEquals(0, queue.size());
     }
 
 
+    /**
+     * Sender A sends M1 to S1 and M2 to S1. M2 should wait until M1 is done
+     */
+    public void testSameSenderSameDestination() throws InterruptedException {
+        queue.put(a1, s1, 1);
+        queue.put(a1, s1, 2);
+        queue.put(a1, s1, 3);
+        System.out.println("queue:\n" + queue);
+
+        assertEquals(3, queue.size());
+        int ret=queue.take();
+
+        assertEquals(1, ret);
+        Integer retval=queue.poll(100);
+        assertNull(retval);
+        queue.done(a1, s1);
+        System.out.println("queue:\n" + queue);
+        ret=queue.take();
+        assertEquals(2, ret);
+        queue.done(a1, s1);
+        System.out.println("queue:\n" + queue);
+        ret=queue.take();
+        System.out.println("queue:\n" + queue);
+        assertEquals(3, ret);
+    }
+
+
+
+    /**
+     * Sender A sends M1 to S1 and M2 to S2. M2 should get processed immediately and not have
+     * to wait for M1 to complete
+     */
+    public void testSameSenderMultipleDestinations() throws InterruptedException {
+        queue.put(a1, s1, 10);
+        queue.put(a1, s1, 11);
+        queue.put(a1, s1, 12);
+
+        queue.put(a1, s2, 20);
+        queue.put(a1, s2, 21);
+        queue.put(a1, s2, 22);
+
+        queue.put(a1, s3, 30);
+        queue.put(a1, s3, 31);
+        queue.put(a1, s3, 32);
+        System.out.println("queue:\n" + queue);
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(10, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(20, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(30, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+
+        queue.done(a1, s3);
+        queue.done(a1, s1);
+        queue.done(a1, s2);
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(31, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(11, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(21, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+
+        assertEquals(3, queue.size());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+
+        queue.done(a1, s1);
+        queue.done(a1, s3);
+        queue.done(a1, s2);
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(12, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(32, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(22, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+
+        assertEquals(0, queue.size());
+    }
+
+
+    /**
+     * Sender A sends M1 to S1 and sender B sends M2 to S1. M2 should get processed concurrently to M1 and
+     * should not have to wait for M1's completion
+     */
+    public void testDifferentSendersSameDestination() throws InterruptedException {
+        queue.put(a1, s1, 10);
+        queue.put(a2, s1, 20);
+        queue.put(a1, s1, 11);
+        queue.put(a2, s1, 21);
+        System.out.println("queue:\n" + queue);
+        assertEquals(4, queue.size());
+
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(10, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(20, ret.intValue());
+
+        queue.done(a1, s1);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(11, ret.intValue());
+
+        queue.done(a2, s1);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(21, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+        assertEquals(0, queue.size());
+    }
+
+
+
+    /**
+     * Sender A sends M1 to S1 and sender B sends M2 to S2. M1 and M2 should get processed concurrently 
+     */
+    public void testDifferentSendersDifferentdestinations() {
+
+    }
+    
+
+
     public void testOrdering() throws InterruptedException {
         for(int i=1; i <= 3; i++)
-            queue.put(s1, i);
+            queue.put(a1, s1, i);
         assertEquals(3, queue.size());
 
         int ret=queue.take();
         assertEquals(1, ret);
         assertEquals(2, queue.size());
 
-        queue.done(s1);
-        queue.put(s1, 4);
-        queue.put(s1, 5);
+        queue.done(a1, s1);
+        queue.put(a1, s1, 4);
+        queue.put(a1, s1, 5);
         System.out.println("queue: " + queue);
 
         for(int i=2; i <= 5; i++) {
             ret=queue.take();
             assertEquals(i, ret);
             assertEquals(5-i, queue.size());
-            queue.done(s1);
+            queue.done(a1, s1);
         }
         assertEquals(0, queue.size());
     }
@@ -104,9 +308,9 @@ public class FIFOMessageQueueTest extends TestCase {
         for(int i=0; i < size; i++) {
             ret=queue.take();
             list.add(ret);
-            queue.done("s1");
-            queue.done("s2");
-            queue.done("s3");
+            queue.done(a1, "s1");
+            queue.done(a1, "s2");
+            queue.done(a1, "s3");
         }
 
         System.out.println("analyzing returned values for correct ordering");
@@ -173,7 +377,7 @@ public class FIFOMessageQueueTest extends TestCase {
             for(int i=start_num; i <= num_msgs+start_num-1; i++) {
                 try {
                     // Util.sleepRandom(50);
-                    queue.put(key, i);
+                    queue.put(a1, key, i);
                 }
                 catch(InterruptedException e) {
                     e.printStackTrace();
