@@ -5,6 +5,7 @@ import org.jgroups.Address;
 import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Blocking queue which can only process 1 message per service concurrently, establishing FIFO order per sender. Example:
@@ -13,7 +14,7 @@ import java.util.concurrent.*;
  * Only when A1 is done will A2 be processed, same for B2: it will get processed when B1 is done. Thus, messages
  * for different services are processed concurrently; messages from the same service are processed FIFO.
  * @author Bela Ban
- * @version $Id: FIFOMessageQueue.java,v 1.3 2007/03/01 16:56:10 belaban Exp $
+ * @version $Id: FIFOMessageQueue.java,v 1.4 2007/03/02 08:27:26 belaban Exp $
  */
 public class FIFOMessageQueue<K, V> {
     /** Used for consolidated takes */
@@ -23,13 +24,13 @@ public class FIFOMessageQueue<K, V> {
      * as values. Those hashmaps have destinations (K) as keys and Entries (list of Vs) as values */
     final ConcurrentMap<Address,ConcurrentMap<K,Entry<V>>> queues=new ConcurrentHashMap<Address,ConcurrentMap<K,Entry<V>>>();
 
-    private int size=0;
+    private final AtomicInteger size=new AtomicInteger(0);
 
 
     public V take() throws InterruptedException {
         V retval=queue.take();
         if(retval != null)
-            size--;
+            size.decrementAndGet();
         return retval;
     }
 
@@ -37,7 +38,7 @@ public class FIFOMessageQueue<K, V> {
     public V poll(long timeout) throws InterruptedException {
         V retval=queue.poll(timeout, TimeUnit.MILLISECONDS);
         if(retval != null)
-            size--;
+            size.decrementAndGet();
         return retval;
     }
 
@@ -63,13 +64,14 @@ public class FIFOMessageQueue<K, V> {
                 add=true;
             }
             else {
+                size.incrementAndGet();
                 entry.list.add(el);
-                size++;
+
             }
         }
         if(add) {
+            size.incrementAndGet();
             queue.put(el);
-            size++;
         }
     }
 
@@ -92,7 +94,7 @@ public class FIFOMessageQueue<K, V> {
     }
 
     public int size() {
-        return size;
+        return size.get();
     }
 
     public String toString() {
