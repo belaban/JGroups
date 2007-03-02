@@ -4,7 +4,6 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -19,7 +18,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.59 2007/02/28 10:21:26 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.60 2007/03/02 08:42:53 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -234,12 +233,12 @@ public class STATE_TRANSFER extends Protocol {
 		return !flushProtocolInStack;
 	}
 
-    private void requestApplicationStates() {
+    private void requestApplicationStates(Address requester) {
         Set appl_ids=new HashSet(state_requesters.keySet());
         String id;
         for(Iterator it=appl_ids.iterator(); it.hasNext();) {
             id=(String)it.next();
-            StateTransferInfo info=new StateTransferInfo(null, id, 0L, null);
+            StateTransferInfo info=new StateTransferInfo(requester, id, 0L, null);
             StateTransferInfo rsp=(StateTransferInfo)up_prot.up(new Event(Event.GET_APPLSTATE, info));
             sendApplicationStateResponse(rsp);
         }
@@ -350,7 +349,7 @@ public class STATE_TRANSFER extends Protocol {
      * we add the sender to the requester list and send a GET_APPLSTATE event up.
      */
     private void handleStateReq(StateHeader hdr) {
-        Object sender=hdr.sender;
+        Address sender=hdr.sender;
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender is null !");
             return;
@@ -367,13 +366,13 @@ public class STATE_TRANSFER extends Protocol {
             requesters.add(sender);
 
             if(!isDigestNeeded()) { // state transfer is in progress, digest was already requested
-                requestApplicationStates();
+                requestApplicationStates(sender);
             }
             else if(empty){
                 digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
-                requestApplicationStates();
+                requestApplicationStates(sender);
             }
         }
     }
@@ -384,6 +383,7 @@ public class STATE_TRANSFER extends Protocol {
         Address sender=hdr.sender;
         Digest tmp_digest=hdr.my_digest;
         String id=hdr.state_id;
+        Address state_sender=hdr.sender;
 
         waiting_for_state_response=false;
         if(isDigestNeeded()){
@@ -409,7 +409,7 @@ public class STATE_TRANSFER extends Protocol {
         }
         else
             log.debug("received state, size=" + state.length + " bytes. Time=" + (stop-start) + " milliseconds");
-        StateTransferInfo info=new StateTransferInfo(null, id, 0L, state);
+        StateTransferInfo info=new StateTransferInfo(state_sender, id, 0L, state);
         up_prot.up(new Event(Event.GET_STATE_OK, info));
     }
 
