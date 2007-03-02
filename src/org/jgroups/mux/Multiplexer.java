@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.48 2007/03/02 09:21:28 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.49 2007/03/02 15:06:23 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -40,7 +40,7 @@ public class Multiplexer implements UpHandler {
 
     /** To make sure messages sent to different services are processed concurrently (using the thread pool above), but
      * messages to the same service are processed FIFO */
-    private FIFOMessageQueue fifo_queue=new FIFOMessageQueue();
+    private FIFOMessageQueue<String,Runnable> fifo_queue=new FIFOMessageQueue<String,Runnable>();
 
 
     /** Cluster view */
@@ -301,9 +301,10 @@ public class Multiplexer implements UpHandler {
                     return null;
                 }
 
+                Address sender=msg.getSrc();
                 if(hdr.info != null) { // it is a service state request - not a default multiplex request
                     try {
-                        handleServiceStateRequest(hdr.info, msg.getSrc());
+                        handleServiceStateRequest(hdr.info, sender);
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
@@ -317,7 +318,8 @@ public class Multiplexer implements UpHandler {
                     log.warn("service " + hdr.id + " not currently running, discarding message " + msg);
                     return null;
                 }
-                return mux_ch.up(evt);
+                // return mux_ch.up(evt);
+                return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
 
             case Event.VIEW_CHANGE:
                 Vector old_members=view != null? view.getMembers() : null;
@@ -647,7 +649,12 @@ public class Multiplexer implements UpHandler {
             MuxChannel mux_ch=services.get(id);
             if(mux_ch == null)
                 throw new IllegalArgumentException("didn't find service with ID=" + id + " to fetch state from");
-            return mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
+            // return mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
+
+            // state_id will be null, get regular state from the service named state_id
+            StateTransferInfo ret=(StateTransferInfo)passToMuxChannel(mux_ch, evt, fifo_queue, requester, id, true);
+            ret.state_id=original_id;
+            return ret;
         }
         catch(Throwable ex) {
             if(log.isErrorEnabled())
@@ -994,12 +1001,69 @@ public class Multiplexer implements UpHandler {
     }
 
 
+    private Object passToMuxChannel(MuxChannel ch, Event evt, final FIFOMessageQueue<String,Runnable> queue,
+                                         final Address sender, final String dest, boolean block) {
+        if(thread_pool == null)
+            return ch.up(evt);
+
+        Runnable finalizer=new Runnable() {
+            public void run() {
+                queue.done(sender, dest);
+            }
+        };
+
+        Task task=new Task(ch, evt, finalizer, block);
+        thread_pool.execute(task);
+        if(block) {
+            try {
+                return task.exchanger.exchange(null);
+            }
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        
+        return null;
+    }
+
     public void addServiceIfNotPresent(String id, MuxChannel ch) {
         MuxChannel tmp;
         synchronized(services) {
             tmp=services.get(id);
             if(tmp == null) {
                 services.put(id, ch);
+            }
+        }
+    }
+
+
+    private static class Task implements Runnable {
+        Exchanger<Object> exchanger;
+        MuxChannel        channel;
+        Event             evt;
+        Runnable          finalizer;
+
+        Task(MuxChannel channel, Event evt, Runnable finalizer, boolean result_expected) {
+            this.channel=channel;
+            this.evt=evt;
+            this.finalizer=finalizer;
+            if(result_expected)
+                exchanger=new Exchanger<Object>();
+        }
+
+        public void run() {
+            Object retval;
+            try {
+                retval=channel.up(evt);
+                if(exchanger != null)
+                    exchanger.exchange(retval);
+            }
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt(); // let the thread pool handle the interrupt - we're done anyway
+            }
+            finally {
+                if(finalizer != null)
+                    finalizer.run();
             }
         }
     }
