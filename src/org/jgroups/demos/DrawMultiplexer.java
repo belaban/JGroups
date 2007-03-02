@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.6 2006/10/30 12:29:11 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.7 2007/03/02 14:18:56 belaban Exp $
  */
 public class DrawMultiplexer {
     JChannelFactory factory;
@@ -13,6 +13,7 @@ public class DrawMultiplexer {
     public static void main(String[] args) throws Exception {
         String props="stacks.xml";
         String stack_name="udp";
+        boolean state=false;
         for(int i=0; i < args.length; i++) {
             String arg=args[i];
             if(arg.equals("-props")) {
@@ -23,24 +24,28 @@ public class DrawMultiplexer {
                 stack_name=args[++i];
                 continue;
             }
-            System.out.println("DrawMultiplexer [-help] [-props <stack config file>] [-stack_name <name>]");
+            if(arg.equals("-state")) {
+                state=true;
+                continue;
+            }
+            System.out.println("DrawMultiplexer [-help] [-props <stack config file>] [-stack_name <name>] [-state]");
             return;
         }
-        new DrawMultiplexer().start(props, stack_name);
+        new DrawMultiplexer().start(props, stack_name, state);
     }
 
 
-    private void start(String props, String stack_name) throws Exception {
+    private void start(String props, String stack_name, boolean state) throws Exception {
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(props);
 
         final Channel ch1, ch2;
         ch1=factory.createMultiplexerChannel(stack_name, "id-1");
-        Draw draw1=new Draw(ch1);
+        Draw draw1=new Draw(ch1, state, 5000);
         ch1.connect("bela");
 
         ch2=factory.createMultiplexerChannel(stack_name, "id-2");
-        Draw draw2=new Draw(ch2);
+        Draw draw2=new Draw(ch2, state, 5000);
         ch2.connect("ban");
 
         draw1.go();
