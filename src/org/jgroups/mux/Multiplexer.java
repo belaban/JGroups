@@ -3,12 +3,15 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.FIFOMessageQueue;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.*;
 
 /**
  * Used for dispatching incoming messages. The Multiplexer implements UpHandler and registers with the associated
@@ -16,11 +19,11 @@ import java.util.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.46 2007/01/22 21:04:23 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.47 2007/03/02 08:45:32 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
-    private final Map services=new HashMap();
+    private final Map<String,MuxChannel> services=new HashMap<String,MuxChannel>();
     private final JChannel channel;
     static final Log log=LogFactory.getLog(Multiplexer.class);
     static final String SEPARATOR="::";
@@ -32,6 +35,12 @@ public class Multiplexer implements UpHandler {
     private boolean flush_present=true;
     private boolean blocked=false;
 
+    /** Thread pool to concurrently process messages sent to different services */
+    private static Executor thread_pool=null;
+
+    /** To make sure messages sent to different services are processed concurrently (using the thread pool above), but
+     * messages to the same service are processed FIFO */
+    private FIFOMessageQueue fifo_queue=new FIFOMessageQueue();
 
 
     /** Cluster view */
@@ -40,20 +49,71 @@ public class Multiplexer implements UpHandler {
     Address local_addr=null;
 
     /** Map<String,Boolean>. Map of service IDs and booleans that determine whether getState() has already been called */
-    private final Map state_transfer_listeners=new HashMap();
+    private final Map<String,Boolean> state_transfer_listeners=new HashMap<String,Boolean>();
 
     /** Map<String,List<Address>>. A map of services as keys and lists of hosts as values */
-    private final Map service_state=new HashMap();
+    private final Map<String,List<Address>> service_state=new HashMap<String,List<Address>>();
 
     /** Used to wait on service state information */
     private final Promise service_state_promise=new Promise();
 
     /** Map<Address, Set<String>>. Keys are senders, values are a set of services hosted by that sender.
      * Used to collect responses to LIST_SERVICES_REQ */
-    private final Map service_responses=new HashMap();
+    private final Map<Address, Set<String>> service_responses=new HashMap<Address, Set<String>>();
 
     private long SERVICES_RSP_TIMEOUT=10000;
 
+
+
+    static {
+        int min_threads=1, max_threads=10;
+        long keep_alive=30000;
+        boolean mux_enabled=true; // default is to use the thread pool
+        String tmp;
+
+        try {
+            tmp=System.getProperty(Global.MUX_ENABLED);
+            if(tmp != null)
+                mux_enabled=Boolean.parseBoolean(tmp);
+        }
+        catch(Throwable t) {}
+
+        
+        if(mux_enabled) {
+
+            ThreadFactory factory=new ThreadFactory() {
+                int num=1;
+                ThreadGroup mux_threads=new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads");
+                public Thread newThread(Runnable command) {
+                    return new Thread(mux_threads, command, "Multiplexer-" + num++);
+                }
+            };
+
+            try {
+                tmp=System.getProperty(Global.MUX_MIN_THREADS);
+                if(tmp != null)
+                    min_threads=Integer.parseInt(tmp);
+            }
+            catch(Throwable t) {}
+
+            try {
+                tmp=System.getProperty(Global.MUX_MAX_THREADS);
+                if(tmp != null)
+                    max_threads=Integer.parseInt(tmp);
+            }
+            catch(Throwable t) {}
+
+            try {
+                tmp=System.getProperty(Global.MUX_KEEPALIVE);
+                if(tmp != null)
+                    keep_alive=Long.parseLong(tmp);
+            }
+            catch(Throwable t) {}
+
+            thread_pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
+                                               new SynchronousQueue(), factory, new ThreadPoolExecutor.CallerRunsPolicy());
+        }
+    }
 
 
 
@@ -77,7 +137,7 @@ public class Multiplexer implements UpHandler {
         return services != null? services.keySet() : null;
     }
 
-    public Set getServiceIds() {
+    public Set<String> getServiceIds() {
         return services != null? services.keySet() : null;
     }
 
@@ -96,7 +156,7 @@ public class Multiplexer implements UpHandler {
      * @return The service view
      */
     public View getServiceView(String service_id) {
-        List hosts=(List)service_state.get(service_id);
+        List hosts=service_state.get(service_id);
         if(hosts == null) return null;
         return generateServiceView(hosts);
     }
@@ -226,9 +286,12 @@ public class Multiplexer implements UpHandler {
 
 
 
-
-   public Object up(Event evt) {
-        // remove header and dispatch to correct MuxChannel
+    /**
+     * Remove mux header and dispatch to correct MuxChannel
+     * @param evt
+     * @return
+     */
+    public Object up(Event evt) {
         MuxHeader hdr;
 
         switch(evt.getType()) {
@@ -251,7 +314,7 @@ public class Multiplexer implements UpHandler {
                     break;
                 }
 
-                MuxChannel mux_ch=(MuxChannel)services.get(hdr.id);
+                MuxChannel mux_ch=services.get(hdr.id);
                 if(mux_ch == null) {
                     log.warn("service " + hdr.id + " not currently running, discarding message " + msg);
                     return null;
@@ -317,7 +380,7 @@ public class Multiplexer implements UpHandler {
 
             case Event.GET_APPLSTATE:
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                return returnStateRequest(evt);
+                return handleStateRequest(evt);
 
             case Event.GET_STATE_OK:
             case Event.STATE_TRANSFER_INPUTSTREAM:
@@ -330,10 +393,10 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.BLOCK:
-                blocked=true;                
+                blocked=true;
                 if(!services.isEmpty()) {
-                   passToAllMuxChannels(evt);                  
-                }                                           
+                    passToAllMuxChannels(evt);
+                }
                 return null;
 
             case Event.UNBLOCK: // process queued-up MergeViews
@@ -374,9 +437,9 @@ public class Multiplexer implements UpHandler {
                 passToAllMuxChannels(evt);
                 break;
         }
+        return null;
+    }
 
-       return null;
-   }
 
     public Channel createMuxChannel(JChannelFactory f, String id, String stack_name) throws Exception {
         MuxChannel ch;
@@ -393,15 +456,14 @@ public class Multiplexer implements UpHandler {
 
 
     private void passToAllMuxChannels(Event evt) {
-        for(Iterator it=services.values().iterator(); it.hasNext();) {
-            MuxChannel ch=(MuxChannel)it.next();
+        for(MuxChannel ch: services.values()) {
             ch.up(evt);
         }
     }
 
     public MuxChannel remove(String id) {
         synchronized(services) {
-            return (MuxChannel)services.remove(id);
+            return services.remove(id);
         }
     }
 
@@ -409,11 +471,9 @@ public class Multiplexer implements UpHandler {
 
     /** Closes the underlying JChannel if all MuxChannels have been disconnected */
     public void disconnect() {
-        MuxChannel mux_ch;
         boolean all_disconnected=true;
         synchronized(services) {
-            for(Iterator it=services.values().iterator(); it.hasNext();) {
-                mux_ch=(MuxChannel)it.next();
+            for(MuxChannel mux_ch: services.values()) {
                 if(mux_ch.isConnected()) {
                     all_disconnected=false;
                     break;
@@ -436,11 +496,9 @@ public class Multiplexer implements UpHandler {
     }
 
     public boolean close() {
-        MuxChannel mux_ch;
         boolean all_closed=true;
         synchronized(services) {
-            for(Iterator it=services.values().iterator(); it.hasNext();) {
-                mux_ch=(MuxChannel)it.next();
+            for(MuxChannel mux_ch: services.values()) {
                 if(mux_ch.isOpen()) {
                     all_closed=false;
                     break;
@@ -459,9 +517,7 @@ public class Multiplexer implements UpHandler {
 
     public void closeAll() {
         synchronized(services) {
-            MuxChannel mux_ch;
-            for(Iterator it=services.values().iterator(); it.hasNext();) {
-                mux_ch=(MuxChannel)it.next();
+            for(MuxChannel mux_ch: services.values()) {
                 mux_ch.setConnected(false);
                 mux_ch.setClosed(true);
                 mux_ch.closeMessageQueue(true);
@@ -470,11 +526,9 @@ public class Multiplexer implements UpHandler {
     }
 
     public boolean shutdown() {
-        MuxChannel mux_ch;
         boolean all_closed=true;
         synchronized(services) {
-            for(Iterator it=services.values().iterator(); it.hasNext();) {
-                mux_ch=(MuxChannel)it.next();
+            for(MuxChannel mux_ch: services.values()) {
                 if(mux_ch.isOpen()) {
                     all_closed=false;
                     break;
@@ -530,9 +584,7 @@ public class Multiplexer implements UpHandler {
     }
 
     /**
-    *
     * Returns an Address of a state provider for a given service_id.
-    *  
     * If preferredTarget is a member of a service view for a given service_id 
     * then preferredTarget is returned. Otherwise, service view coordinator is 
     * returned if such node exists. If service view is empty for a given service_id 
@@ -544,7 +596,7 @@ public class Multiplexer implements UpHandler {
     */
     public Address getStateProvider(Address preferredTarget, String service_id) {
         Address result = null;      
-        List hosts = (List)service_state.get(service_id);       
+        List hosts=service_state.get(service_id);
         if(hosts != null && !hosts.isEmpty()){
            if(hosts.contains(preferredTarget)){
               result = preferredTarget;
@@ -577,11 +629,12 @@ public class Multiplexer implements UpHandler {
     }
 
 
-    private void handleStateRequest(Event evt) {
+
+    private Object handleStateRequest(Event evt) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         String id=info.state_id;
         String original_id=id;
-        MuxChannel mux_ch=null;
+        Address requester=info.target; // the sender of the state request
 
         try {
             int index=id.indexOf(SEPARATOR);
@@ -593,43 +646,9 @@ public class Multiplexer implements UpHandler {
                 info.state_id=null;
             }
 
-            mux_ch=(MuxChannel)services.get(id);
+            MuxChannel mux_ch=services.get(id);
             if(mux_ch == null)
                 throw new IllegalArgumentException("didn't find service with ID=" + id + " to fetch state from");
-
-            // evt.setArg(info);
-            mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled())
-                log.error("failed returning the application state, will return null", ex);
-            channel.returnState(null, original_id); // we cannot use mux_ch because it might be null due to the lookup above
-        }
-    }
-
-
-
-    private Object returnStateRequest(Event evt) {
-        StateTransferInfo info=(StateTransferInfo)evt.getArg();
-        String id=info.state_id;
-        String original_id=id;
-        MuxChannel mux_ch=null;
-
-        try {
-            int index=id.indexOf(SEPARATOR);
-            if(index > -1) {
-                info.state_id=id.substring(index + SEPARATOR_LEN);
-                id=id.substring(0, index);  // similar reuse as above...
-            }
-            else {
-                info.state_id=null;
-            }
-
-            mux_ch=(MuxChannel)services.get(id);
-            if(mux_ch == null)
-                throw new IllegalArgumentException("didn't find service with ID=" + id + " to fetch state from");
-
-            // evt.setArg(info);
             return mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
         }
         catch(Throwable ex) {
@@ -644,6 +663,7 @@ public class Multiplexer implements UpHandler {
     private void handleStateResponse(Event evt) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         MuxChannel mux_ch;
+        Address state_sender=info.target;
 
         String appl_id, substate_id, tmp;
         tmp=info.state_id;
@@ -664,7 +684,7 @@ public class Multiplexer implements UpHandler {
             substate_id=null;
         }
 
-        mux_ch=(MuxChannel)services.get(appl_id);
+        mux_ch=services.get(appl_id);
         if(mux_ch == null) {
             log.error("didn't find service with ID=" + appl_id + " to fetch state from");
         }
@@ -718,7 +738,7 @@ public class Multiplexer implements UpHandler {
 
 
         synchronized(service_responses) {
-            Set tmp=(Set)service_responses.get(sender);
+            Set tmp=service_responses.get(sender);
             if(tmp == null)
                 tmp=new HashSet();
             tmp.addAll(s);
@@ -741,7 +761,7 @@ public class Multiplexer implements UpHandler {
         }
 
         synchronized(service_state) {
-            hosts=(List)service_state.get(service);
+            hosts=service_state.get(service);
             if(hosts == null)
                 return;
             removed=hosts.remove(host);
@@ -751,7 +771,7 @@ public class Multiplexer implements UpHandler {
         if(removed) {
             View service_view=generateServiceView(hosts_copy);
             if(service_view != null) {
-                MuxChannel ch=(MuxChannel)services.get(service);
+                MuxChannel ch=services.get(service);
                 if(ch != null) {
                     Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
                     ch.up(view_evt);
@@ -779,7 +799,7 @@ public class Multiplexer implements UpHandler {
         }
 
         synchronized(service_state) {
-            hosts=(List)service_state.get(service);
+            hosts=service_state.get(service);
             if(hosts == null) {
                 hosts=new ArrayList();
                 service_state.put(service,  hosts);
@@ -794,7 +814,7 @@ public class Multiplexer implements UpHandler {
         if(added) {
             View service_view=generateServiceView(hosts_copy);
             if(service_view != null) {
-                MuxChannel ch=(MuxChannel)services.get(service);
+                MuxChannel ch=services.get(service);
                 if(ch != null) {
                     Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
                     ch.up(view_evt);
@@ -824,14 +844,9 @@ public class Multiplexer implements UpHandler {
             start=System.currentTimeMillis();
             try {
                 while(time_to_wait > 0 && numResponses(service_responses) < num_members) {
-                    // System.out.println("time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
-                       //     ", num_members=" + num_members + ", service_state=" + service_state);
                     service_responses.wait(time_to_wait);
                     time_to_wait-=System.currentTimeMillis() - start;
                 }
-
-                // System.out.println("wait terminated: time_to_wait=" + time_to_wait + ", numResponses(service_responses)=" + numResponses(service_responses) +
-                   //     ", num_members=" + num_members + ", service_state=" + service_state);
                 copy=new HashMap(service_responses);
             }
             catch(Exception ex) {
@@ -879,7 +894,7 @@ public class Multiplexer implements UpHandler {
 
                 for(Iterator it2=service_list.iterator(); it2.hasNext();) {
                     service=(String)it2.next();
-                    my_services=(List)service_state.get(service);
+                    my_services=service_state.get(service);
                     if(my_services == null) {
                         my_services=new ArrayList();
                         service_state.put(service, my_services);
@@ -896,8 +911,8 @@ public class Multiplexer implements UpHandler {
         // now emit MergeViews for all services which were modified
         for(Iterator it=modified_services.iterator(); it.hasNext();) {
             service=(String)it.next();
-            MuxChannel ch=(MuxChannel)services.get(service);
-            my_services=(List)service_state.get(service);
+            MuxChannel ch=services.get(service);
+            my_services=service_state.get(service);
             MergeView v=(MergeView)view.clone();
             v.getMembers().retainAll(my_services);
             Event evt=new Event(Event.VIEW_CHANGE, v);
@@ -938,7 +953,7 @@ public class Multiplexer implements UpHandler {
                 if(removed) {
                     View service_view=generateServiceView(hosts_copy);
                     if(service_view != null) {
-                        MuxChannel ch=(MuxChannel)services.get(service);
+                        MuxChannel ch=services.get(service);
                         if(ch != null) {
                             Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
                             ch.up(view_evt);
@@ -984,7 +999,7 @@ public class Multiplexer implements UpHandler {
     public void addServiceIfNotPresent(String id, MuxChannel ch) {
         MuxChannel tmp;
         synchronized(services) {
-            tmp=(MuxChannel)services.get(id);
+            tmp=services.get(id);
             if(tmp == null) {
                 services.put(id, ch);
             }
