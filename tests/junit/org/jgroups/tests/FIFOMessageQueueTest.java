@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.4 2007/03/01 17:44:28 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.5 2007/03/02 08:41:16 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
@@ -43,6 +43,7 @@ public class FIFOMessageQueueTest extends TestCase {
         assertEquals("queue.size() should be 0, but is " + queue.size(), 0, queue.size());
     }
 
+
     public void testTakeFollowedByPut() throws InterruptedException {
         assertEquals(0, queue.size());
 
@@ -64,6 +65,97 @@ public class FIFOMessageQueueTest extends TestCase {
         assertEquals(1, ret.intValue());
         assertEquals("queue.size() should be 0, but is " + queue.size(), 0, queue.size());
     }
+
+
+    public void testMultipleTakersOnePutter() throws Exception {
+        final CyclicBarrier barrier=new CyclicBarrier(11);
+        for(int i=0; i < 10; i++) {
+            new Thread() {
+                public void run() {
+                    try {
+                        barrier.await();
+                        queue.take();
+
+                    }
+                    catch(Exception e) {
+                    }
+                }
+            }.start();
+        }
+        barrier.await();
+        for(int i=0; i < 10; i++) {
+            queue.put(a1, s1, i);
+            queue.done(a1, s1);
+        }
+        Util.sleep(100);
+        assertEquals(0, queue.size());
+    }
+
+
+    public void testConcurrentPutsAndTakes() throws InterruptedException {
+        final int NUM=10000;
+        final int print=NUM / 10;
+
+        Thread putter=new Thread() {
+
+            public void run() {
+                setName("Putter");
+                int cnt=0;
+                for(int i=0; i < NUM; i++) {
+                    try {
+                        queue.put(a1, s1, i);
+                        cnt++;
+                        if(cnt % print == 0) {
+                            System.out.println("Putter: " + cnt);
+                        }
+                        queue.done(a1, s1);
+                    }
+                    catch(InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        Thread taker=new Thread() {
+
+            public void run() {
+                setName("Taker");
+                int cnt=0;
+                for(int i=0; i < NUM; i++) {
+                    try {
+                        queue.take();
+                        cnt++;
+                        if(cnt % print == 0) {
+                            System.out.println("Taker: " + cnt);
+                        }
+                    }
+                    catch(InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        };
+
+        System.out.println("starting threads");
+        taker.start();
+        putter.start();
+
+        new Thread() {
+
+            public void run() {
+                Util.sleep(3000);
+                System.out.println("queue:\n" + queue);
+            }
+        }.start();
+
+        putter.join();
+        taker.join();
+
+        assertEquals(0, queue.size());
+    }
+
+
 
     public void testSimplePutAndTake() throws InterruptedException {
         queue.put(a1, s1, 1);
@@ -248,8 +340,88 @@ public class FIFOMessageQueueTest extends TestCase {
     /**
      * Sender A sends M1 to S1 and sender B sends M2 to S2. M1 and M2 should get processed concurrently 
      */
-    public void testDifferentSendersDifferentdestinations() {
+    public void testDifferentSendersDifferentDestinations() throws Exception {
+        queue.put(a1, s1, 1);
+        queue.put(a2, s2, 2);
+        queue.put(a1, s2, 3);
+        queue.put(a2, s1, 4);
+        System.out.println("queue:\n" + queue);
+        assertEquals(4, queue.size());
 
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(1, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(2, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(3, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(4, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+        assertEquals(0, queue.size());
+
+    }
+
+
+
+    public void testDifferentSendersDifferentDestinationsMultipleMessages() throws Exception {
+        queue.put(a1, s1, 1);
+        queue.put(a2, s2, 2);
+        queue.put(a1, s2, 3);
+        queue.put(a2, s1, 4);
+
+        queue.put(a1, s1, 5);
+        queue.put(a2, s2, 6);
+        queue.put(a1, s2, 7);
+        queue.put(a2, s1, 8);
+
+        System.out.println("queue:\n" + queue);
+        assertEquals(8, queue.size());
+
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(1, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(2, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(3, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(4, ret.intValue());
+
+
+        queue.done(a1, s1);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(5, ret.intValue());
+
+        queue.done(a2, s2);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(6, ret.intValue());
+
+        queue.done(a1, s2);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(7, ret.intValue());
+
+        queue.done(a2, s1);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(8, ret.intValue());
     }
     
 
