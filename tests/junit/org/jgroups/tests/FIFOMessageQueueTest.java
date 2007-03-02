@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.5 2007/03/02 08:41:16 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.6 2007/03/02 13:15:30 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
@@ -155,6 +155,38 @@ public class FIFOMessageQueueTest extends TestCase {
         assertEquals(0, queue.size());
     }
 
+
+    public void testNullAddress() throws InterruptedException {
+        queue.put(null, s1, 1);
+        queue.put(a1, s1, 2);
+        queue.put(a1, s1, 3);
+        queue.put(null, s1, 4);
+        System.out.println("queue:\n" + queue);
+
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(1, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(2, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(4, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+
+        queue.done(a1, s1);
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(3, ret.intValue());
+
+        ret=queue.poll(5);
+        assertNull(ret);
+        assertEquals(0, queue.size());
+    }
 
 
     public void testSimplePutAndTake() throws InterruptedException {
