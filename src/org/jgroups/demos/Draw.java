@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.41 2007/01/10 09:19:23 belaban Exp $
+// $Id: Draw.java,v 1.42 2007/03/02 14:15:20 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -60,6 +60,16 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
+    }
+
+
+    public Draw(Channel channel, boolean use_state, long state_timeout) throws Exception {
+        this.channel=channel;
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        channel.setReceiver(this);
+        channel.addChannelListener(this);
+        this.use_state=use_state;
+        this.state_timeout=state_timeout;
     }
 
 
