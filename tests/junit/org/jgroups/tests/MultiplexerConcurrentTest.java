@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.2 2007/03/01 09:54:43 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.3 2007/03/02 08:44:38 belaban Exp $
  */
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
@@ -174,7 +174,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      * Use case #4 in http://jira.jboss.com/jira/browse/JGRP-426:<br/>
      * Sender A sends M1 to S1 and sender B sends M2 to S2. M1 and M2 should get processed concurrently
      */
-    public void sendTwoMessagesFromDifferentSendersToDifferentServices() throws Exception {
+    public void testTwoMessagesFromDifferentSendersToDifferentServices() throws Exception {
         final MyReceiver receiver=new MyReceiver();
         s1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
         s1.connect("bla");
