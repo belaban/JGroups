@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.49 2007/02/10 14:49:21 belaban Exp $
+// $Id: FD.java,v 1.50 2007/03/05 13:22:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.49 $
+ * @version $Revision: 1.50 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -160,12 +160,16 @@ public class FD extends Protocol {
 
 
     private void startMonitor() {
+
+        System.out.println("START-MONITOR");
+
         monitor_lock.lock();
         try {
             if(monitor_future == null || monitor_future.isDone()) {
                 last_ack=System.currentTimeMillis();  // start from scratch
-                timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS);
+                monitor_future=timer.scheduleWithFixedDelay(new Monitor(), timeout, timeout, TimeUnit.MILLISECONDS);
                 num_tries=0;
+                System.out.println("STARTED");
             }
         }
         finally {
@@ -174,6 +178,9 @@ public class FD extends Protocol {
     }
 
     private void stopMonitor() {
+
+        System.out.println("STOP-MONITOR");
+
         monitor_lock.lock();
         try {
             if(monitor_future != null) {
