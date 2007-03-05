@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.50 2007/03/05 09:34:46 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.51 2007/03/05 13:33:42 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -85,7 +85,9 @@ public class Multiplexer implements UpHandler {
                 int num=1;
                 ThreadGroup mux_threads=new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads");
                 public Thread newThread(Runnable command) {
-                    return new Thread(mux_threads, command, "Multiplexer-" + num++);
+                    Thread ret=new Thread(mux_threads, command, "Multiplexer-" + num++);
+                    ret.setDaemon(true);
+                    return ret;
                 }
             };
 
@@ -653,7 +655,6 @@ public class Multiplexer implements UpHandler {
             MuxChannel mux_ch=services.get(id);
             if(mux_ch == null)
                 throw new IllegalArgumentException("didn't find service with ID=" + id + " to fetch state from");
-            // return mux_ch.up(evt); // state_id will be null, get regular state from the service named state_id
 
             // state_id will be null, get regular state from the service named state_id
             StateTransferInfo ret=(StateTransferInfo)passToMuxChannel(mux_ch, evt, fifo_queue, requester, id, true);
@@ -700,9 +701,8 @@ public class Multiplexer implements UpHandler {
         else {
             StateTransferInfo tmp_info=info.copy();
             tmp_info.state_id=substate_id;
-            // evt.setArg(tmp_info);
             Event tmpEvt=new Event(evt.getType(), tmp_info);
-            mux_ch.up(tmpEvt); // state_id will be null, get regular state from the service named state_id
+            passToMuxChannel(mux_ch, tmpEvt, fifo_queue, state_sender, appl_id, false);
         }
     }
 
@@ -783,7 +783,8 @@ public class Multiplexer implements UpHandler {
                 MuxChannel ch=services.get(service);
                 if(ch != null) {
                     Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                    ch.up(view_evt);
+                    // ch.up(view_evt);
+                    passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
                 }
                 else {
                     if(log.isTraceEnabled())
@@ -826,7 +827,8 @@ public class Multiplexer implements UpHandler {
                 MuxChannel ch=services.get(service);
                 if(ch != null) {
                     Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                    ch.up(view_evt);
+                    // ch.up(view_evt);
+                    passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
                 }
                 else {
                     if(log.isTraceEnabled())
@@ -925,7 +927,8 @@ public class Multiplexer implements UpHandler {
             MergeView v=(MergeView)view.clone();
             v.getMembers().retainAll(my_services);
             Event evt=new Event(Event.VIEW_CHANGE, v);
-            ch.up(evt);
+            // ch.up(evt);
+            passToMuxChannel(ch, evt, fifo_queue, null, service, false);
         }
     }
 
@@ -965,7 +968,8 @@ public class Multiplexer implements UpHandler {
                         MuxChannel ch=services.get(service);
                         if(ch != null) {
                             Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                            ch.up(view_evt);
+                            // ch.up(view_evt);
+                            passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
                         }
                         else {
                             if(log.isTraceEnabled())
@@ -1024,8 +1028,6 @@ public class Multiplexer implements UpHandler {
                     Thread.currentThread().interrupt();
                 }
             }
-
-            // fifo_queue.done(sender, dest);
         }
         catch(InterruptedException e) {
             Thread.currentThread().interrupt();
