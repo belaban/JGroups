@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.6 2007/03/02 13:15:30 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.7 2007/03/05 09:34:47 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
@@ -41,6 +41,22 @@ public class FIFOMessageQueueTest extends TestCase {
         Integer ret=queue.poll(5);
         assertNull(ret);
         assertEquals("queue.size() should be 0, but is " + queue.size(), 0, queue.size());
+    }
+
+
+    public void testPutTwoTakeTwo() throws InterruptedException {
+        queue.put(a1, s1, 1); // 1 is available immediately
+        queue.put(a1, s1, 2); // 2 is queued
+        Integer ret=queue.poll(5);
+        assertNotNull(ret);
+        queue.done(a1, s1); // 2 is made available (moved into 'queue')
+        ret=queue.poll(5);
+        assertNotNull(ret);
+        assertEquals(0, queue.size());
+        queue.put(a1, s1, 3);
+        assertEquals(1, queue.size());
+        ret=queue.poll(5); // 3 should be available because queue for a1/s1 was empty
+        assertNotNull(ret);
     }
 
 

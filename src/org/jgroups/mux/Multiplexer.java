@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.49 2007/03/02 15:06:23 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.50 2007/03/05 09:34:46 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -66,7 +66,7 @@ public class Multiplexer implements UpHandler {
 
 
     static {
-        int min_threads=1, max_threads=10;
+        int min_threads=1, max_threads=4;
         long keep_alive=30000;
         boolean mux_enabled=true; // default is to use the thread pool
         String tmp;
@@ -318,7 +318,6 @@ public class Multiplexer implements UpHandler {
                     log.warn("service " + hdr.id + " not currently running, discarding message " + msg);
                     return null;
                 }
-                // return mux_ch.up(evt);
                 return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
 
             case Event.VIEW_CHANGE:
@@ -456,8 +455,13 @@ public class Multiplexer implements UpHandler {
 
 
     private void passToAllMuxChannels(Event evt) {
-        for(MuxChannel ch: services.values()) {
-            ch.up(evt);
+        String service_name;
+        MuxChannel ch;
+        for(Map.Entry<String,MuxChannel> entry: services.entrySet()) {
+            service_name=entry.getKey();
+            ch=entry.getValue();
+            // these events are directly delivered, don't get added to any queue
+            passToMuxChannel(ch, evt, fifo_queue, null, service_name, false);
         }
     }
 
@@ -1006,23 +1010,26 @@ public class Multiplexer implements UpHandler {
         if(thread_pool == null)
             return ch.up(evt);
 
-        Runnable finalizer=new Runnable() {
-            public void run() {
-                queue.done(sender, dest);
-            }
-        };
+        Task task=new Task(ch, evt, queue, sender, dest, block);
+        ExecuteTask execute_task=new ExecuteTask(fifo_queue);  // takes Task from queue and executes it
 
-        Task task=new Task(ch, evt, finalizer, block);
-        thread_pool.execute(task);
-        if(block) {
-            try {
-                return task.exchanger.exchange(null);
+        try {
+            fifo_queue.put(sender, dest, task);
+            thread_pool.execute(execute_task);
+            if(block) {
+                try {
+                    return task.exchanger.exchange(null);
+                }
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
             }
-            catch(InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
+
+            // fifo_queue.done(sender, dest);
         }
-        
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
         return null;
     }
 
@@ -1041,12 +1048,16 @@ public class Multiplexer implements UpHandler {
         Exchanger<Object> exchanger;
         MuxChannel        channel;
         Event             evt;
-        Runnable          finalizer;
+        FIFOMessageQueue<String,Runnable> queue;
+        Address           sender;
+        String            dest;
 
-        Task(MuxChannel channel, Event evt, Runnable finalizer, boolean result_expected) {
+        Task(MuxChannel channel, Event evt, FIFOMessageQueue<String,Runnable> queue, Address sender, String dest, boolean result_expected) {
             this.channel=channel;
             this.evt=evt;
-            this.finalizer=finalizer;
+            this.queue=queue;
+            this.sender=sender;
+            this.dest=dest;
             if(result_expected)
                 exchanger=new Exchanger<Object>();
         }
@@ -1062,9 +1073,28 @@ public class Multiplexer implements UpHandler {
                 Thread.currentThread().interrupt(); // let the thread pool handle the interrupt - we're done anyway
             }
             finally {
-                if(finalizer != null)
-                    finalizer.run();
+                queue.done(sender, dest);
             }
         }
     }
+
+
+    private static class ExecuteTask implements Runnable {
+        FIFOMessageQueue<String,Runnable> queue;
+
+        public ExecuteTask(FIFOMessageQueue<String,Runnable> queue) {
+            this.queue=queue;
+        }
+
+        public void run() {
+            try {
+                Runnable task=queue.take();
+                task.run();
+            }
+            catch(InterruptedException e) {
+            }
+        }
+    }
+
+
 }
