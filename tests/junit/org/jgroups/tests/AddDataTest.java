@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.8 2007/02/16 12:18:58 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.9 2007/03/06 09:07:27 belaban Exp $
  */
 public class AddDataTest extends TestCase {
     JChannel ch1, ch2;
@@ -137,7 +137,9 @@ public class AddDataTest extends TestCase {
 
         ch1=new JChannel(props);
         ch1.down(new Event(Event.CONFIG, m));
+
         ch2=new JChannel(props);
+        ch2.down(new Event(Event.CONFIG, m));
         ch1.connect("group");
         ch2.connect("group");
         while(ch2.peek(10) != null) {
