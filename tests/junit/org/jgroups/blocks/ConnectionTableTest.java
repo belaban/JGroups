@@ -17,7 +17,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.3 2007/02/16 11:55:43 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.4 2007/03/06 12:31:15 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -64,13 +64,33 @@ public class ConnectionTableTest extends TestCase {
 
 
 
-    public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 7000, 60000, 120000);
+    public void testStopConnectionTableNoSendQueues() throws Exception {
+        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000);
+        ct1.setUseSendQueues(false);
+        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000);
+        ct2.setUseSendQueues(false);
+        _testStop(ct1, ct2);
+    }
+
+    public void testStopConnectionTableWithSendQueues() throws Exception {
+        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000);
         ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000);
         _testStop(ct1, ct2);
     }
 
-    public void testStopConnectionTableNIO() throws Exception {
+
+    public void testStopConnectionTableNIONoSendQueues() throws Exception {
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000, false);
+        ct1.setUseSendQueues(false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000, false);
+        ct2.setUseSendQueues(false);
+        ct1.start();
+        ct2.start();
+        _testStop(ct1, ct2);
+    }
+
+
+    public void testStopConnectionTableNIOWithSendQueues() throws Exception {
         ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000, false);
         ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000, false);
         ct1.start();
@@ -86,16 +106,16 @@ public class ConnectionTableTest extends TestCase {
         table2.send(addr2, data, 0, data.length); // send to self
         table2.send(addr1, data, 0, data.length); // send to other
 
-        assertEquals(2, table1.getNumConnections());
-        assertEquals(2, table2.getNumConnections());
+
+        System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
+
+        assertEquals(1, table1.getNumConnections());
+        assertEquals(1, table2.getNumConnections());
 
         table2.stop();
         table1.stop();
         assertEquals(0, table1.getNumConnections());
         assertEquals(0, table2.getNumConnections());
-
-        // Util.sleep(1000);
-
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
         assertEquals("threads:\n" + dumpThreads(), active_threads, current_active_threads);
@@ -138,11 +158,13 @@ public class ConnectionTableTest extends TestCase {
 
     static class DummyReceiver implements ConnectionTable.Receiver {
         public void receive(Address sender, byte[] data, int offset, int length) {
+            System.out.println("-- received " + length + " bytes from " + sender);
         }
     }
 
     static class DummyReceiverNIO implements ConnectionTableNIO.Receiver {
         public void receive(Address sender, byte[] data, int offset, int length) {
+            System.out.println("-- received " + length + " bytes from " + sender);
         }
     }
 
