@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.49 2006/09/30 16:17:30 belaban Exp $
+// $Id: ConnectionTable.java,v 1.50 2007/03/06 12:31:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -159,7 +159,6 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                conn=new Connection(sock, dest);
                conn.sendLocalAddress(local_addr);
                notifyConnectionOpened(dest);
-               // conns.put(dest, conn);
                addConnection(dest, conn);
                conn.init();
                if(log.isInfoEnabled()) log.info("created socket to " + dest);
@@ -180,7 +179,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
-        if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
+        if(log.isInfoEnabled()) log.info("server socket listening on " + local_addr);
 
         //Roland Kurmann 4/7/2003, build new thread group
         thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
@@ -257,7 +256,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    break;
                }
                if(log.isTraceEnabled())
-                   log.trace("accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
+                   log.trace("[" +local_addr + "] accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
                try {
                    client_sock.setSendBufferSize(send_buf_size);
                }
