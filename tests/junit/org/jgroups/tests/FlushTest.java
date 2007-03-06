@@ -42,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.24 2007/02/14 21:52:49 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.25 2007/03/06 16:37:32 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -314,7 +314,7 @@ public class FlushTest extends ChannelTestBase
  			}
 		 }
          
-         FlushTestReceiver lastMember = (FlushTestReceiver) channels.get(count-1);
+         FlushTestReceiver lastMember =channels.get(count-1);
          List<Address> ignoreList = new ArrayList<Address>();
          ignoreList.add(lastMember.getLocalAddress());
          Message msg = new Message();
@@ -334,7 +334,7 @@ public class FlushTest extends ChannelTestBase
          semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
               
          //kill lsat member
-         FlushTestReceiver randomRecv = (FlushTestReceiver)channels.remove(count-1);  
+         FlushTestReceiver randomRecv =channels.remove(count-1);
          log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
          ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
          randomRecv.cleanup();
