@@ -9,12 +9,13 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.15 2007/01/12 14:19:12 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.16 2007/03/06 17:33:32 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -23,10 +24,10 @@ public class SEQUENCER extends Protocol {
     private long              seqno=0;
 
     /** Map<seqno, Message>: maintains messages forwarded to the coord which which no ack has been received yet */
-    private final Map               forward_table=new TreeMap();
+    private final Map<Long,Message>          forward_table=new TreeMap<Long,Message>();
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
-    private final ConcurrentHashMap received_table=new ConcurrentHashMap();
+    private final ConcurrentMap<Address,Long> received_table=new ConcurrentHashMap<Address,Long>();
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -46,10 +47,10 @@ public class SEQUENCER extends Protocol {
         forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=0L;
     }
 
-    public Map dumpStats() {
-        Map m=super.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> m=super.dumpStats();
         if(m == null)
-            m=new HashMap();
+            m=new HashMap<String,Object>();
         m.put("forwarded", new Long(forwarded_msgs));
         m.put("broadcast", new Long(bcast_msgs));
         m.put("received_forwards", new Long(received_forwards));
@@ -78,7 +79,7 @@ public class SEQUENCER extends Protocol {
         }
     }
 
-
+    
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -168,7 +169,7 @@ public class SEQUENCER extends Protocol {
         }
         // remove left members from received_table
         int size=received_table.size();
-        Set keys=received_table.keySet();
+        Set<Address> keys=received_table.keySet();
         keys.retainAll(members);
         if(keys.size() != size) {
             if(trace)
@@ -184,10 +185,8 @@ public class SEQUENCER extends Protocol {
      * from being inserted until we're done, that's why there's synchronization.
      */
     private void resendMessagesInForwardTable() {
-        Message   msg;
         synchronized(forward_table) {
-            for(Iterator it=forward_table.values().iterator(); it.hasNext();) {
-                msg=(Message)it.next();
+            for(Message msg: forward_table.values()) {
                 msg.setDest(coord);
                 down_prot.down(new Event(Event.MSG, msg));
             }
@@ -236,7 +235,7 @@ public class SEQUENCER extends Protocol {
         }
 
         // if msg was already delivered, discard it
-        Long highest_seqno_seen=(Long)received_table.get(original_sender);
+        Long highest_seqno_seen=received_table.get(original_sender);
         if(highest_seqno_seen != null) {
             if(highest_seqno_seen.longValue() >= msg_seqno) {
                 if(log.isWarnEnabled())
@@ -305,7 +304,6 @@ public class SEQUENCER extends Protocol {
             out.writeByte(type);
             out.writeObject(tag);
         }
-
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
