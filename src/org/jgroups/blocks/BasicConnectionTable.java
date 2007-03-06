@@ -176,6 +176,7 @@ public abstract class BasicConnectionTable {
        synchronized(conns) {
            copy=new HashMap(conns);
        }
+       ret.append("local_addr=" + local_addr).append("\n");
        ret.append("connections (" + copy.size() + "):\n");
        for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
            entry=(Map.Entry)it.next();
@@ -221,6 +222,11 @@ public abstract class BasicConnectionTable {
        if(!running) {
            if(log.isWarnEnabled())
                log.warn("connection table is not running, discarding message to " + dest);
+           return;
+       }
+
+       if(dest.equals(local_addr)) {
+           receive(local_addr, data, offset, length);
            return;
        }
 
@@ -309,8 +315,8 @@ public abstract class BasicConnectionTable {
        long             last_access=System.currentTimeMillis(); // last time a message was sent or received
 
        /** Bounded queue of data to be sent to the peer of this connection */
-       BlockingQueue<byte[]> send_queue=new LinkedBlockingQueue<byte[]>(1000);
-       Sender                sender=new Sender();
+       BlockingQueue<byte[]> send_queue=null;
+       Sender                sender=null;
        boolean               is_running=false;
 
 
@@ -333,6 +339,12 @@ public abstract class BasicConnectionTable {
        Connection(Socket s, Address peer_addr) {
            sock=s;
            this.peer_addr=peer_addr;
+
+           if(use_send_queues) {
+               send_queue=new LinkedBlockingQueue<byte[]>(1000);
+               sender=new Sender();
+           }
+
            try {
                // out=new DataOutputStream(sock.getOutputStream());
                // in=new DataInputStream(sock.getInputStream());
@@ -341,7 +353,8 @@ public abstract class BasicConnectionTable {
                // bela Sept 7 2006
                out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
                in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
-               sender.start();
+               if(sender != null)
+                   sender.start();
            }
            catch(Exception ex) {
                if(log.isErrorEnabled()) log.error("exception is " + ex);
@@ -372,7 +385,7 @@ public abstract class BasicConnectionTable {
                receiverThread.setDaemon(true);
                receiverThread.start();
                if(log.isTraceEnabled())
-                   log.trace("ConnectionTable.Connection.Receiver started");
+                   log.trace("receiver started: " + receiverThread);
            }
 
        }
@@ -381,7 +394,8 @@ public abstract class BasicConnectionTable {
        void destroy() {
            is_running=false;
            closeSocket(); // should terminate handler as well
-           sender.stop();
+           if(sender != null)
+               sender.stop();
            Thread tmp=receiverThread;
            receiverThread=null;
            if(tmp != null) {
@@ -644,12 +658,12 @@ public abstract class BasicConnectionTable {
 
            void start() {
                if(senderThread == null || !senderThread.isAlive()) {
-                   senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender [" + getSockAddress() + "]");
+                   senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender local_addr=" + local_addr + " [" + getSockAddress() + "]");
                    senderThread.setDaemon(true);
                    senderThread.start();
                    is_it_running=true;
                    if(log.isTraceEnabled())
-                       log.trace("ConnectionTable.Connection.Sender thread started");
+                       log.trace("sender thread started: " + senderThread);
                }
            }
 
