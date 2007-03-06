@@ -29,7 +29,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.50 2007/01/12 14:21:46 belaban Exp $
+ * @version $Id: Protocol.java,v 1.51 2007/03/06 17:33:12 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -150,7 +150,7 @@ public abstract class Protocol {
         return null;
     }
 
-    public Map dumpStats() {
+    public Map<String,Object> dumpStats() {
         return null;
     }
 
