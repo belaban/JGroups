@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.16 2007/03/06 17:33:32 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.17 2007/03/06 17:43:40 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -185,11 +185,13 @@ public class SEQUENCER extends Protocol {
      * from being inserted until we're done, that's why there's synchronization.
      */
     private void resendMessagesInForwardTable() {
+        Map<Long,Message> copy;
         synchronized(forward_table) {
-            for(Message msg: forward_table.values()) {
-                msg.setDest(coord);
-                down_prot.down(new Event(Event.MSG, msg));
-            }
+            copy=new TreeMap<Long,Message>(forward_table);
+        }
+        for(Message msg: copy.values()) {
+            msg.setDest(coord);
+            down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
