@@ -18,12 +18,12 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.3 2006/08/08 08:24:50 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.4 2007/03/06 17:43:01 belaban Exp $
  */
 public class SequencerFailoverTest extends TestCase {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
-    final String GROUP="demo-group";
-    final int NUM_MSGS=50;
+    static final String GROUP="demo-group";
+    static final int NUM_MSGS=50;
 
 
     String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
@@ -87,7 +87,6 @@ public class SequencerFailoverTest extends TestCase {
         View view=ch2.getView();
         System.out.println("ch2's view is " + view);
         assertEquals(2, view.getMembers().size());
-        long total=0;
         for(int i=10000; i > 0; i-=1000) {
             Util.sleep(1000);
             System.out.print("sleeping for " + (i/1000) + " seconds\r");
