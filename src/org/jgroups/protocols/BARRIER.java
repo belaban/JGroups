@@ -5,11 +5,12 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.Properties;
+import java.util.Set;
+import java.util.HashSet;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.*;
 
 /**
  * All messages up the stack have to go through a barrier (read lock, RL). By default, the barrier is open.
@@ -19,14 +20,18 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.1 2007/03/07 14:34:46 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.2 2007/03/07 16:49:42 belaban Exp $
  */
 
 public class BARRIER extends Protocol {
     long max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
-    ReadWriteLock barrier=new ReentrantReadWriteLock();
-    Lock rl=barrier.readLock();
-    Lock wl=barrier.writeLock();
+    final Lock lock=new ReentrantLock();
+    final AtomicBoolean barrier_closed=new AtomicBoolean(false);
+
+    /** signals to waiting threads that the barrier is open again */
+    Condition barrier_opened=lock.newCondition();
+    Condition no_msgs_pending=lock.newCondition();
+    Set<Thread> in_flight_threads=new HashSet<Thread>();
     Future barrier_opener_future=null;
     TimeScheduler timer;
 
@@ -52,6 +57,14 @@ public class BARRIER extends Protocol {
         return true;
     }
 
+    public boolean isClosed() {
+        return barrier_closed.get();
+    }
+
+
+    public int getNumberOfInFlightThreads() {
+        return in_flight_threads.size();
+    }
 
     public void init() throws Exception {
         super.init();
@@ -84,12 +97,39 @@ public class BARRIER extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
-                rl.lock();
+                Thread current_thread=Thread.currentThread();
+                in_flight_threads.add(current_thread);
+                if(barrier_closed.get()) {
+                    lock.lock();
+                    try {
+                        while(barrier_closed.get()) {
+                            try {
+                                barrier_opened.await();
+                            }
+                            catch(InterruptedException e) {
+                            }
+                        }
+                    }
+                    finally {
+                        lock.unlock();
+                    }
+                }
+
                 try {
                     return up_prot.up(evt);
                 }
                 finally {
-                    rl.unlock();
+                    lock.lock();
+                    try {
+                        if(in_flight_threads.remove(current_thread) &&
+                                in_flight_threads.isEmpty() &&
+                                barrier_closed.get()) {
+                            no_msgs_pending.signalAll();
+                        }
+                    }
+                    finally {
+                        lock.unlock();
+                    }
                 }
             case Event.CLOSE_BARRIER:
                 closeBarrier();
@@ -103,16 +143,37 @@ public class BARRIER extends Protocol {
 
 
     private void closeBarrier() {
-        wl.lock();
+        lock.lock();
+        try {
+            if(!barrier_closed.compareAndSet(false, true))
+                return; // barrier was already set
+
+            // wait until all pending (= in-progress) msgs have returned
+            in_flight_threads.remove(Thread.currentThread());
+            while(!in_flight_threads.isEmpty()) {
+                try {
+                    no_msgs_pending.await();
+                }
+                catch(InterruptedException e) {
+                }
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+
         if(max_close_time > 0)
             scheduleBarrierOpener();
     }
 
     private void openBarrier() {
+        lock.lock();
         try {
-            wl.unlock();
+            barrier_closed.set(false);
+            barrier_opened.signalAll();
         }
-        catch(Throwable t) {
+        finally {
+            lock.unlock();
         }
         cancelBarrierOpener(); // cancels if running
     }
