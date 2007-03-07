@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.38 2007/02/08 14:35:30 vlada Exp $
+// $Id: Event.java,v 1.39 2007/03/07 11:04:11 belaban Exp $
 
 package org.jgroups;
 
@@ -15,7 +15,7 @@ public class Event {
     public static final int VIEW_CHANGE               =  6;  // arg = View (or MergeView in case of merge)
     public static final int SET_LOCAL_ADDRESS         =  8;
     public static final int SUSPECT                   =  9;  // arg = Address of suspected member
-    public static final int BLOCK                     = 10;    
+    public static final int BLOCK                     = 10;  // arg = null (used by FLUSH)
     public static final int FIND_INITIAL_MBRS         = 12;
     public static final int FIND_INITIAL_MBRS_OK      = 13;  // arg = Vector of PingRsps
     public static final int MERGE                     = 14;  // arg = Vector of Objects
@@ -40,8 +40,8 @@ public class Event {
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-    public static final int SUSPEND					  = 68;  // arg = View|null   
-    public static final int RESUME					  = 70;  // arg = null
+    public static final int SUSPEND					  = 68;  // arg = View|null (used by FLUSH)
+    public static final int RESUME					  = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
     public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
