@@ -15,7 +15,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.8 2007/01/11 16:52:11 belaban Exp $
+ * @version $Id: Simulator.java,v 1.9 2007/03/07 16:16:36 belaban Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -62,7 +62,7 @@ public class Simulator {
     }
 
     public String dumpStats() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(int i=0; i < protStack.length; i++) {
             Protocol p1=protStack[i];
             sb.append(p1.getName()).append(":\n").append(p1.dumpStats()).append("\n");
