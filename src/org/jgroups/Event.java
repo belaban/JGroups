@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.39 2007/03/07 11:04:11 belaban Exp $
+// $Id: Event.java,v 1.40 2007/03/07 14:34:29 belaban Exp $
 
 package org.jgroups;
 
@@ -46,7 +46,9 @@ public class Event {
     public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
     public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
     public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED= 74;//arg=null
-    public static final int UNBLOCK                   =75;  //arg=null (indicate end of flush round)   
+    public static final int UNBLOCK                   = 75;  //arg=null (indicate end of flush round)
+    public static final int CLOSE_BARRIER             = 76;  // arg = null
+    public static final int OPEN_BARRIER              = 77;  // arg = null
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -66,7 +68,7 @@ public class Event {
         this.arg=arg;
     }
 
-    public int getType() {
+    public final int getType() {
         return type;
     }
 
@@ -128,8 +130,9 @@ public class Event {
             case STATE_TRANSFER_OUTPUTSTREAM:return "STATE_TRANSFER_OUTPUTSTREAM";
             case STATE_TRANSFER_INPUTSTREAM_CLOSED: return "STATE_TRANSFER_INPUTSTREAM_CLOSED";
             case STATE_TRANSFER_OUTPUTSTREAM_CLOSED: return "STATE_TRANSFER_OUTPUTSTREAM_CLOSED";
-            case UNBLOCK:                return "UNBLOCK";           
-
+            case UNBLOCK:                return "UNBLOCK";
+            case CLOSE_BARRIER:          return "CLOSE_BARRIER";
+            case OPEN_BARRIER:           return "OPEN_BARRIER";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
