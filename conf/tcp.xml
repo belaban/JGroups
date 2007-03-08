@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.12 2007/01/22 17:18:15 vlada Exp $
+    version: $Id: tcp.xml,v 1.13 2007/03/08 10:02:40 belaban Exp $
 -->
 <config>
     <TCP start_port="7800"
@@ -47,6 +47,7 @@
     <FD_SOCK/>
     <FD timeout="10000" max_tries="5" shun="true"/>
     <VERIFY_SUSPECT timeout="1500"  />
+    <BARRIER />
     <pbcast.NAKACK max_xmit_size="60000"
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="300,600,1200,2400,4800"
