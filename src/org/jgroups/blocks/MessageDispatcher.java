@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.60.2.2 2006/12/04 22:48:05 vlada Exp $
+ * @version $Id: MessageDispatcher.java,v 1.60.2.3 2007/03/08 10:14:45 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -261,6 +261,8 @@ public class MessageDispatcher implements RequestHandler {
 
     public void setConcurrentProcessing(boolean flag) {
         this.concurrent_processing=flag;
+        if(corr != null)
+            corr.setConcurrentProcessing(flag);
     }
 
 
