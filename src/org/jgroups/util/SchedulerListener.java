@@ -1,4 +1,4 @@
-// $Id: SchedulerListener.java,v 1.2 2005/07/17 11:33:58 chrislott Exp $
+// $Id: SchedulerListener.java,v 1.2.10.1 2007/03/08 10:23:20 belaban Exp $
 
 package org.jgroups.util;
 
@@ -7,19 +7,23 @@ package org.jgroups.util;
  */
 public interface SchedulerListener {
 	/**
+	 * @param rt
 	 * @param r
 	 */
-    void started(Runnable   r);
-    /**
-     * @param r
-     */
-    void stopped(Runnable   r);
-    /**
-     * @param r
-     */
-    void suspended(Runnable r);
-    /**
-     * @param r
-     */
-    void resumed(Runnable   r);
+    void started(ReusableThread rt, Runnable   r);
+	/**
+	 * @param rt
+	 * @param r
+	 */
+    void stopped(ReusableThread rt, Runnable   r);
+	/**
+	 * @param rt
+	 * @param r
+	 */
+    void suspended(ReusableThread rt, Runnable r);
+	/**
+	 * @param rt
+	 * @param r
+	 */
+    void resumed(ReusableThread rt, Runnable   r);
 }

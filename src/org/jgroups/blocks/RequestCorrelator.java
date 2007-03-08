@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.30.2.3 2007/02/16 09:12:11 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.30.2.4 2007/03/08 10:19:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -7,9 +7,11 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.ReusableThread;
 import org.jgroups.util.Scheduler;
 import org.jgroups.util.SchedulerListener;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.ThreadLocalListener;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -65,7 +67,7 @@ public class RequestCorrelator {
      * addreses of the senders with the address at the bottom being the
      * address of the first caller
      */
-    protected java.util.Stack call_stack=null;
+    protected ThreadLocal call_stack=new ThreadLocal();
 
     /** Whether or not to perform deadlock detection for synchronous (potentially recursive) group method invocations.
      *  If on, we use a scheduler (handling a priority queue), otherwise we don't and call handleRequest() directly.
@@ -211,8 +213,11 @@ public class RequestCorrelator {
     }
 
 
-    public void setConcurrentProcessing(boolean concurrent_processing) {
-        this.concurrent_processing=concurrent_processing;
+    public void setConcurrentProcessing(boolean flag) {
+        this.concurrent_processing=flag;
+        if(deadlock_detection && scheduler != null) { // scheduler should never be null if deadlock_detection is true
+            scheduler.setConcurrentProcessing(flag);
+        }
     }
 
 
@@ -276,10 +281,14 @@ public class RequestCorrelator {
                     if(log.isErrorEnabled()) log.error("local address is null !");
                     return;
                 }
-                java.util.Stack new_call_stack = (call_stack != null?
-                                                  (java.util.Stack)call_stack.clone():new java.util.Stack());
+                java.util.Stack local_call_stack = (java.util.Stack)call_stack.get();
+                java.util.Stack new_call_stack = local_call_stack != null?
+                                                  (java.util.Stack)local_call_stack.clone():new java.util.Stack();
                 new_call_stack.push(local_addr);
                 hdr.callStack=new_call_stack;
+                if(log.isTraceEnabled()) {
+                    log.trace(new StringBuffer("call stack=").append(hdr.callStack).append(" set for request ").append(hdr.id));
+                }
             }
             addEntry(hdr.id, new RequestEntry(coll));
         }
@@ -888,21 +897,15 @@ public class RequestCorrelator {
      * a <code>Request</code>).
      */
     private class CallStackSetter implements SchedulerListener {
-        public void started(Runnable r)   { setCallStack(r); }
-        public void stopped(Runnable r)   { setCallStack(null); }
-        public void suspended(Runnable r) { setCallStack(null); }
-        public void resumed(Runnable r)   { setCallStack(r); }
+        public void started(ReusableThread rt, Runnable r)   { setCallStack(rt, r); }
+        public void stopped(ReusableThread rt, Runnable r)   {}
+        public void suspended(ReusableThread rt, Runnable r) {}
+        public void resumed(ReusableThread rt, Runnable r)   { setCallStack(rt, r); }
 
-        void setCallStack(Runnable r) {
-            java.util.Stack new_stack;
+        void setCallStack(ReusableThread rt, Runnable r) {
             Message req;
             Header  hdr;
             Object  obj;
-
-            if(r == null) {
-                call_stack=null;
-                return;
-            }
 
             req=((Request)r).req;
             if(req == null)
@@ -916,9 +919,16 @@ public class RequestCorrelator {
             if(hdr.rsp_expected == false)
                 return;
 
-            new_stack=hdr.callStack;
+            final java.util.Stack new_stack=(java.util.Stack)hdr.callStack.clone();
             if(new_stack != null)
-                call_stack=(java.util.Stack)new_stack.clone();
+                rt.assignThreadLocalListener(new ThreadLocalListener() {
+                    public void setThreadLocal() {
+                        call_stack.set(new_stack);
+                    }
+                    public void resetThreadLocal() {
+                        call_stack.remove();
+                    }
+                });
         }
     }
 

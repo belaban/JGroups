@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.13 2006/09/11 14:09:51 belaban Exp $
+// $Id: Scheduler.java,v 1.13.2.1 2007/03/08 10:23:05 belaban Exp $
 
 package org.jgroups.util;
 
@@ -84,7 +84,7 @@ public class Scheduler implements Runnable {
                 if(current_task.suspended) {
                     current_task.suspended=false;
                     current_task.thread.resume();
-                    if(listener != null) listener.resumed(current_task.target);
+                    if(listener != null) listener.resumed(current_task.thread, current_task.target);
                 }
                 else {
                     if(current_task.thread == null) {
@@ -98,7 +98,7 @@ public class Scheduler implements Runnable {
                     }
 
                     // if we get here, current_task.thread and current_task.target are guaranteed to be non-null
-                    if(listener != null) listener.started(current_task.target);
+                    if(listener != null) listener.started(current_task.thread, current_task.target);
                     if(current_task.thread.assignTask(current_task.target) == false)
                         continue;
                 }
@@ -118,7 +118,7 @@ public class Scheduler implements Runnable {
                         while(!current_task.thread.done() && !current_task.thread.suspended)
                             current_task.thread.wait();
                     }
-                    if(listener != null) listener.stopped(current_task.target);
+                    if(listener != null) listener.stopped(current_task.thread, current_task.target);
                 }
                 queue.removeElement(current_task);
             }
@@ -126,7 +126,7 @@ public class Scheduler implements Runnable {
                 if(sched_thread == null || queue.closed()) break;
                 if(current_task.thread != null) {
                     current_task.thread.suspend();
-                    if(listener != null) listener.suspended(current_task.target);
+                    if(listener != null) listener.suspended(current_task.thread, current_task.target);
                     current_task.suspended=true;
                 }
                 Thread.interrupted(); // clears the interrupt-flag
