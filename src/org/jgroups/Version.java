@@ -4,13 +4,15 @@
 package org.jgroups;
 
 /**
+ * @author Bela Ban
+ * @version $Id: Version.java,v 1.47 2007/03/08 12:15:47 belaban Exp $
  * Holds version information for JGroups.
  */
 public class Version {
 	
     public static final String description="2.5.0 alpha-2";
     public static final short version=250;
-    public static final String cvs="$Id: Version.java,v 1.46 2007/02/16 12:22:06 belaban Exp $";
+    public static final String cvs="$Id: Version.java,v 1.47 2007/03/08 12:15:47 belaban Exp $";
 
     /**
      * Prints the value of the description and cvs fields to System.out.
