@@ -1,4 +1,4 @@
-// $Id: ReusableThread.java,v 1.7 2005/01/16 01:04:52 belaban Exp $
+// $Id: ReusableThread.java,v 1.7.16.1 2007/03/08 10:22:05 belaban Exp $
 
 package org.jgroups.util;
 
@@ -30,10 +30,11 @@ import org.apache.commons.logging.LogFactory;
 public class ReusableThread implements Runnable {
     volatile Thread thread=null;  // thread that works on the task
     Runnable task=null;    // task assigned to thread
+    private ThreadLocalListener tl_listener=null;
     String thread_name="ReusableThread";
     volatile boolean suspended=false;
     protected static final Log log=LogFactory.getLog(ReusableThread.class);
-    final long TASK_JOIN_TIME=3000; // wait 3 secs for an interrupted thread to terminate
+    static final long TASK_JOIN_TIME=3000; // wait 3 secs for an interrupted thread to terminate
 
 
     public ReusableThread() {
@@ -125,10 +126,9 @@ public class ReusableThread implements Runnable {
     public void suspend() {
         synchronized(this) {
             if(log.isTraceEnabled()) log.trace("suspended=" + suspended + ", task=" + printObj(task));
-            if(suspended)
-                return; // already suspended
-            else
+            if(!suspended) {
                 suspended=true;
+            }
         }
     }
 
@@ -160,10 +160,21 @@ public class ReusableThread implements Runnable {
             else {
                 if(log.isErrorEnabled())
                     log.error("already working on a thread: current_task=" + task + ", new task=" + t +
-                            ", thread=" + thread + ", is alive=" + (thread != null ? "" + thread.isAlive() : "null"));
+                            ", thread=" + thread + ", is alive=" + (thread != null ? String.valueOf(thread.isAlive()) : "null"));
                 return false;
             }
         }
+    }
+
+    /**
+     * Assigns a ThreadLocalListener to the current ReusableThread. The ThreadLocalListener
+     * sets ThreadLocal's values for the lifetime of the task for the thread that is used
+     * to run the task. The ThreadLocalListener will reset values upon the task returning
+     * and at this point will be deleted.
+     */
+    public void assignThreadLocalListener(ThreadLocalListener tl_listener)
+    {
+        this.tl_listener = tl_listener;
     }
 
 
@@ -215,12 +226,21 @@ public class ReusableThread implements Runnable {
             if(thread == null) return; // we need to terminate
 
             if(task != null) {
+                if(log.isTraceEnabled()) log.trace("setting ThreadLocal(s)");
+                if (tl_listener  != null)
+                    tl_listener.setThreadLocal();
                 if(log.isTraceEnabled()) log.trace("running task");
                 try {
                     task.run(); //here we are actually running the task
                 }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled()) log.error("failed running task", ex);
+                }
+                finally {
+                    if(log.isTraceEnabled()) log.trace("resetting ThreadLocal(s)");
+                    if (tl_listener  != null)
+                        tl_listener.resetThreadLocal();
+                    tl_listener = null;
                 }
                 if(log.isTraceEnabled()) log.trace("task completed");
             }

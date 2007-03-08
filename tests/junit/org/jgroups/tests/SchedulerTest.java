@@ -1,10 +1,11 @@
-// $Id: SchedulerTest.java,v 1.5 2004/07/05 14:15:04 belaban Exp $
+// $Id: SchedulerTest.java,v 1.5.20.1 2007/03/08 10:23:26 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
 import org.jgroups.util.Scheduler;
 import org.jgroups.util.SchedulerListener;
+import org.jgroups.util.ReusableThread;
 import org.jgroups.util.Util;
 
 
@@ -32,19 +33,19 @@ public class SchedulerTest extends TestCase {
 
 
     static class Listener implements SchedulerListener {
-        public void started(Runnable t) {
+        public void started(ReusableThread rt, Runnable t) {
             System.out.println("--> Started: " + t);
         }
 
-        public void stopped(Runnable t) {
+        public void stopped(ReusableThread rt, Runnable t) {
             System.out.println("--> Stopped: " + t);
         }
 
-        public void suspended(Runnable t) {
+        public void suspended(ReusableThread rt, Runnable t) {
             System.out.println("--> Suspended: " + t);
         }
 
-        public void resumed(Runnable t) {
+        public void resumed(ReusableThread rt, Runnable t) {
             System.out.println("--> Resumed: " + t);
         }
     }
