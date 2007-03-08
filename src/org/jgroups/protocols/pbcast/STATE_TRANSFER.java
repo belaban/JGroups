@@ -18,7 +18,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.61 2007/03/06 09:09:09 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.62 2007/03/08 08:33:20 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -233,13 +233,20 @@ public class STATE_TRANSFER extends Protocol {
 		return !flushProtocolInStack;
 	}
 
-    private void requestApplicationStates(Address requester) {
+    private void requestApplicationStates(Address requester, boolean open_barrier) {
         Set appl_ids=new HashSet(state_requesters.keySet());
         String id;
+
+        List<StateTransferInfo> responses=new LinkedList<StateTransferInfo>();
         for(Iterator it=appl_ids.iterator(); it.hasNext();) {
             id=(String)it.next();
             StateTransferInfo info=new StateTransferInfo(requester, id, 0L, null);
             StateTransferInfo rsp=(StateTransferInfo)up_prot.up(new Event(Event.GET_APPLSTATE, info));
+            responses.add(rsp);
+        }
+        if(open_barrier)
+            down_prot.down(new Event(Event.OPEN_BARRIER));
+        for(StateTransferInfo rsp: responses) {
             sendApplicationStateResponse(rsp);
         }
     }
@@ -366,13 +373,21 @@ public class STATE_TRANSFER extends Protocol {
             requesters.add(sender);
 
             if(!isDigestNeeded()) { // state transfer is in progress, digest was already requested
-                requestApplicationStates(sender);
+                requestApplicationStates(sender, false);
             }
-            else if(empty){
+            else if(empty) {
+                down_prot.down(new Event(Event.CLOSE_BARRIER));
                 digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
-                requestApplicationStates(sender);
+                try {
+                    requestApplicationStates(sender, true);
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("failed getting state from application", t);
+                    down_prot.down(new Event(Event.OPEN_BARRIER));
+                }
             }
         }
     }
