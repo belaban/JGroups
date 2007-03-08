@@ -512,7 +512,7 @@ public abstract class BasicConnectionTable {
                // then read the version
                version=in.readShort();
 
-               if(Version.compareTo(version) == false) {
+               if(Version.isSame(version) == false) {
                    if(log.isWarnEnabled())
                        log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
                               append(" has different version (").append(version).append(") from ours (").
