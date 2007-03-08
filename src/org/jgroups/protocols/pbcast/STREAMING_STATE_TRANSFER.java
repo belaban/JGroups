@@ -1,47 +1,19 @@
 package org.jgroups.protocols.pbcast;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.Vector;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadFactory;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Event;
-import org.jgroups.Global;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+
+import java.io.*;
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -536,7 +508,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       String id = hdr.state_id;
       synchronized (state_requesters)
       {
-         boolean empty = state_requesters.isEmpty();
          Set requesters = (Set) state_requesters.get(id);
          if (requesters == null)
          {
@@ -544,21 +515,20 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          }
          requesters.add(sender);
          state_requesters.put(id, requesters);
-
-         if (!isDigestNeeded())
-         {
-            respondToStateRequester();
-         }
-         else if (empty)
-         {
-            digest = null;
-            if (log.isDebugEnabled())
-               log.debug("passing down GET_DIGEST");
-            down_prot.down(new Event(Event.GET_DIGEST));
-         }
       }
+
+       if(isDigestNeeded())
+       {
+           digest = null;
+           if (log.isDebugEnabled())
+               log.debug("passing down GET_DIGEST");
+           digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
+       }
+       respondToStateRequester();
    }
 
+
+    
    void handleStateRsp(StateHeader hdr)
    {
       Digest tmp_digest = hdr.my_digest;
