@@ -512,11 +512,11 @@ public abstract class BasicConnectionTable {
                // then read the version
                version=in.readShort();
 
-               if(Version.isSame(version) == false) {
+               if(Version.isBinaryCompatible(version) == false) {
                    if(log.isWarnEnabled())
                        log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
-                              append(" has different version (").append(version).append(") from ours (").
-                                append(Version.version).append("). This may cause problems"));
+                              append(" has different version (").append(Version.print(version)).append(") from ours (").
+                                append(Version.printVersion()).append("). This may cause problems"));
                }
                client_peer_addr=new IpAddress();
                client_peer_addr.readFrom(in);

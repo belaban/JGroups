@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.123 2007/03/08 16:28:06 belaban Exp $
+ * @version $Id: TP.java,v 1.124 2007/03/08 16:49:40 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1074,10 +1074,10 @@ public abstract class TP extends Protocol {
             synchronized(in_stream) {
                 in_stream.setData(data, offset, length);
                 version=dis.readShort();
-                if(Version.isSame(version) == false) {
+                if(Version.isBinaryCompatible(version) == false) {
                     if(warn) {
                         StringBuffer sb=new StringBuffer();
-                        sb.append("packet from ").append(sender).append(" has different version (").append(version);
+                        sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
                             sb.append("Packet is discarded");
@@ -1533,10 +1533,10 @@ public abstract class TP extends Protocol {
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
                 dis=new DataInputStream(in_stream);
                 version=dis.readShort();
-                if(Version.isSame(version) == false) {
+                if(Version.isBinaryCompatible(version) == false) {
                     if(warn) {
                         StringBuffer sb=new StringBuffer();
-                        sb.append("packet from ").append(sender).append(" has different version (").append(version);
+                        sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
                             sb.append("Packet is discarded");
