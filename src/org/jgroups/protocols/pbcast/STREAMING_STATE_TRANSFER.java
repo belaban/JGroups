@@ -357,7 +357,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       return !flushProtocolInStack;
    }
 
-   private void respondToStateRequester()
+   private void respondToStateRequester(boolean open_barrier)
    {
 
       // setup the plumbing if needed
@@ -368,12 +368,15 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          new Thread(Util.getGlobalThreadGroup(), spawner, "StateProviderThreadSpawner").start();
       }
 
+       List<Message> responses=new LinkedList<Message>();
       synchronized (state_requesters)
       {
          if (state_requesters.isEmpty())
          {
             if (warn)
                log.warn("Should be responding to state requester, but there are no requesters !");
+             if(open_barrier)
+                 down_prot.down(new Event(Event.OPEN_BARRIER));
             return;
          }
 
@@ -392,6 +395,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          if (log.isDebugEnabled())
             log.debug("Iterating state requesters " + state_requesters);
 
+
          for (Iterator it = state_requesters.keySet().iterator(); it.hasNext();)
          {
             String tmp_state_id = (String) it.next();
@@ -403,18 +407,25 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                StateHeader hdr = new StateHeader(StateHeader.STATE_RSP, local_addr, spawner.getServerSocketAddress(),
                      digest, tmp_state_id);
                state_rsp.putHeader(NAME, hdr);
-
-               if (log.isDebugEnabled())
-                  log.debug("Responding to state requester " + requester + " with address "
-                        + spawner.getServerSocketAddress() + " and digest " + digest);
-               down_prot.down(new Event(Event.MSG, state_rsp));
-               if (stats)
-               {
-                  num_state_reqs++;
-               }
+                responses.add(state_rsp);
             }
          }
       }
+
+       if(open_barrier)
+           down_prot.down(new Event(Event.OPEN_BARRIER));
+
+       for(Message msg: responses) {
+           if (log.isDebugEnabled())
+               log.debug("Responding to state requester " + msg.getDest() + " with address "
+                       + spawner.getServerSocketAddress() + " and digest " + digest);
+           down_prot.down(new Event(Event.MSG, msg));
+           if (stats)
+           {
+               num_state_reqs++;
+           }
+       }
+
    }
 
 
@@ -517,14 +528,23 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          state_requesters.put(id, requesters);
       }
 
-       if(isDigestNeeded())
+       if(isDigestNeeded()) // FLUSH protocol is not present
        {
+           down_prot.down(new Event(Event.CLOSE_BARRIER)); // drain (and block) incoming msgs until after state has been returned
            digest = null;
            if (log.isDebugEnabled())
                log.debug("passing down GET_DIGEST");
            digest=(Digest)down_prot.down(Event.GET_DIGEST_EVT);
        }
-       respondToStateRequester();
+       try {
+           respondToStateRequester(isDigestNeeded());
+       }
+       catch(Throwable t) {
+           if(log.isErrorEnabled())
+               log.error("failed fetching state from application", t);
+           if(isDigestNeeded())
+               down_prot.down(new Event(Event.OPEN_BARRIER));
+       }
    }
 
 
