@@ -18,7 +18,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.62 2007/03/08 08:33:20 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.63 2007/03/08 09:41:50 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -376,17 +376,21 @@ public class STATE_TRANSFER extends Protocol {
                 requestApplicationStates(sender, false);
             }
             else if(empty) {
-                down_prot.down(new Event(Event.CLOSE_BARRIER));
+                if(!flushProtocolInStack) {
+                    down_prot.down(new Event(Event.CLOSE_BARRIER));
+                }
                 digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
                 try {
-                    requestApplicationStates(sender, true);
+                    requestApplicationStates(sender, !flushProtocolInStack);
                 }
                 catch(Throwable t) {
                     if(log.isErrorEnabled())
                         log.error("failed getting state from application", t);
-                    down_prot.down(new Event(Event.OPEN_BARRIER));
+                    if(!flushProtocolInStack) {
+                        down_prot.down(new Event(Event.OPEN_BARRIER));
+                    }
                 }
             }
         }
