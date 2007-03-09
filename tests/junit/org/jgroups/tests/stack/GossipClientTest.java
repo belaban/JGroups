@@ -1,4 +1,4 @@
-// $Id: GossipClientTest.java,v 1.2 2006/10/11 14:33:53 belaban Exp $
+// $Id: GossipClientTest.java,v 1.2.2.1 2007/03/09 07:49:19 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -17,7 +17,7 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.2.2.1 $
  * @since 2.2.1
  */
 public class GossipClientTest extends TestCase {
@@ -103,7 +103,7 @@ public class GossipClientTest extends TestCase {
 
         // send a second GET after more than EXPIRY_TIME ms
         mbrs=client.getMembers(groupName);
-        assertTrue(mbrs == null || mbrs.size() == 0);
+        assertTrue("mbrs=" + mbrs + ", should be empty", mbrs == null || mbrs.isEmpty());
     }
 
     public static Test suite() {
