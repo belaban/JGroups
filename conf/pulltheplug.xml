@@ -15,8 +15,7 @@
          max_bundle_size="64000"
          max_bundle_timeout="30"
          use_incoming_packet_handler="true" 
-         use_outgoing_packet_handler="false" 
-         ip_ttl="2" 
+         ip_ttl="2"
          enable_bundling="true"/>
     <PING timeout="2000"
             num_initial_members="3"/>
