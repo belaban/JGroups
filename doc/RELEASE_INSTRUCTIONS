@@ -1,8 +1,9 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.8 2006/11/01 09:28:33 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.9 2007/03/09 20:31:11 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
 
+- Do a cvs update -dP and commit all pending changes
 - Run all unit tests
 - Run the manual tests in doc/tests/ManualTests.txt
 - Run the performance tests to see whether performance is about the same
