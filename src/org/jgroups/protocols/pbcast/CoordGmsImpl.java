@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.63 2007/02/08 14:35:30 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.64 2007/03/09 20:30:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -484,6 +484,8 @@ public class CoordGmsImpl extends GmsImpl {
         Message m=new Message(dest, null, null);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
         m.putHeader(gms.getName(), hdr);
+        if(!gms.members.contains(dest))
+            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, dest));
         gms.getDownProtocol().down(new Event(Event.MSG, m));
     }
 
