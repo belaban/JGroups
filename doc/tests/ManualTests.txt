@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.9 2006/10/30 12:28:35 belaban Exp $
+$Id: ManualTests.txt,v 1.9.2.1 2007/03/09 08:11:38 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -50,6 +50,9 @@ Test 3
   --> B should be suspected
   --> A should show 1 member
 (run with FD_SOCK first, then with FD only)
+With FD, there will be warnings like 
+"failed to collect all ACKs (3) for view [192.168.5.2:4275|9]"; these
+are normal (expected) warning
 
 
 Test 4
