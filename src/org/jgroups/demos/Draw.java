@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.42 2007/03/02 14:15:20 belaban Exp $
+// $Id: Draw.java,v 1.43 2007/03/09 09:34:12 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -518,6 +518,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             try {
                 byte[] buf=Util.streamableToByteBuffer(comm);
                 channel.send(new Message(null, null, buf));
+                Thread.yield();
             }
             catch(Exception ex) {
                 System.err.println(ex);
