@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.12 2007/01/12 14:21:50 belaban Exp $
+// $Id: NakackTest.java,v 1.13 2007/03/09 21:07:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -146,7 +146,8 @@ public class NakackTest extends TestCase {
             catch(Exception ex) {
                 log.error("NakackTest.CheckNoGaps.up(): " + ex);
             }
-            return up_prot.up(evt);
+            // return up_prot.up(evt);
+            return null;
         }
 
 
