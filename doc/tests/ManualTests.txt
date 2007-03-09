@@ -1,4 +1,4 @@
-$Id: ManualTests.txt,v 1.9.2.1 2007/03/09 08:11:38 belaban Exp $
+$Id: ManualTests.txt,v 1.9.2.2 2007/03/09 09:14:14 belaban Exp $
 
 
 Group Membership Service (GMS) Protocol
@@ -50,9 +50,6 @@ Test 3
   --> B should be suspected
   --> A should show 1 member
 (run with FD_SOCK first, then with FD only)
-With FD, there will be warnings like 
-"failed to collect all ACKs (3) for view [192.168.5.2:4275|9]"; these
-are normal (expected) warning
 
 
 Test 4
@@ -61,6 +58,9 @@ Test 4
 - Test 3
 - Repeatedly start B and kill B
   --> A should always show the correct mbrship
+With FD, there will be warnings like 
+"failed to collect all ACKs (3) for view [192.168.5.2:4275|9]"; these
+are normal (expected) warning
 
 
 
@@ -186,6 +186,8 @@ Pull-the-plug scenarios
 - Run Draw with udp.xml, tcp.xml and tcp-nio.xml, those configurations may need to be adjusted to use
   the IP addresses of the 2 nodes
 - Make sure loopback=true in UDP/TCP/TCP_NIO if running on Windows
+- Reduce the min and max intervals in MERGE2, otherwise we have to
+  wait too long
 - 2 nodes, node 1 and node 2, connected to a switch
 
 
