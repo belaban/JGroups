@@ -11,12 +11,13 @@ import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.1 2007/03/10 10:19:29 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.2 2007/03/10 10:23:27 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends TestCase {
     MessageDispatcher disp, disp2;
@@ -45,6 +46,7 @@ public class MessageDispatcherUnitTest extends TestCase {
             disp2.stop();
             ch2.close();
         }
+        Util.sleep(500);
     }
 
 
@@ -74,16 +76,19 @@ public class MessageDispatcherUnitTest extends TestCase {
     }
 
 
-    public void testNullMessage() throws ChannelException {
+    public void testNullMessageToAll() throws ChannelException {
         disp.setRequestHandler(new MyHandler(null));
 
         ch2=new JChannel(props);
+        long stop,start=System.currentTimeMillis();
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
+        stop=System.currentTimeMillis();
         ch2.connect("x");
         assertEquals(2, ch2.getView().size());
 
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         System.out.println("rsps:\n" + rsps);
+        System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
         assertEquals(2, rsps.size());
         Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
