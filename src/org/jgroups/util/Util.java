@@ -25,7 +25,7 @@ import java.security.MessageDigest;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.116 2007/03/08 13:23:59 belaban Exp $
+ * @version $Id: Util.java,v 1.117 2007/03/12 10:14:39 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1375,9 +1375,9 @@ public class Util {
      * Returns all members that left between 2 views. All members that are element of old_mbrs but not element of
      * new_mbrs are returned.
      */
-    public static Vector determineLeftMembers(Vector old_mbrs, Vector new_mbrs) {
-        Vector retval=new Vector();
-        Object mbr;
+    public static Vector<Address> determineLeftMembers(Vector<Address> old_mbrs, Vector<Address> new_mbrs) {
+        Vector<Address> retval=new Vector<Address>();
+        Address mbr;
 
         if(old_mbrs == null || new_mbrs == null)
             return retval;
@@ -2212,8 +2212,8 @@ public class Util {
      * @return the String representation
      */
     private static String getString(byte[] bytes) {
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < bytes.length; i++) {
+         StringBuilder sb=new StringBuilder();
+         for (int i = 0; i < bytes.length; i++) {
             byte b = bytes[i];
             sb.append(0x00FF & b);
             if (i + 1 < bytes.length) {
