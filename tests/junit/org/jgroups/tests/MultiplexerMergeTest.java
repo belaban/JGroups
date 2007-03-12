@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
 /**
  * Tests merging with a multiplexer channel
  * @author Jerry Gauthier
- * @version $Id: MultiplexerMergeTest.java,v 1.1.2.1 2007/02/12 18:42:22 vlada Exp $
+ * @version $Id: MultiplexerMergeTest.java,v 1.1.2.2 2007/03/12 14:52:18 vlada Exp $
  */
 public class MultiplexerMergeTest extends TestCase {
 	// stack file must be on classpath
@@ -146,6 +146,12 @@ public class MultiplexerMergeTest extends TestCase {
         
         public void setState(InputStream is) {
             m_state = getInputStreamBytes(is);
+            try{
+            	is.close();
+            }
+            catch (IOException e) {
+                System.out.println(m_name + " MultiplexerMergeTest.setState(InputStream): " + e.toString());
+            }
             System.out.println(m_name + " MultiplexerMergeTest.setState(InputStream) - setting stream state = " + new String(m_state));
         }
         
