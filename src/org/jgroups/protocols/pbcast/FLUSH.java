@@ -766,7 +766,7 @@ public class FLUSH extends Protocol
       
       if (flushCompleted)
       {         
-         List<Digest> gaps = findVirtualSynchronyGaps();
+         /*List<Digest> gaps = findVirtualSynchronyGaps();
          if(!gaps.isEmpty())
          {
             requestRetransmissions(gaps);
@@ -783,11 +783,11 @@ public class FLUSH extends Protocol
             down_prot.down(new Event(Event.MSG, msg));            
          }
          else
-         {           
+         { */          
             flush_promise.setResult(Boolean.TRUE);          
             if (log.isDebugEnabled())
-               log.debug("All FLUSH_COMPLETED received at " + localAddress + " sent SUSPEND_OK down/up");   
-         }                             
+               log.debug("All FLUSH_COMPLETED received at " + localAddress);   
+         //}                             
       }
    }
 
