@@ -331,7 +331,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             return null;        
          case Event.CONFIG :
             Map config = (Map) evt.getArg();                     
-            if((config != null && !config.containsKey("flush_suported")))
+            if(config != null && config.containsKey("flush_supported"))
             {                             
             	flushProtocolInStack = true;                           	                 
             }
