@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.51 2007/03/05 13:33:42 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.52 2007/03/12 13:44:25 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -923,9 +923,10 @@ public class Multiplexer implements UpHandler {
         for(Iterator it=modified_services.iterator(); it.hasNext();) {
             service=(String)it.next();
             MuxChannel ch=services.get(service);
-            my_services=service_state.get(service);
-            MergeView v=(MergeView)view.clone();
-            v.getMembers().retainAll(my_services);
+            my_services=service_state.get(service);           
+            Vector membersCopy = new Vector(view.getMembers());
+            membersCopy.retainAll(my_services);
+            MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());
             Event evt=new Event(Event.VIEW_CHANGE, v);
             // ch.up(evt);
             passToMuxChannel(ch, evt, fifo_queue, null, service, false);
