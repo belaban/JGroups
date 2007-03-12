@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.74 2007/03/09 20:33:05 belaban Exp $
+// $Id: UNICAST.java,v 1.75 2007/03/12 10:18:54 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -35,7 +35,7 @@ import java.util.*;
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
-    private final HashMap         connections=new HashMap(11);   // Object (sender or receiver) -- Entries
+    private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
     private long[]                timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     private Address               local_addr=null;
     private TimeScheduler         timer=null;                    // used for retransmissions (passed to AckSenderWindow)
@@ -67,9 +67,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public String getMembers() {return members != null? members.toString() : "[]";}
     public String printConnections() {
         StringBuilder sb=new StringBuilder();
-        Map.Entry entry;
-        for(Iterator it=connections.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Map.Entry<Address,Entry> entry: connections.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
@@ -107,12 +105,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
     public int getNumberOfUnackedMessages() {
         int num=0;
-        Entry entry;
         synchronized(connections) {
-            for(Iterator it=connections.values().iterator(); it.hasNext();) {
-                entry=(Entry)it.next();
+            for(Entry entry: connections.values()) {
                 if(entry.sent_msgs != null)
-                num+=entry.sent_msgs.size();
+                    num+=entry.sent_msgs.size();
             }
         }
         return num;
@@ -123,8 +119,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         num_xmit_requests_received=0;
     }
 
-    public Map dumpStats() {
-        Map m=new HashMap();
+
+    public Map<String, Object> dumpStats() {
+        Map<String,Object> m=new HashMap<String,Object>();
         m.put("num_msgs_sent", new Long(num_msgs_sent));
         m.put("num_msgs_received", new Long(num_msgs_received));
         m.put("num_bytes_sent", new Long(num_bytes_sent));
@@ -274,7 +271,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
                 Entry entry;
                 synchronized(connections) {
-                    entry=(Entry)connections.get(dst);
+                    entry=connections.get(dst);
                     if(entry == null) {
                         entry=new Entry();
                         connections.put(dst, entry);
@@ -331,8 +328,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 return null; // we already passed the msg down
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
-                Vector new_members=((View)evt.getArg()).getMembers();
-                Vector left_members;
+                Vector<Address> new_members=((View)evt.getArg()).getMembers();
+                Vector<Address> left_members;
                 synchronized(members) {
                     left_members=Util.determineLeftMembers(members, new_members);
                     members.clear();
@@ -344,7 +341,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // See DESIGN for details
                 boolean rc;
                 if(use_gms && !left_members.isEmpty()) {
-                    Object mbr;
+                    Address mbr;
                     for(int i=0; i < left_members.size(); i++) {
                         mbr=left_members.elementAt(i);
                         rc=removeConnection(mbr); // adds to previous_members
@@ -395,11 +392,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** Removes and resets from connection table (which is already locked). Returns true if member was found, otherwise false */
-    private boolean removeConnection(Object mbr) {
+    private boolean removeConnection(Address mbr) {
         Entry entry;
 
         synchronized(connections) {
-            entry=(Entry)connections.remove(mbr);
+            entry=connections.remove(mbr);
             if(!previous_members.contains(mbr))
                 previous_members.add(mbr);
         }
@@ -415,11 +412,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     private void removeAllConnections() {
-        Entry entry;
-
         synchronized(connections) {
-            for(Iterator it=connections.values().iterator(); it.hasNext();) {
-                entry=(Entry)it.next();
+            for(Entry entry: connections.values()) {
                 entry.reset();
             }
             connections.clear();
@@ -464,7 +458,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * add message. Set e.received_msgs to the new window. Else just add the message.
      * @return boolean True if we can send an ack, false otherwise
      */
-    private boolean handleDataReceived(Object sender, long seqno, Message msg) {
+    private boolean handleDataReceived(Address sender, long seqno, Message msg) {
         if(trace)
             log.trace(new StringBuffer().append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno));
 
@@ -482,7 +476,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         Entry    entry;
         synchronized(connections) {
-            entry=(Entry)connections.get(sender);
+            entry=connections.get(sender);
             if(entry == null) {
                 entry=new Entry();
                 connections.put(sender, entry);
@@ -526,7 +520,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     /** Add the ACK to hashtable.sender.sent_msgs */
-    private void handleAckReceived(Object sender, long seqno) {
+    private void handleAckReceived(Address sender, long seqno) {
         Entry           entry;
         AckSenderWindow win;
 
@@ -534,7 +528,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             log.trace(new StringBuffer().append(local_addr).append(" <-- ACK(").append(sender).
                       append(": #").append(seqno).append(')'));
         synchronized(connections) {
-            entry=(Entry)connections.get(sender);
+            entry=connections.get(sender);
         }
         if(entry == null || entry.sent_msgs == null)
             return;
@@ -599,7 +593,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             out.writeByte(type);
             out.writeLong(seqno);
         }
-
 
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
