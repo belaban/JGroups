@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.64 2007/03/09 20:30:52 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.65 2007/03/12 09:04:35 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -190,7 +190,6 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
         digest=gms.getDigest();
         view=new View(gms.view_id.copy(), gms.members.getMembers());
-        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, sender));
         sendMergeResponse(sender, view, digest);
     }
 
@@ -717,6 +716,7 @@ public class CoordGmsImpl extends GmsImpl {
         hdr.my_digest=digest;
         msg.putHeader(gms.getName(), hdr);
         if(log.isDebugEnabled()) log.debug("response=" + hdr);
+        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, sender));
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
