@@ -1,10 +1,9 @@
-// $Id: MergeView.java,v 1.7 2006/09/09 13:21:55 belaban Exp $
+// $Id: MergeView.java,v 1.8 2007/03/12 10:51:46 belaban Exp $
 
 
 package org.jgroups;
 
 import java.io.*;
-import java.util.Iterator;
 import java.util.Vector;
 
 
@@ -20,8 +19,7 @@ import java.util.Vector;
  * V2:(p,q,r) and V2:(s,t).
  */
 public class MergeView extends View {
-    /** Vector<View> */
-    protected Vector subgroups=null; // subgroups that merged into this single view (a list of Views)
+    protected Vector<View> subgroups=null; // subgroups that merged into this single view (a list of Views)
 
 
     /**
@@ -38,7 +36,7 @@ public class MergeView extends View {
      * @param members   Contains a list of all the members in the view, can be empty but not null.
      * @param subgroups A list of Views representing the former subgroups
      */
-    public MergeView(ViewId vid, Vector members, Vector subgroups) {
+    public MergeView(ViewId vid, Vector<Address> members, Vector<View> subgroups) {
         super(vid, members);
         this.subgroups=subgroups;
     }
@@ -52,13 +50,13 @@ public class MergeView extends View {
      * @param members   Contains a list of all the members in the view, can be empty but not null.
      * @param subgroups A list of Views representing the former subgroups
      */
-    public MergeView(Address creator, long id, Vector members, Vector subgroups) {
+    public MergeView(Address creator, long id, Vector<Address> members, Vector<View> subgroups) {
         super(creator, id, members);
         this.subgroups=subgroups;
     }
 
 
-    public Vector getSubgroups() {
+    public Vector<View> getSubgroups() {
         return subgroups;
     }
 
@@ -70,14 +68,14 @@ public class MergeView extends View {
      */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector members2=members != null ? (Vector)members.clone() : null;
-        Vector subgroups2=subgroups != null ? (Vector)subgroups.clone() : null;
+        Vector<Address> members2=members != null ? (Vector<Address>)members.clone() : null;
+        Vector<View> subgroups2=subgroups != null ? (Vector<View>)subgroups.clone() : null;
         return new MergeView(vid2, members2, subgroups2);
     }
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("MergeView::").append(super.toString()).append(", subgroups=").append(subgroups);
         return sb.toString();
     }
@@ -91,7 +89,7 @@ public class MergeView extends View {
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         super.readExternal(in);
-        subgroups=(Vector)in.readObject();
+        subgroups=(Vector<View>)in.readObject();
     }
 
 
@@ -103,9 +101,7 @@ public class MergeView extends View {
         out.writeShort(len);
         if(len == 0)
             return;
-        View v;
-        for(Iterator it=subgroups.iterator(); it.hasNext();) {
-            v=(View)it.next();
+        for(View v: subgroups) {
             if(v instanceof MergeView)
                 out.writeBoolean(true);
             else
@@ -119,7 +115,7 @@ public class MergeView extends View {
         short len=in.readShort();
         if(len > 0) {
             View v;
-            subgroups=new Vector();
+            subgroups=new Vector<View>();
             for(int i=0; i < len; i++) {
                 boolean is_merge_view=in.readBoolean();
                 v=is_merge_view? new MergeView() : new View();
@@ -135,9 +131,7 @@ public class MergeView extends View {
 
         if(subgroups == null)
             return retval;
-        View v;
-        for(Iterator it=subgroups.iterator(); it.hasNext();) {
-            v=(View)it.next();
+        for(View v: subgroups) {
             retval+=Global.BYTE_SIZE; // boolean for View or MergeView
             retval+=v.serializedSize();
         }
