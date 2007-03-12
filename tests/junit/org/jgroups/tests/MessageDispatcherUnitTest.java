@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.2 2007/03/10 10:23:27 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.3 2007/03/12 07:56:13 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends TestCase {
     MessageDispatcher disp, disp2;
@@ -39,7 +39,6 @@ public class MessageDispatcherUnitTest extends TestCase {
 
 
     protected void tearDown() throws Exception {
-        super.tearDown();
         disp.stop();
         ch.close();
         if(ch2 != null) {
@@ -47,6 +46,7 @@ public class MessageDispatcherUnitTest extends TestCase {
             ch2.close();
         }
         Util.sleep(500);
+        super.tearDown();
     }
 
 
