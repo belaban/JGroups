@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.75 2007/03/12 10:18:54 belaban Exp $
+// $Id: UNICAST.java,v 1.76 2007/03/12 11:06:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -328,7 +328,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 return null; // we already passed the msg down
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
-                Vector<Address> new_members=((View)evt.getArg()).getMembers();
+                View view=(View)evt.getArg();
+                Vector<Address> new_members=view.getMembers();
                 Vector<Address> left_members;
                 synchronized(members) {
                     left_members=Util.determineLeftMembers(members, new_members);
@@ -374,6 +375,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
+                // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-357
+                if(view instanceof MergeView) {
+                    if(trace)
+                        log.trace("removing all connections for the current members");
+                    removeConnections(members);
+                }
+
                 break;
 
             case Event.ENABLE_UNICASTS_TO:
@@ -417,6 +425,18 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 entry.reset();
             }
             connections.clear();
+        }
+    }
+
+
+    private void removeConnections(List<Address> mbrs) {
+        Entry entry;
+        synchronized(connections) {
+            for(Address mbr: mbrs) {
+                entry=connections.remove(mbr);
+                if(entry != null)
+                    entry.reset();
+            }
         }
     }
 
