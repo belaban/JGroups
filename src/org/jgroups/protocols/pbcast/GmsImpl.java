@@ -1,13 +1,12 @@
-// $Id: GmsImpl.java,v 1.19 2007/01/12 14:21:36 belaban Exp $
+// $Id: GmsImpl.java,v 1.20 2007/03/12 09:03:44 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.jgroups.*;
 
-import java.util.Vector;
 import java.util.Collection;
-import java.util.Set;
+import java.util.Vector;
 
 
 public abstract class GmsImpl {
@@ -64,6 +63,7 @@ public abstract class GmsImpl {
         hdr.merge_id=merge_id;
         msg.putHeader(gms.getName(), hdr);
         if(log.isDebugEnabled()) log.debug("response=" + hdr);
+        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, sender));
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
