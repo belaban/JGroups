@@ -13,13 +13,13 @@ import org.jgroups.stack.GossipRouter;
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.9 2006/10/04 12:15:37 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.10 2007/03/12 11:00:58 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
-    final int    TIMES=10;
-    final int    router_port=12000;
-    final String bind_addr="127.0.0.1";
+    static final int    TIMES=10;
+    static final int    router_port=12000;
+    static final String bind_addr="127.0.0.1";
     GossipRouter router;
     JChannel     ch1, ch2;
     private ViewChecker  checker;
