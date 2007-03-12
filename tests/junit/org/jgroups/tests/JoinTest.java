@@ -16,7 +16,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.5 2007/01/22 19:33:01 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.6 2007/03/12 10:42:34 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
@@ -77,7 +77,11 @@ public class JoinTest extends ChannelTestBase {
         c2.setReceiver(r2);
         Message m1=new Message(null, null, "message-1"), m2=new Message(null, null, "message-2");
         c1.connect("X");
+        View view=c1.getView();
+        assertEquals("c1's view: " + view, 1, view.size());
         c2.connect("X");
+        view=c2.getView();
+        assertEquals("c2's view: " + view, 2, view.size());
         c1.send(m1);
         c2.send(m2);
 
