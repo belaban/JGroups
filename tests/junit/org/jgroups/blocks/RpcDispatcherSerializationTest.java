@@ -86,7 +86,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         assertEquals(members.size(), rsps.size());
         for(int i=0; i < rsps.size(); i++) {
             Rsp rsp=(Rsp)rsps.elementAt(i);
-            assertTrue(rsp.getValue() instanceof NoSuchMethodException);
+            assertTrue("response value is " + rsp.getValue(), rsp.getValue() instanceof NoSuchMethodException);
         }
     }
 
