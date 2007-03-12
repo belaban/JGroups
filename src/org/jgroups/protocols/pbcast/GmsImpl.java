@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.20 2007/03/12 09:03:44 belaban Exp $
+// $Id: GmsImpl.java,v 1.21 2007/03/12 09:05:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -84,9 +84,7 @@ public abstract class GmsImpl {
         Membership tmp_mbrs=gms.members.copy();
         tmp_mbrs.merge(new_mbrs, null);
         tmp_mbrs.sort();
-        if(tmp_mbrs.size() <= 0 || gms.local_addr == null)
-            return false;
-        return gms.local_addr.equals(tmp_mbrs.elementAt(0));
+        return !(tmp_mbrs.size() <= 0 || gms.local_addr == null) && gms.local_addr.equals(tmp_mbrs.elementAt(0));
     }
 
 }
