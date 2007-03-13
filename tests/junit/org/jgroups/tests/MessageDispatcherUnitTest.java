@@ -2,26 +2,29 @@ package org.jgroups.tests;
 
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Channel;
 import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
+import org.jgroups.protocols.UDP;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+
+import java.util.Properties;
 
 
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.3 2007/03/12 07:56:13 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.4 2007/03/13 08:42:38 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends TestCase {
     MessageDispatcher disp, disp2;
-    Channel ch, ch2;
+    JChannel ch, ch2;
     static final String props="udp.xml";
 
 
@@ -33,9 +36,12 @@ public class MessageDispatcherUnitTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         ch=new JChannel(props);
+        disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
         ch.connect("x");
     }
+
+
 
 
     protected void tearDown() throws Exception {
@@ -80,13 +86,18 @@ public class MessageDispatcherUnitTest extends TestCase {
         disp.setRequestHandler(new MyHandler(null));
 
         ch2=new JChannel(props);
+        disableBundling(ch2);
         long stop,start=System.currentTimeMillis();
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
         stop=System.currentTimeMillis();
         ch2.connect("x");
         assertEquals(2, ch2.getView().size());
+        System.out.println("view: " + ch2.getView());
 
+        System.out.println("casting message");
+        start=System.currentTimeMillis();
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
+        stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
@@ -138,6 +149,7 @@ public class MessageDispatcherUnitTest extends TestCase {
         disp.setRequestHandler(new MyHandler(new byte[size]));
 
         ch2=new JChannel(props);
+        disableBundling(ch2);
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(new byte[size]));
         ch2.connect("x");
         assertEquals(2, ch2.getView().size());
@@ -158,6 +170,17 @@ public class MessageDispatcherUnitTest extends TestCase {
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         assertEquals(size, ret.length);
+    }
+
+
+    private void disableBundling(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        UDP transport=(UDP)stack.findProtocol("UDP");
+        if(transport != null) {
+            Properties tmp=new Properties();
+            tmp.setProperty("enable_bundling", "false");
+            transport.setProperties(tmp);
+        }
     }
 
 
