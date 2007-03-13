@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.23 2007/01/12 14:21:26 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.24 2007/03/13 16:23:47 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -56,11 +56,9 @@ public class ParticipantGmsImpl extends GmsImpl {
 
             if(log.isDebugEnabled()) log.debug("sending LEAVE request to " + coord + " (local_addr=" + gms.local_addr + ")");
             sendLeaveMessage(coord, mbr);
-            synchronized(leave_promise) {
-                result=leave_promise.getResult(gms.leave_timeout);
-                if(result != null)
-                    break;
-            }
+            result=leave_promise.getResult(gms.leave_timeout);
+            if(result != null)
+                break;
         }
         gms.becomeClient();
     }
@@ -84,9 +82,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("leave_promise is null");
             return;
         }
-        synchronized(leave_promise) {
-            leave_promise.setResult(Boolean.TRUE);  // unblocks thread waiting in leave()
-        }
+        leave_promise.setResult(Boolean.TRUE);  // unblocks thread waiting in leave()
     }
 
 
