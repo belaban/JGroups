@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.17 2006/09/07 18:36:23 belaban Exp $
+// $Id: UtilTest.java,v 1.18 2007/03/13 20:34:44 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -220,6 +220,13 @@ public class UtilTest extends TestCase {
             Object value=values[i];
             marshal(value);
         }
+    }
+
+
+    public void testObjectToByteArrayWithLargeString() throws Exception {
+        byte[] tmp=new byte[70000];
+        String str=new String(tmp, 0, tmp.length);
+        Util.objectToByteBuffer(str);
     }
 
 
