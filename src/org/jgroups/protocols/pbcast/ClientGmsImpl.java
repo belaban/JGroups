@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.34 2006/08/03 07:53:12 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.34.2.1 2007/03/13 07:45:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.34 $
+ * @version $Revision: 1.34.2.1 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -149,6 +149,7 @@ public class ClientGmsImpl extends GmsImpl {
 
                         if(!installView(tmp_view)) {
                             if(log.isErrorEnabled()) log.error("view installation failed, retrying to join group");
+                            Util.sleep(gms.join_retry_timeout);
                             continue;
                         }
 
