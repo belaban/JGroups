@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.26 2006/09/01 14:40:26 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.27 2007/03/13 14:52:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.26 2006/09/01 14:40:26 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.27 2007/03/13 14:52:05 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -326,7 +326,7 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 	/**
 	 * Clears this hashtable so that it contains no keys
 	 */
-	public synchronized void clear() {
+	public void clear() {
 		//Changes done by <aos>
 		//if true, propagate action to the group
         if(send_message == true) {
@@ -438,6 +438,9 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
 
     public void _clear() {
+
+        System.out.println("CLEAR(" + channel.getLocalAddress() + ")");
+
         super.clear();
         if(persistent) {
             try {
