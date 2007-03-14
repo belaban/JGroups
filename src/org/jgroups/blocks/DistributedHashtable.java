@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.27 2007/03/13 14:52:05 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.28 2007/03/14 16:28:35 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.27 2007/03/13 14:52:05 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.28 2007/03/14 16:28:35 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -438,9 +438,6 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
 
 
     public void _clear() {
-
-        System.out.println("CLEAR(" + channel.getLocalAddress() + ")");
-
         super.clear();
         if(persistent) {
             try {
