@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.1 2006/12/09 21:53:39 belaban Exp $
+ * @version $Id: Util.java,v 1.105.2.2 2007/03/14 16:36:45 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -213,7 +213,18 @@ public class Util {
                     break;
                 case TYPE_STRING:
                     in=new DataInputStream(in_stream);
+                    if(((DataInputStream)in).readBoolean()) { // large string
+                        ObjectInputStream ois=new ObjectInputStream(in);
+                        try {
+                            return ois.readObject();
+                        }
+                        finally {
+                            ois.close();
+                        }
+                    }
+                    else {
                     retval=((DataInputStream)in).readUTF();
+                    }
                     break;
                 default:
                     throw new IllegalArgumentException("type " + b + " is invalid");
@@ -285,7 +296,21 @@ public class Util {
                             ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
                             break;
                         case TYPE_STRING:
-                            ((DataOutputStream)out).writeUTF((String)obj);
+                            String str=(String)obj;
+                            if(str.length() > Short.MAX_VALUE) {
+                                ((DataOutputStream)out).writeBoolean(true);
+                                ObjectOutputStream oos=new ObjectOutputStream(out);
+                                try {
+                                    oos.writeObject(str);
+                                }
+                                finally {
+                                    oos.close();
+                                }
+                            }
+                            else {
+                                ((DataOutputStream)out).writeBoolean(false);
+                                ((DataOutputStream)out).writeUTF(str);
+                            }
                             break;
                         default:
                             throw new IllegalArgumentException("type " + type + " is invalid");

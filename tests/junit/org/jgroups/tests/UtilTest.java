@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.17.2.1 2007/03/13 20:35:14 belaban Exp $
+// $Id: UtilTest.java,v 1.17.2.2 2007/03/14 16:36:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -224,10 +224,37 @@ public class UtilTest extends TestCase {
 
 
     public void testObjectToByteArrayWithLargeString() throws Exception {
-        byte[] tmp=new byte[70000];
-        String str=new String(tmp, 0, tmp.length);
-        Util.objectToByteBuffer(str);
+        marshalString(Short.MAX_VALUE );
     }
+
+
+     public void testObjectToByteArrayWithLargeString2() throws Exception {
+        marshalString(Short.MAX_VALUE - 100);
+    }
+
+
+    public void testObjectToByteArrayWithLargeString3() throws Exception {
+        marshalString(Short.MAX_VALUE + 1);
+    }
+
+    public void testObjectToByteArrayWithLargeString4() throws Exception {
+        marshalString(Short.MAX_VALUE + 100);
+    }
+
+     public void testObjectToByteArrayWithLargeString5() throws Exception {
+        marshalString(Short.MAX_VALUE + 100000);
+    }
+
+
+    private void marshalString(int size) throws Exception {
+        byte[] tmp=new byte[size];
+        String str=new String(tmp, 0, tmp.length);
+        byte[] retval=Util.objectToByteBuffer(str);
+        System.out.println("length=" + retval.length + " bytes");
+        String obj=(String)Util.objectFromByteBuffer(retval);
+        System.out.println("read " + obj.length() + " string");
+    }
+
 
 
     void marshal(Object obj) throws Exception {
