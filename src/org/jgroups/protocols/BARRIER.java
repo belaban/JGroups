@@ -20,7 +20,7 @@ import java.util.concurrent.locks.*;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.3 2007/03/07 17:00:33 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.4 2007/03/15 08:51:17 belaban Exp $
  */
 
 public class BARRIER extends Protocol {
@@ -146,7 +146,7 @@ public class BARRIER extends Protocol {
         lock.lock();
         try {
             if(!barrier_closed.compareAndSet(false, true))
-                return; // barrier was already set
+                return; // barrier was already closed
 
             // wait until all pending (= in-progress) msgs have returned
             in_flight_threads.remove(Thread.currentThread());
@@ -172,7 +172,8 @@ public class BARRIER extends Protocol {
     private void openBarrier() {
         lock.lock();
         try {
-            barrier_closed.set(false);
+            if(!barrier_closed.compareAndSet(true, false))
+                return; // barrier was already open
             barrier_opened.signalAll();
         }
         finally {
