@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.128 2007/03/06 12:51:33 belaban Exp $
+ * @version $Id: UDP.java,v 1.129 2007/03/15 14:53:35 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -92,6 +92,8 @@ public class UDP extends TP implements Runnable {
 
     /** The multicast receiver thread */
     Thread          mcast_receiver=null;
+    
+    private final static String MCAST_RECEIVER_THREAD_NAME = "UDP mcast receiver";
 
     /** The unicast receiver thread */
     UcastReceiver   ucast_receiver=null;
@@ -242,6 +244,7 @@ public class UDP extends TP implements Runnable {
         byte[]          data;
         InetAddress     sender_addr;
         Address         sender;
+        String 			oldThreadName = null;
 
         // moved out of loop to avoid excessive object creations (bela March 8 2001)
         packet=new DatagramPacket(receive_buf, receive_buf.length);
@@ -256,6 +259,9 @@ public class UDP extends TP implements Runnable {
                 len=packet.getLength();
                 data=packet.getData();
                 sender=new IpAddress(sender_addr, sender_port);
+                
+                if(thread_naming_pattern != null && thread_naming_pattern.isIncludeSenderAddress())
+                	oldThreadName = thread_naming_pattern.renameThread(mcast_receiver, sender);               
 
                 if(len > receive_buf.length) {
                     if(log.isErrorEnabled())
@@ -276,6 +282,10 @@ public class UDP extends TP implements Runnable {
                 if(log.isErrorEnabled())
                     log.error("failure in multicast receive()", ex);
                 // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
+            }
+            finally{
+            	if(oldThreadName != null && mcast_receiver!=null)
+                	mcast_receiver.setName(oldThreadName);           
             }
         }
         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
@@ -782,7 +792,7 @@ public class UDP extends TP implements Runnable {
             }
 
             if(mcast_receiver == null) {
-                mcast_receiver=new Thread(Util.getGlobalThreadGroup(), this, "UDP mcast receiver");
+                mcast_receiver=new Thread(Util.getGlobalThreadGroup(), this, MCAST_RECEIVER_THREAD_NAME);
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
                 mcast_receiver.setDaemon(true);
                 mcast_receiver.start();
@@ -824,49 +834,22 @@ public class UDP extends TP implements Runnable {
 
     protected void setThreadNames() {
         super.setThreadNames();
-
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            if(mcast_receiver != null) {
-                tmp=mcast_receiver.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + channel_name + ")";
-                    mcast_receiver.setName(tmp);
-                }
-            }
-            if(ucast_receiver != null) {
-                tmp=ucast_receiver.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + channel_name + ")";
-                    ucast_receiver.setName(tmp);
-                }
-            }
-        }
+        
+        if(thread_naming_pattern != null) {
+        	thread_naming_pattern.renameThread(mcast_receiver, null);
+        	
+        	if(ucast_receiver != null) 
+        		thread_naming_pattern.renameThread(ucast_receiver.getThread(), null);                        
+        }        
     }
 
     protected void unsetThreadNames() {
         super.unsetThreadNames();
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            int index;
-
-            tmp=mcast_receiver != null? mcast_receiver.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    mcast_receiver.setName(tmp);
-                }
-            }
-            tmp=ucast_receiver != null? ucast_receiver.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    ucast_receiver.setName(tmp);
-                }
-            }
-        }
+        if(mcast_receiver != null)
+        	mcast_receiver.setName(MCAST_RECEIVER_THREAD_NAME);                   
+        
+        if(ucast_receiver != null && ucast_receiver.getThread() != null)
+        	ucast_receiver.getThread().setName(UcastReceiver.UCAST_RECEIVER_THREAD_NAME);        	                      
     }
 
 
@@ -899,21 +882,19 @@ public class UDP extends TP implements Runnable {
 
 
     public class UcastReceiver implements Runnable {
+    	
+    	public static final String UCAST_RECEIVER_THREAD_NAME = "UDP ucast receiver";
         boolean running=true;
         Thread thread=null;
 
-        String getName() {
-            return thread != null? thread.getName() : null;
+        public Thread getThread(){
+        	return thread;
         }
-
-        void setName(String thread_name) {
-            if(thread != null)
-                thread.setName(thread_name);
-        }
+        
 
         public void start() {
             if(thread == null) {
-                thread=new Thread(Util.getGlobalThreadGroup(), this, "UDP.UcastReceiverThread");
+                thread=new Thread(Util.getGlobalThreadGroup(), this, UCAST_RECEIVER_THREAD_NAME);
                 thread.setDaemon(true);
                 running=true;
                 thread.start();
@@ -948,6 +929,7 @@ public class UDP extends TP implements Runnable {
             InetAddress     sender_addr;
             int             sender_port;
             Address         sender;
+            String 			oldThreadName = null;
 
             // moved out of loop to avoid excessive object creations (bela March 8 2001)
             packet=new DatagramPacket(receive_buf, receive_buf.length);
@@ -962,6 +944,9 @@ public class UDP extends TP implements Runnable {
                     len=packet.getLength();
                     data=packet.getData();
                     sender=new IpAddress(sender_addr, sender_port);
+                    
+                    if(thread_naming_pattern != null && thread_naming_pattern.isIncludeSenderAddress())
+                    	oldThreadName = thread_naming_pattern.renameThread(mcast_receiver, sender);                    
 
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
@@ -981,6 +966,10 @@ public class UDP extends TP implements Runnable {
                     if(log.isErrorEnabled())
                         log.error("[" + local_addr + "] failed receiving unicast packet", ex);
                     // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
+                }
+                finally{
+                	if(oldThreadName != null && thread!=null)
+                    	thread.setName(oldThreadName);                   
                 }
             }
             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
