@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.124 2007/03/08 16:49:40 belaban Exp $
+ * @version $Id: TP.java,v 1.125 2007/03/15 14:53:35 vlada Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -137,12 +137,12 @@ public abstract class TP extends Protocol {
 
     /**
      * Names the current thread. Valid values are "pcsl":
-     * p: include the pool name, e.g. "Incoming thread-1"
+     * p: include the previous (original) name, e.g. "Incoming thread-1", "UDP ucast receiver"
      * c: include the cluster name, e.g. "MyCluster"
      * s: include the sender of the currently processed message, e.g. "192.168.5.2:1234"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
-    private ThreadNamingPattern thread_naming_pattern;
+    protected ThreadNamingPattern thread_naming_pattern;
 
 
     /** ================================== OOB thread pool ============================== */
@@ -1358,96 +1358,27 @@ public abstract class TP extends Protocol {
 
 
 
-    protected void setThreadNames() {
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            if(incoming_packet_handler != null) {
-                tmp=incoming_packet_handler.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + channel_name + ")";
-                    incoming_packet_handler.setName(tmp);
-                }
-            }
-            if(incoming_msg_handler != null) {
-                tmp=incoming_msg_handler.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + channel_name + ")";
-                    incoming_msg_handler.setName(tmp);
-                }
-            }
-            if(diag_handler != null) {
-                tmp=diag_handler.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + channel_name + ")";
-                    diag_handler.setName(tmp);
-                }
-            }
+    protected void setThreadNames() {           
+        if(thread_naming_pattern != null){
+        	if(incoming_packet_handler != null) 
+        		thread_naming_pattern.renameThread(incoming_packet_handler.getThread(), null);                    
+        	if(incoming_msg_handler != null) 
+        		thread_naming_pattern.renameThread(incoming_msg_handler.getThread(), null);                   
+        	if(diag_handler != null)
+        		thread_naming_pattern.renameThread(diag_handler.getThread(), null);
         }
     }
 
 
     protected void unsetThreadNames() {
-        if(channel_name != null) {
-            String tmp, prefix=Global.THREAD_PREFIX;
-            int index;
-
-            tmp=incoming_packet_handler != null? incoming_packet_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    incoming_packet_handler.setName(tmp);
-                }
-            }
-
-            tmp=incoming_msg_handler != null? incoming_msg_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    incoming_msg_handler.setName(tmp);
-                }
-            }
-
-            tmp=diag_handler != null? diag_handler.getName() : null;
-            if(tmp != null) {
-                index=tmp.indexOf(prefix);
-                if(index > -1) {
-                    tmp=tmp.substring(0, index);
-                    diag_handler.setName(tmp);
-                }
-            }
-        }
-    }
-
-    private String renameRunningThread(Address sender) {
-        Thread runner=Thread.currentThread();
-        String oldName=runner.getName();
-
-        StringBuilder threadName=new StringBuilder();
-        if(thread_naming_pattern.isIncludePoolName()) {
-            threadName.append(oldName);
-        }
-        if(thread_naming_pattern.isIncludeLocalAddress()) {
-            if(threadName.length() > 0)
-                threadName.append(',');
-            threadName.append(getLocalAddress());
-        }
-        if(thread_naming_pattern.isIncludeClusterName()) {
-            if(threadName.length() > 0)
-                threadName.append(',');
-            threadName.append(getChannelName());
-        }
-        if(thread_naming_pattern.isIncludeSenderAddress()) {
-            if(threadName.length() > 0)
-                threadName.append(',');
-            threadName.append(sender);
-        }
-
-        runner.setName(threadName.toString());
-        return oldName;
-    }
-
+    	 if(incoming_packet_handler != null && incoming_packet_handler.getThread() != null) 
+         	 incoming_packet_handler.getThread().setName(IncomingPacketHandler.THREAD_NAME);                    
+         if(incoming_msg_handler != null && incoming_msg_handler.getThread() != null) 
+        	 incoming_msg_handler.getThread().setName(IncomingMessageHandler.THREAD_NAME);                   
+         if(diag_handler != null && diag_handler.getThread() != null)
+        	 diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);                   
+    }    
+    
     protected void handleConfigEvent(HashMap map) {
         if(map == null) return;
         if(map.containsKey("additional_data")) {
@@ -1529,7 +1460,7 @@ public abstract class TP extends Protocol {
 
             try {
                 if(thread_naming_pattern != null)
-                    old_thread_name=renameRunningThread(sender);
+                    old_thread_name=thread_naming_pattern.renameThread(sender);
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
                 dis=new DataInputStream(in_stream);
                 version=dis.readShort();
@@ -1628,20 +1559,17 @@ public abstract class TP extends Protocol {
      * to the higher layer (done in handleIncomingUdpPacket()).
      */
     class IncomingPacketHandler implements Runnable {
+    	
+    	public static final String THREAD_NAME="IncomingPacketHandler"; 
         Thread t=null;
 
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
+        Thread getThread(){
+        	return t;
         }
 
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "IncomingPacketHandler");
+                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
                 t.setDaemon(true);
                 t.start();
             }
@@ -1686,22 +1614,19 @@ public abstract class TP extends Protocol {
 
 
     class IncomingMessageHandler implements Runnable {
+    	
+    	public static final String THREAD_NAME = "IncomingMessageHandler"; 
         Thread t;
         int i=0;
 
 
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
+        Thread getThread(){
+        	return t;
         }
 
         public void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "IncomingMessageHandler");
+                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
                 t.setDaemon(true);
                 t.start();
             }
@@ -1888,19 +1813,15 @@ public abstract class TP extends Protocol {
 
 
     private class DiagnosticsHandler implements Runnable {
+    	public static final String THREAD_NAME = "DiagnosticsHandler"; 
         Thread t=null;
         MulticastSocket diag_sock=null;
 
         DiagnosticsHandler() {
         }
 
-        String getName() {
-            return t != null? t.getName() : null;
-        }
-
-        void setName(String thread_name) {
-            if(t != null)
-                t.setName(thread_name);
+        Thread getThread(){
+        	return t;
         }
 
         void start() throws IOException {
@@ -1909,7 +1830,7 @@ public abstract class TP extends Protocol {
             bindToInterfaces(interfaces, diag_sock);
 
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, "DiagnosticsHandler");
+                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
                 t.setDaemon(true);
                 t.start();
             }
@@ -1954,14 +1875,14 @@ public abstract class TP extends Protocol {
         }
     }
 
-    private static class ThreadNamingPattern {
-        final boolean includePoolName;
+    public class ThreadNamingPattern {
+        final boolean includePreviousName;
         final boolean includeClusterName;
         final boolean includeSenderAddress;
         final boolean includeLocalAddress;
 
         public ThreadNamingPattern(String pattern) {
-            includePoolName=pattern.contains("p");
+            includePreviousName=pattern.contains("p");
             includeClusterName=pattern.contains("c");
             includeSenderAddress=pattern.contains("s");
             includeLocalAddress=pattern.contains("l");
@@ -1979,8 +1900,43 @@ public abstract class TP extends Protocol {
             return includeSenderAddress;
         }
 
-        public boolean isIncludePoolName() {
-            return includePoolName;
+        public boolean isIncludePreviousName() {
+            return includePreviousName;
+        }
+        
+        protected String renameThread(Thread runner, Address sender) {
+        	String oldName = null;
+        	if(runner!=null){        		        
+	            oldName=runner.getName();
+	
+	            StringBuilder threadName=new StringBuilder();
+	            if(isIncludePreviousName()) {
+	                threadName.append(oldName);
+	            }
+	            if(isIncludeLocalAddress()) {
+	                if(threadName.length() > 0)
+	                    threadName.append(',');
+	                threadName.append(getLocalAddress());
+	            }
+	            if(isIncludeClusterName()) {
+	                if(threadName.length() > 0)
+	                    threadName.append(',');
+	                threadName.append(getChannelName());
+	            }
+	            if(isIncludeSenderAddress()) {
+	                if(threadName.length() > 0 && sender != null){
+	                	threadName.append(',');
+	                	threadName.append(sender);
+	                }
+	            }
+	
+	            runner.setName(threadName.toString());
+        	}
+            return oldName;
+        }
+        
+        protected String renameThread(Address sender) {
+           return renameThread(Thread.currentThread(),sender);
         }
     }
 
