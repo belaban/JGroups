@@ -16,7 +16,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.6 2007/03/12 10:42:34 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.7 2007/03/15 10:51:26 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
@@ -82,10 +82,14 @@ public class JoinTest extends ChannelTestBase {
         c2.connect("X");
         view=c2.getView();
         assertEquals("c2's view: " + view, 2, view.size());
+        Util.sleep(200);
+        view=c1.getView();
+        assertEquals("c1's view: " + view, 2, view.size());
+
         c1.send(m1);
         c2.send(m2);
 
-        Util.sleep(2000);
+        Util.sleep(1000);
         List c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
         System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
         assertNotNull(c1_list);
