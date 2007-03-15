@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.95 2007/03/12 09:33:19 vlada Exp $
+ * @version $Id: GMS.java,v 1.96 2007/03/15 10:57:56 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -655,10 +655,10 @@ public class GMS extends Protocol {
                         view_ack.setFlag(Message.OOB);
                         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
                         view_ack.putHeader(name, tmphdr);
+                        impl.handleViewChange(hdr.view, hdr.my_digest);
                         if(trace)
                             log.trace("sending VIEW_ACK to " + coord);
                         down_prot.down(new Event(Event.MSG, view_ack));
-                        impl.handleViewChange(hdr.view, hdr.my_digest);
                         break;
 
                     case GmsHeader.VIEW_ACK:
@@ -1159,7 +1159,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.95 2007/03/12 09:33:19 vlada Exp $
+     * @version $Id: GMS.java,v 1.96 2007/03/15 10:57:56 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                             thread;
