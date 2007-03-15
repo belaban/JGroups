@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
-import org.jgroups.JChannel;
+import org.jgroups.Channel;
 import org.jgroups.blocks.DistributedHashtable;
 
 import java.util.HashMap;
@@ -10,13 +9,11 @@ import java.util.Map;
 /**
  * Test methods for DistributedHashtable
  * @author denis.pasek@senacor.com
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  **/
-public class DistributedHashtableUnitTest extends TestCase {
+public class DistributedHashtableUnitTest extends ChannelTestBase {
 
-    private static int testCount = 1;
-
-    private static final String props="c:\\udp.xml";
+    private static int testCount = 1;   
 
     private DistributedHashtable map1;
     private DistributedHashtable map2;
@@ -29,12 +26,12 @@ public class DistributedHashtableUnitTest extends TestCase {
         super.setUp();
         System.out.println("#### Setup Test " + testCount);
 
-        JChannel c1=new JChannel(props);
+        Channel c1=createChannel("A");
         this.map1=new DistributedHashtable(c1, false, 5000);
         c1.connect("demo");
         this.map1.start(5000);
 
-        JChannel c2=new JChannel(props);
+        Channel c2=createChannel("A");
         this.map2=new DistributedHashtable(c2, false, 5000);
         c2.connect("demo");
         this.map2.start(5000);
