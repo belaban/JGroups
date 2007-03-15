@@ -477,9 +477,9 @@ public class FLUSH extends Protocol
       return up_prot.up(evt);
    }
 
-   public Vector providedDownServices()
+   public Vector<Integer> providedDownServices()
    {
-      Vector retval = new Vector(2);
+      Vector<Integer> retval = new Vector<Integer>(2);
       retval.addElement(new Integer(Event.SUSPEND));
       retval.addElement(new Integer(Event.RESUME));
       return retval;
