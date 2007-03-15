@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.125 2007/03/15 14:53:35 vlada Exp $
+ * @version $Id: TP.java,v 1.126 2007/03/15 17:03:52 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1503,7 +1503,7 @@ public abstract class TP extends Protocol {
             }
             finally {
                 if(old_thread_name != null)
-                    Thread.currentThread().setName(old_thread_name);
+                   Thread.currentThread().setName(old_thread_name);
             }
         }
 
@@ -1878,13 +1878,11 @@ public abstract class TP extends Protocol {
     public class ThreadNamingPattern {
         final boolean includePreviousName;
         final boolean includeClusterName;
-        final boolean includeSenderAddress;
         final boolean includeLocalAddress;
 
         public ThreadNamingPattern(String pattern) {
             includePreviousName=pattern.contains("p");
             includeClusterName=pattern.contains("c");
-            includeSenderAddress=pattern.contains("s");
             includeLocalAddress=pattern.contains("l");
         }
 
@@ -1894,10 +1892,6 @@ public abstract class TP extends Protocol {
 
         public boolean isIncludeClusterName() {
             return includeClusterName;
-        }
-
-        public boolean isIncludeSenderAddress() {
-            return includeSenderAddress;
         }
 
         public boolean isIncludePreviousName() {
@@ -1923,13 +1917,7 @@ public abstract class TP extends Protocol {
 	                    threadName.append(',');
 	                threadName.append(getChannelName());
 	            }
-	            if(isIncludeSenderAddress()) {
-	                if(threadName.length() > 0 && sender != null){
-	                	threadName.append(',');
-	                	threadName.append(sender);
-	                }
-	            }
-	
+
 	            runner.setName(threadName.toString());
         	}
             return oldName;
