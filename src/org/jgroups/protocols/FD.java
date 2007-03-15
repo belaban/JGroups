@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.51 2007/03/05 13:23:52 belaban Exp $
+// $Id: FD.java,v 1.52 2007/03/15 08:03:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.51 $
+ * @version $Revision: 1.52 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -255,7 +255,7 @@ public class FD extends Protocol {
                             if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
                         }
                         else {
-                            /* modified by Luís Palma Nunes Mendes on 11 Aug 2006
+                            /* modified by Luis Palma Nunes Mendes on 11 Aug 2006
                              * By not doing this check, if we keep receiving HEARTBEAT_ACK messages from
                              * other members than ping_dest, Monitor Thread would be restarted every time,
                              * taking down the timeouts with it. This inhibits ping_dest Failure Detection.
