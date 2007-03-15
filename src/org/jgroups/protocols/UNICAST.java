@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.77 2007/03/15 10:58:24 belaban Exp $
+// $Id: UNICAST.java,v 1.78 2007/03/15 11:18:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -266,7 +266,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 //}
 
                 if(!members.contains(dst) && !enabled_members.contains(dst)) {
-                    throw new IllegalArgumentException(dst + " is not a member of the group");
+                    throw new IllegalArgumentException(dst + " is not a member of the group " + members + " (enabled_members=" + enabled_members + ")");
                 }
 
                 Entry entry;
