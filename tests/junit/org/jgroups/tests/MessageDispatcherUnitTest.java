@@ -20,7 +20,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.4 2007/03/13 08:42:38 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.5 2007/03/15 10:58:36 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends TestCase {
     MessageDispatcher disp, disp2;
@@ -154,6 +154,7 @@ public class MessageDispatcherUnitTest extends TestCase {
         ch2.connect("x");
         assertEquals(2, ch2.getView().size());
 
+        System.out.println("casting message");
         start=System.currentTimeMillis();
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         stop=System.currentTimeMillis();

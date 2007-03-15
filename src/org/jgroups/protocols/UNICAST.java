@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.76 2007/03/12 11:06:52 belaban Exp $
+// $Id: UNICAST.java,v 1.77 2007/03/15 10:58:24 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -388,8 +388,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 Object member=evt.getArg();
                 if(!enabled_members.contains(member))
                     enabled_members.add(member);
-                previous_members.removeElement(member);
-                if(trace)
+                Object obj=previous_members.removeElement(member);
+                if(obj != null && trace)
                     log.trace("removing " + member + " from previous_members as result of ENABLE_UNICAST_TO event, " +
                             "previous_members=" + previous_members);
                 break;
