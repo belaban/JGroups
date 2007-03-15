@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.96 2007/03/15 10:57:56 belaban Exp $
+ * @version $Id: GMS.java,v 1.97 2007/03/15 12:14:57 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -29,10 +29,10 @@ public class GMS extends Protocol {
     private final Membership  tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
-    private final Vector      joining=new Vector(7);
+    private final Vector<Address> joining=new Vector<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    private final Vector      leaving=new Vector(7);
+    private final Vector<Address>  leaving=new Vector<Address>(7);
 
     View                      view=null;
     ViewId                    view_id=null;
@@ -42,7 +42,7 @@ public class GMS extends Protocol {
     long                      leave_timeout=5000;
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
-    private final Hashtable   impls=new Hashtable(3);
+    private final Hashtable<String,GmsImpl>   impls=new Hashtable<String,GmsImpl>(3);
     private boolean           shun=false;
     boolean                   merge_leader=false;         // can I initiate a merge ?
     private boolean           print_local_addr=true;
@@ -161,8 +161,8 @@ public class GMS extends Protocol {
     }
 
 
-    public Vector requiredDownServices() {
-        Vector retval=new Vector(3);
+    public Vector<Integer> requiredDownServices() {
+        Vector<Integer> retval=new Vector<Integer>(3);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
@@ -266,7 +266,7 @@ public class GMS extends Protocol {
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
     public View getNextView(Collection new_mbrs, Collection old_mbrs, Collection suspected_mbrs) {
-        Vector mbrs;
+        Vector<Address> mbrs;
         long vid;
         View v;
         Membership tmp_mbrs;
@@ -556,7 +556,7 @@ public class GMS extends Protocol {
     }
 
 
-    public View makeView(Vector mbrs) {
+    public View makeView(Vector<Address> mbrs) {
         Address coord=null;
         long id=0;
 
@@ -568,7 +568,7 @@ public class GMS extends Protocol {
     }
 
 
-    public View makeView(Vector mbrs, ViewId vid) {
+    public View makeView(Vector<Address> mbrs, ViewId vid) {
         Address coord=null;
         long id=0;
 
@@ -644,21 +644,21 @@ public class GMS extends Protocol {
                         impl.handleLeaveResponse();
                         break;
                     case GmsHeader.VIEW:
-                        if(hdr.view == null) {
+                        View new_view=hdr.view;
+                        if(new_view == null) {
                             if(log.isErrorEnabled()) log.error("[VIEW]: view == null");
                             return null;
                         }
 
-                        // send VIEW_ACK to sender of view
                         Address coord=msg.getSrc();
-                        Message view_ack=new Message(coord, null, null);
-                        view_ack.setFlag(Message.OOB);
-                        GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
-                        view_ack.putHeader(name, tmphdr);
-                        impl.handleViewChange(hdr.view, hdr.my_digest);
-                        if(trace)
-                            log.trace("sending VIEW_ACK to " + coord);
-                        down_prot.down(new Event(Event.MSG, view_ack));
+                        if(!new_view.containsMember(coord)) {
+                            sendViewAck(coord); // we need to send the ack first, otherwise the connection is removed
+                            impl.handleViewChange(new_view, hdr.my_digest);
+                        }
+                        else {
+                            impl.handleViewChange(new_view, hdr.my_digest);
+                            sendViewAck(coord); // send VIEW_ACK to sender of view
+                        }
                         break;
 
                     case GmsHeader.VIEW_ACK:
@@ -718,6 +718,9 @@ public class GMS extends Protocol {
         return null;
     }
 
+
+
+    
 
     /**
      This method is overridden to avoid hanging on getDigest(): when a JOIN is received, the coordinator needs
@@ -899,6 +902,17 @@ public class GMS extends Protocol {
         view=null;
     }
 
+
+    private void sendViewAck(Address dest) {
+        Message view_ack=new Message(dest, null, null);
+        view_ack.setFlag(Message.OOB);
+        GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK);
+        view_ack.putHeader(name, tmphdr);
+        System.out.println("-- sending VIEW_ACK to " + dest);
+        if(trace)
+            log.trace("sending VIEW_ACK to " + dest);
+        down_prot.down(new Event(Event.MSG, view_ack));
+    }
 
     /* --------------------------- End of Private Methods ------------------------------- */
 
@@ -1159,7 +1173,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.96 2007/03/15 10:57:56 belaban Exp $
+     * @version $Id: GMS.java,v 1.97 2007/03/15 12:14:57 belaban Exp $
      */
     class ViewHandler implements Runnable {
         Thread                             thread;
@@ -1270,7 +1284,7 @@ public class GMS extends Protocol {
 
         public void run() {
             long start, stop, wait_time;
-            List requests=new LinkedList();
+            List<Request> requests=new LinkedList<Request>();
             while(!q.closed() && Thread.currentThread().equals(thread)) {
                 requests.clear();
                 try {
@@ -1335,9 +1349,9 @@ public class GMS extends Protocol {
                 case Request.JOIN:
                 case Request.LEAVE:
                 case Request.SUSPECT:
-                    Collection newMembers=new LinkedHashSet(requests.size());
-                    Collection suspectedMembers=new LinkedHashSet(requests.size());
-                    Collection oldMembers=new LinkedHashSet(requests.size());
+                    Collection<Address> newMembers=new LinkedHashSet<Address>(requests.size());
+                    Collection<Address> suspectedMembers=new LinkedHashSet<Address>(requests.size());
+                    Collection<Address> oldMembers=new LinkedHashSet<Address>(requests.size());
                     for(Iterator i=requests.iterator(); i.hasNext();) {
                         Request req=(Request)i.next();
                         switch(req.type) {
