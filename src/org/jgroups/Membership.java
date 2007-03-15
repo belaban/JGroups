@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.9 2006/01/14 13:18:08 belaban Exp $
+// $Id: Membership.java,v 1.10 2007/03/15 12:09:09 belaban Exp $
 
 package org.jgroups;
 
@@ -17,7 +17,7 @@ import java.util.*;
  */
 public class Membership implements Cloneable {
     /* private vector to hold all the addresses */
-    private final LinkedList members=new LinkedList();
+    private final List<Address> members=new LinkedList<Address>();
     protected static final Log log=LogFactory.getLog(Membership.class);
 
     /**
@@ -51,10 +51,10 @@ public class Membership implements Cloneable {
      *
      * @return a list of members,
      */
-    public Vector getMembers() {
+    public Vector<Address> getMembers() {
         /*clone so that this objects members can not be manipulated from the outside*/
         synchronized(members) {
-            return new Vector(members);
+            return new Vector<Address>(members);
         }
     }
 

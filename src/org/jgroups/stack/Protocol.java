@@ -29,7 +29,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.51 2007/03/06 17:33:12 belaban Exp $
+ * @version $Id: Protocol.java,v 1.52 2007/03/15 12:11:24 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -196,27 +196,27 @@ public abstract class Protocol {
 
     /** List of events that are required to be answered by some layer above.
      @return Vector (of Integers) */
-    public Vector requiredUpServices() {
+    public Vector<Integer> requiredUpServices() {
         return null;
     }
 
     /** List of events that are required to be answered by some layer below.
      @return Vector (of Integers) */
-    public Vector requiredDownServices() {
+    public Vector<Integer> requiredDownServices() {
         return null;
     }
 
     /** List of events that are provided to layers above (they will be handled when sent down from
      above).
      @return Vector (of Integers) */
-    public Vector providedUpServices() {
+    public Vector<Integer> providedUpServices() {
         return null;
     }
 
     /** List of events that are provided to layers below (they will be handled when sent down from
      below).
-     @return Vector (of Integers) */
-    public Vector providedDownServices() {
+     @return Vector<Integer (of Integers) */
+    public Vector<Integer> providedDownServices() {
         return null;
     }
 
