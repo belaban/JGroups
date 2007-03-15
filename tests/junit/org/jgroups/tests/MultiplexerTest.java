@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.32 2006/11/22 19:33:07 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.33 2007/03/15 10:56:43 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -215,8 +215,12 @@ public class MultiplexerTest extends ChannelTestBase {
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
         ch1_repl.connect("bla");
+        Util.sleep(200);
 
         View v=ch1_repl.getView();
+        assertNotNull(v);
+        assertEquals(2, v.size());
+        v=ch1.getView();
         assertNotNull(v);
         assertEquals(2, v.size());
 
@@ -245,8 +249,8 @@ public class MultiplexerTest extends ChannelTestBase {
 
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
-        assertEquals(4, c1.size());
-        assertEquals(4, c1_repl.size());
+        assertEquals("c1: " + c1, 4, c1.size());
+        assertEquals("c1_repl: " + c1_repl, 4, c1_repl.size());
 
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
