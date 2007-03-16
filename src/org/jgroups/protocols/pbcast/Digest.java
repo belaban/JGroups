@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.27 2007/02/14 22:34:50 belaban Exp $
+// $Id: Digest.java,v 1.28 2007/03/16 10:15:42 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -121,9 +121,9 @@ public class Digest implements Externalizable, Streamable {
             for(Address address : intersection) {
                 Entry e1=this.get(address);
                 Entry e2=other.get(address);
-                if(!e1.equals(e2)) {
-                    long low=e1.low_seqno < e2.low_seqno? e1.low_seqno : e2.low_seqno;
-                    long high=e1.high_seqno > e2.high_seqno? e1.high_seqno : e2.high_seqno;
+                if(e1.getHigh() != e2.getHigh()) {
+                    long low=Math.min(e1.high_seqno, e2.high_seqno);
+                    long high=Math.max(e1.high_seqno, e2.high_seqno);
                     Entry r=new Entry(low, high);
                     resultMap.put(address, r);
                 }
