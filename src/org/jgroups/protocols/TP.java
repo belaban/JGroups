@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.126 2007/03/15 17:03:52 belaban Exp $
+ * @version $Id: TP.java,v 1.127 2007/03/16 09:54:43 belaban Exp $
  */
 @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -136,10 +136,9 @@ public abstract class TP extends Protocol {
     ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
     /**
-     * Names the current thread. Valid values are "pcsl":
+     * Names the current thread. Valid values are "pcl":
      * p: include the previous (original) name, e.g. "Incoming thread-1", "UDP ucast receiver"
      * c: include the cluster name, e.g. "MyCluster"
-     * s: include the sender of the currently processed message, e.g. "192.168.5.2:1234"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
     protected ThreadNamingPattern thread_naming_pattern;
@@ -537,7 +536,7 @@ public abstract class TP extends Protocol {
             else
                 oob_thread_pool_queue=new SynchronousQueue();
             oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB", "OOB Thread-");
+                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB", "OOB Thread");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             oob_thread_pool=new DirectExecutor();
@@ -551,14 +550,14 @@ public abstract class TP extends Protocol {
             else
                 thread_pool_queue=new SynchronousQueue();
             thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming", "Incoming Thread-");
+                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming", "Incoming Thread");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
         }
 
 
-        if(loopback) {
+        if(loopback && !use_concurrent_stack) {
             incoming_msg_queue=new Queue();
             incoming_msg_handler=new IncomingMessageHandler();
             incoming_msg_handler.start();
@@ -1361,11 +1360,13 @@ public abstract class TP extends Protocol {
     protected void setThreadNames() {           
         if(thread_naming_pattern != null){
         	if(incoming_packet_handler != null) 
-        		thread_naming_pattern.renameThread(incoming_packet_handler.getThread(), null);                    
+        		thread_naming_pattern.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
         	if(incoming_msg_handler != null) 
-        		thread_naming_pattern.renameThread(incoming_msg_handler.getThread(), null);                   
+        		thread_naming_pattern.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
         	if(diag_handler != null)
-        		thread_naming_pattern.renameThread(diag_handler.getThread(), null);
+        		thread_naming_pattern.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
+
+            //todo: set the names of all threads in both thread pools
         }
     }
 
@@ -1376,8 +1377,10 @@ public abstract class TP extends Protocol {
          if(incoming_msg_handler != null && incoming_msg_handler.getThread() != null) 
         	 incoming_msg_handler.getThread().setName(IncomingMessageHandler.THREAD_NAME);                   
          if(diag_handler != null && diag_handler.getThread() != null)
-        	 diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);                   
-    }    
+        	 diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);
+
+        //todo: unset the names of all threads in both thread pools
+    }
     
     protected void handleConfigEvent(HashMap map) {
         if(map == null) return;
@@ -1391,7 +1394,7 @@ public abstract class TP extends Protocol {
 
     protected Executor createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
                                         BlockingQueue queue,
-                                        final String thread_group_name, final String thread_name_prefix) {
+                                        final String thread_group_name, final String thread_name) {
         ThreadPoolExecutor pool=null;
         pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
 
@@ -1399,7 +1402,10 @@ public abstract class TP extends Protocol {
             int num=1;
             ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, thread_group_name);
             public Thread newThread(Runnable command) {
-                return new Thread(unmarshaller_threads, command, thread_name_prefix + num++);
+                Thread retval=new Thread(unmarshaller_threads, command, thread_name);
+                if(thread_naming_pattern != null)
+                    thread_naming_pattern.renameThread(thread_name, retval);
+                return retval;
             }
         });
 
@@ -1456,11 +1462,8 @@ public abstract class TP extends Protocol {
             byte                         flags;
             ExposedByteArrayInputStream  in_stream=null;
             DataInputStream              dis=null;
-            String                       old_thread_name=null;
 
             try {
-                if(thread_naming_pattern != null)
-                    old_thread_name=thread_naming_pattern.renameThread(sender);
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
                 dis=new DataInputStream(in_stream);
                 version=dis.readShort();
@@ -1500,10 +1503,6 @@ public abstract class TP extends Protocol {
             catch(Throwable t) {
                 if(log.isErrorEnabled())
                     log.error("failed handling incoming message", t);
-            }
-            finally {
-                if(old_thread_name != null)
-                   Thread.currentThread().setName(old_thread_name);
             }
         }
 
@@ -1876,12 +1875,10 @@ public abstract class TP extends Protocol {
     }
 
     public class ThreadNamingPattern {
-        final boolean includePreviousName;
         final boolean includeClusterName;
         final boolean includeLocalAddress;
 
         public ThreadNamingPattern(String pattern) {
-            includePreviousName=pattern.contains("p");
             includeClusterName=pattern.contains("c");
             includeLocalAddress=pattern.contains("l");
         }
@@ -1894,28 +1891,24 @@ public abstract class TP extends Protocol {
             return includeClusterName;
         }
 
-        public boolean isIncludePreviousName() {
-            return includePreviousName;
-        }
-        
-        protected String renameThread(Thread runner, Address sender) {
+
+        protected String renameThread(String base_name, Thread runner) {
         	String oldName = null;
         	if(runner!=null){        		        
 	            oldName=runner.getName();
 	
 	            StringBuilder threadName=new StringBuilder();
-	            if(isIncludePreviousName()) {
-	                threadName.append(oldName);
-	            }
-	            if(isIncludeLocalAddress()) {
-	                if(threadName.length() > 0)
-	                    threadName.append(',');
-	                threadName.append(getLocalAddress());
-	            }
-	            if(isIncludeClusterName()) {
+                threadName.append(base_name);
+
+                if(isIncludeClusterName()) {
 	                if(threadName.length() > 0)
 	                    threadName.append(',');
 	                threadName.append(getChannelName());
+	            }
+                if(isIncludeLocalAddress()) {
+	                if(threadName.length() > 0)
+	                    threadName.append(',');
+	                threadName.append(getLocalAddress());
 	            }
 
 	            runner.setName(threadName.toString());
@@ -1923,9 +1916,6 @@ public abstract class TP extends Protocol {
             return oldName;
         }
         
-        protected String renameThread(Address sender) {
-           return renameThread(Thread.currentThread(),sender);
-        }
     }
 
 

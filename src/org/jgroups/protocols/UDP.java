@@ -1,4 +1,3 @@
-
 package org.jgroups.protocols;
 
 
@@ -38,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.130 2007/03/16 08:49:56 vlada Exp $
+ * @version $Id: UDP.java,v 1.131 2007/03/16 09:54:43 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -222,12 +221,7 @@ public class UDP extends TP implements Runnable {
         Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
         Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
         Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
+        return props.isEmpty();
     }
 
 
@@ -244,7 +238,7 @@ public class UDP extends TP implements Runnable {
         byte[]          data;
         InetAddress     sender_addr;
         Address         sender;
-        String 			oldThreadName = null;
+
 
         // moved out of loop to avoid excessive object creations (bela March 8 2001)
         packet=new DatagramPacket(receive_buf, receive_buf.length);
@@ -258,8 +252,8 @@ public class UDP extends TP implements Runnable {
                 offset=packet.getOffset();
                 len=packet.getLength();
                 data=packet.getData();
-                sender=new IpAddress(sender_addr, sender_port);                                       
-
+                sender=new IpAddress(sender_addr, sender_port);
+                
                 if(len > receive_buf.length) {
                     if(log.isErrorEnabled())
                         log.error("size of the received packet (" + len + ") is bigger than " +
@@ -279,10 +273,6 @@ public class UDP extends TP implements Runnable {
                 if(log.isErrorEnabled())
                     log.error("failure in multicast receive()", ex);
                 // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
-            }
-            finally{
-            	if(oldThreadName != null && mcast_receiver!=null)
-                	mcast_receiver.setName(oldThreadName);           
             }
         }
         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
@@ -775,7 +765,10 @@ public class UDP extends TP implements Runnable {
             //start the listener thread of the ucast_recv_sock
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
-             if(log.isDebugEnabled()) log.debug("created unicast receiver thread");
+            if(thread_naming_pattern != null)
+                thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+            if(log.isDebugEnabled())
+                log.debug("created unicast receiver thread " + ucast_receiver.getThread());
         }
 
         if(ip_mcast) {
@@ -791,8 +784,12 @@ public class UDP extends TP implements Runnable {
             if(mcast_receiver == null) {
                 mcast_receiver=new Thread(Util.getGlobalThreadGroup(), this, MCAST_RECEIVER_THREAD_NAME);
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
+                if(thread_naming_pattern != null)
+                    thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);    
                 mcast_receiver.setDaemon(true);
                 mcast_receiver.start();
+                if(log.isDebugEnabled())
+                log.debug("created multicast receiver thread " + mcast_receiver);
             }
         }
     }
@@ -833,10 +830,9 @@ public class UDP extends TP implements Runnable {
         super.setThreadNames();
         
         if(thread_naming_pattern != null) {
-        	thread_naming_pattern.renameThread(mcast_receiver, null);
-        	
-        	if(ucast_receiver != null) 
-        		thread_naming_pattern.renameThread(ucast_receiver.getThread(), null);                        
+        	thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
+        	if(ucast_receiver != null)
+        		thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
         }        
     }
 
@@ -926,7 +922,6 @@ public class UDP extends TP implements Runnable {
             InetAddress     sender_addr;
             int             sender_port;
             Address         sender;
-            String 			oldThreadName = null;
 
             // moved out of loop to avoid excessive object creations (bela March 8 2001)
             packet=new DatagramPacket(receive_buf, receive_buf.length);
@@ -940,8 +935,8 @@ public class UDP extends TP implements Runnable {
                     offset=packet.getOffset();
                     len=packet.getLength();
                     data=packet.getData();
-                    sender=new IpAddress(sender_addr, sender_port);                                                
-
+                    sender=new IpAddress(sender_addr, sender_port);
+                    
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
                             log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
@@ -960,10 +955,6 @@ public class UDP extends TP implements Runnable {
                     if(log.isErrorEnabled())
                         log.error("[" + local_addr + "] failed receiving unicast packet", ex);
                     // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
-                }
-                finally{
-                	if(oldThreadName != null && thread!=null)
-                    	thread.setName(oldThreadName);                   
                 }
             }
             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
