@@ -1,4 +1,4 @@
-// $Id: Configurator.java,v 1.24 2007/01/16 09:23:30 belaban Exp $
+// $Id: Configurator.java,v 1.25 2007/03/16 06:17:19 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -622,8 +622,8 @@ public class Configurator {
                 retval.setProtocolStack(prot_stack);
                 if(properties != null)
                     if(!retval.setPropertiesInternal(properties))
-                        return null;
-                // retval.init(); // moved to after creation of *all* protocols
+                        throw new IllegalArgumentException("the following properties in " + protocol_name +
+                                " are not recognized: " + properties);
             }
             catch(InstantiationException inst_ex) {
                 log.error("an instance of " + protocol_name + " could not be created. Please check that it implements" +
