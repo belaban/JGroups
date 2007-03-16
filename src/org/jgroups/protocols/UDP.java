@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.129 2007/03/15 14:53:35 vlada Exp $
+ * @version $Id: UDP.java,v 1.130 2007/03/16 08:49:56 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -258,10 +258,7 @@ public class UDP extends TP implements Runnable {
                 offset=packet.getOffset();
                 len=packet.getLength();
                 data=packet.getData();
-                sender=new IpAddress(sender_addr, sender_port);
-                
-                if(thread_naming_pattern != null && thread_naming_pattern.isIncludeSenderAddress())
-                	oldThreadName = thread_naming_pattern.renameThread(mcast_receiver, sender);               
+                sender=new IpAddress(sender_addr, sender_port);                                       
 
                 if(len > receive_buf.length) {
                     if(log.isErrorEnabled())
@@ -943,10 +940,7 @@ public class UDP extends TP implements Runnable {
                     offset=packet.getOffset();
                     len=packet.getLength();
                     data=packet.getData();
-                    sender=new IpAddress(sender_addr, sender_port);
-                    
-                    if(thread_naming_pattern != null && thread_naming_pattern.isIncludeSenderAddress())
-                    	oldThreadName = thread_naming_pattern.renameThread(mcast_receiver, sender);                    
+                    sender=new IpAddress(sender_addr, sender_port);                                                
 
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
