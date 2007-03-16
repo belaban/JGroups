@@ -43,9 +43,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.127 2007/03/16 09:54:43 belaban Exp $
+ * @version $Id: TP.java,v 1.128 2007/03/16 14:00:15 belaban Exp $
  */
-@SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
+// @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
 
 
@@ -92,7 +92,7 @@ public abstract class TP extends Protocol {
     int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
     /** The members of this group (updated when a member joins or leaves) */
-    final protected Vector    members=new Vector(11);
+    final protected Vector<Address> members=new Vector<Address>(11);
 
     protected View            view=null;
 
@@ -156,7 +156,7 @@ public abstract class TP extends Protocol {
     long num_oob_msgs_received=0;
 
     /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
-    BlockingQueue oob_thread_pool_queue=null;
+    BlockingQueue<Runnable> oob_thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with direct executor) */
     boolean oob_thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
@@ -179,7 +179,7 @@ public abstract class TP extends Protocol {
     long num_incoming_msgs_received=0;
 
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
-    BlockingQueue thread_pool_queue=null;
+    BlockingQueue<Runnable> thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
     boolean thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
@@ -392,10 +392,10 @@ public abstract class TP extends Protocol {
 
 
 
-    public Map dumpStats() {
-        Map retval=super.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=super.dumpStats();
         if(retval == null)
-            retval=new HashMap();
+            retval=new HashMap<String,Object>();
         retval.put("num_msgs_sent", new Long(num_msgs_sent));
         retval.put("num_msgs_received", new Long(num_msgs_received));
         retval.put("num_bytes_sent", new Long(num_bytes_sent));
@@ -450,7 +450,7 @@ public abstract class TP extends Protocol {
             String req=tok.nextToken();
             StringBuffer info=new StringBuffer("n/a");
             if(req.trim().toLowerCase().startsWith("query")) {
-                ArrayList l=new ArrayList(tok.countTokens());
+                ArrayList<String> l=new ArrayList<String>(tok.countTokens());
                 while(tok.hasMoreTokens())
                     l.add(tok.nextToken().trim().toLowerCase());
 
@@ -501,7 +501,7 @@ public abstract class TP extends Protocol {
     public void init() throws Exception {
         super.init();
         if(bind_addr != null) {
-            Map m=new HashMap(1);
+            Map<String,Object> m=new HashMap<String,Object>(1);
             m.put("bind_addr", bind_addr);
             up_prot.up(new Event(Event.CONFIG, m));
         }
@@ -532,9 +532,9 @@ public abstract class TP extends Protocol {
         // ========================================== OOB thread pool ==============================
         if(oob_thread_pool_enabled) { // create a ThreadPoolExecutor for the unmarshaller thread pool
             if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new LinkedBlockingQueue(oob_thread_pool_queue_max_size);
+                oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
             else
-                oob_thread_pool_queue=new SynchronousQueue();
+                oob_thread_pool_queue=new SynchronousQueue<Runnable>();
             oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
                                              oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB", "OOB Thread");
         }
@@ -546,9 +546,9 @@ public abstract class TP extends Protocol {
         // ====================================== Regular thread pool ===========================
         if(thread_pool_enabled) { // create a ThreadPoolExecutor for the unmarshaller thread pool
             if(thread_pool_queue_enabled)
-                thread_pool_queue=new LinkedBlockingQueue(thread_pool_queue_max_size);
+                thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
             else
-                thread_pool_queue=new SynchronousQueue();
+                thread_pool_queue=new SynchronousQueue<Runnable>();
             thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
                                          thread_pool_rejection_policy, thread_pool_queue, "Incoming", "Incoming Thread");
         }
@@ -1097,7 +1097,7 @@ public abstract class TP extends Protocol {
                     msgs=readMessageList(dis, dest, multicast);
                 else {
                     msg=readMessage(dis, dest, sender, multicast);
-                    msgs=new LinkedList();
+                    msgs=new LinkedList<Message>();
                     msgs.add(msg);
                 }
             }
@@ -1249,10 +1249,10 @@ public abstract class TP extends Protocol {
     }
 
     private List<Message> readMessageList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
-        List                    list=new LinkedList();
-        int                     len;
-        Message                 msg;
-        Address                 src;
+        List<Message> list=new LinkedList<Message>();
+        int           len;
+        Message       msg;
+        Address       src;
 
         len=instream.readInt();
         src=Util.readAddress(instream);
@@ -1275,7 +1275,7 @@ public abstract class TP extends Protocol {
      * @return List<NetworkInterface>
      */
     private java.util.List parseInterfaceList(String s) throws Exception {
-        java.util.List interfaces=new ArrayList(10);
+        java.util.List<NetworkInterface> interfaces=new ArrayList<NetworkInterface>(10);
         if(s == null)
             return null;
 
@@ -1331,7 +1331,7 @@ public abstract class TP extends Protocol {
             synchronized(members) {
                 view=(View)evt.getArg();
                 members.clear();
-                Vector tmpvec=view.getMembers();
+                Vector<Address> tmpvec=view.getMembers();
                 members.addAll(tmpvec);
             }
             break;
@@ -1365,8 +1365,6 @@ public abstract class TP extends Protocol {
         		thread_naming_pattern.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
         	if(diag_handler != null)
         		thread_naming_pattern.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
-
-            //todo: set the names of all threads in both thread pools
         }
     }
 
@@ -1378,8 +1376,6 @@ public abstract class TP extends Protocol {
         	 incoming_msg_handler.getThread().setName(IncomingMessageHandler.THREAD_NAME);                   
          if(diag_handler != null && diag_handler.getThread() != null)
         	 diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);
-
-        //todo: unset the names of all threads in both thread pools
     }
     
     protected void handleConfigEvent(HashMap map) {
@@ -1393,8 +1389,7 @@ public abstract class TP extends Protocol {
 
 
     protected Executor createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
-                                        BlockingQueue queue,
-                                        final String thread_group_name, final String thread_name) {
+                                        BlockingQueue<Runnable> queue, final String thread_group_name, final String thread_name) {
         ThreadPoolExecutor pool=null;
         pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
 
@@ -1661,7 +1656,7 @@ public abstract class TP extends Protocol {
 
     private class Bundler {
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-        final Map<Address,List<Message>>  msgs=new HashMap(36);
+        final Map<Address,List<Message>>  msgs=new HashMap<Address,List<Message>>(36);
         long                              count=0;    // current number of bytes accumulated
         int                               num_msgs=0;
         long                              last_bundle_time;
@@ -1715,7 +1710,7 @@ public abstract class TP extends Protocol {
         private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
             List<Message> tmp=msgs.get(dest);
             if(tmp == null) {
-                tmp=new LinkedList();
+                tmp=new LinkedList<Message>();
                 msgs.put(dest, tmp);
             }
             tmp.add(msg);
@@ -1727,7 +1722,7 @@ public abstract class TP extends Protocol {
         private Map<Address,List<Message>> removeBundledMessages() {
             if(msgs.isEmpty())
                 return null;
-            Map<Address,List<Message>> copy=new HashMap(msgs);
+            Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
             if(trace) {
                 long stop=System.currentTimeMillis();
                 double percentage=100.0 / max_bundle_size * count;
@@ -1751,18 +1746,18 @@ public abstract class TP extends Protocol {
         private void sendBundledMessages(Map<Address,List<Message>> msgs) {
             boolean   multicast;
             Buffer    buffer;
-            Map.Entry entry;
+            Map.Entry<Address,List<Message>> entry;
             Address   dst;
 
             ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
             ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
-            for(Iterator it=msgs.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                List<Message> list=(List)entry.getValue();
+            for(Iterator<Map.Entry<Address,List<Message>>> it=msgs.entrySet().iterator(); it.hasNext();) {
+                entry=it.next();
+                List<Message> list=entry.getValue();
                 if(list.isEmpty())
                     continue;
-                dst=(Address)entry.getKey();
+                dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
                 synchronized(out_stream) {
                     try {
