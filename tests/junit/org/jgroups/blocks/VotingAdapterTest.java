@@ -1,31 +1,12 @@
 package org.jgroups.blocks;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.JChannel;
 
-public class VotingAdapterTest extends TestCase {
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
 
-    public static final String SERVER_PROTOCOL_STACK =
-            "UDP(mcast_addr=228.3.11.76;mcast_port=12345;ip_ttl=1;"
-                    + "mcast_send_buf_size=150000;mcast_recv_buf_size=80000)"
-//        + "JMS(topicName=topic/testTopic;cf=UILConnectionFactory;"
-//        + "jndiCtx=org.jnp.interfaces.NamingContextFactory;"
-//        + "providerURL=localhost;ttl=10000)"
-                    + ":PING(timeout=500;num_initial_members=1)"
-                    + ":FD"
-                    + ":VERIFY_SUSPECT(timeout=1500)"
-                    + ":pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800)"
-                    + ":FRAG(frag_size=4096)"
-                    + ":UNICAST(timeout=5000)"
-                    + ":pbcast.STABLE(desired_avg_gossip=200)"
-                    + ":pbcast.GMS(join_timeout=5000;join_retry_timeout=1000;"
-                    +     "shun=false;print_local_addr=false)"
-                    //+ ":SPEED_LIMIT(down_queue_limit=10)"
-                    + ":pbcast.STATE_TRANSFER"
-            ;
-
+public class VotingAdapterTest extends ChannelTestBase {
 
     public VotingAdapterTest(String testName) {
             super(testName);
@@ -36,8 +17,8 @@ public class VotingAdapterTest extends TestCase {
     }
 
     
-    private JChannel channel1;
-    private JChannel channel2;
+    private Channel channel1;
+    private Channel channel2;
 
     protected VotingAdapter adapter1;
     protected VotingAdapter adapter2;
@@ -56,7 +37,7 @@ public class VotingAdapterTest extends TestCase {
         listener3=new TestVoteChannelListener(false);
         listener4=new TestVoteChannelListener(false);
 
-        channel1=new JChannel(SERVER_PROTOCOL_STACK);
+        channel1=createChannel("A");
         adapter1=new VotingAdapter(channel1);
 
         channel1.connect("voting");
@@ -68,7 +49,7 @@ public class VotingAdapterTest extends TestCase {
         catch(Exception ex) {
         }
 
-        channel2=new JChannel(SERVER_PROTOCOL_STACK);
+        channel2=createChannel("A");
         adapter2=new VotingAdapter(channel2);
 
         channel2.connect("voting");
