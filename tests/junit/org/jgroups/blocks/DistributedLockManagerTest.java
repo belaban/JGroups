@@ -5,38 +5,19 @@ import java.lang.reflect.Field;
 import java.util.HashMap;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.JChannel;
+
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
 
 /**
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.4 2006/04/05 05:35:54 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.5 2007/03/16 13:40:57 vlada Exp $
  */
-public class DistributedLockManagerTest extends TestCase {
+public class DistributedLockManagerTest extends ChannelTestBase {
 
-    public static final String SERVER_PROTOCOL_STACK =
-            "UDP(mcast_addr=228.3.11.76;mcast_port=12345;ip_ttl=1;"
-                    + "mcast_send_buf_size=150000;mcast_recv_buf_size=80000)"
-//        + "JMS(topicName=topic/testTopic;cf=UILConnectionFactory;"
-//        + "jndiCtx=org.jnp.interfaces.NamingContextFactory;"
-//        + "providerURL=localhost;ttl=10000)"
-                    + ":PING(timeout=500;num_initial_members=1)"
-                    + ":FD"
-                    + ":VERIFY_SUSPECT(timeout=1500)"
-                    + ":pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800)"
-                    + ":UNICAST(timeout=5000)"
-                    + ":pbcast.STABLE(desired_avg_gossip=200)"
-                    + ":FRAG(frag_size=4096)"
-                    + ":pbcast.GMS(join_timeout=5000;join_retry_timeout=1000;"
-                    +     "shun=false;print_local_addr=false)"
-//        + ":SPEED_LIMIT(down_queue_limit=10)"
-//        + ":pbcast.STATE_TRANSFER(down_thread=false)"
-            ;
-    
-    
     public DistributedLockManagerTest(String testName) {
             super(testName);
     }
@@ -46,8 +27,8 @@ public class DistributedLockManagerTest extends TestCase {
     }
 
     
-    private JChannel channel1;
-    private JChannel channel2;
+    private Channel channel1;
+    private Channel channel2;
 
     protected VotingAdapter adapter1;
     protected VotingAdapter adapter2;
@@ -59,7 +40,7 @@ public class DistributedLockManagerTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        channel1=new JChannel(SERVER_PROTOCOL_STACK);
+        channel1=createChannel("A");
         adapter1=new VotingAdapter(channel1);
         channel1.connect("voting");
 
@@ -73,7 +54,7 @@ public class DistributedLockManagerTest extends TestCase {
         catch(Exception ex) {
         }
 
-        channel2=new JChannel(SERVER_PROTOCOL_STACK);
+        channel2=createChannel("A");
         adapter2=new VotingAdapter(channel2);
         lockManager2=new DistributedLockManager(adapter2, "2");
 
@@ -87,6 +68,7 @@ public class DistributedLockManagerTest extends TestCase {
     }
 
     public void tearDown() throws Exception {
+    	super.tearDown();
         channel2.close();
         
         try {
