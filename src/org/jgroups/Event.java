@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.40 2007/03/07 14:34:29 belaban Exp $
+// $Id: Event.java,v 1.41 2007/03/19 15:27:21 vlada Exp $
 
 package org.jgroups;
 
@@ -49,6 +49,7 @@ public class Event {
     public static final int UNBLOCK                   = 75;  //arg=null (indicate end of flush round)
     public static final int CLOSE_BARRIER             = 76;  // arg = null
     public static final int OPEN_BARRIER              = 77;  // arg = null
+    public static final int REBROADCAST				  = 78;  // arg = Digest    
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -133,6 +134,7 @@ public class Event {
             case UNBLOCK:                return "UNBLOCK";
             case CLOSE_BARRIER:          return "CLOSE_BARRIER";
             case OPEN_BARRIER:           return "OPEN_BARRIER";
+            case REBROADCAST:            return "REBROADCAST";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
