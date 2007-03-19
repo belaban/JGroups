@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.33 2007/03/15 10:56:43 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.34 2007/03/19 13:34:44 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -219,7 +219,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
         View v=ch1_repl.getView();
         assertNotNull(v);
-        assertEquals(2, v.size());
+        assertEquals("view is " + v, 2, v.size());
         v=ch1.getView();
         assertNotNull(v);
         assertEquals(2, v.size());
@@ -1019,7 +1019,7 @@ public class MultiplexerTest extends ChannelTestBase {
         public String toString() {
             synchronized(data) {
                 Set keys=new TreeSet(data.keySet());
-                StringBuffer sb=new StringBuffer();
+                StringBuilder sb=new StringBuilder();
                 for(Iterator it=keys.iterator(); it.hasNext();) {
                     Object o=it.next();
                     sb.append(o).append("=").append(data.get(o)).append(" ");
