@@ -1,11 +1,6 @@
-// $Id: NAKACK.java,v 1.109 2007/03/19 16:30:11 belaban Exp $
-
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
@@ -17,6 +12,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
@@ -34,6 +30,7 @@ import java.util.concurrent.ConcurrentMap;
  * vsync.
  *
  * @author Bela Ban
+ * @version $Id: NAKACK.java,v 1.110 2007/03/19 19:03:19 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -107,7 +104,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size missing messages received */
     private BoundedList send_history;
 
+    /** to wait for rebroadcasting to complete (all missing messages have been received) */
+    private final Promise rebroadcast_promise=new Promise();
 
+    private final AtomicInteger rebroadcast_msgs=new AtomicInteger(0);
+
+    // set during processing of a rebroadcast event
+    private volatile boolean rebroadcasting=false;
+
+    private long max_rebroadcast_timeout=20000;
 
 
 
@@ -268,6 +273,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             stats_list_size=Integer.parseInt(str);
             props.remove("stats_list_size");
+        }
+
+        str=props.getProperty("max_rebroadcast_timeout");
+        if(str != null) {
+            max_rebroadcast_timeout=Long.parseLong(str);
+            props.remove("max_rebroadcast_timeout");
         }
 
         if(xmit_from_random_member) {
@@ -448,7 +459,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 break;
 
             case Event.REBROADCAST:
-                rebroadcastMessages((Digest)evt.getArg());
+                rebroadcasting=true;
+                try {
+                    rebroadcastMessages((Digest)evt.getArg());
+                }
+                finally {
+                    rebroadcasting=false;
+                }
                 return null;
         }
 
@@ -744,9 +761,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     private static void updateStats(HashMap map, Address key, int req, int rsp, int missing) {
-        Entry entry=(Entry)map.get(key);
+        StatsEntry entry=(StatsEntry)map.get(key);
         if(entry == null) {
-            entry=new Entry();
+            entry=new StatsEntry();
             map.put(key, entry);
         }
         entry.xmit_reqs+=req;
@@ -802,7 +819,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 for(Iterator it=list.iterator(); it.hasNext();) {
                     m=(Message)it.next();
+                    if(rebroadcasting)
+                        rebroadcast_msgs.decrementAndGet();
                     up(new Event(Event.MSG, m));
+                }
+                if(rebroadcasting) {
+                    if(rebroadcast_msgs.longValue() <= 0) {
+                        rebroadcast_promise.setResult(Boolean.TRUE);
+                    }
                 }
                 list.clear();
             }
@@ -822,7 +846,41 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param highest_seqnos
      */
     private void rebroadcastMessages(Digest highest_seqnos) {
-        // todo: implement
+        if(highest_seqnos == null)
+            return;
+        Digest current=getDigest();
+        long high, curr_high;
+
+        Address sender;
+        Digest.Entry high_entry, curr_entry;
+        Map<Address,Digest.Entry> highest=highest_seqnos.getSenders();
+
+        // ask all senders with seqnos higher than our own to re-send those messages
+        rebroadcast_msgs.set(0);
+        rebroadcast_promise.reset();
+        for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
+            sender=entry.getKey();
+            high_entry=entry.getValue();
+            curr_entry=current.get(sender);
+            if(curr_entry == null)
+                continue;
+            high=high_entry.getHighSeen();
+            curr_high=curr_entry.getHighSeen();
+            if(high > curr_high) {
+                rebroadcast_msgs.addAndGet((int)(curr_high - high));
+                retransmit(curr_high, high, sender);
+            }
+        }
+
+        // now wait for all rebroadcasts, or elapsing of max_rebroadcast_timeout
+        try {
+            rebroadcast_promise.getResultWithTimeout(max_rebroadcast_timeout);
+        }
+        catch(TimeoutException e) {
+            if(log.isErrorEnabled())
+                log.error("failed getting all retransmitted messages within " + max_rebroadcast_timeout + " ms timeout;" +
+                        " highest_seqnos=" + highest_seqnos + ", our current digest=" + getDigest());
+        }
     }
 
 
@@ -1280,7 +1338,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    static class Entry {
+    static class StatsEntry {
         long xmit_reqs, xmit_rsps, missing_msgs_rcvd;
 
         public String toString() {
