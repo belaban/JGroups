@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.33 2007/01/04 12:18:54 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.34 2007/03/19 17:15:13 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -147,8 +147,7 @@ public class NakReceiverWindow {
 
 
     public void setRetransmitTimeouts(long[] timeouts) {
-        if(retransmitter != null)
-            retransmitter.setRetransmitTimeouts(timeouts);
+        retransmitter.setRetransmitTimeouts(timeouts);
     }
 
 
@@ -225,9 +224,7 @@ public class NakReceiverWindow {
                 }
                 received_msgs.put(new Long(seqno), msg);
                 tail=seqno + 1;
-                if(retransmitter != null) {
-                    retransmitter.add(old_tail, seqno - 1);
-                }
+                retransmitter.add(old_tail, seqno - 1);
             }
             else if(seqno < tail) { // finally received missing message
                 if(log.isTraceEnabled()) {
@@ -250,7 +247,7 @@ public class NakReceiverWindow {
                     //  xmit_entry.received=System.currentTimeMillis();
                     //long xmit_diff=xmit_entry == null? -1 : xmit_entry.received - xmit_entry.created;
                     //NAKACK.addXmitResponse(msg.getSrc(), seqno);
-                    if(retransmitter != null) retransmitter.remove(seqno);
+                    retransmitter.remove(seqno);
                 }
                 else
                     retval=false;
@@ -342,8 +339,7 @@ public class NakReceiverWindow {
     public void reset() {
         lock.writeLock().lock();
         try {
-            if(retransmitter != null)
-                retransmitter.reset();
+            retransmitter.reset();
             _reset();
         }
         finally {
@@ -358,8 +354,7 @@ public class NakReceiverWindow {
     public void destroy() {
         lock.writeLock().lock();
         try {
-            if(retransmitter != null)
-                retransmitter.stop();
+            retransmitter.stop();
             _reset();
         }
         finally {
