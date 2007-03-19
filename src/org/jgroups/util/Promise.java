@@ -1,4 +1,4 @@
-// $Id: Promise.java,v 1.10 2005/07/17 11:33:58 chrislott Exp $
+// $Id: Promise.java,v 1.11 2007/03/19 18:42:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -20,7 +20,7 @@ public class Promise {
      * Blocks until a result is available, or timeout milliseconds have elapsed
      * @param timeout
      * @return An object
-     * @throws TimeoutException. If a timeout occurred (implies that timeout > 0)
+     * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     public Object getResultWithTimeout(long timeout) throws TimeoutException {
         synchronized(this) {
@@ -39,7 +39,7 @@ public class Promise {
      * a lock held on 'this'
      * @param timeout
      * @return An object
-     * @throws TimeoutException. If a timeout occurred (implies that timeout > 0)
+     * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     private Object _getResultWithTimeout(long timeout) throws TimeoutException {
         Object  ret=null;
