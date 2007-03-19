@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.36 2007/01/12 14:20:55 belaban Exp $
+// $Id: MERGE2.java,v 1.37 2007/03/19 13:07:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -196,7 +196,7 @@ public class MERGE2 extends Protocol {
                 String tmp, prefix=Global.THREAD_PREFIX;
                 tmp=task.getName();
                 if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + group_name + ")";
+                    tmp+=prefix + group_name + ", local_addr=" + local_addr + ")";
                     task.setName(tmp);
                 }
             }
