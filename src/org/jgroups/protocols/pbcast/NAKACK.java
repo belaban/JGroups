@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.108 2007/03/19 16:25:04 belaban Exp $
+// $Id: NAKACK.java,v 1.109 2007/03/19 16:30:11 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -446,6 +446,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 leaving=true;
                 reset();
                 break;
+
+            case Event.REBROADCAST:
+                rebroadcastMessages((Digest)evt.getArg());
+                return null;
         }
 
         return down_prot.down(evt);
@@ -811,6 +815,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    /**
+     * Takes the argument highest_seqnos and compares it to the current digest. If the current digest has fewer messages,
+     * then send retransmit messages for the missing messages. Return when all missing messages have been received. If
+     * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
+     * @param highest_seqnos
+     */
+    private void rebroadcastMessages(Digest highest_seqnos) {
+        // todo: implement
+    }
 
 
     /**
