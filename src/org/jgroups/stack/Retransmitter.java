@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.19 2007/03/19 16:40:44 belaban Exp $
+// $Id: Retransmitter.java,v 1.20 2007/03/19 16:46:07 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 public class Retransmitter {
 
@@ -115,8 +115,8 @@ public class Retransmitter {
         Entry e;
 
         synchronized(msgs) {
-            for(ListIterator it=msgs.listIterator(); it.hasNext();) {
-                e=(Entry)it.next();
+            for(ListIterator<Entry> it=msgs.listIterator(); it.hasNext();) {
+                e=it.next();
                 if(seqno < e.low || seqno > e.high) continue;
                 e.remove(seqno);
                 if(e.low > e.high) {
@@ -133,11 +133,8 @@ public class Retransmitter {
      * respective tasks
      */
     public void reset() {
-        Entry entry;
-
         synchronized(msgs) {
-            for(ListIterator it=msgs.listIterator(); it.hasNext();) {
-                entry=(Entry)it.next();
+            for(Entry entry: msgs) {
                 entry.cancel();
             }
             msgs.clear();
@@ -154,8 +151,6 @@ public class Retransmitter {
      * stop it.
      */
     public void stop() {
-        Entry entry;
-
         // i. If retransmitter is owned, stop it else cancel all tasks
         // ii. Clear all pending msgs
         synchronized(msgs) {
@@ -169,8 +164,7 @@ public class Retransmitter {
                 }
             }
             else {
-                for(ListIterator it=msgs.listIterator(); it.hasNext();) {
-                    entry=(Entry)it.next();
+                for(Entry entry: msgs) {
                     entry.cancel();
                 }
             }
@@ -191,10 +185,8 @@ public class Retransmitter {
 
     public int size() {
         int size=0;
-        Entry entry;
         synchronized(msgs) {
-            for(Iterator it=msgs.iterator(); it.hasNext();) {
-                entry=(Retransmitter.Entry)it.next();
+            for(Entry entry: msgs) {
                 size+=entry.size();
             }
         }
