@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.110 2007/03/19 19:03:19 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.111 2007/03/19 19:08:00 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -534,6 +534,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address)evt.getArg();
+            break;
+
+        case Event.SUSPECT:
+            // release the promise if rebroadcasting is in progress... otherwise we wait forever. there will be a new
+            // flush round anyway
+            if(rebroadcasting) {
+                rebroadcast_promise.setResult(Boolean.TRUE);
+            }
             break;
 
         case Event.CONFIG:
