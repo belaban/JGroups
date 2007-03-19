@@ -1,4 +1,3 @@
-// $Id: ProtocolStack.java,v 1.43 2007/03/16 06:17:19 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -19,6 +18,7 @@ import java.util.concurrent.ThreadFactory;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
+ * @version $Id: ProtocolStack.java,v 1.44 2007/03/19 12:53:28 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -28,11 +28,12 @@ public class ProtocolStack extends Protocol implements Transport {
     private JChannel                channel=null;
     private boolean                 stopped=true;
     public final  TimeScheduler     timer;
-
+    protected ThreadGroup           timer_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Timers");
 
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
 
+    private static final String     TIMER_NAME="Timer";
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
@@ -328,6 +329,13 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.CONNECT:
+            case Event.DISCONNECT:
+                Object retval=top_prot.down(evt);
+                renameTimerThreads(TIMER_NAME);
+                return retval;
+        }
         return top_prot.down(evt);
     }
 
@@ -337,14 +345,65 @@ public class ProtocolStack extends Protocol implements Transport {
 
     private TimeScheduler createTimer() {
         ThreadFactory factory=new ThreadFactory() {
-            int num=1;
-            ThreadGroup timer_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Timers");
+
             public Thread newThread(Runnable command) {
-                return new Thread(timer_thread_group, command, "Timer-" + num++);
+                Thread thread=new Thread(timer_thread_group, command, TIMER_NAME);
+                renameThread(TIMER_NAME, thread);
+                return thread;
             }
         };
-
         return new TimeScheduler(factory);
+    }
+
+    private void renameTimerThreads(String base_name) {
+        if(timer_thread_group == null)
+            return;
+        String cluster_name=getClusterName();
+        Address local_addr=getLocalAddress();
+        int num_threads=timer_thread_group.activeCount();
+        Thread[] timers=new Thread[num_threads];
+        num_threads=timer_thread_group.enumerate(timers);
+        for(int i=0; i < num_threads; i++) {
+            Thread thread=timers[i];
+            renameThread(base_name, thread, cluster_name, local_addr);
+        }
+    }
+
+    private String renameThread(String base_name, Thread runner) {
+        return renameThread(base_name, runner, getClusterName(), getLocalAddress());
+    }
+
+
+    private String renameThread(String base_name, Thread runner, String cluster_name, Address local_addr) {
+        String oldName = null;
+        if(runner!=null){
+            oldName=runner.getName();
+
+            StringBuilder threadName=new StringBuilder();
+            threadName.append(base_name);
+
+            if(threadName.length() > 0)
+                threadName.append(',');
+            if(cluster_name == null)
+                cluster_name=getClusterName();
+            threadName.append(cluster_name);
+            if(threadName.length() > 0)
+                threadName.append(',');
+            if(local_addr == null)
+                local_addr=getLocalAddress();
+            threadName.append(local_addr);
+
+            runner.setName(threadName.toString());
+        }
+        return oldName;
+    }
+
+    private Address getLocalAddress() {
+        return channel != null? channel.getLocalAddress() : null;
+    }
+
+    private String getClusterName() {
+        return channel != null? channel.getClusterName() : "n/a";
     }
 
 
