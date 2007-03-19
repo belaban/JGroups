@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.2 2007/03/08 10:02:40 belaban Exp $
+  version: $Id: sfc.xml,v 1.3 2007/03/19 14:42:16 belaban Exp $
 -->
 
 <config>
@@ -22,7 +22,7 @@
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_bundling="true"
          enable_diagnostics="true"
-         thread_naming_pattern="pcl"
+         thread_naming_pattern="cl"
 
          use_concurrent_stack="true"
 
