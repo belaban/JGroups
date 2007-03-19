@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.18 2007/03/19 16:36:34 belaban Exp $
+// $Id: Retransmitter.java,v 1.19 2007/03/19 16:40:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class Retransmitter {
 
@@ -34,7 +34,7 @@ public class Retransmitter {
     private static long[] RETRANSMIT_TIMEOUTS={2 * SEC, 3 * SEC, 5 * SEC, 8 * SEC};
 
     private Address              sender=null;
-    private final List<Entry>    msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
+    private final List<Entry>    msgs=new LinkedList<Entry>();  // List<Entry> of elements to be retransmitted
     private RetransmitCommand    cmd=null;
     private boolean              retransmitter_owned;
     private TimeScheduler        timer=null;
@@ -268,7 +268,7 @@ public class Retransmitter {
         private long low;
         private long high;
         /** List<long[2]> of ranges to be retransmitted */
-        final java.util.List list=new ArrayList();
+        final java.util.List<long[]> list=new ArrayList<long[]>();
 
         public Entry(long low, long high, long[] intervals) {
             super(intervals);
@@ -301,7 +301,7 @@ public class Retransmitter {
 
             synchronized(list) {
                 for(i=0; i < list.size(); ++i) {
-                    bounds=(long[])list.get(i);
+                    bounds=list.get(i);
                     if(seqno < bounds[0] || seqno > bounds[1]) continue;
                     break;
                 }
@@ -313,11 +313,11 @@ public class Retransmitter {
                     else
                         bounds[0]++;
                     if(i == 0)
-                        low=list.isEmpty()? high + 1 : ((long[])list.get(i))[0];
+                        low=list.isEmpty()? high + 1 : list.get(i)[0];
                 }
                 else if(seqno == bounds[1]) {
                     bounds[1]--;
-                    if(i == list.size() - 1) high=((long[])list.get(i))[1];
+                    if(i == list.size() - 1) high=list.get(i)[1];
                 }
                 else {
                     newBounds=new long[2];
@@ -338,7 +338,7 @@ public class Retransmitter {
             List copy;
 
             synchronized(list) {
-                copy=new LinkedList(list);
+                copy=new LinkedList<long[]>(list);
             }
 
             for(Iterator it=copy.iterator(); it.hasNext();) {
