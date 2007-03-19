@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.17 2007/02/12 14:27:22 belaban Exp $
+// $Id: Retransmitter.java,v 1.18 2007/03/19 16:36:34 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 public class Retransmitter {
 
@@ -98,11 +98,11 @@ public class Retransmitter {
             last_seqno=tmp;
         }
 
-        Entry e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
+        Entry entry=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
         synchronized(msgs) {
-            msgs.add(e);
-            e.doSchedule(timer); // Entry adds itself to the timer
+            msgs.add(entry);
         }
+        entry.doSchedule(timer); // Entry adds itself to the timer
     }
 
     /**
