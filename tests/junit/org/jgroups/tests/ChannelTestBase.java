@@ -50,6 +50,7 @@ public class ChannelTestBase extends TestCase
 
    protected final Log log = LogFactory.getLog(this.getClass());
 
+
    public ChannelTestBase()
    {
       super();
@@ -97,9 +98,8 @@ public class ChannelTestBase extends TestCase
          {
             muxFactory[i].destroy();
          }
-      }          
-      
-      Util.sleep(500); // remove this in 2.5 !
+      }
+
 
       if (shouldCompareThreadCount())
       {
@@ -223,7 +223,6 @@ public class ChannelTestBase extends TestCase
 
    /**
     * Default channel factory used in junit tests
-    *
     */
    protected class DefaultChannelTestFactory implements ChannelTestFactory
    {      
@@ -235,7 +234,7 @@ public class ChannelTestBase extends TestCase
       protected Channel createChannel(String configFile, boolean useBlocking) throws Exception
       {
          HashMap channelOptions = new HashMap();
-         channelOptions.put(new Integer(Channel.BLOCK), new Boolean(useBlocking));
+         channelOptions.put(new Integer(Channel.BLOCK), Boolean.valueOf(useBlocking));
          return createChannel(configFile, channelOptions);
       }
 
@@ -364,9 +363,7 @@ public class ChannelTestBase extends TestCase
          catch (Exception e)
          {
             log.error(name + ": " + e.getLocalizedMessage(), e);
-
-            // Save it for the test to check
-            exception = e;
+            exception = e; // Save it for the test to check
          }
       }
 
