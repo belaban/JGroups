@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5 beta 1
 ================================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.2 2007/03/20 12:24:53 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.3 2007/03/20 12:47:48 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.1). However, there are some changes:
@@ -21,13 +21,40 @@ Concurrent stack
 [http://jira.jboss.com/jira/browse/JGRP-181]
 
 The concurrent stack is a major performance improvement for clusters where multiple nodes are sending messages at the
-same time. Up to and including 2.4.x, all messages from all senders were placed into a queue and delivered in order
+same time. Up to and including 2.4.x, all messages from all senders were placed into a single queue and delivered in order
 of reception (FIFO) to the application.
+
+This means that, for a given message M, all messages ahead of M had to get processed before M could get processed, even
+if some of those messages were from different senders.
+
+Now, messages from different senders are processed concurrently. This is done through 2 thread pools, a pool for default
+messages and a pool for out-of-band messages.
+
+The concurrent stack will improve performance dramatically when there are multiple senders and/or the processing
+of a message takes some time. In a cluster of N with N senders, X messages and T think time/message,
+we have seen total processing time of all messages drop from X * N * T to (X * T) + <const overhead> !
 
 
 Out-of-band (unordered) messages
 --------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-205]
+
+In some cases, messages do not need to get delivered in the order in which they were sent. For example, if a sender
+A sends messages M1 --> M2 --> M3 --> M4 --> M5 (--> means followed by), and all messages except M3 (heartbeat) and
+M5 (discovery request) are regular messages, then all 5 messages will be delivered sequentially.
+This means that M3 has to wait for M1 and M2 to get processed, and M5 has to wait for all 4 messages ahead of it, until
+it gets processed.
+An out-of-band (OOB) message is one that is tagged:
+Message msg;
+msg.setFlag(Message.OOB)
+
+An OOB message is reliably transmitted, that is if the network drops it, JGroups will retransmit it. However, the ordering
+defined by the stack is ignored for an OOB messages, e.g. in the above case, M3 and M5 can be delivered out of sequence
+with regard to the other messages.
+
+This is perfect for messages like heartbeats or diecovery requests or responses, which do not need to be delivered in
+FIFO order with respect to other messages from the same sender. If a message is tagged as OOB, it will be handled by the
+OOB thread pool rather than the regular thread pool.
 
 
 Concurrent Multiplexer
