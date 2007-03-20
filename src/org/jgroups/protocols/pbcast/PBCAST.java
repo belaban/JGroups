@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.21 2007/01/16 09:03:42 belaban Exp $
+// $Id: PBCAST.java,v 1.22 2007/03/20 09:16:20 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -8,6 +8,7 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
@@ -23,7 +24,7 @@ import java.util.*;
  * (gc is piggybacked in gossip messages). See DESIGN for more details.
  * @author Bela Ban
  */
-public class PBCAST extends Protocol implements Runnable {
+public class PBCAST extends Protocol implements Runnable, Retransmitter.RetransmitCommand {
     boolean operational=false;
     long seqno=1;                  // seqno for messages. 1 for the first message
     long gossip_round=1;           // identifies the gossip (together with sender)
@@ -164,7 +165,7 @@ public class PBCAST extends Protocol implements Runnable {
                         if(win == null) {
                             if(log.isInfoEnabled()) log.info("NakReceiverWindow for sender " + local_addr +
                                                         " not found. Creating new NakReceiverWindow starting at seqno=" + seqno);
-                            win=new NakReceiverWindow(local_addr, seqno);
+                            win=new NakReceiverWindow(local_addr, this, seqno);
                             digest.put(local_addr, win);
                         }
                         copy=m.copy();
@@ -215,7 +216,7 @@ public class PBCAST extends Protocol implements Runnable {
                 for(int i=0; i < mbrs.size(); i++) {
                     key=(Address) mbrs.elementAt(i);
                     if(!digest.containsKey(key)) {
-                        digest.put(key, new NakReceiverWindow(key, 1));
+                        digest.put(key, new NakReceiverWindow(key, this, 1));
                     }
                 }
 
@@ -241,6 +242,9 @@ public class PBCAST extends Protocol implements Runnable {
         return down_prot.down(evt);
     }
 
+
+    public void retransmit(long first_seqno, long last_seqno, Address sender) {
+    }
 
     /** Gossip thread. Sends gossips containing a message digest every <code>gossip_interval</code> msecs */
     public void run() {
@@ -351,7 +355,7 @@ public class PBCAST extends Protocol implements Runnable {
             if(win == null) {
                 if(warn) log.warn("NakReceiverWindow for sender " + sender +
                                                        " not found. Creating new NakReceiverWindow starting at seqno=" + tmp_seqno);
-                win=new NakReceiverWindow(sender, tmp_seqno);
+                win=new NakReceiverWindow(sender, this, tmp_seqno);
                 digest.put(sender, win);
             }
 
@@ -442,7 +446,7 @@ public class PBCAST extends Protocol implements Runnable {
                 }
                 val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
                 tmp_seqno=val.getHigh();
-                digest.put(sender, new NakReceiverWindow(sender, tmp_seqno + 1)); // next to expect, digest had *last* seen !
+                digest.put(sender, new NakReceiverWindow(sender, this, tmp_seqno + 1)); // next to expect, digest had *last* seen !
             }
         }
     }
@@ -627,7 +631,7 @@ public class PBCAST extends Protocol implements Runnable {
         /* 4. Send a HEARD_FROM event containing all members in the gossip-chain down to the FD layer.
            This ensures that we don't suspect them */
         seen_list=gossip.getSeenList();
-        if(seen_list.size() > 0)
+        if(!seen_list.isEmpty())
             down_prot.down(new Event(Event.HEARD_FROM, seen_list.clone()));
 
 
@@ -681,7 +685,7 @@ public class PBCAST extends Protocol implements Runnable {
 
         /* 6. Send a XMIT_REQ to the sender of the gossip. The sender will then resend those messages as
            an XMIT_RSP unicast message (the messages are in its buffer, as a List) */
-        if(ht == null || ht.size() == 0) {
+        if(ht == null || ht.isEmpty()) {
         }
         else {
             hdr=new PbcastHeader(PbcastHeader.XMIT_REQ);
