@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.10 2007/02/14 22:32:05 belaban Exp $
+// $Id: DigestTest.java,v 1.11 2007/03/20 16:10:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -96,9 +96,32 @@ public class DigestTest extends TestCase {
 	    System.out.println(diff2);
         assertEquals(1, diff2.size());
         assertEquals(diff, diff2);
-	    
     }
-    
+
+
+
+    public void testIsGreaterThanOrEqual() {
+        Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
+        map.put(a1, new Digest.Entry(4, 500, 501));
+        map.put(a2, new Digest.Entry(25, 26, 26));
+        map.put(a3, new Digest.Entry(20, 25, 33));
+        Digest my=new Digest(map);
+
+        System.out.println("\nd: " + d + "\nmy: " + my);
+        assertTrue(my.isGreaterThanOrEqual(d));
+
+        map.remove(a3);
+        map.put(a3, new Digest.Entry(20, 26, 33));
+        my=new Digest(map);
+        System.out.println("\nd: " + d + "\nmy: " + my);
+        assertTrue(my.isGreaterThanOrEqual(d));
+
+        map.remove(a3);
+        map.put(a3, new Digest.Entry(20, 22, 32));
+        my=new Digest(map);
+        System.out.println("\nd: " + d + "\nmy: " + my);
+        assertFalse(my.isGreaterThanOrEqual(d));
+    }
 
     public void testEquals2() {
         md=new MutableDigest(d);
