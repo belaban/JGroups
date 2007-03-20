@@ -1,11 +1,69 @@
 
-Release Notes JGroups 2.5
-=========================
+Release Notes JGroups 2.5 beta 1
+================================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.1 2007/02/21 16:23:16 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.2 2007/03/20 12:24:53 belaban Exp $
 Author: Bela Ban
 
+JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.1). However, there are some changes:
+ - JDK 5 is required
+ - a major number of older protocols were tossed out, e.g. if you used protocols listed in vsync.xml, they won't be
+   found anymore
 
+The biggest new functionality is the concurrent stack, which allows for concurrent processing of
+unrelated messages.
+
+Below is a short summary (with links to the detailed description) of the major new features.
+
+
+Concurrent stack
+----------------
+[http://jira.jboss.com/jira/browse/JGRP-181]
+
+The concurrent stack is a major performance improvement for clusters where multiple nodes are sending messages at the
+same time. Up to and including 2.4.x, all messages from all senders were placed into a queue and delivered in order
+of reception (FIFO) to the application.
+
+
+Out-of-band (unordered) messages
+--------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-205]
+
+
+Concurrent Multiplexer
+----------------------
+[http://jira.jboss.com/jira/browse/JGRP-415]
+
+
+Simplified and fast flow control (SFC)
+--------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-402]
+
+
+Full support for virtual synchrony
+----------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-341]
+
+
+Simple failure detection protocol (FD_ALL)
+------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-395]
+
+
+Better naming of threads
+------------------------
+
+
+Switch to java.util.concurrent classes (JDK 5)
+----------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-391]
+
+
+Manual
+------
 The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+Bela Ban, Kreuzlingen, Switzerland, March 20 2007
 
 
