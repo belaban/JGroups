@@ -27,6 +27,7 @@ import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.protocols.pbcast.Digest.Entry;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.AckCollector;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -126,6 +127,8 @@ public class FLUSH extends Protocol
    private final Exchanger<Boolean> blockExchange = new Exchanger<Boolean>();    
    
    private final FlushPhase flushPhase = new FlushPhase();
+   
+   private final AckCollector reconcileOks = new AckCollector();
 
 
 
@@ -397,6 +400,29 @@ public class FLUSH extends Protocol
                         log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
                      }
                   }
+               }
+               else if (fh.type == FlushHeader.FLUSH_RECONCILE)
+               {                  
+                  flushPhase.release();                  
+                  Address requester = msg.getSrc();
+                  Digest reconcileDigest = fh.digest;
+                  
+                  if(log.isWarnEnabled())
+                  {
+                     log.warn("Received FLUSH_RECONCILE at " + localAddress + " passing this digest to NAKACK " + reconcileDigest);
+                  }
+                  
+                  //Let NAKACK reconcile missing messages
+                  down_prot.down(new Event(Event.REBROADCAST, reconcileDigest));
+                  
+                  Message reconcileOk = new Message(requester);
+                  reconcileOk.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
+                  down_prot.down(new Event(Event.MSG, reconcileOk));                  
+               }
+               else if (fh.type == FlushHeader.FLUSH_RECONCILE_OK)
+               {                  
+                  flushPhase.release();                  
+                  reconcileOks.ack(msg.getSrc());
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
                {
@@ -765,54 +791,38 @@ public class FLUSH extends Protocol
                + flushCompletedMap.keySet());
       
       if (flushCompleted)
-      {         
-         /*List<Digest> gaps = findVirtualSynchronyGaps();
-         if(!gaps.isEmpty())
-         {
-            requestRetransmissions(gaps);
-            
-            //restart FLUSH
-            Message msg = new Message();
-            synchronized (sharedLock)
-            {
-               msg.putHeader(getName(), new FlushHeader(FlushHeader.START_FLUSH, currentViewId(), flushMembers));
-            }
-            if (log.isDebugEnabled())
-               log.debug("Repeating FLUSH due to virtual synchrony gap");
-            
-            down_prot.down(new Event(Event.MSG, msg));            
-         }
-         else
-         { */          
-            flush_promise.setResult(Boolean.TRUE);          
-            if (log.isDebugEnabled())
-               log.debug("All FLUSH_COMPLETED received at " + localAddress);   
-         //}                             
+      {             	 
+    	 if(hasVirtualSynchronyGaps())
+    	 {
+    		 Digest d = findHighestSequences();
+    		 Message msg = new Message();
+             synchronized (sharedLock)
+             {
+            	 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(), flushMembers);           
+            	 reconcileOks.reset(currentView!=null?currentView.getVid():null, new ArrayList(flushMembers));
+            	 fh.addDigest(d);
+                 msg.putHeader(getName(), fh);                
+             }                        
+             
+             if (log.isWarnEnabled())
+                log.warn("Repeating FLUSH due to virtual synchrony gap, digest is " + d);
+             
+             down_prot.down(new Event(Event.MSG, msg));   
+             
+             try {
+            	 reconcileOks.waitForAllAcks(5000);                
+             }
+             catch(TimeoutException e) {                
+             }                         
+    	 }
+	     flush_promise.setResult(Boolean.TRUE);          
+         if (log.isDebugEnabled())
+            log.debug("All FLUSH_COMPLETED received at " + localAddress);         
       }
    }
-
-   private void requestRetransmissions(List<Digest> gaps)
-   {     	 
-      for (Digest digest : gaps)
-      {
-         Map<Address, Entry> senders = digest.getSenders();
-         for (Address sender : senders.keySet())
-         {
-            Entry e = senders.get(sender);
-            Header hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, e.getLow(), e.getHigh(), sender);
-            Message retransmit_msg=new Message();
-            retransmit_msg.setFlag(Message.OOB);      
-            retransmit_msg.putHeader("NAKACK", hdr);
-            log.warn(localAddress + ": sending XMIT_REQ " + hdr + " to all");
-            down_prot.down(new Event(Event.MSG, retransmit_msg));                       
-         }
-      }
-      
-   }
-
-   private List<Digest> findVirtualSynchronyGaps()
-   {      
-      List<Digest> difference = new ArrayList<Digest>();
+   
+   private boolean hasVirtualSynchronyGaps()
+   {            
       synchronized (sharedLock)
       {
          Collection<Digest> digests = flushCompletedMap.values();            
@@ -821,16 +831,34 @@ public class FLUSH extends Protocol
             for (Digest digestEntryO : digests)
             {                           
 	           Digest diff = digestEntryI.difference(digestEntryO);	           
-	           if(!difference.contains(diff) && diff != Digest.EMPTY_DIGEST)
+	           if(diff != Digest.EMPTY_DIGEST)
 	           {
-	        	  log.warn("Digest " + digestEntryI + " is not the same as " + digestEntryO);
-	        	  log.warn("Diff " + diff);
-	              difference.add(diff);  
+	        	   return true;
 	           }                                
             }                          
-         }
+         }                
       }
-      return difference;
+      return false;
+   }
+   
+   private Digest findHighestSequences()
+   {      
+	  Digest result = null;
+      synchronized (sharedLock)
+      {
+         List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values()); 
+         log.warn(digests);
+         
+         Digest firstDigest = digests.get(0);
+         result = firstDigest;         
+         List<Digest> remainingDigests = digests.subList(1, digests.size());
+         
+         for (Digest digestG : remainingDigests)
+         {
+        	 result = result.highestSequence(digestG);        	 
+         }           
+      }
+      return result;
    }
 
    private void onSuspect(Address address)
@@ -929,6 +957,10 @@ public class FLUSH extends Protocol
       public static final byte ABORT_FLUSH = 5;  
       
       public static final byte FLUSH_BYPASS = 6;
+      
+      public static final byte FLUSH_RECONCILE = 7;
+      
+      public static final byte FLUSH_RECONCILE_OK = 8;
 
       byte type;
 
@@ -982,7 +1014,11 @@ public class FLUSH extends Protocol
             case FLUSH_COMPLETED :
                return "FLUSH[type=FLUSH_COMPLETED,viewId=" + viewID + "]";
             case FLUSH_BYPASS :
-               return "FLUSH[type=FLUSH_BYPASS,viewId=" + viewID + "]";   
+               return "FLUSH[type=FLUSH_BYPASS,viewId=" + viewID + "]";
+            case FLUSH_RECONCILE :
+                return "FLUSH[type=FLUSH_RECONCILE,viewId=" + viewID + ",digest=" + digest + "]"; 
+            case FLUSH_RECONCILE_OK :
+                return "FLUSH[type=FLUSH_RECONCILE_OK,viewId=" + viewID + "]";     
             default :
                return "[FLUSH: unknown type (" + type + ")]";
          }
