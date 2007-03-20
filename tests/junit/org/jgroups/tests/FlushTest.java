@@ -42,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.25 2007/03/06 16:37:32 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.26 2007/03/20 10:27:22 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -323,7 +323,7 @@ public class FlushTest extends ChannelTestBase
          lastMember.getChannel().send(msg);
          
          //Sleep to ensure all members receive discard message
-         sleepThread(10000);               
+         sleepThread(5000);               
          
          semaphore.release(count);
          

@@ -1,4 +1,4 @@
-// $Id: Digest.java,v 1.28 2007/03/16 10:15:42 vlada Exp $
+// $Id: Digest.java,v 1.29 2007/03/20 10:27:21 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -127,6 +127,52 @@ public class Digest implements Externalizable, Streamable {
                     Entry r=new Entry(low, high);
                     resultMap.put(address, r);
                 }
+            }
+
+            //any entries left in (this - intersection)?
+            //if yes, add them to result
+            if(intersection.size() != this.senders.keySet().size()) {
+                Set<Address> thisMinusInteresection=new TreeSet<Address>(this.senders.keySet());
+                thisMinusInteresection.removeAll(intersection);
+                for(Address address : thisMinusInteresection) {
+                    resultMap.put(address, new Entry(this.get(address)));
+                }
+            }
+
+            //any entries left in (other - intersection)?
+            //if yes, add them to result
+            if(intersection.size() != other.senders.keySet().size()) {
+                Set<Address> otherMinusInteresection=new TreeSet<Address>(other.senders.keySet());
+                otherMinusInteresection.removeAll(intersection);
+                for(Address address : otherMinusInteresection) {
+                    resultMap.put(address, new Entry(other.get(address)));
+                }
+            }
+            result=new Digest(resultMap);
+        }
+        return result;
+    }
+    
+    public Digest highestSequence(Digest other) {
+        if(other == null) return copy();
+
+        Digest result=EMPTY_DIGEST;
+        if(this.equals(other)) {
+            return result;
+        }
+        else {
+            //find intersection and compare their entries
+            Map<Address, Entry> resultMap=new ConcurrentHashMap<Address, Entry>(7);
+            Set<Address> intersection=new TreeSet<Address>(this.senders.keySet());
+            intersection.retainAll(other.senders.keySet());
+
+            for(Address address : intersection) {
+                Entry e1=this.get(address);
+                Entry e2=other.get(address);                
+                    
+                long high=Math.max(e1.high_seqno, e2.high_seqno);
+                Entry r=new Entry(0, high);
+                resultMap.put(address, r);                
             }
 
             //any entries left in (this - intersection)?
