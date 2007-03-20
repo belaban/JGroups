@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.30 2007/03/20 13:43:59 belaban Exp $
+ * @version $Id: Digest.java,v 1.31 2007/03/20 16:09:55 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -230,6 +230,31 @@ public class Digest implements Externalizable, Streamable {
             return -1;
         else
             return entry.high_seqno_seen;
+    }
+
+
+    /**
+     * Returns true if all senders of the current digest have their seqnos >= the ones from other
+     * @param other
+     * @return
+     */
+    public boolean isGreaterThanOrEqual(Digest other) {
+        Map<Address,Entry> our_map=getSenders();
+        Address sender;
+        Entry my_entry, their_entry;
+        long my_highest, their_highest;
+        for(Map.Entry<Address,Entry> entry: our_map.entrySet()) {
+            sender=entry.getKey();
+            my_entry=entry.getValue();
+            their_entry=other.get(sender);
+            if(their_entry == null)
+                continue;
+            my_highest=my_entry.getHighest();
+            their_highest=their_entry.getHighest();
+            if(my_highest < their_highest)
+                return false;
+        }
+        return true;
     }
 
 
