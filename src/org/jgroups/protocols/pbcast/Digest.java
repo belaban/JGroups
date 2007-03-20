@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.31 2007/03/20 16:09:55 belaban Exp $
+ * @version $Id: Digest.java,v 1.32 2007/03/20 17:16:20 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -239,6 +239,8 @@ public class Digest implements Externalizable, Streamable {
      * @return
      */
     public boolean isGreaterThanOrEqual(Digest other) {
+        if(other == null)
+            return true;
         Map<Address,Entry> our_map=getSenders();
         Address sender;
         Entry my_entry, their_entry;
