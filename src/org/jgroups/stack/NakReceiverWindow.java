@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.34 2007/03/19 17:15:13 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.35 2007/03/20 09:17:08 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -111,8 +111,7 @@ public class NakReceiverWindow {
      * requests of missing msgs. If it's not provided or is null, an internal
      * one is created
      */
-    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd,
-                             long start_seqno, TimeScheduler sched) {
+    public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long start_seqno, TimeScheduler sched) {
         head=start_seqno;
         tail=head;
 
@@ -133,16 +132,6 @@ public class NakReceiverWindow {
      */
     public NakReceiverWindow(Address sender, Retransmitter.RetransmitCommand cmd, long start_seqno) {
         this(sender, cmd, start_seqno, null);
-    }
-
-    /**
-     * Creates a new instance without a retransmission thread
-     *
-     * @param sender The sender associated with this instance
-     * @param start_seqno The first sequence number to be received
-     */
-    public NakReceiverWindow(Address sender, long start_seqno) {
-        this(sender, null, start_seqno);
     }
 
 
