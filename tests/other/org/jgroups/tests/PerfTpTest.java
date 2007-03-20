@@ -13,7 +13,7 @@ import java.util.Iterator;
 /**
  * Test of PERF_TP. Requirement: transport needs to be PERF_TP
  * @author Bela Ban Feb 24, 2004
- * @version $Id: PerfTpTest.java,v 1.8 2005/04/18 13:55:35 belaban Exp $
+ * @version $Id: PerfTpTest.java,v 1.9 2007/03/20 09:43:30 belaban Exp $
  */
 public class PerfTpTest {
     JChannel ch=null;
@@ -86,6 +86,7 @@ public class PerfTpTest {
         }
 
         ch=new JChannel(props);
+        ch.setReceiver(new ExtendedReceiverAdapter());
         ch.connect("demo");
         tp=PERF_TP.getInstance();
         local_addr=ch.getLocalAddress();
