@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.114 2007/03/20 17:24:41 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.115 2007/03/20 18:01:37 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -878,58 +878,119 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * then send retransmit messages for the missing messages. Return when all missing messages have been received. If
      * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
      */
-    private void rebroadcastMessages() {
-        if(rebroadcast_digest == null)
-            return;
-        Digest current=getDigest();
-        long high, curr_high;
-        boolean xmitted=false;
+//    private void rebroadcastMessages1() {
+//        if(rebroadcast_digest == null)
+//            return;
+//        Digest current=getDigest();
+//        long high, curr_high;
+//        boolean xmitted=false;
+//
+//        Address sender;
+//        Digest.Entry high_entry, curr_entry;
+//        Map<Address,Digest.Entry> highest=rebroadcast_digest.getSenders();
+//
+//        // ask all senders with seqnos higher than our own to re-send those messages
+//        cancelRebroadcasting();
+//        rebroadcasting=true;
+//        for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
+//            sender=entry.getKey();
+//            high_entry=entry.getValue();
+//            curr_entry=current.get(sender);
+//            if(curr_entry == null)
+//                continue;
+//            high=high_entry.getHighest();
+//            curr_high=curr_entry.getHighest();
+//            if(high > curr_high) {
+//                if(trace)
+//                    log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
+//                retransmit(curr_high, high, sender);
+//                xmitted=true;
+//            }
+//        }
+//
+//        if(!xmitted)
+//            return;
+//
+//        rebroadcast_lock.lock();
+//        try {
+//            while(true) {
+//                try {
+//                    current=getDigest();
+//                    Digest tmp=rebroadcast_digest;
+//                    boolean flag=current.isGreaterThanOrEqual(tmp);
+//                    if(flag)
+//                        return;
+//                    boolean timeout_occurred=rebroadcast_done.await(max_rebroadcast_timeout, TimeUnit.MILLISECONDS);
+//                    if(timeout_occurred)
+//                        return;
+//                }
+//                catch(InterruptedException e) {
+//                }
+//            }
+//        }
+//        finally {
+//            rebroadcast_lock.unlock();
+//        }
+//    }
 
+
+    /**
+     * Takes the argument highest_seqnos and compares it to the current digest. If the current digest has fewer messages,
+     * then send retransmit messages for the missing messages. Return when all missing messages have been received. If
+     * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
+     */
+    private void rebroadcastMessages() {
+        Digest current;
+        Map<Address,Digest.Entry> highest;
         Address sender;
         Digest.Entry high_entry, curr_entry;
-        Map<Address,Digest.Entry> highest=rebroadcast_digest.getSenders();
+        long high, curr_high;
+        long wait_time=max_rebroadcast_timeout, start=System.currentTimeMillis();
 
-        // ask all senders with seqnos higher than our own to re-send those messages
+
         cancelRebroadcasting();
         rebroadcasting=true;
-        for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
-            sender=entry.getKey();
-            high_entry=entry.getValue();
-            curr_entry=current.get(sender);
-            if(curr_entry == null)
-                continue;
-            high=high_entry.getHighest();
-            curr_high=curr_entry.getHighest();
-            if(high > curr_high) {
-                if(trace)
-                    log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
-                retransmit(curr_high, high, sender);
-                xmitted=true;
+        while(rebroadcast_digest != null && wait_time > 0) {
+            current=getDigest();
+            highest=rebroadcast_digest.getSenders();
+
+            boolean xmitted=false;
+            for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
+                sender=entry.getKey();
+                high_entry=entry.getValue();
+                curr_entry=current.get(sender);
+                if(curr_entry == null)
+                    continue;
+                high=high_entry.getHighest();
+                curr_high=curr_entry.getHighest();
+                if(high > curr_high) {
+                    if(trace)
+                        log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
+                    retransmit(curr_high, high, sender);
+                    xmitted=true;
+                }
             }
-        }
+            if(!xmitted)
+                return; // we're done; no retransmissions are needed anymore. our digest is >= rebroadcast_digest
 
-        if(!xmitted)
-            return;
-
-        rebroadcast_lock.lock();
-        try {
-            while(true) {
+            rebroadcast_lock.lock();
+            try {
                 try {
                     current=getDigest();
-                    Digest tmp=rebroadcast_digest;
-                    boolean flag=current.isGreaterThanOrEqual(tmp);
-                    if(flag)
+                    if(!rebroadcasting || current.isGreaterThanOrEqual(rebroadcast_digest)) {
                         return;
-                    boolean timeout_occurred=rebroadcast_done.await(max_rebroadcast_timeout, TimeUnit.MILLISECONDS);
+                    }
+                    boolean timeout_occurred=rebroadcast_done.await(wait_time, TimeUnit.MILLISECONDS);
                     if(timeout_occurred)
                         return;
+                    wait_time-=(System.currentTimeMillis() - start);
                 }
                 catch(InterruptedException e) {
                 }
             }
-        }
-        finally {
-            rebroadcast_lock.unlock();
+            finally {
+                rebroadcast_lock.unlock();
+            }
         }
     }
 
