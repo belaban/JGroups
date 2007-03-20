@@ -30,7 +30,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.111 2007/03/19 19:08:00 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.112 2007/03/20 13:56:40 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -858,6 +858,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         Digest current=getDigest();
         long high, curr_high;
+        boolean xmitted=false;
 
         Address sender;
         Digest.Entry high_entry, curr_entry;
@@ -872,22 +873,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             curr_entry=current.get(sender);
             if(curr_entry == null)
                 continue;
-            high=high_entry.getHighSeen();
-            curr_high=curr_entry.getHighSeen();
+            high=high_entry.getHighest();
+            curr_high=curr_entry.getHighest();
             if(high > curr_high) {
                 rebroadcast_msgs.addAndGet((int)(curr_high - high));
+                if(trace)
+                    log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
                 retransmit(curr_high, high, sender);
+                xmitted=true;
             }
         }
 
-        // now wait for all rebroadcasts, or elapsing of max_rebroadcast_timeout
-        try {
-            rebroadcast_promise.getResultWithTimeout(max_rebroadcast_timeout);
-        }
-        catch(TimeoutException e) {
-            if(log.isErrorEnabled())
-                log.error("failed getting all retransmitted messages within " + max_rebroadcast_timeout + " ms timeout;" +
-                        " highest_seqnos=" + highest_seqnos + ", our current digest=" + getDigest());
+        if(xmitted && rebroadcast_msgs.longValue() > 0) {
+            // now wait for all rebroadcasts, or elapsing of max_rebroadcast_timeout
+            try {
+                rebroadcast_promise.getResultWithTimeout(max_rebroadcast_timeout);
+            }
+            catch(TimeoutException e) {
+                if(log.isErrorEnabled())
+                    log.error("failed getting all retransmitted messages within " + max_rebroadcast_timeout + " ms timeout;" +
+                            " highest_seqnos=" + highest_seqnos + ", our current digest=" + getDigest());
+            }
         }
     }
 
