@@ -235,7 +235,7 @@ public class ChannelTestBase extends TestCase
       protected Channel createChannel(String configFile, boolean useBlocking) throws Exception
       {
          HashMap channelOptions = new HashMap();
-         channelOptions.put(new Integer(Channel.BLOCK), Boolean.TRUE);
+         channelOptions.put(new Integer(Channel.BLOCK), new Boolean(useBlocking));
          return createChannel(configFile, channelOptions);
       }
 
