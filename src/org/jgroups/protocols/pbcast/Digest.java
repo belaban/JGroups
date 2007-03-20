@@ -1,6 +1,6 @@
-// $Id: Digest.java,v 1.29 2007/03/20 10:27:21 vlada Exp $
-
 package org.jgroups.protocols.pbcast;
+
+import static java.lang.Math.max;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
+ * @version $Id: Digest.java,v 1.30 2007/03/20 13:43:59 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -123,7 +124,7 @@ public class Digest implements Externalizable, Streamable {
                 Entry e2=other.get(address);
                 if(e1.getHigh() != e2.getHigh()) {
                     long low=Math.min(e1.high_seqno, e2.high_seqno);
-                    long high=Math.max(e1.high_seqno, e2.high_seqno);
+                    long high=max(e1.high_seqno, e2.high_seqno);
                     Entry r=new Entry(low, high);
                     resultMap.put(address, r);
                 }
@@ -170,7 +171,7 @@ public class Digest implements Externalizable, Streamable {
                 Entry e1=this.get(address);
                 Entry e2=other.get(address);                
                     
-                long high=Math.max(e1.high_seqno, e2.high_seqno);
+                long high=max(e1.high_seqno, e2.high_seqno);
                 Entry r=new Entry(0, high);
                 resultMap.put(address, r);                
             }
@@ -409,6 +410,7 @@ public class Digest implements Externalizable, Streamable {
         public final long getLow() {return low_seqno;}
         public final long getHigh() {return high_seqno;}
         public final long getHighSeen() {return high_seqno_seen;}
+        public final long getHighest() {return max(high_seqno, high_seqno_seen);}
 
         public boolean equals(Object obj) {
             Entry other=(Entry)obj;
