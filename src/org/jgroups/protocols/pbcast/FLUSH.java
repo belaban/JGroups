@@ -407,21 +407,27 @@ public class FLUSH extends Protocol
                   Address requester = msg.getSrc();
                   Digest reconcileDigest = fh.digest;
                   
-                  if(log.isWarnEnabled())
-                  {
-                     log.warn("Received FLUSH_RECONCILE at " + localAddress + " passing this digest to NAKACK " + reconcileDigest);
-                  }
+                  if(log.isDebugEnabled())                  
+                     log.debug("Received FLUSH_RECONCILE at " + localAddress + " passing digest to NAKACK " + reconcileDigest);                  
                   
                   //Let NAKACK reconcile missing messages
                   down_prot.down(new Event(Event.REBROADCAST, reconcileDigest));
                   
+                  if(log.isDebugEnabled())                  
+                	  log.debug("Returned from FLUSH_RECONCILE at " + localAddress + " Sending RECONCILE_OK to " + requester);                                  
+                  
                   Message reconcileOk = new Message(requester);
+                  reconcileOk.setFlag(Message.OOB);
                   reconcileOk.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
                   down_prot.down(new Event(Event.MSG, reconcileOk));                  
                }
                else if (fh.type == FlushHeader.FLUSH_RECONCILE_OK)
                {                  
-                  flushPhase.release();                  
+                  flushPhase.release();   
+                  if(log.isDebugEnabled())
+                  {
+                	  log.debug(localAddress + " received reconcile ok from " + msg.getSrc());
+                  }
                   reconcileOks.ack(msg.getSrc());
                }
                else if (fh.type == FlushHeader.STOP_FLUSH)
@@ -792,10 +798,11 @@ public class FLUSH extends Protocol
       
       if (flushCompleted)
       {             	 
-    	 if(hasVirtualSynchronyGaps())
+    	 /*if(hasVirtualSynchronyGaps())
     	 {
     		 Digest d = findHighestSequences();
     		 Message msg = new Message();
+    		 msg.setFlag(Message.OOB);
              synchronized (sharedLock)
              {
             	 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(), flushMembers);           
@@ -814,7 +821,7 @@ public class FLUSH extends Protocol
              }
              catch(TimeoutException e) {                
              }                         
-    	 }
+    	 }*/
 	     flush_promise.setResult(Boolean.TRUE);          
          if (log.isDebugEnabled())
             log.debug("All FLUSH_COMPLETED received at " + localAddress);         
@@ -846,8 +853,7 @@ public class FLUSH extends Protocol
 	  Digest result = null;
       synchronized (sharedLock)
       {
-         List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values()); 
-         log.warn(digests);
+         List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());          
          
          Digest firstDigest = digests.get(0);
          result = firstDigest;         
