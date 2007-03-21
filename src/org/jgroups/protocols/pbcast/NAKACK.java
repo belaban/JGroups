@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.117 2007/03/21 11:18:33 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.118 2007/03/21 14:41:15 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -122,6 +122,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private long max_rebroadcast_timeout=2000;
 
     private static final int NUM_REBROADCAST_MSGS=3;
+
+    /** keeps the last 10 stability messages */
+    private final BoundedList stability_msgs=new BoundedList(10);
 
 
 
@@ -364,9 +367,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             sb.append(missing).append("\n");
         }
 
+        sb.append("\nStability messages received\n");
+        sb.append(printStabilityMessages()).append("\n");
+
         return sb.toString();
     }
 
+    public String printStabilityMessages() {
+        StringBuilder sb=new StringBuilder();
+        sb.append(stability_msgs.toStringWithDelimiter("\n"));
+        return sb.toString();
+    }
 
 
     public Vector providedUpServices() {
@@ -703,10 +714,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=null;
         boolean      amISender; // am I the original sender ?
 
-        // System.out.println("-- [" +local_addr + "] received XMIT_REQ from " + xmit_requester + " for " + first_seqno +
-           //     " - " + last_seqno);
-        
-
         if(trace) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
@@ -865,7 +872,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(rebroadcasting && count > 0) {
                     Digest tmp=getDigest();
                     if(tmp.isGreaterThanOrEqual(rebroadcast_digest)) {
-                        // System.out.println("CANCEL rebroadcasting");
                         cancelRebroadcasting();
                     }
                 }
@@ -909,7 +915,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 their_high=their_entry.getHighest();
                 my_high=my_entry.getHighest();
                 if(their_high > my_high) {
-                    //System.out.println("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
                     if(trace)
                         log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
                     retransmit(my_high, their_high, sender);
@@ -1204,6 +1209,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(trace) {
             log.trace("received stable digest " + d);
         }
+
+        stability_msgs.add(d);
 
         Map.Entry entry;
         Address sender;
