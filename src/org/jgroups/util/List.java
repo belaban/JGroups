@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.12 2006/10/10 15:46:24 belaban Exp $
+// $Id: List.java,v 1.13 2007/03/21 14:41:15 belaban Exp $
 
 package org.jgroups.util;
 
@@ -216,7 +216,7 @@ public class List implements Externalizable, Cloneable {
     }
 
     public String toString() {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
         Element el=head;
 
         while(el != null) {
@@ -228,9 +228,26 @@ public class List implements Externalizable, Cloneable {
         return ret.toString();
     }
 
+    public String toStringWithDelimiter(String delimiter) {
+        Element el=head;
+        boolean first=true;
+        StringBuilder sb=new StringBuilder();
+        while(el != null) {
+            if(first) {
+                first=false;
+            }
+            else {
+                sb.append(delimiter);
+            }
+            sb.append(el.obj);
+            el=el.next;
+        }
+        return sb.toString();
+    }
+
 
     public String dump() {
-        StringBuffer ret=new StringBuffer("[");
+        StringBuilder ret=new StringBuilder("[");
         for(Element el=head; el != null; el=el.next)
             ret.append(el.obj).append(" ");
 
@@ -427,6 +444,8 @@ public class List implements Externalizable, Cloneable {
         l.addAtHead(new Integer(3));
         l.addAtHead(new Integer(4));
         l.addAtHead(new Integer(5));
+
+        System.out.println("list: " + l.toStringWithDelimiter(", "));
 
         System.out.println("Removed from head: " + l.removeFromHead());
         System.out.println("Removed from head: " + l.removeFromHead());
