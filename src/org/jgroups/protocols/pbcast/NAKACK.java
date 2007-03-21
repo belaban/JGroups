@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.116 2007/03/21 09:00:54 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.117 2007/03/21 11:18:33 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -703,8 +703,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=null;
         boolean      amISender; // am I the original sender ?
 
-        System.out.println("-- [" +local_addr + "] received XMIT_REQ from " + xmit_requester + " for " + first_seqno +
-                " - " + last_seqno);
+        // System.out.println("-- [" +local_addr + "] received XMIT_REQ from " + xmit_requester + " for " + first_seqno +
+           //     " - " + last_seqno);
         
 
         if(trace) {
@@ -865,7 +865,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(rebroadcasting && count > 0) {
                     Digest tmp=getDigest();
                     if(tmp.isGreaterThanOrEqual(rebroadcast_digest)) {
-                        System.out.println("CANCEL rebroadcasting");
+                        // System.out.println("CANCEL rebroadcasting");
                         cancelRebroadcasting();
                     }
                 }
@@ -909,7 +909,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 their_high=their_entry.getHighest();
                 my_high=my_entry.getHighest();
                 if(their_high > my_high) {
-                    System.out.println("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
+                    //System.out.println("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
                     if(trace)
                         log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
                     retransmit(my_high, their_high, sender);
