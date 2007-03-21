@@ -1,5 +1,3 @@
-// $Id: STABLE.java,v 1.62 2007/03/21 14:21:49 belaban Exp $
-
 package org.jgroups.protocols.pbcast;
 
 
@@ -34,6 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
+ * @version $Id: STABLE.java,v 1.63 2007/03/21 14:22:23 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address              local_addr=null;
