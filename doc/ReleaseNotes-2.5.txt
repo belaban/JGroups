@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5 beta 1
 ================================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.5 2007/03/21 09:39:48 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.6 2007/03/21 09:42:32 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
@@ -14,6 +14,7 @@ The biggest new functionality is the concurrent stack, which allows for concurre
 unrelated messages.
 
 Below is a summary (with links to the detailed description) of the major new features.
+
 
 
 Concurrent stack
@@ -33,6 +34,7 @@ messages and a pool for out-of-band messages.
 The concurrent stack will improve performance dramatically when there are multiple senders and/or the processing
 of a message takes some time. In a cluster of N with N senders, X messages and T think time/message,
 we have seen total processing time of all messages drop from X * N * T to (X * T) + <overhead for thread pools> !
+
 
 
 Out-of-band (unordered) messages
@@ -57,6 +59,7 @@ FIFO order with respect to other messages from the same sender. If a message is 
 OOB thread pool rather than the regular thread pool.
 
 
+
 Concurrent Multiplexer
 ----------------------
 [http://jira.jboss.com/jira/browse/JGRP-415]
@@ -67,6 +70,7 @@ are processed in FIFO order).
 
 This was solved by adding a thread pool to the Multiplexer, which handles requests to different services concurrently,
 even if they were sent by the same sender.
+
 
 
 Simplified and fast flow control (SFC)
@@ -108,6 +112,7 @@ FLUSH is very important for the Multiplexer, where a flush phase is run whenever
 when a new member acquires the state from an existing member.
 
 
+
 Simple failure detection protocol (FD_ALL)
 ------------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-395]
@@ -136,6 +141,7 @@ clusters in the same JVM (e.g. in JBossAS), allowing for more meaningful stack t
 belongs to which cluster).
 
 
+
 Switch to java.util.concurrent classes (JDK 5)
 ----------------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-391]
@@ -144,12 +150,13 @@ We switched from concurrent.jar to java.util.concurrent, resulting in slightly b
 drop 1 JAR (concurrent.jar).
 
 
+
 Manual
 ------
 The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
 
 
-Bela Ban, Kreuzlingen, Switzerland, March 20 2007
+Bela Ban, Kreuzlingen, Switzerland, March 21 2007
 
 
 [1] Reliable communication in presence of failures.
