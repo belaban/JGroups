@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.115 2007/03/20 18:01:37 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.116 2007/03/21 09:00:54 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -119,7 +119,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private Digest rebroadcast_digest=null;
 
-    private long max_rebroadcast_timeout=20000;
+    private long max_rebroadcast_timeout=2000;
+
+    private static final int NUM_REBROADCAST_MSGS=3;
 
 
 
@@ -701,6 +703,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=null;
         boolean      amISender; // am I the original sender ?
 
+        System.out.println("-- [" +local_addr + "] received XMIT_REQ from " + xmit_requester + " for " + first_seqno +
+                " - " + last_seqno);
+        
+
         if(trace) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
@@ -859,6 +865,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(rebroadcasting && count > 0) {
                     Digest tmp=getDigest();
                     if(tmp.isGreaterThanOrEqual(rebroadcast_digest)) {
+                        System.out.println("CANCEL rebroadcasting");
                         cancelRebroadcasting();
                     }
                 }
@@ -873,66 +880,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    /**
-     * Takes the argument highest_seqnos and compares it to the current digest. If the current digest has fewer messages,
-     * then send retransmit messages for the missing messages. Return when all missing messages have been received. If
-     * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
-     */
-//    private void rebroadcastMessages1() {
-//        if(rebroadcast_digest == null)
-//            return;
-//        Digest current=getDigest();
-//        long high, curr_high;
-//        boolean xmitted=false;
-//
-//        Address sender;
-//        Digest.Entry high_entry, curr_entry;
-//        Map<Address,Digest.Entry> highest=rebroadcast_digest.getSenders();
-//
-//        // ask all senders with seqnos higher than our own to re-send those messages
-//        cancelRebroadcasting();
-//        rebroadcasting=true;
-//        for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
-//            sender=entry.getKey();
-//            high_entry=entry.getValue();
-//            curr_entry=current.get(sender);
-//            if(curr_entry == null)
-//                continue;
-//            high=high_entry.getHighest();
-//            curr_high=curr_entry.getHighest();
-//            if(high > curr_high) {
-//                if(trace)
-//                    log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
-//                retransmit(curr_high, high, sender);
-//                xmitted=true;
-//            }
-//        }
-//
-//        if(!xmitted)
-//            return;
-//
-//        rebroadcast_lock.lock();
-//        try {
-//            while(true) {
-//                try {
-//                    current=getDigest();
-//                    Digest tmp=rebroadcast_digest;
-//                    boolean flag=current.isGreaterThanOrEqual(tmp);
-//                    if(flag)
-//                        return;
-//                    boolean timeout_occurred=rebroadcast_done.await(max_rebroadcast_timeout, TimeUnit.MILLISECONDS);
-//                    if(timeout_occurred)
-//                        return;
-//                }
-//                catch(InterruptedException e) {
-//                }
-//            }
-//        }
-//        finally {
-//            rebroadcast_lock.unlock();
-//        }
-//    }
-
 
     /**
      * Takes the argument highest_seqnos and compares it to the current digest. If the current digest has fewer messages,
@@ -940,33 +887,32 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * we're waiting for a missing message from P, and P crashes while waiting, we need to exclude P from the wait set.
      */
     private void rebroadcastMessages() {
-        Digest current;
-        Map<Address,Digest.Entry> highest;
+        Digest my_digest;
+        Map<Address,Digest.Entry> their_digest;
         Address sender;
-        Digest.Entry high_entry, curr_entry;
-        long high, curr_high;
+        Digest.Entry their_entry, my_entry;
+        long their_high, my_high;
+        long sleep=max_rebroadcast_timeout / NUM_REBROADCAST_MSGS;
         long wait_time=max_rebroadcast_timeout, start=System.currentTimeMillis();
 
-
-        cancelRebroadcasting();
-        rebroadcasting=true;
         while(rebroadcast_digest != null && wait_time > 0) {
-            current=getDigest();
-            highest=rebroadcast_digest.getSenders();
+            my_digest=getDigest();
+            their_digest=rebroadcast_digest.getSenders();
 
             boolean xmitted=false;
-            for(Map.Entry<Address,Digest.Entry> entry: highest.entrySet()) {
+            for(Map.Entry<Address,Digest.Entry> entry: their_digest.entrySet()) {
                 sender=entry.getKey();
-                high_entry=entry.getValue();
-                curr_entry=current.get(sender);
-                if(curr_entry == null)
+                their_entry=entry.getValue();
+                my_entry=my_digest.get(sender);
+                if(my_entry == null)
                     continue;
-                high=high_entry.getHighest();
-                curr_high=curr_entry.getHighest();
-                if(high > curr_high) {
+                their_high=their_entry.getHighest();
+                my_high=my_entry.getHighest();
+                if(their_high > my_high) {
+                    System.out.println("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
                     if(trace)
-                        log.trace("sending XMIT request to " + sender + " for messages " + curr_high + " - " + high);
-                    retransmit(curr_high, high, sender);
+                        log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
+                    retransmit(my_high, their_high, sender);
                     xmitted=true;
                 }
             }
@@ -976,13 +922,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             rebroadcast_lock.lock();
             try {
                 try {
-                    current=getDigest();
-                    if(!rebroadcasting || current.isGreaterThanOrEqual(rebroadcast_digest)) {
+                    my_digest=getDigest();
+                    if(!rebroadcasting || my_digest.isGreaterThanOrEqual(rebroadcast_digest)) {
                         return;
                     }
-                    boolean timeout_occurred=rebroadcast_done.await(wait_time, TimeUnit.MILLISECONDS);
-                    if(timeout_occurred)
-                        return;
+                    rebroadcast_done.await(sleep, TimeUnit.MILLISECONDS);
                     wait_time-=(System.currentTimeMillis() - start);
                 }
                 catch(InterruptedException e) {
