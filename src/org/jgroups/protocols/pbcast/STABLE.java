@@ -1,4 +1,4 @@
-// $Id: STABLE.java,v 1.61 2007/02/12 14:21:32 belaban Exp $
+// $Id: STABLE.java,v 1.62 2007/03/21 14:21:49 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -15,10 +15,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Vector;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -221,45 +221,12 @@ public class STABLE extends Protocol {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
-
-            // only if message counting is enabled, and only for multicast messages
-            // fixes http://jira.jboss.com/jira/browse/JGRP-233
-            if(max_bytes > 0) {
-                Address dest=msg.getDest();
-                if(dest == null || dest.isMulticastAddress()) {
-                    boolean unlocked=false;
-                    received.lock();
-                    try {
-                        num_bytes_received+=(long)msg.getLength();
-                        if(num_bytes_received >= max_bytes) {
-                            if(trace) {
-                                log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
-                                        append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
-                            }
-                            num_bytes_received=0;
-                            received.unlock();
-                            unlocked=true;
-
-                            // asks the NAKACK protocol for the current digest,
-                            Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
-                            synchronized(latest_local_digest) {
-                                latest_local_digest.replace(my_digest);
-                            }
-                            if(trace)
-                                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
-                            sendStableMessage(my_digest);
-                        }
-                    }
-                    finally {
-                        if(!unlocked)
-                            received.unlock();
-                    }
-                }
+            hdr=(StableHeader)msg.getHeader(name);
+            if(hdr == null) {
+                handleRegularMessage(msg);
+                return up_prot.up(evt);
             }
 
-            hdr=(StableHeader)msg.getHeader(name);
-            if(hdr == null)
-                break;
             switch(hdr.type) {
             case StableHeader.STABLE_GOSSIP:
                 handleStableMessage(msg.getSrc(), hdr.stableDigest);
@@ -286,12 +253,49 @@ public class STABLE extends Protocol {
 
 
 
+    private void handleRegularMessage(Message msg) {
+        // only if message counting is enabled, and only for multicast messages
+        // fixes http://jira.jboss.com/jira/browse/JGRP-233
+        if(max_bytes <= 0)
+            return;
+        Address dest=msg.getDest();
+        if(dest == null || dest.isMulticastAddress()) {
+            boolean unlocked=false;
+            received.lock();
+            try {
+                num_bytes_received+=(long)msg.getLength();
+                if(num_bytes_received >= max_bytes) {
+                    if(trace) {
+                        log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
+                                append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
+                    }
+                    num_bytes_received=0;
+                    received.unlock();
+                    unlocked=true;
+
+                    // asks the NAKACK protocol for the current digest,
+                    Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+                    synchronized(latest_local_digest) {
+                        latest_local_digest.replace(my_digest);
+                    }
+                    if(trace)
+                        log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+                    sendStableMessage(my_digest);
+                }
+            }
+            finally {
+                if(!unlocked)
+                    received.unlock();
+            }
+        }
+    }
+
 
     public Object down(Event evt) {
         switch(evt.getType()) {
-        case Event.VIEW_CHANGE:
-            View v=(View)evt.getArg();
-            handleViewChange(v);
+            case Event.VIEW_CHANGE:
+                View v=(View)evt.getArg();
+                handleViewChange(v);
             break;
 
         case Event.SUSPEND_STABLE:
