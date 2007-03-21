@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5 beta 1
 ================================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.4 2007/03/21 09:31:16 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.5 2007/03/21 09:39:48 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
@@ -112,14 +112,36 @@ Simple failure detection protocol (FD_ALL)
 ------------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-395]
 
+Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat.
+Every member also maintains a table of all members (minus itself).
+When data or a heartbeat from P are received, we reset the timestamp for P to the current time.
+Periodically, we check for expired members, and suspect those.
+
+Example: <FD_ALL interval="3000" timeout="10000"/>
+
+In the exampe above, we send a heartbeat every 3 seconds and suspect members if we haven't received a heartbeat
+(or traffic) for more than 10 seconds. Note that since we check the timestamps every 'interval' milliseconds,
+we will suspect a member after roughly 4 * 3s == 12 seconds. If we set the timeout to 8500, then we would suspect
+a member after 3 * 3 secs == 9 seconds.
+
+FD_ALL is interchangeable with FD.
+
+
 
 Better naming of threads
 ------------------------
+
+Almost all threads have the cluster name and local address appended to their names. This is good if we have multiple
+clusters in the same JVM (e.g. in JBossAS), allowing for more meaningful stack traces (knowing which thread
+belongs to which cluster).
 
 
 Switch to java.util.concurrent classes (JDK 5)
 ----------------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-391]
+
+We switched from concurrent.jar to java.util.concurrent, resulting in slightly better performance and we could also
+drop 1 JAR (concurrent.jar).
 
 
 Manual
