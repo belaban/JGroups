@@ -42,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.27 2007/03/20 12:58:41 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.28 2007/03/22 09:48:59 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -298,17 +298,18 @@ public class FlushTest extends ChannelTestBase
         
          blockUntilViewsReceived(channels, 60000);  
          
-         //inser DISCARD
+         //insert DISCARD
          for (FlushTestReceiver receiver : channels) {
         	Properties prop = new Properties();
  			prop.setProperty("up", "0.3");
+ 			prop.setProperty("excludeitself", "true");
 
- 			Protocol d = new DISCARD();
+ 			DISCARD d = new DISCARD(); 			 		
  			d.setProperties(prop);
 
  			Channel channel = receiver.getChannel();
  			if (channel instanceof JChannel) 
- 			{
+ 			{ 				
  				((JChannel) channel).getProtocolStack().insertProtocol(d,
  						ProtocolStack.BELOW, "NAKACK");
  			}
@@ -338,7 +339,16 @@ public class FlushTest extends ChannelTestBase
          // Reacquire the semaphore tickets; when we have them all
          // we know the threads are done         
          semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
-              
+         
+         //remove DISCARD
+         for (FlushTestReceiver receiver : channels) {         	
+  			Channel channel = receiver.getChannel();
+  			if (channel instanceof JChannel) 
+  			{ 				
+  				((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
+  			}
+ 		 }  
+         
          //kill last member to trigger FLUSH with vsynch gaps
          FlushTestReceiver randomRecv =channels.remove(count-1);
          log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
@@ -346,7 +356,7 @@ public class FlushTest extends ChannelTestBase
          randomRecv.cleanup();
          
          //let the view propagate and verify related asserts
-         sleepThread(2000);
+         sleepThread(4000);
          closeAssert.verify(channels);
          
 
