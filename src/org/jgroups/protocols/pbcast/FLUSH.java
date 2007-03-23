@@ -16,8 +16,6 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.Vector;
 import java.util.concurrent.Exchanger;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
@@ -27,7 +25,6 @@ import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.ViewId;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.AckCollector;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -128,8 +125,7 @@ public class FLUSH extends Protocol
    
    private final FlushPhase flushPhase = new FlushPhase();
    
-   private final AckCollector reconcileOks = new AckCollector();
-
+   private final List<Address> reconcileOks = new ArrayList<Address>();
 
 
    public FLUSH()
@@ -224,22 +220,25 @@ public class FLUSH extends Protocol
    private boolean startFlush(Event evt, long timeout, int numberOfAttempts)
    {
       boolean successfulFlush = false;
-      flush_promise.reset();
-      View v = (View) evt.getArg();
-      if(log.isDebugEnabled())
-         log.debug("Received SUSPEND at " + localAddress + ", view is " + v);
-      
-      onSuspend(v);
-      try
-      {         
-         Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
-         successfulFlush = r.booleanValue();
-      }
-      catch (TimeoutException e)
+      if(!flushPhase.isFlushInProgress())
       {
-         if(log.isInfoEnabled())
-            log.info("At " + localAddress
-               + " timed out waiting for flush responses after " + timeout + " msec");
+	      flush_promise.reset();
+	      View v = (View) evt.getArg();
+	      if(log.isDebugEnabled())
+	         log.debug("Received SUSPEND at " + localAddress + ", view is " + v);
+	      
+	      onSuspend(v);
+	      try
+	      {  	    	 
+	         Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);	         
+	         successfulFlush = r.booleanValue();
+	      }
+	      catch (TimeoutException e)
+	      {
+	         if(log.isInfoEnabled())
+	            log.info("At " + localAddress
+	               + " timed out waiting for flush responses after " + timeout + " msec");
+	      }
       }
 
       if (!successfulFlush && numberOfAttempts > 0)
@@ -271,13 +270,13 @@ public class FLUSH extends Protocol
             FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null && fh.type == FlushHeader.FLUSH_BYPASS)
             {
-               break;
+            	return down_prot.down(evt);
             }
             else
             {
-               blockMessageDuringFlush();
-               break;
+               blockMessageDuringFlush();               
             }
+            break;
          case Event.GET_STATE:   
             blockMessageDuringFlush();
             break;
@@ -343,115 +342,68 @@ public class FLUSH extends Protocol
             Message msg = (Message) evt.getArg();
             FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if (fh != null)
-            {               
-               switch (fh.type)
+            {
+               if(fh.type == FlushHeader.FLUSH_BYPASS)
                {
-               	               
-               case FlushHeader.FLUSH_BYPASS:               
-                  break;
-                  //propel this msg up
-                              
-               case FlushHeader.START_FLUSH:
-                                           
-                  if (!flushPhase.isFlushInProgress())
-                  {
-                     flushPhase.transitionToFirstPhase();                     
-                     sendBlockUpToChannel();                     
-                     onStartFlush(msg.getSrc(), fh);
-                  }
-                  else if (flushPhase.isInFirstPhase())
-                  {                     
-                     Address flushRequester = msg.getSrc();
-                     Address coordinator = null;
-                     synchronized(sharedLock)
-                     {
-                        coordinator = flushCoordinator;
-                     }
-                     
-                     if(coordinator == null || flushRequester.compareTo(coordinator)<0)
-                     {                        
-                        rejectFlush(fh.viewID, coordinator);
-                        if(log.isDebugEnabled())
-                        {
-                           log.debug("Rejecting flush at " + localAddress + " to current flush coordinator " + coordinator + " and switching flush coordinator to " + flushRequester);
-                        }
-                        synchronized(sharedLock)
-                        {
-                           flushCoordinator = flushRequester;
-                        }                        
-                     }
-                     else
-                     {                        
-                        rejectFlush(fh.viewID, flushRequester); 
-                        if(log.isDebugEnabled())
-                        {
-                           log.debug("Rejecting flush at " + localAddress + " to flush requester " + flushRequester);
-                        }
-                     }                      
-                  }
-                  else if (flushPhase.isInSecondPhase())
-                  {                     
-                     Address flushRequester = msg.getSrc();
-                     rejectFlush(fh.viewID, flushRequester);  
-                     if(log.isDebugEnabled())
-                     {
-                        log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
-                     }
-                  }
-                  break;
-                  
-               case FlushHeader.FLUSH_RECONCILE:                                                     
-                  Address requester = msg.getSrc();
-                  Digest reconcileDigest = fh.digest;
-                  
-                  if(log.isDebugEnabled())                  
-                     log.debug("Received FLUSH_RECONCILE at " + localAddress + " passing digest to NAKACK " + reconcileDigest);                  
-                  
-                  //Let NAKACK reconcile missing messages
-                  down_prot.down(new Event(Event.REBROADCAST, reconcileDigest));
-                  
-                  if(log.isDebugEnabled())                  
-                	  log.debug("Returned from FLUSH_RECONCILE at " + localAddress + " Sending RECONCILE_OK to " + requester);                                  
-                  
-                  Message reconcileOk = new Message(requester);
-                  reconcileOk.setFlag(Message.OOB);
-                  reconcileOk.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
-                  down_prot.down(new Event(Event.MSG, reconcileOk));                       
-                  break;
-                  
-               case FlushHeader.FLUSH_RECONCILE_OK:
-            	                                                    
+            	   return up_prot.up(evt);
+               }              
+               else if (fh.type == FlushHeader.START_FLUSH)
+               {                             
+                  handleStartFlush(msg, fh);
+               }
+               else if (fh.type == FlushHeader.FLUSH_RECONCILE)
+               {                                            
+                  handleFlushReconcile(msg, fh);                  
+               }
+               else if (fh.type == FlushHeader.FLUSH_RECONCILE_OK)
+               {                                   
                   if(log.isDebugEnabled())                  
                 	  log.debug(localAddress + " received reconcile ok from " + msg.getSrc());
                   
-                  reconcileOks.ack(msg.getSrc());
-                  break;
-                  
-               case FlushHeader.STOP_FLUSH:               
-                  flushPhase.transitionToSecondPhase();                  
+                  synchronized (sharedLock)
+                  {
+                	  reconcileOks.add(msg.getSrc());                  
+	                  if(reconcileOks.size() >= flushMembers.size())
+	                  {
+	                	 flush_promise.setResult(Boolean.TRUE);          
+	         	         if (log.isDebugEnabled())
+	         	            log.debug("All FLUSH_RECONCILE_OK received at " + localAddress);
+	                  }
+                  }
+               }
+               else if (fh.type == FlushHeader.STOP_FLUSH)
+               {
+                  flushPhase.transitionToSecondPhase();                 
                   onStopFlush();
-                  break;
-                  
-               case FlushHeader.ABORT_FLUSH:               
-                  //abort current flush                    
+               }
+               else if (fh.type == FlushHeader.ABORT_FLUSH)
+               {
+                  //abort current flush                  
                   flush_promise.setResult(Boolean.FALSE);                 
-                  break;
-                  
-               case FlushHeader.FLUSH_OK:                                                 
-            	  onFlushOk(msg.getSrc(), fh.viewID);
-            	  break;
-            	
-               case FlushHeader.STOP_FLUSH_OK:
-            	  onStopFlushOk(msg.getSrc());
-            	  break;
-            	  
-               case FlushHeader.FLUSH_COMPLETED:
-            	  onFlushCompleted(msg.getSrc(),fh.digest);
-            	  break;            	                
+               }
+               else if (isCurrentFlushMessage(fh))
+               {                  
+                  if (fh.type == FlushHeader.FLUSH_OK)
+                  {
+                     onFlushOk(msg.getSrc(), fh.viewID);
+                  }
+                  else if (fh.type == FlushHeader.STOP_FLUSH_OK)
+                  {
+                     onStopFlushOk(msg.getSrc());
+                  }
+                  else if (fh.type == FlushHeader.FLUSH_COMPLETED)
+                  {                     
+                     onFlushCompleted(msg.getSrc(),fh.digest);
+                  }
+               }
+               else
+               {                 
+                  if (log.isDebugEnabled())
+                     log.debug(localAddress + " received outdated FLUSH message " + fh + ",ignoring it.");
+               }
+               return null; //do not pass FLUSH msg up
             }
-            return null; //do not pass FLUSH msg up            
-         }
-         break;   
+            break;
 
          case Event.VIEW_CHANGE :
             //if this is channel's first view and its the only member of the group then the
@@ -483,7 +435,7 @@ public class FLUSH extends Protocol
             break;
 
          case Event.SUSPEND :           
-        	return startFlush(evt, 5000, 5);
+        	return startFlush(evt, 4000, 5);
 
          case Event.RESUME :
             onResume();
@@ -492,6 +444,73 @@ public class FLUSH extends Protocol
       }
 
       return up_prot.up(evt);
+   }
+
+   private void handleFlushReconcile(Message msg, FlushHeader fh) {
+	  Address requester = msg.getSrc();
+	  Digest reconcileDigest = fh.digest;
+	  
+	  if(log.isDebugEnabled())                  
+	     log.debug("Received FLUSH_RECONCILE at " + localAddress + " passing digest to NAKACK " + reconcileDigest);                  
+	  
+	  //Let NAKACK reconcile missing messages
+	  down_prot.down(new Event(Event.REBROADCAST, reconcileDigest));
+	  
+	  if(log.isDebugEnabled())                  
+		  log.debug("Returned from FLUSH_RECONCILE at " + localAddress + " Sending RECONCILE_OK to " + requester + ", thread " + Thread.currentThread());                                  
+	  
+	  Message reconcileOk = new Message(requester);
+	  reconcileOk.setFlag(Message.OOB);
+	  reconcileOk.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_RECONCILE_OK));
+	  down_prot.down(new Event(Event.MSG, reconcileOk));
+   }
+
+   private void handleStartFlush(Message msg, FlushHeader fh) {
+	  byte oldPhase = flushPhase.transitionToFirstPhase();
+	  if (oldPhase == FlushPhase.START_PHASE)
+	  {	                         
+	     sendBlockUpToChannel();                     
+	     onStartFlush(msg.getSrc(), fh);
+	  }
+	  else if (oldPhase == FlushPhase.FIRST_PHASE)
+	  {                     
+	     Address flushRequester = msg.getSrc();
+	     Address coordinator = null;
+	     synchronized(sharedLock)
+	     {
+	        coordinator = flushCoordinator;
+	     }
+	     
+	     if(coordinator == null || flushRequester.compareTo(coordinator)<0)
+	     {                        
+	        rejectFlush(fh.viewID, coordinator);
+	        if(log.isDebugEnabled())
+	        {
+	           log.debug("Rejecting flush at " + localAddress + " to current flush coordinator " + coordinator + " and switching flush coordinator to " + flushRequester);
+	        }
+	        synchronized(sharedLock)
+	        {
+	           flushCoordinator = flushRequester;
+	        }                        
+	     }
+	     else
+	     {                        
+	        rejectFlush(fh.viewID, flushRequester); 
+	        if(log.isDebugEnabled())
+	        {
+	           log.debug("Rejecting flush at " + localAddress + " to flush requester " + flushRequester);
+	        }
+	     }                      
+	  }
+	  else if (oldPhase == FlushPhase.SECOND_PHASE)
+	  {                     
+	     Address flushRequester = msg.getSrc();
+	     rejectFlush(fh.viewID, flushRequester);  
+	     if(log.isDebugEnabled())
+	     {
+	        log.debug("Rejecting flush in second phase at " + localAddress + " to flush requester " + flushRequester);
+	     }
+	  }
    }
 
    public Vector<Integer> providedDownServices()
@@ -789,7 +808,7 @@ public class FLUSH extends Protocol
              synchronized (sharedLock)
              {
             	 FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(), flushMembers);           
-            	 reconcileOks.reset(currentView!=null?currentView.getVid():null, new ArrayList(flushMembers));
+            	 reconcileOks.clear();
             	 fh.addDigest(d);
                  msg.putHeader(getName(), fh);                
              }                        
@@ -797,23 +816,14 @@ public class FLUSH extends Protocol
              if (log.isInfoEnabled())
                 log.info("Reconciling flush mebers due to virtual synchrony gap, digest is " + d + " flush members are " + flushMembers);
              
-             down_prot.down(new Event(Event.MSG, msg));   
-             
-             try {
-            	 reconcileOks.waitForAllAcks(4000); 
-            	 if (log.isDebugEnabled())
-                     log.debug("Reconciled flush members");
-             }
-             catch(TimeoutException e) {  
-            	 
-            	 log.warn("failed to collect all ACKs for flush reconciliation after 5000 ms, missing ACKs from " 
-            			 + reconcileOks.printMissing() + " (received=" + reconcileOks.printReceived() +
-                         "), local_addr=" + localAddress);            	
-             }                         
+             down_prot.down(new Event(Event.MSG, msg));                                
     	 }
-	     flush_promise.setResult(Boolean.TRUE);          
-         if (log.isDebugEnabled())
-            log.debug("All FLUSH_COMPLETED received at " + localAddress);         
+    	 else
+    	 {
+		     flush_promise.setResult(Boolean.TRUE);          
+	         if (log.isDebugEnabled())
+	            log.debug("All FLUSH_COMPLETED received at " + localAddress);         
+    	 }
       }
    }
    
@@ -888,41 +898,49 @@ public class FLUSH extends Protocol
    }  
    
    private static class FlushPhase
-   {
-	  private AtomicInteger phase = new AtomicInteger(0); 
-	  
-      public FlushPhase(){}          
-     
-      public void transitionToFirstPhase()
+   {     
+      private byte phase = 0;
+      
+      public static final byte START_PHASE = 0;
+      public static final byte FIRST_PHASE = 1; 
+      public static final byte SECOND_PHASE = 2;
+      
+      public FlushPhase(){}                   
+      
+      public synchronized byte transitionToFirstPhase()
       {
-    	  phase.set(1);
+    	 byte oldPhase = phase; 
+    	 if(oldPhase == START_PHASE)
+    	 {
+    		 phase = FIRST_PHASE;
+    	 }
+    	 return oldPhase;
       }
       
-      public void transitionToSecondPhase()
+      public synchronized void transitionToStart()
       {
-    	  phase.set(2);
+    	 phase = START_PHASE;
       }
       
-      public void transitionToStart()
+      public synchronized void transitionToSecondPhase()
       {
-    	  phase.set(0);
+         phase = SECOND_PHASE;
       }
       
-      public boolean isInFirstPhase()
+      public synchronized boolean isInFirstPhase()
       {
-         return phase.get()==1;
+         return phase == FIRST_PHASE;
       }
       
-      public boolean isInSecondPhase()
+      public synchronized boolean isInSecondPhase()
       {
-         return phase.get()==2;
+         return phase == SECOND_PHASE;
       }       
       
-      public boolean isFlushInProgress()
+      public synchronized boolean isFlushInProgress()
       {
-    	 return phase.get() !=0;          
+         return phase != START_PHASE;
       }
-      
    }
 
    public static class FlushHeader extends Header implements Streamable
