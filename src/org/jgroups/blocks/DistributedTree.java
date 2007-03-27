@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.15 2006/03/27 08:34:24 belaban Exp $
+// $Id: DistributedTree.java,v 1.16 2007/03/27 14:46:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -22,12 +22,15 @@ import java.util.Vector;
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
 public class DistributedTree implements MessageListener, MembershipListener {
-    Node root=null;
+    private Node root=null;
     final Vector listeners=new Vector();
     final Vector view_listeners=new Vector();
     final Vector members=new Vector();
     protected Channel channel=null;
     protected RpcDispatcher disp=null;
+    // rc is global and protected so that extensions can detect when 
+    // state has been transferred
+    protected boolean rc = false;
     String groupname="DistributedTreeGroup";
     String channel_properties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0):" +
             "PING(timeout=5000;num_initial_members=6):" +
@@ -39,12 +42,16 @@ public class DistributedTree implements MessageListener, MembershipListener {
             "FRAG(down_thread=false;up_thread=false):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=true):" +
-            "pbcast.STATE_TRANSFER(trace=true)";
-    final long state_timeout=5000;   // wait 5 secs max to obtain state
+            // trace=true is not supported anymore
+            "pbcast.STATE_TRANSFER()";
+    static final long state_timeout=5000;   // wait 5 secs max to obtain state
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
-	private boolean send_message = false;
+    
+    // Make this protected so that extensions 
+    // can control whether or not to send
+	protected boolean send_message = false;
 
     protected static final Log log=LogFactory.getLog(DistributedTree.class);
 
@@ -90,8 +97,8 @@ public class DistributedTree implements MessageListener, MembershipListener {
         throws ChannelException {
         channel = (Channel)adapter.getTransport();
         disp=new RpcDispatcher(adapter, id, this, this, this);
-        boolean rc = channel.getState(null, state_timeout);
-        if(rc) {
+        boolean flag = channel.getState(null, state_timeout);
+        if(flag) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         }
         else
@@ -118,7 +125,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
         channel=new JChannel(channel_properties);
         disp=new RpcDispatcher(channel, this, this, this);
         channel.connect(groupname);
-        boolean rc=channel.getState(null, timeout);
+        rc=channel.getState(null, timeout);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully");
         }
@@ -249,9 +256,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
 
 
     public boolean exists(String fqn) {
-        if(fqn == null)
-            return false;
-        return findNode(fqn) == null? false : true;
+        return fqn != null && (findNode(fqn) != null);
     }
 
 
@@ -305,7 +310,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
 
 
     public String print() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         int indent=0;
 
         if(root == null)
@@ -386,8 +391,12 @@ public class DistributedTree implements MessageListener, MembershipListener {
             }
             curr=n;
         }
-        curr.element=element;
-        notifyNodeModified(fqn, null, element);
+        // If the element is not null, we install it and notify the
+        // listener app that the node is modified.
+        if(element != null){
+        	curr.element=element;
+        	notifyNodeModified(fqn, null, element);
+        }
     }
 
 
@@ -491,6 +500,11 @@ public class DistributedTree implements MessageListener, MembershipListener {
             return;
         }
         root=((Node)new_state).copy();
+        
+        // State transfer needs to notify listeners in the new
+        // cluster member about everything that exists.  This
+        // is working ok now.
+        this.notifyAllNodesCreated(root, "");
     }
 
 
@@ -508,12 +522,8 @@ public class DistributedTree implements MessageListener, MembershipListener {
         }
 		//if size is bigger than one, there are more peers in the group
 		//otherwise there is only one server.
-        if(members.size() > 1) {
-            send_message=true;
-        }
-        else {
-            send_message=false;
-        }
+        send_message=true;
+        send_message=members.size() > 1;
     }
 
 
@@ -531,7 +541,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
         Vector joined, left;
         Object mbr;
 
-        if(view_listeners.size() == 0 || old_mbrs == null || new_mbrs == null)
+        if(view_listeners.isEmpty() || old_mbrs == null || new_mbrs == null)
             return;
 
 
@@ -555,7 +565,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
     }
 
 
-    Node findNode(String fqn) {
+    private Node findNode(String fqn) {
         Node curr=root;
         StringTokenizer tok;
         String child_name;
@@ -593,18 +603,26 @@ public class DistributedTree implements MessageListener, MembershipListener {
      initially retrieved (state transfer) */
     void notifyAllNodesCreated(Node curr, String tmp_fqn) {
         Node n;
-
+        // We need a local string here to handle the empty string (root)
+        // otherwise, we start off with two slashes in the path.
+        String path = "";
         if(curr == null) return;
         if(curr.name == null) {
             if(log.isErrorEnabled()) log.error("curr.name is null");
             return;
         }
-
+        // If we're the root node, then we supply a "starter" slash.
+        // This lets us properly initiate the recursion with an empty
+        // string, and then prepend a slash for each additional depth
+        path = (curr.equals(root)) ? "/" : tmp_fqn;
+        
+        // Recursion must occur _before_ we look for children, or we
+        // never notifyNodeAdded() for leaf nodes.
+        notifyNodeAdded(path, curr.element);
         if(curr.children != null) {
             for(int i=0; i < curr.children.size(); i++) {
                 n=(Node)curr.children.elementAt(i);
-                System.out.println("*** nodeCreated(): tmp_fqn is " + tmp_fqn);
-                notifyNodeAdded(tmp_fqn, n.element);
+                System.out.println("*** nodeCreated(): tmp_fqn is " + tmp_fqn);         
                 notifyAllNodesCreated(n, tmp_fqn + '/' + n.name);
             }
         }
@@ -621,6 +639,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
         String name=null;
         Vector children=null;
         Serializable element=null;
+        private static final long serialVersionUID=-635336369135391033L;
 
 
         Node() {
@@ -697,7 +716,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
 
 
         String print(int indent) {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             boolean is_root=name != null && "/".equals(name);
 
             for(int i=0; i < indent; i++)
