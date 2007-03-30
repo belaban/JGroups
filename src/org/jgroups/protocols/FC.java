@@ -27,24 +27,24 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.66 2007/01/12 14:19:04 belaban Exp $
+ * @version $Id: FC.java,v 1.67 2007/03/30 14:48:01 belaban Exp $
  */
 public class FC extends Protocol {
 
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
-    final Map<Address,Long> sent=new HashMap(11);
+    final Map<Address,Long> sent=new HashMap<Address,Long>(11);
     // final Map sent=new ConcurrentHashMap(11);
 
     /** HashMap<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits. */
-    final Map<Address,Long> received=new ConcurrentHashMap(11);
+    final Map<Address,Long> received=new ConcurrentHashMap<Address,Long>(11);
 
 
     /** List of members from whom we expect credits */
-    final List<Address> creditors=new ArrayList(11);
+    final List<Address> creditors=new ArrayList<Address>(11);
 
     /** Max number of bytes to send per receiver until an ack must
      * be received before continuing sending */
@@ -188,10 +188,10 @@ public class FC extends Protocol {
         return sb.toString();
     }
 
-    public Map dumpStats() {
-        Map retval=super.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=super.dumpStats();
         if(retval == null)
-            retval=new HashMap();
+            retval=new HashMap<String,Object>();
         retval.put("senders", printMap(sent));
         retval.put("receivers", printMap(received));
         retval.put("num_blockings", new Integer(this.num_blockings));
@@ -214,9 +214,9 @@ public class FC extends Protocol {
             if(trace)
                 log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
-            Map.Entry entry;
-            for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
+            Map.Entry<Address,Long> entry;
+            for(Iterator<Map.Entry<Address,Long>> it=sent.entrySet().iterator(); it.hasNext();) {
+                entry=it.next();
                 entry.setValue(max_credits_constant);
             }
 
@@ -456,7 +456,7 @@ public class FC extends Protocol {
      * @param credits
      * @return The lowest number of credits left, or -1 if a unicast member was not found
      */
-    private long decrementCredit(Map m, Address dest, long credits) {
+    private long decrementCredit(Map<Address,Long> m, Address dest, long credits) {
         boolean multicast=dest == null || dest.isMulticastAddress();
         long    lowest=max_credits, tmp;
         Long    val;
@@ -464,10 +464,10 @@ public class FC extends Protocol {
         if(multicast) {
             if(m.isEmpty())
                 return -1;
-            Map.Entry entry;
-            for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                val=(Long)entry.getValue();
+            Map.Entry<Address,Long> entry;
+            for(Iterator<Map.Entry<Address,Long>> it=m.entrySet().iterator(); it.hasNext();) {
+                entry=it.next();
+                val=entry.getValue();
                 tmp=val.longValue();
                 tmp-=credits;
                 entry.setValue(new Long(tmp));
@@ -476,7 +476,7 @@ public class FC extends Protocol {
             return lowest;
         }
         else {
-            val=(Long)m.get(dest);
+            val=m.get(dest);
             if(val != null) {
                 lowest=val.longValue();
                 lowest-=credits;
@@ -521,9 +521,9 @@ public class FC extends Protocol {
         }
     }
 
-    private static long computeLowestCredit(Map m) {
-        Collection credits=m.values(); // List of Longs (credits)
-        Long retval=(Long)Collections.min(credits);
+    private static long computeLowestCredit(Map<Address,Long> m) {
+        Collection<Long> credits=m.values(); // List of Longs (credits)
+        Long retval=Collections.min(credits);
         return retval.longValue();
     }
 
