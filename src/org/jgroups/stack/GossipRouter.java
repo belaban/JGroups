@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.22 2006/10/25 08:10:05 belaban Exp $
+// $Id: GossipRouter.java,v 1.23 2007/03/30 13:38:58 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -72,7 +72,7 @@ public class GossipRouter {
 
     // HashMap<String, Map<Address,AddressEntry> >. Maintains associations between groups and their members. Keys=group
     // names, values = maps of logical address / AddressEntry associations
-    private final Map routingTable=new HashMap();
+    private final Map<String,Map<Address,AddressEntry>> routingTable=new HashMap<String,Map<Address,AddressEntry>>();
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
@@ -293,10 +293,10 @@ public class GossipRouter {
 
     public String dumpRoutingTable() {
         String label="routing";
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
 
         synchronized(routingTable) {
-            if(routingTable.size() == 0) {
+            if(routingTable.isEmpty()) {
                 sb.append("empty ");
                 sb.append(label);
                 sb.append(" table");
@@ -305,11 +305,11 @@ public class GossipRouter {
                 for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
                     String gname=(String)i.next();
                     sb.append("GROUP: '" + gname + "'\n");
-                    Map map=(Map)routingTable.get(gname);
+                    Map map=routingTable.get(gname);
                     if(map == null) {
                         sb.append("\tnull list of addresses\n");
                     }
-                    else if(map.size() == 0) {
+                    else if(map.isEmpty()) {
                         sb.append("\tempty list of addresses\n");
                     }
                     else {
@@ -389,12 +389,12 @@ public class GossipRouter {
 
                     case GossipRouter.GOSSIP_GET:
                         group=req.getGroup();
-                        List mbrs=null;
-                        Map map;
+                        List<Address> mbrs=null;
+                        Map<Address,AddressEntry> map;
                         synchronized(routingTable) {
-                            map=(Map)routingTable.get(group);
+                            map=routingTable.get(group);
                             if(map != null) {
-                                mbrs=new LinkedList(map.keySet());
+                                mbrs=new LinkedList<Address>(map.keySet());
                             }
                         }
 
@@ -412,14 +412,14 @@ public class GossipRouter {
                         group=req.getGroup();
                         output=new DataOutputStream(sock.getOutputStream());
 
-                        List ret=null;
+                        List<Address> ret=null;
                         synchronized(routingTable) {
-                            map=(Map)routingTable.get(group);
+                            map=routingTable.get(group);
                             if(map != null) {
-                                ret=new LinkedList(map.keySet());
+                                ret=new LinkedList<Address>(map.keySet());
                             }
                             else
-                                ret=new LinkedList();
+                                ret=new LinkedList<Address>();
                         }
                         if(log.isTraceEnabled())
                             log.trace("ROUTER_GET(" + group + ") --> " + ret);
@@ -547,7 +547,7 @@ public class GossipRouter {
             for(Iterator it=routingTable.entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 map=(Map)entry.getValue();
-                if(map == null || map.size() == 0) {
+                if(map == null || map.isEmpty()) {
                     it.remove();
                     continue;
                 }
@@ -627,14 +627,14 @@ public class GossipRouter {
         }
 
         synchronized(routingTable) {
-            Map mbrs=(Map)routingTable.get(groupname);
+            Map<Address,AddressEntry> mbrs=routingTable.get(groupname);
             if(mbrs == null) {
-                mbrs=new HashMap();
+                mbrs=new HashMap<Address,AddressEntry>();
                 mbrs.put(logical_addr, entry);
                 routingTable.put(groupname, mbrs);
             }
             else {
-                AddressEntry tmp=(AddressEntry)mbrs.get(logical_addr);
+                AddressEntry tmp=mbrs.get(logical_addr);
                 if(tmp != null) { // already present
                     if(update_only) {
                         tmp.update();
@@ -652,7 +652,7 @@ public class GossipRouter {
     private void removeEntry(String groupname, Address logical_addr) {
         Map val;
         synchronized(routingTable) {
-            val=(Map)routingTable.get(groupname);
+            val=routingTable.get(groupname);
             if(val == null)
                 return;
         }
@@ -673,7 +673,7 @@ public class GossipRouter {
         if(group_name == null || logical_addr == null)
             return null;
         synchronized(routingTable) {
-            Map val=(Map)routingTable.get(group_name);
+            Map val=routingTable.get(group_name);
             if(val == null)
                 return null;
             return (AddressEntry)val.get(logical_addr);
@@ -700,8 +700,8 @@ public class GossipRouter {
 
     private void sendToAllMembersInGroup(String groupname, byte[] msg, Address sender) {
         Map val;
-        val=(Map)routingTable.get(groupname);
-        if(val == null || val.size() == 0)
+        val=routingTable.get(groupname);
+        if(val == null || val.isEmpty())
             return;
 
         Map.Entry tmp;
@@ -795,7 +795,7 @@ public class GossipRouter {
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer("logical addr=");
+            StringBuilder sb=new StringBuilder("logical addr=");
             sb.append(logical_addr).append(" (").append(physical_addr).append(")");
             //if(sock != null) {
               //  sb.append(", sock=");
