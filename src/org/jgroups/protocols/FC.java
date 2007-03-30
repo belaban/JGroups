@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53 2006/09/12 12:36:12 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.1 2007/03/30 14:42:38 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -382,12 +382,14 @@ public class FC extends Protocol {
                         if(insufficient_credit && running) {
                             // we need to send the credit requests down *without* holding the lock, otherwise we might
                             // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+
+                            List creditors_copy=new ArrayList(creditors);
                             Util.release(lock);
                             try {
                                 if(trace)
-                                    log.trace("timeout occurred waiting for credits; sending credit request to " + creditors);
-                                for(int i=0; i < creditors.size(); i++) {
-                                    sendCreditRequest((Address)creditors.get(i));
+                                    log.trace("timeout occurred waiting for credits; sending credit request to " + creditors_copy);
+                                for(int i=0; i < creditors_copy.size(); i++) {
+                                    sendCreditRequest((Address)creditors_copy.get(i));
                                 }
                             }
                             finally {
