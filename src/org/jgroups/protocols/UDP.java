@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.131 2007/03/16 09:54:43 belaban Exp $
+ * @version $Id: UDP.java,v 1.132 2007/04/01 16:49:42 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -102,7 +102,7 @@ public class UDP extends TP implements Runnable {
     boolean         ip_mcast=true;
 
     /** The time-to-live (TTL) for multicast datagram packets */
-    int             ip_ttl=64;
+    int             ip_ttl=8;
 
     /** Send buffer size of the multicast datagram socket */
     int             mcast_send_buf_size=32000;
