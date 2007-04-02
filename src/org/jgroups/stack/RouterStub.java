@@ -24,7 +24,7 @@ import java.util.List;
 /**
  * Client stub that talks to a remote GossipRouter
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.22 2006/10/25 08:23:58 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.23 2007/04/02 07:09:18 belaban Exp $
  */
 public class RouterStub {
     String router_host=null;       // name of the router host
@@ -163,7 +163,7 @@ public class RouterStub {
 
 
     /** Closes the socket and the input and output streams associated with it */
-    public synchronized void disconnect() {
+    public void disconnect() {
         disconnect(false);
     }
 
