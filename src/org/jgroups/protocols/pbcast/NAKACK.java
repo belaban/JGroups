@@ -36,13 +36,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.118 2007/03/21 14:41:15 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.119 2007/04/02 06:46:37 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     private boolean             is_server=false;
     private Address             local_addr=null;
-    private final List<Address> members=new CopyOnWriteArrayList();
+    private final List<Address> members=new CopyOnWriteArrayList<Address>();
     private View                view;
     private long                seqno=-1;                                  // current message sequence number (starts with 0)
     private long                max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
@@ -83,7 +83,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final ConcurrentMap<Address,NakReceiverWindow> received_msgs=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
     /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
-    private final TreeMap sent_msgs=new TreeMap();
+    private final TreeMap<Long,Message> sent_msgs=new TreeMap<Long,Message>();
 
     private boolean leaving=false;
     private boolean started=false;
@@ -97,10 +97,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private long missing_msgs_received;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
-    private HashMap sent=new HashMap();
+    private HashMap<Address,StatsEntry> sent=new HashMap<Address,StatsEntry>();
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
-    private HashMap received=new HashMap();
+    private HashMap<Address,StatsEntry> received=new HashMap<Address,StatsEntry>();
 
     private int stats_list_size=20;
 
@@ -307,10 +307,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return true;
     }
 
-    public Map dumpStats() {
-        Map retval=super.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=super.dumpStats();
         if(retval == null)
-            retval=new HashMap();
+            retval=new HashMap<String,Object>();
 
         retval.put("xmit_reqs_received", new Long(xmit_reqs_received));
         retval.put("xmit_reqs_sent", new Long(xmit_reqs_sent));
@@ -380,8 +380,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    public Vector providedUpServices() {
-        Vector retval=new Vector(5);
+    public Vector<Integer> providedUpServices() {
+        Vector<Integer> retval=new Vector<Integer>(5);
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.GET_DIGEST_STABLE));
         retval.addElement(new Integer(Event.SET_DIGEST));
@@ -448,7 +448,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             case Event.TMP_VIEW:
                 View tmp_view=(View)evt.getArg();
-                Vector mbrs=tmp_view.getMembers();
+                Vector<Address> mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
                 adjustReceivers(false);
@@ -462,7 +462,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 adjustReceivers(true);
                 is_server=true;  // check vids from now on
 
-                Set tmp=new LinkedHashSet(members);
+                Set<Address> tmp=new LinkedHashSet<Address>(members);
                 tmp.add(null); // for null destination (= mcast)
                 sent.keySet().retainAll(tmp);
                 received.keySet().retainAll(tmp);
@@ -709,7 +709,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
         Message m, tmp;
-        LinkedList list;
+        LinkedList<Message> list;
         long size=0, marker=first_seqno, len;
         NakReceiverWindow win=null;
         boolean      amISender; // am I the original sender ?
@@ -736,10 +736,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(!amISender)
             win=received_msgs.get(original_sender);
 
-        list=new LinkedList();
+        list=new LinkedList<Message>();
         for(long i=first_seqno; i <= last_seqno; i++) {
             if(amISender) {
-                m=(Message)sent_msgs.get(new Long(i)); // no need to synchronize
+                m=sent_msgs.get(new Long(i)); // no need to synchronize
             }
             else {
                 m=win != null? win.get(i) : null;
@@ -804,8 +804,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    private static void updateStats(HashMap map, Address key, int req, int rsp, int missing) {
-        StatsEntry entry=(StatsEntry)map.get(key);
+    private static void updateStats(HashMap<Address,StatsEntry> map, Address key, int req, int rsp, int missing) {
+        StatsEntry entry=map.get(key);
         if(entry == null) {
             entry=new StatsEntry();
             map.put(key, entry);
@@ -983,7 +983,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private Digest getDigest() {
         Range range;
 
-        Map<Address,Digest.Entry> map=new HashMap(members.size());
+        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
         for(Address sender: members) {
             range=getLowestAndHighestSeqno(sender, false);  // get the highest received seqno
             if(range == null) {
@@ -1008,7 +1008,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Range range;
         long high_seqno_seen;
 
-        Map<Address,Digest.Entry> map=new HashMap(members.size());
+        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
         for(Address sender: members) {
             range=getLowestAndHighestSeqno(sender, true);  // get the highest deliverable seqno
             if(range == null) {
@@ -1379,8 +1379,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         StringBuilder sb=new StringBuilder();
         Long min_seqno, max_seqno;
         synchronized(sent_msgs) {
-            min_seqno=!sent_msgs.isEmpty()? (Long)sent_msgs.firstKey() : new Long(0);
-            max_seqno=!sent_msgs.isEmpty()? (Long)sent_msgs.lastKey() : new Long(0);
+            min_seqno=!sent_msgs.isEmpty()? sent_msgs.firstKey() : new Long(0);
+            max_seqno=!sent_msgs.isEmpty()? sent_msgs.lastKey() : new Long(0);
         }
         sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (").append(sent_msgs.size()).append(")");
         return sb.toString();
