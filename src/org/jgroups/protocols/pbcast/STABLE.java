@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.64 2007/04/02 08:37:22 belaban Exp $
+ * @version $Id: STABLE.java,v 1.65 2007/04/02 10:34:13 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address              local_addr=null;
@@ -391,8 +391,8 @@ public class STABLE extends Protocol {
 
         StringBuffer sb=null;
         if(trace)
-            sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest).
-                    append("\ndigest from ").append(sender).append(": ").append(d);
+            sb=new StringBuffer("my [").append(local_addr).append("] digest before: ").append(digest.printHighSeqnos()).
+                    append("\ndigest from ").append(sender).append(": ").append(d.printHighSeqnos());
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno;
         long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
@@ -415,7 +415,7 @@ public class STABLE extends Protocol {
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_seqno, new_highest_seen_seqno);
         }
         if(trace) {
-            sb.append("\nmy [").append(local_addr).append("] digest after: ").append(digest).append("\n");
+            sb.append("\nmy [").append(local_addr).append("] digest after: ").append(digest.printHighSeqnos()).append("\n");
             log.trace(sb);
         }
         return true;
