@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.32 2007/03/20 17:16:20 belaban Exp $
+ * @version $Id: Digest.java,v 1.33 2007/04/02 10:45:13 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -300,7 +300,8 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
 
-        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
+        TreeMap copy=new TreeMap(senders);
+        for(Iterator<Map.Entry<Address, Entry>> it=copy.entrySet().iterator(); it.hasNext();) {
             entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
