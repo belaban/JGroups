@@ -32,16 +32,16 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.66 2007/04/02 10:37:09 belaban Exp $
+ * @version $Id: STABLE.java,v 1.67 2007/04/02 10:47:48 belaban Exp $
  */
 public class STABLE extends Protocol {
-    private Address              local_addr=null;
-    private final Vector         mbrs=new Vector();
+    private Address               local_addr=null;
+    private final Vector<Address> mbrs=new Vector<Address>();
 
 
     private final MutableDigest  digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
     private final MutableDigest  latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
-    private final Vector         heard_from=new Vector();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
+    private final Vector<Address> heard_from=new Vector<Address>();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
     private long                 desired_avg_gossip=20000;
@@ -123,8 +123,8 @@ public class STABLE extends Protocol {
     }
 
 
-    public Vector requiredDownServices() {
-        Vector retval=new Vector();
+    public Vector<Integer> requiredDownServices() {
+        Vector<Integer> retval=new Vector<Integer>();
         retval.addElement(new Integer(Event.GET_DIGEST_STABLE));  // NAKACK layer
         return retval;
     }
@@ -327,7 +327,7 @@ public class STABLE extends Protocol {
 
 
     private void handleViewChange(View v) {
-        Vector tmp=v.getMembers();
+        Vector<Address> tmp=v.getMembers();
         mbrs.clear();
         mbrs.addAll(tmp);
         adjustSenders(digest, tmp);
@@ -423,7 +423,7 @@ public class STABLE extends Protocol {
 
 
 
-    private void resetDigest(Vector new_members) {
+    private void resetDigest(Vector<Address> new_members) {
         if(new_members == null || new_members.isEmpty())
             return;
         synchronized(heard_from) {
