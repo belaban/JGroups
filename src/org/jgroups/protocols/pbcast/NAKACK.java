@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.119 2007/04/02 06:46:37 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.120 2007/04/02 11:16:59 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -125,6 +125,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /** keeps the last 10 stability messages */
     private final BoundedList stability_msgs=new BoundedList(10);
+
+    /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
+    protected boolean print_stability_history_on_failed_xmit=false;
 
 
 
@@ -298,6 +301,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 discard_delivered_msgs=false;
                 log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
             }
+        }
+
+        str=props.getProperty("print_stability_history_on_failed_xmit");
+        if(str != null) {
+            print_stability_history_on_failed_xmit=Boolean.valueOf(str).booleanValue();
+            props.remove("print_stability_history_on_failed_xmit");
         }
 
         if(!props.isEmpty()) {
@@ -756,6 +765,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     else {
                         sb.append(printSentMsgs());
                     }
+
+                    if(print_stability_history_on_failed_xmit) {
+                        sb.append(" (stability history:\n").append(printStabilityMessages());
+                    }
                     log.error(sb);
                 }
                 continue;
@@ -790,6 +803,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             list.clear();
         }
     }
+
 
 
     private void cancelRebroadcasting() {
@@ -1210,7 +1224,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             log.trace("received stable digest " + d);
         }
 
-        stability_msgs.add(d);
+        stability_msgs.add(d.toString());
 
         Map.Entry entry;
         Address sender;
