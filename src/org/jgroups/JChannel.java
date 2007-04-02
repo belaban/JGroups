@@ -68,7 +68,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.126 2007/02/16 07:32:07 belaban Exp $
+ * @version $Id: JChannel.java,v 1.127 2007/04/02 07:10:16 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -393,7 +393,7 @@ public class JChannel extends Channel {
                flush_unblock_promise.reset();
 
             Event connect_event=new Event(Event.CONNECT, cluster_name);
-            Object res=down(connect_event);  // waits forever until connected (or channel is closed)
+            Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
                 throw new ChannelException("connect() failed", (Throwable)res);
             }
@@ -1169,7 +1169,33 @@ public class JChannel extends Channel {
      * Sends a message through the protocol stack if the stack is available
      * @param evt the message to send down, encapsulated in an event
      */
-    public Object down(Event evt) {
+    public void down(Event evt) {
+        if(evt == null) return;
+
+        switch(evt.getType()) {
+            case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
+                try {
+                    Map m=(Map)evt.getArg();
+                    if(m != null && m.containsKey("additional_data")) {
+                        additional_data=(byte[])m.get("additional_data");
+                        if(local_addr instanceof IpAddress)
+                            ((IpAddress)local_addr).setAdditionalData(additional_data);
+                    }
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
+                }
+                break;
+            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+                state_promise.setResult(Boolean.TRUE);
+                break;
+        }
+
+        prot_stack.down(evt);
+    }
+
+
+    public Object downcall(Event evt) {
         if(evt == null) return null;
 
         switch(evt.getType()) {
@@ -1448,7 +1474,6 @@ public class JChannel extends Channel {
      * 
      * 
      * @param timeout
-     * @param numberOfAttempts if flush was unsuccessful attempt again until numberOfAttempts is 0
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
@@ -1457,7 +1482,7 @@ public class JChannel extends Channel {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
         boolean successfulFlush = false;      
-        successfulFlush = (Boolean) down(new Event(Event.SUSPEND));
+        successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND));
         
         if(automatic_resume)
             stopFlush();

@@ -35,7 +35,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.69 2007/01/12 14:22:04 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.70 2007/04/02 07:10:17 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -734,7 +734,7 @@ public class MessageDispatcher implements RequestHandler {
 
         public Object down(Event evt) {
             if(channel != null) {
-                return channel.down(evt);
+                return channel.downcall(evt);
             }
             else
                 if(this.log.isWarnEnabled()) {
