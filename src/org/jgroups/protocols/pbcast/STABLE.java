@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.65 2007/04/02 10:34:13 belaban Exp $
+ * @version $Id: STABLE.java,v 1.66 2007/04/02 10:37:09 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address              local_addr=null;
@@ -570,10 +570,7 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(trace)
-            log.trace(new StringBuffer("received stable msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
         if(!heard_from.contains(sender)) {  // already received gossip from sender; discard it
-            if(trace) log.trace("already received stable msg from " + sender);
             return;
         }
 
