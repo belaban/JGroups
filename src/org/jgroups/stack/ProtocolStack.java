@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadFactory;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.44 2007/03/19 12:53:28 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.45 2007/04/02 10:49:39 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -336,7 +336,9 @@ public class ProtocolStack extends Protocol implements Transport {
                 renameTimerThreads(TIMER_NAME);
                 return retval;
         }
-        return top_prot.down(evt);
+        if(top_prot != null)
+            return top_prot.down(evt);
+        return null;
     }
 
 
