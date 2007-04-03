@@ -851,7 +851,7 @@ public class Test implements Receiver {
     private class ResultsPublisher implements Runnable {
         static final long interval=1000;
         boolean running=true;
-        Thread t;
+        volatile Thread t;
 
         void start() {
             if(t == null) {
