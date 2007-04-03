@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.11 2007/03/20 16:10:17 belaban Exp $
+// $Id: DigestTest.java,v 1.12 2007/04/03 08:29:22 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -300,11 +300,11 @@ public class DigestTest extends TestCase {
         assertEquals(25, d.highSeqnoAt(a3));
     }
 
-    public void testSetHighSeqnoAt() {
-        assertEquals(500, md.highSeqnoAt(a1));
-        md.setHighSeqnoAt(a1, 555);
-        assertEquals(555, md.highSeqnoAt(a1));
-    }
+//    public void testSetHighSeqnoAt() {
+//        assertEquals(500, md.highSeqnoAt(a1));
+//        md.setHighSeqnoAt(a1, 555);
+//        assertEquals(555, md.highSeqnoAt(a1));
+//    }
 
     public void testHighSeqnoSeenAt() {
         assertEquals(501, d.highSeqnoSeenAt(a1));
@@ -312,16 +312,18 @@ public class DigestTest extends TestCase {
         assertEquals(33, d.highSeqnoSeenAt(a3));
     }
 
-    public void testSetHighSeenSeqnoAt() {
-        assertEquals(26, md.highSeqnoSeenAt(a2));
-        md.setHighSeqnoSeenAt(a2, 100);
-        assertEquals(100, md.highSeqnoSeenAt(a2));
-    }
+//    public void testSetHighSeenSeqnoAt() {
+//        assertEquals(26, md.highSeqnoSeenAt(a2));
+//        md.setHighSeqnoSeenAt(a2, 100);
+//        assertEquals(100, md.highSeqnoSeenAt(a2));
+//    }
 
     public void testSetHighestDeliveredAndSeenSeqnoAt() {
+        assertEquals(4, d.lowSeqnoAt(a1));
         assertEquals(500, d.highSeqnoAt(a1));
         assertEquals(501, md.highSeqnoSeenAt(a1));
-        md.setHighestDeliveredAndSeenSeqnos(a1, 10, 20);
+        md.setHighestDeliveredAndSeenSeqnos(a1, 2, 10, 20);
+        assertEquals(2, md.lowSeqnoAt(a1));
         assertEquals(10, md.highSeqnoAt(a1));
         assertEquals(20, md.highSeqnoSeenAt(a1));
     }
