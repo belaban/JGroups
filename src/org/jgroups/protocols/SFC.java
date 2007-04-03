@@ -11,14 +11,15 @@ import java.util.*;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.TimeUnit;
 import java.io.*;
 
 /**
  * Simple flow control protocol. After max_credits bytes sent to the group (or an individual member), the sender blocks
- * until it receives an ack from all members (or an individual member in the case of a unicast message) that they
- * indeed received max_credits bytes. Design in doc/design/SimpleFlowControl.txt
+ * until it receives an ack from all members that they indeed received max_credits bytes.
+ * Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.9 2007/01/12 14:19:42 belaban Exp $
+ * @version $Id: SFC.java,v 1.10 2007/04/03 09:42:17 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -54,6 +55,9 @@ public class SFC extends Protocol {
 
     /** Used to wait for and signal when credits become available again */
     private final Condition credits_available=lock.newCondition();
+
+    /** Number of milliseconds after which we send a new credit request if we are waiting for credit responses */
+    private long max_block_time=5000;
 
     private final List<Address> members=new LinkedList<Address>();
 
@@ -95,10 +99,10 @@ public class SFC extends Protocol {
     public double getAverageBlockingTime() {return num_blockings == 0? 0 : total_block_time / num_blockings;}
 
 
-    public Map dumpStats() {
-        Map retval=super.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=super.dumpStats();
         if(retval == null)
-            retval=new HashMap();
+            retval=new HashMap<String,Object>();
         return retval;
     }
 
@@ -157,6 +161,13 @@ public class SFC extends Protocol {
     public boolean setProperties(Properties props) {
         String  str;
         super.setProperties(props);
+
+        str=props.getProperty("max_block_time");
+        if(str != null) {
+            max_block_time=Long.parseLong(str);
+            props.remove("max_block_time");
+        }
+
         str=props.getProperty("max_credits");
         if(str != null) {
             max_credits=Long.parseLong(str);
@@ -192,7 +203,10 @@ public class SFC extends Protocol {
                             log.trace("blocking (current credits=" + curr_credits_available + ")");
                         try {
                             num_blockings++;
-                            credits_available.await(); // will be signalled when we have credit responses from all members
+                            // will be signalled when we have credit responses from all members
+                            credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
+                            if(curr_credits_available <=0 && running)
+                                sendCreditRequest(true);
                         }
                         catch(InterruptedException e) {
                             if(warn)
@@ -255,7 +269,10 @@ public class SFC extends Protocol {
                 if(hdr != null) {
                     switch(hdr.type) {
                         case Header.CREDIT_REQUEST:
-                            handleCreditRequest(sender);
+                            handleCreditRequest(sender, false);
+                            break;
+                        case Header.URGENT_CREDIT_REQUEST:
+                            handleCreditRequest(sender, true);
                             break;
                         case Header.REPLENISH:
                             handleCreditResponse(sender);
@@ -348,7 +365,7 @@ public class SFC extends Protocol {
     }
     
 
-    private void handleCreditRequest(Address sender) {
+    private void handleCreditRequest(Address sender, boolean urgent) {
         boolean send_credit_response=false;
 
         received_lock.lock();
@@ -365,7 +382,7 @@ public class SFC extends Protocol {
                 send_credit_response=true;
             }
             else {
-                if(bytes.longValue() < max_credits) {
+                if(bytes.longValue() < max_credits && !urgent) {
                     if(trace)
                         log.trace("adding " + sender + " to pending credit requesters");
                     pending_requesters.add(sender);
@@ -459,9 +476,14 @@ public class SFC extends Protocol {
     }
 
     private void sendCreditRequest() {
+        sendCreditRequest(false);
+    }
+
+    private void sendCreditRequest(boolean urgent) {
         Message credit_req=new Message();
         // credit_req.setFlag(Message.OOB); // we need to receive the credit request after regular messages
-        credit_req.putHeader(name, new Header(Header.CREDIT_REQUEST));
+        byte type=urgent? Header.URGENT_CREDIT_REQUEST : Header.CREDIT_REQUEST;
+        credit_req.putHeader(name, new Header(type));
         num_credit_requests_sent++;
         down_prot.down(new Event(Event.MSG, credit_req));
     }
@@ -482,6 +504,7 @@ public class SFC extends Protocol {
     public static class Header extends org.jgroups.Header implements Streamable {
         public static final byte CREDIT_REQUEST = 1; // the sender of the message is the requester
         public static final byte REPLENISH      = 2; // the sender of the message is the creditor
+        public static final byte URGENT_CREDIT_REQUEST = 3;
 
         byte  type=CREDIT_REQUEST;
 
@@ -517,6 +540,7 @@ public class SFC extends Protocol {
             switch(type) {
                 case REPLENISH: return "REPLENISH";
                 case CREDIT_REQUEST: return "CREDIT_REQUEST";
+                case URGENT_CREDIT_REQUEST: return "URGENT_CREDIT_REQUEST";
                 default: return "<invalid type>";
             }
         }
