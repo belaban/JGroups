@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.3 2007/02/05 09:58:21 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.4 2007/04/03 08:29:22 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -170,29 +170,29 @@ public class MutableDigest extends Digest {
 
 
 
-    public void setHighSeqnoAt(Address sender, long high_seqno) {
-        Entry entry=senders.get(sender);
-        if(entry != null) {
-            checkSealed();
-            Entry new_entry=new Entry(entry.getLow(), high_seqno, entry.getHighSeen());
-            senders.put(sender, new_entry);
-        }
-    }
+//    public void setHighSeqnoAt(Address sender, long high_seqno) {
+//        Entry entry=senders.get(sender);
+//        if(entry != null) {
+//            checkSealed();
+//            Entry new_entry=new Entry(entry.getLow(), high_seqno, entry.getHighSeen());
+//            senders.put(sender, new_entry);
+//        }
+//    }
+//
+//    public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
+//        Entry entry=senders.get(sender);
+//        if(entry != null) {
+//            checkSealed();
+//            Entry new_entry=new Entry(entry.getLow(), entry.getHigh(), high_seqno_seen);
+//            senders.put(sender, new_entry);
+//        }
+//    }
 
-    public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
+    public void setHighestDeliveredAndSeenSeqnos(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
         Entry entry=senders.get(sender);
         if(entry != null) {
             checkSealed();
-            Entry new_entry=new Entry(entry.getLow(), entry.getHigh(), high_seqno_seen);
-            senders.put(sender, new_entry);
-        }
-    }
-
-    public void setHighestDeliveredAndSeenSeqnos(Address sender, long high_seqno, long high_seqno_seen) {
-        Entry entry=senders.get(sender);
-        if(entry != null) {
-            checkSealed();
-            Entry new_entry=new Entry(entry.getLow(), high_seqno, high_seqno_seen);
+            Entry new_entry=new Entry(low_seqno, high_seqno, high_seqno_seen);
             senders.put(sender, new_entry);
         }
     }

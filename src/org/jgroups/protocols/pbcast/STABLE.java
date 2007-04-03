@@ -32,7 +32,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.69 2007/04/03 08:15:45 belaban Exp $
+ * @version $Id: STABLE.java,v 1.70 2007/04/03 08:29:22 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -406,7 +406,7 @@ public class STABLE extends Protocol {
             sb.append("mine:   ").append(digest.printHighSeqnos()).append("\nother:  ").append(d.printHighSeqnos());
         }
         Address mbr;
-        long highest_seqno, my_highest_seqno, new_highest_seqno;
+        long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
         long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
         Map.Entry entry;
         org.jgroups.protocols.pbcast.Digest.Entry val;
@@ -414,8 +414,12 @@ public class STABLE extends Protocol {
             entry=(Map.Entry)it.next();
             mbr=(Address)entry.getKey();
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            low=val.getLow();
             highest_seqno=val.getHigh();          // highest *delivered* seqno
             highest_seen_seqno=val.getHighSeen(); // highest *seen* seqno
+
+            my_low=digest.lowSeqnoAt(mbr);
+            new_low=Math.min(my_low, low);
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
             my_highest_seqno=digest.highSeqnoAt(mbr);
@@ -424,7 +428,7 @@ public class STABLE extends Protocol {
 
             new_highest_seqno=Math.min(my_highest_seqno, highest_seqno);
             new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
-            digest.setHighestDeliveredAndSeenSeqnos(mbr, new_highest_seqno, new_highest_seen_seqno);
+            digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
         }
         if(trace) {
             sb.append("\nresult: ").append(digest.printHighSeqnos()).append("\n");
