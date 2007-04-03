@@ -6,7 +6,7 @@ Design of new NAKACK with only 1 retransmission table
 Author:   Bela Ban
 Date:     April 3, 2007
 JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
-Version:  $Id: NAKACK.txt,v 1.3 2007/04/03 11:56:17 belaban Exp $
+Version:  $Id: NAKACK.txt,v 1.4 2007/04/03 11:58:10 belaban Exp $
 
 
 
@@ -56,7 +56,11 @@ On reception of stability message D:
   - Call stable() in the NakReceiverWindow. This will adjust the lowest message counter in the NakReceiverWindow
 
 
-On creation of a new NakReceiverWindow:
+On creation of a new NakReceiverWindow with digest D:
+- Create the NakReceiverWindow with
+  - lowest seqno = D.low_seqno
+  - highest delivered seqno = D.highest_delivered_seqno
+  - highest received seqno = D.highest_received_seqno
 
 
 
