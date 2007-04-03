@@ -34,6 +34,7 @@ import org.jgroups.UnblockEvent;
 import org.jgroups.View;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.pbcast.Digest;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -42,7 +43,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.28 2007/03/22 09:48:59 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.29 2007/04/03 09:02:29 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -361,12 +362,24 @@ public class FlushTest extends ChannelTestBase
          
 
          //verify block/unblock/view/              
-
+         List<Digest> digests = new ArrayList<Digest>();
          for (Iterator iter = channels.iterator(); iter.hasNext();)
          {
             FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-            checkEventSequence(receiver,isMuxChannelUsed());                     
-         }         
+            checkEventSequence(receiver,isMuxChannelUsed());  
+                     
+            Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
+            digests.add(d);
+         }  
+         
+         //verify digests are the same at all surviving members
+         for (Digest digestO : digests) 
+         {
+			for (Digest digestI : digests) 
+			{
+				assertEquals("virtual synchrony not satisfied",digestO, digestI);
+			}
+		 }             
       }
       catch (Exception ex)
       {
