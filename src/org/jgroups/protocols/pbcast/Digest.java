@@ -6,6 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.annotations.Immutable;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -27,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.33 2007/04/02 10:45:13 belaban Exp $
+ * @version $Id: Digest.java,v 1.34 2007/04/03 08:13:48 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -294,7 +295,7 @@ public class Digest implements Externalizable, Streamable {
 
 
     public String printHighSeqnos() {
-        StringBuilder sb=new StringBuilder();
+        StringBuilder sb=new StringBuilder("[");
         boolean first=true;
         Map.Entry<Address,Entry> entry;
         Address key;
@@ -309,7 +310,6 @@ public class Digest implements Externalizable, Streamable {
                 sb.append(", ");
             }
             else {
-                sb.append('[');
                 first=false;
             }
             sb.append(key).append("#").append(val.high_seqno);
@@ -410,6 +410,7 @@ public class Digest implements Externalizable, Streamable {
      * Class keeping track of the lowest and highest sequence numbers delivered, and the highest
      * sequence numbers received, per member. This class is immutable
      */
+    @Immutable
     public static class Entry implements Externalizable {
         private long low_seqno, high_seqno, high_seqno_seen=-1;
 
@@ -420,11 +421,15 @@ public class Digest implements Externalizable, Streamable {
             this.low_seqno=low_seqno;
             this.high_seqno=high_seqno;
             this.high_seqno_seen=high_seqno_seen;
+            check();
         }
+
+
 
         public Entry(long low_seqno, long high_seqno) {
             this.low_seqno=low_seqno;
             this.high_seqno=high_seqno;
+            check();
         }
 
         public Entry(Entry other) {
@@ -432,6 +437,7 @@ public class Digest implements Externalizable, Streamable {
                 low_seqno=other.low_seqno;
                 high_seqno=other.high_seqno;
                 high_seqno_seen=other.high_seqno_seen;
+                check();
             }
         }
 
@@ -460,6 +466,12 @@ public class Digest implements Externalizable, Streamable {
             low_seqno=in.readLong();
             high_seqno=in.readLong();
             high_seqno_seen=in.readLong();
+        }
+
+
+        private void check() {
+            if(low_seqno > high_seqno)
+                throw new IllegalArgumentException("low_seqno (" + low_seqno + ") is greater than high_seqno (" + high_seqno + ")");
         }
     }
 }
