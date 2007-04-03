@@ -1,0 +1,18 @@
+
+
+Design of new NAKACK with only 1 retransmission table (http://jira.jboss.com/jira/browse/JGRP-281)
+==================================================================================================
+
+Author: Bela Ban
+Date: April 3, 2007
+Version: $Id: NAKACK.txt,v 1.1 2007/04/03 11:39:30 belaban Exp $
+
+
+
+
+
+
+
+
+
+
