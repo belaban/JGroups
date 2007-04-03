@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.121 2007/04/02 13:39:32 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.122 2007/04/03 08:14:23 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1220,34 +1220,32 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * for each sender P in the digest and its highest seqno seen SEQ, garbage collect all delivered_msgs in the
      * NakReceiverWindow corresponding to P which are <= seqno at digest[P].
      */
-    private void stable(Digest d) {
+    private void stable(Digest digest) {
         NakReceiverWindow recv_win;
         long my_highest_rcvd;        // highest seqno received in my digest for a sender P
         long stability_highest_rcvd; // highest seqno received in the stability vector for a sender P
 
-        if(members == null || local_addr == null || d == null) {
+        if(members == null || local_addr == null || digest == null) {
             if(warn)
                 log.warn("members, local_addr or digest are null !");
             return;
         }
 
         if(trace) {
-            log.trace("received stable digest " + d);
+            log.trace("received stable digest " + digest);
         }
 
-        stability_msgs.add(d);
+        stability_msgs.add(digest);
 
-        Map.Entry entry;
         Address sender;
         org.jgroups.protocols.pbcast.Digest.Entry val;
         long high_seqno_delivered, high_seqno_received;
 
-        for(Iterator it=d.getSenders().entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sender=(Address)entry.getKey();
+        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
+            sender=entry.getKey();
             if(sender == null)
                 continue;
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            val=entry.getValue();
             high_seqno_delivered=val.getHigh();
             high_seqno_received=val.getHighSeen();
 
