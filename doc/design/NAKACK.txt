@@ -1,17 +1,40 @@
 
 
-Design of new NAKACK with only 1 retransmission table (http://jira.jboss.com/jira/browse/JGRP-281)
-==================================================================================================
+Design of new NAKACK with only 1 retransmission table
+=====================================================
 
-Author: Bela Ban
-Date: April 3, 2007
-Version: $Id: NAKACK.txt,v 1.1 2007/04/03 11:39:30 belaban Exp $
-
-
-
+Author:   Bela Ban
+Date:     April 3, 2007
+JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
+Version:  $Id: NAKACK.txt,v 1.2 2007/04/03 11:47:10 belaban Exp $
 
 
 
+Motivation
+----------
+Merge of sent-table, received-table and delivered-table into one single retransmission table. This should reduce
+complexity, and increase performance, because we don't need to handle 3 tables. Plus, sent-table maintained a sorted
+key set (TreeMap) which made insertion costly when many keys were present.
+
+
+
+Design
+------
+
+Variables:
+- xmit-table: Map<Address,NakReceiverWindow> of senders and their associated NakReceiverWindows. Each NakReceiverWindow
+              contains a map<Long,Message> of sequence numbers and the messages associated with them.
+              Each NakReceiverWindow maintains the seqnos of (1) the highest message received, (2) the highest message
+              delivered and (3) the lowest message. The latter is the seqno that was last purged through a stability
+              message (see STABLE protocol)
+
+
+
+On send(M):
+
+
+
+On receive(M):
 
 
 
