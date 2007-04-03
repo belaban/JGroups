@@ -32,55 +32,55 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.68 2007/04/02 10:59:56 belaban Exp $
+ * @version $Id: STABLE.java,v 1.69 2007/04/03 08:15:45 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
     private final Vector<Address> mbrs=new Vector<Address>();
 
 
-    private final MutableDigest  digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
-    private final MutableDigest  latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
+    private final MutableDigest   digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    private final MutableDigest   latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
     private final Vector<Address> heard_from=new Vector<Address>();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
-    private long                 desired_avg_gossip=20000;
+    private long                  desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
      * small number (> 0 !) if <code>max_bytes</code> is used */
-    private long                 stability_delay=6000;
+    private long                  stability_delay=6000;
 
     @GuardedBy("stability_lock")
-    private Future               stability_task_future=null;
-    private final Lock           stability_lock=new ReentrantLock();   // to synchronize on stability_task
+    private Future                stability_task_future=null;
+    private final Lock            stability_lock=new ReentrantLock();   // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
-    private Future               stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
-    private final Lock           stable_task_lock=new ReentrantLock(); // to sync on stable_task
+    private Future                stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
+    private final Lock            stable_task_lock=new ReentrantLock(); // to sync on stable_task
 
 
-    private TimeScheduler        timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
-    private static final String  name="STABLE";
+    private TimeScheduler         timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
+    private static final String   name="STABLE";
 
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
-    private long                 max_bytes=0;
+    private long                  max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
     @GuardedBy("received")
-    private long                 num_bytes_received=0;
+    private long                  num_bytes_received=0;
 
-    private Lock                 received=new ReentrantLock();
+    private Lock                  received=new ReentrantLock();
 
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
-    private boolean              suspended=false;
+    private boolean               suspended=false;
 
-    private boolean              initialized=false;
+    private boolean               initialized=false;
 
-    private Future               resume_task_future=null;
-    private final Object         resume_task_mutex=new Object();
+    private Future                resume_task_future=null;
+    private final Object          resume_task_mutex=new Object();
 
     private int num_stable_msgs_sent=0;
     private int num_stable_msgs_received=0;
@@ -239,9 +239,10 @@ public class STABLE extends Protocol {
             return null;  // don't pass STABLE or STABILITY messages up the stack
 
         case Event.VIEW_CHANGE:
+            Object retval=up_prot.up(evt);
             View view=(View)evt.getArg();
             handleViewChange(view);
-            break;
+            return retval;
 
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address)evt.getArg();
@@ -293,9 +294,10 @@ public class STABLE extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
+                Object retval=down_prot.down(evt);
                 View v=(View)evt.getArg();
                 handleViewChange(v);
-            break;
+            return retval;
 
         case Event.SUSPEND_STABLE:
             long timeout=0;
@@ -332,6 +334,15 @@ public class STABLE extends Protocol {
         mbrs.addAll(tmp);
         adjustSenders(digest, tmp);
         adjustSenders(latest_local_digest, tmp);
+
+        // asks the NAKACK protocol for the current digest
+        Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+        if(my_digest != null) {
+            synchronized(latest_local_digest) {
+                latest_local_digest.replace(my_digest);
+            }
+        }
+
         resetDigest(tmp);
         if(!initialized)
             initialized=true;
@@ -380,10 +391,10 @@ public class STABLE extends Protocol {
         }
 
         if(!digest.sameSenders(d)) {
-            if(trace)
-                log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
-                          append(sender).append(" which has different members than mine (").
-                          append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
+//            if(trace)
+//                log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
+//                          append(sender).append(" which has different members than mine (").
+//                          append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
             // to avoid sending incorrect stability/stable msgs, we simply reset our heard_from list, see DESIGN
             resetDigest(mbrs);
             return false;
