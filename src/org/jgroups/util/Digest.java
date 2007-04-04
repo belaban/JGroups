@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.2 2007/04/04 05:34:04 belaban Exp $
+ * @version $Id: Digest.java,v 1.3 2007/04/04 05:41:18 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -298,7 +298,7 @@ public class Digest implements Externalizable, Streamable {
         Address key;
         Entry val;
 
-        TreeMap copy=new TreeMap(senders);
+        TreeMap<Address,Entry> copy=new TreeMap<Address,Entry>(senders);
         for(Iterator<Map.Entry<Address, Entry>> it=copy.entrySet().iterator(); it.hasNext();) {
             entry=it.next();
             key=entry.getKey();
@@ -346,7 +346,7 @@ public class Digest implements Externalizable, Streamable {
     }
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        Map<Address, Entry> tmp = (Map<Address, Entry>)in.readObject();
+        Map<Address, Entry> tmp=(Map<Address, Entry>)in.readObject();
         senders.clear();
         senders.putAll(tmp);
     }
@@ -356,8 +356,8 @@ public class Digest implements Externalizable, Streamable {
         Map.Entry<Address,Entry> entry;
         Address key;
         Entry val;
-        for(Iterator it=senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry<Address, Entry>)it.next();
+        for(Iterator<Map.Entry<Address, Entry>> it=senders.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
             key=entry.getKey();
             val=entry.getValue();
             Util.writeAddress(key, out);
