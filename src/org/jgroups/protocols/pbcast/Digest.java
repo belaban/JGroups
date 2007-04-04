@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.34 2007/04/03 08:13:48 belaban Exp $
+ * @version $Id: Digest.java,v 1.35 2007/04/04 05:13:40 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -390,7 +390,7 @@ public class Digest implements Externalizable, Streamable {
             Address addr=senders.keySet().iterator().next();
             int len=addr.size() +
                     2 * Global.BYTE_SIZE; // presence byte, IpAddress vs other address
-            len+=3 * Global.LONG_SIZE; // 3 longs in one Entry
+            len+=Entry.SIZE; // 3 longs in one Entry
             retval+=len * senders.size();
         }
         return retval;
@@ -411,8 +411,9 @@ public class Digest implements Externalizable, Streamable {
      * sequence numbers received, per member. This class is immutable
      */
     @Immutable
-    public static class Entry implements Externalizable {
+    public static class Entry implements Externalizable, Streamable {
         private long low_seqno, high_seqno, high_seqno_seen=-1;
+        final static int SIZE=Global.LONG_SIZE * 3;
 
         public Entry() {
         }
@@ -468,10 +469,28 @@ public class Digest implements Externalizable, Streamable {
             high_seqno_seen=in.readLong();
         }
 
+        public int size() {
+            return SIZE;
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeLong(low_seqno);
+            out.writeLong(high_seqno);
+            out.writeLong(high_seqno_seen);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            low_seqno=in.readLong();
+            high_seqno=in.readLong();
+            high_seqno_seen=in.readLong();
+        }
+
 
         private void check() {
             if(low_seqno > high_seqno)
                 throw new IllegalArgumentException("low_seqno (" + low_seqno + ") is greater than high_seqno (" + high_seqno + ")");
         }
+
+
     }
 }
