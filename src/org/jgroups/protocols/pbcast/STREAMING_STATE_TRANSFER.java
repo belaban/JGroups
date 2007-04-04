@@ -6,6 +6,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.util.Digest;
 
 import java.io.*;
 import java.net.*;

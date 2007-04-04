@@ -28,6 +28,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.util.Digest;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending

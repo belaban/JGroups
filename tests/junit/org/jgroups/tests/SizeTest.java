@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.19 2007/01/26 10:18:40 belaban Exp $$
+// $Id: SizeTest.java,v 1.20 2007/04/04 05:23:35 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -15,12 +15,13 @@ import org.jgroups.protocols.FD;
 import org.jgroups.protocols.pbcast.*;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.protocols.pbcast.Digest;
+import org.jgroups.util.Digest;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.STATE_TRANSFER;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.MutableDigest;
 
 import java.util.*;
 import java.io.ByteArrayOutputStream;

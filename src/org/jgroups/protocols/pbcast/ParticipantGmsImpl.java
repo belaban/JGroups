@@ -1,9 +1,10 @@
-// $Id: ParticipantGmsImpl.java,v 1.24 2007/03/13 16:23:47 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.25 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Digest;
 
 import java.util.Vector;
 import java.util.Iterator;

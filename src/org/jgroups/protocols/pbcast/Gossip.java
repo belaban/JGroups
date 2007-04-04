@@ -1,8 +1,9 @@
-// $Id: Gossip.java,v 1.6 2006/05/16 11:14:27 belaban Exp $
+// $Id: Gossip.java,v 1.7 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.Address;
+import org.jgroups.util.Digest;
 
 import java.io.Serializable;
 import java.util.Vector;

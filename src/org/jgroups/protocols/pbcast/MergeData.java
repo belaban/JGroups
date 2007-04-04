@@ -1,10 +1,11 @@
-// $Id: MergeData.java,v 1.5 2006/01/14 14:00:33 belaban Exp $
+// $Id: MergeData.java,v 1.6 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.Address;
 import org.jgroups.View;
+import org.jgroups.util.Digest;
 
 import java.io.Externalizable;
 import java.io.IOException;
@@ -22,7 +23,7 @@ public class MergeData implements Externalizable {
     Address   sender=null;
     boolean   merge_rejected=false;
     View      view=null;
-    Digest    digest=null;
+    Digest digest=null;
 
     /**
      * Empty constructor needed for externalization

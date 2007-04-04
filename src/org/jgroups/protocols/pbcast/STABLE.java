@@ -4,9 +4,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.Iterator;
@@ -32,14 +30,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.70 2007/04/03 08:29:22 belaban Exp $
+ * @version $Id: STABLE.java,v 1.71 2007/04/04 05:23:33 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
     private final Vector<Address> mbrs=new Vector<Address>();
 
 
-    private final MutableDigest   digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    private final MutableDigest digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
     private final MutableDigest   latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
     private final Vector<Address> heard_from=new Vector<Address>();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
@@ -350,21 +348,21 @@ public class STABLE extends Protocol {
 
 
     /** Digest and members are guaranteed to be non-null */
-    private static void adjustSenders(MutableDigest d, Vector members) {
-        synchronized(d) {
+    private static void adjustSenders(MutableDigest digest, Vector members) {
+        synchronized(digest) {
             // 1. remove all members from digest who are not in the view
-            Iterator it=d.senders.keySet().iterator();
+            Iterator<Address> it=digest.getSenders().keySet().iterator();
             Address mbr;
             while(it.hasNext()) {
-                mbr=(Address)it.next();
+                mbr=it.next();
                 if(!members.contains(mbr))
                     it.remove();
             }
             // 2. add members to digest which are in the new view but not in the digest
             for(int i=0; i < members.size(); i++) {
                 mbr=(Address)members.get(i);
-                if(!d.contains(mbr))
-                    d.add(mbr, -1, -1);
+                if(!digest.contains(mbr))
+                    digest.add(mbr, -1, -1);
             }
         }
     }
@@ -408,12 +406,12 @@ public class STABLE extends Protocol {
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
         long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
-        Map.Entry entry;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            mbr=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+        Map.Entry<Address,Digest.Entry> entry;
+        Digest.Entry val;
+        for(Iterator<Map.Entry<Address, Digest.Entry>> it=d.getSenders().entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
+            mbr=entry.getKey();
+            val=entry.getValue();
             low=val.getLow();
             highest_seqno=val.getHigh();          // highest *delivered* seqno
             highest_seen_seqno=val.getHighSeen(); // highest *seen* seqno

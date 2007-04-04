@@ -1,4 +1,4 @@
-// $Id: JoinRsp.java,v 1.11 2007/01/03 14:22:37 belaban Exp $
+// $Id: JoinRsp.java,v 1.12 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -7,6 +7,7 @@ import org.jgroups.View;
 import org.jgroups.Global;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.util.Digest;
 
 import java.io.Serializable;
 import java.io.DataOutputStream;

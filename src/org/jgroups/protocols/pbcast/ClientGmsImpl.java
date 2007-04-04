@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.42 2007/03/15 12:13:22 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.43 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -7,6 +7,8 @@ import org.jgroups.*;
 import org.jgroups.protocols.PingRsp;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MutableDigest;
 
 import java.util.*;
 
@@ -19,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.42 $
+ * @version $Revision: 1.43 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
