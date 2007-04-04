@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.13 2007/03/09 21:07:32 belaban Exp $
+// $Id: NakackTest.java,v 1.14 2007/04/04 16:56:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -36,7 +36,7 @@ public class NakackTest extends TestCase {
 
     public void test0() throws Exception {
         Object mutex=new Object();
-        CheckNoGaps check=new CheckNoGaps(-1, this, mutex);
+        CheckNoGaps check=new CheckNoGaps(1, this, mutex);
         ProtocolTester t=new ProtocolTester("pbcast.NAKACK", check);
         Address my_addr=new IpAddress("localhost", 10000);
         ViewId vid=new ViewId(my_addr, 322649);
@@ -50,14 +50,16 @@ public class NakackTest extends TestCase {
         check.down(new Event(Event.BECOME_SERVER));
         check.down(new Event(Event.VIEW_CHANGE, view));
 
+        for(long i=1; i <= NUM_MSGS; i++) {
+            if(i % 1000 == 0)
+                System.out.println("sending msg #" + i);
+            check.down(new Event(Event.MSG, new Message(null, my_addr, new Long(i))));
+            num_msgs_sent++;
+        }
+
         synchronized(mutex) {
-            for(long i=0; i < NUM_MSGS; i++) {
-                if(i % 1000 == 0 && i > 0)
-                    System.out.println("sending msg #" + i);
-                check.down(new Event(Event.MSG, new Message(null, my_addr, new Long(i))));
-                num_msgs_sent++;
-            }
-            mutex.wait(WAIT_TIME);
+            while(!check.isDone())
+                mutex.wait(WAIT_TIME);
         }
         System.out.println("\nMessages sent: " + num_msgs_sent + ", messages received: " + num_msgs_received);
         assertEquals(num_msgs_received, num_msgs_sent);
@@ -75,11 +77,13 @@ public class NakackTest extends TestCase {
 
 
     private static class CheckNoGaps extends Protocol {
-        long starting_seqno=0;
-        long num_msgs=0;
+        long starting_seqno=1;
         Hashtable senders=new Hashtable(); // sender --> highest seqno received so far
         NakackTest t=null;
         final Object mut;
+        long highest_seqno=starting_seqno;
+        boolean done=false;
+
 
 
         CheckNoGaps(long seqno, NakackTest t, Object mut) {
@@ -93,10 +97,14 @@ public class NakackTest extends TestCase {
         }
 
 
+        public boolean isDone() {
+            return done;
+        }
+
         public Object up(Event evt) {
             Message msg=null;
             Address sender;
-            long highest_seqno, received_seqno;
+            long received_seqno;
             Long s;
 
             if(evt == null)
@@ -120,33 +128,33 @@ public class NakackTest extends TestCase {
                 senders.put(sender, s);
             }
 
-            highest_seqno=s.longValue();
-
             try {
                 s=(Long)msg.getObject();
                 received_seqno=s.longValue();
-                if(received_seqno == highest_seqno + 1) {
+                if(received_seqno == highest_seqno) {
                     // correct
                     if(received_seqno % 1000 == 0 && received_seqno > 0)
                         System.out.println("PASS: received msg #" + received_seqno);
-                    senders.put(sender, new Long(highest_seqno + 1));
-                    num_msgs++;
-                    if(num_msgs >= NakackTest.NUM_MSGS) {
-                        synchronized(mut) {
-                            t.num_msgs_received=num_msgs;
+                    senders.put(sender, new Long(highest_seqno));
+                    highest_seqno++;
+
+                    synchronized(mut) {
+                        t.num_msgs_received++;
+                        if(t.num_msgs_received >= NakackTest.NUM_MSGS) {
+                            done=true;
                             mut.notifyAll();
                         }
+
                     }
                 }
                 else {
                     // error, terminate test
-                    log.error("FAIL: received msg #" + received_seqno);
+                    fail("FAIL: received msg #" + received_seqno + ", expected " + highest_seqno);
                 }
             }
             catch(Exception ex) {
-                log.error("NakackTest.CheckNoGaps.up(): " + ex);
+                log.error("NakackTest.CheckNoGaps.up()", ex);
             }
-            // return up_prot.up(evt);
             return null;
         }
 

@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.14 2007/04/04 05:34:05 belaban Exp $
+// $Id: DigestTest.java,v 1.15 2007/04/04 16:59:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -283,7 +283,7 @@ public class DigestTest extends TestCase {
         md.resetAt(a1);
         assertEquals(0, md.lowSeqnoAt(a1));
         assertEquals(0, md.highestDeliveredSeqnoAt(a1));
-        assertEquals(md.highestReceivedSeqnoAt(a1), -1);
+        assertEquals(0, md.highestReceivedSeqnoAt(a1));
     }
 
 
