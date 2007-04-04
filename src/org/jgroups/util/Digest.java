@@ -1,16 +1,13 @@
 package org.jgroups.util;
 
-import static java.lang.Math.max;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.annotations.Immutable;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
 
 import java.io.*;
+import static java.lang.Math.max;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -28,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.1 2007/04/04 05:23:35 belaban Exp $
+ * @version $Id: Digest.java,v 1.2 2007/04/04 05:34:04 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
@@ -61,14 +58,14 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    public Digest(Address sender, long low, long high, long high_seen) {
+    public Digest(Address sender, long low, long highest_delivered, long highest_received) {
         senders=createSenders(1);
-        senders.put(sender, new Entry(low, high, high_seen));
+        senders.put(sender, new Entry(low, highest_delivered, highest_received));
     }
 
-    public Digest(Address sender, long low, long high) {
+    public Digest(Address sender, long low, long highest_delivered) {
         senders=createSenders(1);
-        senders.put(sender, new Entry(low, high));
+        senders.put(sender, new Entry(low, highest_delivered));
     }
 
     /** Returns an unmodifiable map, so modifications will result in exceptions */
@@ -123,9 +120,9 @@ public class Digest implements Externalizable, Streamable {
             for(Address address : intersection) {
                 Entry e1=this.get(address);
                 Entry e2=other.get(address);
-                if(e1.getHigh() != e2.getHigh()) {
-                    long low=Math.min(e1.high_seqno, e2.high_seqno);
-                    long high=max(e1.high_seqno, e2.high_seqno);
+                if(e1.getHighestDeliveredSeqno() != e2.getHighestDeliveredSeqno()) {
+                    long low=Math.min(e1.highest_delivered_seqno, e2.highest_delivered_seqno);
+                    long high=max(e1.highest_delivered_seqno, e2.highest_delivered_seqno);
                     Entry r=new Entry(low, high);
                     resultMap.put(address, r);
                 }
@@ -172,7 +169,7 @@ public class Digest implements Externalizable, Streamable {
                 Entry e1=this.get(address);
                 Entry e2=other.get(address);                
                     
-                long high=max(e1.high_seqno, e2.high_seqno);
+                long high=max(e1.highest_delivered_seqno, e2.highest_delivered_seqno);
                 Entry r=new Entry(0, high);
                 resultMap.put(address, r);                
             }
@@ -216,21 +213,21 @@ public class Digest implements Externalizable, Streamable {
     }
 
 
-    public long highSeqnoAt(Address sender) {
+    public long highestDeliveredSeqnoAt(Address sender) {
         Entry entry=senders.get(sender);
         if(entry == null)
             return -1;
         else
-            return entry.high_seqno;
+            return entry.highest_delivered_seqno;
     }
 
 
-    public long highSeqnoSeenAt(Address sender) {
+    public long highestReceivedSeqnoAt(Address sender) {
         Entry entry=senders.get(sender);
         if(entry == null)
             return -1;
         else
-            return entry.high_seqno_seen;
+            return entry.highest_received_seqno;
     }
 
 
@@ -285,16 +282,16 @@ public class Digest implements Externalizable, Streamable {
                 first=false;
             }
             sb.append(key).append(": ").append('[').append(val.low_seqno).append(" : ");
-            sb.append(val.high_seqno);
-            if(val.high_seqno_seen >= 0)
-                sb.append(" (").append(val.high_seqno_seen).append(")");
+            sb.append(val.highest_delivered_seqno);
+            if(val.highest_received_seqno >= 0)
+                sb.append(" (").append(val.highest_received_seqno).append(")");
             sb.append("]");
         }
         return sb.toString();
     }
 
 
-    public String printHighSeqnos() {
+    public String printHighestDeliveredSeqnos() {
         StringBuilder sb=new StringBuilder("[");
         boolean first=true;
         Map.Entry<Address,Entry> entry;
@@ -312,14 +309,14 @@ public class Digest implements Externalizable, Streamable {
             else {
                 first=false;
             }
-            sb.append(key).append("#").append(val.high_seqno);
+            sb.append(key).append("#").append(val.highest_delivered_seqno);
         }
         sb.append(']');
         return sb.toString();
     }
 
 
-    public String printHighSeqnosSeen() {
+    public String printHighestReceivedSeqnos() {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
         Map.Entry<Address,Entry> entry;
@@ -337,7 +334,7 @@ public class Digest implements Externalizable, Streamable {
                 sb.append('[');
                 first=false;
             }
-            sb.append(key).append("#").append(val.high_seqno_seen);
+            sb.append(key).append("#").append(val.highest_received_seqno);
         }
         sb.append(']');
         return sb.toString();
@@ -365,8 +362,8 @@ public class Digest implements Externalizable, Streamable {
             val=entry.getValue();
             Util.writeAddress(key, out);
             out.writeLong(val.low_seqno);
-            out.writeLong(val.high_seqno);
-            out.writeLong(val.high_seqno_seen);
+            out.writeLong(val.highest_delivered_seqno);
+            out.writeLong(val.highest_received_seqno);
         }
     }
 
@@ -412,61 +409,65 @@ public class Digest implements Externalizable, Streamable {
      */
     @Immutable
     public static class Entry implements Externalizable, Streamable {
-        private long low_seqno, high_seqno, high_seqno_seen=-1;
+        private long low_seqno;
+        private long highest_delivered_seqno; // the highest delivered seqno, e.g. in 1,2,4,5,7 --> 2
+        private long highest_received_seqno=-1; //the highest received seqno, e.g. in 1,2,4,5,7 --> 7
         final static int SIZE=Global.LONG_SIZE * 3;
 
         public Entry() {
         }
 
-        public Entry(long low_seqno, long high_seqno, long high_seqno_seen) {
+        public Entry(long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
             this.low_seqno=low_seqno;
-            this.high_seqno=high_seqno;
-            this.high_seqno_seen=high_seqno_seen;
+            this.highest_delivered_seqno=highest_delivered_seqno;
+            this.highest_received_seqno=highest_received_seqno;
             check();
         }
 
 
 
-        public Entry(long low_seqno, long high_seqno) {
+        public Entry(long low_seqno, long highest_delivered_seqno) {
             this.low_seqno=low_seqno;
-            this.high_seqno=high_seqno;
+            this.highest_delivered_seqno=highest_delivered_seqno;
             check();
         }
 
         public Entry(Entry other) {
             if(other != null) {
                 low_seqno=other.low_seqno;
-                high_seqno=other.high_seqno;
-                high_seqno_seen=other.high_seqno_seen;
+                highest_delivered_seqno=other.highest_delivered_seqno;
+                highest_received_seqno=other.highest_received_seqno;
                 check();
             }
         }
 
         public final long getLow() {return low_seqno;}
-        public final long getHigh() {return high_seqno;}
-        public final long getHighSeen() {return high_seqno_seen;}
-        public final long getHighest() {return max(high_seqno, high_seqno_seen);}
+        public final long getHighestDeliveredSeqno() {return highest_delivered_seqno;}
+        public final long getHighestReceivedSeqno() {return highest_received_seqno;}
+
+        /** Return the max of the highest delivered or highest received seqno */
+        public final long getHighest() {return max(highest_delivered_seqno, highest_received_seqno);}
 
         public boolean equals(Object obj) {
             Entry other=(Entry)obj;
-            return low_seqno == other.low_seqno && high_seqno == other.high_seqno && high_seqno_seen == other.high_seqno_seen;
+            return low_seqno == other.low_seqno && highest_delivered_seqno == other.highest_delivered_seqno && highest_received_seqno == other.highest_received_seqno;
         }
 
         public String toString() {
-            return new StringBuffer("low=").append(low_seqno).append(", high=").append(high_seqno).
-                    append(", highest seen=").append(high_seqno_seen).toString();
+            return new StringBuffer("low=").append(low_seqno).append(", highest delivered=").append(highest_delivered_seqno).
+                    append(", highest received=").append(highest_received_seqno).toString();
         }
 
         public void writeExternal(ObjectOutput out) throws IOException {
             out.writeLong(low_seqno);
-            out.writeLong(high_seqno);
-            out.writeLong(high_seqno_seen);
+            out.writeLong(highest_delivered_seqno);
+            out.writeLong(highest_received_seqno);
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             low_seqno=in.readLong();
-            high_seqno=in.readLong();
-            high_seqno_seen=in.readLong();
+            highest_delivered_seqno=in.readLong();
+            highest_received_seqno=in.readLong();
         }
 
         public int size() {
@@ -475,20 +476,20 @@ public class Digest implements Externalizable, Streamable {
 
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeLong(low_seqno);
-            out.writeLong(high_seqno);
-            out.writeLong(high_seqno_seen);
+            out.writeLong(highest_delivered_seqno);
+            out.writeLong(highest_received_seqno);
         }
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             low_seqno=in.readLong();
-            high_seqno=in.readLong();
-            high_seqno_seen=in.readLong();
+            highest_delivered_seqno=in.readLong();
+            highest_received_seqno=in.readLong();
         }
 
 
         private void check() {
-            if(low_seqno > high_seqno)
-                throw new IllegalArgumentException("low_seqno (" + low_seqno + ") is greater than high_seqno (" + high_seqno + ")");
+            if(low_seqno > highest_delivered_seqno)
+                throw new IllegalArgumentException("low_seqno (" + low_seqno + ") is greater than highest_delivered_seqno (" + highest_delivered_seqno + ")");
         }
 
 

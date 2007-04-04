@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.13 2007/04/04 05:23:35 belaban Exp $
+// $Id: DigestTest.java,v 1.14 2007/04/04 05:34:05 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -237,17 +237,17 @@ public class DigestTest extends TestCase {
         md.add(a2, 3, 300);
         md.add(a3, 7, 700);
 
-        long tmp=md.highSeqnoAt(a1);
+        long tmp=md.highestDeliveredSeqnoAt(a1);
         md.incrementHighSeqno(a1);
-        assertEquals(md.highSeqnoAt(a1), tmp+1);
+        assertEquals(md.highestDeliveredSeqnoAt(a1), tmp+1);
 
-        tmp=md.highSeqnoAt(a2);
+        tmp=md.highestDeliveredSeqnoAt(a2);
         md.incrementHighSeqno(a2);
-        assertEquals(md.highSeqnoAt(a2), tmp+1);
+        assertEquals(md.highestDeliveredSeqnoAt(a2), tmp+1);
 
-        tmp=md.highSeqnoAt(a3);
+        tmp=md.highestDeliveredSeqnoAt(a3);
         md.incrementHighSeqno(a3);
-        assertEquals(md.highSeqnoAt(a3), tmp+1);
+        assertEquals(md.highestDeliveredSeqnoAt(a3), tmp+1);
     }
 
 
@@ -282,8 +282,8 @@ public class DigestTest extends TestCase {
     public void testResetAt() {
         md.resetAt(a1);
         assertEquals(0, md.lowSeqnoAt(a1));
-        assertEquals(0, md.highSeqnoAt(a1));
-        assertEquals(md.highSeqnoSeenAt(a1), -1);
+        assertEquals(0, md.highestDeliveredSeqnoAt(a1));
+        assertEquals(md.highestReceivedSeqnoAt(a1), -1);
     }
 
 
@@ -295,9 +295,9 @@ public class DigestTest extends TestCase {
 
 
     public void testHighSeqnoAt() {
-        assertEquals(500, d.highSeqnoAt(a1));
-        assertEquals(26, d.highSeqnoAt(a2));
-        assertEquals(25, d.highSeqnoAt(a3));
+        assertEquals(500, d.highestDeliveredSeqnoAt(a1));
+        assertEquals(26, d.highestDeliveredSeqnoAt(a2));
+        assertEquals(25, d.highestDeliveredSeqnoAt(a3));
     }
 
 //    public void testSetHighSeqnoAt() {
@@ -307,9 +307,9 @@ public class DigestTest extends TestCase {
 //    }
 
     public void testHighSeqnoSeenAt() {
-        assertEquals(501, d.highSeqnoSeenAt(a1));
-        assertEquals(26, d.highSeqnoSeenAt(a2));
-        assertEquals(33, d.highSeqnoSeenAt(a3));
+        assertEquals(501, d.highestReceivedSeqnoAt(a1));
+        assertEquals(26, d.highestReceivedSeqnoAt(a2));
+        assertEquals(33, d.highestReceivedSeqnoAt(a3));
     }
 
 //    public void testSetHighSeenSeqnoAt() {
@@ -320,12 +320,12 @@ public class DigestTest extends TestCase {
 
     public void testSetHighestDeliveredAndSeenSeqnoAt() {
         assertEquals(4, d.lowSeqnoAt(a1));
-        assertEquals(500, d.highSeqnoAt(a1));
-        assertEquals(501, md.highSeqnoSeenAt(a1));
+        assertEquals(500, d.highestDeliveredSeqnoAt(a1));
+        assertEquals(501, md.highestReceivedSeqnoAt(a1));
         md.setHighestDeliveredAndSeenSeqnos(a1, 2, 10, 20);
         assertEquals(2, md.lowSeqnoAt(a1));
-        assertEquals(10, md.highSeqnoAt(a1));
-        assertEquals(20, md.highSeqnoSeenAt(a1));
+        assertEquals(10, md.highestDeliveredSeqnoAt(a1));
+        assertEquals(20, md.highestReceivedSeqnoAt(a1));
     }
 
     public void testCopy() {
@@ -363,16 +363,16 @@ public class DigestTest extends TestCase {
         assertEquals(3, digest.size());
 
         assertEquals(3, digest.lowSeqnoAt(a1));
-        assertEquals(500, digest.highSeqnoAt(a1));
-        assertEquals(502, digest.highSeqnoSeenAt(a1));
+        assertEquals(500, digest.highestDeliveredSeqnoAt(a1));
+        assertEquals(502, digest.highestReceivedSeqnoAt(a1));
 
         assertEquals(20, digest.lowSeqnoAt(a2));
-        assertEquals(26, digest.highSeqnoAt(a2));
-        assertEquals(27, digest.highSeqnoSeenAt(a2));
+        assertEquals(26, digest.highestDeliveredSeqnoAt(a2));
+        assertEquals(27, digest.highestReceivedSeqnoAt(a2));
 
         assertEquals(20, digest.lowSeqnoAt(a3));
-        assertEquals(26, digest.highSeqnoAt(a3));
-        assertEquals(35, digest.highSeqnoSeenAt(a3));
+        assertEquals(26, digest.highestDeliveredSeqnoAt(a3));
+        assertEquals(35, digest.highestReceivedSeqnoAt(a3));
     }
 
     public void testNonConflictingMerge() {
@@ -392,17 +392,17 @@ public class DigestTest extends TestCase {
         assertEquals(25, cons_d.lowSeqnoAt(a2));
         assertEquals(20, cons_d.lowSeqnoAt(a3));
 
-        assertEquals(10, cons_d.highSeqnoAt(ip1));
-        assertEquals(20, cons_d.highSeqnoAt(ip2));
-        assertEquals(500, cons_d.highSeqnoAt(a1));
-        assertEquals(26, cons_d.highSeqnoAt(a2));
-        assertEquals(25, cons_d.highSeqnoAt(a3));
+        assertEquals(10, cons_d.highestDeliveredSeqnoAt(ip1));
+        assertEquals(20, cons_d.highestDeliveredSeqnoAt(ip2));
+        assertEquals(500, cons_d.highestDeliveredSeqnoAt(a1));
+        assertEquals(26, cons_d.highestDeliveredSeqnoAt(a2));
+        assertEquals(25, cons_d.highestDeliveredSeqnoAt(a3));
 
-        assertEquals(10, cons_d.highSeqnoSeenAt(ip1));
-        assertEquals(20, cons_d.highSeqnoSeenAt(ip2));
-        assertEquals(501, cons_d.highSeqnoSeenAt(a1));
-        assertEquals(26, cons_d.highSeqnoSeenAt(a2));
-        assertEquals(33, cons_d.highSeqnoSeenAt(a3));
+        assertEquals(10, cons_d.highestReceivedSeqnoAt(ip1));
+        assertEquals(20, cons_d.highestReceivedSeqnoAt(ip2));
+        assertEquals(501, cons_d.highestReceivedSeqnoAt(a1));
+        assertEquals(26, cons_d.highestReceivedSeqnoAt(a2));
+        assertEquals(33, cons_d.highestReceivedSeqnoAt(a3));
     }
 
 
@@ -418,16 +418,16 @@ public class DigestTest extends TestCase {
         //System.out.println("d after: " + d);
 
         assertEquals(4, md.lowSeqnoAt(a1));  // low_seqno should *not* have changed
-        assertEquals(500, md.highSeqnoAt(a1));  // high_seqno should *not* have changed
-        assertEquals(501, md.highSeqnoSeenAt(a1));  // high_seqno_seen should *not* have changed
+        assertEquals(500, md.highestDeliveredSeqnoAt(a1));  // high_seqno should *not* have changed
+        assertEquals(501, md.highestReceivedSeqnoAt(a1));  // high_seqno_seen should *not* have changed
 
         assertEquals(25, md.lowSeqnoAt(a2));  // low_seqno should *not* have changed
-        assertEquals(26, md.highSeqnoAt(a2));  // high_seqno should *not* have changed
-        assertEquals(26, md.highSeqnoSeenAt(a2));  // high_seqno_seen should *not* have changed
+        assertEquals(26, md.highestDeliveredSeqnoAt(a2));  // high_seqno should *not* have changed
+        assertEquals(26, md.highestReceivedSeqnoAt(a2));  // high_seqno_seen should *not* have changed
 
         assertEquals(18, md.lowSeqnoAt(a3));  // low_seqno should *not* have changed
-        assertEquals(28, md.highSeqnoAt(a3));  // high_seqno should *not* have changed
-        assertEquals(35, md.highSeqnoSeenAt(a3));  // high_seqno_seen should *not* have changed
+        assertEquals(28, md.highestDeliveredSeqnoAt(a3));  // high_seqno should *not* have changed
+        assertEquals(35, md.highestReceivedSeqnoAt(a3));  // high_seqno_seen should *not* have changed
     }
 
 

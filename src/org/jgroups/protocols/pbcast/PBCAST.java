@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.23 2007/04/04 05:23:33 belaban Exp $
+// $Id: PBCAST.java,v 1.24 2007/04/04 05:34:05 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -444,7 +444,7 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
                     continue;
                 }
                 val=(Digest.Entry)entry.getValue();
-                tmp_seqno=val.getHigh();
+                tmp_seqno=val.getHighestDeliveredSeqno();
                 digest.put(sender, new NakReceiverWindow(sender, this, tmp_seqno + 1)); // next to expect, digest had *last* seen !
             }
         }
@@ -647,7 +647,7 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
             sender=(Address)entry.getKey();
             val=(Digest.Entry)entry.getValue();
             their_low=val.getLow();
-            their_high=val.getHigh();
+            their_high=val.getHighestDeliveredSeqno();
             if(their_low == 0 && their_high == 0)
                 continue; // won't have any messages for this sender, don't even re-send
 
@@ -828,7 +828,7 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
                                                    " not found in our message digest, skipping");
                 continue;
             }
-            tmp_seqno=val.getHigh();
+            tmp_seqno=val.getHighestDeliveredSeqno();
             tmp_seqno=Math.max(tmp_seqno - gc_lag, 0);
             if(tmp_seqno <= 0) {
                 continue;

@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.71 2007/04/04 05:23:33 belaban Exp $
+ * @version $Id: STABLE.java,v 1.72 2007/04/04 05:34:05 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -277,7 +277,7 @@ public class STABLE extends Protocol {
                         latest_local_digest.replace(my_digest);
                     }
                     if(trace)
-                        log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+                        log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
                     sendStableMessage(my_digest);
                 }
             }
@@ -401,7 +401,7 @@ public class STABLE extends Protocol {
         StringBuffer sb=null;
         if(trace) {
             sb=new StringBuffer("[").append(local_addr).append("] handling digest from ").append(sender).append(":\n");
-            sb.append("mine:   ").append(digest.printHighSeqnos()).append("\nother:  ").append(d.printHighSeqnos());
+            sb.append("mine:   ").append(digest.printHighestDeliveredSeqnos()).append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
@@ -413,23 +413,23 @@ public class STABLE extends Protocol {
             mbr=entry.getKey();
             val=entry.getValue();
             low=val.getLow();
-            highest_seqno=val.getHigh();          // highest *delivered* seqno
-            highest_seen_seqno=val.getHighSeen(); // highest *seen* seqno
+            highest_seqno=val.getHighestDeliveredSeqno();          // highest *delivered* seqno
+            highest_seen_seqno=val.getHighestReceivedSeqno(); // highest *seen* seqno
 
             my_low=digest.lowSeqnoAt(mbr);
             new_low=Math.min(my_low, low);
 
             // compute the minimum of the highest seqnos deliverable (for garbage collection)
-            my_highest_seqno=digest.highSeqnoAt(mbr);
+            my_highest_seqno=digest.highestDeliveredSeqnoAt(mbr);
             // compute the maximum of the highest seqnos seen (for retransmission of last missing message)
-            my_highest_seen_seqno=digest.highSeqnoSeenAt(mbr);
+            my_highest_seen_seqno=digest.highestReceivedSeqnoAt(mbr);
 
             new_highest_seqno=Math.min(my_highest_seqno, highest_seqno);
             new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
         }
         if(trace) {
-            sb.append("\nresult: ").append(digest.printHighSeqnos()).append("\n");
+            sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");
             log.trace(sb);
         }
         return true;
@@ -452,7 +452,7 @@ public class STABLE extends Protocol {
         synchronized(digest) {
             digest.replace(copy_of_latest);
             if(trace)
-                log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighSeqnos());
+                log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighestDeliveredSeqnos());
         }
     }
 
@@ -619,7 +619,7 @@ public class STABLE extends Protocol {
 
         if(d != null && d.size() > 0) {
             if(trace)
-                log.trace("sending stable msg " + d.printHighSeqnos());
+                log.trace("sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
             Message msg=new Message(); // mcast message
             msg.setFlag(Message.OOB);
@@ -678,7 +678,7 @@ public class STABLE extends Protocol {
         }
 
         if(trace)
-            log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighSeqnos()));
+            log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighestDeliveredSeqnos()));
         stopStabilityTask();
 
         // we won't handle the gossip d, if d's members don't match the membership in my own digest,
@@ -823,7 +823,7 @@ public class STABLE extends Protocol {
                 latest_local_digest.replace(my_digest);
             }
             if(trace)
-                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighSeqnos());
+                log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
             sendStableMessage(my_digest);
         }
 
@@ -866,7 +866,7 @@ public class STABLE extends Protocol {
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
-                if(trace) log.trace("sending stability msg " + d.printHighSeqnos());
+                if(trace) log.trace("sending stability msg " + d.printHighestDeliveredSeqnos());
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
                 d=null;

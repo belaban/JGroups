@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.1 2007/04/04 05:23:35 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.2 2007/04/04 05:34:04 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -66,7 +66,7 @@ public class MutableDigest extends Digest {
                 entry=(Map.Entry)it.next();
                 key=(Address)entry.getKey();
                 val=(Entry)entry.getValue();
-                add(key, val.getLow(), val.getHigh(), val.getHighSeen());
+                add(key, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
         }
     }
@@ -102,7 +102,7 @@ public class MutableDigest extends Digest {
             sender=(Address)entry.getKey();
             val=(Entry)entry.getValue();
             if(val != null) {
-                merge(sender, val.getLow(), val.getHigh(), val.getHighSeen());
+                merge(sender, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
         }
     }
@@ -129,8 +129,8 @@ public class MutableDigest extends Digest {
         }
         else {
             Entry new_entry=new Entry(Math.min(entry.getLow(),      low_seqno), 
-                                      Math.max(entry.getHigh(),     high_seqno),
-                                      Math.max(entry.getHighSeen(), high_seqno_seen));
+                                      Math.max(entry.getHighestDeliveredSeqno(),     high_seqno),
+                                      Math.max(entry.getHighestReceivedSeqno(), high_seqno_seen));
             senders.put(sender, new_entry);
         }
     }
@@ -145,7 +145,7 @@ public class MutableDigest extends Digest {
         if(entry == null)
             return;
         checkSealed();
-        Entry new_entry=new Entry(entry.getLow(), entry.getHigh() +1, entry.getHighSeen());
+        Entry new_entry=new Entry(entry.getLow(), entry.getHighestDeliveredSeqno() +1, entry.getHighestReceivedSeqno());
         senders.put(sender, new_entry);
     }
 
