@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.2 2007/04/04 05:34:04 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.3 2007/04/04 05:39:27 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -32,15 +32,15 @@ public class MutableDigest extends Digest {
         super(digest.getSenders());
     }
 
-    public void add(Address sender, long low_seqno, long high_seqno) {
+    public void add(Address sender, long low_seqno, long highest_delivered_seqno) {
         checkSealed();
-        add(sender, low_seqno, high_seqno, -1);
+        add(sender, low_seqno, highest_delivered_seqno, -1);
     }
 
 
-    public void add(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
+    public void add(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
         checkSealed();
-        add(sender, new Digest.Entry(low_seqno, high_seqno, high_seqno_seen));
+        add(sender, new Digest.Entry(low_seqno, highest_delivered_seqno, highest_received_seqno));
     }
 
     private void add(Address sender, Entry entry) {
@@ -56,16 +56,16 @@ public class MutableDigest extends Digest {
     }
 
 
-    public void add(Digest d) {
-        if(d != null) {
+    public void add(Digest digest) {
+        if(digest != null) {
             checkSealed();
-            Map.Entry entry;
+            Map.Entry<Address,Entry> entry;
             Address key;
             Entry val;
-            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=(Address)entry.getKey();
-                val=(Entry)entry.getValue();
+            for(Iterator<Map.Entry<Address,Entry>> it=digest.senders.entrySet().iterator(); it.hasNext();) {
+                entry=it.next();
+                key=entry.getKey();
+                val=entry.getValue();
                 add(key, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
         }
@@ -78,9 +78,9 @@ public class MutableDigest extends Digest {
         }
     }
 
-    public boolean set(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
+    public boolean set(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
         checkSealed();
-        Entry entry=senders.put(sender, new Entry(low_seqno, high_seqno, high_seqno_seen));
+        Entry entry=senders.put(sender, new Entry(low_seqno, highest_delivered_seqno, highest_received_seqno));
         return entry == null;
     }
 
@@ -88,19 +88,19 @@ public class MutableDigest extends Digest {
      * Adds a digest to this digest. This digest must have enough space to add the other digest; otherwise an error
      * message will be written. For each sender in the other digest, the merge() method will be called.
      */
-    public void merge(Digest d) {
-        if(d == null) {
+    public void merge(Digest digest) {
+        if(digest == null) {
             if(log.isErrorEnabled()) log.error("digest to be merged with is null");
             return;
         }
         checkSealed();
-        Map.Entry entry;
+        Map.Entry<Address,Entry> entry;
         Address sender;
         Entry val;
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sender=(Address)entry.getKey();
-            val=(Entry)entry.getValue();
+        for(Iterator<Map.Entry<Address,Entry>> it=digest.senders.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
+            sender=entry.getKey();
+            val=entry.getValue();
             if(val != null) {
                 merge(sender, val.getLow(), val.getHighestDeliveredSeqno(), val.getHighestReceivedSeqno());
             }
@@ -112,12 +112,12 @@ public class MutableDigest extends Digest {
      * Similar to add(), but if the sender already exists, its seqnos will be modified (no new entry) as follows:
      * <ol>
      * <li>this.low_seqno=min(this.low_seqno, low_seqno)
-     * <li>this.high_seqno=max(this.high_seqno, high_seqno)
-     * <li>this.high_seqno_seen=max(this.high_seqno_seen, high_seqno_seen)
+     * <li>this.highest_delivered_seqno=max(this.highest_delivered_seqno, highest_delivered_seqno)
+     * <li>this.highest_received_seqno=max(this.highest_received_seqno, highest_received_seqno)
      * </ol>
      * If the sender doesn not exist, a new entry will be added (provided there is enough space)
      */
-    public void merge(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
+    public void merge(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
         if(sender == null) {
             if(log.isErrorEnabled()) log.error("sender == null");
             return;
@@ -125,12 +125,12 @@ public class MutableDigest extends Digest {
         checkSealed();
         Entry entry=senders.get(sender);
         if(entry == null) {
-            add(sender, low_seqno, high_seqno, high_seqno_seen);
+            add(sender, low_seqno, highest_delivered_seqno, highest_received_seqno);
         }
         else {
-            Entry new_entry=new Entry(Math.min(entry.getLow(),      low_seqno), 
-                                      Math.max(entry.getHighestDeliveredSeqno(),     high_seqno),
-                                      Math.max(entry.getHighestReceivedSeqno(), high_seqno_seen));
+            Entry new_entry=new Entry(Math.min(entry.getLow(), low_seqno),
+                                      Math.max(entry.getHighestDeliveredSeqno(), highest_delivered_seqno),
+                                      Math.max(entry.getHighestReceivedSeqno(), highest_received_seqno));
             senders.put(sender, new_entry);
         }
     }
@@ -170,29 +170,11 @@ public class MutableDigest extends Digest {
 
 
 
-//    public void setHighSeqnoAt(Address sender, long high_seqno) {
-//        Entry entry=senders.get(sender);
-//        if(entry != null) {
-//            checkSealed();
-//            Entry new_entry=new Entry(entry.getLow(), high_seqno, entry.getHighSeen());
-//            senders.put(sender, new_entry);
-//        }
-//    }
-//
-//    public void setHighSeqnoSeenAt(Address sender, long high_seqno_seen) {
-//        Entry entry=senders.get(sender);
-//        if(entry != null) {
-//            checkSealed();
-//            Entry new_entry=new Entry(entry.getLow(), entry.getHigh(), high_seqno_seen);
-//            senders.put(sender, new_entry);
-//        }
-//    }
-
-    public void setHighestDeliveredAndSeenSeqnos(Address sender, long low_seqno, long high_seqno, long high_seqno_seen) {
+    public void setHighestDeliveredAndSeenSeqnos(Address sender, long low_seqno, long highest_delivered_seqno, long highest_received_seqno) {
         Entry entry=senders.get(sender);
         if(entry != null) {
             checkSealed();
-            Entry new_entry=new Entry(low_seqno, high_seqno, high_seqno_seen);
+            Entry new_entry=new Entry(low_seqno, highest_delivered_seqno, highest_received_seqno);
             senders.put(sender, new_entry);
         }
     }
