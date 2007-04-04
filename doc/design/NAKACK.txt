@@ -6,7 +6,7 @@ Design of new NAKACK with only 1 retransmission table
 Author:   Bela Ban
 Date:     April 3, 2007
 JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
-Version:  $Id: NAKACK.txt,v 1.6 2007/04/04 06:13:48 belaban Exp $
+Version:  $Id: NAKACK.txt,v 1.7 2007/04/04 06:18:27 belaban Exp $
 
 
 
@@ -71,9 +71,9 @@ NakReceiverWindow
 -----------------
 - received-msgs and delivered-msgs are merged into msgs
 - msgs is a map<Long,Message> of seqnos with their associated messages
-  - low is the seqno that was last purged (by stable()) (old 'tail' variable)
+  - low is the seqno that was last purged (by stable()) (old 'head' variable)
   - highest_deliverable is the seqno that will be returned by the next remove()
-  - highest_received is the seqno of the highest received message (old 'head' variable)
+  - highest_received is the seqno of the highest received message (old 'tail' variable)
   - E.g. for 1,2,4,5,7: low=1, highest_deliverable=2 and highest_received=7
 - NakReceiverWindow.remove() does *not* remove a message (unless discard_delivered_msgs = true), it instead simply
   moves the highest_deliverable marker
