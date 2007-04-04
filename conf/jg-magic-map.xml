@@ -87,12 +87,6 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.PbcastHeader</class-name>
-        <preload>true</preload>
-        <magic-number>26</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
         <class-name>org.jgroups.protocols.pbcast.STABLE$StableHeader</class-name>
         <preload>true</preload>
         <magic-number>27</magic-number>
