@@ -6,7 +6,7 @@ Design of new NAKACK with only 1 retransmission table
 Author:   Bela Ban
 Date:     April 3, 2007
 JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
-Version:  $Id: NAKACK.txt,v 1.7 2007/04/04 06:18:27 belaban Exp $
+Version:  $Id: NAKACK.txt,v 1.8 2007/04/04 10:36:50 belaban Exp $
 
 
 
@@ -78,6 +78,8 @@ NakReceiverWindow
 - NakReceiverWindow.remove() does *not* remove a message (unless discard_delivered_msgs = true), it instead simply
   moves the highest_deliverable marker
 - Messages are *only* purged from NakReceiverWindow on reception of a stability message (stable())
+- Note that the highest delivered message is the highest seqno actually *removed* by the application, not the
+  highest *deliverable* message !
 
 
 
