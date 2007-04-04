@@ -1,9 +1,11 @@
-// $Id: CoordGmsImpl.java,v 1.65 2007/03/12 09:04:35 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.66 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MutableDigest;
 import org.jgroups.annotations.GuardedBy;
 
 import java.util.Collection;

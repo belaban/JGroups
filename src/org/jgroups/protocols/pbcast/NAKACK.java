@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.124 2007/04/03 10:02:55 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.125 2007/04/04 05:23:33 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1066,14 +1066,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         Map.Entry entry;
         Address sender;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
+        Digest.Entry val;
         long initial_seqno;
         NakReceiverWindow win;
 
         for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            val=(Digest.Entry)entry.getValue();
 
             if(sender == null || val == null) {
                 if(warn) {
@@ -1103,14 +1103,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         Map.Entry entry;
         Address sender;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
+        Digest.Entry val;
         NakReceiverWindow win;
         long initial_seqno;
 
         for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            val=(Digest.Entry)entry.getValue();
 
             if(sender == null || val == null) {
                 if(warn) {

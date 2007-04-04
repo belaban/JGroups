@@ -165,7 +165,7 @@
     </class>
     <class>
         <description>Digest</description>
-        <class-name>org.jgroups.protocols.pbcast.Digest</class-name>
+        <class-name>org.jgroups.util.Digest</class-name>
         <preload>true</preload>
         <magic-number>40</magic-number>
     </class>

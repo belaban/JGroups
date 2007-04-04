@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pbcast;
+package org.jgroups.util;
 
 import static java.lang.Math.max;
 
@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.35 2007/04/04 05:13:40 belaban Exp $
+ * @version $Id: Digest.java,v 1.1 2007/04/04 05:23:35 belaban Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	

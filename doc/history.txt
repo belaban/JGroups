@@ -3,7 +3,7 @@
 			     History List
 			     ============
 
-Revision: $Id: history.txt,v 1.191 2006/06/10 19:11:03 belaban Exp $
+Revision: $Id: history.txt,v 1.192 2007/04/04 05:23:34 belaban Exp $
 
 [For current version, see file Version.java (or invoke 'java org.jgroups.Version')]
 
@@ -136,7 +136,7 @@ Version 2.2.9
   to a message
   (bela July 15 2005)
 
-- Changed org.jgroups.protocols.pbcast.Digest to use a HashMap rather than arrays
+- Changed org.jgroups.util.Digest to use a HashMap rather than arrays
   (bela July 12 2005)
 
 - Refactored UDP and TCP into extending a common transport (TP)

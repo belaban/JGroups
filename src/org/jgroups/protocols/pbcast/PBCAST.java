@@ -1,4 +1,4 @@
-// $Id: PBCAST.java,v 1.22 2007/03/20 09:16:20 belaban Exp $
+// $Id: PBCAST.java,v 1.23 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -9,10 +9,9 @@ import org.jgroups.View;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.util.*;
 import org.jgroups.util.List;
 import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
 
 import java.util.*;
 
@@ -436,15 +435,15 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
 
             Map.Entry entry;
             Address sender;
-            org.jgroups.protocols.pbcast.Digest.Entry val;
-            for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+            Digest.Entry val;
+            for(Iterator it=d.getSenders().entrySet().iterator(); it.hasNext();) {
                 entry=(Map.Entry)it.next();
                 sender=(Address)entry.getKey();
                 if(sender == null) {
                     if(log.isErrorEnabled()) log.error("cannot set item because sender is null");
                     continue;
                 }
-                val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+                val=(Digest.Entry)entry.getValue();
                 tmp_seqno=val.getHigh();
                 digest.put(sender, new NakReceiverWindow(sender, this, tmp_seqno + 1)); // next to expect, digest had *last* seen !
             }
@@ -642,11 +641,11 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
 
         Map.Entry entry;
         Address sender;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
-        for(Iterator it=their_digest.senders.entrySet().iterator(); it.hasNext();) {
+        Digest.Entry val;
+        for(Iterator it=their_digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            val=(Digest.Entry)entry.getValue();
             their_low=val.getLow();
             their_high=val.getHigh();
             if(their_low == 0 && their_high == 0)
@@ -817,12 +816,12 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
         long tmp_seqno;
         NakReceiverWindow win;
         Map.Entry entry;
-        org.jgroups.protocols.pbcast.Digest.Entry val;
+        Digest.Entry val;
 
-        for(Iterator it=d.senders.entrySet().iterator(); it.hasNext();) {
+        for(Iterator it=d.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sender=(Address)entry.getKey();
-            val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
+            val=(Digest.Entry)entry.getValue();
             win=(NakReceiverWindow)digest.get(sender);
             if(win == null) {
                 if(log.isDebugEnabled()) log.debug("sender " + sender +
@@ -835,8 +834,8 @@ public class PBCAST extends Protocol implements Runnable, Retransmitter.Retransm
                 continue;
             }
 
-            if(trace) log.trace("(from " + local_addr +
-                                               ") GC: deleting messages < " + tmp_seqno + " from " + sender);
+            if(trace)
+                log.trace("(from " + local_addr + ") GC: deleting messages < " + tmp_seqno + " from " + sender);
             win.stable(tmp_seqno);
         }
     }

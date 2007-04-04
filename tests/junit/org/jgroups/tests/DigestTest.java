@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.12 2007/04/03 08:29:22 belaban Exp $
+// $Id: DigestTest.java,v 1.13 2007/04/04 05:23:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,8 +6,8 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.protocols.pbcast.Digest;
-import org.jgroups.protocols.pbcast.MutableDigest;
+import org.jgroups.util.Digest;
+import org.jgroups.util.MutableDigest;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.Address;
@@ -77,7 +77,7 @@ public class DigestTest extends TestCase {
         assertEquals(1, diff.size());
 	    
 	    
-	    Map<Address, Digest.Entry> map3=new HashMap<Address, Digest.Entry>();       
+	    Map<Address, Digest.Entry> map3=new HashMap<Address, Digest.Entry>();
 	    map3.put(a1, new Digest.Entry(4, 500, 501));
 	    map3.put(a2, new Digest.Entry(25, 26, 26));
 	    map3.put(a3, new Digest.Entry(20, 37, 33));

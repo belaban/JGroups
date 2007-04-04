@@ -1,4 +1,4 @@
-package org.jgroups.protocols.pbcast;
+package org.jgroups.util;
 
 import org.jgroups.Address;
 
@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.4 2007/04/03 08:29:22 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.1 2007/04/04 05:23:35 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;

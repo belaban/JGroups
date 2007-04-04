@@ -1,9 +1,10 @@
-// $Id: GmsImpl.java,v 1.21 2007/03/12 09:05:05 belaban Exp $
+// $Id: GmsImpl.java,v 1.22 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.jgroups.*;
+import org.jgroups.util.Digest;
 
 import java.util.Collection;
 import java.util.Vector;
