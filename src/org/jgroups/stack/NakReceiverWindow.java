@@ -7,7 +7,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
-import org.jgroups.util.List;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
@@ -45,7 +44,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.35 2007/03/20 09:17:08 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.36 2007/04/04 06:36:16 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -53,10 +52,8 @@ public class NakReceiverWindow {
         void missingMessageReceived(long seqno, Message msg);
     }
 
-
     /** The big read/write lock */
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
-    //private final ReadWriteLock lock=new NullReadWriteLock();
 
     /** keep track of *next* seqno to remove and highest received */
     private long   head=0;
@@ -400,47 +397,6 @@ public class NakReceiverWindow {
     }
 
 
-    /**
-     * Find all messages between 'low' and 'high' (including 'low' and
-     * 'high') that have a null msg.
-     * Return them as a list of longs
-     *
-     * @return List<Long>. A list of seqnos, sorted in ascending order.
-     * E.g. [1, 4, 7, 8]
-     */
-    public List getMissingMessages(long low, long high) {
-        List retval=new List();
-        // long my_high;
-
-        if(low > high) {
-            if(log.isErrorEnabled()) log.error("invalid range: low (" + low +
-                    ") is higher than high (" + high + ')');
-            return null;
-        }
-
-        lock.readLock().lock();
-        try {
-
-            // my_high=Math.max(head - 1, 0);
-            // check only received messages, because delivered messages *must* have a non-null msg
-            SortedMap m=received_msgs.subMap(new Long(low), new Long(high+1));
-            for(Iterator it=m.keySet().iterator(); it.hasNext();) {
-                retval.add(it.next());
-            }
-
-//            if(received_msgs.size() > 0) {
-//                entry=(Entry)received_msgs.peek();
-//                if(entry != null) my_high=entry.seqno;
-//            }
-//            for(long i=my_high + 1; i <= high; i++)
-//                retval.add(new Long(i));
-
-            return retval;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
 
 
     /**
@@ -460,102 +416,6 @@ public class NakReceiverWindow {
         }
     }
 
-
-    /**
-     * Return messages that are higher than <code>seqno</code> (excluding
-     * <code>seqno</code>). Check both received <em>and</em> delivered
-     * messages.
-     * @return List<Message>. All messages that have a seqno greater than <code>seqno</code>
-     */
-    public List getMessagesHigherThan(long seqno) {
-        List retval=new List();
-
-        lock.readLock().lock();
-        try {
-            // check received messages
-            SortedMap m=received_msgs.tailMap(new Long(seqno+1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add((it.next()));
-            }
-
-            // we retrieve all msgs whose seqno is strictly greater than seqno (tailMap() *includes* seqno,
-            // but we need to exclude seqno, that's why we increment it
-            m=delivered_msgs.tailMap(new Long(seqno +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(((Message)it.next()).copy());
-            }
-            return (retval);
-
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-
-    /**
-     * Return all messages m for which the following holds:
-     * m > lower && m <= upper (excluding lower, including upper). Check both
-     * <code>received_msgs</code> and <code>delivered_msgs</code>.
-     */
-    public List getMessagesInRange(long lower, long upper) {
-        List retval=new List();
-
-        lock.readLock().lock();
-        try {
-            // check received messages
-            SortedMap m=received_msgs.subMap(new Long(lower +1), new Long(upper +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(it.next());
-            }
-
-            m=delivered_msgs.subMap(new Long(lower +1), new Long(upper +1));
-            for(Iterator it=m.values().iterator(); it.hasNext();) {
-                retval.add(((Message)it.next()).copy());
-            }
-            return retval;
-
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-
-    /**
-     * Return a list of all messages for which there is a seqno in
-     * <code>missing_msgs</code>. The seqnos of the argument list are
-     * supposed to be in ascending order
-     * @param missing_msgs A List<Long> of seqnos
-     * @return List<Message>
-     */
-    public List getMessagesInList(List missing_msgs) {
-        List ret=new List();
-
-        if(missing_msgs == null) {
-            if(log.isErrorEnabled()) log.error("argument list is null");
-            return ret;
-        }
-
-        lock.readLock().lock();
-        try {
-            Long seqno;
-            Message msg;
-            for(Enumeration en=missing_msgs.elements(); en.hasMoreElements();) {
-                seqno=(Long)en.nextElement();
-                msg=(Message)delivered_msgs.get(seqno);
-                if(msg != null)
-                    ret.add(msg.copy());
-                msg=(Message)received_msgs.get(seqno);
-                if(msg != null)
-                    ret.add(msg.copy());
-            }
-            return ret;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
 
     /**
      * Returns the message from received_msgs or delivered_msgs.
