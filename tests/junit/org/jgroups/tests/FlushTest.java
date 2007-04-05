@@ -34,7 +34,7 @@ import org.jgroups.UnblockEvent;
 import org.jgroups.View;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.DISCARD;
-import org.jgroups.protocols.pbcast.Digest;
+import org.jgroups.util.Digest;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -43,7 +43,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.29 2007/04/03 09:02:29 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.30 2007/04/05 07:06:32 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
