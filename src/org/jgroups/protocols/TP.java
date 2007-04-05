@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.128 2007/03/16 14:00:15 belaban Exp $
+ * @version $Id: TP.java,v 1.129 2007/04/05 08:03:27 belaban Exp $
  */
 // @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -1808,14 +1808,14 @@ public abstract class TP extends Protocol {
 
     private class DiagnosticsHandler implements Runnable {
     	public static final String THREAD_NAME = "DiagnosticsHandler"; 
-        Thread t=null;
+        Thread thread=null;
         MulticastSocket diag_sock=null;
 
         DiagnosticsHandler() {
         }
 
         Thread getThread(){
-        	return t;
+        	return thread;
         }
 
         void start() throws IOException {
@@ -1823,23 +1823,29 @@ public abstract class TP extends Protocol {
             java.util.List interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
 
-            if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
-                t.setDaemon(true);
-                t.start();
+            if(thread == null || !thread.isAlive()) {
+                thread=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
+                thread.setDaemon(true);
+                thread.start();
             }
         }
 
         void stop() {
             if(diag_sock != null)
                 diag_sock.close();
-            t=null;
+            Thread tmp=thread;
+            thread=null;
+            try {
+                tmp.join(200);
+            }
+            catch(InterruptedException e) {
+            }
         }
 
         public void run() {
             byte[] buf=new byte[1500]; // MTU on most LANs
             DatagramPacket packet;
-            while(!diag_sock.isClosed() && Thread.currentThread().equals(t)) {
+            while(!diag_sock.isClosed() && Thread.currentThread().equals(thread)) {
                 packet=new DatagramPacket(buf, 0, buf.length);
                 try {
                     diag_sock.receive(packet);
