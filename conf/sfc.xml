@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.3 2007/03/19 14:42:16 belaban Exp $
+  version: $Id: sfc.xml,v 1.4 2007/04/06 15:47:41 belaban Exp $
 -->
 
 <config>
@@ -16,7 +16,7 @@
          mcast_send_buf_size="640000"
          loopback="false"
          discard_incompatible_packets="true"
-         max_bundle_size="60000"
+         max_bundle_size="64000"
          max_bundle_timeout="30"
          use_incoming_packet_handler="true"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
