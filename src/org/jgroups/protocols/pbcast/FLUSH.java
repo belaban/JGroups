@@ -121,8 +121,6 @@ public class FLUSH extends Protocol {
 
 	private final Promise flush_promise = new Promise();
 
-	private final Exchanger<Boolean> blockExchange = new Exchanger<Boolean>();
-
 	private final FlushPhase flushPhase = new FlushPhase();
 
 	private final List<Address> reconcileOks = new ArrayList<Address>();
@@ -482,23 +480,8 @@ public class FLUSH extends Protocol {
 		down_prot.down(new Event(Event.MSG, reject));
 	}
 
-	private void sendBlockUpToChannel() {
-		new Thread(Util.getGlobalThreadGroup(), new Runnable() {
-			public void run() {
-				Boolean result = (Boolean) up_prot.up(new Event(Event.BLOCK));
-				try {
-					blockExchange.exchange(result);
-				} catch (InterruptedException e) {
-					Thread.currentThread().interrupt();
-				}
-			}
-		}, "FLUSH block").start();
-
-		try {
-			blockExchange.exchange(null);
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-		}
+	private void sendBlockUpToChannel() {	
+		up_prot.up(new Event(Event.BLOCK));		
 	}
 
 	private boolean isCurrentFlushMessage(FlushHeader fh) {
@@ -749,18 +732,18 @@ public class FLUSH extends Protocol {
 	}
 
 	private boolean hasVirtualSynchronyGaps() {
+		ArrayList <Digest> digests = new ArrayList<Digest>();
 		synchronized (sharedLock) {
-			Collection<Digest> digests = flushCompletedMap.values();
-			for (Digest digestEntryI : digests) {
-				for (Digest digestEntryO : digests) {
-					Digest diff = digestEntryI.difference(digestEntryO);
-					if (diff != Digest.EMPTY_DIGEST) {
-						return true;
-					}
-				}
+			digests.addAll(flushCompletedMap.values());			
+		}
+		Digest firstDigest = digests.get(0);
+		for (Digest digest : digests) {
+			Digest diff = firstDigest.difference(digest);
+			if (diff != Digest.EMPTY_DIGEST) {
+				return true;
 			}
 		}
-		return false;
+		return false;	
 	}
 
 	private Digest findHighestSequences() {
