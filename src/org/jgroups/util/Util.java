@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.2 2007/03/14 16:36:45 belaban Exp $
+ * @version $Id: Util.java,v 1.105.2.3 2007/04/12 20:24:45 bstansberry Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -101,6 +101,21 @@ public class Util {
     }
 
 
+    /**
+     * Verifies that val is <= max memory
+     * @param buf_name
+     * @param val
+     */
+    public static void checkBufferSize(String buf_name, long val) {
+        // sanity check that max_credits doesn't exceed memory allocated to VM by -Xmx
+        long max_mem=Runtime.getRuntime().maxMemory();
+        if(val > max_mem) {
+            throw new IllegalArgumentException(buf_name + "(" + Util.printBytes(val) + ") exceeds max memory allocated to VM (" +
+                    Util.printBytes(max_mem) + ")");
+        }
+    }
+
+
     public static void close(InputStream inp) {
         if(inp != null)
             try {inp.close();} catch(IOException e) {}
@@ -125,6 +140,15 @@ public class Util {
     }
 
 
+    /**
+     * Attempts to acquire the given <code>Sync</code>, suppressing any
+     * <code>InterruptedException</code>.
+     * 
+     * @param sync the Sync
+     * 
+     * @return <code>true</code> if the Sync was acquired, <code>false</code>
+     *         if an <code>InterruptedException</code> was caught and suppressed.
+     */
     public static boolean acquire(Sync sync) {
         try {
             sync.acquire();
@@ -135,7 +159,11 @@ public class Util {
         }
     }
 
-
+    /**
+     * Releases the given <code>Sync</code>, suppressing any Throwable.
+     * 
+     * @param sync the Sync
+     */
     public static void release(Sync sync) {
         if(sync != null) {
             try {
@@ -145,7 +173,48 @@ public class Util {
             }
         }
     }
+    
+    /**
+     * Acquires the given <code>Sync</code>, but will not throw an
+     * InterruptedException.  If an InterruptedException is thrown while
+     * waiting to acquire, it will be ignored, and another attempt will be
+     * made to acquire, continuing until successful. If any InterruptedException
+     * is caught and ignored, before returning {@link Thread#interrupt()} will
+     * be invoked, allowing the caller to be aware of the interruption.
+     * 
+     * @param sync
+     */
+    public static void lock(Sync sync)
+    {
+       boolean interrupted = false;
+       for (;;)
+       {
+          try
+          {
+             sync.acquire();
+             break;
+          }
+          catch (InterruptedException e)
+          {
+             interrupted = true;
+          }
+       }
+       
+       if (interrupted)
+          Thread.currentThread().interrupt();
+    }
 
+    /**
+     * Releases the given <code>Sync</code>, suppressing any Throwable.
+     * Same as @{link {@link #release(Sync)}}; just included as a logically
+     * named counterpart to {@link #lock(Sync)}.
+     * 
+     * @param sync the Sync
+     */
+    public static void unlock(Sync sync)
+    {
+       release(sync);
+    }
 
     /**
      * Creates an object from a byte buffer
