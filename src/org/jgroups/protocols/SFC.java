@@ -22,7 +22,7 @@ import java.io.*;
  * until it receives an ack from all members that they indeed received max_credits bytes.
  * Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.10.2.2 2007/04/12 20:24:45 bstansberry Exp $
+ * @version $Id: SFC.java,v 1.10.2.3 2007/04/14 02:39:53 bstansberry Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -241,17 +241,7 @@ public class SFC extends Protocol {
                     break;
 
                 boolean send_credit_request=false;
-                try
-                {
-                   lock.acquire();
-                }
-                catch (InterruptedException e)
-                {
-                   if(warn)
-                      log.warn("thread was interrupted", e);
-                  Thread.currentThread().interrupt(); // pass the exception on to the  caller
-                  return;
-                }
+                Util.lock(lock);
                 try {
                     while(curr_credits_available <=0 && running) {
                         if(trace)
@@ -621,6 +611,5 @@ public class SFC extends Protocol {
             }
         }
     }
-
 
 }
