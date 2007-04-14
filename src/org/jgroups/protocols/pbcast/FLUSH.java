@@ -1,34 +1,14 @@
 package org.jgroups.protocols.pbcast;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Set;
-import java.util.TreeSet;
-import java.util.Vector;
-import java.util.concurrent.Exchanger;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Header;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
-import org.jgroups.ViewId;
+import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-import org.jgroups.util.Digest;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending
@@ -751,8 +731,7 @@ public class FLUSH extends Protocol {
 		synchronized (sharedLock) {
 			List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());
 
-			Digest firstDigest = digests.get(0);
-			result = firstDigest;
+            result =digests.get(0);
 			List<Digest> remainingDigests = digests.subList(1, digests.size());
 
 			for (Digest digestG : remainingDigests) {
