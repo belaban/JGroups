@@ -22,7 +22,7 @@ import java.io.*;
  * until it receives an ack from all members that they indeed received max_credits bytes.
  * Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.10.2.3 2007/04/14 02:39:53 bstansberry Exp $
+ * @version $Id: SFC.java,v 1.10.2.4 2007/04/14 17:40:10 bstansberry Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -551,7 +551,7 @@ public class SFC extends Protocol {
         if(trace)
            log.trace("sending credit request to group");
         num_credit_requests_sent++;
-        down_prot.down(new Event(Event.MSG, credit_req));
+        passDown(new Event(Event.MSG, credit_req));
     }
 
     private void sendCreditResponse(Address dest) {
@@ -562,7 +562,7 @@ public class SFC extends Protocol {
         if(trace)
             log.trace("sending credit response to " + dest);
         num_replenishments_sent++;
-        down_prot.down(new Event(Event.MSG, credit_rsp));
+        passDown(new Event(Event.MSG, credit_rsp));
     }
 
 
