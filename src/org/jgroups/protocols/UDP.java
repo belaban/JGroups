@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.132 2007/04/01 16:49:42 belaban Exp $
+ * @version $Id: UDP.java,v 1.133 2007/04/16 18:23:37 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -809,9 +809,10 @@ public class UDP extends TP implements Runnable {
                 closeMulticastSocket();  // will cause the multicast thread to terminate
                 tmp.interrupt();
                 try {
-                    tmp.join(100);
+                    tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
                 }
-                catch(Exception e) {
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt(); // set interrupt flag again
                 }
                 tmp=null;
             }
@@ -904,9 +905,10 @@ public class UDP extends TP implements Runnable {
                 closeSocket(); // this will cause the thread to break out of its loop
                 tmp.interrupt();
                 try {
-                    tmp.join(500);
+                    tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
                 }
                 catch(InterruptedException e) {
+                    Thread.currentThread().interrupt(); // set interrupt flag again
                 }
                 tmp=null;
             }

@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.13 2006/09/11 14:09:51 belaban Exp $
+// $Id: Scheduler.java,v 1.14 2007/04/16 18:23:38 vlada Exp $
 
 package org.jgroups.util;
 
@@ -39,7 +39,6 @@ public class Scheduler implements Runnable {
     int                NUM_THREADS=128;
 
     static final int          WAIT_FOR_THREAD_AVAILABILITY=3000;
-    static final int          THREAD_JOIN_TIMEOUT=1000;
 
 
 
@@ -208,11 +207,11 @@ public class Scheduler implements Runnable {
             sched_thread=null;
             tmp.interrupt();
             try {
-                tmp.join(THREAD_JOIN_TIMEOUT);
+                tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
             }
-            catch(Exception ex) {
+            catch(InterruptedException e) {
+                Thread.currentThread().interrupt(); // set interrupt flag again
             }
-
             if(tmp.isAlive())
                 if(log.isErrorEnabled()) log.error("scheduler thread is still not dead  !!!");
         }

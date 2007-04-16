@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.129 2007/04/05 08:03:27 belaban Exp $
+ * @version $Id: TP.java,v 1.130 2007/04/16 18:23:37 vlada Exp $
  */
 // @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
@@ -233,7 +233,6 @@ public abstract class TP extends Protocol {
     long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
 
     static  NumberFormat f;
-    private static final long POOL_SHUTDOWN_WAIT_TIME=3000;
     private static final int INITIAL_BUFSIZE=1024;
 
     static {
@@ -1422,7 +1421,7 @@ public abstract class TP extends Protocol {
     private void shutdownThreadPool(ThreadPoolExecutor thread_pool) {
         thread_pool.shutdownNow();
         try {
-            thread_pool.awaitTermination(POOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
+            thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
         }
         catch(InterruptedException e) {
         }
@@ -1570,20 +1569,14 @@ public abstract class TP extends Protocol {
         }
 
         void stop() {
-            Thread tmp=t;
-            t=null;
             incoming_packet_queue.close(true); // should terminate the packet_handler thread too
-            if(tmp != null) {
+            if(t != null) {
                 try {
-                    tmp.join(10000);
+                    t.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
                 }
                 catch(InterruptedException e) {
                     Thread.currentThread().interrupt(); // set interrupt flag again
-                }
-                if(tmp.isAlive()) {
-                    if(log.isWarnEnabled())
-                        log.warn("IncomingPacketHandler thread was interrupted, but is still alive");
-                }
+                }                
             }
         }
 
@@ -1628,8 +1621,15 @@ public abstract class TP extends Protocol {
 
 
         public void stop() {
-            incoming_msg_queue.close(true);
-            t=null;
+            incoming_msg_queue.close(true);            
+            if(t != null) {
+                try {
+                    t.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+                }
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt(); // set interrupt flag again
+                }                
+            }
         }
 
         public void run() {
@@ -1832,14 +1832,14 @@ public abstract class TP extends Protocol {
 
         void stop() {
             if(diag_sock != null)
-                diag_sock.close();
-            Thread tmp=thread;
-            thread=null;
-            try {
-                tmp.join(200);
-            }
-            catch(InterruptedException e) {
-            }
+                diag_sock.close();           
+            if(thread != null){
+		try{
+		    thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+		}catch(InterruptedException e){
+		    Thread.currentThread().interrupt(); // set interrupt flag                                                        
+		}
+	    }
         }
 
         public void run() {

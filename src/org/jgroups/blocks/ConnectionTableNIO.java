@@ -1,10 +1,11 @@
-// $Id: ConnectionTableNIO.java,v 1.28 2007/02/28 03:02:32 smarlownovell Exp $
+// $Id: ConnectionTableNIO.java,v 1.29 2007/04/16 18:23:37 vlada Exp $
 
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
@@ -411,13 +412,13 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       if(m_requestProcessors instanceof ThreadPoolExecutor)
          ((ThreadPoolExecutor)m_requestProcessors).shutdownNow();
 
-       if(m_requestProcessors instanceof ThreadPoolExecutor) {
-           try {
-               ((ThreadPoolExecutor)m_requestProcessors).awaitTermination(1000, TimeUnit.MILLISECONDS);
-           }
-           catch(InterruptedException e) {
-           }
-       }
+       if(m_requestProcessors instanceof ThreadPoolExecutor){
+	    try{
+		((ThreadPoolExecutor) m_requestProcessors).awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME,
+									    TimeUnit.MILLISECONDS);
+	    }catch(InterruptedException e){
+	    }
+	}
 
       // then close the connections
       synchronized(conns) {
