@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.21 2007/03/01 09:29:38 belaban Exp $
+ * @version $Id: Global.java,v 1.22 2007/04/16 14:22:59 vlada Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -51,4 +51,40 @@ public class Global {
     public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
     public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
     public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
+    
+    public static final long THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
+    public static final long THREAD_SHUTDOWN_WAIT_TIME=300;
+    
+    public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
+	boolean result = defaultValue;
+	try{
+	    String tmp = System.getProperty(property);
+	    if(tmp != null)
+		result = Boolean.parseBoolean(tmp);
+	}catch(Throwable t){
+	}
+	return result;
+    }
+
+    public static long getPropertyAsLong(String property, long defaultValue) {
+	long result = defaultValue;
+	try{
+	    String tmp = System.getProperty(property);
+	    if(tmp != null)
+		result = Long.parseLong(tmp);
+	}catch(Throwable t){
+	}
+	return result;
+    }
+
+    public static int getPropertyAsInteger(String property, int defaultValue) {
+	int result = defaultValue;
+	try{
+	    String tmp = System.getProperty(property);
+	    if(tmp != null)
+		result = Integer.parseInt(tmp);
+	}catch(Throwable t){
+	}
+	return result;
+    }
 }
