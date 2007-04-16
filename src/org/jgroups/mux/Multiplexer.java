@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.52 2007/03/12 13:44:25 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.53 2007/04/16 14:22:58 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -36,7 +36,7 @@ public class Multiplexer implements UpHandler {
     private boolean blocked=false;
 
     /** Thread pool to concurrently process messages sent to different services */
-    private static Executor thread_pool=null;
+    private ExecutorService thread_pool;
 
     /** To make sure messages sent to different services are processed concurrently (using the thread pool above), but
      * messages to the same service are processed FIFO */
@@ -63,72 +63,26 @@ public class Multiplexer implements UpHandler {
 
     private long SERVICES_RSP_TIMEOUT=10000;
 
-
-
-    static {
-        int min_threads=1, max_threads=4;
-        long keep_alive=30000;
-        boolean mux_enabled=true; // default is to use the thread pool
-        String tmp;
-
-        try {
-            tmp=System.getProperty(Global.MUX_ENABLED);
-            if(tmp != null)
-                mux_enabled=Boolean.parseBoolean(tmp);
-        }
-        catch(Throwable t) {}
-
-        
-        if(mux_enabled) {
-
-            ThreadFactory factory=new ThreadFactory() {
-                int num=1;
-                ThreadGroup mux_threads=new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads");
-                public Thread newThread(Runnable command) {
-                    Thread ret=new Thread(mux_threads, command, "Multiplexer-" + num++);
-                    ret.setDaemon(true);
-                    return ret;
-                }
-            };
-
-            try {
-                tmp=System.getProperty(Global.MUX_MIN_THREADS);
-                if(tmp != null)
-                    min_threads=Integer.parseInt(tmp);
-            }
-            catch(Throwable t) {}
-
-            try {
-                tmp=System.getProperty(Global.MUX_MAX_THREADS);
-                if(tmp != null)
-                    max_threads=Integer.parseInt(tmp);
-            }
-            catch(Throwable t) {}
-
-            try {
-                tmp=System.getProperty(Global.MUX_KEEPALIVE);
-                if(tmp != null)
-                    keep_alive=Long.parseLong(tmp);
-            }
-            catch(Throwable t) {}
-
-            thread_pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
-                                               new SynchronousQueue(), factory, new ThreadPoolExecutor.CallerRunsPolicy());
-        }
-    }
-
-
-
     public Multiplexer() {
         this.channel=null;
-        flush_present=isFlushPresent();
+        flush_present=isFlushPresent(); 
+        
+        // threadpool is enabled by default
+	if(Global.getPropertyAsBoolean(Global.MUX_ENABLED, true)){
+	    thread_pool = createThreadPool();
+	}
     }
 
     public Multiplexer(JChannel channel) {
         this.channel=channel;
         this.channel.setUpHandler(this);
         this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves
-        flush_present=isFlushPresent();
+        flush_present=isFlushPresent(); 
+        
+        //threadpool is enabled by default
+        if(Global.getPropertyAsBoolean(Global.MUX_ENABLED, true)){
+	    thread_pool = createThreadPool();
+	}
     }
 
     /**
@@ -207,6 +161,43 @@ public class Multiplexer implements UpHandler {
         rc=fetchServiceStates(target, keys, timeout);
         state_transfer_listeners.clear();        
         return rc;
+    }
+    
+    protected ExecutorService createThreadPool() {
+	int min_threads = 1, max_threads = 4;
+	long keep_alive = 30000;
+
+	ThreadFactory factory = new ThreadFactory() {
+	    int num = 1;
+
+	    ThreadGroup mux_threads = new ThreadGroup(Util.getGlobalThreadGroup(),
+						      "MultiplexerThreads");
+
+	    public Thread newThread(Runnable command) {
+		Thread ret = new Thread(mux_threads, command, "Multiplexer-" + num++);
+		ret.setDaemon(true);
+		return ret;
+	    }
+	};
+
+	min_threads = Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
+	max_threads = Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
+	keep_alive = Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
+
+	return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
+				      new SynchronousQueue(), factory,
+				      new ThreadPoolExecutor.CallerRunsPolicy());
+    }
+    
+    protected void shutdownThreadPool() {
+	if(thread_pool != null && !thread_pool.isShutdown()){
+	    thread_pool.shutdownNow();
+	    try{
+		thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME,
+					     TimeUnit.MILLISECONDS);
+	    }catch(InterruptedException e){
+	    }
+	}
     }
 
     /** Fetches the app states for all service IDs in keys.
@@ -516,6 +507,7 @@ public class Multiplexer implements UpHandler {
                 }
                 channel.close();
                 services.clear();
+                shutdownThreadPool();
             }
             return all_closed;
         }
@@ -529,6 +521,7 @@ public class Multiplexer implements UpHandler {
                 mux_ch.closeMessageQueue(true);
             }
         }
+        shutdownThreadPool();
     }
 
     public boolean shutdown() {
@@ -546,6 +539,7 @@ public class Multiplexer implements UpHandler {
                 }
                 channel.shutdown();
                 services.clear();
+                shutdownThreadPool();
             }
             return all_closed;
         }
