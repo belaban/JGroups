@@ -790,9 +790,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol
 
             pool.shutdownNow();
             try
-            {
-               //TODO use some system wide timeout eventually
-               pool.awaitTermination(5000, TimeUnit.MILLISECONDS);
+            {               
+               pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException ignored)
             {

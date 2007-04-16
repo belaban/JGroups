@@ -103,6 +103,13 @@ public class ChannelTestBase extends TestCase
 
       if (shouldCompareThreadCount())
       {
+	 // at the moment Thread.activeCount() is called
+	 // it might count in threads that are just being 
+	 // excluded from active count.
+	  
+	 // Therefore we include a slight delay of 20 msec 
+	 
+	 Util.sleep(20); 
          int current_active_threads = Thread.activeCount();
 
          String msg = "";

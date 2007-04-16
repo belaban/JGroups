@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -54,7 +55,7 @@ public abstract class BasicConnectionTable {
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
     boolean             running=false;
 
-    final static long   MAX_JOIN_TIMEOUT=10000;
+    final static long   MAX_JOIN_TIMEOUT=Global.THREAD_SHUTDOWN_WAIT_TIME;
 
 
     public final void setReceiver(Receiver r) {
