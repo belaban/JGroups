@@ -43,9 +43,8 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.130 2007/04/16 18:23:37 vlada Exp $
+ * @version $Id: TP.java,v 1.131 2007/04/17 13:05:29 belaban Exp $
  */
-// @SuppressWarnings("unchecked") // todo: remove once all unchecked use has been converted into checked use
 public abstract class TP extends Protocol {
 
 
@@ -931,9 +930,7 @@ public abstract class TP extends Protocol {
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
         if(trace) {
-            StringBuilder sb=new StringBuilder("sending msg to ").append(msg.getDest()).
-                    append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.printHeaders());
-            log.trace(sb.toString());
+            log.trace("sending msg to " + msg.getDest() + ", src=" + msg.getSrc() + ", headers are " + msg.printHeaders());
         }
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -1666,6 +1663,7 @@ public abstract class TP extends Protocol {
 
 
         private void send(Message msg, Address dest) throws Exception {
+            // long length=msg.getLength();
             long length=msg.size();
             checkLength(length);
             Map<Address,List<Message>> bundled_msgs=null;
@@ -1760,15 +1758,22 @@ public abstract class TP extends Protocol {
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
                 synchronized(out_stream) {
+                    int size=0;
+                    int msg_list_length=0;
                     try {
                         out_stream.reset();
                         dos.reset();
+                        msg_list_length=list.size();
                         writeMessageList(list, dos, multicast); // flushes output stream when done
                         buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+
+                        size=buffer.getLength();
+
                         doSend(buffer, dst, multicast);
                     }
                     catch(Throwable e) {
                         if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
+                        System.out.println("buffer size=" + size + ", msg_list_length=" + msg_list_length);
                     }
                 }
             }
@@ -1832,14 +1837,15 @@ public abstract class TP extends Protocol {
 
         void stop() {
             if(diag_sock != null)
-                diag_sock.close();           
+                diag_sock.close();
             if(thread != null){
-		try{
-		    thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
-		}catch(InterruptedException e){
-		    Thread.currentThread().interrupt(); // set interrupt flag                                                        
-		}
-	    }
+                try{
+                    thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+                }
+                catch(InterruptedException e){
+                    Thread.currentThread().interrupt(); // set interrupt flag
+                }
+            }
         }
 
         public void run() {
