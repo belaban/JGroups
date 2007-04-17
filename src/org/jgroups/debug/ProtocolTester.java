@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.11 2007/01/11 16:52:07 belaban Exp $
+// $Id: ProtocolTester.java,v 1.12 2007/04/17 13:08:49 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -56,6 +56,14 @@ public class ProtocolTester {
         return props;
     }
 
+
+    public Protocol getBottom() {
+        return bottom;
+    }
+
+    public Protocol getTop() {
+        return top;
+    }
 
     public void start() throws Exception {
         Protocol p;
