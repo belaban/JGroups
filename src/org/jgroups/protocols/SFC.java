@@ -19,7 +19,7 @@ import java.io.*;
  * until it receives an ack from all members that they indeed received max_credits bytes.
  * Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.10.2.5 2007/04/18 03:17:30 bstansberry Exp $
+ * @version $Id: SFC.java,v 1.10.2.6 2007/04/18 05:08:31 bstansberry Exp $
  */
 public class SFC extends Protocol {
    
@@ -78,7 +78,7 @@ public class SFC extends Protocol {
     
     /** Thread that carries *messages* through up() and shouldn't be 
      * blocked in down() if ignore_synchronous_response==true. JGRP-465. */
-    private Map ignore_threads = new ConcurrentReaderHashMap();
+    private Thread ignore_thread;
     
     /** Coordinates credit availability for multicast messages */
     private FlowCoordinator multicast_coordinator;
@@ -394,6 +394,12 @@ public class SFC extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
+               
+               // JGRP-465. We only deal with msgs to avoid having to use
+               // a concurrent collection; ignore views, suspicions, etc 
+               // which can come up on unusual threads.
+               if (ignore_thread == null && ignore_synchronous_response)
+                  ignore_thread = Thread.currentThread();
                 
                 Message msg=(Message)evt.getArg();
                 Address sender=msg.getSrc();                
@@ -446,13 +452,6 @@ public class SFC extends Protocol {
                 break;
         }
         
-        // JGRP-465. 
-        // TODO. Consider only dealing with msgs and not using a collection; 
-        // ignore views, suspicions, etc which can come up on unusual threads. 
-        // Have to be sure only one thread can carry messages though. 
-        if (ignore_synchronous_response)
-           ignore_threads.put(Thread.currentThread(), NULL);
-        
         passUp(evt);
     }
 
@@ -465,6 +464,8 @@ public class SFC extends Protocol {
         if (control_unicast && unicast_coordinators == null)
            unicast_coordinators = new ConcurrentReaderHashMap();
         
+        ignore_thread = null;
+        
         running=true;
     }
 
@@ -476,8 +477,6 @@ public class SFC extends Protocol {
         for (Iterator it = getFlowCoordinators().iterator(); it.hasNext();) {
             ((FlowCoordinator) it.next()).stop();
         }
-        
-        ignore_threads.clear();
     }
 
 
@@ -654,7 +653,7 @@ public class SFC extends Protocol {
                  
                   // JGRP-465. Don't block the single up_thread.
                   if (ignore_synchronous_response 
-                        && ignore_threads.containsKey(Thread.currentThread())) {
+                        && ignore_thread == Thread.currentThread()) {
                   
                      if (trace) {
                         log.trace(targetLabel + "Bypassing blocking to avoid " +
