@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.70 2007/04/18 13:49:46 belaban Exp $
+ * @version $Id: FC.java,v 1.71 2007/04/18 21:26:37 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -595,10 +595,14 @@ public class FC extends Protocol {
      */
     private long adjustCredit(Message msg, Address src) {
         long length=msg.getLength(); // we don't care about headers for the purpose of flow control
-        if(src == null || length == 0) {
+        if(src == null) {
             if(log.isErrorEnabled()) log.error("src is null");
             return 0;
         }
+
+        if(length == 0)
+            return 0; // no effect
+
         long remaining_cred=decrementCredit(received, src, length);
         long credit_response=max_credits - remaining_cred;
         if(credit_response >= min_credits) {
