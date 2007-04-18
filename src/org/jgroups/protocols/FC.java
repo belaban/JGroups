@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.1 2007/03/30 14:42:38 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.2 2007/04/18 05:15:16 bstansberry Exp $
  */
 public class FC extends Protocol {
 
@@ -80,9 +80,27 @@ public class FC extends Protocol {
     /** Mutex to block on down() */
     final CondVar mutex=new CondVar(lock);
 
-    static final String name="FC";
+    /** Whether an up thread that comes back down should be allowed to
+     * bypass blocking if all credits are exhausted. Avoids JGRP-465. */
+    private boolean ignore_synchronous_response = true;
+    
+    /** Thread that carries messages through up() and shouldn't be blocked
+     * in down() if ignore_synchronous_response==true. JGRP-465. */
+    private Thread ignore_thread;
 
-    private long start_blocking=0, stop_blocking=0;
+    static final String name="FC";
+    
+    private long start_blocking=0, stop_blocking=0;    
+    
+    /** Minimum interval between REPLENISHMENT requests sent to the same sender.
+     *  Used to prevent spamming senders with credit requests if numerous
+     *  threads block for max_block_time and then nearly simultaneously
+     *  awaken to request credit.
+     */
+    private long min_credit_request_interval = 500L;
+    
+    /** Map<Address, Long> of the last time we requested credit */
+    private Map last_credit_request = new Hashtable();
 
     private int num_blockings=0;
     private int num_credit_requests_received=0, num_credit_requests_sent=0;
@@ -265,6 +283,18 @@ public class FC extends Protocol {
             props.remove("max_block_time");
         }
 
+        str=props.getProperty("min_credit_request_interval");
+        if(str != null) {
+            min_credit_request_interval=Long.parseLong(str);
+            props.remove("min_credit_request_interval");
+        }
+        
+        str=props.getProperty("ignore_synchronous_response");
+        if(str != null) {
+           ignore_synchronous_response=Boolean.valueOf(str).booleanValue();
+           props.remove("ignore_synchronous_response");
+        }
+
         if(props.size() > 0) {
             log.error("FC.setProperties(): the following properties are not recognized: " + props);
             return false;
@@ -291,6 +321,7 @@ public class FC extends Protocol {
         if(Util.acquire(lock)) {
             try {
                 running=false;
+                ignore_thread = null;
                 mutex.broadcast(); // notify all threads waiting on the mutex that we are done
             }
             finally {
@@ -330,6 +361,13 @@ public class FC extends Protocol {
         switch(evt.getType()) {
 
             case Event.MSG:
+               
+                // JGRP-465. We only deal with msgs to avoid having to use
+                // a concurrent collection; ignore views, suspicions, etc 
+                // which can come up on unusual threads.
+                if (ignore_thread == null && ignore_synchronous_response)
+                   ignore_thread = Thread.currentThread();
+                
                 Message msg=(Message)evt.getArg();
                 FcHeader hdr=(FcHeader)msg.removeHeader(name);
                 if(hdr != null) {
@@ -373,42 +411,53 @@ public class FC extends Protocol {
         if(Util.acquire(lock)) {
             try {
                 if(lowest_credit <= length) {
-                    determineCreditors(dest, length);
-                    insufficient_credit=true;
-                    num_blockings++;
-                    start_blocking=System.currentTimeMillis();
-                    while(insufficient_credit && running) {
-                        try {mutex.timedwait(max_block_time);} catch(InterruptedException e) {}
-                        if(insufficient_credit && running) {
-                            // we need to send the credit requests down *without* holding the lock, otherwise we might
-                            // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-
-                            List creditors_copy=new ArrayList(creditors);
-                            Util.release(lock);
-                            try {
-                                if(trace)
-                                    log.trace("timeout occurred waiting for credits; sending credit request to " + creditors_copy);
-                                for(int i=0; i < creditors_copy.size(); i++) {
-                                    sendCreditRequest((Address)creditors_copy.get(i));
-                                }
-                            }
-                            finally {
-                                Util.acquire(lock);
-                            }
+                   
+                    if (ignore_synchronous_response 
+                          && ignore_thread == Thread.currentThread()) {
+                        // JGRP-465
+                        if (trace) {
+                           log.trace("Bypassing blocking to avoid deadlocking " +
+                                     Thread.currentThread());
                         }
                     }
-                    stop_blocking=System.currentTimeMillis();
-                    long block_time=stop_blocking - start_blocking;
-                    if(trace)
-                        log.trace("total time blocked: " + block_time + " ms");
-                    total_time_blocking+=block_time;
-                    last_blockings.add(new Long(block_time));
+                    else {                    
+                       determineCreditors(dest, length);
+                       insufficient_credit=true;
+                       num_blockings++;
+                       start_blocking=System.currentTimeMillis();
+                       while(insufficient_credit && running) {
+                           try {mutex.timedwait(max_block_time);} catch(InterruptedException e) {}
+                           if(insufficient_credit && running) {
+                               // we need to send the credit requests down *without* holding the lock, otherwise we might
+                               // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+   
+                               List creditors_copy=new ArrayList(creditors);
+                               Util.release(lock);
+                               try {
+                                   if(trace)
+                                       log.trace("timeout occurred waiting for credits");
+                                   for(int i=0; i < creditors_copy.size(); i++) {
+                                       sendCreditRequest((Address)creditors_copy.get(i));
+                                   }
+                               }
+                               finally {
+                                   Util.acquire(lock);
+                               }
+                           }
+                       }
+                       stop_blocking=System.currentTimeMillis();
+                       long block_time=stop_blocking - start_blocking;
+                       if(trace)
+                           log.trace("total time blocked: " + block_time + " ms");
+                       total_time_blocking+=block_time;
+                       last_blockings.add(new Long(block_time));
+                    }
                 }
-                else {
-                    long tmp=decrementCredit(sent, dest, length);
-                    if(tmp != -1)
-                        lowest_credit=Math.min(tmp, lowest_credit);
-                }
+                
+                long tmp=decrementCredit(sent, dest, length);
+                if(tmp != -1)
+                    lowest_credit=Math.min(tmp, lowest_credit);
+                
             }
             finally {
                 Util.release(lock);
@@ -564,6 +613,26 @@ public class FC extends Protocol {
     }
 
     private void sendCreditRequest(final Address dest) {
+       
+       if (min_credit_request_interval > 0)
+       {  
+          // This call is made with the lock released, so ensure the get/put is atomic
+          synchronized (last_credit_request)
+          {
+             long now = System.currentTimeMillis();
+             Long last = (Long) last_credit_request.get(dest);             
+             if (last != null 
+                   && now - last.longValue() < min_credit_request_interval)
+             {
+                return;
+             }
+             last_credit_request.put(dest, new Long(now));
+          }
+       }
+       
+       if(trace)
+          log.trace("sending credit request to " + dest);
+      
         Message  msg=new Message(dest, null, null);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         passDown(new Event(Event.MSG, msg));
@@ -613,6 +682,11 @@ public class FC extends Protocol {
                     insufficient_credit=false;
                     mutex.broadcast();
                 }
+                
+                // keep it simple and just clear the last_credit_request Map
+                // at worst we get an extra credit request
+                last_credit_request.clear();
+                
             }
             finally {
                 Util.release(lock);
