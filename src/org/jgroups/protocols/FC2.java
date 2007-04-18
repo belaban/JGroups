@@ -25,7 +25,7 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC2.java,v 1.1.2.1 2007/04/18 05:18:08 bstansberry Exp $
+ * @version $Id: FC2.java,v 1.1.2.2 2007/04/18 06:01:24 bstansberry Exp $
  */
 public class FC2 extends Protocol {
    
@@ -597,10 +597,9 @@ public class FC2 extends Protocol {
             return; // no effect
         
         long remaining_cred = decrementCredit(received, src, length);
-        
-        if(remaining_cred <= min_credits) {
-            received.put(src, max_credits_constant);
-            long credit_response= max_credits - remaining_cred;
+        long credit_response= max_credits - remaining_cred;
+        if(credit_response >= min_credits) {
+            received.put(src, max_credits_constant);            
             if(trace) log.trace("sending " + credit_response + " replenishment credits to " + src);
             sendCredit(src, credit_response);
         }
