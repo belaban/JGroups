@@ -289,11 +289,5 @@
         <preload>true</preload>
         <magic-number>60</magic-number>
     </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.SFC$Header</class-name>
-        <preload>true</preload>
-        <magic-number>62</magic-number>
-    </class>
 
 </magic-number-class-mapping>
