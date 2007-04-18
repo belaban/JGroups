@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.68 2007/03/30 14:50:27 belaban Exp $
+ * @version $Id: FC.java,v 1.69 2007/04/18 12:25:06 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -382,7 +382,7 @@ public class FC extends Protocol {
                     if(insufficient_credit && running) {
                         // we need to send the credit requests down *without* holding the lock, otherwise we might
                         // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                        List<Address> creditors_copy=new ArrayList(creditors);
+                        List<Address> creditors_copy=new ArrayList<Address>(creditors);
                         lock.unlock();
                         try {
                             if(trace)
