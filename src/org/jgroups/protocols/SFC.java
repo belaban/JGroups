@@ -19,7 +19,7 @@ import java.io.*;
  * until it receives an ack from all members that they indeed received max_credits bytes.
  * Design in doc/design/SimpleFlowControl.txt
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.10 2007/04/03 09:42:17 belaban Exp $
+ * @version $Id: SFC.java,v 1.11 2007/04/18 06:19:05 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -58,6 +58,9 @@ public class SFC extends Protocol {
 
     /** Number of milliseconds after which we send a new credit request if we are waiting for credit responses */
     private long max_block_time=5000;
+
+    /** Last time a thread woke up from blocking and had to request credit */
+    private long last_blocked_request=0L;
 
     private final List<Address> members=new LinkedList<Address>();
 
@@ -205,8 +208,26 @@ public class SFC extends Protocol {
                             num_blockings++;
                             // will be signalled when we have credit responses from all members
                             credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
-                            if(curr_credits_available <=0 && running)
-                                sendCreditRequest(true);
+                            if(curr_credits_available <=0 && running) {
+                                if(trace)
+                                    log.trace("returned from await but credits still unavailable (credits=" +curr_credits_available +")");
+                                long now=System.currentTimeMillis();
+                                if(now - last_blocked_request >= max_block_time) {
+                                    last_blocked_request=now;
+                                    lock.unlock(); // send the credit request without holding the lock
+                                    try {
+                                        sendCreditRequest(true);
+                                    }
+                                    finally {
+                                        lock.lock(); // now acquire the lock again
+                                    }
+                                }
+                            }
+                            else {
+                                // reset the last_blocked_request stamp so the
+                                // next timed out block will for sure send a request
+                                last_blocked_request=0;
+                            }
                         }
                         catch(InterruptedException e) {
                             if(warn)
@@ -240,7 +261,7 @@ public class SFC extends Protocol {
                         log.trace("sending credit request to group");
                     start=System.nanoTime(); // only 1 thread is here at any given time
                     Object ret=down_prot.down(evt);       // send the message before the credit request
-                    sendCreditRequest(); // do this outside of the lock
+                    sendCreditRequest(false); // do this outside of the lock
                     return ret;
                 }
                 break;
@@ -475,9 +496,6 @@ public class SFC extends Protocol {
         handleCreditResponse(suspected_mbr);
     }
 
-    private void sendCreditRequest() {
-        sendCreditRequest(false);
-    }
 
     private void sendCreditRequest(boolean urgent) {
         Message credit_req=new Message();
