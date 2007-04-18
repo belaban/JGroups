@@ -25,10 +25,10 @@ import java.util.*;
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.2 2007/04/18 05:15:16 bstansberry Exp $
+ * @version $Id: FC.java,v 1.53.2.3 2007/04/18 09:12:36 belaban Exp $
  */
 public class FC extends Protocol {
-
+   
     /** HashMap<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size */
     final Map sent=new HashMap(11);
@@ -74,7 +74,7 @@ public class FC extends Protocol {
     /** the lowest credits of any destination (sent_msgs) */
     private long lowest_credit=max_credits;
 
-    /** Lock to be used with the Condvar below */
+    /** Lock to be used with the CondVar below. */
     final Sync lock=new ReentrantLock();
 
     /** Mutex to block on down() */
@@ -89,7 +89,7 @@ public class FC extends Protocol {
     private Thread ignore_thread;
 
     static final String name="FC";
-    
+
     private long start_blocking=0, stop_blocking=0;    
     
     /** Minimum interval between REPLENISHMENT requests sent to the same sender.
@@ -366,7 +366,7 @@ public class FC extends Protocol {
                 // a concurrent collection; ignore views, suspicions, etc 
                 // which can come up on unusual threads.
                 if (ignore_thread == null && ignore_synchronous_response)
-                   ignore_thread = Thread.currentThread();
+                    ignore_thread = Thread.currentThread();
                 
                 Message msg=(Message)evt.getArg();
                 FcHeader hdr=(FcHeader)msg.removeHeader(name);
@@ -374,15 +374,12 @@ public class FC extends Protocol {
                     switch(hdr.type) {
                     case FcHeader.REPLENISH:
                         num_credit_responses_received++;
-                        handleCredit(msg.getSrc());
+                        handleCredit(msg.getSrc(), (Number) msg.getObject());
                         break;
                     case FcHeader.CREDIT_REQUEST:
                         num_credit_requests_received++;
                         Address sender=msg.getSrc();
-                        if(trace)
-                            log.trace("received credit request from " + sender + ": sending credits");
-                        received.put(sender, max_credits_constant);
-                        sendCredit(sender);
+                        handleCreditRequest(sender);
                         break;
                     default:
                         log.error("header type " + hdr.type + " not known");
@@ -399,6 +396,7 @@ public class FC extends Protocol {
             handleViewChange(((View)evt.getArg()).getMembers());
             break;
         }
+        
         passUp(evt);
     }
 
@@ -413,12 +411,12 @@ public class FC extends Protocol {
                 if(lowest_credit <= length) {
                    
                     if (ignore_synchronous_response 
-                          && ignore_thread == Thread.currentThread()) {
+                         && ignore_thread == Thread.currentThread()) {
                         // JGRP-465
                         if (trace) {
-                           log.trace("Bypassing blocking to avoid deadlocking " +
-                                     Thread.currentThread());
-                        }
+                            log.trace("Bypassing blocking to avoid deadlocking " +
+                                    Thread.currentThread());
+                       }
                     }
                     else {                    
                        determineCreditors(dest, length);
@@ -539,21 +537,23 @@ public class FC extends Protocol {
     }
 
 
-    private void handleCredit(Address sender) {
+    private void handleCredit(Address sender, Number increase) {
         if(sender == null) return;
         StringBuffer sb=null;
 
         if(Util.acquire(lock)) {
             try {
+                Long old_credit=(Long)sent.get(sender);
+                Long new_credit = new Long(old_credit.longValue() + increase.longValue());
+                
                 if(trace) {
-                    Long old_credit=(Long)sent.get(sender);
                     sb=new StringBuffer();
                     sb.append("received credit from ").append(sender).append(", old credit was ").
-                            append(old_credit).append(", new credits are ").append(max_credits).
+                            append(old_credit).append(", new credits are ").append(new_credit).
                             append(".\nCreditors before are: ").append(creditors);
                 }
 
-                sent.put(sender, max_credits_constant);
+                sent.put(sender, new_credit);
                 lowest_credit=computeLowestCredit(sent);
                 if(creditors.size() > 0) {  // we are blocked because we expect credit from one or more members
                     creditors.remove(sender);
@@ -595,18 +595,55 @@ public class FC extends Protocol {
 
         if(length == 0)
             return; // no effect
-
-        if(decrementCredit(received, src, length) <= min_credits) {
-            received.put(src, max_credits_constant);
-            if(trace) log.trace("sending replenishment message to " + src);
-            sendCredit(src);
+        
+        long remaining_cred = decrementCredit(received, src, length);
+        long credit_response= max_credits - remaining_cred;
+        if(credit_response >= min_credits) {
+            received.put(src, max_credits_constant);            
+            if(trace) log.trace("sending " + credit_response + " replenishment credits to " + src);
+            sendCredit(src, credit_response);
         }
     }
+    
+    private void handleCreditRequest(Address sender) {
+       if(sender == null) return;
+
+       if(Util.acquire(lock)) {
+           long credit_response = 0;
+           try {
+               Long old_credit=(Long)received.get(sender);
+               if (old_credit != null) {
+                  credit_response = max_credits - old_credit.longValue();
+               }
+               
+               if (credit_response > 0) {
+                  if(trace)
+                     log.trace("received credit request from " + sender + 
+                           ": sending " + credit_response + " credits");
+                 received.put(sender, max_credits_constant);
+               }
+               else if (trace) {
+                  log.trace("received credit request from " + sender + " but have no credits available");
+               }
+           }
+           finally {
+               Util.release(lock);
+           }
+           
+           if (credit_response > 0)
+              sendCredit(sender, credit_response);
+       }
+   }
 
 
 
-    private void sendCredit(Address dest) {
-        Message  msg=new Message(dest, null, null);
+    private void sendCredit(Address dest, long credit) {
+        Number number;
+        if (credit < Integer.MAX_VALUE)
+           number = new Integer((int) credit);
+        else
+           number = new Long(credit);
+        Message  msg=new Message(dest, null, number);
         msg.putHeader(name, REPLENISH_HDR);
         passDown(new Event(Event.MSG, msg));
         num_credit_responses_sent++;
@@ -615,8 +652,8 @@ public class FC extends Protocol {
     private void sendCreditRequest(final Address dest) {
        
        if (min_credit_request_interval > 0)
-       {  
-          // This call is made with the lock released, so ensure the get/put is atomic
+       {
+          // This call is made with the lock released, so ensure the get/put is atomic                    
           synchronized (last_credit_request)
           {
              long now = System.currentTimeMillis();
@@ -685,8 +722,7 @@ public class FC extends Protocol {
                 
                 // keep it simple and just clear the last_credit_request Map
                 // at worst we get an extra credit request
-                last_credit_request.clear();
-                
+                last_credit_request.clear();                
             }
             finally {
                 Util.release(lock);

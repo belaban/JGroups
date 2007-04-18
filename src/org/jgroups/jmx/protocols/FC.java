@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: FC.java,v 1.5 2005/08/26 14:19:09 belaban Exp $
+ * @version $Id: FC.java,v 1.5.10.1 2007/04/18 09:12:35 belaban Exp $
  */
 public class FC extends Protocol implements FCMBean {
     org.jgroups.protocols.FC p;

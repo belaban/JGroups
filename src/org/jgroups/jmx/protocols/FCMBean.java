@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: FCMBean.java,v 1.6 2005/08/26 14:19:09 belaban Exp $
+ * @version $Id: FCMBean.java,v 1.6.10.1 2007/04/18 09:12:35 belaban Exp $
  */
 public interface FCMBean extends ProtocolMBean {
     long getMaxCredits();
