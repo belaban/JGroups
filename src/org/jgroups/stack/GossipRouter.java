@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.23 2007/03/30 13:38:58 belaban Exp $
+// $Id: GossipRouter.java,v 1.24 2007/04/18 06:10:50 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -15,6 +15,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP).
@@ -72,7 +74,7 @@ public class GossipRouter {
 
     // HashMap<String, Map<Address,AddressEntry> >. Maintains associations between groups and their members. Keys=group
     // names, values = maps of logical address / AddressEntry associations
-    private final Map<String,Map<Address,AddressEntry>> routingTable=new HashMap<String,Map<Address,AddressEntry>>();
+    private final ConcurrentMap<String,ConcurrentMap<Address,AddressEntry>> routingTable=new ConcurrentHashMap<String,ConcurrentMap<Address,AddressEntry>>();
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
@@ -295,31 +297,25 @@ public class GossipRouter {
         String label="routing";
         StringBuilder sb=new StringBuilder();
 
-        synchronized(routingTable) {
-            if(routingTable.isEmpty()) {
-                sb.append("empty ");
-                sb.append(label);
-                sb.append(" table");
-            }
-            else {
-                for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
-                    String gname=(String)i.next();
-                    sb.append("GROUP: '" + gname + "'\n");
-                    Map map=routingTable.get(gname);
-                    if(map == null) {
-                        sb.append("\tnull list of addresses\n");
-                    }
-                    else if(map.isEmpty()) {
-                        sb.append("\tempty list of addresses\n");
-                    }
-                    else {
-                        AddressEntry ae;
-                        for(Iterator j=map.values().iterator(); j.hasNext();) {
-                            ae=(AddressEntry)j.next();
-                            sb.append('\t');
-                            sb.append(ae);
-                            sb.append('\n');
-                        }
+        if(routingTable.isEmpty()) {
+            sb.append("empty ").append(label).append(" table");
+        }
+        else {
+            for(Iterator i=routingTable.keySet().iterator(); i.hasNext();) {
+                String gname=(String)i.next();
+                sb.append("GROUP: '" + gname + "'\n");
+                Map map=routingTable.get(gname);
+                if(map == null) {
+                    sb.append("\tnull list of addresses\n");
+                }
+                else if(map.isEmpty()) {
+                    sb.append("\tempty list of addresses\n");
+                }
+                else {
+                    AddressEntry ae;
+                    for(Iterator j=map.values().iterator(); j.hasNext();) {
+                        ae=(AddressEntry)j.next();
+                        sb.append('\t').append(ae).append('\n');
                     }
                 }
             }
@@ -391,11 +387,9 @@ public class GossipRouter {
                         group=req.getGroup();
                         List<Address> mbrs=null;
                         Map<Address,AddressEntry> map;
-                        synchronized(routingTable) {
-                            map=routingTable.get(group);
-                            if(map != null) {
-                                mbrs=new LinkedList<Address>(map.keySet());
-                            }
+                        map=routingTable.get(group);
+                        if(map != null) {
+                            mbrs=new LinkedList<Address>(map.keySet());
                         }
 
                         if(log.isTraceEnabled())
@@ -413,14 +407,12 @@ public class GossipRouter {
                         output=new DataOutputStream(sock.getOutputStream());
 
                         List<Address> ret=null;
-                        synchronized(routingTable) {
-                            map=routingTable.get(group);
-                            if(map != null) {
-                                ret=new LinkedList<Address>(map.keySet());
-                            }
-                            else
-                                ret=new LinkedList<Address>();
+                        map=routingTable.get(group);
+                        if(map != null) {
+                            ret=new LinkedList<Address>(map.keySet());
                         }
+                        else
+                            ret=new LinkedList<Address>();
                         if(log.isTraceEnabled())
                             log.trace("ROUTER_GET(" + group + ") --> " + ret);
                         rsp=new GossipData(GossipRouter.GET_RSP, group, null, ret);
@@ -491,21 +483,15 @@ public class GossipRouter {
      * Cleans the routing tables while the Router is going down.
      */
     private void cleanup() {
-
         // shutdown the routing threads and cleanup the tables
-        synchronized(routingTable) {
-            Map map;
-            for(Iterator i=routingTable.values().iterator(); i.hasNext();) {
-                map=(Map)i.next();
-                if(map != null) {
-                    for(Iterator j=map.values().iterator(); j.hasNext();) {
-                        AddressEntry e=(AddressEntry)j.next();
-                        e.destroy();
-                    }
+        for(Map<Address,AddressEntry> map: routingTable.values()) {
+            if(map != null) {
+                for(AddressEntry entry: map.values()) {
+                    entry.destroy();
                 }
             }
-            routingTable.clear();
         }
+        routingTable.clear();
     }
 
     /**
@@ -540,27 +526,25 @@ public class GossipRouter {
         long diff, currentTime=System.currentTimeMillis();
         int num_entries_removed=0;
 
-        synchronized(routingTable) {
-            Map.Entry entry, entry2;
-            Map map;
-            AddressEntry ae;
-            for(Iterator it=routingTable.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                map=(Map)entry.getValue();
-                if(map == null || map.isEmpty()) {
-                    it.remove();
-                    continue;
-                }
-                for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
-                    entry2=(Map.Entry)it2.next();
-                    ae=(GossipRouter.AddressEntry)entry2.getValue();
-                    diff=currentTime - ae.timestamp;
-                    if(diff > expiryTime) {
-                        it2.remove();
-                        if(log.isTraceEnabled())
-                            log.trace("removed " + ae.logical_addr + " (" + diff + " msecs old)");
-                        num_entries_removed++;
-                    }
+        Map.Entry entry, entry2;
+        Map map;
+        AddressEntry ae;
+        for(Iterator it=routingTable.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            map=(Map)entry.getValue();
+            if(map == null || map.isEmpty()) {
+                it.remove();
+                continue;
+            }
+            for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
+                entry2=(Map.Entry)it2.next();
+                ae=(GossipRouter.AddressEntry)entry2.getValue();
+                diff=currentTime - ae.timestamp;
+                if(diff > expiryTime) {
+                    it2.remove();
+                    if(log.isTraceEnabled())
+                        log.trace("removed " + ae.logical_addr + " (" + diff + " msecs old)");
+                    num_entries_removed++;
                 }
             }
         }
@@ -626,24 +610,22 @@ public class GossipRouter {
             return;
         }
 
-        synchronized(routingTable) {
-            Map<Address,AddressEntry> mbrs=routingTable.get(groupname);
-            if(mbrs == null) {
-                mbrs=new HashMap<Address,AddressEntry>();
-                mbrs.put(logical_addr, entry);
-                routingTable.put(groupname, mbrs);
-            }
-            else {
-                AddressEntry tmp=mbrs.get(logical_addr);
-                if(tmp != null) { // already present
-                    if(update_only) {
-                        tmp.update();
-                        return;
-                    }
-                    tmp.destroy();
+        ConcurrentMap<Address,AddressEntry> mbrs=routingTable.get(groupname);
+        if(mbrs == null) {
+            mbrs=new ConcurrentHashMap<Address,AddressEntry>();
+            mbrs.put(logical_addr, entry);
+            routingTable.putIfAbsent(groupname, mbrs);
+        }
+        else {
+            AddressEntry tmp=mbrs.get(logical_addr);
+            if(tmp != null) { // already present
+                if(update_only) {
+                    tmp.update();
+                    return;
                 }
-                mbrs.put(logical_addr, entry);
+                tmp.destroy();
             }
+            mbrs.put(logical_addr, entry);
         }
     }
 
@@ -651,11 +633,9 @@ public class GossipRouter {
 
     private void removeEntry(String groupname, Address logical_addr) {
         Map val;
-        synchronized(routingTable) {
-            val=routingTable.get(groupname);
-            if(val == null)
-                return;
-        }
+        val=routingTable.get(groupname);
+        if(val == null)
+            return;
         synchronized(val) {
             AddressEntry entry=(AddressEntry)val.get(logical_addr);
             if(entry != null) {
@@ -672,12 +652,10 @@ public class GossipRouter {
     private AddressEntry findAddressEntry(String group_name, Address logical_addr) {
         if(group_name == null || logical_addr == null)
             return null;
-        synchronized(routingTable) {
-            Map val=routingTable.get(group_name);
-            if(val == null)
-                return null;
-            return (AddressEntry)val.get(logical_addr);
-        }
+        Map val=routingTable.get(group_name);
+        if(val == null)
+            return null;
+        return (AddressEntry)val.get(logical_addr);
     }
 
 
