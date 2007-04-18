@@ -20,8 +20,15 @@ import java.util.*;
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * <br/>This is the second simplified implementation of the same model. The algorithm is sketched out in
  * doc/FlowControl.txt
+ * <br/>
+ * Changes (Brian) April 2006:
+ * <ol>
+ * <li>Receivers now send credits to a sender when more than min_credits have been received (rather than when min_credits
+ * are left)
+ * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
+ * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.4 2007/04/18 09:42:02 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.5 2007/04/18 09:48:06 belaban Exp $
  */
 public class FC extends Protocol {
 
