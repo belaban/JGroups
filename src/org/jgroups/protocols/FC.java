@@ -28,7 +28,7 @@ import java.util.*;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.6 2007/04/19 08:02:00 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.7 2007/04/19 08:34:17 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -625,33 +625,49 @@ public class FC extends Protocol {
         }
     }
 
+//    private void handleCreditRequest(Address sender) {
+//        if(sender == null) return;
+//
+//        if(Util.acquire(lock)) {
+//            long credit_response=0;
+//            try {
+//                Long old_credit=(Long)received.get(sender);
+//                if(old_credit != null) {
+//                    credit_response=max_credits - old_credit.longValue();
+//                }
+//
+//                if(credit_response > 0) {
+//                    if(trace)
+//                        log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
+//                    received.put(sender, max_credits_constant);
+//                }
+//                else if(trace) {
+//                    log.trace("received credit request from " + sender + " but have no credits available");
+//                }
+//            }
+//            finally {
+//                Util.release(lock);
+//            }
+//
+//            if(credit_response > 0)
+//                sendCredit(sender, credit_response);
+//        }
+//    }
+
+
+    /**
+     * Returns the max credits. Handling a credit request should be the exception, not the normal case.
+     * @param sender
+     * todo: see if this solves Brian's deadlock problems. If not, use the (commented) method above !
+     */
     private void handleCreditRequest(Address sender) {
-        if(sender == null) return;
-
-        if(Util.acquire(lock)) {
-            long credit_response=0;
-            try {
-                Long old_credit=(Long)received.get(sender);
-                if(old_credit != null) {
-                    credit_response=max_credits - old_credit.longValue();
-                }
-
-                if(credit_response > 0) {
-                    if(trace)
-                        log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-                    received.put(sender, max_credits_constant);
-                }
-                else if(trace) {
-                    log.trace("received credit request from " + sender + " but have no credits available");
-                }
-            }
-            finally {
-                Util.release(lock);
-            }
-
-            if(credit_response > 0)
-                sendCredit(sender, credit_response);
+        if(sender == null) {
+            if(warn)
+                log.warn("sender is null, not able to send credits");
+            return;
         }
+        received.put(sender, max_credits_constant);
+        sendCredit(sender, max_credits);
     }
 
 
