@@ -6,7 +6,7 @@ Design of new NAKACK with only 1 retransmission table
 Author:   Bela Ban
 Date:     April 3, 2007
 JIRA:     http://jira.jboss.com/jira/browse/JGRP-281
-Version:  $Id: NAKACK.txt,v 1.8 2007/04/04 10:36:50 belaban Exp $
+Version:  $Id: NAKACK.txt,v 1.9 2007/04/19 21:01:17 belaban Exp $
 
 
 
@@ -23,7 +23,7 @@ Design
 
 Variables:
 - xmit-table: Map<Address,NakReceiverWindow> of senders and their associated NakReceiverWindows. Each NakReceiverWindow
-              contains a map<Long,Message> of sequence numbers and the messages associated with them.
+              contains a Map<Long,Message> of sequence numbers and the messages associated with them.
               Each NakReceiverWindow maintains the seqnos of (1) the highest message received, (2) the highest message
               delivered and (3) the lowest message. The latter is the seqno that was last purged through a stability
               message (see STABLE protocol)
@@ -44,7 +44,7 @@ On reception of M (sender=P):
 
 
 
-On GET_DIGEST:
+On GET_DIGEST_STABLE:
 - For each sender S in xmit-table:
   - Get low seqno, highest devlivered seqno and highest received seqno and add it to digest D
 - Return D
