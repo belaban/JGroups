@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.10 2007/03/20 09:16:46 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.11 2007/04/19 21:05:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -30,133 +30,184 @@ public class NakReceiverWindowTest extends TestCase {
 
     public void test1() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
-        assertEquals(0, win.getLowestSeen());
-        assertEquals(0, win.getHighestSeen());
+        check(win, 0, 1, 1);
         assertNull(win.get(23));
     }
 
     public void test2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
-        assertEquals(0, win.getLowestSeen());
-        assertEquals(0, win.getHighestSeen());
+        check(win, 0, 100, 100);
     }
 
     public void test3() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         assertNotNull(win.get(1));
-        assertEquals(1, win.getLowestSeen());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 1, 0);
         win.add(2, new Message());
-        assertEquals(1, win.getLowestSeen());
-        assertEquals(2, win.getHighestSeen());
+        check(win, 0, 2, 0);
         assertNotNull(win.get(2));
+        win.remove();
+        check(win, 0, 2, 1);
+        win.remove();
+        check(win, 0, 2, 2);
     }
 
     public void test4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
         win.add(2, new Message());
-        assertEquals(0, win.getLowestSeen());
-        assertEquals(0, win.getHighestSeen());
+        check(win, 0, 2, 1);
     }
 
     public void test5() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
         win.add(100, new Message());
-        assertEquals(100, win.getLowestSeen());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 101, 100);
     }
 
     public void test6() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
+        System.out.println("win: " + win);
         win.add(100, new Message());
-        while((win.remove()) != null) ;
-        assertNotNull(win.get(100));
-        assertNotNull(win.get(101));
-        assertEquals(100, win.getLowestSeen());
-        assertEquals(101, win.getHighestSeen());
+        System.out.println("win: " + win);
+        check(win, 0, 101, 100);
+        win.remove();
+        System.out.println("win: " + win);
+        check(win, 0, 101, 101);
+        while((win.remove()) != null);
+        check(win, 0, 101, 101);
+    }
+
+
+    public void testLowerBounds() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
+        win.add(101, new Message());
+        System.out.println("win: " + win);
+        win.add(100, new Message());
+        System.out.println("win: " + win);
+        check(win, 50, 101, 100);
+        win.remove();
+        System.out.println("win: " + win);
+        check(win, 50, 101, 101);
+        while((win.remove()) != null);
+        check(win, 50, 101, 101);
     }
 
     public void test7() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
+        check(win, 0, 4, 0);
+        System.out.println("Note that the subsequent warning is expected:");
+        win.stable(4); // no-op because we haven't even removed 4 messages
+        check(win, 0, 4, 0);
+        while(win.remove() != null);
+        check(win, 0, 4, 4);
         win.stable(4);
-        assertEquals(true, win.getLowestSeen() == 1);
-        assertEquals(4, win.getHighestSeen());
-        assertNotNull(win.get(2));
+        check(win, 4, 4, 4);
     }
 
 
+    public void testLowerBounds2() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
+        win.add(100, new Message());
+        win.add(101, new Message());
+        win.add(102, new Message());
+        win.add(103, new Message());
+        System.out.println("win: " + win);
+        check(win, 50, 103, 100);
+        System.out.println("Note that the subsequent warning is expected:");
+        win.stable(103); // no-op because we haven't even removed 4 messages
+        check(win, 100, 103, 100);
+        while(win.remove() != null);
+        check(win, 100, 103, 103);
+        win.stable(103);
+        System.out.println("win: " + win);
+        check(win, 103, 103, 103);
+    }
+
     public void test8() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
         win.add(6, new Message());
-
-        //System.out.println("highest received=" + win.getHighestReceived() +
-        //	   "\nhighest_seen=" + win.getHighestSeen() +
-        //	   "\nhighest_delivered=" + win.getHighestDelivered());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 0, 6, 0); // haven't delivered a message yet
+        while(win.remove() != null);
+        check(win, 0, 6, 4);
+        win.add(5, new Message());
+        check(win, 0, 6, 4);
+        win.remove();
+        check(win, 0, 6, 5);
+        win.remove();
+        check(win, 0, 6, 6);
+        win.stable(4);
+        check(win, 4, 6, 6);
+        win.stable(6);
+        check(win, 6, 6, 6);
     }
 
 
     public void testAdd() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
-        assertEquals(0, win.getHighestSeen());
-        win.add(0, new Message());
-        assertEquals(0, win.getHighestSeen());
+        check(win, 0, 0, 0);
+        win.add(0, new Message()); // discarded, next expected is 1
+        check(win, 0, 0, 0);
         win.add(1, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 1, 0);
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 0, 4, 0);
         win.add(6, new Message());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 0, 6, 0);
         win.add(5, new Message());
-        assertEquals(6, win.getHighestSeen());
+        check(win, 0, 6, 0);
         while(win.remove() != null) ;
-        assertEquals(6, win.getHighestSeen());
+        check(win, 0, 6, 6);
+        win.stable(4);
+        check(win, 4, 6, 6);
+        win.stable(6);
+        check(win, 6, 6, 6);
     }
 
 
     public void test9() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
         win.add(6, new Message());
+        System.out.println("win: " + win);
         while((win.remove()) != null) ;
         win.stable(6);
+        System.out.println("win: " + win);
         assertNull(win.get(2));
-
-        //System.out.println(win);
-        //System.out.println("highest received=" + win.getHighestReceived() +
-        //   "\nhighest_seen=" + win.getHighestSeen() +
-        //   "\nhighest_delivered=" + win.getHighestDelivered());
-        assertEquals(4, win.getLowestSeen());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 4, 6, 4);
+        win.add(5, new Message());
+        check(win, 4, 6, 4);
+        while((win.remove()) != null) ;
+        check(win, 4, 6, 6);
+        win.stable(6);
+        check(win, 6, 6, 6);
     }
 
 
-    public void testHighestSeen() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+    public void testHighestDelivered() throws Exception {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 0, 4, 0);
         win.add(10, new Message());
-        assertEquals(4, win.getHighestSeen());
-        assertEquals(10, win.getHighestReceived());
+        check(win, 0, 10, 0);
         System.out.println("win: " + win);
         win.add(9, new Message());
         win.add(7, new Message());
@@ -164,188 +215,190 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(6, new Message());
         win.add(5, new Message());
         System.out.println("win: " + win);
+        check(win, 0, 10, 0);
         while((win.remove()) != null) ;
-        assertEquals(win.getHighestSeen(), 10);
+        check(win, 0, 10, 10);
+        win.stable(5);
+        System.out.println("win: " + win);
+        check(win, 5, 10, 10);
+        win.stable(10);
+        System.out.println("win: " + win);
+        check(win, 10, 10, 10);
     }
 
 
     public void testMissingMessages() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(5, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 5, 0);
         win.add(6, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 6, 0);
         System.out.println("win: " + win);
     }
 
 
     public void testMissingMessages2() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(5, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 5, 0);
         win.add(8, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 8, 0);
         win.add(9, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 9, 0);
         System.out.println("win: " + win);
     }
 
 
     public void testMissingMessages3() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(5, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 5, 0);
         win.add(8, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 8, 0);
         win.add(9, new Message());
-        assertEquals(1, win.getHighestSeen());
+        check(win, 0, 9, 0);
         System.out.println("win: " + win);
         win.add(2, new Message());
-        assertEquals(2, win.getHighestSeen());
+        check(win, 0, 9, 0);
         win.add(3, new Message());
         win.add(4, new Message());
-        assertEquals(5, win.getHighestSeen());
+        check(win, 0, 9, 0);
         win.add(7, new Message());
-        assertEquals(5, win.getHighestSeen());
+        check(win, 0, 9, 0);
         win.add(6, new Message());
-        assertEquals(9, win.getHighestSeen());
+        check(win, 0, 9, 0);
         win.add(10, new Message());
-        assertEquals(10, win.getHighestSeen());
+        check(win, 0, 10, 0);
         win.add(11, new Message());
-        assertEquals(11, win.getHighestSeen());
+        check(win, 0, 11, 0);
         System.out.println("win: " + win);
     }
 
 
     public void testMissingMessages4() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 101);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
         win.add(105, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 105, 100);
         win.add(108, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 108, 100);
         win.add(109, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 109, 100);
         System.out.println("win: " + win);
         win.add(102, new Message());
-        assertEquals(102, win.getHighestSeen());
+        check(win, 0, 109, 100);
         win.add(103, new Message());
         win.add(104, new Message());
-        assertEquals(105, win.getHighestSeen());
+        check(win, 0, 109, 100);
         win.add(107, new Message());
-        assertEquals(105, win.getHighestSeen());
+        check(win, 0, 109, 100);
         win.add(106, new Message());
-        assertEquals(109, win.getHighestSeen());
+        check(win, 0, 109, 100);
         win.add(110, new Message());
-        assertEquals(110, win.getHighestSeen());
+        check(win, 0, 110, 100);
         win.add(110, new Message());
-        assertEquals(110, win.getHighestSeen());
+        check(win, 0, 110, 100);
         System.out.println("win: " + win);
     }
 
 
     public void testMissingMessages5() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 101);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 101, 100);
         win.add(108, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 108, 100);
+        win.remove();
         win.add(109, new Message());
-        assertEquals(101, win.getHighestSeen());
+        check(win, 0, 109, 101);
         System.out.println("win: " + win);
         win.add(102, new Message());
-        assertEquals(102, win.getHighestSeen());
+        check(win, 0, 109, 101);
         win.add(103, new Message());
         win.add(104, new Message());
-        assertEquals(104, win.getHighestSeen());
+        check(win, 0, 109, 101);
         win.add(107, new Message());
-        assertEquals(104, win.getHighestSeen());
+        check(win, 0, 109, 101);
         win.add(106, new Message());
         win.add(105, new Message());
-        assertEquals(109, win.getHighestSeen());
+        check(win, 0, 109, 101);
         win.add(110, new Message());
-        assertEquals(110, win.getHighestSeen());
+        check(win, 0, 110, 101);
         win.add(110, new Message());
-        assertEquals(110, win.getHighestSeen());
+        check(win, 0, 110, 101);
         System.out.println("win: " + win);
     }
 
     public void test10() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
         while((win.remove()) != null) ;
-        assertEquals(1, win.getLowestSeen());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 0, 4, 4);
     }
 
     public void test10a() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
         while((win.remove()) != null) ;
         win.stable(4);
-        assertEquals(4, win.getLowestSeen());
-        assertEquals(4, win.getHighestSeen());
+        check(win, 4, 4, 4);
 
     }
 
     public void test11() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
         while((win.remove()) != null) ;
         win.reset();
-        assertEquals(true, win.getLowestSeen() == 0);
-        assertEquals(0, win.getHighestSeen());
+        check(win, 0, 0, 0);
     }
 
 
     public void test12() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
 
         win.add(1, new Message(null, null, new Integer(1)));
         win.add(2, new Message(null, null, new Integer(2)));
         win.add(3, new Message(null, null, new Integer(3)));
 
-        assertEquals(true, ((Integer)win.remove().getObject()).intValue() == 1);
+        assertEquals(1, ((Integer)win.remove().getObject()).intValue());
         assertEquals(2, ((Integer)win.remove().getObject()).intValue());
         assertEquals(3, ((Integer)win.remove().getObject()).intValue());
     }
 
 
     public void test13() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
         win.add(4, new Message());
-        assertEquals(1, win.getLowestSeen());
-        assertEquals(4, win.getHighestSeen());
-
+        check(win, 0, 4, 0);
         win.remove();
         win.remove();
         win.add(5, new Message());
         win.add(6, new Message());
-        assertEquals(1, win.getLowestSeen());
-        assertEquals(6, win.getHighestSeen());
+        check(win, 0, 6, 2);
         win.stable(2);
-        assertEquals(2, win.getLowestSeen());
+        check(win, 2, 6, 2);
     }
 
 
 
     public void testAddOOBAtHead() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(0, oob());
         assertFalse(rc);
@@ -357,7 +410,7 @@ public class NakReceiverWindowTest extends TestCase {
 
 
     public void testAddOOBAtTail() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(1, oob());
         assertTrue(rc);
@@ -369,7 +422,7 @@ public class NakReceiverWindowTest extends TestCase {
 
 
     public void testAddOOBInTheMiddle() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(3, oob());
         assertTrue(rc);
@@ -386,11 +439,6 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
-    private Message oob() {
-        Message retval=new Message();
-        retval.setFlag(Message.OOB);
-        return retval;
-    }
 
 
     public void testUpdateHighestSeen() {
@@ -428,6 +476,22 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    private Message oob() {
+        Message retval=new Message();
+        retval.setFlag(Message.OOB);
+        return retval;
+    }
+
+
+    private void check(NakReceiverWindow win, long lowest, long highest_received, long highest_delivered) {
+        assertEquals("lowest=" + lowest + ", win.lowest=" + win.getLowestSeen(), lowest, win.getLowestSeen());
+        assertEquals("highest_received=" + highest_received + ", win.highest_received=" + win.getHighestReceived(),
+                     highest_received, win.getHighestReceived());
+        assertEquals("highest_delivered=" + highest_delivered + ", win.highest_delivered=" + win.getHighestDelivered(), 
+                     highest_delivered, win.getHighestDelivered());
+    }
+
+
     private static class MyRetransmitCommand implements Retransmitter.RetransmitCommand {
 
         public void retransmit(long first_seqno, long last_seqno, Address sender) {
@@ -436,8 +500,7 @@ public class NakReceiverWindowTest extends TestCase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(NakReceiverWindowTest.class);
-        return s;
+        return new TestSuite(NakReceiverWindowTest.class);
     }
 
     public static void main(String[] args) {
