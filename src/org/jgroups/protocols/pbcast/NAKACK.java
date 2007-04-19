@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
@@ -36,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.126 2007/04/04 05:34:05 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.127 2007/04/19 21:03:08 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -44,9 +45,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
     private View                view;
-    private long                seqno=-1;                                  // current message sequence number (starts with 0)
-    private long                max_xmit_size=8192;                        // max size of a retransmit message (otherwise send multiple)
-    private int                 gc_lag=20;                                 // number of msgs garbage collection lags behind
+    @GuardedBy("seqno_lock")
+    private long                seqno=0;                                  // current message sequence number (starts with 1)
+    private final Lock          seqno_lock=new ReentrantLock();
+    private long                max_xmit_size=8192;                       // max size of a retransmit message (otherwise send multiple)
+    private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
+
+    private static final long INITIAL_SEQNO=0;
 
     /**
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
@@ -63,7 +68,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
-     * messages are removed from NakReceiverWindow.received_msgs and moved to NakReceiverWindow.delivered_msgs, where
+     * messages are removed from NakReceiverWindow.xmit_table and moved to NakReceiverWindow.delivered_msgs, where
      * they are later garbage collected (by STABLE). Since we do retransmits only from sent messages, never
      * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
      * around, and don't need to wait for garbage collection to remove them.
@@ -76,14 +81,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private int max_xmit_buf_size=0;
 
 
-    /**
-     * Hashtable<Address,NakReceiverWindow>. Stores received messages (keyed by sender). Note that this is no long term
-     * storage; messages are just stored until they can be delivered (ie., until the correct FIFO order is established)
-     */
-    private final ConcurrentMap<Address,NakReceiverWindow> received_msgs=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
+    /** Map to store sent and received messages (keyed by sender) */
+    private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
-    /** TreeMap<Long,Message>. Map of messages sent by me (keyed and sorted on sequence number) */
-    private final TreeMap<Long,Message> sent_msgs=new TreeMap<Long,Message>();
 
     private boolean leaving=false;
     private boolean started=false;
@@ -147,18 +147,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public int getPendingRetransmissionRequests() {
         int num=0;
-        for(NakReceiverWindow win: received_msgs.values()) {
-            num+=win.size();
+        for(NakReceiverWindow win: xmit_table.values()) {
+            num+=win.getPendingXmits();
         }
         return num;
     }
 
-    public int getSentTableSize() {
-        int size;
-        synchronized(sent_msgs) {
-            size=sent_msgs.size();
+    public int getXmitTableSize() {
+        int num=0;
+        for(NakReceiverWindow win: xmit_table.values()) {
+            num+=win.size();
         }
-        return size;
+        return num;
     }
 
     public int getReceivedTableSize() {
@@ -212,7 +212,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public void setDiscardDeliveredMsgs(boolean discard_delivered_msgs) {
+        boolean old=this.discard_delivered_msgs;
         this.discard_delivered_msgs=discard_delivered_msgs;
+        if(old != this.discard_delivered_msgs) {
+            for(NakReceiverWindow win: xmit_table.values()) {
+                win.setDiscardDeliveredMessages(this.discard_delivered_msgs);
+            }
+        }
     }
 
     public int getMaxXmitBufSize() {
@@ -326,20 +332,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         retval.put("xmit_rsps_received", new Long(xmit_rsps_received));
         retval.put("xmit_rsps_sent", new Long(xmit_rsps_sent));
         retval.put("missing_msgs_received", new Long(missing_msgs_received));
-        retval.put("sent_msgs", printSentMsgs());
-
-        StringBuilder sb=new StringBuilder();
-        Address addr;
-        Object w;
-
-        for(Map.Entry<Address,NakReceiverWindow> entry: received_msgs.entrySet()) {
-            addr=entry.getKey();
-            w=entry.getValue();
-            sb.append(addr).append(": ").append(w.toString()).append('\n');
-        }
-
-        retval.put("received_msgs", sb.toString());
-        return retval;        
+        retval.put("msgs", printMessages());
+        return retval;
     }
 
     public String printStats() {
@@ -622,16 +616,23 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         long msg_id;
-        synchronized(sent_msgs) {
+        NakReceiverWindow win=xmit_table.get(local_addr); // todo: create an instance var which points to the sender's NRW
+        msg.setSrc(local_addr); // this needs to be done
+
+        seqno_lock.lock();
+        try {
             try { // incrementing seqno and adding the msg to sent_msgs needs to be atomic
                 msg_id=seqno +1;
                 msg.putHeader(name, new NakAckHeader(NakAckHeader.MSG, msg_id));
-                sent_msgs.put(new Long(msg_id), msg);
+                win.add(msg_id, msg);
                 seqno=msg_id;
             }
             catch(Throwable t) {
-                throw new RuntimeException("failure adding msg " + msg + " to the retransmit table", t);
+                throw new RuntimeException("failure adding msg " + msg + " to the retransmit table for " + local_addr, t);
             }
+        }
+        finally {
+            seqno_lock.unlock();
         }
 
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
@@ -645,6 +646,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
     }
+
 
 
     /**
@@ -673,7 +675,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // Changed by bela Jan 29 2003: we currently don't resend from received msgs, just from sent_msgs !
         // msg.putHeader(getName(), hdr);
 
-        win=received_msgs.get(sender);
+        win=xmit_table.get(sender);
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
@@ -686,7 +688,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        boolean added=win.add(hdr.seqno, msg);  // add in order, then remove and pass up as many msgs as possible
+        boolean added=local_addr.equals(sender) || win.add(hdr.seqno, msg);
+
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
         if(msg.isFlagSet(Message.OOB) && added) {
@@ -728,11 +731,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @param original_sender The member who originally sent the messsage. Guaranteed to be non-null
      */
     private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
-        Message m, tmp;
-        LinkedList<Message> list;
+        Message msg, tmp;
         long size=0, marker=first_seqno, len;
-        NakReceiverWindow win=null;
-        boolean      amISender; // am I the original sender ?
+
+//        if(last_seqno - first_seqno < 50) {
+//            handleXmitReqUnbatched(xmit_requester, first_seqno, last_seqno, original_sender);
+//            return;
+//        }
 
         if(trace) {
             StringBuilder sb=new StringBuilder();
@@ -752,29 +757,23 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             updateStats(received, xmit_requester, 1, 0, 0);
         }
 
-        amISender=local_addr.equals(original_sender);
-        if(!amISender)
-            win=received_msgs.get(original_sender);
 
-        list=new LinkedList<Message>();
+        LinkedList<Message> list=new LinkedList<Message>();
+        NakReceiverWindow win=xmit_table.get(original_sender);
         for(long i=first_seqno; i <= last_seqno; i++) {
-            if(amISender) {
-                m=sent_msgs.get(new Long(i)); // no need to synchronize
-            }
-            else {
-                m=win != null? win.get(i) : null;
-            }
-            if(m == null) {
+
+            msg=win != null? win.get(i) : null;
+            if(msg == null) {
                 if(log.isErrorEnabled()) {
                     StringBuffer sb=new StringBuffer();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in ").append((amISender? "sent" : "received")).append(" msgs ");
+                    sb.append(" not found in retransmission table of ");
                     if(win != null) {
-                        sb.append("from ").append(original_sender).append(": ").append(win.toString());
+                        sb.append(original_sender).append(": ").append(win.toString());
                     }
                     else {
-                        sb.append(printSentMsgs());
+                        sb.append(printMessages());
                     }
 
                     if(print_stability_history_on_failed_xmit) {
@@ -784,7 +783,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            len=m.size();
+            len=msg.size();
             size+=len;
             if(size > max_xmit_size && !list.isEmpty()) { // changed from >= to > (yaron-r, bug #943709)
                 // yaronr: added &&listSize()>0 since protocols between FRAG and NAKACK add headers, and message exceeds size.
@@ -799,7 +798,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 // bug report #854887
                 size=len;
             }
-            tmp=m;
+            tmp=msg;
             // tmp.setDest(xmit_requester);
             // tmp.setSrc(local_addr);
             if(tmp.getSrc() == null)
@@ -816,6 +815,61 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+
+    /* private void handleXmitReq(Address xmit_requester, long first_seqno, long last_seqno, Address original_sender) {
+        Message msg, tmp;
+
+        if(trace) {
+            StringBuilder sb=new StringBuilder();
+            sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
+            sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
+            log.trace(sb.toString());
+        }
+
+        if(first_seqno > last_seqno) {
+            if(log.isErrorEnabled())
+                log.error("first_seqno (" + first_seqno + ") > last_seqno (" + last_seqno + "): not able to retransmit");
+            return;
+        }
+
+        if(stats) {
+            xmit_reqs_received+=last_seqno - first_seqno +1;
+            updateStats(received, xmit_requester, 1, 0, 0);
+        }
+
+
+        NakReceiverWindow win=xmit_table.get(original_sender);
+        for(long i=first_seqno; i <= last_seqno; i++) {
+            msg=win.get(i);
+            if(msg == null) {
+                if(log.isErrorEnabled()) {
+                    StringBuffer sb=new StringBuffer();
+                    sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
+                    sb.append(") message ").append(original_sender).append("::").append(i);
+                    sb.append(" not found in retransmission table of ");
+                    if(win != null) {
+                        sb.append(original_sender).append(": ").append(win.toString());
+                    }
+                    else {
+                        sb.append(printMessages());
+                    }
+
+                    if(print_stability_history_on_failed_xmit) {
+                        sb.append(" (stability history:\n").append(printStabilityHistory());
+                    }
+                    log.error(sb);
+                }
+                continue;
+            }
+
+            tmp=msg;
+            if(tmp.getSrc() == null)
+                tmp.setSrc(local_addr);
+
+            down_prot.down(new Event(Event.MSG, msg));
+        }
+    }
+*/
 
     private void cancelRebroadcasting() {
         rebroadcast_lock.lock();
@@ -971,32 +1025,32 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /**
      * Remove old members from NakReceiverWindows and add new members (starting seqno=0). Essentially removes all
-     * entries from received_msgs that are not in <code>members</code>. This method is not called concurrently
+     * entries from xmit_table that are not in <code>members</code>. This method is not called concurrently
      * multiple times
      */
     private void adjustReceivers(boolean remove) {
         NakReceiverWindow win;
 
         if(remove) {
-            // 1. Remove all senders in received_msgs that are not members anymore
-            for(Iterator it=received_msgs.keySet().iterator(); it.hasNext();) {
-                Address sender=(Address)it.next();
+            // 1. Remove all senders in xmit_table that are not members anymore
+            for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
+                Address sender=it.next();
                 if(!members.contains(sender)) {
-                    win=received_msgs.get(sender);
+                    win=xmit_table.get(sender);
                     win.reset();
                     if(log.isDebugEnabled()) {
-                        log.debug("removing " + sender + " from received_msgs (not member anymore)");
+                        log.debug("removing " + sender + " from xmit_table (not member anymore)");
                     }
                     it.remove();
                 }
             }
         }
 
-        // 2. Add newly joined members to received_msgs (starting seqno=0)
+        // 2. Add newly joined members to xmit_table (starting seqno=0)
         for(Address sender: members) {
-            if(!received_msgs.containsKey(sender)) {
-                win=createNakReceiverWindow(sender, 0);
-                received_msgs.put(sender, win);
+            if(!xmit_table.containsKey(sender)) {
+                win=createNakReceiverWindow(sender, INITIAL_SEQNO, 0);
+                xmit_table.put(sender, win);
             }
         }
     }
@@ -1031,7 +1085,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     private Digest getDigestHighestDeliveredMsgs() {
         Range range;
-        long high_seqno_seen;
+        long highest_received;
 
         Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
         for(Address sender: members) {
@@ -1042,8 +1096,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            high_seqno_seen=getHighSeqnoSeen(sender);
-            map.put(sender, new Digest.Entry(range.low, range.high, high_seqno_seen));
+            highest_received=getHighestReceivedSeqno(sender);
+            map.put(sender, new Digest.Entry(range.low, range.high, highest_received));
         }
 
         return new Digest(map);
@@ -1082,14 +1136,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
             }
             initial_seqno=val.getHighestDeliveredSeqno();
-            win=createNakReceiverWindow(sender, initial_seqno);
-            received_msgs.put(sender, win);
+            win=createNakReceiverWindow(sender, initial_seqno, val.getLow());
+            xmit_table.put(sender, win);
         }
     }
 
 
     /**
-     * For all members of the digest, adjust the NakReceiverWindows in the received_msgs hashtable. If the member
+     * For all members of the digest, adjust the NakReceiverWindows in the xmit_table hashtable. If the member
      * already exists, sets its seqno to be the max of the seqno and the seqno of the member in the digest. If no entry
      * exists, create one with the initial seqno set to the seqno of the member in the digest.
      */
@@ -1105,7 +1159,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Address sender;
         Digest.Entry val;
         NakReceiverWindow win;
-        long initial_seqno;
+        long initial_seqno, low;
 
         for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
@@ -1119,26 +1173,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
             }
             initial_seqno=val.getHighestDeliveredSeqno();
+            low=val.getLow();
 
-            win=received_msgs.get(sender);
+            win=xmit_table.get(sender);
             if(win == null) {
-                win=createNakReceiverWindow(sender, initial_seqno);
-                received_msgs.putIfAbsent(sender, win);
+                win=createNakReceiverWindow(sender, initial_seqno, low);
+                xmit_table.putIfAbsent(sender, win);
             }
             else {
                 if(win.getHighestReceived() < initial_seqno) {
                     win.reset();
-                    received_msgs.remove(sender);
-                    win=createNakReceiverWindow(sender, initial_seqno);
-                    received_msgs.put(sender, win);
+                    xmit_table.remove(sender);
+                    win=createNakReceiverWindow(sender, initial_seqno, low);
+                    xmit_table.put(sender, win);
                 }
             }
         }
     }
 
 
-    private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno) {
-        NakReceiverWindow win=new NakReceiverWindow(sender, this, initial_seqno, timer);
+    private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
+        NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer);
         win.setRetransmitTimeouts(retransmit_timeout);
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
         win.setMaxXmitBufSize(this.max_xmit_buf_size);
@@ -1166,29 +1221,29 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             return r;
         }
-        win=received_msgs.get(sender);
+        win=xmit_table.get(sender);
         if(win == null) {
             if(log.isErrorEnabled()) {
-                log.error("sender " + sender + " not found in received_msgs");
+                log.error("sender " + sender + " not found in xmit_table");
             }
             return r;
         }
         if(stop_at_gaps) {
-            r=new Range(win.getLowestSeen(), win.getHighestSeen());       // deliverable messages (no gaps)
+            r=new Range(win.getLowestSeen(), win.getHighestDelivered());   // deliverable messages (no gaps)
         }
         else {
-            r=new Range(win.getLowestSeen(), win.getHighestReceived() + 1); // received messages
+            r=new Range(win.getLowestSeen(), win.getHighestReceived());    // received messages
         }
         return r;
     }
 
 
     /**
-     * Returns the highest seqno seen from sender. E.g. if we received 1, 2, 4, 5 from P, then 5 will be returned
+     * Returns the highest seqno received from sender. E.g. if we received 1, 2, 4, 5 from P, then 5 will be returned
      * (doesn't take gaps into account). If we are the sender, we will return the highest seqno <em>sent</em> rather
      * then <em>received</em>
      */
-    private long getHighSeqnoSeen(Address sender) {
+    private long getHighestReceivedSeqno(Address sender) {
         NakReceiverWindow win;
         long ret=0;
 
@@ -1198,14 +1253,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             return ret;
         }
-        if(sender.equals(local_addr)) {
-            return seqno - 1;
-        }
 
-        win=received_msgs.get(sender);
+        win=xmit_table.get(sender);
         if(win == null) {
             if(log.isErrorEnabled()) {
-                log.error("sender " + sender + " not found in received_msgs");
+                log.error("sender " + sender + " not found in xmit_table");
             }
             return ret;
         }
@@ -1216,7 +1268,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /**
      * Garbage collect messages that have been seen by all members. Update sent_msgs: for the sender P in the digest
-     * which is equal to the local address, garbage collect all messages <= seqno at digest[P]. Update received_msgs:
+     * which is equal to the local address, garbage collect all messages <= seqno at digest[P]. Update xmit_table:
      * for each sender P in the digest and its highest seqno seen SEQ, garbage collect all delivered_msgs in the
      * NakReceiverWindow corresponding to P which are <= seqno at digest[P].
      */
@@ -1253,7 +1305,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             // check whether the last seqno received for a sender P in the stability vector is > last seqno
             // received for P in my digest. if yes, request retransmission (see "Last Message Dropped" topic
             // in DESIGN)
-            recv_win=received_msgs.get(sender);
+            recv_win=xmit_table.get(sender);
             if(recv_win != null) {
                 my_highest_rcvd=recv_win.getHighestReceived();
                 stability_highest_rcvd=high_seqno_received;
@@ -1276,19 +1328,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(trace)
                 log.trace("deleting msgs <= " + high_seqno_delivered + " from " + sender);
 
-            // garbage collect from sent_msgs if sender was myself
-            if(sender.equals(local_addr)) {
-                synchronized(sent_msgs) {
-                    // gets us a subset from [lowest seqno - seqno]
-                    SortedMap stable_keys=sent_msgs.headMap(new Long(high_seqno_delivered));
-                    if(stable_keys != null) {
-                        stable_keys.clear(); // this will modify sent_msgs directly
-                    }
-                }
-            }
-
             // delete *delivered* msgs that are stable
-            // recv_win=(NakReceiverWindow)received_msgs.get(sender);
             if(recv_win != null)
                 recv_win.stable(high_seqno_delivered);  // delete all messages with seqnos <= seqno
         }
@@ -1348,66 +1388,50 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /* ------------------- End of Interface NakReceiverWindow.Listener ------------------- */
 
     private void clear() {
-        NakReceiverWindow win;
-
         // changed April 21 2004 (bela): SourceForge bug# 938584. We cannot delete our own messages sent between
         // a join() and a getState(). Otherwise retransmission requests from members who missed those msgs might
         // fail. Not to worry though: those msgs will be cleared by STABLE (message garbage collection)
 
         // sent_msgs.clear();
 
-        for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
-            win=(NakReceiverWindow)it.next();
+        for(NakReceiverWindow win: xmit_table.values()) {
             win.reset();
         }
-        received_msgs.clear();
+        xmit_table.clear();
     }
 
 
     private void reset() {
-        NakReceiverWindow win;
-
-        synchronized(sent_msgs) {
-            sent_msgs.clear();
+        seqno_lock.lock();
+        try {
             seqno=-1;
         }
+        finally {
+            seqno_lock.unlock();
+        }
 
-        for(Iterator it=received_msgs.values().iterator(); it.hasNext();) {
-            win=(NakReceiverWindow)it.next();
+        for(NakReceiverWindow win: xmit_table.values()) {
             win.destroy();
         }
-        received_msgs.clear();
+        xmit_table.clear();
     }
 
 
    public String printMessages() {
        StringBuilder ret=new StringBuilder();
-        Map.Entry entry;
-        Address addr;
-        Object w;
+       Map.Entry<Address,NakReceiverWindow> entry;
+       Address addr;
+       Object w;
 
-       ret.append("\nsent_msgs: ").append(printSentMsgs());
-        ret.append("\nreceived_msgs:\n");
-       for(Iterator it=received_msgs.entrySet().iterator(); it.hasNext();) {
-           entry=(Map.Entry)it.next();
-           addr=(Address)entry.getKey();
+       for(Iterator<Map.Entry<Address,NakReceiverWindow>> it=xmit_table.entrySet().iterator(); it.hasNext();) {
+           entry=it.next();
+           addr=entry.getKey();
            w=entry.getValue();
            ret.append(addr).append(": ").append(w.toString()).append('\n');
        }
        return ret.toString();
    }
 
-
-    public String printSentMsgs() {
-        StringBuilder sb=new StringBuilder();
-        Long min_seqno, max_seqno;
-        synchronized(sent_msgs) {
-            min_seqno=!sent_msgs.isEmpty()? sent_msgs.firstKey() : new Long(0);
-            max_seqno=!sent_msgs.isEmpty()? sent_msgs.lastKey() : new Long(0);
-        }
-        sb.append('[').append(min_seqno).append(" - ").append(max_seqno).append("] (").append(sent_msgs.size()).append(")");
-        return sb.toString();
-    }
 
 
     private void handleConfigEvent(HashMap map) {

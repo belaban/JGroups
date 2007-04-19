@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACKMBean.java,v 1.6 2007/03/21 14:41:14 belaban Exp $
+ * @version $Id: NAKACKMBean.java,v 1.7 2007/04/19 21:03:21 belaban Exp $
  */
 public interface NAKACKMBean extends ProtocolMBean {
     int getGcLag();
@@ -19,15 +19,14 @@ public interface NAKACKMBean extends ProtocolMBean {
     void setMaxXmitBufSize(int max_xmit_buf_size);
     long getMaxXmitSize();
     void setMaxXmitSize(long max_xmit_size);
-    int getSentTableSize();
-    int getReceivedTableSize();
+    int getXmitTableSize();
     long getXmitRequestsReceived();
     long getXmitRequestsSent();
     long getXmitResponsesReceived();
     long getXmitResponsesSent();
     long getMissingMessagesReceived();
     int getPendingRetransmissionRequests();
-    String printSentMessages();
+    String printXmitTable();
     String printMessages();
     String printStabilityMessages();
 }
