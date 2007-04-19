@@ -36,7 +36,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.71 2007/04/19 18:49:37 vlada Exp $
+ * @version $Id: MessageDispatcher.java,v 1.72 2007/04/19 19:16:19 vlada Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -661,13 +661,7 @@ public class MessageDispatcher implements RequestHandler {
                 	if(log.isWarnEnabled()){
                 	    log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
                 	             + " application does not implement ExtendedMessageListener. State is not transfered");
-        
-                	    try{
-                		if(os!=null)
-                		    os.close();
-                	    }catch(IOException e){
-        			    // ignored
-                	    }
+                	    Util.close(os);
                 	}
 		    }
                     break;
@@ -687,13 +681,7 @@ public class MessageDispatcher implements RequestHandler {
                 	if(log.isWarnEnabled()){
                 	    log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
                 	             + " application does not implement ExtendedMessageListener. State is not transfered");
-        
-                	    try{
-                		if(is!=null)
-                		    is.close();
-                	    }catch(IOException e){
-        			    // ignored
-                	    }
+                	    Util.close(is);
                 	}
 		    }                    
                     break;
