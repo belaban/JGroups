@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.72 2007/04/04 05:34:05 belaban Exp $
+ * @version $Id: STABLE.java,v 1.73 2007/04/19 20:55:50 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -413,8 +413,8 @@ public class STABLE extends Protocol {
             mbr=entry.getKey();
             val=entry.getValue();
             low=val.getLow();
-            highest_seqno=val.getHighestDeliveredSeqno();          // highest *delivered* seqno
-            highest_seen_seqno=val.getHighestReceivedSeqno(); // highest *seen* seqno
+            highest_seqno=val.getHighestDeliveredSeqno();      // highest *delivered* seqno
+            highest_seen_seqno=val.getHighestReceivedSeqno();  // highest *received* seqno
 
             my_low=digest.lowSeqnoAt(mbr);
             new_low=Math.min(my_low, low);

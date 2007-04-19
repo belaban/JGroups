@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.14 2007/04/04 16:56:04 belaban Exp $
+// $Id: NakackTest.java,v 1.15 2007/04/19 21:03:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -47,6 +47,9 @@ public class NakackTest extends TestCase {
         view=new View(vid, mbrs);
 
         t.start();
+        t.getBottom().up(new Event(Event.SET_LOCAL_ADDRESS, my_addr));
+
+
         check.down(new Event(Event.BECOME_SERVER));
         check.down(new Event(Event.VIEW_CHANGE, view));
 
