@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.29 2007/03/15 15:35:12 vlada Exp $
+// $Id: DistributedHashtable.java,v 1.30 2007/04/19 18:45:06 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -12,6 +12,11 @@ import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.*;
 
@@ -35,9 +40,9 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.29 2007/03/15 15:35:12 vlada Exp $
+ * @version $Id: DistributedHashtable.java,v 1.30 2007/04/19 18:45:06 vlada Exp $
  */
-public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
+public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
 
 
 
@@ -639,6 +644,64 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
         catch (Throwable t) {
             t.printStackTrace();
         }
+    }
+
+    public byte[] getState(String state_id) {
+	// not implemented
+	return null;
+    }
+
+    public void getState(OutputStream ostream) {
+	Object    key, val;
+        Hashtable copy=new Hashtable();
+        ObjectOutputStream oos = null;
+
+        for(Enumeration e=keys(); e.hasMoreElements();) {
+            key=e.nextElement();
+            val=get(key);
+            copy.put(key, val);
+        }
+        try {
+            oos = new ObjectOutputStream(ostream);
+            oos.writeObject(copy);            
+        }
+        catch(Throwable ex) {
+            if(log.isErrorEnabled()) log.error("exception marshalling state: " + ex);            
+        }
+        finally{
+	    Util.close(oos);
+	}
+    }
+
+    public void getState(String state_id, OutputStream ostream) {	
+    }
+
+    public void setState(String state_id, byte[] state) {
+    }
+
+    public void setState(InputStream istream) {
+	Hashtable new_copy = null;
+	ObjectInputStream ois = null;
+	try{
+	    ois = new ObjectInputStream(istream);
+	    new_copy = (Hashtable) ois.readObject();
+	    ois.close();
+	}catch(Throwable e){	   
+	    e.printStackTrace();
+	    if(log.isErrorEnabled()) log.error("exception marshalling state: " + e); 
+	}finally{
+	    Util.close(ois);
+	}
+	if(new_copy != null)
+	    _putAll(new_copy);
+	
+	state_promise.setResult(Boolean.TRUE);	
+    }
+
+    public void setState(String state_id, InputStream istream) {
+    }
+
+    public void unblock() {
     }
 
 }
