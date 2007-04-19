@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.43 2007/04/04 05:23:33 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.44 2007/04/19 21:00:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.43 $
+ * @version $Revision: 1.44 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -142,7 +142,7 @@ public class ClientGmsImpl extends GmsImpl {
                                     tmp_digest + ", skipping it");
                     }
                     else {
-                        tmp_digest.incrementHighSeqno(coord); 	// see DESIGN for an explanantion
+                        tmp_digest.incrementHighestDeliveredSeqno(coord); 	// see DESIGN for an explanantion
                         tmp_digest.seal();
                         gms.setDigest(tmp_digest);
 
