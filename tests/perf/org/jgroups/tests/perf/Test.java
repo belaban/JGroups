@@ -841,7 +841,7 @@ public class Test implements Receiver {
 
     static void help() {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
-                "[-config <config file>] " +
+                "[-config <config file>] [-num_threads <number of threads for sending messages>]" +
                 "[-props <stack config>] [-verbose] [-jmx] " +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
                 "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)]");
