@@ -28,7 +28,7 @@ import java.util.*;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.5 2007/04/18 09:48:06 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.6 2007/04/19 08:02:00 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -586,6 +586,10 @@ public class FC extends Protocol {
             finally {
                 Util.release(lock);
             }
+        }
+        else {
+            if(warn)
+                log.warn(increase + " credits from " + sender + " were dropped, lock could not be acquired");
         }
     }
 
