@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.93 2007/04/04 07:30:56 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.94 2007/04/19 13:28:32 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -471,6 +471,14 @@
 			<param name="testname.ext" value="tcp"/>
 			<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
 		</antcall>
+
+		<antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>
+		 	<param name="mux.on" value="true"/>
+			<param name="mux.conf.stack" value="udp"/>
+		 	<param name="testname.ext" value="mux-udp"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+		</antcall>		
 		
 	</target>
 	
