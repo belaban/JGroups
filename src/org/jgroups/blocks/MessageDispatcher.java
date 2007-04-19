@@ -8,6 +8,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -35,7 +36,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.70 2007/04/02 07:10:17 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.71 2007/04/19 18:49:37 vlada Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -645,9 +646,9 @@ public class MessageDispatcher implements RequestHandler {
                     break;
 
                 case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                    if(msg_listener != null) {
-                        StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                        OutputStream os=sti.outputStream;
+                    StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                    OutputStream os=sti.outputStream;
+                    if(msg_listener instanceof ExtendedMessageListener) {                        
                         if(os != null && msg_listener instanceof ExtendedMessageListener) {
                             if(sti.state_id == null)
                                 ((ExtendedMessageListener)msg_listener).getState(os);
@@ -656,12 +657,25 @@ public class MessageDispatcher implements RequestHandler {
                         }
                         return new StateTransferInfo(null, os, sti.state_id);
                     }
-    				break;
+                    else if(msg_listener instanceof MessageListener){
+                	if(log.isWarnEnabled()){
+                	    log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
+                	             + " application does not implement ExtendedMessageListener. State is not transfered");
+        
+                	    try{
+                		if(os!=null)
+                		    os.close();
+                	    }catch(IOException e){
+        			    // ignored
+                	    }
+                	}
+		    }
+                    break;
 
                 case Event.STATE_TRANSFER_INPUTSTREAM:
-                    if(msg_listener != null) {
-                    	StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                        InputStream is=sti.inputStream;
+                    sti=(StateTransferInfo)evt.getArg();
+                    InputStream is=sti.inputStream;
+                    if(msg_listener instanceof ExtendedMessageListener) {                    	
                         if(is!=null && msg_listener instanceof ExtendedMessageListener) {
                             if(sti.state_id == null)
                                 ((ExtendedMessageListener)msg_listener).setState(is);
@@ -669,7 +683,20 @@ public class MessageDispatcher implements RequestHandler {
                                 ((ExtendedMessageListener)msg_listener).setState(sti.state_id, is);
                         }
                     }
-        			break;
+                    else if(msg_listener instanceof MessageListener){
+                	if(log.isWarnEnabled()){
+                	    log.warn("Channel has STREAMING_STATE_TRANSFER, however,"
+                	             + " application does not implement ExtendedMessageListener. State is not transfered");
+        
+                	    try{
+                		if(is!=null)
+                		    is.close();
+                	    }catch(IOException e){
+        			    // ignored
+                	    }
+                	}
+		    }                    
+                    break;
 
                 case Event.VIEW_CHANGE:
                     View v=(View) evt.getArg();
