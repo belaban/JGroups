@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.16 2007/04/19 20:39:26 vlada Exp $
+// $Id: DigestTest.java,v 1.17 2007/04/19 21:00:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -128,7 +128,7 @@ public class DigestTest extends TestCase {
         System.out.println("d: " + d + "\nmd= " + md);
         assertEquals(d, d);
         assertEquals(d, md);
-        md.incrementHighSeqno(a1);
+        md.incrementHighestDeliveredSeqno(a1);
         System.out.println("d: " + d + "\nmd= " + md);
         assertFalse(d.equals(md));
     }
@@ -137,14 +137,14 @@ public class DigestTest extends TestCase {
     public void testMutability() {
         Digest md2=md;
         assertEquals(md, md2);
-        md.incrementHighSeqno(a2);
+        md.incrementHighestDeliveredSeqno(a2);
         assertEquals(md, md2);
     }
 
     public void testImmutability() {
         MutableDigest tmp=new MutableDigest(d);
         assertEquals(d, tmp);
-        tmp.incrementHighSeqno(a2);
+        tmp.incrementHighestDeliveredSeqno(a2);
         assertFalse(d.equals(tmp));
     }
 
@@ -162,7 +162,7 @@ public class DigestTest extends TestCase {
     public void testImmutability4() {
         Digest copy=md.copy();
         assertEquals(copy, md);
-        md.incrementHighSeqno(a1);
+        md.incrementHighestDeliveredSeqno(a1);
         assertFalse(copy.equals(md));
     }
 
@@ -183,10 +183,10 @@ public class DigestTest extends TestCase {
 
 
     public void testSeal2() {
-        md.incrementHighSeqno(a1);
+        md.incrementHighestDeliveredSeqno(a1);
         md.seal();
         try {
-            md.incrementHighSeqno(a3);
+            md.incrementHighestDeliveredSeqno(a3);
             fail("should run into an exception");
         }
         catch(IllegalAccessError e) {
@@ -194,7 +194,7 @@ public class DigestTest extends TestCase {
         }
 
         MutableDigest tmp=new MutableDigest(md);
-        tmp.incrementHighSeqno(a3);
+        tmp.incrementHighestDeliveredSeqno(a3);
     }
 
     public void testAdd() {
@@ -238,15 +238,15 @@ public class DigestTest extends TestCase {
         md.add(a3, 7, 700);
 
         long tmp=md.highestDeliveredSeqnoAt(a1);
-        md.incrementHighSeqno(a1);
+        md.incrementHighestDeliveredSeqno(a1);
         assertEquals(md.highestDeliveredSeqnoAt(a1), tmp+1);
 
         tmp=md.highestDeliveredSeqnoAt(a2);
-        md.incrementHighSeqno(a2);
+        md.incrementHighestDeliveredSeqno(a2);
         assertEquals(md.highestDeliveredSeqnoAt(a2), tmp+1);
 
         tmp=md.highestDeliveredSeqnoAt(a3);
-        md.incrementHighSeqno(a3);
+        md.incrementHighestDeliveredSeqno(a3);
         assertEquals(md.highestDeliveredSeqnoAt(a3), tmp+1);
     }
 
@@ -283,7 +283,7 @@ public class DigestTest extends TestCase {
         md.resetAt(a1);
         assertEquals(0, md.lowSeqnoAt(a1));
         assertEquals(0, md.highestDeliveredSeqnoAt(a1));
-        assertEquals(-1, md.highestReceivedSeqnoAt(a1));
+        assertEquals(0, md.highestReceivedSeqnoAt(a1));
     }
 
 
