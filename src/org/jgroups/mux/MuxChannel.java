@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.31 2007/04/02 07:10:15 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.32 2007/04/19 14:08:04 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -77,7 +77,7 @@ public class MuxChannel extends JChannel {
      * @return The service view (list of nodes on which this service is running)
      */
     public View getView() {
-        return mux.getServiceView(id);
+	return closed || !connected ? null : mux.getServiceView(id);
     }
 
     /** Returns the JGroups view of a cluster, e.g. if we have nodes A, B and C, then the view will
@@ -123,6 +123,15 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
+	/*make sure the channel is not closed*/
+	checkClosed();
+
+        /*if we already are connected, then ignore this*/
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
+            return;
+        }
+        
         factory.connect(this);
         notifyChannelConnected(this);
     }
@@ -253,14 +262,5 @@ public class MuxChannel extends JChannel {
         if(state_id != null)
             my_id+="::" + state_id;
         ch.returnState(state, my_id);
-    }
-
-
-    protected void checkNotConnected() throws ChannelNotConnectedException {
-        ;
-    }
-
-    protected void checkClosed() throws ChannelClosedException {
-        ;
-    }
+    }  
 }
