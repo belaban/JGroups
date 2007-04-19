@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.4 2007/04/05 12:28:43 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.5 2007/04/19 20:57:46 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -145,7 +145,7 @@ public class MutableDigest extends Digest {
     /**
      * Increments the sender's high_seqno by 1.
      */
-    public void incrementHighSeqno(Address sender) {
+    public void incrementHighestDeliveredSeqno(Address sender) {
         Entry entry=senders.get(sender);
         if(entry == null)
             return;
