@@ -69,7 +69,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.128 2007/04/19 18:49:37 vlada Exp $
+ * @version $Id: JChannel.java,v 1.129 2007/04/19 19:16:20 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1027,13 +1027,7 @@ public class JChannel extends Channel {
         	    if(log.isWarnEnabled()){
         		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
         		         " application does not implement ExtendedMessageListener. State is not transfered");
-        		
-        		try{
-        		    if(is!=null)
-        			is.close();
-			}catch(IOException e){
-			    //ignored
-			}        		        		
+        		Util.close(is);        		     		        	
         	    }
         	}
                 else {
@@ -1044,7 +1038,7 @@ public class JChannel extends Channel {
                     }
                 }
             }
-			break;
+            break;
 
         case Event.SET_LOCAL_ADDRESS:
             local_addr_promise.setResult(evt.getArg());
@@ -1117,14 +1111,8 @@ public class JChannel extends Channel {
                 else if(receiver instanceof Receiver){
         	    if(log.isWarnEnabled()){
         		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-        		         " application does not implement ExtendedMessageListener. State is not transfered");
-        		
-        		try{
-        		    if(os!=null)
-        			os.close();
-			}catch(IOException e){
-			    //ignored
-			}        		        		
+        		         " application does not implement ExtendedMessageListener. State is not transfered");        		
+        		Util.close(os);     		        		
         	    }
         	}
 		break;
