@@ -12,6 +12,7 @@ import org.jgroups.util.*;
 import org.w3c.dom.Element;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -68,7 +69,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.127 2007/04/02 07:10:16 belaban Exp $
+ * @version $Id: JChannel.java,v 1.128 2007/04/19 18:49:37 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1015,13 +1016,26 @@ public class JChannel extends Channel {
                 return up_handler.up(evt);
             }
 
-            if(is != null) {
+            if(is != null) {        	
                 if(receiver instanceof ExtendedReceiver) {
                     if(sti.state_id == null)
                         ((ExtendedReceiver)receiver).setState(is);
                     else
                         ((ExtendedReceiver)receiver).setState(sti.state_id, is);
                 }
+                else if(receiver instanceof Receiver){
+        	    if(log.isWarnEnabled()){
+        		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
+        		         " application does not implement ExtendedMessageListener. State is not transfered");
+        		
+        		try{
+        		    if(is!=null)
+        			is.close();
+			}catch(IOException e){
+			    //ignored
+			}        		        		
+        	    }
+        	}
                 else {
                     try {
                         mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
@@ -1089,18 +1103,31 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                if(receiver != null) {
-                    StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-                    OutputStream os=sti.outputStream;
-                    if(os != null && receiver instanceof ExtendedReceiver) {
+        	StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                OutputStream os=sti.outputStream;
+                if(receiver instanceof ExtendedReceiver) {                    
+                    if(os != null) {
                         if(sti.state_id == null)
                             ((ExtendedReceiver)receiver).getState(os);
                         else
                             ((ExtendedReceiver)receiver).getState(sti.state_id, os);
-                    }
-                    return new StateTransferInfo(null, os, sti.state_id);
+                        return new StateTransferInfo(null, os, sti.state_id);
+                    }                    
                 }
-				break;
+                else if(receiver instanceof Receiver){
+        	    if(log.isWarnEnabled()){
+        		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
+        		         " application does not implement ExtendedMessageListener. State is not transfered");
+        		
+        		try{
+        		    if(os!=null)
+        			os.close();
+			}catch(IOException e){
+			    //ignored
+			}        		        		
+        	    }
+        	}
+		break;
 
             case Event.BLOCK:
                 if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'                    
