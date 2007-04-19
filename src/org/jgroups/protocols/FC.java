@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
@@ -33,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.72 2007/04/19 20:09:32 belaban Exp $
+ * @version $Id: FC.java,v 1.73 2007/04/19 20:27:40 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -56,6 +57,7 @@ public class FC extends Protocol {
     /**
      * List of members from whom we expect credits
      */
+    @GuardedBy("lock")
     final List<Address> creditors=new ArrayList<Address>(11);
 
     /**
@@ -93,11 +95,13 @@ public class FC extends Protocol {
      * Determines whether or not to block on down(). Set when not enough credit is available to send a message
      * to all or a single member
      */
+    @GuardedBy("lock")
     private boolean insufficient_credit=false;
 
     /**
      * the lowest credits of any destination (sent_msgs)
      */
+    @GuardedBy("lock")
     private long lowest_credit=max_credits;
 
     /**
@@ -548,18 +552,17 @@ public class FC extends Protocol {
 
     private void handleCredit(Address sender, Number increase) {
         if(sender == null) return;
-        StringBuffer sb=null;
+        StringBuilder sb=null;
 
         lock.lock();
         try {
             Long old_credit=sent.get(sender);
-            Long new_credit=Math.min(max_credits,  new Long(old_credit.longValue() + increase.longValue()));
+            Long new_credit=Math.min(max_credits, new Long(old_credit.longValue() + increase.longValue()));
 
             if(trace) {
-                sb=new StringBuffer();
-                sb.append("received credit from ").append(sender).append(", old credit was ").
-                        append(old_credit).append(", new credits are ").append(new_credit).
-                        append(".\nCreditors before are: ").append(creditors);
+                sb=new StringBuilder();
+                sb.append("received credit from ").append(sender).append(", old credit was ").append(old_credit)
+                        .append(", new credits are ").append(new_credit).append(".\nCreditors before are: ").append(creditors);
             }
 
             sent.put(sender, new_credit);
