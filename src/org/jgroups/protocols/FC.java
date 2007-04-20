@@ -29,7 +29,7 @@ import java.util.Map.Entry;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.9 2007/04/20 11:40:56 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.10 2007/04/20 13:10:28 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -686,18 +686,27 @@ public class FC extends Protocol {
                     received.put(sender, max_credits_constant);
                     pending_requesters.remove(sender);
                 }
-                else if (pending_requesters.contains(sender)) {
-                   credit_response = max_credits - sender_credit.longValue();
-                   received.put(sender, max_credits_constant);
-                   pending_requesters.remove(sender);
-                   if (warn)
-                      log.warn("Received two credit requests from " + sender + 
-                            " without any intervening messages; sending " + credit_response + " credits");
-                }
                 else {
-                    pending_requesters.add(sender);
-                    if (trace)
-                       log.trace("received credit request from " + sender + " but have no credits available");
+                    if(pending_requesters.contains(sender)) {
+                        // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
+                        // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
+                        // credits is negative, we simply send max_credits back
+                        long credits_left=sender_credit.longValue();
+                        if(credits_left < 0)
+                            credits_left=0;
+                        credit_response = max_credits - credits_left;
+                        // credit_response = max_credits;
+                        received.put(sender, max_credits_constant);
+                        pending_requesters.remove(sender);
+                        if (warn)
+                            log.warn("Received two credit requests from " + sender +
+                                    " without any intervening messages; sending " + credit_response + " credits");
+                    }
+                    else {
+                        pending_requesters.add(sender);
+                        if (trace)
+                            log.trace("received credit request from " + sender + " but have no credits available");
+                    }
                 }
             }
             finally {
