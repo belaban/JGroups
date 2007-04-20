@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.Map.Entry;
 
 /**
  * Simple flow control protocol based on a credit system. Each sender has a number of credits (bytes
@@ -28,7 +29,7 @@ import java.util.*;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.7 2007/04/19 08:34:17 belaban Exp $
+ * @version $Id: FC.java,v 1.53.2.8 2007/04/20 06:48:49 bstansberry Exp $
  */
 public class FC extends Protocol {
 
@@ -54,6 +55,9 @@ public class FC extends Protocol {
      */
     final List creditors=new ArrayList(11);
 
+    /** Peers who have asked for credit that we didn't have */
+    final Set pending_requesters = new HashSet(11);
+    
     /**
      * Max number of bytes to send per receiver until an ack must
      * be received before continuing sending
@@ -120,7 +124,7 @@ public class FC extends Protocol {
 
     static final String name="FC";
 
-    private long start_blocking=0, stop_blocking=0;
+    private long start_blocking=0;
 
 
     /**
@@ -396,7 +400,8 @@ public class FC extends Protocol {
                         case FcHeader.CREDIT_REQUEST:
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
-                            handleCreditRequest(sender);
+                            Long sent = (Long) msg.getObject();
+                            handleCreditRequest(sender, sent);
                             break;
                         default:
                             log.error("header type " + hdr.type + " not known");
@@ -432,9 +437,18 @@ public class FC extends Protocol {
                     }
                     else {
                         determineCreditors(dest, length);
-                        insufficient_credit=true;
+                        
+                        long blockStart=System.currentTimeMillis(); 
+                        if (!insufficient_credit) {
+                           insufficient_credit = true;
+                           start_blocking = blockStart;
+                           if (trace) {
+                              log.trace("Starting blocking. lowest_credit=" + 
+                                    lowest_credit + "; msg length =" + length);
+                           }
+                        }
                         num_blockings++;
-                        start_blocking=System.currentTimeMillis();
+                        
                         while(insufficient_credit && running) {
                             try {
                                 mutex.timedwait(max_block_time);
@@ -442,25 +456,39 @@ public class FC extends Protocol {
                             catch(InterruptedException e) {
                             }
                             if(insufficient_credit && running) {
-                                // we need to send the credit requests down *without* holding the lock, otherwise we might
-                                // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-
-                                List creditors_copy=new ArrayList(creditors);
-                                Util.release(lock);
-                                try {
-                                    if(trace)
-                                        log.trace("timeout occurred waiting for credits");
-                                    for(int i=0; i < creditors_copy.size(); i++) {
-                                        sendCreditRequest((Address)creditors_copy.get(i));
-                                    }
+                                long waitTime = System.currentTimeMillis() - blockStart;
+                                if(trace) {                                    
+                                    log.trace("Still waiting for credits -- waiting " + waitTime + " ms");
                                 }
-                                finally {
-                                    Util.acquire(lock);
+                                
+                                // Only ask for credit if we blocked over max_block_time,
+                                // otherwise it's not an emergency
+                                if (waitTime >= max_block_time) {
+                                   
+                                   // Creditors may have been cleared but credit
+                                   // receipt was insufficient to let all
+                                   // blocked threads proceed. So, redetermine
+                                   determineCreditors(dest, length);
+                                   
+                                   Map sent_copy = new HashMap(sent);
+                                   sent_copy.keySet().retainAll(creditors);
+                                   // we need to send the credit requests down *without* holding the lock, otherwise we might
+                                   // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+                                   Util.release(lock);
+                                   try {
+                                       for(Iterator it = sent_copy.entrySet().iterator(); it.hasNext(); ) {
+                                           Map.Entry e = (Entry) it.next();
+                                           sendCreditRequest((Address)e.getKey(), (Long) e.getValue());
+                                       }
+                                   }
+                                   finally {
+                                       Util.acquire(lock);
+                                   }
                                 }
                             }
                         }
-                        stop_blocking=System.currentTimeMillis();
-                        long block_time=stop_blocking - start_blocking;
+                        
+                        long block_time=System.currentTimeMillis() - blockStart;
                         if(trace)
                             log.trace("total time blocked: " + block_time + " ms");
                         total_time_blocking+=block_time;
@@ -560,28 +588,42 @@ public class FC extends Protocol {
         if(Util.acquire(lock)) {
             try {
                 Long old_credit=(Long)sent.get(sender);
-                Long new_credit=new Long(old_credit.longValue() + increase.longValue());
+                long increased = old_credit.longValue() + increase.longValue();
+                Long new_credit=new Long(Math.min(max_credits, increased));
 
                 if(trace) {
                     sb=new StringBuffer();
-                    sb.append("received credit from ").append(sender).append(", old credit was ").
-                            append(old_credit).append(", new credits are ").append(new_credit).
-                            append(".\nCreditors before are: ").append(creditors);
+                    sb.append("received " + increase + " credit from ").append(sender).append(", old credit was ").
+                            append(old_credit).append(", new credits are ").append(new_credit);
+                    if (increased > max_credits)
+                       sb.append(" ignored over-credit of " + (increased - max_credits));
                 }
 
                 sent.put(sender, new_credit);
                 lowest_credit=computeLowestCredit(sent);
                 if(!creditors.isEmpty()) {  // we are blocked because we expect credit from one or more members
+                    
+                    if (trace)
+                       sb.append(".\nCreditors before are: ").append(creditors);
+                    
                     creditors.remove(sender);
+                    
                     if(trace) {
-                        sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
-                        log.trace(sb.toString());
+                        sb.append("\nCreditors after removal of ").append(sender)
+                           .append(" are: ").append(creditors)
+                           .append("; lowest_credit=").append(lowest_credit);
                     }
                 }
+                
                 if(insufficient_credit && lowest_credit > 0 && creditors.isEmpty()) {
                     insufficient_credit=false;
                     mutex.broadcast();
+                    if (trace)
+                       sb.append("\nTotal block time = " + (System.currentTimeMillis() - start_blocking));
                 }
+                
+                if (trace)
+                   log.trace(sb.toString());
             }
             finally {
                 Util.release(lock);
@@ -620,39 +662,52 @@ public class FC extends Protocol {
         long credit_response=max_credits - remaining_cred;
         if(credit_response >= min_credits) {
             received.put(src, max_credits_constant);
+            if (!pending_requesters.isEmpty())
+               pending_requesters.remove(src);
             if(trace) log.trace("sending " + credit_response + " replenishment credits to " + src);
             sendCredit(src, credit_response);
         }
     }
 
-//    private void handleCreditRequest(Address sender) {
-//        if(sender == null) return;
-//
-//        if(Util.acquire(lock)) {
-//            long credit_response=0;
-//            try {
-//                Long old_credit=(Long)received.get(sender);
-//                if(old_credit != null) {
-//                    credit_response=max_credits - old_credit.longValue();
-//                }
-//
-//                if(credit_response > 0) {
-//                    if(trace)
-//                        log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-//                    received.put(sender, max_credits_constant);
-//                }
-//                else if(trace) {
-//                    log.trace("received credit request from " + sender + " but have no credits available");
-//                }
-//            }
-//            finally {
-//                Util.release(lock);
-//            }
-//
-//            if(credit_response > 0)
-//                sendCredit(sender, credit_response);
-//        }
-//    }
+    private void handleCreditRequest(Address sender, Long sender_credit) {
+        if(sender == null) return;
+
+        if(Util.acquire(lock)) {
+            long credit_response=0;
+            try {
+                Long old_credit=(Long)received.get(sender);
+                if(old_credit != null) {
+                    credit_response=max_credits - old_credit.longValue();
+                }
+
+                if(credit_response > 0) {
+                    if(trace)
+                        log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
+                    received.put(sender, max_credits_constant);
+                    pending_requesters.remove(sender);
+                }
+                else if (pending_requesters.contains(sender)) {
+                   credit_response = max_credits - sender_credit.longValue();
+                   received.put(sender, max_credits_constant);
+                   pending_requesters.remove(sender);
+                   if (warn)
+                      log.warn("Received two credit requests from " + sender + 
+                            " without any intervening messages; sending " + credit_response + " credits");
+                }
+                else {
+                    pending_requesters.add(sender);
+                    if (trace)
+                       log.trace("received credit request from " + sender + " but have no credits available");
+                }
+            }
+            finally {
+                Util.release(lock);
+            }
+
+            if(credit_response > 0)
+                sendCredit(sender, credit_response);
+        }
+    }
 
 
     /**
@@ -660,15 +715,23 @@ public class FC extends Protocol {
      * @param sender
      * todo: see if this solves Brian's deadlock problems. If not, use the (commented) method above !
      */
-    private void handleCreditRequest(Address sender) {
-        if(sender == null) {
-            if(warn)
-                log.warn("sender is null, not able to send credits");
-            return;
-        }
-        received.put(sender, max_credits_constant);
-        sendCredit(sender, max_credits);
-    }
+//    private void handleCreditRequest(Address sender) {
+//        if(sender == null) {
+//            if(warn)
+//                log.warn("sender is null, not able to send credits");
+//            return;
+//        }
+//        
+//        if(trace) {
+//           Long recL = (Long) received.get(sender);
+//           long rec = recL == null ? 0 : max_credits - recL.longValue();
+//           log.trace("received credit request from " + sender + ": sending " + 
+//                      max_credits + " credits: had received " + rec + " bytes");
+//        }
+//        
+//        received.put(sender, max_credits_constant);
+//        sendCredit(sender, max_credits);
+//    }
 
 
     private void sendCredit(Address dest, long credit) {
@@ -688,8 +751,9 @@ public class FC extends Protocol {
      * milliseconds ago), then we discard the request. This ensures that credit requests are not sent more frequently
      * than every max_block_time milliseconds, preventing credit request storms
      * @param dest
+     * @param sent
      */
-    private void sendCreditRequest(final Address dest) {
+    private void sendCreditRequest(final Address dest, final Long credit_balance) {
         if(max_block_time > 0) {
             // This call is made with the lock released, so ensure the get/put is atomic
             long now=System.currentTimeMillis();
@@ -701,9 +765,9 @@ public class FC extends Protocol {
         }
 
         if(trace)
-            log.trace("sending credit request to " + dest);
+            log.trace("sending credit request to " + dest + "; balance=" + credit_balance);
 
-        Message msg=new Message(dest, null, null);
+        Message msg=new Message(dest, null, credit_balance);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         passDown(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
