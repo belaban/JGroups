@@ -29,7 +29,7 @@ import java.util.Map.Entry;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.53.2.8 2007/04/20 06:48:49 bstansberry Exp $
+ * @version $Id: FC.java,v 1.53.2.9 2007/04/20 11:40:56 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -63,7 +63,7 @@ public class FC extends Protocol {
      * be received before continuing sending
      */
     private long max_credits=500000;
-    private Long max_credits_constant;
+    private Long max_credits_constant=new Long(max_credits);
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
@@ -400,8 +400,8 @@ public class FC extends Protocol {
                         case FcHeader.CREDIT_REQUEST:
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
-                            Long sent = (Long) msg.getObject();
-                            handleCreditRequest(sender, sent);
+                            Long sent_credits = (Long) msg.getObject();
+                            handleCreditRequest(sender, sent_credits);
                             break;
                         default:
                             log.error("header type " + hdr.type + " not known");
@@ -751,7 +751,7 @@ public class FC extends Protocol {
      * milliseconds ago), then we discard the request. This ensures that credit requests are not sent more frequently
      * than every max_block_time milliseconds, preventing credit request storms
      * @param dest
-     * @param sent
+     * @param credit_balance
      */
     private void sendCreditRequest(final Address dest, final Long credit_balance) {
         if(max_block_time > 0) {
