@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.20 2005/08/26 11:32:44 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.20.10.1 2007/04/20 13:21:01 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -67,9 +67,9 @@ public class AckReceiverWindow {
             Long key=new Long(next_to_remove);
             retval=(Message)msgs.remove(key);
             if(retval != null) {
-                if(log.isTraceEnabled())
-                    log.trace("removed seqno=" + next_to_remove);
                 next_to_remove++;
+                if(log.isTraceEnabled())
+                    log.trace("removed seqno=" + key);
             }
         }
         return retval;
