@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.30.2.4 2007/03/08 10:19:56 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.30.2.5 2007/04/23 10:15:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -926,7 +926,7 @@ public class RequestCorrelator {
                         call_stack.set(new_stack);
                     }
                     public void resetThreadLocal() {
-                        call_stack.remove();
+                        call_stack.set(null);
                     }
                 });
         }
