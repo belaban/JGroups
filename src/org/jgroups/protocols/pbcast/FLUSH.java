@@ -703,11 +703,11 @@ public class FLUSH extends Protocol
          {
             m = new Message(flushCoordinator);
          }
-      }
-
-      if (log.isDebugEnabled())
-         log.debug("At " + localAddress + " FLUSH_OK from " + address + ",completed " 
-               + flushOkCompleted + ",  flushOkSet " + flushOkSet.toString());
+         
+         if (log.isDebugEnabled())
+             log.debug("At " + localAddress + " FLUSH_OK from " + address + ",completed " 
+                   + flushOkCompleted + ",  flushOkSet " + flushOkSet.toString());
+      }      
 
       if (flushOkCompleted)
       {
@@ -732,11 +732,11 @@ public class FLUSH extends Protocol
          TreeSet membersCopy = new TreeSet(currentView.getMembers());
          membersCopy.removeAll(suspected);
          stopFlushOkCompleted = stopFlushOkSet.containsAll(membersCopy);
-      }
-
-      if (log.isDebugEnabled())
-         log.debug("At " + localAddress + " STOP_FLUSH_OK from " + address + ",completed " + stopFlushOkCompleted
-               + ",  stopFlushOkSet " + stopFlushOkSet.toString());
+         
+         if (log.isDebugEnabled())
+             log.debug("At " + localAddress + " STOP_FLUSH_OK from " + address + ",completed " + stopFlushOkCompleted
+                   + ",  stopFlushOkSet " + stopFlushOkSet.toString());
+      }      
 
       if (stopFlushOkCompleted)
       {         
@@ -772,12 +772,12 @@ public class FLUSH extends Protocol
       {
          flushCompletedSet.add(address);
          flushCompleted = flushCompletedSet.containsAll(flushMembers);
-      }
-
-      if (log.isDebugEnabled())
-         log.debug("At " + localAddress + " FLUSH_COMPLETED from " + address 
-               + ",completed " + flushCompleted + ",flushCompleted "
-               + flushCompletedSet.toString());
+         
+         if (log.isDebugEnabled())
+             log.debug("At " + localAddress + " FLUSH_COMPLETED from " + address 
+                   + ",completed " + flushCompleted + ",flushCompleted "
+                   + flushCompletedSet.toString());
+      }      
 
       if (flushCompleted)
       {
@@ -805,6 +805,10 @@ public class FLUSH extends Protocol
          {
             m = new Message(flushCoordinator);
          }
+         
+         if (log.isDebugEnabled())
+             log.debug("Suspect is " + address + ",completed " + flushOkCompleted + ",  flushOkSet " + flushOkSet
+                   + " flushMembers " + flushMembers);
       }
       if (flushOkCompleted)
       {
@@ -812,10 +816,7 @@ public class FLUSH extends Protocol
          passDown(new Event(Event.MSG, m));
          if (log.isDebugEnabled())
             log.debug(localAddress + " sent FLUSH_COMPLETED message to " + flushCoordinator);
-      }
-      if (log.isDebugEnabled())
-         log.debug("Suspect is " + address + ",completed " + flushOkCompleted + ",  flushOkSet " + flushOkSet
-               + " flushMembers " + flushMembers);
+      }      
    }  
    
    private static class FlushPhase
