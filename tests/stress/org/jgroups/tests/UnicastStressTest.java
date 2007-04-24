@@ -5,6 +5,7 @@ import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.util.Util;
 
 import java.util.Vector;
 import java.util.concurrent.CyclicBarrier;
@@ -14,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Tests UNICAST by sending anycast messages via an RpcDispatcher
  * @author Bela Ban
- * @version $Id: UnicastStressTest.java,v 1.1 2007/04/24 11:35:35 belaban Exp $
+ * @version $Id: UnicastStressTest.java,v 1.2 2007/04/24 12:27:11 belaban Exp $
  */
 public class UnicastStressTest {
     int num_channels=6;
@@ -28,10 +29,11 @@ public class UnicastStressTest {
     private RpcDispatcher[] dispatchers;
     private Receiver[]      receivers;
 
-    final AtomicLong msgs_received=new AtomicLong(0);
+    final AtomicInteger msgs_received=new AtomicInteger(0);
     final AtomicLong bytes_received=new AtomicLong(0);
 
-    final CyclicBarrier barrier;
+    final CyclicBarrier start_barrier;
+    final CyclicBarrier terminate_barrier;
 
 
     public UnicastStressTest(String props, int num_channels, int num_threads, int num_msgs, int msg_size, int buddies) {
@@ -41,8 +43,9 @@ public class UnicastStressTest {
         this.num_msgs=num_msgs;
         this.msg_size=msg_size;
         this.buddies=buddies;
-        barrier=new CyclicBarrier(num_channels * num_threads +1);
-        if(buddies >= num_channels)
+        start_barrier=new CyclicBarrier(num_channels * num_threads +1);
+        terminate_barrier=new CyclicBarrier(num_channels +1);
+        if(buddies > num_channels)
             throw new IllegalArgumentException("buddies needs to be smaller than number of channels");
     }
 
@@ -51,11 +54,13 @@ public class UnicastStressTest {
         channels=new JChannel[num_channels];
         receivers=new Receiver[num_channels];
         dispatchers=new RpcDispatcher[num_channels];
+        long start, stop;
 
         int num_expected_msgs=num_threads * num_msgs * buddies;
+        int num_total_msgs=num_channels * num_threads * num_msgs; // over all channels
         for(int i=0; i < channels.length; i++) {
             channels[i]=new JChannel(props);
-            receivers[i]=new Receiver(barrier, bytes_received, msgs_received, num_expected_msgs);
+            receivers[i]=new Receiver(terminate_barrier, bytes_received, msgs_received, num_expected_msgs, num_total_msgs);
             dispatchers[i]=new RpcDispatcher(channels[i], null, null, receivers[i]);
             channels[i].connect("x");
         }
@@ -70,13 +75,21 @@ public class UnicastStressTest {
                         " only " + members.size() + " (view: " + view + ")");
             }
             Vector<Address> tmp=pickBuddies(members, channel.getLocalAddress());
-            Sender sender=new Sender(barrier, msg_size, num_msgs, dispatchers[i], tmp);
-            sender.start(); // will wait on barrier
+
+            for(int j=0; j < num_threads; j++) {
+                Sender sender=new Sender(start_barrier, msg_size, num_msgs, dispatchers[i], channel.getLocalAddress(), tmp);
+                sender.start(); // will wait on barrier
+            }
         }
 
-        barrier.await(); // signals all senders to start
+        System.out.println("sending " + num_total_msgs + " msgs with " + num_threads + " threads over " + num_channels + " channels");
 
-        barrier.await(); // when all receivers have received all messages
+        start_barrier.await(); // signals all senders to start
+        start=System.currentTimeMillis();
+
+
+        terminate_barrier.await(); // when all receivers have received all messages
+        stop=System.currentTimeMillis();
 
         for(int i=0; i < dispatchers.length; i++) {
             dispatchers[i].stop();
@@ -84,10 +97,25 @@ public class UnicastStressTest {
         for(int i=channels.length -1; i >= 0; i--) {
             channels[i].close();
         }
+
+        printStats(stop - start);
     }
 
-    private Vector pickBuddies(Vector<Address> members, Address local_addr) {
-        Vector retval=new Vector();
+    private void printStats(long time) {
+        for(int i=0; i < receivers.length; i++) {
+            System.out.println("receiver #" + (i+1) + ": " + receivers[i].getNumReceivedMessages());
+        }
+        System.out.println("total received messages for " + num_channels + " channels: " + msgs_received.get());
+        System.out.println("total bytes received by " + num_channels + " channels: " + Util.printBytes(bytes_received.get()));
+        System.out.println("time: " + time + " ms");
+        double msgs_per_sec=msgs_received.get() / (time /1000.0);
+        double throughput=bytes_received.get() / (time / 1000.0);
+        System.out.println("Message rate: " + msgs_per_sec + " msgs/sec");
+        System.out.println("Throughput: " + Util.printBytes(throughput) + " / sec");
+    }
+
+    private Vector<Address> pickBuddies(Vector<Address> members, Address local_addr) {
+        Vector<Address> retval=new Vector<Address>();
         int index=members.indexOf(local_addr);
         if(index < 0)
             return null;
@@ -101,26 +129,34 @@ public class UnicastStressTest {
 
 
     public static class Receiver {
-        final AtomicLong msgs;
+        final AtomicInteger msgs;
         final AtomicLong bytes;
-        final int num_expected_msgs;
+        final int num_expected_msgs, num_total_msgs, print;
         final CyclicBarrier barrier;
         final AtomicInteger num_received_msgs=new AtomicInteger(0);
 
 
-        public Receiver(CyclicBarrier barrier, AtomicLong bytes, AtomicLong msgs, int num_expected_msgs) {
+        public Receiver(CyclicBarrier barrier, AtomicLong bytes, AtomicInteger msgs, int num_expected_msgs, int num_total_msgs) {
             this.barrier=barrier;
             this.bytes=bytes;
             this.msgs=msgs;
             this.num_expected_msgs=num_expected_msgs;
+            this.num_total_msgs=num_total_msgs;
+            print=num_total_msgs / 10;
         }
 
+        public int getNumReceivedMessages() {return num_received_msgs.get();}
 
         public void receive(byte[] data) {
             msgs.incrementAndGet();
             bytes.addAndGet(data.length);
 
-            if(num_received_msgs.incrementAndGet() >= num_expected_msgs) {
+            int count=num_received_msgs.incrementAndGet();
+            if(count % print == 0) {
+                System.out.println("received " + count + " msgs");
+            }
+            
+            if((count=num_received_msgs.get()) >= num_expected_msgs) {
                 try {
                     barrier.await();
                 }
@@ -139,12 +175,13 @@ public class UnicastStressTest {
         private final Vector buddies;
 
 
-        public Sender(CyclicBarrier barrier, int msg_size, int num_msgs, RpcDispatcher disp, Vector buddies) {
+        public Sender(CyclicBarrier barrier, int msg_size, int num_msgs, RpcDispatcher disp, Address local_addr, Vector buddies) {
             this.barrier=barrier;
             this.msg_size=msg_size;
             this.num_msgs=num_msgs;
             this.disp=disp;
             this.buddies=buddies;
+            setName("Sender (" + local_addr + " --> " + buddies + ")");
         }
 
         public void run() {
