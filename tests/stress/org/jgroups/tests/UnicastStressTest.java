@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicLong;
 /**
  * Tests UNICAST by sending anycast messages via an RpcDispatcher
  * @author Bela Ban
- * @version $Id: UnicastStressTest.java,v 1.2 2007/04/24 12:27:11 belaban Exp $
+ * @version $Id: UnicastStressTest.java,v 1.3 2007/04/24 13:57:19 belaban Exp $
  */
 public class UnicastStressTest {
     int num_channels=6;
@@ -237,6 +237,7 @@ public class UnicastStressTest {
                 continue;
             }
             help();
+            return;
         }
 
         new UnicastStressTest(props, num_channels, num_threads, num_msgs, msg_size, buddies).start();
