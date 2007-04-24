@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: UNICASTMBean.java,v 1.7.10.1 2007/04/20 12:25:55 belaban Exp $
+ * @version $Id: UNICASTMBean.java,v 1.7.10.2 2007/04/24 08:26:14 belaban Exp $
  */
 public interface UNICASTMBean extends ProtocolMBean {
     String getLocalAddress();
@@ -17,6 +17,7 @@ public interface UNICASTMBean extends ProtocolMBean {
     long getAcksSent();
     long getAcksReceived();
     long getXmitRequestsReceived();
-    int getUnackedMessages();
+    int getNumUnackedMessages();
+    String getUnackedMessages();
     int getNumberOfMessagesInReceiveWindows();
 }
