@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.78 2007/03/15 11:18:51 belaban Exp $
+// $Id: UNICAST.java,v 1.79 2007/04/24 08:23:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -495,6 +495,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         Entry    entry;
+        AckReceiverWindow win;
         synchronized(connections) {
             entry=connections.get(sender);
             if(entry == null) {
@@ -503,11 +504,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 if(trace)
                     log.trace(local_addr + ": created new connection for dst " + sender);
             }
-            if(entry.received_msgs == null)
-                entry.received_msgs=new AckReceiverWindow(DEFAULT_FIRST_SEQNO);
+            win=entry.received_msgs;
+            if(win == null) {
+                win=new AckReceiverWindow(DEFAULT_FIRST_SEQNO);
+                entry.received_msgs=win;
+            }
         }
 
-        boolean added=entry.received_msgs.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
+        boolean added=win.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
@@ -526,8 +530,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
-        synchronized(entry) {
-            while((m=entry.received_msgs.remove()) != null) {
+        synchronized(win) { // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
+            while((m=win.remove()) != null) {
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
                     continue;
