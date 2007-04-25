@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.20.10.2 2007/04/24 08:27:03 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.20.10.3 2007/04/25 02:25:08 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -71,7 +71,7 @@ public class AckReceiverWindow {
                 if(log.isTraceEnabled())
                     log.trace("removed seqno=" + key);
             }
-                }
+        }
         return retval;
     }
 
