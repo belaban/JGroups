@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.10.10.1 2007/04/25 06:27:57 belaban Exp $
+// $Id: Retransmitter.java,v 1.10.10.2 2007/04/25 07:20:13 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.10.10.1 $
+ * @version $Revision: 1.10.10.2 $
  */
 public class Retransmitter {
 
@@ -314,7 +314,7 @@ public class Retransmitter {
                     else
                         bounds[0]++;
                     if(i == 0)
-                        low=list.size() == 0 ? high + 1 : ((long[])list.get(i))[0];
+                        low=list.isEmpty()? high + 1 : ((long[])list.get(i))[0];
                 }
                 else if(seqno == bounds[1]) {
                     bounds[1]--;
