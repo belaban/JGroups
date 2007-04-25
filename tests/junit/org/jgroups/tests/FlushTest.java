@@ -38,7 +38,7 @@ import EDU.oswego.cs.dl.util.concurrent.Semaphore;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.16.2.1 2006/12/04 22:45:49 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.16.2.2 2007/04/25 15:24:21 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -349,7 +349,7 @@ public class FlushTest extends ChannelTestBase
          randomRecv.cleanup();
          
          //let the view propagate and verify related asserts
-         sleepThread(2000);
+         sleepThread(5000);
          closeAssert.verify(channels);
          
 
