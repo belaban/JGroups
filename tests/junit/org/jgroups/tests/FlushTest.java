@@ -43,7 +43,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.30 2007/04/05 07:06:32 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.31 2007/04/25 20:10:19 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -472,7 +472,7 @@ public class FlushTest extends ChannelTestBase
          randomRecv.cleanup();
          
          //let the view propagate and verify related asserts
-         sleepThread(2000);
+         sleepThread(5000);
          closeAssert.verify(channels);
          
 
