@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
@@ -40,7 +41,7 @@ import java.util.*;
 public class FLUSH extends Protocol {
 	public static final String NAME = "FLUSH";
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private View currentView;
 
 	private Address localAddress;
@@ -50,22 +51,22 @@ public class FLUSH extends Protocol {
 	 * coordinator is the group coordinator For state transfer flush coordinator
 	 * is the state requesting member
 	 */
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private Address flushCoordinator;
 
-	// GuardedBy ("sharedLock")
-	private final Collection<Address> flushMembers;
+	@GuardedBy ("sharedLock")
+	private final List<Address> flushMembers;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private final Set<Address> flushOkSet;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private final Map<Address, Digest> flushCompletedMap;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private final Set<Address> stopFlushOkSet;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private final Set<Address> suspected;
 
 	private final Object sharedLock = new Object();
@@ -76,7 +77,7 @@ public class FLUSH extends Protocol {
 	 * Indicates if FLUSH.down() is currently blocking threads Condition
 	 * predicate associated with blockMutex
 	 */
-	// GuardedBy ("blockMutex")
+	@GuardedBy ("blockMutex")
 	private boolean isBlockingFlushDown = true;
 
 	/**
@@ -85,10 +86,10 @@ public class FLUSH extends Protocol {
 	 */
 	private long timeout = 8000;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private boolean receivedFirstView = false;
 
-	// GuardedBy ("sharedLock")
+	@GuardedBy ("sharedLock")
 	private boolean receivedMoreThanOneView = false;
 
 	private long startFlushTime;
@@ -101,8 +102,10 @@ public class FLUSH extends Protocol {
 
 	private final Promise flush_promise = new Promise();
 
+	@GuardedBy ("sharedLock")
 	private final FlushPhase flushPhase = new FlushPhase();
 
+	@GuardedBy ("sharedLock")
 	private final List<Address> reconcileOks = new ArrayList<Address>();
 
 	public FLUSH() {
@@ -178,12 +181,12 @@ public class FLUSH extends Protocol {
 	}
 
 	public boolean startFlush(long timeout) {
-		return startFlush(new Event(Event.SUSPEND), timeout, 5);
+		return startFlush(new Event(Event.SUSPEND), timeout, 5, false);
 	}
 
-	private boolean startFlush(Event evt, long timeout, int numberOfAttempts) {
+	private boolean startFlush(Event evt, long timeout, int numberOfAttempts, boolean isRetry) {
 		boolean successfulFlush = false;
-		if (!flushPhase.isFlushInProgress()) {
+		if (!flushPhase.isFlushInProgress() || isRetry) {
 			flush_promise.reset();
 			View v = (View) evt.getArg();
 			if (log.isDebugEnabled())
@@ -210,7 +213,7 @@ public class FLUSH extends Protocol {
 						+ numberOfAttempts);
 
 			Util.sleep(backOffSleepTime * 1000);
-			successfulFlush = startFlush(evt, timeout, --numberOfAttempts);
+			successfulFlush = startFlush(evt, timeout, --numberOfAttempts, true);
 		}
 		return successfulFlush;
 	}
@@ -244,7 +247,7 @@ public class FLUSH extends Protocol {
 			break;
 
 		case Event.SUSPEND:
-			return startFlush(evt, 4000, 5);
+			return startFlush(evt, 4000, 5, false);
 
 		case Event.RESUME:
 			onResume();
@@ -348,6 +351,27 @@ public class FLUSH extends Protocol {
 				return null;
 			}
 			break;
+			
+		case Event.TMP_VIEW:					
+			/*
+			 * April 25, 2007
+			 * 
+			 * Accomodating current NAKACK (1.127)
+			 * 
+			 * Updates field currentView of a leaving coordinator.
+			 * Leaving coordinator, after it sends out the view,
+			 * does not need to participate in second flush phase.
+			 * 
+			 * see onStopFlush();
+			 * 
+			 * TODO: revisit if still needed post NAKACK 1.127
+			 *  
+			 */
+			View tmpView = (View) evt.getArg();
+			if(!tmpView.containsMember(localAddress)){
+				onViewChange(tmpView);
+			}
+			break;					
 
 		case Event.SET_LOCAL_ADDRESS:
 			localAddress = (Address) evt.getArg();
@@ -358,7 +382,7 @@ public class FLUSH extends Protocol {
 			break;
 
 		case Event.SUSPEND:
-			return startFlush(evt, 4000, 5);
+			return startFlush(evt, 4000, 5, false);
 
 		case Event.RESUME:
 			onResume();
@@ -416,10 +440,13 @@ public class FLUSH extends Protocol {
 			Address flushRequester = msg.getSrc();
 			Address coordinator = null;
 			synchronized (sharedLock) {
-				coordinator = flushCoordinator;
+				if(flushCoordinator != null)
+					coordinator = flushCoordinator;
+				else
+					coordinator = flushRequester;
 			}
 
-			if (coordinator == null || flushRequester.compareTo(coordinator) < 0) {
+			if (flushRequester.compareTo(coordinator) < 0) {
 				rejectFlush(fh.viewID, coordinator);
 				if (log.isDebugEnabled()) {
 					log.debug("Rejecting flush at " + localAddress
@@ -430,12 +457,19 @@ public class FLUSH extends Protocol {
 				synchronized (sharedLock) {
 					flushCoordinator = flushRequester;
 				}
-			} else {
+			} else if (flushRequester.compareTo(coordinator) > 0)  {
 				rejectFlush(fh.viewID, flushRequester);
 				if (log.isDebugEnabled()) {
 					log.debug("Rejecting flush at " + localAddress
-							+ " to flush requester " + flushRequester);
+							+ " to flush requester " + flushRequester + " coordinator is " + coordinator);
 				}
+			}
+			else if (flushRequester.equals(coordinator)){
+				if (log.isDebugEnabled()) {
+					log.debug("Accepting flush at " + localAddress
+							+ ", proceeding with flush");
+				}
+				onStartFlush(msg.getSrc(), fh);
 			}
 		} else if (oldPhase == FlushPhase.SECOND_PHASE) {
 			Address flushRequester = msg.getSrc();
@@ -524,15 +558,31 @@ public class FLUSH extends Protocol {
 			if (numberOfFlushes > 0) {
 				averageFlushDuration = totalTimeInFlush / (double) numberOfFlushes;
 			}
+		}	
+		
+		/*
+		 * April 25, 2007
+		 * 
+		 * Accomodating current NAKACK (1.127)
+		 *
+		 * ack this STOP_FLUSH only if we are surviving member
+		 * otherwise we get runtime exception from NAKACK
+		 * 
+		 * TODO: revisit if still needed post NAKACK 1.127 
+		 *  
+		 */
+		boolean amISurvivingMember = false;		
+		synchronized(sharedLock){
+			amISurvivingMember = currentView.containsMember(localAddress);					
 		}
-		// ack this STOP_FLUSH
-		Message msg = new Message(null, localAddress, null);
-		msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK,currentViewId()));
-		down_prot.down(new Event(Event.MSG, msg));
-
-		if (log.isDebugEnabled())
-			log.debug("Received STOP_FLUSH and sent STOP_FLUSH_OK from "
-					+ localAddress);
+		if(amISurvivingMember){
+			Message msg = new Message(null, localAddress, null);
+			msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK,currentViewId()));		
+			down_prot.down(new Event(Event.MSG, msg));			
+			if (log.isDebugEnabled())
+				log.debug("Received STOP_FLUSH and sent STOP_FLUSH_OK from "
+						+ localAddress);
+		}
 	}
 
 	private void onSuspend(View view) {
@@ -555,8 +605,8 @@ public class FLUSH extends Protocol {
 		} else {
 			down_prot.down(new Event(Event.MSG, msg));
 			if (log.isDebugEnabled())
-				log.debug("Received SUSPEND at " + localAddress
-						+ ", sent START_FLUSH to " + participantsInFlush);
+				log.debug("Flush coordinator " + localAddress
+						+ " is starting FLUSH with participants " + participantsInFlush);
 		}
 	}
 
@@ -607,12 +657,11 @@ public class FLUSH extends Protocol {
 			if (flushOkCompleted) {
 				m = new Message(flushCoordinator);
 			}
-		}
-
-		if (log.isDebugEnabled())
-			log.debug("At " + localAddress + " FLUSH_OK from " + address
-					+ ",completed " + flushOkCompleted + ",  flushOkSet "
-					+ flushOkSet.toString());
+			if (log.isDebugEnabled())
+				log.debug("At " + localAddress + " FLUSH_OK from " + address
+						+ ",completed " + flushOkCompleted + ",  flushOkSet "
+						+ flushOkSet);	
+		}		
 
 		if (flushOkCompleted && amIParticipant) {
 			synchronized (blockMutex) {
@@ -622,11 +671,12 @@ public class FLUSH extends Protocol {
 			FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_COMPLETED,viewID);
 			fh.addDigest(digest);
 			m.putHeader(getName(), fh);
-			down_prot.down(new Event(Event.MSG, m));
 			if (log.isDebugEnabled())
 				log.debug(localAddress
-						+ " is blocking FLUSH.down(). Sent FLUSH_COMPLETED message to "
+						+ " is blocking FLUSH.down(). Sending FLUSH_COMPLETED message to "
 						+ flushCoordinator);
+			down_prot.down(new Event(Event.MSG, m));
+			
 		}
 	}
 
@@ -638,23 +688,23 @@ public class FLUSH extends Protocol {
 			TreeSet<Address> membersCopy = new TreeSet<Address>(currentView.getMembers());
 			membersCopy.removeAll(suspected);
 			stopFlushOkCompleted = stopFlushOkSet.containsAll(membersCopy);
-		}
-
-		if (log.isDebugEnabled())
-			log.debug("At " + localAddress + " STOP_FLUSH_OK from " + address
-					+ ",completed " + stopFlushOkCompleted
-					+ ",  stopFlushOkSet " + stopFlushOkSet.toString());
+			
+			if (log.isDebugEnabled())
+				log.debug("At " + localAddress + " STOP_FLUSH_OK from " + address
+						+ ",completed " + stopFlushOkCompleted
+						+ ",  stopFlushOkSet " + stopFlushOkSet);
+		}		
 
 		if (stopFlushOkCompleted) {
 			synchronized (sharedLock) {
+				flushPhase.transitionToStart();
 				flushCompletedMap.clear();
 				flushOkSet.clear();
 				stopFlushOkSet.clear();
 				flushMembers.clear();
 				suspected.clear();
-				flushCoordinator = null;
-			}
-			flushPhase.transitionToStart();
+				flushCoordinator = null;			
+			}			
 
 			if (log.isDebugEnabled())
 				log.debug("At " + localAddress
@@ -670,54 +720,56 @@ public class FLUSH extends Protocol {
 
 	private void onFlushCompleted(Address address, Digest digest) {
 		boolean flushCompleted = false;
+		Message msg = null;
+		boolean needsReconciliationPhase = false;		
 		synchronized (sharedLock) {
 			flushCompletedMap.put(address, digest);
 			if (flushCompletedMap.size() >= flushMembers.size()) {
 				flushCompleted = flushCompletedMap.keySet().containsAll(
 						flushMembers);
 			}
-		}
-
-		if (log.isDebugEnabled())
-			log.debug("At " + localAddress + " FLUSH_COMPLETED from " + address
-					+ ",completed " + flushCompleted + ",flushCompleted "
-					+ flushCompletedMap.keySet());
-
-		if (flushCompleted) {
-			if (hasVirtualSynchronyGaps()) {
-				Digest d = findHighestSequences();
-				Message msg = new Message();
-				msg.setFlag(Message.OOB);
-				synchronized (sharedLock) {
-					FlushHeader fh = new FlushHeader(
-							FlushHeader.FLUSH_RECONCILE, currentViewId(),
-							flushMembers);
-					reconcileOks.clear();
-					fh.addDigest(d);
-					msg.putHeader(getName(), fh);
-				}
-
+			
+			if (log.isDebugEnabled())
+				log.debug("At " + localAddress + " FLUSH_COMPLETED from " + address
+						+ ",completed " + flushCompleted + ",flushCompleted "
+						+ flushCompletedMap.keySet());
+			
+			needsReconciliationPhase = flushCompleted && hasVirtualSynchronyGaps();
+			if (needsReconciliationPhase){
+				
+				Digest d = findHighestSequences();			
+				msg = new Message();
+				msg.setFlag(Message.OOB);				
+				FlushHeader fh = new FlushHeader(
+						FlushHeader.FLUSH_RECONCILE, currentViewId(),
+						flushMembers);
+				reconcileOks.clear();
+				fh.addDigest(d);
+				msg.putHeader(getName(), fh);
+				
 				if (log.isInfoEnabled())
 					log.info("Reconciling flush mebers due to virtual synchrony gap, digest is "
 									+ d + " flush members are " + flushMembers);
-
-				down_prot.down(new Event(Event.MSG, msg));
-			} else {
-				flush_promise.setResult(Boolean.TRUE);
-				if (log.isDebugEnabled())
-					log.debug("All FLUSH_COMPLETED received at "
-									+ localAddress);
+				
+				flushCompletedMap.clear();
 			}
-		}
+		}	
+		if(needsReconciliationPhase){
+			down_prot.down(new Event(Event.MSG, msg));
+		}else if(flushCompleted){
+			flush_promise.setResult(Boolean.TRUE);
+			if (log.isDebugEnabled())
+				log.debug("All FLUSH_COMPLETED received at "
+								+ localAddress);
+		}		
 	}
 
 	private boolean hasVirtualSynchronyGaps() {
 		ArrayList <Digest> digests = new ArrayList<Digest>();
-		synchronized (sharedLock) {
-			digests.addAll(flushCompletedMap.values());			
-		}
+		digests.addAll(flushCompletedMap.values());					
 		Digest firstDigest = digests.get(0);
-		for (Digest digest : digests) {
+		List<Digest> remainingDigests = digests.subList(1, digests.size());
+		for (Digest digest : remainingDigests) {
 			Digest diff = firstDigest.difference(digest);
 			if (diff != Digest.EMPTY_DIGEST) {
 				return true;
@@ -727,17 +779,15 @@ public class FLUSH extends Protocol {
 	}
 
 	private Digest findHighestSequences() {
-		Digest result = null;
-		synchronized (sharedLock) {
-			List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());
+		Digest result = null;		
+		List<Digest> digests = new ArrayList<Digest>(flushCompletedMap.values());
 
-            result =digests.get(0);
-			List<Digest> remainingDigests = digests.subList(1, digests.size());
+        result =digests.get(0);
+		List<Digest> remainingDigests = digests.subList(1, digests.size());
 
-			for (Digest digestG : remainingDigests) {
-				result = result.highestSequence(digestG);
-			}
-		}
+		for (Digest digestG : remainingDigests) {
+			result = result.highestSequence(digestG);
+		}		
 		return result;
 	}
 
@@ -753,6 +803,10 @@ public class FLUSH extends Protocol {
 			if (flushOkCompleted) {
 				m = new Message(flushCoordinator, localAddress, null);
 			}
+			if (log.isDebugEnabled())
+				log.debug("Suspect is " + address + ",completed "
+						+ flushOkCompleted + ",  flushOkSet " + flushOkSet
+						+ " flushMembers " + flushMembers);
 		}
 		if (flushOkCompleted) {
 			Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
@@ -763,14 +817,10 @@ public class FLUSH extends Protocol {
 			if (log.isDebugEnabled())
 				log.debug(localAddress + " sent FLUSH_COMPLETED message to "
 						+ flushCoordinator);
-		}
-		if (log.isDebugEnabled())
-			log.debug("Suspect is " + address + ",completed "
-					+ flushOkCompleted + ",  flushOkSet " + flushOkSet
-					+ " flushMembers " + flushMembers);
+		}		
 	}
 
-	private static class FlushPhase {
+	private class FlushPhase {
 		private byte phase = 0;
 
 		public static final byte START_PHASE = 0;
@@ -779,35 +829,36 @@ public class FLUSH extends Protocol {
 
 		public static final byte SECOND_PHASE = 2;
 
-		public FlushPhase() {
+		FlushPhase() {
 		}
 
-		public synchronized byte transitionToFirstPhase() {
-			byte oldPhase = phase;
-			if (oldPhase == START_PHASE) {
-				phase = FIRST_PHASE;
+		public byte transitionToFirstPhase() {
+			byte oldPhase = -1;
+			synchronized(sharedLock){
+				oldPhase = phase;
+				if(oldPhase == START_PHASE){
+					phase = FIRST_PHASE;
+				}
 			}
 			return oldPhase;
 		}
 
-		public synchronized void transitionToStart() {
-			phase = START_PHASE;
+		public void transitionToStart() {
+			synchronized(sharedLock){
+				phase = START_PHASE;
+			}
 		}
 
-		public synchronized void transitionToSecondPhase() {
-			phase = SECOND_PHASE;
+		public void transitionToSecondPhase() {
+			synchronized(sharedLock){
+				phase = SECOND_PHASE;
+			}
 		}
 
-		public synchronized boolean isInFirstPhase() {
-			return phase == FIRST_PHASE;
-		}
-
-		public synchronized boolean isInSecondPhase() {
-			return phase == SECOND_PHASE;
-		}
-
-		public synchronized boolean isFlushInProgress() {
-			return phase != START_PHASE;
+		public boolean isFlushInProgress() {
+			synchronized(sharedLock){
+				return phase != START_PHASE;
+			}
 		}
 	}
 
