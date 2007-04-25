@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.10 2005/11/03 11:42:59 belaban Exp $
+// $Id: Retransmitter.java,v 1.10.10.1 2007/04/25 06:27:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.10.10.1 $
  */
 public class Retransmitter {
 
@@ -37,8 +37,8 @@ public class Retransmitter {
     private Address              sender=null;
     private final LinkedList     msgs=new LinkedList();  // List<Entry> of elements to be retransmitted
     private RetransmitCommand    cmd=null;
-    private boolean              retransmitter_owned;
-    private TimeScheduler        retransmitter=null;
+    private boolean              timer_owned;
+    private TimeScheduler        timer=null;
     protected static final Log   log=LogFactory.getLog(Retransmitter.class);
 
 
@@ -103,7 +103,7 @@ public class Retransmitter {
         synchronized(msgs) {
             e=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
             msgs.add(e);
-            retransmitter.add(e);
+            timer.add(e);
         }
     }
 
@@ -161,9 +161,9 @@ public class Retransmitter {
         // i. If retransmitter is owned, stop it else cancel all tasks
         // ii. Clear all pending msgs
         synchronized(msgs) {
-            if(retransmitter_owned) {
+            if(timer_owned) {
                 try {
-                    retransmitter.stop();
+                    timer.stop();
                 }
                 catch(InterruptedException ex) {
                     if(log.isErrorEnabled()) log.error("failed stopping retransmitter", ex);
@@ -219,8 +219,8 @@ public class Retransmitter {
     private void init(Address sender, RetransmitCommand cmd, TimeScheduler sched, boolean sched_owned) {
         this.sender=sender;
         this.cmd=cmd;
-        retransmitter_owned=sched_owned;
-        retransmitter=sched;
+        timer_owned=sched_owned;
+        timer=sched;
     }
 
 
