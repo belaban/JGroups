@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.26.2.1 2007/03/13 14:50:51 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.26.2.2 2007/04/26 16:43:00 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -35,7 +35,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.26.2.1 2007/03/13 14:50:51 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.26.2.2 2007/04/26 16:43:00 vlada Exp $
  */
 public class DistributedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
@@ -126,12 +126,12 @@ public class DistributedHashtable extends Hashtable implements MessageListener, 
     }
 
 
-    public DistributedHashtable(JChannel channel, long state_timeout) {
+    public DistributedHashtable(Channel channel, long state_timeout) {
         this(channel, false, state_timeout);
     }
 
 
-    public DistributedHashtable(JChannel channel, boolean persistent, long state_timeout) {
+    public DistributedHashtable(Channel channel, boolean persistent, long state_timeout) {
         this.groupname = channel.getClusterName();
         this.channel = channel;
         this.persistent=persistent;
