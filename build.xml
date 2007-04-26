@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.5 2007/04/20 14:48:11 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.6 2007/04/26 21:32:06 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -65,8 +65,8 @@
 	</patternset>
 	
 	<patternset id="all.tests">	     
-		<include name="org/jgroups/tests/**Test**"/>	
-		<exclude if="junit.excludes"/>
+		<include name="org/jgroups/tests/**Test**"/>		
+		<include name="org/jgroups/blocks/**Test**"/>		
 	</patternset>
 	
 	<patternset id="junit.excludes">	     
@@ -440,7 +440,8 @@
 	        	<batchtest todir="${tmp.dir}/tests-results">
 	                <fileset dir="${junit.dir}">
 	                	<patternset refid="@{set}"/>
-	                </fileset>
+	                	<patternset refid="junit.excludes"/>
+	                </fileset>	           	
 	            </batchtest>	        	
 	        </junit>
 		</sequential>	

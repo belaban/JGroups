@@ -3,12 +3,16 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.Header;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.debug.Debugger;
 
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.Vector;
 
@@ -21,14 +25,18 @@ import java.util.Vector;
  * thread will sleep for <code>n</code> milliseconds;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
+ * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.2 2006/11/17 13:39:21 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.1.14.1 2007/04/26 21:32:06 vlada Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
  
 	public static boolean USE_DEBUGGER=false;
 	 
+    public static boolean CUMMULATIVE=false;
+
+
     public static int MESSAGE_NUMBER=5 * 100;
 
     public static boolean SLEEP_BETWEEN_SENDING=false;
@@ -91,7 +99,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
         adapter1=new PullPushAdapter(channel1);
 
         if(USE_DEBUGGER) {
-            debugger1=new Debugger(channel1, "channel 1");
+            debugger1=new Debugger(channel1, CUMMULATIVE, "channel 1");
             debugger1.start();
         }
 
@@ -109,7 +117,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
             adapter2=new PullPushAdapter(channel2);
 
             if(USE_DEBUGGER) {
-                debugger2=new Debugger(channel2, "channel 2");
+                debugger2=new Debugger(channel2, CUMMULATIVE, "channel 2");
                 debugger2.start();
             }
 
@@ -343,6 +351,59 @@ public class EncryptMessageOrderTestCase extends TestCase {
         }
         assertTrue("Message ordering is incorrect - check log output",(!orderCounterFailure));
     }
+    public static class EncryptOrderTestHeader extends Header {
+    	   
+
+        long    seqno=-1;          // either reg. NAK_ACK_MSG or first_seqno in retransmissions
+      
+      
+
+        public EncryptOrderTestHeader() {}
+        
+
+
+        public EncryptOrderTestHeader(long seqno) {
+
+    	this.seqno=seqno;
+        }
+
+
+        public long size() {
+    	return 512;
+        }
+
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+    	
+    	out.writeLong(seqno);
+        }
+
+
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+    	seqno=in.readLong();
+
+        }
+
+
+        public EncryptOrderTestHeader copy() {
+    	EncryptOrderTestHeader ret=new EncryptOrderTestHeader(seqno);
+    	return ret;
+        }
+
+
+       
+
+        public String toString() {
+    	StringBuffer ret=new StringBuffer();
+    	ret.append("[ENCRYPT_ORDER_TEST: seqno=" + seqno);	
+    	ret.append(']');
+
+    	return ret.toString();
+        }
+
+    }
 
     /**
      * Main method to start a test case from the command line. Parameters are:
@@ -351,6 +412,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
      * thread will sleep for <code>n</code> milliseconds;
      * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;;
      * <li><code>-debug</code> - pop-up protocol debugger;
+     * <li><code>-cummulative</code> - debugger shows cummulative messages.
      * </ul>
      */
     public static void main(String[] args) {
@@ -367,6 +429,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
                     throw new RuntimeException("Cannot parse sleep time");
                 }
 
+                continue;
             }
             else if("-msg_num".equals(args[i])) {
                 if(!(i < args.length - 1))
@@ -379,11 +442,17 @@ public class EncryptMessageOrderTestCase extends TestCase {
                     throw new RuntimeException("Cannot parse messages number");
                 }
 
+                continue;
             }
            
             else if("-debug".equals(args[i])) {
                 USE_DEBUGGER=true;
 
+                continue;
+            }
+            else if("-cummulative".equals(args[i])) {
+                CUMMULATIVE=true;
+                continue;
             }
             else if("-help".equals(args[i])) {
                 help();
@@ -396,7 +465,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
     static void help() {
         System.out.println("EncryptOrderTest [-help] [-sleep <sleep time between sends (ms)>] " +
-                " [-msg_num <number of msgs to send>] [-debug]");
+                " [-msg_num <number of msgs to send>] [-debug [-cummulative]]");
     }
 
 }

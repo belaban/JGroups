@@ -4,7 +4,6 @@ import org.jgroups.MessageListener;
 import org.jgroups.MembershipListener;
 import org.jgroups.Channel;
 import org.jgroups.ChannelException;
-import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.Address;
@@ -15,16 +14,16 @@ import java.util.Vector;
 import java.util.Map;
 import java.util.Iterator;
 
-public class RpcDispatcherAnycastTestServerObject implements MessageListener, MembershipListener
+public class RpcDispatcherAnycastServerObject implements MessageListener, MembershipListener
 {
    int i = 0;
    private Channel c;
    private RpcDispatcher d;
 
-   public RpcDispatcherAnycastTestServerObject() throws ChannelException
+   public RpcDispatcherAnycastServerObject(Channel channel) throws ChannelException
    {
-      c = new JChannel();
-      c.connect("TEST");
+      c = channel;
+      c.connect("test");
       d = new RpcDispatcher(c, this, this, this);
    }
 
