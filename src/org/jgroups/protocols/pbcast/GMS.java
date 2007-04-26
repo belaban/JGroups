@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.100 2007/04/26 14:31:18 belaban Exp $
+ * @version $Id: GMS.java,v 1.101 2007/04/26 14:32:52 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1173,7 +1173,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.100 2007/04/26 14:31:18 belaban Exp $
+     * @version $Id: GMS.java,v 1.101 2007/04/26 14:32:52 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1285,7 +1285,7 @@ public class GMS extends Protocol {
         public void run() {
             long start, stop, wait_time;
             List<Request> requests=new LinkedList<Request>();
-            while(true && Thread.currentThread().equals(thread)) {
+            while(Thread.currentThread().equals(thread)) {
                 requests.clear();
                 try {
                     boolean keepGoing=false;
