@@ -80,7 +80,7 @@ public class ChannelTestBase extends TestCase
       super(name);
    }
 
-   public void setUp() throws Exception
+   protected void setUp() throws Exception
    {
       super.setUp();     
       MUX_CHANNEL_CONFIG = System.getProperty("mux.conf", MUX_CHANNEL_CONFIG);
@@ -107,7 +107,7 @@ public class ChannelTestBase extends TestCase
       }             
    }
 
-   public void tearDown() throws Exception
+   protected void tearDown() throws Exception
    {
       super.tearDown();
 
