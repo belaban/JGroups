@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.10.10.2 2007/04/25 07:20:13 belaban Exp $
+// $Id: Retransmitter.java,v 1.10.10.3 2007/04/27 06:26:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,7 +24,7 @@ import java.util.*;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.10.10.2 $
+ * @version $Revision: 1.10.10.3 $
  */
 public class Retransmitter {
 
@@ -75,7 +75,7 @@ public class Retransmitter {
      * @param cmd the retransmission callback reference
      */
     public Retransmitter(Address sender, RetransmitCommand cmd) {
-        init(sender, cmd, new TimeScheduler(SUSPEND_TIMEOUT), true);
+        init(sender, cmd, new TimeScheduler(), true);
     }
 
 

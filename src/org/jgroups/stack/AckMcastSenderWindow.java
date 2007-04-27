@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindow.java,v 1.10 2006/01/14 14:00:42 belaban Exp $
+// $Id: AckMcastSenderWindow.java,v 1.10.6.1 2007/04/27 06:26:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -33,7 +33,7 @@ import java.util.*;
  *
  * @author Bela Ban June 9 1999
  * @author John Georgiadis May 8 2001
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.10.6.1 $
  */
 public class AckMcastSenderWindow {
     /**
@@ -263,7 +263,7 @@ public class AckMcastSenderWindow {
      * @throws IllegalArgumentException if <code>cmd</code> is null
      */
     public AckMcastSenderWindow(RetransmitCommand cmd, long[] retransmit_intervals) {
-	init(cmd, retransmit_intervals, new TimeScheduler(SUSPEND_TIMEOUT), true);
+	init(cmd, retransmit_intervals, new TimeScheduler(), true);
     }
 
     /**
