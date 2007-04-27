@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.80 2007/04/27 07:59:19 belaban Exp $
+// $Id: UNICAST.java,v 1.81 2007/04/27 11:06:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -114,6 +114,35 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return num;
     }
 
+
+    public String getUnackedMessages() {
+        StringBuilder sb=new StringBuilder();
+        Entry e;
+        Object member;
+        synchronized(connections) {
+            for(Map.Entry<Address,Entry> entry: connections.entrySet()) {
+                member=entry.getKey();
+                e=entry.getValue();
+                sb.append(member).append(": ");
+                if(e.sent_msgs != null)
+                    sb.append(e.sent_msgs.toString()).append("\n");
+            }
+        }
+        return sb.toString();
+    }
+
+
+    public int getNumberOfMessagesInReceiveWindows() {
+        int num=0;
+        synchronized(connections) {
+            for(Entry entry: connections.values()) {
+                if(entry.received_msgs != null)
+                    num+=entry.received_msgs.size();
+            }
+        }
+        return num;
+    }
+
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=num_acks_sent=num_acks_received=0;
         num_xmit_requests_received=0;
@@ -129,6 +158,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         m.put("num_acks_sent", new Long(num_acks_sent));
         m.put("num_acks_received", new Long(num_acks_received));
         m.put("num_xmit_requests_received", new Long(num_xmit_requests_received));
+        m.put("num_unacked_msgs", new Long(getNumberOfUnackedMessages()));
+        m.put("unacked_msgs", getUnackedMessages());
+        m.put("num_msgs_in_recv_windows", new Long(getNumberOfMessagesInReceiveWindows()));
         return m;
     }
 
