@@ -5,16 +5,12 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: ProtocolMBean.java,v 1.9 2007/01/09 09:06:10 belaban Exp $
+ * @version $Id: ProtocolMBean.java,v 1.10 2007/04/27 07:59:24 belaban Exp $
  */
 public interface ProtocolMBean {
     String getName();
     String getPropertiesAsString();
     void setProperties(Properties p);
-    boolean isTrace();
-    void setTrace(boolean trace);
-    boolean isWarn();
-    void setWarn(boolean warn);
     boolean getStatsEnabled();
     void setStatsEnabled(boolean flag);
     void resetStats();

@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.19 2007/03/05 13:21:59 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.20 2007/04/27 07:59:19 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -234,7 +234,7 @@ public class VIEW_SYNC extends Protocol {
         	if(view_send_task_future == null || view_send_task_future.isDone()) {
 	            ViewSendTask view_send_task=new ViewSendTask();
 	            view_send_task_future=timer.scheduleWithDynamicInterval(view_send_task, true); // fixed-rate scheduling
-	            if(trace)
+	            if(log.isTraceEnabled())
 	                log.trace("view send task started");
         	}
         }
@@ -250,7 +250,7 @@ public class VIEW_SYNC extends Protocol {
             if(view_send_task_future != null) {
                 view_send_task_future.cancel(false);
                 view_send_task_future=null;
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("view send task stopped");
             }
         }

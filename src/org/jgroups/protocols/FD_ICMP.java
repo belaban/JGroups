@@ -20,7 +20,7 @@ import java.util.Properties;
  * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
  * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.7 2007/01/11 16:50:30 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -123,7 +123,7 @@ public class FD_ICMP extends FD {
 
         public void run() {
             if(ping_dest == null) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("ping_dest is null: members=" + members + ", pingable_mbrs=" +
                             pingable_mbrs + ", local_addr=" + local_addr);
                 return;
@@ -134,7 +134,7 @@ public class FD_ICMP extends FD {
             if(host == null)
                 throw new IllegalArgumentException("ping_dest is not of type IpAddress - FD_ICMP only works with these");
             try {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("pinging " + host + " (ping_dest=" + ping_dest + ") using interface " + intf);
                 start=System.currentTimeMillis();
                 Boolean rc=(Boolean)is_reacheable.invoke(host, new Object[]{intf, new Integer(ttl), new Integer((int)timeout)});
@@ -142,7 +142,7 @@ public class FD_ICMP extends FD {
                 num_heartbeats++;
                 if(rc.booleanValue()) { // success
                     num_tries=0;
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
                 }
                 else { // failure

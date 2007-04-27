@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.23 2007/01/15 15:47:51 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.24 2007/04/27 07:59:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -100,7 +100,7 @@ public class TCPGOSSIP extends Discovery {
                 log.error("group_addr or local_addr is null, cannot register with GossipRouter(s)");
         }
         else {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("registering " + local_addr + " under " + group_addr + " with GossipRouter");
             gossip_client.register(group_addr, local_addr);
         }
@@ -117,14 +117,14 @@ public class TCPGOSSIP extends Discovery {
             up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
         }
-        if(trace) log.trace("fetching members from GossipRouter(s)");
+        if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
         tmp_mbrs=gossip_client.getMembers(group_addr);
         if(tmp_mbrs == null || tmp_mbrs.isEmpty()) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
             up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
             return;
         }
-        if(trace) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
+        if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
 
         // 1. 'Mcast' GET_MBRS_REQ message
         hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
@@ -136,7 +136,7 @@ public class TCPGOSSIP extends Discovery {
             mbr_addr=(Address)it.next();
             copy=msg.copy();
             copy.setDest(mbr_addr);
-            if(trace) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
+            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());
             down_prot.down(new Event(Event.MSG, copy));
         }
     }

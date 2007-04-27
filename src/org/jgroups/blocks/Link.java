@@ -1,4 +1,4 @@
-// $Id: Link.java,v 1.7 2005/05/30 16:14:33 belaban Exp $
+// $Id: Link.java,v 1.8 2007/04/27 07:59:25 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -125,11 +125,11 @@ public class Link implements Runnable {
     /** Tries to send buffer across out socket. Tries to establish connection if not yet connected. */
     public boolean send(byte[] buf) {
 	if(buf == null || buf.length == 0) {
-	    if(trace) System.err.println("Link.send(): buffer is null or does not contain any data !");
+	    if(log.isTraceEnabled()) System.err.println("Link.send(): buffer is null or does not contain any data !");
 	    return false;
 	}
 	if(!established) { // will be set by ConnectionEstablisher when connection has been set up
-	    if(trace) log.error("Link.send(): connection not established, discarding message");
+	    if(log.isTraceEnabled()) log.error("Link.send(): connection not established, discarding message");
 	    return false;
 	}
 
@@ -139,7 +139,7 @@ public class Link implements Runnable {
 	    return true;
 	}
 	catch(Exception ex) {  // either IOException or EOFException (subclass if IOException)
-	    if(trace) log.error("Link.send1(): sending failed; retrying");
+	    if(log.isTraceEnabled()) log.error("Link.send1(): sending failed; retrying");
 	    return retry(buf);
 	}
     }
@@ -158,7 +158,7 @@ public class Link implements Runnable {
 		return true;
 	    }
 	    catch(Exception e) {
-		if(trace) System.out.println("Link.send2(): failed, closing connection");
+		if(log.isTraceEnabled()) System.out.println("Link.send2(): failed, closing connection");
 		closeOutgoingConnection();
 		return false;
 	    }
@@ -180,23 +180,23 @@ public class Link implements Runnable {
 
 	while(!stop) {
 	    try {
-		if(trace) System.out.println("-- WAITING for ACCEPT");
+		if(log.isTraceEnabled()) System.out.println("-- WAITING for ACCEPT");
 		incoming=srv_sock.accept();
 		instream=new DataInputStream(incoming.getInputStream());
 		peer=incoming.getInetAddress();
 		peer_port=incoming.getPort();
 
 
-		if(trace) System.out.println("-- ACCEPT: incoming is " + printSocket(incoming));
+		if(log.isTraceEnabled()) System.out.println("-- ACCEPT: incoming is " + printSocket(incoming));
 
 		
 		/** This piece of code would only accept connections from the peer address defined above. */
 		if(remote.equals(incoming.getInetAddress())) {
-		    if(trace)
+		    if(log.isTraceEnabled())
 			System.out.println("Link.run(): accepted connection from " + peer + ':' + peer_port);
 		}
 		else {
-		    if(trace) 
+		    if(log.isTraceEnabled())
 			log.error("Link.run(): rejected connection request from " +
 					   peer + ':' + peer_port + ". Address not specified as peer in link !");
 		    closeIncomingConnection();  // only close incoming connection
@@ -305,7 +305,7 @@ public class Link implements Runnable {
 		if(receiver != null) receiver.linkUp(local, local_port, remote, remote_port);
 		established=true;
 
-		if(trace) System.out.println("-- CREATE: outgoing is " + printSocket(outgoing));
+		if(log.isTraceEnabled()) System.out.println("-- CREATE: outgoing is " + printSocket(outgoing));
 
 		return true;
 	    }
@@ -339,7 +339,7 @@ public class Link implements Runnable {
 		outstream=new DataOutputStream(outgoing.getOutputStream());
 		if(receiver != null) receiver.linkUp(local, local_port, remote, remote_port);
 		established=true;
-		if(trace) System.out.println("-- CREATE: outgoing is " + printSocket(outgoing));
+		if(log.isTraceEnabled()) System.out.println("-- CREATE: outgoing is " + printSocket(outgoing));
 		return true;
 	    }
 	    catch(Exception e) {
@@ -360,7 +360,7 @@ public class Link implements Runnable {
 	    }
 	    if(outstream != null) {
 		
-		if(trace) System.out.println("-- CLOSE: outgoing is " + printSocket(outgoing));
+		if(log.isTraceEnabled()) System.out.println("-- CLOSE: outgoing is " + printSocket(outgoing));
 		
 		try {
 		    outstream.close(); // flush data before socket is closed
@@ -387,7 +387,7 @@ public class Link implements Runnable {
     synchronized void closeIncomingConnection() {
 	if(instream != null) {
 	    
-	    if(trace) System.out.println("-- CLOSE: incoming is " + printSocket(incoming));
+	    if(log.isTraceEnabled()) System.out.println("-- CLOSE: incoming is " + printSocket(incoming));
 	    
 	    try {instream.close();} catch(Exception e) {}
 	    instream=null;
@@ -521,7 +521,7 @@ public class Link implements Runnable {
 	public void run() {
 	    long  diff=0, curr_time=0, num_missed_hbs=0;
 	    
-	    if(trace) System.out.println("heartbeat to " + remote + ':' + remote_port + " started");
+	    if(log.isTraceEnabled()) System.out.println("heartbeat to " + remote + ':' + remote_port + " started");
 	    while(!stop_hb) {
 
 		if(established) {  // send heartbeats
@@ -554,7 +554,7 @@ public class Link implements Runnable {
 		    }
 
 		    if(diff >= hb_timeout) {
-			if(trace) System.out.println("###### Link.Heartbeat.run(): no heartbeat receveived for " + 
+			if(log.isTraceEnabled()) System.out.println("###### Link.Heartbeat.run(): no heartbeat receveived for " +
 						     diff + " msecs. Closing connections. #####");
 			closeConnections(); // close both incoming *and* outgoing connections
 		    }
@@ -569,7 +569,7 @@ public class Link implements Runnable {
 			    outstream=new DataOutputStream(outgoing.getOutputStream());
 			    if(receiver != null) receiver.linkUp(local, local_port, remote, remote_port);
 			    established=true;
-			    if(trace) System.out.println("-- CREATE (CE): " + printSocket(outgoing));
+			    if(log.isTraceEnabled()) System.out.println("-- CREATE (CE): " + printSocket(outgoing));
 			    continue;
 			}
 			catch(InterruptedException interrupted_ex) {
@@ -581,7 +581,7 @@ public class Link implements Runnable {
 		    }
 		}
 	    }
-	    if(trace) System.out.println("heartbeat to " + remote + ':' + remote_port + " stopped");
+	    if(log.isTraceEnabled()) System.out.println("heartbeat to " + remote + ':' + remote_port + " stopped");
 	    thread=null;
 	}
     }

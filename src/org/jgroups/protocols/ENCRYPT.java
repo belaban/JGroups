@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.34 2007/01/16 12:40:02 belaban Exp $
+// $Id: ENCRYPT.java,v 1.35 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -619,7 +619,7 @@ public class ENCRYPT extends Protocol {
 
         if (msg == null)
         {
-            if (trace)
+            if(log.isTraceEnabled())
                 log.trace("null message - passing straight up");
             passItUp(evt);
             return;
@@ -641,7 +641,7 @@ public class ENCRYPT extends Protocol {
             return;
         }
 
-        if (trace)
+        if(log.isTraceEnabled())
             log.trace("header received " + hdr);
 
 
@@ -650,7 +650,7 @@ public class ENCRYPT extends Protocol {
         {
             // if msg buffer is empty, and we didn't encrypt the entire message, just pass up
             if (!hdr.encrypt_entire_msg && ((Message)evt.getArg()).getLength() == 0) {
-                if (trace)
+                if(log.isTraceEnabled())
                     log.trace("passing up message as it has an empty buffer ");
                 passItUp(evt);
                 return;
@@ -658,7 +658,7 @@ public class ENCRYPT extends Protocol {
 
             // if queueing then pass into queue to be dealt with later
             if (queue_up){
-                if (trace)
+                if(log.isTraceEnabled())
                     log.trace("queueing up message as no session key established: " + evt.getArg());
                     upMessageQueue.put(evt);
             } else{
@@ -671,7 +671,7 @@ public class ENCRYPT extends Protocol {
                 // try and decrypt the message
                 Message tmpMsg=decryptMessage(symDecodingCipher, msg);
                 if (tmpMsg != null){
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("decrypted message " + tmpMsg);
                     passItUp(new Event(Event.MSG, tmpMsg));
                 } else {
@@ -757,7 +757,7 @@ public class ENCRYPT extends Protocol {
                 Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
 
                 if (msg != null){
-                    if (trace){
+                    if(log.isTraceEnabled()){
                         log.trace("passing up message from drain " + msg);
                     }
                     passItUp(new Event(Event.MSG, msg));
@@ -819,7 +819,7 @@ public class ENCRYPT extends Protocol {
                 log.warn("Unable to find a matching cipher in previous key map");
                 return null;
             } else{
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("decrypting using previous cipher version "+ hdr.getVersion());
                 return _decrypt(cipher, msg, hdr.encrypt_entire_msg);
             }
@@ -973,7 +973,7 @@ public class ENCRYPT extends Protocol {
                 try
                 {
                     if (queue_down){
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("queueing down message as no session key established" + evt.getArg());
                         downMessageQueue.put(evt); // queue messages if we are waiting for a new key
                     } else {

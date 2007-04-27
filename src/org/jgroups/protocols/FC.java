@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.73 2007/04/19 20:27:40 belaban Exp $
+ * @version $Id: FC.java,v 1.74 2007/04/27 07:59:18 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -264,7 +264,7 @@ public class FC extends Protocol {
     public void unblock() {
         lock.lock();
         try {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
             Map.Entry<Address, Long> entry;
@@ -405,7 +405,7 @@ public class FC extends Protocol {
                     }
                     finally {
                         if(new_credits > 0) {
-                            if(trace) log.trace("sending " + new_credits + " credits to " + sender);
+                            if(log.isTraceEnabled()) log.trace("sending " + new_credits + " credits to " + sender);
                             sendCredit(sender, new_credits);
                         }
                     }
@@ -428,7 +428,7 @@ public class FC extends Protocol {
         try {
             if(lowest_credit <= length) {
                 if(ignore_synchronous_response && ignore_thread == Thread.currentThread()) { // JGRP-465
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("Bypassing blocking to avoid deadlocking " + Thread.currentThread());
                 }
                 else {
@@ -450,7 +450,7 @@ public class FC extends Protocol {
                             List<Address> creditors_copy=new ArrayList<Address>(creditors);
                             lock.unlock();
                             try {
-                                if(trace)
+                                if(log.isTraceEnabled())
                                     log.trace("timeout occurred waiting for credits; sending credit request to " + creditors_copy);
                                 for(int i=0; i < creditors_copy.size(); i++) {
                                     sendCreditRequest(creditors_copy.get(i));
@@ -463,7 +463,7 @@ public class FC extends Protocol {
                     }
                     stop_blocking=System.currentTimeMillis();
                     long block_time=stop_blocking - start_blocking;
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("total time blocked: " + block_time + " ms");
                     total_time_blocking+=block_time;
                     last_blockings.add(new Long(block_time));
@@ -559,7 +559,7 @@ public class FC extends Protocol {
             Long old_credit=sent.get(sender);
             Long new_credit=Math.min(max_credits, new Long(old_credit.longValue() + increase.longValue()));
 
-            if(trace) {
+            if(log.isTraceEnabled()) {
                 sb=new StringBuilder();
                 sb.append("received credit from ").append(sender).append(", old credit was ").append(old_credit)
                         .append(", new credits are ").append(new_credit).append(".\nCreditors before are: ").append(creditors);
@@ -569,7 +569,7 @@ public class FC extends Protocol {
             lowest_credit=computeLowestCredit(sent);
             if(!creditors.isEmpty()) {  // we are blocked because we expect credit from one or more members
                 creditors.remove(sender);
-                if(trace) {
+                if(log.isTraceEnabled()) {
                     sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
                     log.trace(sb.toString());
                 }
@@ -627,11 +627,11 @@ public class FC extends Protocol {
             }
 
             if(credit_response > 0) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
                 received.put(sender, max_credits_constant);
             }
-            else if(trace) {
+            else if(log.isTraceEnabled()) {
                 log.trace("received credit request from " + sender + " but have no credits available");
             }
         }
@@ -675,7 +675,7 @@ public class FC extends Protocol {
             last_credit_request.put(dest, new Long(now));
         }
 
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
 
         Message msg=new Message(dest, null, null);
@@ -688,7 +688,7 @@ public class FC extends Protocol {
     private void handleViewChange(Vector mbrs) {
         Address addr;
         if(mbrs == null) return;
-        if(trace) log.trace("new membership: " + mbrs);
+        if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
 
         lock.lock();
         try {
@@ -721,7 +721,7 @@ public class FC extends Protocol {
                     creditors.remove(creditor);
             }
 
-            if(trace) log.trace("creditors are " + creditors);
+            if(log.isTraceEnabled()) log.trace("creditors are " + creditors);
             if(insufficient_credit && creditors.isEmpty()) {
                 lowest_credit=computeLowestCredit(sent);
                 insufficient_credit=false;

@@ -20,7 +20,7 @@ import java.util.concurrent.locks.*;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.4 2007/03/15 08:51:17 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.5 2007/04/27 07:59:19 belaban Exp $
  */
 
 public class BARRIER extends Protocol {
@@ -162,7 +162,7 @@ public class BARRIER extends Protocol {
             lock.unlock();
         }
 
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("barrier was closed");
 
         if(max_close_time > 0)
@@ -179,7 +179,7 @@ public class BARRIER extends Protocol {
         finally {
             lock.unlock();
         }
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("barrier was opened");
         cancelBarrierOpener(); // cancels if running
     }

@@ -1,4 +1,4 @@
-// $Id: PING.java,v 1.32 2007/01/12 14:20:49 belaban Exp $
+// $Id: PING.java,v 1.33 2007/04/27 07:59:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -196,7 +196,7 @@ public class PING extends Discovery {
                     for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
                         h=(IpAddress)hen.nextElement();
                         msg.setDest(h);
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                         down_prot.down(new Event(Event.MSG, msg.copy()));
                     }

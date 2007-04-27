@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.32 2007/01/16 14:23:33 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.33 2007/04/27 07:59:19 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -127,7 +127,7 @@ public class FRAG2 extends Protocol {
             long size=msg.getLength();
             num_sent_msgs.incrementAndGet();
             if(size > frag_size) {
-                if(trace) {
+                if(log.isTraceEnabled()) {
                     log.trace(new StringBuilder("message's buffer size is ").append(size)
                             .append(", will fragment ").append("(frag_size=").append(frag_size).append(')'));
                 }
@@ -153,7 +153,7 @@ public class FRAG2 extends Protocol {
                 //the new view doesn't contain the sender, he must have left,
                 //hence we will clear all his fragmentation tables
                 fragment_list.remove(mbr);
-                if(trace) log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+                if(log.isTraceEnabled()) log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
             }
             break;
 
@@ -226,7 +226,7 @@ public class FRAG2 extends Protocol {
             num_frags=fragments.size();
             num_sent_frags.addAndGet(num_frags);
 
-            if(trace) {
+            if(log.isTraceEnabled()) {
                 StringBuilder sb=new StringBuilder("fragmenting packet to ");
                 sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
                 sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append(']');
@@ -276,7 +276,7 @@ public class FRAG2 extends Protocol {
         assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
         if(assembled_msg != null) {
             try {
-                if(trace) log.trace("assembled_msg is " + assembled_msg);
+                if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
                 assembled_msg.setSrc(sender); // needed ? YES, because fragments have a null src !!
                 num_received_msgs.incrementAndGet();
                 up_prot.up(new Event(Event.MSG, assembled_msg));

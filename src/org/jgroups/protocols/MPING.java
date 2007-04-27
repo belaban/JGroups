@@ -21,7 +21,7 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.23 2007/03/22 06:18:25 belaban Exp $
+ * @version $Id: MPING.java,v 1.24 2007/04/27 07:59:19 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -199,7 +199,7 @@ public class MPING extends PING implements Runnable {
                 // if(addr.isLoopbackAddress())
                    // continue;
                 mcast_sock.joinGroup(tmp_mcast_addr, i);
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
                 break;
             }
@@ -211,7 +211,7 @@ public class MPING extends PING implements Runnable {
             receiver=new Thread(Util.getGlobalThreadGroup(), this, "ReceiverThread");
             receiver.setDaemon(true);
             receiver.start();
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("receiver thread started");
         }
     }
@@ -278,7 +278,7 @@ public class MPING extends PING implements Runnable {
                 closeInputStream(inp_stream);
             }
         }
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("receiver thread terminated");
     }
 
