@@ -34,13 +34,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.76 2007/04/27 11:55:26 belaban Exp $
+ * @version $Id: FC.java,v 1.77 2007/04/27 15:23:13 belaban Exp $
  */
 public class FC extends Protocol {
 
     /**
      * Map<Address,Long>: keys are members, values are credits left. For each send, the
-     * number of credits is decremented by the message size.
+     * number of credits is decremented by the message size. A HashMap rather than a ConcurrentHashMap is
+     * currently used as there might be null values
      */
     @GuardedBy("lock")
     final Map<Address, Long> sent=new HashMap<Address, Long>(11);
@@ -59,7 +60,7 @@ public class FC extends Protocol {
      * List of members from whom we expect credits
      */
     @GuardedBy("lock")
-    final List<Address> creditors=new ArrayList<Address>(11);
+    final Set<Address> creditors=new HashSet<Address>(11);
 
     /** Peers who have asked for credit that we didn't have */
     final Set<Address> pending_requesters=new HashSet<Address>(11);
@@ -429,7 +430,7 @@ public class FC extends Protocol {
 
         lock.lock();
         try {
-            if(lowest_credit <= length) { // then block and loop asking for credits until enough credits are available
+            if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
                 if(ignore_synchronous_response && ignore_thread == Thread.currentThread()) { // JGRP-465
                     if(log.isTraceEnabled())
                         log.trace("Bypassing blocking to avoid deadlocking " + Thread.currentThread());
@@ -450,13 +451,13 @@ public class FC extends Protocol {
                         if(insufficient_credit && running) {
                             // we need to send the credit requests down *without* holding the lock, otherwise we might
                             // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                            List<Address> creditors_copy=new ArrayList<Address>(creditors);
+                            Set<Address> creditors_copy=new HashSet<Address>(creditors);
                             lock.unlock();
                             try {
                                 if(log.isTraceEnabled())
                                     log.trace("timeout occurred waiting for credits; sending credit request to " + creditors_copy);
-                                for(int i=0; i < creditors_copy.size(); i++) {
-                                    sendCreditRequest(creditors_copy.get(i));
+                                for(Address creditor: creditors_copy) {
+                                    sendCreditRequest(creditor);
                                 }
                             }
                             finally {
@@ -487,7 +488,7 @@ public class FC extends Protocol {
 
     /**
      * Checks whether one member (unicast msg) or all members (multicast msg) have enough credits. Add those
-     * that don't to the creditors list
+     * that don't to the creditors list. Called with lock held
      * @param dest
      * @param length
      */
@@ -499,18 +500,14 @@ public class FC extends Protocol {
             for(Map.Entry<Address,Long> entry: sent.entrySet()) {
                 mbr=entry.getKey();
                 credits=entry.getValue();
-                if(credits.longValue() <= length) {
-                    if(!creditors.contains(mbr))
-                        creditors.add(mbr);
-                }
+                if(credits.longValue() <= length)
+                    creditors.add(mbr);
             }
         }
         else {
             credits=sent.get(dest);
-            if(credits != null && credits.longValue() <= length) {
-                if(!creditors.contains(dest))
-                    creditors.add(dest);
-            }
+            if(credits != null && credits.longValue() <= length)
+                creditors.add(dest);
         }
     }
 
@@ -572,7 +569,7 @@ public class FC extends Protocol {
                 creditors.remove(sender);
                 if(log.isTraceEnabled()) {
                     sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
-                    log.trace(sb.toString());
+                    log.trace(sb);
                 }
             }
             if(insufficient_credit && lowest_credit > 0 && creditors.isEmpty()) {
@@ -734,8 +731,7 @@ public class FC extends Protocol {
             }
 
             // remove all creditors which are not in the new view
-            for(int i=0; i < creditors.size(); i++) {
-                Address creditor=creditors.get(i);
+            for(Address creditor: creditors) {
                 if(!mbrs.contains(creditor))
                     creditors.remove(creditor);
             }
