@@ -8,17 +8,19 @@ import org.jgroups.TimeoutException;
 import org.jgroups.stack.Interval;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Util;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 
 
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.10 2007/01/26 10:18:40 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.11 2007/04/27 06:21:26 belaban Exp $
  */
 public class TimeSchedulerTest extends TestCase {
     TimeScheduler timer=null;
@@ -45,6 +47,85 @@ public class TimeSchedulerTest extends TestCase {
         }
         catch(InterruptedException e) {
         }
+    }
+
+
+    public void testCancel() throws InterruptedException {
+        for(int i=0; i < 10; i++)
+            timer.scheduleWithDynamicInterval(new OneTimeTask(1000));
+        assertEquals(10, timer.size());
+        timer.stop();
+        assertEquals(0, timer.size());
+    }
+
+
+    public void testTaskCancellationBeforeTaskHasRun() {
+        Future future;
+        StressTask task=new StressTask();
+        future=timer.scheduleWithDynamicInterval(task);
+        assertEquals(1, timer.size());
+        future.cancel(true);
+        assertEquals(1, timer.size());
+
+        Util.sleep(200);
+        int num_executions=task.getNum_executions();
+        System.out.println("number of task executions=" + num_executions);
+        assertEquals("task should never have executed as it was cancelled before execution", 0, num_executions);
+
+        timer.purge(); // removes cancelled tasks
+        assertEquals(0, timer.size());
+    }
+
+    public void testTaskCancellationAfterHasRun() {
+        Future future;
+        StressTask task=new StressTask();
+        future=timer.scheduleWithDynamicInterval(task);
+        assertEquals(1, timer.size());
+
+        Util.sleep(200); // wait until task has executed
+        future.cancel(true);
+        assertEquals(1, timer.size());
+
+        int num_executions=task.getNum_executions();
+        System.out.println("number of task executions=" + num_executions);
+        assertTrue("task should have executed at least 1 time, as it was cancelled after 200ms", num_executions >= 1);
+        timer.purge(); // removes cancelled tasks
+        assertEquals(0, timer.size());
+    }
+
+
+
+    public void testRepeatingTask() {
+        Future future;
+        System.out.println(System.currentTimeMillis() + ": adding task");
+        RepeatingTask task=new RepeatingTask(500);
+        future=timer.scheduleWithDynamicInterval(task);
+        Util.sleep(5000);
+
+        System.out.println("<<< cancelling task");
+        future.cancel(true);
+        Util.sleep(2000);
+        int num=task.getNum();
+        System.out.println("task executed " + num + " times");
+        assertTrue(num >= 9 && num < 11);
+    }
+
+    public void testStress() {
+        StressTask t;
+
+        for(int i=0; i < 1000; i++) {
+            for(int j=0; j < 1000; j++) {
+                t=new StressTask();
+                Future future=timer.scheduleWithDynamicInterval(t);
+                future.cancel(true);
+            }
+            System.out.println(i + ": " + timer.size());
+        }
+        for(int i=0; i < 10; i++) {
+            System.out.println(timer.size());
+            Util.sleep(500);
+        }
+        assertEquals(0, timer.size());
     }
 
 
@@ -282,6 +363,59 @@ public class TimeSchedulerTest extends TestCase {
 
 
 
+    static class OneTimeTask implements TimeScheduler.Task {
+        boolean done=false;
+        private long timeout=0;
+
+        OneTimeTask(long timeout) {
+            this.timeout=timeout;
+        }
+
+        public long nextInterval() {
+            return timeout;
+        }
+
+        public void run() {
+            System.out.println(System.currentTimeMillis() + ": this is MyTask running - done");
+            done=true;
+        }
+    }
+
+
+    static class RepeatingTask extends OneTimeTask {
+        int num=0;
+
+        RepeatingTask(long timeout) {
+            super(timeout);
+        }
+
+        public int getNum() {
+            return num;
+        }
+
+        public void run() {
+            System.out.println((num +1) + ": this is the repeating task");
+            num++;
+        }
+    }
+
+
+    static class StressTask implements TimeScheduler.Task {
+        boolean cancelled=false;
+        int num_executions=0;
+
+        public int getNum_executions() {
+            return num_executions;
+        }
+
+        public long nextInterval() {
+            return 50;
+        }
+
+        public void run() {
+            num_executions++;
+        }
+    }
 
 
 
