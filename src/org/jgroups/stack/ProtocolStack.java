@@ -1,4 +1,4 @@
-// $Id: ProtocolStack.java,v 1.28 2006/11/17 13:39:20 belaban Exp $
+// $Id: ProtocolStack.java,v 1.27.6.1 2007/04/27 06:26:38 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -28,8 +28,7 @@ public class ProtocolStack extends Protocol implements Transport {
     private String                  setup_string;
     private JChannel                channel=null;
     private boolean                 stopped=true;
-    public final  TimeScheduler     timer=new TimeScheduler(60000);
-    // final Promise                   ack_promise=new Promise();
+    public TimeScheduler            timer=new TimeScheduler();
 
     /** Used to sync on START/START_OK events for start()*/
     Promise                         start_promise=null;
@@ -93,7 +92,7 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public String dumpTimerQueue() {
-        return timer.dumpTaskQueue();
+        return timer != null ? timer.dumpTaskQueue() : "";
     }
 
     /**
@@ -173,6 +172,10 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void setup() throws Exception {
+        if(timer == null) {
+            timer=new TimeScheduler();
+            timer.start();
+        }
         if(top_prot == null) {
             top_prot=conf.setupProtocolStack(setup_string, this);
             if(top_prot == null)
@@ -251,6 +254,16 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void destroy() {
+        if(timer != null) {
+            try {
+                timer.stop();
+                timer.cancel();
+                timer=null;
+            }
+            catch(Exception ex) {
+            }
+        }
+
         if(top_prot != null) {
             conf.stopProtocolStack(top_prot);           // destroys msg queues and threads
             top_prot=null;
@@ -268,7 +281,7 @@ public class ProtocolStack extends Protocol implements Transport {
         Object start_result=null;
         if(stopped == false) return;
 
-        timer.start();
+
 
         if(start_promise == null)
             start_promise=new Promise();
@@ -293,6 +306,9 @@ public class ProtocolStack extends Protocol implements Transport {
         // DON'T REMOVE !!!!  Avoids a superfluous thread
     }
 
+    public void startDownHandler() {
+        // DON'T REMOVE !!!!  Avoids a superfluous thread
+    }
 
 
     /**
@@ -303,14 +319,6 @@ public class ProtocolStack extends Protocol implements Transport {
      * </ol>
      */
     public void stopStack() {
-        if(timer != null) {
-            try {
-                timer.stop();
-            }
-            catch(Exception ex) {
-            }
-        }
-
         if(stopped) return;
 
         if(stop_promise == null)
