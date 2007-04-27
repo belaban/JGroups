@@ -40,7 +40,7 @@ import java.util.Date;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.14.2.1 2007/04/27 06:26:40 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.14.2.2 2007/04/27 09:11:18 belaban Exp $
  */
 public class TimeScheduler extends Timer {
     /**
@@ -79,19 +79,11 @@ public class TimeScheduler extends Timer {
 
 
     public TimeScheduler() {
-        super("TimeScheduler thread", true);
+        super(true);
     }
 
     public TimeScheduler(boolean isDaemon) {
         super(isDaemon);
-    }
-
-    public TimeScheduler(String name) {
-        super(name);
-    }
-
-    public TimeScheduler(String name, boolean isDaemon) {
-        super(name, isDaemon);
     }
 
 
