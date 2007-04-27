@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER.java,v 1.21 2006/04/13 08:14:20 belaban Exp $
+// $Id: STATE_TRANSFER.java,v 1.21.6.1 2007/04/27 08:03:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -261,7 +261,7 @@ public class STATE_TRANSFER extends Protocol implements RequestHandler {
                     if(is_server)
                         return cached_state;
                     else {
-                        if(warn) log.warn("RETURN_STATE: returning null" +
+                        if(log.isWarnEnabled()) log.warn("RETURN_STATE: returning null" +
                                 "as I'm not yet an operational state server !");
                         return null;
                     }

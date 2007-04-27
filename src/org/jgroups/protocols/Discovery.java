@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.16 2006/10/11 14:38:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.16.2.1 2007/04/27 08:03:51 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -241,7 +241,7 @@ public abstract class Discovery extends Protocol {
                 rsp_msg=new Message(msg.getSrc(), null, null);
                 rsp_hdr=new PingHeader(PingHeader.GET_MBRS_RSP, ping_rsp);
                 rsp_msg.putHeader(getName(), rsp_hdr);
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("received GET_MBRS_REQ from " + msg.getSrc() + ", sending response " + rsp_hdr);
                 passDown(new Event(Event.MSG, rsp_msg));
                 return;
@@ -249,13 +249,13 @@ public abstract class Discovery extends Protocol {
             case PingHeader.GET_MBRS_RSP:   // add response to vector and notify waiting thread
                 rsp=hdr.arg;
 
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
                 ping_waiter.addResponse(rsp);
                 return;
 
             default:
-                if(warn) log.warn("got PING header with unknown type (" + hdr.type + ')');
+                if(log.isWarnEnabled()) log.warn("got PING header with unknown type (" + hdr.type + ')');
                 return;
             }
 

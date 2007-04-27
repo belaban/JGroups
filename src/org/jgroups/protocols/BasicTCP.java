@@ -176,10 +176,10 @@ public abstract class BasicTCP extends TP {
     }
 
     public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
-        if(trace) log.trace("dest=" + dest + " (" + length + " bytes)");
+        if(log.isTraceEnabled()) log.trace("dest=" + dest + " (" + length + " bytes)");
         if(skip_suspected_members) {
             if(suspected_mbrs.contains(dest)) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("will not send unicast message to " + dest + " as it is currently suspected");
                 return;
             }

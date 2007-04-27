@@ -20,7 +20,7 @@ import java.lang.reflect.Method;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.21 2006/09/12 12:01:01 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.21.2.1 2007/04/27 08:03:52 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address     local_addr=null;
@@ -68,7 +68,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(str != null) {
             num_msgs=Integer.parseInt(str);
             if(num_msgs <= 0) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("num_msgs is invalid (" + num_msgs + "): setting it to 1");
                 num_msgs=1;
             }
@@ -193,7 +193,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     curr_time=System.currentTimeMillis();
                     diff=curr_time - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
                         if(tmp == null) tmp=new LinkedList();
                         tmp.add(mbr);
@@ -232,7 +232,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             suspects.put(mbr, new Long(System.currentTimeMillis()));
         }
         // moved out of synchronized statement (bela): http://jira.jboss.com/jira/browse/JGRP-302
-        if(trace) log.trace("verifying that " + mbr + " is dead");
+        if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(mbr, null, null);
             msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
@@ -248,7 +248,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         if(host == null)
             throw new IllegalArgumentException("suspected_mbr is not of type IpAddress - FD_ICMP only works with these");
         try {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("pinging host " + suspected_mbr + " using interface " + intf);
             long start=System.currentTimeMillis(), stop;
             Boolean rc=(Boolean)is_reacheable.invoke(host,
@@ -257,11 +257,11 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                                                              new Integer((int)timeout)});
             stop=System.currentTimeMillis();
             if(rc.booleanValue()) { // success
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("successfully received response from " + host + " (after " + (stop-start) + "ms)");
             }
             else { // failure
-                if(trace)
+                if(log.isTraceEnabled())
                     log.debug("could not ping " + suspected_mbr + " after " + (stop-start) + "ms; " +
                             "passing up SUSPECT event");
                 suspects.remove(suspected_mbr);
@@ -279,7 +279,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         boolean removed=false;
         synchronized(suspects) {
             if(suspects.containsKey(mbr)) {
-                if(trace) log.trace("member " + mbr + " is not dead !");
+                if(log.isTraceEnabled()) log.trace("member " + mbr + " is not dead !");
                 suspects.remove(mbr);
                 removed=true;
             }

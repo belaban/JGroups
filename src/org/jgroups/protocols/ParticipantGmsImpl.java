@@ -1,4 +1,4 @@
-// $Id: ParticipantGmsImpl.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
+// $Id: ParticipantGmsImpl.java,v 1.9.10.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -116,7 +116,7 @@ public class ParticipantGmsImpl extends GmsImpl {
 
         if(leaving) {
             if(mbrs != null && mbrs.contains(gms.local_addr)) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("received view in which I'm still a member, cannot quit yet");
                 gms.installView(new_view, mbrs);
             }

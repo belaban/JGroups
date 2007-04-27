@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.34.2.1 2007/03/13 07:45:52 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.34.2.2 2007/04/27 08:03:55 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -19,7 +19,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.34.2.1 $
+ * @version $Revision: 1.34.2.2 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -67,7 +67,7 @@ public class ClientGmsImpl extends GmsImpl {
             if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
             if(initial_mbrs.size() == 0) {
                 if(gms.disable_initial_coord) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("received an initial membership of 0, but cannot become coordinator " +
                                 "(disable_initial_coord=true), will retry fetching the initial membership");
                     continue;
@@ -81,13 +81,13 @@ public class ClientGmsImpl extends GmsImpl {
             coord=determineCoord(initial_mbrs);
             if(coord == null) { // e.g. because we have all clients only
                 if(gms.handle_concurrent_startup == false) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
                     becomeSingletonMember(mbr);
                     return;
                 }
 
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("could not determine coordinator from responses " + initial_mbrs);
 
                 // so the member to become singleton member (and thus coord) is the first of all clients
@@ -99,17 +99,17 @@ public class ClientGmsImpl extends GmsImpl {
                     if(client_addr != null)
                         clients.add(client_addr);
                 }
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("clients to choose new coord from are: " + clients);
                 Address new_coord=(Address)clients.iterator().next();
                 if(new_coord.equals(mbr)) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
                     becomeSingletonMember(mbr);
                     return;
                 }
                 else {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("I (" + mbr + ") am not the first of the clients, " +
                                 "waiting for another client to become coordinator");
                     Util.sleep(500);
@@ -124,7 +124,7 @@ public class ClientGmsImpl extends GmsImpl {
                 rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
 
                 if(rsp == null) {
-                    if(warn) log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
+                    if(log.isWarnEnabled()) log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
                 }
                 else {
                     // 1. check whether JOIN was rejected
@@ -337,7 +337,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
 
         if(votes.size() > 1) {
-            if(warn) log.warn("there was more than 1 candidate for coordinator: " + votes);
+            if(log.isWarnEnabled()) log.warn("there was more than 1 candidate for coordinator: " + votes);
         }
         else {
             if(log.isDebugEnabled()) log.debug("election results: " + votes);

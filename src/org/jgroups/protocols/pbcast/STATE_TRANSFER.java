@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.44.2.2 2007/02/28 11:28:04 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.44.2.3 2007/04/27 08:03:55 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -219,13 +219,13 @@ public class STATE_TRANSFER extends Protocol {
                 String id=info.state_id;
                 synchronized(state_requesters) {
                     if(state_requesters.size() == 0) {
-                        if(warn)
+                        if(log.isWarnEnabled())
                             log.warn("GET_APPLSTATE_OK: received application state, but there are no requesters !");
                         return;
                     }
                     if(isDigestNeeded()){
 	                    if(digest == null) {
-	                        if(warn) log.warn("GET_APPLSTATE_OK: received application state, but there is no digest !");
+	                        if(log.isWarnEnabled()) log.warn("GET_APPLSTATE_OK: received application state, but there is no digest !");
                         }
 	                    else {
 	                        digest=digest.copy();
@@ -248,7 +248,7 @@ public class STATE_TRANSFER extends Protocol {
                             final Message state_rsp=new Message(requester, null, state);
                             hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest, id);
                             state_rsp.putHeader(name, hdr);
-                            if(trace)
+                            if(log.isTraceEnabled())
                                 log.trace("sending state for ID=" + id + " to " + requester + " (" + state.length + " bytes)");
 
                             // This has to be done in a separate thread, so we don't block on FC
@@ -363,7 +363,7 @@ public class STATE_TRANSFER extends Protocol {
         }
 
         if(send_up_null_state_rsp) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("discovered that the state provider (" + old_coord + ") crashed; will return null state to application");
             StateHeader hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, null, null);
             handleStateRsp(hdr, null); // sends up null GET_STATE_OK
@@ -413,7 +413,7 @@ public class STATE_TRANSFER extends Protocol {
         waiting_for_state_response=false;
         if(isDigestNeeded()){
 	        if(tmp_digest == null) {
-	            if(warn)
+	            if(log.isWarnEnabled())
 	                log.warn("digest received from " + sender + " is null, skipping setting digest !");
 	        }
 	        else
@@ -429,7 +429,7 @@ public class STATE_TRANSFER extends Protocol {
         passDown(new Event(Event.RESUME_STABLE));
 
         if(state == null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("state received from " + sender + " is null, will return null state to application");
         }
         else

@@ -7,7 +7,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.9 2006/11/17 13:39:18 belaban Exp $
+ * @version $Id: Protocol.java,v 1.8.10.1 2007/04/27 08:03:50 belaban Exp $
  */
 public class Protocol implements ProtocolMBean {
     org.jgroups.stack.Protocol prot;
@@ -36,22 +36,6 @@ public class Protocol implements ProtocolMBean {
         prot.setProperties(p);
     }
 
-    public boolean isTrace() {
-        return prot.isTrace();
-    }
-
-    public void setTrace(boolean trace) {
-        prot.setTrace(trace);
-    }
-
-    public boolean isWarn() {
-        return prot.isWarn();
-    }
-
-    public void setWarn(boolean warn) {
-        prot.setWarn(warn);
-    }
-
 
     public boolean getStatsEnabled() {
         return prot.statsEnabled();
@@ -77,12 +61,8 @@ public class Protocol implements ProtocolMBean {
         return prot.upThreadEnabled();
     }
 
-    /**
-     * @deprecated down_threads have been removed, this is false by default
-     * @return boolean False by default
-     */
     public boolean getDownThread() {
-        return false;
+        return prot.downThreadEnabled();
     }
 
     public void setObserver(ProtocolObserver observer) {

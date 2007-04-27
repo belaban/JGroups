@@ -1,4 +1,4 @@
-// $Id: PERF.java,v 1.11 2006/11/17 13:39:19 belaban Exp $
+// $Id: PERF.java,v 1.10.10.1 2007/04/27 08:03:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.util.Vector;
  * </ol>
  *
  * @author Bela Ban Oct 2001
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.10.10.1 $
  */
 public class PERF extends Protocol {
     boolean             details=false;
@@ -83,7 +83,7 @@ public class PERF extends Protocol {
             if(hdr != null) {
                 hdr.setEndTime();
                 hdr.setDone(name, PerfHeader.UP); // we do this here because header is removed, so PassUp won't find it
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace(hdr.printContents(details, protocols) + "\n---------------------------------\n");
             }
             break;
@@ -235,7 +235,7 @@ class PerfObserver implements ProtocolObserver {
     }
 
 
-    public boolean down(Event evt) {
+    public boolean down(Event evt, int num_evts) {
         PerfHeader hdr;
         if(evt.getType() == Event.MSG) {
             hdr=getPerfHeader((Message)evt.getArg());

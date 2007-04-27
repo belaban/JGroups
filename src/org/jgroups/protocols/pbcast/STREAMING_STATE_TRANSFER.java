@@ -416,14 +416,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          if (state_requesters.isEmpty())
          {
-            if (warn)
+            if(log.isWarnEnabled())
                log.warn("Should be responding to state requester, but there are no requesters !");
             return;
          }
 
          if (digest == null && isDigestNeeded())
          {
-            if (warn)
+            if(log.isWarnEnabled())
             {
                log.warn("Should be responding to state requester, but there is no digest !");
             }
@@ -597,7 +597,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          if (tmp_digest == null)
          {
-            if (warn)
+            if(log.isWarnEnabled())
                log.warn("digest received from " + hdr.sender + " is null, skipping setting digest !");
          }
          else
@@ -663,7 +663,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       }
       catch (IOException e)
       {
-         if (warn)
+         if(log.isWarnEnabled())
          {
             log.warn("State reader socket thread spawned abnormaly", e);
          }
@@ -676,7 +676,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
       {
          if (!socket.isConnected())
          {
-            if (warn)
+            if(log.isWarnEnabled())
                log.warn("Could not connect to state provider. Closing socket...");
             try
             {
@@ -778,7 +778,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
             }
             catch (IOException e)
             {
-               if (warn)
+               if(log.isWarnEnabled())
                {
                   //we get this exception when we close server socket
                   //exclude that case
@@ -871,7 +871,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          }
          catch (IOException e)
          {
-            if (warn)
+            if(log.isWarnEnabled())
             {
                log.warn("State writer socket thread spawned abnormaly", e);
             }
@@ -885,7 +885,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          {
             if (socket != null && !socket.isConnected())
             {
-               if (warn)
+               if(log.isWarnEnabled())
                   log.warn("Accepted request for state transfer but socket " + socket
                         + " not connected properly. Closing it...");
                try

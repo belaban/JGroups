@@ -1,4 +1,4 @@
-// $Id: SMACK.java,v 1.14 2006/02/07 13:49:57 belaban Exp $
+// $Id: SMACK.java,v 1.14.6.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,7 +45,7 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.14.6.1 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
@@ -171,7 +171,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 
                         tmp_seqno=new Long(hdr.seqno);
 
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("received #" + tmp_seqno + " from " + sender);
 
                         win=(AckReceiverWindow)receivers.get(sender);
@@ -191,7 +191,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         addMember(msg.getSrc());
                         sender_win.ack(hdr.seqno, msg.getSrc());
                         sender_win.clearStableMessages();
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("received ack for #" + hdr.seqno + " from " + msg.getSrc());
                         return;
 
@@ -215,7 +215,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                         return;
 
                     default:
-                        if(warn) log.warn("detected SmackHeader with invalid type: " + hdr);
+                        if(log.isWarnEnabled()) log.warn("detected SmackHeader with invalid type: " + hdr);
                         break;
                 }
                 break;
@@ -260,7 +260,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 if(msg.getDest() == null || msg.getDest().isMulticastAddress()) {
                     msg.putHeader(name, new SmackHeader(SmackHeader.MCAST, seqno));
                     sender_win.add(seqno, msg, (Vector)members.clone());
-                    if(trace) log.trace("sending mcast #" + seqno);
+                    if(log.isTraceEnabled()) log.trace("sending mcast #" + seqno);
                     seqno++;
                 }
                 break;
@@ -354,7 +354,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 View new_view;
                 members.addElement(mbr);
                 tmp=members.clone();
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("added " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
                 passUp(new Event(Event.VIEW_CHANGE, new_view));
@@ -370,7 +370,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 View new_view;
                 members.removeElement(mbr);
                 tmp=members.clone();
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("removed " + mbr + ", members=" + tmp);
                 new_view=new View(new ViewId(local_addr, vid++), (Vector)tmp);
                 passUp(new Event(Event.VIEW_CHANGE, new_view));
