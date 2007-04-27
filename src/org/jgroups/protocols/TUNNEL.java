@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.36 2007/01/15 16:33:14 belaban Exp $
+// $Id: TUNNEL.java,v 1.37 2007/04/27 07:59:20 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -197,7 +197,7 @@ public class TUNNEL extends Protocol implements Runnable {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
 
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(msg + ", hdrs: " + msg.printHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -210,7 +210,7 @@ public class TUNNEL extends Protocol implements Runnable {
             // copy.setDest(dest);
             evt=new Event(Event.MSG, copy);
 
-            if(trace) log.trace("looped back local message " + copy);
+            if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
             up_prot.up(evt);
             if(dest != null && !dest.isMulticastAddress())
                 return null;
@@ -300,13 +300,13 @@ public class TUNNEL extends Protocol implements Runnable {
             Address src=msg.getSrc();
 
             if(dst != null && dst.isMulticastAddress() && src != null && local_addr.equals(src)) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("discarded own loopback multicast packet");
                 return;
             }
         }
 
-         if(trace)
+         if(log.isTraceEnabled())
              log.trace(msg + ", hdrs: " + msg.printHeaders());
 
         /* Discard all messages destined for a channel with a different name */
@@ -320,7 +320,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     Object handleDownEvent(Event evt) {
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(evt);
 
         switch(evt.getType()) {

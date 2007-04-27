@@ -1,4 +1,4 @@
-// $Id: HTOTAL.java,v 1.7 2007/01/12 14:20:16 belaban Exp $
+// $Id: HTOTAL.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -18,7 +18,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.7 2007/01/12 14:20:16 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
  */
 public class HTOTAL extends Protocol {
     Address coord=null;
@@ -119,7 +119,7 @@ public class HTOTAL extends Protocol {
             msg.putHeader(getName(), hdr);
         }
         msg.setDest(destination);
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("forwarding message to " + destination + ", hdr=" + hdr);
         down_prot.down(new Event(Event.MSG, msg));
     }
@@ -150,7 +150,7 @@ public class HTOTAL extends Protocol {
             }
         }
         neighbor=retval;
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("coord=" + coord + ", neighbor=" + neighbor);
     }
 

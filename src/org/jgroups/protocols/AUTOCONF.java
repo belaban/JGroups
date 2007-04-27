@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.18 2007/01/12 14:19:48 belaban Exp $
+// $Id: AUTOCONF.java,v 1.19 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -119,7 +119,7 @@ public class AUTOCONF extends Protocol {
             local_addr=InetAddress.getLocalHost();
         }
         catch(Exception ex) {
-            if(warn) log.warn("failed creating DatagramSocket: " + ex);
+            if(log.isWarnEnabled()) log.warn("failed creating DatagramSocket: " + ex);
             return 0;
         }
 
@@ -144,7 +144,7 @@ public class AUTOCONF extends Protocol {
                     upper=(upper + lower) / 2;
                 }
                 catch(Throwable ex) {
-                    if(warn) log.warn("exception=" + ex);
+                    if(log.isWarnEnabled()) log.warn("exception=" + ex);
                     break;
                 }
             }

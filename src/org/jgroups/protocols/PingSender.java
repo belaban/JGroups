@@ -11,7 +11,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Sends num_ping_request GET_MBRS_REQ messages, distributed over timeout ms
  * @author Bela Ban
- * @version $Id: PingSender.java,v 1.6 2007/01/20 11:55:18 belaban Exp $
+ * @version $Id: PingSender.java,v 1.7 2007/04/27 07:59:20 belaban Exp $
  */
 public class PingSender implements Runnable {
     @GuardedBy("lock")
@@ -73,7 +73,7 @@ public class PingSender implements Runnable {
             finally {
                 lock.unlock();
             }
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("sending GET_MBRS_REQ");
             discovery_prot.sendGetMembersRequest();
             Util.sleep((long)interval);

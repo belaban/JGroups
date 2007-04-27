@@ -16,7 +16,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.16 2007/02/16 08:22:55 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.17 2007/04/27 07:59:19 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     @GuardedBy("thread_lock")
@@ -143,7 +143,7 @@ public class PingWaiter implements Runnable {
                     if(!cond)
                         break;
 
-                    if(trace) // +++ remove
+                    if(log.isTraceEnabled()) // +++ remove
                         log.trace(new StringBuilder("waiting for initial members: time_to_wait=").append(time_to_wait)
                                   .append(", got ").append(rsps.size()).append(" rsps"));
 
@@ -157,7 +157,7 @@ public class PingWaiter implements Runnable {
                     }
                     time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace(new StringBuffer("initial mbrs are ").append(rsps));
                 return new Vector(rsps);
             }

@@ -1,4 +1,4 @@
-// $Id: SIZE.java,v 1.20 2007/01/12 14:19:20 belaban Exp $
+// $Id: SIZE.java,v 1.21 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -87,20 +87,20 @@ public class SIZE extends Protocol {
             payload_size=msg.getLength();
 
             if(raw_buffer) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
             }
             else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("size of serialized message is " + serialized_size +
                                   ", " + numHeaders(msg) + " headers");
 
                 }
             }
             if(print_msg) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("headers are " + msg.printHeaders() + ", payload size=" + payload_size);
             }
             break;
@@ -121,19 +121,19 @@ public class SIZE extends Protocol {
             payload_size=msg.getLength();
 
             if(raw_buffer) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("size of message buffer is " + payload_size + ", " + numHeaders(msg) + " headers");
             }
             else {
                 serialized_size=sizeOf(msg);
                 if(serialized_size > min_size) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("size of serialized message is " + serialized_size + ", " + numHeaders(msg) + " headers");
 
                 }
             }
             if(print_msg) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("headers are " + msg.printHeaders() + ", payload size=" + payload_size);
             }
             break;

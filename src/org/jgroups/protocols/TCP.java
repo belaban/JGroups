@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.37 2006/10/02 06:47:53 belaban Exp $
+// $Id: TCP.java,v 1.38 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -100,11 +100,11 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
        else {
            if(reaperInterval == 0) {
                reaperInterval=5000;
-               if(warn) log.warn("reaper_interval was 0, set it to " + reaperInterval);
+               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + reaperInterval);
            }
            if(connExpireTime == 0) {
                connExpireTime=1000 * 60 * 5;
-               if(warn) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
+               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
            cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort,
                                       reaperInterval, connExpireTime);

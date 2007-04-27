@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.52 2007/03/15 08:03:22 belaban Exp $
+// $Id: FD.java,v 1.53 2007/04/27 07:59:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.52 $
+ * @version $Revision: 1.53 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -207,7 +207,7 @@ public class FD extends Protocol {
                     if(ping_dest != null && (sender=msg.getSrc()) != null) {
                         if(ping_dest.equals(sender)) {
                             last_ack=System.currentTimeMillis();
-                            if(trace)
+                            if(log.isTraceEnabled())
                                 log.trace("received msg from " + sender + " (counts as ack)");
                             num_tries=0;
                         }
@@ -219,7 +219,7 @@ public class FD extends Protocol {
                 switch(hdr.type) {
                     case FdHeader.HEARTBEAT:                       // heartbeat request; send heartbeat ack
                         Address hb_sender=msg.getSrc();
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("received are-you-alive from " + hb_sender + ", sending response");
                         sendHeartbeatResponse(hb_sender);
 
@@ -243,7 +243,7 @@ public class FD extends Protocol {
 //                                    startMonitor();
 //                                }
 //                                catch(Exception ex) {
-//                                    if(warn) log.warn("exception when calling startMonitor(): " + ex);
+//                                    if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
 //                                }
 //                            }
 //                        }
@@ -277,17 +277,17 @@ public class FD extends Protocol {
                                             startMonitor();
                                         }
                                         catch(Exception ex) {
-                                            if(warn) log.warn("exception when calling startMonitor(): " + ex);
+                                            if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
                                         }
                                     }
                                 }
                                 else if (ping_dest == null) {
-                                    if(trace)
+                                    if(log.isTraceEnabled())
                                         log.trace("and ping_dest is null, stop Monitor");
                                     stop();
                                 }
                                 else {
-                                    if(trace)
+                                    if(log.isTraceEnabled())
                                         log.trace("but we must keep pinging same destination");
                                 }
                             }
@@ -296,11 +296,11 @@ public class FD extends Protocol {
 
                     case FdHeader.SUSPECT:
                         if(hdr.mbrs != null) {
-                            if(trace) log.trace("[SUSPECT] suspect hdr is " + hdr);
+                            if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
                             for(int i=0; i < hdr.mbrs.size(); i++) {
                                 Address m=(Address)hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
-                                    if(warn)
+                                    if(log.isWarnEnabled())
                                         log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT " +
                                                 "message and sending back a HEARTBEAT_ACK");
                                     sendHeartbeatResponse(msg.getSrc());
@@ -350,7 +350,7 @@ public class FD extends Protocol {
                             startMonitor();
                         }
                         catch(Exception ex) {
-                            if(warn) log.warn("exception when calling startMonitor(): " + ex);
+                            if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
                         }
                     }
                 }
@@ -518,7 +518,7 @@ public class FD extends Protocol {
             long not_heard_from; // time in msecs we haven't heard from ping_dest
 
             if(ping_dest == null) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("ping_dest is null: members=" + members + ", pingable_mbrs=" +
                             pingable_mbrs + ", local_addr=" + local_addr);
                 return;
@@ -597,7 +597,7 @@ public class FD extends Protocol {
                                                               0, // run immediately the first time
                                                               timeout, // then every timeout milliseconds, until cancelled
                                                               TimeUnit.MILLISECONDS);
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("BroadcastTask started");
                 }
                 else {
@@ -675,7 +675,7 @@ public class FD extends Protocol {
 
         public void stop() {
             suspected_members.clear();
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("BroadcastTask stopped");
         }
 

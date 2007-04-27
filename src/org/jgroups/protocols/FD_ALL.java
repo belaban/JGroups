@@ -19,7 +19,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.9 2007/01/26 10:18:39 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.10 2007/04/27 07:59:19 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -169,7 +169,7 @@ public class FD_ALL extends Protocol {
                         sender=msg.getSrc();
                         if(sender.equals(local_addr))
                             break;
-                        //if(trace)
+                        //if(log.isTraceEnabled())
                           //  log.trace(local_addr + ": received a heartbeat from " + sender);
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
@@ -184,7 +184,7 @@ public class FD_ALL extends Protocol {
                         break;          // don't pass up !
 
                     case Header.SUSPECT:
-                        if(trace) log.trace("[SUSPECT] suspect hdr is " + hdr);
+                        if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
                         down_prot.down(new Event(Event.SUSPECT, hdr.suspected_mbr));
                         up_prot.up(new Event(Event.SUSPECT, hdr.suspected_mbr));
                         break;
@@ -222,7 +222,7 @@ public class FD_ALL extends Protocol {
         startHeartbeatSender();
         startTimeoutChecker();
         tasks_running=true;
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("started heartbeat sender and timeout checker tasks");
     }
 
@@ -230,7 +230,7 @@ public class FD_ALL extends Protocol {
         stopTimeoutChecker();
         stopHeartbeatSender();
         tasks_running=false;
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("stopped heartbeat sender and timeout checker tasks");
     }
 
@@ -453,7 +453,7 @@ public class FD_ALL extends Protocol {
             Header hdr=new Header(Header.HEARTBEAT);
             heartbeat.putHeader(name, hdr);
             down_prot.down(new Event(Event.MSG, heartbeat));
-            //if(trace)
+            //if(log.isTraceEnabled())
               //  log.trace(local_addr + ": sent heartbeat to cluster");
             num_heartbeats_sent++;
         }
@@ -468,7 +468,7 @@ public class FD_ALL extends Protocol {
             Long val;
 
 
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("checking for expired senders, table is:\n" + printTimeStamps());
 
             long current_time=System.currentTimeMillis(), diff;
@@ -482,7 +482,7 @@ public class FD_ALL extends Protocol {
                 }
                 diff=current_time - val.longValue();
                 if(diff > timeout) {
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("haven't received a heartbeat from " + key + " for " + diff + " ms, suspecting it");
                     suspect((Address)key);
                 }

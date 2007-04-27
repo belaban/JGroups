@@ -29,7 +29,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.52 2007/03/15 12:11:24 belaban Exp $
+ * @version $Id: Protocol.java,v 1.53 2007/04/27 07:59:24 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -37,8 +37,6 @@ public abstract class Protocol {
     protected ProtocolStack    stack=null;
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
-    protected boolean          trace=log.isTraceEnabled();
-    protected boolean          warn=log.isWarnEnabled();
 
 
     /**
@@ -62,28 +60,28 @@ public abstract class Protocol {
 
         String str=props.getProperty("down_thread");
         if(str != null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("down_thread was deprecated and is ignored");
             props.remove("down_thread");
         }
 
         str=props.getProperty("down_thread_prio");
         if(str != null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("down_thread_prio was deprecated and is ignored");
             props.remove("down_thread_prio");
         }
 
         str=props.getProperty("up_thread");
         if(str != null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("up_thread was deprecated and is ignored");
             props.remove("up_thread");
         }
 
         str=props.getProperty("up_thread_prio");
         if(str != null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("up_thread_prio was deprecated and is ignored");
             props.remove("up_thread_prio");
         }
@@ -102,22 +100,6 @@ public abstract class Protocol {
         return props;
     }
 
-
-    public boolean isTrace() {
-        return trace;
-    }
-
-    public void setTrace(boolean trace) {
-        this.trace=trace;
-    }
-
-    public boolean isWarn() {
-        return warn;
-    }
-
-    public void setWarn(boolean warn) {
-        this.warn=warn;
-    }
 
     /** @deprecated up_thread was removed
      * @return false by default

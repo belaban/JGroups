@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.17 2007/03/06 17:43:40 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.18 2007/04/27 07:59:18 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -172,7 +172,7 @@ public class SEQUENCER extends Protocol {
         Set<Address> keys=received_table.keySet();
         keys.retainAll(members);
         if(keys.size() != size) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("adjusted received_table, keys are " + keys);
         }
     }

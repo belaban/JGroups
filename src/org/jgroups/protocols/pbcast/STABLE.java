@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.73 2007/04/19 20:55:50 belaban Exp $
+ * @version $Id: STABLE.java,v 1.74 2007/04/27 07:59:23 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -263,7 +263,7 @@ public class STABLE extends Protocol {
             try {
                 num_bytes_received+=(long)msg.getLength();
                 if(num_bytes_received >= max_bytes) {
-                    if(trace) {
+                    if(log.isTraceEnabled()) {
                         log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
                                 append(", bytes received=").append(num_bytes_received).append("): triggers stable msg"));
                     }
@@ -276,7 +276,7 @@ public class STABLE extends Protocol {
                     synchronized(latest_local_digest) {
                         latest_local_digest.replace(my_digest);
                     }
-                    if(trace)
+                    if(log.isTraceEnabled())
                         log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
                     sendStableMessage(my_digest);
                 }
@@ -383,13 +383,13 @@ public class STABLE extends Protocol {
             return false;
 
         if(!initialized) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return false;
         }
 
         if(!digest.sameSenders(d)) {
-//            if(trace)
+//            if(log.isTraceEnabled())
 //                log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
 //                          append(sender).append(" which has different members than mine (").
 //                          append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
@@ -399,7 +399,7 @@ public class STABLE extends Protocol {
         }
 
         StringBuffer sb=null;
-        if(trace) {
+        if(log.isTraceEnabled()) {
             sb=new StringBuffer("[").append(local_addr).append("] handling digest from ").append(sender).append(":\n");
             sb.append("mine:   ").append(digest.printHighestDeliveredSeqnos()).append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
@@ -428,7 +428,7 @@ public class STABLE extends Protocol {
             new_highest_seen_seqno=Math.max(my_highest_seen_seqno, highest_seen_seqno);
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
         }
-        if(trace) {
+        if(log.isTraceEnabled()) {
             sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");
             log.trace(sb);
         }
@@ -451,7 +451,7 @@ public class STABLE extends Protocol {
         }
         synchronized(digest) {
             digest.replace(copy_of_latest);
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighestDeliveredSeqnos());
         }
     }
@@ -479,7 +479,7 @@ public class STABLE extends Protocol {
             if(stable_task_future == null || stable_task_future.isDone()) {
                 StableTask stable_task=new StableTask();
                 stable_task_future=timer.scheduleWithDynamicInterval(stable_task, true);
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("stable task started");
             }
         }
@@ -573,13 +573,13 @@ public class STABLE extends Protocol {
         }
 
         if(!initialized) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return;
         }
 
         if(suspended) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("STABLE message will not be handled as I'm suspended");
             return;
         }
@@ -612,13 +612,13 @@ public class STABLE extends Protocol {
      */
     private void sendStableMessage(Digest d) {
         if(suspended) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("will not send STABLE message as I'm suspended");
             return;
         }
 
         if(d != null && d.size() > 0) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
             Message msg=new Message(); // mcast message
@@ -645,7 +645,7 @@ public class STABLE extends Protocol {
         long delay;
 
         if(suspended) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("STABILITY message will not be sent as I'm suspended");
             return;
         }
@@ -665,7 +665,7 @@ public class STABLE extends Protocol {
         }
 
         if(!initialized) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("STABLE message will not be handled as I'm not yet initialized");
             return;
         }
@@ -677,7 +677,7 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighestDeliveredSeqnos()));
         stopStabilityTask();
 
@@ -807,7 +807,7 @@ public class STABLE extends Protocol {
 
         public void run() {
             if(suspended) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("stable task will not run as suspended=" + suspended);
                 return;
             }
@@ -815,14 +815,14 @@ public class STABLE extends Protocol {
             // asks the NAKACK protocol for the current digest
             Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
             if(my_digest == null) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("received null digest, skipped sending of stable message");
                 return;
             }
             synchronized(latest_local_digest) {
                 latest_local_digest.replace(my_digest);
             }
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
             sendStableMessage(my_digest);
         }
@@ -866,7 +866,7 @@ public class STABLE extends Protocol {
                 msg.setFlag(Message.OOB);
                 hdr=new StableHeader(StableHeader.STABILITY, d);
                 msg.putHeader(STABLE.name, hdr);
-                if(trace) log.trace("sending stability msg " + d.printHighestDeliveredSeqnos());
+                if(log.isTraceEnabled()) log.trace("sending stability msg " + d.printHighestDeliveredSeqnos());
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
                 d=null;
