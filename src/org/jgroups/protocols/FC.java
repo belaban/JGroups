@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.74 2007/04/27 07:59:18 belaban Exp $
+ * @version $Id: FC.java,v 1.75 2007/04/27 11:33:10 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -60,12 +60,15 @@ public class FC extends Protocol {
     @GuardedBy("lock")
     final List<Address> creditors=new ArrayList<Address>(11);
 
+    /** Peers who have asked for credit that we didn't have */
+    final Set<Address> pending_requesters=new HashSet<Address>(11);
+
     /**
      * Max number of bytes to send per receiver until an ack must
      * be received before continuing sending
      */
     private long max_credits=500000;
-    private Long max_credits_constant;
+    private Long max_credits_constant=new Long(max_credits);
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
@@ -389,7 +392,8 @@ public class FC extends Protocol {
                         case FcHeader.CREDIT_REQUEST:
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
-                            handleCreditRequest(sender);
+                            Long sent_credits = (Long) msg.getObject();
+                            handleCreditRequest(sender, sent_credits);
                             break;
                         default:
                             log.error("header type " + hdr.type + " not known");
@@ -557,7 +561,7 @@ public class FC extends Protocol {
         lock.lock();
         try {
             Long old_credit=sent.get(sender);
-            Long new_credit=Math.min(max_credits, new Long(old_credit.longValue() + increase.longValue()));
+            Long new_credit=Math.min(max_credits, old_credit.longValue() + increase.longValue());
 
             if(log.isTraceEnabled()) {
                 sb=new StringBuilder();
@@ -615,7 +619,7 @@ public class FC extends Protocol {
         return 0;
     }
 
-    private void handleCreditRequest(Address sender) {
+    private void handleCreditRequest(Address sender, Long sender_credit) {
         if(sender == null) return;
 
         lock.lock();
@@ -630,9 +634,27 @@ public class FC extends Protocol {
                 if(log.isTraceEnabled())
                     log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
                 received.put(sender, max_credits_constant);
+                pending_requesters.remove(sender);
             }
-            else if(log.isTraceEnabled()) {
-                log.trace("received credit request from " + sender + " but have no credits available");
+            else {
+                if(pending_requesters.contains(sender)) {
+                    // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
+                    // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
+                    // credits is negative, we simply send max_credits back
+                    long credits_left=Math.max(0, sender_credit.longValue());
+                    credit_response=max_credits - credits_left;
+                    // credit_response = max_credits;
+                    received.put(sender, max_credits_constant);
+                    pending_requesters.remove(sender);
+                    if(log.isWarnEnabled())
+                        log.warn("Received two credit requests from " + sender +
+                                " without any intervening messages; sending " + credit_response + " credits");
+                }
+                else {
+                    pending_requesters.add(sender);
+                    if(log.isTraceEnabled())
+                        log.trace("received credit request from " + sender + " but have no credits available");
+                }
             }
         }
         finally {
