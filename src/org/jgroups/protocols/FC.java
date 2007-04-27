@@ -34,19 +34,20 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.75 2007/04/27 11:33:10 belaban Exp $
+ * @version $Id: FC.java,v 1.76 2007/04/27 11:55:26 belaban Exp $
  */
 public class FC extends Protocol {
 
     /**
-     * HashMap<Address,Long>: keys are members, values are credits left. For each send, the
-     * number of credits is decremented by the message size
+     * Map<Address,Long>: keys are members, values are credits left. For each send, the
+     * number of credits is decremented by the message size.
      */
+    @GuardedBy("lock")
     final Map<Address, Long> sent=new HashMap<Address, Long>(11);
     // final Map sent=new ConcurrentHashMap(11);
 
     /**
-     * HashMap<Address,Long>: keys are members, values are credits left (in bytes).
+     * Map<Address,Long>: keys are members, values are credits left (in bytes).
      * For each receive, the credits for the sender are decremented by the size of the received message.
      * When the credits are 0, we refill and send a CREDIT message to the sender. Sender blocks until CREDIT
      * is received after reaching <tt>min_credits</tt> credits.
@@ -270,9 +271,7 @@ public class FC extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
-            Map.Entry<Address, Long> entry;
-            for(Iterator<Map.Entry<Address, Long>> it=sent.entrySet().iterator(); it.hasNext();) {
-                entry=it.next();
+            for(Map.Entry<Address, Long> entry: sent.entrySet()) {
                 entry.setValue(max_credits_constant);
             }
 
@@ -430,7 +429,7 @@ public class FC extends Protocol {
 
         lock.lock();
         try {
-            if(lowest_credit <= length) {
+            if(lowest_credit <= length) { // then block and loop asking for credits until enough credits are available
                 if(ignore_synchronous_response && ignore_thread == Thread.currentThread()) { // JGRP-465
                     if(log.isTraceEnabled())
                         log.trace("Bypassing blocking to avoid deadlocking " + Thread.currentThread());
@@ -497,11 +496,9 @@ public class FC extends Protocol {
         Address mbr;
         Long credits;
         if(multicast) {
-            Map.Entry entry;
-            for(Iterator it=sent.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                mbr=(Address)entry.getKey();
-                credits=(Long)entry.getValue();
+            for(Map.Entry<Address,Long> entry: sent.entrySet()) {
+                mbr=entry.getKey();
+                credits=entry.getValue();
                 if(credits.longValue() <= length) {
                     if(!creditors.contains(mbr))
                         creditors.add(mbr);
@@ -759,11 +756,9 @@ public class FC extends Protocol {
         }
     }
 
-    private static String printMap(Map m) {
-        Map.Entry entry;
+    private static String printMap(Map<Address,Long> m) {
         StringBuilder sb=new StringBuilder();
-        for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Map.Entry<Address,Long> entry: m.entrySet()) {
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
