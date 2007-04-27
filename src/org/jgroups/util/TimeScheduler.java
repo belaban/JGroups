@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.19 2007/04/16 18:23:37 vlada Exp $
+ * @version $Id: TimeScheduler.java,v 1.20 2007/04/27 06:21:12 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
@@ -152,19 +152,26 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
     /**
      * Stop the scheduler if it's running. Switch to stopped, if it's
-     * suspended. Clear the task queue.
+     * suspended. Clear the task queue, cancelling all un-executed tasks
      *
      * @throws InterruptedException if interrupted while waiting for thread
      *                              to return
      */
     public void stop() throws InterruptedException {
-        shutdownNow();
+        java.util.List<Runnable> tasks=shutdownNow();
+        for(Runnable task: tasks) {
+            if(task instanceof Future) {
+                Future future=(Future)task;
+                future.cancel(true);
+            }
+        }
+        getQueue().clear();
         awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
     }
 
 
     private class TaskWrapper implements Runnable {
-        Task               task;
+        final Task         task;
         ScheduledFuture<?> future; // cannot be null !
 
 
@@ -178,7 +185,7 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
         public void run() {
             try {
-                if(future != null && future.isCancelled())
+                if((future != null && future.isCancelled()))
                     return;
                 task.run();
             }
