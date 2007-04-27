@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.9 2005/08/11 12:43:47 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.9.10.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -84,7 +84,7 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
         if(new_view == null) {
-             if(warn) log.warn("received a Merge Denied");
+             if(log.isWarnEnabled()) log.warn("received a Merge Denied");
             gms.passDown(new Event(Event.MERGE_DENIED));
             return; //Merge denied
         }
@@ -108,7 +108,7 @@ public class CoordGmsImpl extends GmsImpl {
             return false;
         }
         if(gms.mbrs.contains(mbr)) {
-            if(warn) log.warn("member " + mbr + " already present !");
+            if(log.isWarnEnabled()) log.warn("member " + mbr + " already present !");
             return true;  // already joined
         }
 
@@ -139,7 +139,7 @@ public class CoordGmsImpl extends GmsImpl {
     public void handleViewChange(ViewId new_view, Vector mbrs) {
         if(leaving) {
             if(mbrs.contains(gms.local_addr)) {
-                if(warn) log.warn("received view in which I'm still a member, cannot quit yet");
+                if(log.isWarnEnabled()) log.warn("received view in which I'm still a member, cannot quit yet");
                 gms.installView(new_view, mbrs);  // +++ modify
             }
             else {

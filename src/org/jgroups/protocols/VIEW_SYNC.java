@@ -19,7 +19,7 @@ import java.util.Vector;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.10 2006/08/14 16:30:06 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.10.2.1 2007/04/27 08:03:52 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -229,7 +229,7 @@ public class VIEW_SYNC extends Protocol {
             view_send_task=new ViewSendTask();
             timer.add(view_send_task, true); // fixed-rate scheduling
         }
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace("view send task started");
     }
 
@@ -240,7 +240,7 @@ public class VIEW_SYNC extends Protocol {
         synchronized(view_send_task_mutex) {
             if(view_send_task != null) {
                 view_send_task.stop();
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("view send task stopped");
                 view_send_task=null;
             }

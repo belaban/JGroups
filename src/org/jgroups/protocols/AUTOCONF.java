@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.16 2006/11/17 13:39:19 belaban Exp $
+// $Id: AUTOCONF.java,v 1.15.10.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -87,6 +87,11 @@ public class AUTOCONF extends Protocol {
     public void startUpHandler() {
     }
 
+    /**
+     * Leave empty: no down_thread will be created, but the down_thread of the neighbor above us will be used
+     */
+    public void startDownHandler() {
+    }
 
 
     /* -------------------------------------- Private metods ------------------------------------------- */
@@ -125,7 +130,7 @@ public class AUTOCONF extends Protocol {
             local_addr=InetAddress.getLocalHost();
         }
         catch(Exception ex) {
-            if(warn) log.warn("failed creating DatagramSocket: " + ex);
+            if(log.isWarnEnabled()) log.warn("failed creating DatagramSocket: " + ex);
             return 0;
         }
 
@@ -150,7 +155,7 @@ public class AUTOCONF extends Protocol {
                     upper=(upper + lower) / 2;
                 }
                 catch(Throwable ex) {
-                    if(warn) log.warn("exception=" + ex);
+                    if(log.isWarnEnabled()) log.warn("exception=" + ex);
                     break;
                 }
             }

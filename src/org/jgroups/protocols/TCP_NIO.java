@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.11 2006/10/02 06:47:53 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.11.2.1 2007/04/27 08:03:51 belaban Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -33,11 +33,11 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
        else {
            if (ri == 0) {
                ri = 5000;
-               if(warn) log.warn("reaper_interval was 0, set it to " + ri);
+               if(log.isWarnEnabled()) log.warn("reaper_interval was 0, set it to " + ri);
            }
            if (cet == 0) {
                cet = 1000 * 60 * 5;
-               if(warn) log.warn("conn_expire_time was 0, set it to " + cet);
+               if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + cet);
            }
            retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, ri, cet, false);
        }

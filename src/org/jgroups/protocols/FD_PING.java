@@ -14,7 +14,7 @@ import java.util.Properties;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.3 2006/10/11 14:39:29 belaban Exp $
+ * @version $Id: FD_PING.java,v 1.3.2.1 2007/04/27 08:03:51 belaban Exp $
  */
 public class FD_PING extends FD {
     /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
@@ -65,7 +65,7 @@ public class FD_PING extends FD {
 
         public void run() {
             if(ping_dest == null) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("ping_dest is null: members=" + members + ", pingable_mbrs=" +
                             pingable_mbrs + ", local_addr=" + local_addr);
                 return;
@@ -162,7 +162,7 @@ public class FD_PING extends FD {
                         break;
                     }
                 }
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace(sb.toString());
             }
         }

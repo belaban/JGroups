@@ -1,4 +1,4 @@
-// $Id: MERGE.java,v 1.13 2006/10/11 14:40:26 belaban Exp $
+// $Id: MERGE.java,v 1.13.2.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -198,7 +198,7 @@ public class MERGE extends Protocol implements Runnable {
                         start();
                     }
                     catch(Exception ex) {
-                        if(warn) log.warn("exception calling start(): " + ex);
+                        if(log.isWarnEnabled()) log.warn("exception calling start(): " + ex);
                     }
                 }
                 else {
@@ -214,7 +214,7 @@ public class MERGE extends Protocol implements Runnable {
                     is_server=true;
                 }
                 catch(Exception ex) {
-                    if(warn) log.warn("exception calling start(): " + ex);
+                    if(log.isWarnEnabled()) log.warn("exception calling start(): " + ex);
                 }
                 break;
 

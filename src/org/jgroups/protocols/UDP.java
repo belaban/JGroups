@@ -38,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.123.2.2 2007/03/09 07:19:05 belaban Exp $
+ * @version $Id: UDP.java,v 1.123.2.3 2007/04/27 08:03:51 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -261,7 +261,7 @@ public class UDP extends TP implements Runnable {
                 receive(mcast_addr, sender, data, offset, len);
             }
             catch(SocketException sock_ex) {
-                 if(trace) log.trace("multicast socket is closed, exception=" + sock_ex);
+                 if(log.isTraceEnabled()) log.trace("multicast socket is closed, exception=" + sock_ex);
                 break;
             }
             catch(InterruptedIOException io_ex) { // thread was interrupted
@@ -532,7 +532,7 @@ public class UDP extends TP implements Runnable {
 //                // if(addr.isLoopbackAddress())
 //                // continue;
 //                s.joinGroup(tmp_mcast_addr, i);
-//                if(trace)
+//                if(log.isTraceEnabled())
 //                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
 //                break;
 //            }
@@ -554,7 +554,7 @@ public class UDP extends TP implements Runnable {
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
                 s.joinGroup(tmp_mcast_addr, i);
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
                 break;
             }
@@ -687,14 +687,14 @@ public class UDP extends TP implements Runnable {
             sock.setSendBufferSize(send_buf_size);
         }
         catch(Throwable ex) {
-            if(warn) log.warn("failed setting send buffer size of " + send_buf_size + " in " + sock + ": " + ex);
+            if(log.isWarnEnabled()) log.warn("failed setting send buffer size of " + send_buf_size + " in " + sock + ": " + ex);
         }
 
         try {
             sock.setReceiveBufferSize(recv_buf_size);
         }
         catch(Throwable ex) {
-            if(warn) log.warn("failed setting receive buffer size of " + recv_buf_size + " in " + sock + ": " + ex);
+            if(log.isWarnEnabled()) log.warn("failed setting receive buffer size of " + recv_buf_size + " in " + sock + ": " + ex);
         }
     }
 

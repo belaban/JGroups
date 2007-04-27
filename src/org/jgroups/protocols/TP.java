@@ -40,7 +40,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.77.2.2 2007/04/18 08:40:11 belaban Exp $
+ * @version $Id: TP.java,v 1.77.2.3 2007/04/27 08:03:51 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -534,7 +534,7 @@ public abstract class TP extends Protocol {
         if(str != null) {
             use_incoming_packet_handler=Boolean.valueOf(str).booleanValue();
             props.remove("use_packet_handler");
-            if(warn) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
+            if(log.isWarnEnabled()) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
         }
 
         str=props.getProperty("use_incoming_packet_handler");
@@ -618,7 +618,7 @@ public abstract class TP extends Protocol {
 
         if(enable_bundling) {
             //if (use_outgoing_packet_handler == false)
-              //  if(warn) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
+              //  if(log.isWarnEnabled()) log.warn("enable_bundling is true; setting use_outgoing_packet_handler=true");
             // use_outgoing_packet_handler=true;
         }
 
@@ -675,7 +675,7 @@ public abstract class TP extends Protocol {
             observer.passDown(evt);
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
-        if(trace) {
+        if(log.isTraceEnabled()) {
             StringBuffer sb=new StringBuffer("sending msg to ").append(msg.getDest()).
                     append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
             log.trace(sb.toString());
@@ -693,7 +693,7 @@ public abstract class TP extends Protocol {
             copy.setSrc(local_addr);
             // copy.setDest(dest);
 
-            if(trace) log.trace(new StringBuffer("looping back message ").append(copy));
+            if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
             try {
                 incoming_msg_queue.add(copy);
             }
@@ -764,7 +764,7 @@ public abstract class TP extends Protocol {
 //        }
 
         boolean mcast=dest == null || dest.isMulticastAddress();
-        if(trace){
+        if(log.isTraceEnabled()){
             StringBuffer sb=new StringBuffer("received (");
             sb.append(mcast? "mcast) " : "ucast) ").append(length).append(" bytes from ").append(sender);
             log.trace(sb.toString());
@@ -805,7 +805,7 @@ public abstract class TP extends Protocol {
                 buf_in_stream.reset(length);
                 version=dis.readShort();
                 if(Version.isBinaryCompatible(version) == false) {
-                    if(warn) {
+                    if(log.isWarnEnabled()) {
                         StringBuffer sb=new StringBuffer();
                         sb.append("packet from ").append(sender).append(" has different version (").append(version);
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
@@ -873,7 +873,7 @@ public abstract class TP extends Protocol {
         }
 
         evt=new Event(Event.MSG, msg);
-        if(trace) {
+        if(log.isTraceEnabled()) {
             StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.getHeaders());
             log.trace(sb);
         }
@@ -893,14 +893,14 @@ public abstract class TP extends Protocol {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(ch_name != null && channel_name != null && !channel_name.equals(ch_name) &&
                     !ch_name.equals(Util.DIAG_GROUP)) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
                             append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
                 return;
             }
         }
         else {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
                           append(", headers are ").append(msg.getHeaders()).append(", will be discarded"));
             return;
@@ -1303,7 +1303,7 @@ public abstract class TP extends Protocol {
                         log.error("error processing incoming packet", ex);
                 }
             }
-            if(trace) log.trace("incoming packet handler terminating");
+            if(log.isTraceEnabled()) log.trace("incoming packet handler terminating");
         }
     }
 
@@ -1351,7 +1351,7 @@ public abstract class TP extends Protocol {
                         log.error("error processing incoming message", ex);
                 }
             }
-            if(trace) log.trace("incoming message handler terminating");
+            if(log.isTraceEnabled()) log.trace("incoming message handler terminating");
         }
     }
 
@@ -1409,7 +1409,7 @@ public abstract class TP extends Protocol {
                 }
                 msg=null; // let's give the garbage collector a hand... this is probably useless though
             }
-            if(trace) log.trace("outgoing message handler terminating");
+            if(log.isTraceEnabled()) log.trace("outgoing message handler terminating");
         }
 
         protected void handleMessage(Message msg) throws Throwable {
@@ -1494,7 +1494,7 @@ public abstract class TP extends Protocol {
 //                    log.error("failure in bundling", ex);
 //                }
 //            }
-//            if(trace) log.trace("BundlingOutgoingPacketHandler thread terminated");
+//            if(log.isTraceEnabled()) log.trace("BundlingOutgoingPacketHandler thread terminated");
 //        }
 //
 //
@@ -1532,7 +1532,7 @@ public abstract class TP extends Protocol {
 //                return;
 //
 //            try {
-//                if(trace) {
+//                if(log.isTraceEnabled()) {
 //                    StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
 //                    sb.append(count).append(" bytes, ").append(stop_time-start).append("ms)");
 //                    sb.append(" to ").append(msgs.size()).append(" destination(s)");
@@ -1634,7 +1634,7 @@ public abstract class TP extends Protocol {
                 if(msgs.size() == 0)
                     return;
                 copy=new HashMap(msgs);
-                if(trace) {
+                if(log.isTraceEnabled()) {
                     long stop=System.currentTimeMillis();
                     double percentage=100.0 / max_bundle_size * count;
                     StringBuffer sb=new StringBuffer("sending ").append(num_msgs).append(" msgs (");
@@ -1762,7 +1762,7 @@ public abstract class TP extends Protocol {
                 try {
                     if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("joined " + group_addr + " on " + i.getName());
                     }
                 }

@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.81 2006/10/27 07:02:00 belaban Exp $
+// $Id: NAKACK.java,v 1.81.2.1 2007/04/27 08:03:55 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -502,7 +502,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             // discard messages while not yet server (i.e., until JOIN has returned)
             if(!is_server) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("message was discarded (not yet server)");
                 return;
             }
@@ -528,7 +528,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 return;
 
             case NakAckHeader.XMIT_RSP:
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("received missing messages " + hdr.range);
                 handleXmitRsp(msg);
                 return;
@@ -587,7 +587,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             throw new NullPointerException("msg is null; event is " + evt);
 
         if(!started) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
             return;
         }
@@ -617,12 +617,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         try { // moved passDown() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             passDown(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
         }
         catch(Throwable t) { // eat the exception, don't pass it up the stack
-            if(warn) {
+            if(log.isWarnEnabled()) {
                 log.warn("failure passing message down", t);
             }
         }
@@ -644,7 +644,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        if(trace) {
+        if(log.isTraceEnabled()) {
             StringBuffer sb=new StringBuffer('[');
             sb.append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno);
             log.trace(sb.toString());
@@ -661,7 +661,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-            if(warn) {
+            if(log.isWarnEnabled()) {
                 StringBuffer sb=new StringBuffer('[');
                 sb.append(local_addr).append("] discarded message from non-member ")
                         .append(sender).append(", my view is " ).append(this.view);
@@ -707,7 +707,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=null;
         boolean      amISender; // am I the original sender ?
 
-        if(trace) {
+        if(log.isTraceEnabled()) {
             StringBuffer sb=new StringBuffer();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
             sb.append(original_sender).append(" [").append(first_seqno).append(" - ").append(last_seqno).append("]");
@@ -759,7 +759,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 // yaronr: added &&listSize()>0 since protocols between FRAG and NAKACK add headers, and message exceeds size.
 
                 // size has reached max_xmit_size. go ahead and send message (excluding the current message)
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("xmitting msgs [" + marker + '-' + (i - 1) + "] to " + xmit_requester);
                 sendXmitRsp(xmit_requester, (LinkedList)list.clone(), marker, i - 1);
                 marker=i;
@@ -782,7 +782,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         if(list.size() > 0) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("xmitting msgs [" + marker + '-' + last_seqno + "] to " + xmit_requester);
             sendXmitRsp(xmit_requester, (LinkedList)list.clone(), marker, last_seqno);
             list.clear();
@@ -832,7 +832,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Message m;
 
         if(msg == null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("message is null");
             return;
         }
@@ -975,7 +975,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
 
             if(sender == null || val == null) {
-                if(warn) {
+                if(log.isWarnEnabled()) {
                     log.warn("sender or value is null");
                 }
                 continue;
@@ -1014,7 +1014,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             val=(org.jgroups.protocols.pbcast.Digest.Entry)entry.getValue();
 
             if(sender == null || val == null) {
-                if(warn) {
+                if(log.isWarnEnabled()) {
                     log.warn("sender or value is null");
                 }
                 continue;
@@ -1132,12 +1132,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long stability_highest_rcvd; // highest seqno received in the stability vector for a sender P
 
         if(members == null || local_addr == null || d == null) {
-            if(warn)
+            if(log.isWarnEnabled())
                 log.warn("members, local_addr or digest are null !");
             return;
         }
 
-        if(trace) {
+        if(log.isTraceEnabled()) {
             log.trace("received stable digest " + d);
         }
 
@@ -1167,7 +1167,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 stability_highest_rcvd=high_seqno_received;
 
                 if(stability_highest_rcvd >= 0 && stability_highest_rcvd > my_highest_rcvd) {
-                    if(trace) {
+                    if(log.isTraceEnabled()) {
                         log.trace("my_highest_rcvd (" + my_highest_rcvd + ") < stability_highest_rcvd (" +
                                 stability_highest_rcvd + "): requesting retransmission of " +
                                 sender + '#' + stability_highest_rcvd);
@@ -1181,7 +1181,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 continue;
             }
 
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("deleting msgs <= " + high_seqno_delivered + " from " + sender);
 
             // garbage collect from sent_msgs if sender was myself
@@ -1219,14 +1219,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             Address random_member=(Address)Util.pickRandomElement(members);
             if(random_member != null && !local_addr.equals(random_member)) {
                 dest=random_member;
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("picked random member " + dest + " to send XMIT request to");
             }
         }
 
         hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, first_seqno, last_seqno, sender);
         retransmit_msg=new Message(dest, null, null);
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
         passDown(new Event(Event.MSG, retransmit_msg));

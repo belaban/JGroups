@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.30 2006/11/17 13:39:19 belaban Exp $
+// $Id: MERGE2.java,v 1.29.2.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -137,6 +137,12 @@ public class MERGE2 extends Protocol {
     }
 
 
+    /**
+     * This prevents the down-handler thread to be created, which is not needed in the protocol.
+     * DON'T REMOVE ! 
+     */
+    public void startDownHandler() {
+    }
 
 
     public void up(Event evt) {
@@ -305,7 +311,7 @@ public class MERGE2 extends Protocol {
                     }
                 }
             }
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
         }
 

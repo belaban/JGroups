@@ -18,7 +18,7 @@ import java.util.List;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.68.2.4 2007/04/26 16:21:20 vlada Exp $
+ * @version $Id: GMS.java,v 1.68.2.5 2007/04/27 08:03:55 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -401,7 +401,7 @@ public class GMS extends Protocol {
         try {
             ack_collector.waitForAllAcks(view_ack_collection_timeout);
             stop=System.currentTimeMillis();
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
         catch(TimeoutException e) {
@@ -461,7 +461,7 @@ public class GMS extends Protocol {
             // {A,B,X}, which would cause Y and Z to be shunned as they are not part of the membership
             // bela Nov 20 2003
             if(shun && local_addr != null && prev_members.contains(local_addr)) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("I (" + local_addr + ") am not a member of view " + new_view +
                             ", shunning myself and leaving the group (prev_members are " + prev_members +
                             ", current view is " + view + ")");
@@ -470,7 +470,7 @@ public class GMS extends Protocol {
                 passUp(new Event(Event.EXIT));
             }
             else {
-                if(warn) log.warn("I (" + local_addr + ") am not a member of view " + new_view + "; discarding view");
+                if(log.isWarnEnabled()) log.warn("I (" + local_addr + ") am not a member of view " + new_view + "; discarding view");
             }
             return;
         }
@@ -701,7 +701,7 @@ public class GMS extends Protocol {
                         Message view_ack=new Message(coord, null, null);
                         GmsHeader tmphdr=new GmsHeader(GmsHeader.VIEW_ACK, hdr.view);
                         view_ack.putHeader(name, tmphdr);
-                        if(trace)
+                        if(log.isTraceEnabled())
                             log.trace("sending VIEW_ACK to " + coord);
                         passDown(new Event(Event.MSG, view_ack));
                         impl.handleViewChange(hdr.view, hdr.my_digest);
@@ -1223,7 +1223,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.68.2.4 2007/04/26 16:21:20 vlada Exp $
+     * @version $Id: GMS.java,v 1.68.2.5 2007/04/27 08:03:55 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread           thread;
@@ -1257,7 +1257,7 @@ public class GMS extends Protocol {
                 history.add(new Date() + ": " + req.toString());
             }
             catch(QueueClosedException e) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("queue is closed; request " + req + " is discarded");
             }
         }
@@ -1291,7 +1291,7 @@ public class GMS extends Protocol {
             q.clear();
             waitUntilCompleted(MAX_COMPLETION_TIME);
             q.close(true);
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("suspended ViewHandler");
             Resumer r=new Resumer(resume_task_timeout, merge_id, resume_tasks, this);
             resume_tasks.put(merge_id, r);
@@ -1306,7 +1306,7 @@ public class GMS extends Protocol {
             same_merge_id=same_merge_id || (this.merge_id == null && merge_id == null);
 
             if(!same_merge_id) {
-                if(warn)
+                if(log.isWarnEnabled())
                     log.warn("resume(" +merge_id+ ") does not match " + this.merge_id + ", ignoring resume()");
                 return;
             }
@@ -1324,7 +1324,7 @@ public class GMS extends Protocol {
             if(q.closed())
                 q.reset();
             suspended=false;
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("resumed ViewHandler");
         }
 
@@ -1388,7 +1388,7 @@ public class GMS extends Protocol {
         private void process(List requests) {
             if(requests.isEmpty())
                 return;
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("processing " + requests);
             Request firstReq=(Request)requests.get(0);
             switch(firstReq.type) {
@@ -1465,7 +1465,7 @@ public class GMS extends Protocol {
                 thread=new Thread(Util.getGlobalThreadGroup(), this, "ViewHandler");
                 thread.setDaemon(false); // thread cannot terminate if we have tasks left, e.g. when we as coord leave
                 thread.start();
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("ViewHandler started");
             }
         }

@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.11 2006/09/14 07:27:53 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.11.2.1 2007/04/27 08:03:52 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -171,7 +171,7 @@ public class SEQUENCER extends Protocol {
         Set keys=received_table.keySet();
         keys.retainAll(members);
         if(keys.size() != size) {
-            if(trace)
+            if(log.isTraceEnabled())
                 log.trace("adjusted received_table, keys are " + keys);
         }
     }

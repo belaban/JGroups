@@ -1,4 +1,4 @@
-// $Id: FLOW_CONTROL.java,v 1.11 2006/04/28 15:16:53 belaban Exp $
+// $Id: FLOW_CONTROL.java,v 1.11.6.1 2007/04/27 08:03:51 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -274,7 +274,7 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
         _msgsSentAfterFCreq=0;
 
         if(isBlockState) {
-            if(warn) log.warn("ACTION UNBLOCK");
+            if(log.isWarnEnabled()) log.warn("ACTION UNBLOCK");
             log.error("1;" + System.currentTimeMillis() + ';' + _windowSize);
             synchronized(block_sending) {
                 isBlockState=false;
@@ -282,8 +282,8 @@ public class FLOW_CONTROL extends MessageProtocol implements Runnable {
             }
         }
 
-        if(warn) log.warn("estimatedTimeout = " + _estimatedRTT);
-        if(warn) log.warn("window size = " + _windowSize + " forward margin size = " + _fwdMarginSize);
+        if(log.isWarnEnabled()) log.warn("estimatedTimeout = " + _estimatedRTT);
+        if(log.isWarnEnabled()) log.warn("window size = " + _windowSize + " forward margin size = " + _fwdMarginSize);
 
         return rspList;
     }

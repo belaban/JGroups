@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.26 2006/10/25 08:23:57 belaban Exp $
+// $Id: TUNNEL.java,v 1.26.2.1 2007/04/27 08:03:52 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -206,7 +206,7 @@ public class TUNNEL extends Protocol implements Runnable {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
 
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(msg + ", hdrs: " + msg.getHeaders());
 
         // Don't send if destination is local address. Instead, switch dst and src and put in up_queue.
@@ -223,7 +223,7 @@ public class TUNNEL extends Protocol implements Runnable {
                This allows e.g. PerfObserver to get the time of reception of a message */
             if(observer != null)
                 observer.up(evt, up_queue.size());
-            if(trace) log.trace("looped back local message " + copy);
+            if(log.isTraceEnabled()) log.trace("looped back local message " + copy);
             passUp(evt);
             if(dest != null && !dest.isMulticastAddress())
                 return;
@@ -312,13 +312,13 @@ public class TUNNEL extends Protocol implements Runnable {
             Address src=msg.getSrc();
 
             if(dst != null && dst.isMulticastAddress() && src != null && local_addr.equals(src)) {
-                if(trace)
+                if(log.isTraceEnabled())
                     log.trace("discarded own loopback multicast packet");
                 return;
             }
         }
 
-         if(trace)
+         if(log.isTraceEnabled())
              log.trace(msg + ", hdrs: " + msg.getHeaders());
 
         /* Discard all messages destined for a channel with a different name */
@@ -332,7 +332,7 @@ public class TUNNEL extends Protocol implements Runnable {
 
 
     void handleDownEvent(Event evt) {
-        if(trace)
+        if(log.isTraceEnabled())
             log.trace(evt);
 
         switch(evt.getType()) {

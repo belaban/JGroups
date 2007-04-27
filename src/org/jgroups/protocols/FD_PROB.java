@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java,v 1.10 2006/02/07 07:57:50 belaban Exp $
+// $Id: FD_PROB.java,v 1.10.6.1 2007/04/27 08:03:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.10.6.1 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -130,11 +130,11 @@ public class FD_PROB extends Protocol implements Runnable {
                         updateCounters(hdr);
                         return;                                     // don't pass up !
                     case FdHeader.NOT_MEMBER:
-                        if(warn) log.warn("NOT_MEMBER: I'm being shunned; exiting");
+                        if(log.isWarnEnabled()) log.warn("NOT_MEMBER: I'm being shunned; exiting");
                         passUp(new Event(Event.EXIT));
                         return;
                     default:
-                        if(warn) log.warn("FdHeader type " + hdr.type + " not known");
+                        if(log.isWarnEnabled()) log.warn("FdHeader type " + hdr.type + " not known");
                         return;
                 }
         }
@@ -176,7 +176,7 @@ public class FD_PROB extends Protocol implements Runnable {
                                     start();
                                 }
                                 catch(Exception ex) {
-                                    if(warn) log.warn("exception when calling start(): " + ex);
+                                    if(log.isWarnEnabled()) log.warn("exception when calling start(): " + ex);
                                 }
                             }
                         }
@@ -213,7 +213,7 @@ public class FD_PROB extends Protocol implements Runnable {
             // 1. Get a random member P (excluding ourself)
             hb_dest=getHeartbeatDest();
             if(hb_dest == null) {
-                if(warn) log.warn("hb_dest is null");
+                if(log.isWarnEnabled()) log.warn("hb_dest is null");
                 Util.sleep(gossip_interval);
                 continue;
             }
@@ -231,7 +231,7 @@ public class FD_PROB extends Protocol implements Runnable {
             // 3. Send heartbeat to P
             hdr=createHeader();
             if(hdr == null)
-                if(warn) log.warn("header could not be created. Heartbeat will not be sent");
+                if(log.isWarnEnabled()) log.warn("header could not be created. Heartbeat will not be sent");
             else {
                 hb_msg=new Message(hb_dest, null, null);
                 hb_msg.putHeader(getName(), hdr);
@@ -310,7 +310,7 @@ public class FD_PROB extends Protocol implements Runnable {
             if(entry.excluded())
                 continue;
             if(index >= ret.members.length) {
-                if(warn) log.warn("index " + index + " is out of bounds (" +
+                if(log.isWarnEnabled()) log.warn("index " + index + " is out of bounds (" +
                                                      ret.members.length + ')');
                 break;
             }
@@ -328,7 +328,7 @@ public class FD_PROB extends Protocol implements Runnable {
         FdEntry entry;
 
         if(hdr == null || hdr.members == null || hdr.counters == null) {
-            if(warn) log.warn("hdr is null or contains no counters");
+            if(log.isWarnEnabled()) log.warn("hdr is null or contains no counters");
             return;
         }
 
