@@ -17,9 +17,11 @@ import java.io.*;
 /**
  * Simple flow control protocol. After max_credits bytes sent to the group (or an individual member), the sender blocks
  * until it receives an ack from all members that they indeed received max_credits bytes.
- * Design in doc/design/SimpleFlowControl.txt
+ * Design in doc/design/SimpleFlowControl.txt<br/>
+ * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
+ * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.12 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: SFC.java,v 1.13 2007/04/30 04:51:31 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
