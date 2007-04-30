@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.34 2007/03/19 13:34:44 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.35 2007/04/30 14:25:32 vlada Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -800,11 +800,12 @@ public class MultiplexerTest extends ChannelTestBase {
     }   
 
     private static class Cache extends ExtendedReceiverAdapter {
-        final Map data=new HashMap();
+        protected final Map data ;
         Channel ch;
         String name;
 
         public Cache(Channel ch, String name) {
+        	this.data=new HashMap();
             this.ch=ch;
             this.name=name;
             this.ch.setReceiver(this);
@@ -939,8 +940,10 @@ public class MultiplexerTest extends ChannelTestBase {
             log("view is " + new_view);
         }
 
-        public String toString() {
-            return data.toString();
+        public String toString() {        	
+        	synchronized(data){
+        		return data.toString();
+        	}            
         }
 
         private void log(String msg) {
