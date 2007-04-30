@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.20 2006/12/31 07:46:32 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.21 2007/04/30 15:18:45 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -139,7 +139,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
          acquireSemaphore(semaphore, 60000, count);
          
          //Sleep to ensure async message arrive
-         sleepThread(3000);
+         sleepThread(6000);
 
          //do test verification
          List[] lists = new List[count];
@@ -275,7 +275,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
          acquireSemaphore(semaphore, 60000, count);
 
          //Sleep to ensure async message arrive
-         sleepThread(3000);
+         sleepThread(6000);
          //do test verification
          List[] lists = new List[count];
          for (int i = 0; i < count; i++)
