@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.4 2007/04/06 15:47:41 belaban Exp $
+  version: $Id: sfc.xml,v 1.5 2007/04/30 11:53:42 belaban Exp $
 -->
 
 <config>
@@ -32,7 +32,7 @@
          thread_pool.keep_alive_time="5000"
          thread_pool.queue_enabled="true"
          thread_pool.queue_max_size="1000"
-         thread_pool.rejection_policy="Discard"
+         thread_pool.rejection_policy="Run"
 
          oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
@@ -40,7 +40,7 @@
          oob_thread_pool.keep_alive_time="10000"
          oob_thread_pool.queue_enabled="true"
          oob_thread_pool.queue_max_size="10"
-         oob_thread_pool.rejection_policy="Discard" />
+         oob_thread_pool.rejection_policy="Run" />
 
 
     <PING timeout="2000"
