@@ -17,6 +17,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -37,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.131 2007/04/30 05:06:51 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.132 2007/04/30 15:24:49 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -84,6 +85,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Map to store sent and received messages (keyed by sender) */
     private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
+    /** Map which keeps track of threads removing messages from NakReceiverWindows, so we don't wait while a thread
+     * is removing messages */
+    private final ConcurrentMap<Address,AtomicBoolean> in_progress=new ConcurrentHashMap<Address,AtomicBoolean>();
 
     private boolean leaving=false;
     private boolean started=false;
@@ -131,7 +135,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     protected boolean print_stability_history_on_failed_xmit=false;
-
 
 
     public NAKACK() {
@@ -485,6 +488,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 sent.keySet().retainAll(tmp);
                 received.keySet().retainAll(tmp);
                 view=tmp_view;
+
+                in_progress.keySet().retainAll(mbrs); // remove elements which are not in the membership
                 break;
 
             case Event.BECOME_SERVER:
@@ -620,7 +625,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         long msg_id;
-        NakReceiverWindow win=xmit_table.get(local_addr); // todo: create an instance var which points to the sender's NRW
+        NakReceiverWindow win=xmit_table.get(local_addr);
         msg.setSrc(local_addr); // this needs to be done
 
         seqno_lock.lock();
@@ -688,24 +693,40 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
-        // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
-        // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
-        // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
-        // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
-        // order in which they were sent by the sender
-        Message msg_to_deliver;
-        synchronized(win) {
-            while((msg_to_deliver=win.remove()) != null) {
 
-                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
-                if(msg_to_deliver.isFlagSet(Message.OOB)) {
-                    continue;
+        AtomicBoolean busy=in_progress.get(sender);
+        if(busy == null) {
+            in_progress.putIfAbsent(sender, busy=new AtomicBoolean(false));
+        }
+
+        // check whether a thread is already active for the same sender, if so, terminate. This prevents lots of
+        // threads blocking on the same lock and then - when that lock is released - from terminating anyway, because
+        // the previous thread has already processed all messages (http://jira.jboss.com/jira/browse/JGRP-457)
+        if(busy.compareAndSet(false, true)) {
+            try {
+                // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+                // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
+                // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
+                // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+                // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
+                // order in which they were sent by the sender
+                Message msg_to_deliver;
+                synchronized(win) {
+                    while((msg_to_deliver=win.remove()) != null) {
+
+                        // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                        if(msg_to_deliver.isFlagSet(Message.OOB)) {
+                            continue;
+                        }
+
+                        // Changed by bela Jan 29 2003: not needed (see above)
+                        //msg_to_deliver.removeHeader(getName());
+                        up_prot.up(new Event(Event.MSG, msg_to_deliver));
+                    }
                 }
-
-                // Changed by bela Jan 29 2003: not needed (see above)
-                //msg_to_deliver.removeHeader(getName());
-                up_prot.up(new Event(Event.MSG, msg_to_deliver));
+            }
+            finally {
+                busy.set(false);
             }
         }
     }
