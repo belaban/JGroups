@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.77 2007/04/27 15:23:13 belaban Exp $
+ * @version $Id: FC.java,v 1.78 2007/04/30 07:26:55 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -392,7 +392,7 @@ public class FC extends Protocol {
                         case FcHeader.CREDIT_REQUEST:
                             num_credit_requests_received++;
                             Address sender=msg.getSrc();
-                            Long sent_credits = (Long) msg.getObject();
+                            Long sent_credits=(Long)msg.getObject();
                             handleCreditRequest(sender, sent_credits);
                             break;
                         default:
@@ -403,7 +403,7 @@ public class FC extends Protocol {
                 }
                 else {
                     Address sender=msg.getSrc();
-                    long new_credits=adjustCredit(msg, sender);
+                    long new_credits=adjustCredit(sender, msg.getLength());
                     try {
                         return up_prot.up(evt);
                     }
@@ -451,13 +451,12 @@ public class FC extends Protocol {
                         if(insufficient_credit && running) {
                             // we need to send the credit requests down *without* holding the lock, otherwise we might
                             // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                            Set<Address> creditors_copy=new HashSet<Address>(creditors);
+                            Map<Address,Long> sent_copy=new HashMap<Address,Long>(sent);
+                            sent_copy.keySet().retainAll(creditors);
                             lock.unlock();
                             try {
-                                if(log.isTraceEnabled())
-                                    log.trace("timeout occurred waiting for credits; sending credit request to " + creditors_copy);
-                                for(Address creditor: creditors_copy) {
-                                    sendCreditRequest(creditor);
+                                for(Map.Entry<Address,Long> entry: sent_copy.entrySet()) {
+                                    sendCreditRequest(entry.getKey(), entry.getValue());
                                 }
                             }
                             finally {
@@ -591,11 +590,12 @@ public class FC extends Protocol {
 
     /**
      * Check whether sender has enough credits left. If not, send him some more
-     * @param msg
+     * @param src The address of the sender
+     * @param length The number of bytes received by this message. We don't care about the size of the headers for
+     * the purpose of flow control
      * @return long Number of credits to be sent. Greater than 0 if credits needs to be sent, 0 otherwise
      */
-    private long adjustCredit(Message msg, Address src) {
-        long length=msg.getLength(); // we don't care about headers for the purpose of flow control
+    private long adjustCredit(Address src, int length) {
         if(src == null) {
             if(log.isErrorEnabled()) log.error("src is null");
             return 0;
@@ -613,7 +613,12 @@ public class FC extends Protocol {
         return 0;
     }
 
-    private void handleCreditRequest(Address sender, Long sender_credit) {
+    /**
+     *
+     * @param sender The sender who requests credits
+     * @param left_credits Number of bytes that the sender has left to send messages to us
+     */
+    private void handleCreditRequest(Address sender, Long left_credits) {
         if(sender == null) return;
 
         lock.lock();
@@ -635,7 +640,7 @@ public class FC extends Protocol {
                     // a sender might have negative credits, e.g. -20000. If we subtracted -20000 from max_credits,
                     // we'd end up with max_credits + 20000, and send too many credits back. So if the sender's
                     // credits is negative, we simply send max_credits back
-                    long credits_left=Math.max(0, sender_credit.longValue());
+                    long credits_left=Math.max(0, left_credits.longValue());
                     credit_response=max_credits - credits_left;
                     // credit_response = max_credits;
                     received.put(sender, max_credits_constant);
@@ -679,8 +684,10 @@ public class FC extends Protocol {
      * If the last credit request was sent shortly before (less than max_block_time
      * milliseconds ago), then we discard the request. This ensures that credit requests are not sent more frequently
      * than every max_block_time milliseconds, preventing credit request storms
+     * @param dest The member to which we send the credit request
+     * @param credits_left The number of bytes (of credits) left for dest
      */
-    private void sendCreditRequest(final Address dest) {
+    private void sendCreditRequest(final Address dest, Long credits_left) {
         if(max_block_time > 0) {
             // This call is made with the lock released, so ensure the get/put is atomic
             long now=System.currentTimeMillis();
@@ -688,13 +695,13 @@ public class FC extends Protocol {
             if(last != null && now - last.longValue() < max_block_time) {
                 return;
             }
-            last_credit_request.put(dest, new Long(now));
+            last_credit_request.put(dest, now);
         }
 
         if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
 
-        Message msg=new Message(dest, null, null);
+        Message msg=new Message(dest, null, credits_left);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
         num_credit_requests_sent++;
