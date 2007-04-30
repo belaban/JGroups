@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.130 2007/04/30 04:13:32 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.131 2007/04/30 05:06:51 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -111,7 +111,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private BoundedList send_history;
 
     /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
-    private final Set<Long> oob_loopback_msgs=new HashSet<Long>();
+    private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
 
     private final Lock rebroadcast_lock=new ReentrantLock();
 
