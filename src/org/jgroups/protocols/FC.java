@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.78 2007/04/30 07:26:55 belaban Exp $
+ * @version $Id: FC.java,v 1.79 2007/04/30 08:31:19 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -135,13 +135,8 @@ public class FC extends Protocol {
 
     static final String name="FC";
 
-    private long start_blocking=0, stop_blocking=0;
-
-
-    /**
-     * Map<Address, Long> of the last time we requested credit
-     */
-    private final Map<Address, Long> last_credit_request=new ConcurrentHashMap<Address, Long>();
+    /** Last time a credit request was sent. Used to prevent credit request storms */
+    private long last_credit_request=0;
 
     private int num_blockings=0;
     private int num_credit_requests_received=0, num_credit_requests_sent=0;
@@ -438,8 +433,11 @@ public class FC extends Protocol {
                 else {
                     determineCreditors(dest, length);
                     insufficient_credit=true;
-                    num_blockings++;
-                    start_blocking=System.currentTimeMillis();
+                    long start_blocking=System.currentTimeMillis();
+                    num_blockings++; // we count overall blockings, not blockings for *all* threads
+                    if(log.isTraceEnabled())
+                        log.trace("Starting blocking. lowest_credit=" + lowest_credit + "; msg length =" + length);
+
                     while(insufficient_credit && running) {
                         try {
                             mutex.await(max_block_time, TimeUnit.MILLISECONDS);
@@ -449,23 +447,28 @@ public class FC extends Protocol {
                             Thread.currentThread().interrupt();
                         }
                         if(insufficient_credit && running) {
-                            // we need to send the credit requests down *without* holding the lock, otherwise we might
-                            // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
-                            Map<Address,Long> sent_copy=new HashMap<Address,Long>(sent);
-                            sent_copy.keySet().retainAll(creditors);
-                            lock.unlock();
-                            try {
-                                for(Map.Entry<Address,Long> entry: sent_copy.entrySet()) {
-                                    sendCreditRequest(entry.getKey(), entry.getValue());
+                            long wait_time=System.currentTimeMillis() - last_credit_request;
+                            if(wait_time >= max_block_time) {
+                                // we need to send the credit requests down *without* holding the lock, otherwise we might
+                                // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
+                                Map<Address,Long> sent_copy=new HashMap<Address,Long>(sent);
+                                sent_copy.keySet().retainAll(creditors);
+                                lock.unlock();
+                                try {
+                                    // System.out.println(new Date() + " --> credit request");
+                                    for(Map.Entry<Address,Long> entry: sent_copy.entrySet()) {
+                                        sendCreditRequest(entry.getKey(), entry.getValue());
+                                    }
                                 }
-                            }
-                            finally {
-                                lock.lock();
+                                finally {
+                                    lock.lock();
+                                }
+                                last_credit_request=System.currentTimeMillis();
                             }
                         }
                     }
-                    stop_blocking=System.currentTimeMillis();
-                    long block_time=stop_blocking - start_blocking;
+
+                    long block_time=System.currentTimeMillis() - start_blocking;
                     if(log.isTraceEnabled())
                         log.trace("total time blocked: " + block_time + " ms");
                     total_time_blocking+=block_time;
@@ -681,26 +684,12 @@ public class FC extends Protocol {
     /**
      * We cannot send this request as OOB messages, as the credit request needs to queue up behind the regular messages;
      * if a receiver cannot process the regular messages, that is a sign that the sender should be throttled !
-     * If the last credit request was sent shortly before (less than max_block_time
-     * milliseconds ago), then we discard the request. This ensures that credit requests are not sent more frequently
-     * than every max_block_time milliseconds, preventing credit request storms
      * @param dest The member to which we send the credit request
      * @param credits_left The number of bytes (of credits) left for dest
      */
     private void sendCreditRequest(final Address dest, Long credits_left) {
-        if(max_block_time > 0) {
-            // This call is made with the lock released, so ensure the get/put is atomic
-            long now=System.currentTimeMillis();
-            Long last=last_credit_request.get(dest);
-            if(last != null && now - last.longValue() < max_block_time) {
-                return;
-            }
-            last_credit_request.put(dest, now);
-        }
-
         if(log.isTraceEnabled())
             log.trace("sending credit request to " + dest);
-
         Message msg=new Message(dest, null, credits_left);
         msg.putHeader(name, CREDIT_REQUEST_HDR);
         down_prot.down(new Event(Event.MSG, msg));
@@ -749,10 +738,6 @@ public class FC extends Protocol {
                 insufficient_credit=false;
                 mutex.signalAll();
             }
-
-            // keep it simple and just clear the last_credit_request Map
-            // at worst we get an extra credit request
-            last_credit_request.clear();
         }
         finally {
             lock.unlock();
