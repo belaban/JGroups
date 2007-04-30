@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.129 2007/04/27 15:32:11 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.130 2007/04/30 04:13:32 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -109,6 +109,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size missing messages received */
     private BoundedList send_history;
+
+    /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
+    private final Set<Long> oob_loopback_msgs=new HashSet<Long>();
 
     private final Lock rebroadcast_lock=new ReentrantLock();
 
@@ -416,6 +419,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public void stop() {
         started=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
+        oob_loopback_msgs.clear();
     }
 
 
@@ -636,6 +640,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+            oob_loopback_msgs.add(msg_id);
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
@@ -654,46 +659,33 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * messages as possible from the NRW and passes them up the stack. Discards messages from non-members.
      */
     private void handleMessage(Message msg, NakAckHeader hdr) {
-        NakReceiverWindow win;
-        Message msg_to_deliver;
         Address sender=msg.getSrc();
-
         if(sender == null) {
             if(log.isErrorEnabled())
                 log.error("sender of message is null");
             return;
         }
 
-        if(log.isTraceEnabled()) {
-            StringBuilder sb=new StringBuilder('[');
-            sb.append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno);
-            log.trace(sb.toString());
-        }
+        if(log.isTraceEnabled())
+            log.trace(new StringBuilder('[').append(local_addr).append(": received ").append(sender).append('#').append(hdr.seqno));
 
-        // msg is potentially re-sent later as result of XMIT_REQ reception; that's why hdr is added !
-
-        // Changed by bela Jan 29 2003: we currently don't resend from received msgs, just from sent_msgs !
-        // msg.putHeader(getName(), hdr);
-
-        win=xmit_table.get(sender);
+        NakReceiverWindow win=xmit_table.get(sender);
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-            if(log.isWarnEnabled()) {
-                StringBuffer sb=new StringBuffer('[');
-                sb.append(local_addr).append("] discarded message from non-member ")
-                        .append(sender).append(", my view is " ).append(this.view);
-                log.warn(sb);
-            }
+            if(log.isWarnEnabled())
+                log.warn(local_addr + "] discarded message from non-member " + sender + ", my view is " + view);
             return;
         }
 
-        boolean added=local_addr.equals(sender) || win.add(hdr.seqno, msg);
-
+        boolean loopback=local_addr.equals(sender);
+        boolean added=loopback || win.add(hdr.seqno, msg);
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
         if(msg.isFlagSet(Message.OOB) && added) {
-            up_prot.up(new Event(Event.MSG, msg));
+            if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
+                up_prot.up(new Event(Event.MSG, msg));
+            }
         }
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
@@ -702,6 +694,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
+        Message msg_to_deliver;
         synchronized(win) {
             while((msg_to_deliver=win.remove()) != null) {
 
