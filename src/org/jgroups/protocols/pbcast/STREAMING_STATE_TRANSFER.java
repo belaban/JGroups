@@ -1164,9 +1164,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
          state_id = Util.readString(in);
       }
 
-      public long size()
+      public int size()
       {
-         long retval = Global.LONG_SIZE + Global.BYTE_SIZE; // id and type
+         int retval = Global.LONG_SIZE + Global.BYTE_SIZE; // id and type
 
          retval += Util.size(sender);
 

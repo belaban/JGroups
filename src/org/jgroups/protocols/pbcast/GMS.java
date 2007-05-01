@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.102 2007/04/27 07:59:23 belaban Exp $
+ * @version $Id: GMS.java,v 1.103 2007/05/01 10:55:15 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1084,8 +1084,8 @@ public class GMS extends Protocol {
             merge_rejected=in.readBoolean();
         }
 
-        public long size() {
-            long retval=Global.BYTE_SIZE *2; // type + merge_rejected
+        public int size() {
+            int retval=Global.BYTE_SIZE *2; // type + merge_rejected
 
             retval+=Global.BYTE_SIZE; // presence view
             retval+=Global.BYTE_SIZE; // MergeView or View
@@ -1173,7 +1173,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.102 2007/04/27 07:59:23 belaban Exp $
+     * @version $Id: GMS.java,v 1.103 2007/05/01 10:55:15 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

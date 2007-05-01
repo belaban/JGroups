@@ -1,4 +1,4 @@
-// $Id: PingHeader.java,v 1.10 2005/04/26 15:22:13 belaban Exp $
+// $Id: PingHeader.java,v 1.11 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,8 +25,8 @@ public class PingHeader extends Header implements Streamable {
         this.arg=arg;
     }
 
-    public long size() {
-        long retval=Global.BYTE_SIZE *2; // type and presence
+    public int size() {
+        int retval=Global.BYTE_SIZE *2; // type and presence
         if(arg != null) {
             retval+=arg.size();
         }

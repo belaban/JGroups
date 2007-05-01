@@ -11,7 +11,7 @@ import java.io.*;
 /**
  * Generic transport header, used by TP.
  * @author Bela Ban
- * @version $Id: TpHeader.java,v 1.3 2005/07/17 11:36:15 chrislott Exp $
+ * @version $Id: TpHeader.java,v 1.4 2007/05/01 10:55:10 belaban Exp $
  */
 public class TpHeader extends Header implements Streamable {
     public String channel_name=null;
@@ -31,7 +31,7 @@ public class TpHeader extends Header implements Streamable {
     }
 
 
-    public long size() {
+    public int size() {
         return size;
     }
 

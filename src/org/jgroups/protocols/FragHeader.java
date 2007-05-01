@@ -8,7 +8,7 @@ import java.io.*;
 
 /**
  * @author Bela Ban
- * @version $Id: FragHeader.java,v 1.2 2005/04/15 13:17:02 belaban Exp $
+ * @version $Id: FragHeader.java,v 1.3 2007/05/01 10:55:10 belaban Exp $
  */
 public class FragHeader extends Header implements Streamable {
     public long id=0;
@@ -49,7 +49,7 @@ public class FragHeader extends Header implements Streamable {
         out.writeInt(num_frags);
     }
 
-    public long size() {
+    public int size() {
         return Global.LONG_SIZE + 2*Global.INT_SIZE;
     }
 

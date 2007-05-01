@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.14 2007/01/16 16:37:41 belaban Exp $
+// $Id: CAUSAL.java,v 1.15 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.14 $
+ *  @version $Revision: 1.15 $
  *
  **/
 
@@ -98,9 +98,9 @@ public class CAUSAL extends Protocol
          * Size of this vector timestamp estimation, used in fragmetation
          * @return headersize in bytes
          */
-        public long size()
+        public int size()
         {
-            long retval=Global.BYTE_SIZE;
+            int retval=Global.BYTE_SIZE;
             if(t == null)
                 return retval;
             retval+=t.senderPosition;
@@ -214,7 +214,7 @@ public class CAUSAL extends Protocol
          * Size of this vector timestamp estimation, used in fragmentation.
          * @return headersize in bytes
          */
-        public long size() {           
+        public int size() {
             /*why 231, don't know but these are this values I get when
              flattening the object into byte buffer*/
             return 231;

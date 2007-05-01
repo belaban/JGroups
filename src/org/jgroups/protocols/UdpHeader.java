@@ -1,4 +1,4 @@
-// $Id: UdpHeader.java,v 1.8 2005/04/20 09:10:09 belaban Exp $
+// $Id: UdpHeader.java,v 1.9 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,7 +29,7 @@ public class UdpHeader extends Header implements Streamable {
     }
 
 
-    public long size() {
+    public int size() {
         return size;
     }
 

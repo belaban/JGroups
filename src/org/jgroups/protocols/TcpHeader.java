@@ -1,4 +1,4 @@
-// $Id: TcpHeader.java,v 1.4 2005/04/15 13:17:02 belaban Exp $
+// $Id: TcpHeader.java,v 1.5 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -42,7 +42,7 @@ public class TcpHeader extends Header implements Streamable {
         group_addr=in.readUTF();
     }
 
-    public long size() {
+    public int size() {
         return group_addr.length() +2;
     }
 }

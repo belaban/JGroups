@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.20 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.21 2007/05/01 10:55:10 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -335,8 +335,8 @@ public class VIEW_SYNC extends Protocol {
             }
         }
 
-        public long size() {
-            long retval=Global.INT_SIZE + Global.BYTE_SIZE + Global.BYTE_SIZE; // type + view type + presence for digest
+        public int size() {
+            int retval=Global.INT_SIZE + Global.BYTE_SIZE + Global.BYTE_SIZE; // type + view type + presence for digest
             if(view != null)
                 retval+=view.serializedSize();
             return retval;

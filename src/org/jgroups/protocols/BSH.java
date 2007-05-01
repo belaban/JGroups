@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.17 2007/01/12 14:19:05 belaban Exp $
+// $Id: BSH.java,v 1.18 2007/05/01 10:55:09 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -192,7 +192,7 @@ public class BSH extends Protocol {
             this.type=type;
         }
 
-        public long size() {
+        public int size() {
             return 10;
         }
 

@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.18 2007/04/27 07:59:18 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.19 2007/05/01 10:55:10 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -322,8 +322,8 @@ public class SEQUENCER extends Protocol {
             tag=(ViewId)Util.readStreamable(ViewId.class, in);
         }
 
-        public long size() {
-            long size=Global.BYTE_SIZE *2; // type + presence byte
+        public int size() {
+            int size=Global.BYTE_SIZE *2; // type + presence byte
             if(tag != null)
                 size+=tag.serializedSize();
             return size;
