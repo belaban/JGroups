@@ -1,6 +1,6 @@
 
 // Author: Bela Ban
-// $Id: MarshalingFormat.txt,v 1.5 2006/12/08 09:22:16 belaban Exp $
+// $Id: MarshalingFormat.txt,v 1.6 2007/05/01 08:40:24 belaban Exp $
 
 
 Binary format for marshalled messages
@@ -8,7 +8,7 @@ Binary format for marshalled messages
 
 An org.jgroups.Message is marshalled to a byte stream as follows.
 
-- version ID: short (2 bytes). 2.2.7 is represented as 227, 2.2.8.1 as 2281
+- version ID: short (2 bytes). Version.encode() encodes the major, minor and patch version into the short.
 - flags (byte):
   - single message or list of messages (LIST)
     If single message --> SingleMessage, else MessageList
@@ -33,9 +33,21 @@ MessageList:
 Headers:
 - length: int. Number of headers
 - For each Header:
-  - Key: string.
+  - Key: UTF-8 string
   - Header
 
+
+Header:
+- boolean (1 byte): magic number present
+- if magic number:
+  - magic number (int)
+- else
+  - UTF-8 string
+- contents (header-specific)
+
+
+UTF-8 strings:
+- All strings start with a short that is the length of the string (DataOutputStream.writeUTF(String))
 
 
 Notes:
