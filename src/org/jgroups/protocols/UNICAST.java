@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.81 2007/04/27 11:06:12 belaban Exp $
+// $Id: UNICAST.java,v 1.82 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -618,7 +618,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         byte    type=DATA;
         long    seqno=0;
 
-        static final long serialized_size=Global.BYTE_SIZE + Global.LONG_SIZE;
+        static final int serialized_size=Global.BYTE_SIZE + Global.LONG_SIZE;
 
 
         public UnicastHeader() {} // used for externalization
@@ -640,7 +640,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
 
-        public final long size() {
+        public final int size() {
             return serialized_size;
         }
 

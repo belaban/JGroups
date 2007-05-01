@@ -1,4 +1,4 @@
-// $Id: PullPushAdapter.java,v 1.24 2007/01/18 16:21:54 belaban Exp $
+// $Id: PullPushAdapter.java,v 1.25 2007/05/01 10:55:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -449,7 +449,7 @@ public class PullPushAdapter implements Runnable, ChannelListener {
             return identifier;
         }
 
-        public long size() {
+        public int size() {
             if(identifier == null)
                 return 12;
             else

@@ -1,4 +1,4 @@
-// $Id: Header.java,v 1.9 2005/08/08 09:47:19 belaban Exp $
+// $Id: Header.java,v 1.10 2007/05/01 10:55:19 belaban Exp $
 
 package org.jgroups;
 
@@ -10,7 +10,7 @@ import java.io.Externalizable;
  @author Bela Ban
  */
 public abstract class Header implements Externalizable {
-    public static final long HDR_OVERHEAD=100; // estimated size of a header (used to estimate the size of the entire msg)
+    public static final int HDR_OVERHEAD=100; // estimated size of a header (used to estimate the size of the entire msg)
 
 
     public Header() {
@@ -25,7 +25,7 @@ public abstract class Header implements Externalizable {
      * or not to fragment the message. Fragmentation itself will be accurate, because the entire message will actually
      * be serialized into a byte buffer, so we can determine the exact size.
      */
-    public long size() {
+    public int size() {
         return HDR_OVERHEAD;
     }
 

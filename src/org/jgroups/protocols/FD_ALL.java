@@ -19,7 +19,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.10 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.11 2007/05/01 10:55:10 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -423,7 +423,7 @@ public class FD_ALL extends Protocol {
             suspected_mbr=(Address)in.readObject();
         }
 
-        public long size() {
+        public int size() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(suspected_mbr);
             return retval;

@@ -1,4 +1,4 @@
-// $Id: TunnelHeader.java,v 1.6 2006/01/24 16:01:08 belaban Exp $
+// $Id: TunnelHeader.java,v 1.7 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,7 +16,7 @@ public class TunnelHeader extends Header implements Streamable {
 
     public TunnelHeader(String n) {channel_name=n;}
 
-    public long size() {
+    public int size() {
         return channel_name == null? 1 : channel_name.length() +3;
     }
 

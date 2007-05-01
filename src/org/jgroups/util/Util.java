@@ -25,7 +25,7 @@ import java.security.MessageDigest;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.119 2007/05/01 09:15:17 belaban Exp $
+ * @version $Id: Util.java,v 1.120 2007/05/01 10:55:20 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1539,7 +1539,7 @@ public class Util {
         }
     }
 
-    public static long sizeOf(Streamable inst) {
+    public static int  sizeOf(Streamable inst) {
         byte[] data;
         ByteArrayOutputStream output;
         DataOutputStream out;
@@ -2132,7 +2132,7 @@ public class Util {
         ClassConfigurator.getInstance(true);
 
         Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), "Bela");
-        long    size=Util.sizeOf(msg);
+        int size=Util.sizeOf(msg);
         System.out.println("size=" + msg.size() + ", streamable size=" + size);
 
         msg.putHeader("belaban", new NakAckHeader((byte)1, 23, 34));

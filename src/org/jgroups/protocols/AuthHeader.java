@@ -1,7 +1,6 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Header;
-import org.jgroups.Address;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -47,7 +46,7 @@ public class AuthHeader extends Header implements Streamable{
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         this.token = Util.readAuthToken(in);
     }
-    public long size(){
+    public int size(){
         //need to fix this
         return Util.sizeOf(this);
     }

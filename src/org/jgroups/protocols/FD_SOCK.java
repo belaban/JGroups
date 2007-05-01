@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.61 2007/04/27 07:59:18 belaban Exp $
+// $Id: FD_SOCK.java,v 1.62 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -923,8 +923,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             mbrs=(Set<Address>)in.readObject();
         }
 
-        public long size() {
-            long retval=Global.BYTE_SIZE; // type
+        public int size() {
+            int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbr);
             retval+=Util.size(sock_addr);
 

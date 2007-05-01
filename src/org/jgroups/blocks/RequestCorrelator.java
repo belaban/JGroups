@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.37 2007/02/16 09:11:29 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.38 2007/05/01 10:55:18 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -820,8 +820,8 @@ public class RequestCorrelator {
             dest_mbrs=(List)Util.readAddresses(in, java.util.LinkedList.class);
         }
 
-        public long size() {
-            long retval=Global.BYTE_SIZE // type
+        public int size() {
+            int retval=Global.BYTE_SIZE // type
                     + Global.LONG_SIZE // id
                     + Global.BYTE_SIZE; // rsp_expected
 

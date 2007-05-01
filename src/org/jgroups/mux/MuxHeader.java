@@ -10,7 +10,7 @@ import java.io.*;
 /**
  * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.6 2006/09/22 10:29:33 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.7 2007/05/01 10:55:18 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
     String      id=null;
@@ -44,8 +44,8 @@ public class MuxHeader extends Header implements Streamable {
     }
 
 
-    public long size() {
-        long retval=Global.BYTE_SIZE; // presence byte in Util.writeString
+    public int size() {
+        int retval=Global.BYTE_SIZE; // presence byte in Util.writeString
         if(id != null)
             retval+=id.length() +2;   // for UTF
         retval+=Global.BYTE_SIZE;     // presence for info

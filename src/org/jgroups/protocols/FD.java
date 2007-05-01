@@ -1,4 +1,4 @@
-// $Id: FD.java,v 1.53 2007/04/27 07:59:19 belaban Exp $
+// $Id: FD.java,v 1.54 2007/05/01 10:55:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Revision: 1.53 $
+ * @version $Revision: 1.54 $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -486,7 +486,7 @@ public class FD extends Protocol {
         }
 
 
-        public long size() {
+        public int size() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbrs);
             retval+=Util.size(from);

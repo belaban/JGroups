@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.9 2006/04/23 12:52:54 belaban Exp $
+// $Id: PerfTest.java,v 1.10 2007/05/01 10:55:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -405,7 +405,7 @@ public class PerfTest implements MessageListener, MembershipListener{
             this.seqno=seqno;
         }
 
-        public long size() {
+        public int size() {
             return 16;
         }
 
