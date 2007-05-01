@@ -33,12 +33,6 @@
     </class>
     <class>
         <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.NakAckHeader</class-name>
-        <preload>true</preload>
-        <magic-number>9</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
         <class-name>org.jgroups.protocols.PingHeader</class-name>
         <preload>true</preload>
         <magic-number>13</magic-number>
