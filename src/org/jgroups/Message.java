@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.69 2007/04/04 12:18:04 belaban Exp $
+ * @version $Id: Message.java,v 1.70 2007/05/01 09:15:17 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -41,7 +41,7 @@ public class Message implements Externalizable, Streamable {
     protected transient int     length=0;
 
     /** Map<String,Header> */
-    protected Map headers;
+    protected Map<String,Header> headers;
 
     protected final transient ReentrantReadWriteLock header_lock=new ReentrantReadWriteLock();
 
@@ -65,10 +65,10 @@ public class Message implements Externalizable, Streamable {
 
     private byte flags=0;
 
-    static final HashSet nonStreamableHeaders=new HashSet(); // todo: remove when all headers are streamable
+    static final Set<Class> nonStreamableHeaders=new HashSet<Class>();
 
     /** Map<Address,Address>. Maintains mappings to canonical addresses */
-    private static final ConcurrentHashMap<Address,Address> canonicalAddresses=new ConcurrentHashMap();
+    private static final ConcurrentHashMap<Address,Address> canonicalAddresses=new ConcurrentHashMap<Address,Address>();
     private static final boolean DISABLE_CANONICALIZATION;
 
     static {
@@ -344,7 +344,7 @@ public class Message implements Externalizable, Streamable {
     public Header removeHeader(String key) {
         header_lock.readLock().lock();
         try {
-            return (Header)headers.get(key);
+            return headers.get(key);
         }
         finally {
             header_lock.readLock().unlock();
@@ -356,7 +356,7 @@ public class Message implements Externalizable, Streamable {
     public Header getHeader(String key) {
         header_lock.readLock().lock();
         try {
-            return (Header)headers.get(key);
+            return headers.get(key);
         }
         finally {
             header_lock.readLock().unlock();
@@ -492,7 +492,7 @@ public class Message implements Externalizable, Streamable {
                 key=(String)entry.getKey();
                 retval+=key.length() +2; // not the same as writeUTF(), but almost
                 hdr=(Header)entry.getValue();
-                retval+=5; // 1 for presence of magic number, 4 for magic number
+                retval+=Global.SHORT_SIZE; // 2 for magic number
                 retval+=hdr.size();
             }
         }
@@ -604,8 +604,8 @@ public class Message implements Externalizable, Streamable {
         header_lock.writeLock().lock();
         try {
             while(len-- > 0) {
-                Object key=in.readUTF();
-                Object value=Marshaller.read(in);
+                String key=in.readUTF();
+                Header value=(Header)Marshaller.read(in);
                 headers.put(key, value);
             }
         }
@@ -776,20 +776,19 @@ public class Message implements Externalizable, Streamable {
     }
 
     private static void writeHeader(Header value, DataOutputStream out) throws IOException {
-        int magic_number;
+        short magic_number;
         String classname;
         ObjectOutputStream oos=null;
         try {
             magic_number=ClassConfigurator.getInstance(false).getMagicNumber(value.getClass());
             // write the magic number or the class name
+            out.writeShort(magic_number);
             if(magic_number == -1) {
-                out.writeBoolean(false);
                 classname=value.getClass().getName();
                 out.writeUTF(classname);
             }
             else {
-                out.writeBoolean(true);
-                out.writeInt(magic_number);
+                ;
             }
 
             // write the contents
@@ -820,15 +819,14 @@ public class Message implements Externalizable, Streamable {
 
     private static Header readHeader(DataInputStream in) throws IOException {
         Header            hdr;
-        boolean           use_magic_number=in.readBoolean();
-        int               magic_number;
+        short             magic_number;
         String            classname;
         Class             clazz;
         ObjectInputStream ois=null;
 
         try {
-            if(use_magic_number) {
-                magic_number=in.readInt();
+            magic_number=in.readShort();
+            if(magic_number != -1) {
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
                 if(clazz == null)
                     log.error("magic number " + magic_number + " is not available in magic map");
@@ -854,13 +852,13 @@ public class Message implements Externalizable, Streamable {
         return hdr;
     }
 
-    private static Map createHeaders(int size) {
-        return size > 0? new HashMap(size) : new HashMap(5);
+    private static Map<String,Header> createHeaders(int size) {
+        return size > 0? new HashMap<String,Header>(size) : new HashMap<String,Header>(5);
     }
 
 
-    private static Map createHeaders(Map m) {
-        return new HashMap(m);
+    private static Map<String,Header> createHeaders(Map<String,Header> m) {
+        return new HashMap<String,Header>(m);
     }
 
     /** canonicalize addresses to some extent.  There are race conditions

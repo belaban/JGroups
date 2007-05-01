@@ -25,7 +25,7 @@ import java.security.MessageDigest;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.118 2007/03/14 16:32:47 belaban Exp $
+ * @version $Id: Util.java,v 1.119 2007/05/01 09:15:17 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -503,12 +503,12 @@ public class Util {
         ClassConfigurator conf=null;
         try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
         int b=in.read();
-        int magic_number;
+        short magic_number;
         String classname;
         Class cl=null;
         Address addr;
         if(b == 1) {
-            magic_number=in.readInt();
+            magic_number=in.readShort();
             cl=conf.get(magic_number);
         }
         else {
@@ -523,7 +523,7 @@ public class Util {
     private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
         ClassConfigurator conf=null;
         try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
-        int magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
+        short magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
 
         // write the class info
         if(magic_number == -1) {
@@ -532,7 +532,7 @@ public class Util {
         }
         else {
             out.write(1);
-            out.writeInt(magic_number);
+            out.writeShort(magic_number);
         }
 
         // write the data itself
@@ -619,7 +619,7 @@ public class Util {
 
 
     public static void writeGenericStreamable(Streamable obj, DataOutputStream out) throws IOException {
-        int magic_number;
+        short magic_number;
         String classname;
 
         if(obj == null) {
@@ -632,13 +632,13 @@ public class Util {
             magic_number=ClassConfigurator.getInstance(false).getMagicNumber(obj.getClass());
             // write the magic number or the class name
             if(magic_number == -1) {
-                out.write(0);
+                out.writeBoolean(false);
                 classname=obj.getClass().getName();
                 out.writeUTF(classname);
             }
             else {
-                out.write(1);
-                out.writeInt(magic_number);
+                out.writeBoolean(true);
+                out.writeShort(magic_number);
             }
 
             // write the contents
@@ -657,13 +657,13 @@ public class Util {
         if(b == 0)
             return null;
 
-        int use_magic_number=in.read(), magic_number;
+        boolean use_magic_number=in.readBoolean();
         String classname;
         Class clazz;
 
         try {
-            if(use_magic_number == 1) {
-                magic_number=in.readInt();
+            if(use_magic_number) {
+                short magic_number=in.readShort();
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
                 if (clazz==null) {
                    throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");

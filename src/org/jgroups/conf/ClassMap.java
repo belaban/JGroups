@@ -1,4 +1,4 @@
-// $Id: ClassMap.java,v 1.4 2005/08/08 14:58:32 belaban Exp $
+// $Id: ClassMap.java,v 1.5 2007/05/01 09:15:18 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -15,12 +15,12 @@ public class ClassMap {
     private final String  mClassname;
     private final String  mDescription;
     private final boolean mPreload;
-    private final int     mMagicNumber;
+    private final short    mMagicNumber;
 
     public ClassMap(String clazz,
                     String desc,
                     boolean preload,
-                    int magicnumber) {
+                    short magicnumber) {
         mClassname=clazz;
         mDescription=desc;
         mPreload=preload;
@@ -43,7 +43,7 @@ public class ClassMap {
         return mPreload;
     }
 
-    public int getMagicNumber() {
+    public short getMagicNumber() {
         return mMagicNumber;
     }
 

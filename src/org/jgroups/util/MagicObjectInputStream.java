@@ -12,7 +12,7 @@ import java.io.ObjectStreamClass;
 /**
  * Uses magic numbers for class descriptors
  * @author Bela Ban
- * @version $Id: MagicObjectInputStream.java,v 1.5 2006/02/27 14:13:30 belaban Exp $
+ * @version $Id: MagicObjectInputStream.java,v 1.6 2007/05/01 09:15:17 belaban Exp $
  */
 public class MagicObjectInputStream extends ContextObjectInputStream {
     static volatile ClassConfigurator conf=null;
@@ -34,7 +34,7 @@ public class MagicObjectInputStream extends ContextObjectInputStream {
 
     protected ObjectStreamClass readClassDescriptor() throws IOException, ClassNotFoundException {
         ObjectStreamClass retval;
-        int magic_num=super.readInt();
+        short magic_num=super.readShort();
 
         if(conf == null || magic_num == -1) {
             return super.readClassDescriptor();
