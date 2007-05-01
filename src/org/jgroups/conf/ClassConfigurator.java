@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.20 2006/09/11 13:54:42 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.21 2007/05/01 09:15:18 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -30,14 +30,14 @@ public class ClassConfigurator {
     static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
 
     //this is where we store magic numbers
-    private final Map classMap=new HashMap(); // key=Class, value=magic number
-    private final Map magicMap=new HashMap(); // key=magic number, value=Class
+    private final Map<Class,Short> classMap=new HashMap<Class,Short>(); // key=Class, value=magic number
+    private final Map<Short,Class> magicMap=new HashMap<Short,Class>(); // key=magic number, value=Class
 
-    /** Map<Integer,ObjectStreamClass> */
-    private final Map streamMapId=new HashMap();
+    /** Map<Short,ObjectStreamClass> */
+    private final Map<Short,ObjectStreamClass> streamMapId=new HashMap<Short,ObjectStreamClass>();
 
-    /** Map<ObjectStreamClass, Integer> */
-    private final Map streamMapClass=new HashMap();
+    /** Map<ObjectStreamClass, Short> */
+    private final Map<ObjectStreamClass, Short> streamMapClass=new HashMap<ObjectStreamClass, Short>();
 
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -69,9 +69,9 @@ public class ClassConfigurator {
             ObjectStreamClass objStreamClass;
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
-                Integer m;
+                Short m;
                 for(int i=0; i < mapping.length; i++) {
-                    m=new Integer(mapping[i].getMagicNumber());
+                    m=new Short(mapping[i].getMagicNumber());
                     try {
                         Class clazz=mapping[i].getClassForMap();
                         objStreamClass=ObjectStreamClass.lookup(clazz);
@@ -124,8 +124,8 @@ public class ClassConfigurator {
      * @param magic the magic number that maps to the class
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public Class get(int magic) {
-        return (Class)magicMap.get(new Integer(magic));
+    public Class get(short magic) {
+        return magicMap.get(magic);
     }
 
     /**
@@ -151,25 +151,25 @@ public class ClassConfigurator {
      * @param clazz a class object that we want the magic number for
      * @return the magic number for a class, -1 if no mapping is available
      */
-    public int getMagicNumber(Class clazz) {
-        Integer i=(Integer)classMap.get(clazz);
+    public short getMagicNumber(Class clazz) {
+        Short i=classMap.get(clazz);
         if(i == null)
             return -1;
         else
-            return i.intValue();
+            return i;
     }
 
-    public int getMagicNumberFromObjectStreamClass(ObjectStreamClass objStream) {
-        Integer i=(Integer)streamMapClass.get(objStream);
+    public short getMagicNumberFromObjectStreamClass(ObjectStreamClass objStream) {
+        Short i=streamMapClass.get(objStream);
         if(i == null)
             return -1;
         else
-            return i.intValue();
+            return i.shortValue();
     }
 
-    public ObjectStreamClass getObjectStreamClassFromMagicNumber(int magic_number) {
+    public ObjectStreamClass getObjectStreamClassFromMagicNumber(short magic_number) {
         ObjectStreamClass retval=null;
-        retval=(ObjectStreamClass)streamMapId.get(new Integer(magic_number));
+        retval=streamMapId.get(magic_number);
         return retval;
     }
 
@@ -179,19 +179,17 @@ public class ClassConfigurator {
     }
 
     public String printMagicMap() {
-        StringBuffer sb=new StringBuffer();
-        Integer key;
-        SortedSet keys=new TreeSet(magicMap.keySet());
+        StringBuilder sb=new StringBuilder();
+        SortedSet<Short> keys=new TreeSet<Short>(magicMap.keySet());
 
-        for(Iterator it=keys.iterator(); it.hasNext();) {
-            key=(Integer)it.next();
+        for(Short key: keys) {
             sb.append(key).append(":\t").append(magicMap.get(key)).append('\n');
         }
         return sb.toString();
     }
 
     public String printClassMap() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Map.Entry entry;
 
         for(Iterator it=classMap.entrySet().iterator(); it.hasNext();) {

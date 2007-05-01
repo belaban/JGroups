@@ -1,4 +1,4 @@
-// $Id: Marshaller.java,v 1.5 2004/10/04 20:43:35 belaban Exp $
+// $Id: Marshaller.java,v 1.6 2007/05/01 09:15:17 belaban Exp $
 
 package org.jgroups.util;
 
@@ -72,7 +72,7 @@ public class Marshaller {
             Class extclass=null;
             if(usemagic) {
                 //read the magic number
-                int magic=in.readInt();
+                short magic=in.readShort();
                 //from the magic number, get the class
                 extclass=mConfigurator.get(magic);
             }
@@ -113,13 +113,13 @@ public class Marshaller {
                 return;
 
             //find out if we have a magic number for this class
-            int magic=mConfigurator.getMagicNumber(inst.getClass());
+            short magic=mConfigurator.getMagicNumber(inst.getClass());
             //-1 means no magic number otherwise we have one
             if(magic != -1) {
                 //true means we use a magic number
                 out.writeBoolean(true);
                 //write the magic number
-                out.writeInt(magic);
+                out.writeShort(magic);
             }
             else {
                 //we don't have a magic number

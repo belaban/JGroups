@@ -1,6 +1,6 @@
 
 // Author: Bela Ban
-// $Id: MarshalingFormat.txt,v 1.6 2007/05/01 08:40:24 belaban Exp $
+// $Id: MarshalingFormat.txt,v 1.7 2007/05/01 09:15:18 belaban Exp $
 
 
 Binary format for marshalled messages
@@ -38,11 +38,11 @@ Headers:
 
 
 Header:
-- boolean (1 byte): magic number present
-- if magic number:
-  - magic number (int)
+- magic_number (short)
+- if magic number == -1 (no present):
+  - no-op
 - else
-  - UTF-8 string
+  - UTF-8 string (class name)
 - contents (header-specific)
 
 
