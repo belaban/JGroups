@@ -20,7 +20,7 @@ import java.util.concurrent.Future;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.11 2007/04/27 06:21:26 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.12 2007/05/02 15:33:30 belaban Exp $
  */
 public class TimeSchedulerTest extends TestCase {
     TimeScheduler timer=null;
@@ -166,7 +166,7 @@ public class TimeSchedulerTest extends TestCase {
         assertTrue(future.isDone());
 
         success=future.cancel(true);
-        assertFalse(success); // we try to cancel an already cancelled task
+        assertTrue(success); // we try to cancel an already cancelled task
     }
 
 
@@ -187,7 +187,7 @@ public class TimeSchedulerTest extends TestCase {
     }
 
     public void testIsDone2() throws InterruptedException {
-        TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000, -1});
+        TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000,-1});
         ScheduledFuture<?> future=timer.scheduleWithDynamicInterval(task);
 
         assertFalse(future.isCancelled());
