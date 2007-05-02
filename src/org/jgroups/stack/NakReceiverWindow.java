@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.37 2007/04/19 21:04:59 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.38 2007/05/02 14:25:11 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -277,6 +277,7 @@ public class NakReceiverWindow {
                         Address sender=retval.getSrc();
                         if(!local_addr.equals(sender)) { // don't remove if we sent the message !
                             xmit_table.remove(next_to_remove);
+                            low=next_to_remove;
                         }
                     }
                     highest_delivered=next_to_remove;
@@ -289,6 +290,7 @@ public class NakReceiverWindow {
                             Address sender=retval.getSrc();
                             if(!local_addr.equals(sender)) { // don't remove if we sent the message !
                                 xmit_table.remove(next_to_remove);
+                                low=next_to_remove;
                             }
                         }
                         highest_delivered=next_to_remove;
