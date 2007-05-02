@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.22 2007/05/02 14:44:49 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.23 2007/05/02 15:33:22 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
@@ -186,18 +186,28 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
         public void run() {
             try {
-                if(cancelled || (future != null && future.isCancelled()))
+                if(cancelled) {
+                    if(future != null)
+                        future.cancel(true);
+                    return;
+                }
+                if(future != null && future.isCancelled())
                     return;
                 task.run();
             }
             catch(Throwable t) {
                 log.error("failed running task " + task, t);
             }
-            if(cancelled && future != null)
-                future.cancel(true);
-            if(future != null && !future.isCancelled()) {
-                doSchedule();
+
+            if(cancelled) {
+                if(future != null)
+                    future.cancel(true);
+                return;
             }
+            if(future != null && future.isCancelled())
+                return;
+            
+            doSchedule();
         }
 
 
@@ -206,9 +216,12 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
             if(next_interval <= 0) {
                 if(log.isTraceEnabled())
                     log.trace("task will not get rescheduled as interval is " + next_interval);
+                System.out.println("task will not get rescheduled as interval is " + next_interval);
             }
             else {
                 future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
+                if(cancelled)
+                    future.cancel(true);
             }
         }
 
@@ -223,7 +236,9 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
         public boolean cancel(boolean mayInterruptIfRunning) {
             cancelled=true;
-            return future != null && future.cancel(mayInterruptIfRunning);
+            if(future != null)
+                future.cancel(mayInterruptIfRunning);
+            return cancelled;
         }
 
         public boolean isCancelled() {
