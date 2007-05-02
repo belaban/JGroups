@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.20 2007/04/27 06:21:12 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.21 2007/05/02 12:34:50 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
@@ -119,7 +119,7 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
         TaskWrapper task_wrapper=new TaskWrapper(task);
         task_wrapper.doSchedule(); // calls schedule() in ScheduledThreadPoolExecutor
-        return new FutureWrapper(task_wrapper);
+        return task_wrapper;
     }
 
 
@@ -170,9 +170,10 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
     }
 
 
-    private class TaskWrapper implements Runnable {
-        final Task         task;
-        ScheduledFuture<?> future; // cannot be null !
+    private class TaskWrapper<V> implements Runnable, ScheduledFuture<V> {
+        private final Task         task;
+        private ScheduledFuture<?> future; // cannot be null !
+        private boolean            cancelled=false;
 
 
         public TaskWrapper(Task task) {
@@ -185,13 +186,15 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
         public void run() {
             try {
-                if((future != null && future.isCancelled()))
+                if(cancelled || future.isCancelled())
                     return;
                 task.run();
             }
             catch(Throwable t) {
                 log.error("failed running task " + task, t);
             }
+            if(cancelled)
+                future.cancel(true);
             if(!future.isCancelled()) {
                 doSchedule();
             }
@@ -208,39 +211,26 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
                 future=schedule(this, next_interval, TimeUnit.MILLISECONDS);
             }
         }
-    }
 
-
-    private static class FutureWrapper<V> implements ScheduledFuture<V> {
-        TaskWrapper task_wrapper;
-
-
-        public FutureWrapper(TaskWrapper task_wrapper) {
-            this.task_wrapper=task_wrapper;
+        public int compareTo(Delayed o) {
+            long my_delay=future.getDelay(TimeUnit.MILLISECONDS), their_delay=o.getDelay(TimeUnit.MILLISECONDS);
+            return my_delay < their_delay? -1 : my_delay > their_delay? 1 : 0;
         }
 
         public long getDelay(TimeUnit unit) {
-            ScheduledFuture future=task_wrapper.getFuture();
             return future != null? future.getDelay(unit) : -1;
         }
 
-        public int compareTo(Delayed o) {
-            ScheduledFuture future=task_wrapper.getFuture();
-            return future != null? future.compareTo(o) : -1;
-        }
-
         public boolean cancel(boolean mayInterruptIfRunning) {
-            ScheduledFuture future=task_wrapper.getFuture();
+            cancelled=true;
             return future != null && future.cancel(mayInterruptIfRunning);
         }
 
         public boolean isCancelled() {
-            ScheduledFuture future=task_wrapper.getFuture();
-            return future != null && future.isCancelled();
+            return cancelled || (future != null && future.isCancelled());
         }
 
         public boolean isDone() {
-            ScheduledFuture future=task_wrapper.getFuture();
             return future == null || future.isDone();
         }
 
@@ -253,4 +243,5 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
         }
 
     }
+
 }
