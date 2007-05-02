@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.133 2007/05/02 14:26:09 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.134 2007/05/02 14:46:09 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -645,7 +645,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
-            oob_loopback_msgs.add(msg_id);
+            if(msg.isFlagSet(Message.OOB))
+                oob_loopback_msgs.add(msg_id);
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
@@ -692,8 +693,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 up_prot.up(new Event(Event.MSG, msg));
             }
         }
-
-
+        
         AtomicBoolean busy=in_progress.get(sender);
         if(busy == null) {
             in_progress.putIfAbsent(sender, busy=new AtomicBoolean(false));
