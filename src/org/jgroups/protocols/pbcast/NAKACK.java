@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.137 2007/05/03 15:19:39 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.138 2007/05/03 16:00:54 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1343,9 +1343,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             // delete *delivered* msgs that are stable
             if(recv_win != null) {
-//                System.out.println("STABLE(" + sender + ", " + seqno + "): highest_delivered=" + recv_win.getHighestDelivered() +
-//                        ", highest_received=" + recv_win.getHighestReceived() + ", low=" + recv_win.getLowestSeen() +
-//                        "\nxmit table size=" + recv_win.size() + ": " + recv_win.toString() + "\n");
+                // System.out.println("STABLE(" + sender + ", " + high_seqno_delivered + "): " + recv_win.toString() + "\n");
                 recv_win.stable(high_seqno_delivered);  // delete all messages with seqnos <= seqno
             }
         }
