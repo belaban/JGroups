@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.40 2007/05/03 15:27:38 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.41 2007/05/03 16:01:27 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -324,8 +324,10 @@ public class NakReceiverWindow {
             }
             
             // we need to remove all seqnos *including* seqno
-            for(long i=low; i <= seqno; i++) {
-                xmit_table.remove(i);
+            if(!xmit_table.isEmpty()) {
+                for(long i=low; i <= seqno; i++) {
+                    xmit_table.remove(i);
+                }
             }
             low=seqno;
         }
