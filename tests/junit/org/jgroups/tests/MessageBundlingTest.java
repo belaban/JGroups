@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.1 2007/05/03 19:51:15 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.2 2007/05/03 19:55:01 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -48,8 +48,9 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    public void measureLatency() throws ChannelClosedException, ChannelNotConnectedException {
+     public void measureLatencyWithoutMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
         Message tmp=new Message();
+        setBundling(ch1, false, 20000, 30);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
         System.out.println("sent message at " + new Date());
@@ -58,7 +59,23 @@ public class MessageBundlingTest extends ChannelTestBase {
         assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
-        assertTrue("latency should be more than the bundling timeout (" + LATENCY +
+        assertTrue("latency (" + diff + "ms) should be less than the bundling timeout", diff < LATENCY);
+    }
+
+
+    public void measureLatencyWithMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
+        Message tmp=new Message();
+
+        // setBundling(ch1, false, 20000, 30);
+        long time=System.currentTimeMillis();
+        ch1.send(tmp);
+        System.out.println("sent message at " + new Date());
+        Util.sleep(LATENCY + 10L);
+        List<Long> list=r2.getTimes();
+        assertEquals(1, list.size());
+        Long time2=list.get(0);
+        long diff=time2 - time;
+        assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
                 "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
     }
 
