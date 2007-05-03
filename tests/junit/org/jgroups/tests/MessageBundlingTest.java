@@ -14,7 +14,7 @@ import java.util.Date;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.2 2007/05/03 19:55:01 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.3 2007/05/03 20:17:47 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -26,10 +26,12 @@ public class MessageBundlingTest extends ChannelTestBase {
         super.setUp();
         ch1=createChannel();
         setBundling(ch1, BUNDLING, 64000, LATENCY);
+        setLoopback(ch1, false);
         ch1.setReceiver(new NullReceiver());
         ch1.connect("x");
         ch2=createChannel();
         setBundling(ch2, BUNDLING, 64000, LATENCY);
+        setLoopback(ch1, false);
         r2=new MyReceiver();
         ch2.setReceiver(r2);
         ch2.connect("x");
@@ -48,37 +50,64 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-     public void measureLatencyWithoutMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithoutMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
         Message tmp=new Message();
         setBundling(ch1, false, 20000, 30);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
         System.out.println("sent message at " + new Date());
-        Util.sleep(LATENCY + 10L);
+        Util.sleep(LATENCY * 2);
         List<Long> list=r2.getTimes();
         assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
-        assertTrue("latency (" + diff + "ms) should be less than the bundling timeout", diff < LATENCY);
+        System.out.println("latency: " + diff + " ms");
+        assertTrue("latency (" + diff + "ms) should be less than " + LATENCY + " ms", diff < LATENCY);
     }
 
 
-    public void measureLatencyWithMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
         Message tmp=new Message();
 
-        // setBundling(ch1, false, 20000, 30);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
         System.out.println("sent message at " + new Date());
-        Util.sleep(LATENCY + 10L);
+        Util.sleep(LATENCY * 2);
         List<Long> list=r2.getTimes();
         assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
+        System.out.println("latency: " + diff + " ms");
         assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
                 "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
     }
 
+
+
+    public void testLatencyWithMessageBundlingAndLoopback() throws ChannelClosedException, ChannelNotConnectedException {
+        Message tmp=new Message();
+        setLoopback(ch1, true);
+        setLoopback(ch2, true);
+        long time=System.currentTimeMillis();
+        System.out.println("sending message at " + new Date());
+        ch1.send(tmp);
+
+        Util.sleep(LATENCY * 2);
+        List<Long> list=r2.getTimes();
+        assertEquals(1, list.size());
+        Long time2=list.get(0);
+        long diff=time2 - time;
+        System.out.println("latency: " + diff + " ms");
+        assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
+                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
+    }
+
+    private void setLoopback(JChannel ch, boolean b) {
+        ProtocolStack stack=ch.getProtocolStack();
+        Vector<Protocol> prots=stack.getProtocols();
+        TP transport=(TP)prots.lastElement();
+        transport.setLoopback(b);
+    }
 
 
     private void setBundling(JChannel ch, boolean enabled, int max_bytes, long timeout) {
