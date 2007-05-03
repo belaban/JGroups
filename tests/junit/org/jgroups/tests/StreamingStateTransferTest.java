@@ -15,10 +15,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.JChannelFactory;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 
 
@@ -209,7 +206,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
    
    protected class StreamingChannelTestFactory extends DefaultChannelTestFactory
    {
-      public Channel createChannel(Object id) throws Exception
+      public JChannel createChannel(Object id) throws Exception
       {
          return createChannel(CHANNEL_CONFIG, true);
       }
