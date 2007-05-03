@@ -31,7 +31,6 @@ public abstract class BasicConnectionTable {
     int                 recv_buf_size=120000;
     int                 send_buf_size=60000;
     final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
-    final Object        recv_mutex=new Object();     // to serialize simultaneous access to receive() from multiple Connections
     Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
     long                reaper_interval=60000;       // reap unused conns once a minute
     long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
@@ -154,14 +153,12 @@ public abstract class BasicConnectionTable {
    }
 
    /**
-    * Calls the receiver callback. We serialize access to this method because it may be called concurrently
-    * by several Connection handler threads. Therefore the receiver doesn't need to synchronize.
+    * Calls the receiver callback. We do not serialize access to this method, and it may be called concurrently
+    * by several Connection handler threads. Therefore the receiver needs to be reentrant.
     */
    public void receive(Address sender, byte[] data, int offset, int length) {
        if(receiver != null) {
-           synchronized(recv_mutex) {
-               receiver.receive(sender, data, offset, length);
-           }
+           receiver.receive(sender, data, offset, length);
        }
        else
            if(log.isErrorEnabled()) log.error("receiver is null (not set) !");
