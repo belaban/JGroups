@@ -199,9 +199,9 @@ public class ChannelTestBase extends TestCase
       return names;
    }
    
-   protected Channel createChannel(Object id) throws Exception
+   protected JChannel createChannel(Object id) throws Exception
    {
-      Channel c = null;
+      JChannel c = null;
       if (isMuxChannelUsed())
       {
          for (int i = 0; i < muxFactory.length; i++)
@@ -223,7 +223,7 @@ public class ChannelTestBase extends TestCase
       return c;
    }
    
-   protected Channel createChannel() throws Exception
+   protected JChannel createChannel() throws Exception
    {
       return createChannel("A");
    }
@@ -233,21 +233,21 @@ public class ChannelTestBase extends TestCase
     */
    protected class DefaultChannelTestFactory implements ChannelTestFactory
    {      
-      public Channel createChannel(Object id) throws Exception
+      public JChannel createChannel(Object id) throws Exception
       {
          return createChannel(CHANNEL_CONFIG, useBlocking());
       }
 
-      protected Channel createChannel(String configFile, boolean useBlocking) throws Exception
+      protected JChannel createChannel(String configFile, boolean useBlocking) throws Exception
       {
          HashMap channelOptions = new HashMap();
          channelOptions.put(new Integer(Channel.BLOCK), Boolean.valueOf(useBlocking));
          return createChannel(configFile, channelOptions);
       }
 
-      protected Channel createChannel(String configFile, Map channelOptions) throws Exception
+      protected JChannel createChannel(String configFile, Map channelOptions) throws Exception
       {
-         Channel ch = null;
+         JChannel ch = null;
          log.info("Using configuration file " + configFile);
          ch = new JChannel(configFile);
          for (Iterator iter = channelOptions.keySet().iterator(); iter.hasNext();)
@@ -273,9 +273,9 @@ public class ChannelTestBase extends TestCase
          this.f = f;         
       }
 
-      public Channel createChannel(Object id) throws Exception
+      public JChannel createChannel(Object id) throws Exception
       {
-         Channel c = f.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
+         JChannel c =(JChannel)f.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
          if(useBlocking())
          {
             c.setOpt(Channel.BLOCK, Boolean.TRUE);

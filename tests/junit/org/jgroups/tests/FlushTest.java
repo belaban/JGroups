@@ -12,7 +12,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
-import java.util.Vector;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -43,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.31 2007/04/25 20:10:19 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.32 2007/05/03 19:13:46 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -718,9 +717,9 @@ public class FlushTest extends ChannelTestBase
       receiver.clear();
    }  
 
-   protected Channel createChannel() throws ChannelException
+   protected JChannel createChannel() throws ChannelException
    {
-      Channel ret = new JChannel(CHANNEL_CONFIG);
+      JChannel ret = new JChannel(CHANNEL_CONFIG);
       ret.setOpt(Channel.BLOCK, Boolean.TRUE);
       Protocol flush = ((JChannel) ret).getProtocolStack().findProtocol("FLUSH");
       if (flush != null)
