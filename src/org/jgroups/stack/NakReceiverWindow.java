@@ -45,7 +45,7 @@ import java.util.concurrent.ConcurrentMap;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.38 2007/05/02 14:25:11 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.39 2007/05/03 15:21:20 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -54,7 +54,7 @@ public class NakReceiverWindow {
     }
 
     /** dummy for null values: ConcurrentHashMap doesn't allow null values */
-    private static final Message NULL_MSG=new Message(false);
+    public static final Message NULL_MSG=new Message(false);
 
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
 
@@ -263,10 +263,9 @@ public class NakReceiverWindow {
 
     public Message remove() {
         Message retval=null;
-        long    next_to_remove=highest_delivered +1;
-        boolean bounded_buffer_enabled=max_xmit_buf_size > 0;
 
         lock.writeLock().lock();
+        long next_to_remove=highest_delivered +1;
         try {
             while(!xmit_table.isEmpty()) {
                 retval=xmit_table.get(next_to_remove);
@@ -285,7 +284,7 @@ public class NakReceiverWindow {
                 }
                 else { // message has not yet been received (gap in the message sequence stream)
                        // drop all messages that have not been received
-                    if(bounded_buffer_enabled && xmit_table.size() > max_xmit_buf_size) {
+                    if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
                         if(discard_delivered_msgs) {
                             Address sender=retval.getSrc();
                             if(!local_addr.equals(sender)) { // don't remove if we sent the message !
@@ -319,9 +318,9 @@ public class NakReceiverWindow {
         lock.writeLock().lock();
         try {
             if(seqno > highest_delivered +1) {
-                log.error("seqno " + seqno + " is >= highest_delivered " + highest_delivered + "; purging sequence numbers " +
-                        (highest_delivered) + " and lower instead");
-                seqno=highest_delivered;
+                if(log.isErrorEnabled())
+                    log.error("seqno " + seqno + " is >= highest_delivered " + highest_delivered + "; ignoring stability message");
+                return;
             }
             
             // we need to remove all seqnos *including* seqno
