@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.137 2007/05/04 06:52:00 belaban Exp $
+ * @version $Id: TP.java,v 1.138 2007/05/04 07:59:54 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1652,17 +1652,18 @@ public abstract class TP extends Protocol {
 
     private class Bundler {
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
-        final Map<Address,List<Message>>  msgs=new HashMap<Address,List<Message>>(36);
-        long                              count=0;    // current number of bytes accumulated
-        int                               num_msgs=0;
-        long                              last_bundle_time;
-        BundlingTimer                     bundling_timer=null;
-        Future                            bundling_timer_future=null;
-        final ReentrantLock               lock=new ReentrantLock();
+        final Map<Address,List<Message>>   msgs=new HashMap<Address,List<Message>>(36);
+        long                               count=0;    // current number of bytes accumulated
+        int                                num_msgs=0;
+        long                               last_bundle_time;
+        BundlingTimer                      bundling_timer=null;
+        Future                             bundling_timer_future=null;
+        final ReentrantLock                lock=new ReentrantLock();
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+        final ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
 
         private void send(Message msg, Address dest) throws Exception {
-            // long length=msg.getLength();
             long length=msg.size();
             checkLength(length);
             Map<Address,List<Message>> bundled_msgs=null;
@@ -1721,35 +1722,36 @@ public abstract class TP extends Protocol {
         private Map<Address,List<Message>> removeBundledMessages() {
             if(msgs.isEmpty())
                 return null;
-            Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
-            if(log.isTraceEnabled()) {
-                long stop=System.currentTimeMillis();
-                double percentage=100.0 / max_bundle_size * count;
-                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
-                num_msgs=0;
-                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
-                if(last_bundle_time > 0) {
-                    sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
+                Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
+                if(log.isTraceEnabled()) {
+                    long stop=System.currentTimeMillis();
+                    double percentage=100.0 / max_bundle_size * count;
+                    StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                    num_msgs=0;
+                    sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                    if(last_bundle_time > 0) {
+                        sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
+                    }
+                    sb.append(" to ").append(copy.size()).append(" destination(s)");
+                    if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
+                    log.trace(sb);
                 }
-                sb.append(" to ").append(copy.size()).append(" destination(s)");
-                if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
-                log.trace(sb.toString());
+                msgs.clear();
+                count=0;
+                return copy;
             }
-            msgs.clear();
-            count=0;
-            // last_bundle_time=System.currentTimeMillis();
-            return copy;
-        }
 
 
+        /**
+         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
+         * This method may be called by timer and bundler concurrently
+         * @param msgs
+         */
         private void sendBundledMessages(Map<Address,List<Message>> msgs) {
             boolean   multicast;
             Buffer    buffer;
             Map.Entry<Address,List<Message>> entry;
             Address   dst;
-
-            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-            ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
             for(Iterator<Map.Entry<Address,List<Message>>> it=msgs.entrySet().iterator(); it.hasNext();) {
                 entry=it.next();
@@ -1781,6 +1783,7 @@ public abstract class TP extends Protocol {
                         "). Set the fragmentation/bundle size in FRAG and TP correctly");
         }
 
+        
         private class BundlingTimer implements Runnable {
 
             public void run() {
