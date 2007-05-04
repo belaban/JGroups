@@ -8,7 +8,7 @@ import java.net.MulticastSocket;
 
 /**
  * @author Bela Ban
- * @version $Id: LatencyTest.java,v 1.3 2007/05/04 12:49:38 belaban Exp $
+ * @version $Id: LatencyTest.java,v 1.4 2007/05/04 12:51:57 belaban Exp $
  */
 public class LatencyTest {
     InetAddress GROUP=null;
@@ -55,7 +55,7 @@ public class LatencyTest {
             MulticastSocket recv_sock=new MulticastSocket(PORT);
             recv_sock.joinGroup(GROUP);
             recv_packet=new DatagramPacket(recv_buf, 0, recv_buf.length);
-            
+            System.out.println("receiver started");
             for(;;) {
                 recv_sock.receive(recv_packet);
                 start=((Long)Util.objectFromByteBuffer(recv_buf, recv_packet.getOffset(), recv_packet.getLength())).longValue();
@@ -70,7 +70,7 @@ public class LatencyTest {
 
     public static void main(String[] args) throws Exception {
         boolean sender=false;
-        boolean local=true;
+        boolean local=false;
         for(int i=0; i < args.length; i++) {
             if(args[i].equalsIgnoreCase("-sender")) {
                 sender=true;
