@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.134 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: UDP.java,v 1.135 2007/05/04 08:59:54 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -289,11 +289,9 @@ public class UDP extends TP implements Runnable {
             _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), true, data, offset, length);
         }
         else {
-            ArrayList mbrs=new ArrayList(members);
-            IpAddress mbr;
-            for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                mbr=(IpAddress)it.next();
-                _send(mbr.getIpAddress(), mbr.getPort(), false, data, offset, length);
+            ArrayList<Address> mbrs=new ArrayList<Address>(members);
+            for(Address mbr: mbrs) {
+                _send(((IpAddress)mbr).getIpAddress(), ((IpAddress)mbr).getPort(), false, data, offset, length);
             }
         }
     }
