@@ -5,13 +5,14 @@ import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 
 import java.util.*;
 
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.4 2007/05/04 05:47:28 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.5 2007/05/04 11:47:59 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -23,14 +24,12 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        // ch1=createChannel();
-        ch1=new JChannel("c:\\udp.xml");
+        ch1=createChannel();
         setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
         ch1.setReceiver(new NullReceiver());
         ch1.connect("x");
-        // ch2=createChannel();
-        ch2=new JChannel("c:\\udp.xml");
+        ch2=createChannel();
         setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
         r2=new MyReceiver();
@@ -117,23 +116,31 @@ public class MessageBundlingTest extends ChannelTestBase {
     public void testLatencyWithMessageBundlingAndMaxBytes() throws ChannelClosedException, ChannelNotConnectedException {
         setLoopback(ch1, true);
         setLoopback(ch2, true);
-        r2.setNumExpectedMesssages(20);
+        r2.setNumExpectedMesssages(10);
         Promise promise=new Promise();
         r2.setPromise(promise);
-        long time=System.currentTimeMillis();
-        System.out.println(">>> sending 20 messages at " + new Date());
-        for(int i=0; i < 20; i++)
+        Util.sleep(LATENCY *2);
+        System.out.println(">>> sending 10 messages at " + new Date());
+        for(int i=0; i < 10; i++)
             ch1.send(new Message(null, null, new byte[2000]));
 
         promise.getResult(SLEEP); // we should get the messages immediately because max_bundle_size has been exceeded by the 20 messages
         List<Long> list=r2.getTimes();
-        assertEquals(20, list.size());
+        assertEquals(10, list.size());
 
         for(Iterator<Long> it=list.iterator(); it.hasNext();) {
             Long val=it.next();
             System.out.println(val);
         }
+    }
 
+
+    public void testSimple() throws ChannelClosedException, ChannelNotConnectedException {
+        Message tmp=new Message();
+        ch2.setReceiver(new SimpleReceiver());
+        ch1.send(tmp);
+        System.out.println(">>> sent message at " + new Date());
+        Util.sleep(10000);
     }
 
     private void setLoopback(JChannel ch, boolean b) {
@@ -163,6 +170,16 @@ public class MessageBundlingTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             ;
+        }
+    }
+
+
+    private static class SimpleReceiver extends ReceiverAdapter {
+        long start=System.currentTimeMillis();
+
+        public void receive(Message msg) {
+            System.out.println("<<< received message from " + msg.getSrc() + " at " + new Date() +
+                    ", latency=" + (System.currentTimeMillis() - start) + " ms");
         }
     }
 
