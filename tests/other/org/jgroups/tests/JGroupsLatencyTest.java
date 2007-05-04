@@ -10,16 +10,33 @@ import java.net.DatagramPacket;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.1 2007/05/04 11:47:59 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.2 2007/05/04 12:58:24 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
 
 
-    private void start(boolean sender, String props) throws Exception {
-        ch=new JChannel(props);
+    private void start(boolean sender, boolean local, String props) throws Exception {
+
+
+        if(local) {
+            JChannel ch1, ch2;
+            ch1=new JChannel(props);
+            ch1.connect("x");
+            ch2=new JChannel(props);
+            ch2.setReceiver(new MyReceiver());
+            ch2.connect("x");
+            for(int i=0; i < 10; i++) {
+                ch1.send(new Message(null, null, System.currentTimeMillis()));
+                Util.sleep(1000);
+            }
+            ch2.close();
+            ch1.close();
+            return;
+        }
 
         if(sender) {
+            ch=new JChannel(props);
             ch.connect("x");
             for(int i=0; i < 10; i++) {
                 ch.send(new Message(null, null, System.currentTimeMillis()));
@@ -28,9 +45,10 @@ public class JGroupsLatencyTest {
             ch.close();
         }
         else {
-            System.out.println("receiver ready");
+            ch=new JChannel(props);
             ch.setReceiver(new MyReceiver());
             ch.connect("x");
+            System.out.println("receiver ready");
             while(true)
                 Util.sleep(10000);
         }
@@ -47,11 +65,15 @@ public class JGroupsLatencyTest {
     }
 
     public static void main(String[] args) throws Exception {
-        boolean sender=false;
+        boolean sender=false, local=false;
         String props=null;
         for(int i=0; i < args.length; i++) {
             if(args[i].equalsIgnoreCase("-sender")) {
                 sender=true;
+                continue;
+            }
+            if(args[i].equalsIgnoreCase("-local")) {
+                local=true;
                 continue;
             }
             if(args[i].equalsIgnoreCase("-props")) {
@@ -61,12 +83,12 @@ public class JGroupsLatencyTest {
             help();
             return;
         }
-        new JGroupsLatencyTest().start(sender, props);
+        new JGroupsLatencyTest().start(sender, local, props);
     }
 
 
     private static void help() {
-        System.out.println("JGroupsLatencyTest [-sender] [-props <properties>]");
+        System.out.println("JGroupsLatencyTest [-sender] [-local] [-props <properties>]");
     }
 
 }
