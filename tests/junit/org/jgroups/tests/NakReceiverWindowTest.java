@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.11 2007/04/19 21:05:15 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.12 2007/05/04 11:47:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -122,9 +122,9 @@ public class NakReceiverWindowTest extends TestCase {
         check(win, 50, 103, 100);
         System.out.println("Note that the subsequent warning is expected:");
         win.stable(103); // no-op because we haven't even removed 4 messages
-        check(win, 100, 103, 100);
+        check(win, 50, 103, 100);
         while(win.remove() != null);
-        check(win, 100, 103, 103);
+        check(win, 50, 103, 103);
         win.stable(103);
         System.out.println("win: " + win);
         check(win, 103, 103, 103);
@@ -186,14 +186,14 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(6, new Message());
         System.out.println("win: " + win);
         while((win.remove()) != null) ;
-        win.stable(6);
+        win.stable(6); // 6 is ignore as it is >= highest delivered message
         System.out.println("win: " + win);
-        assertNull(win.get(2));
-        check(win, 4, 6, 4);
+        assertNotNull(win.get(2));
+        check(win, 0, 6, 4);
         win.add(5, new Message());
-        check(win, 4, 6, 4);
+        check(win, 0, 6, 4);
         while((win.remove()) != null) ;
-        check(win, 4, 6, 6);
+        check(win, 0, 6, 6);
         win.stable(6);
         check(win, 6, 6, 6);
     }
