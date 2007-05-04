@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.138 2007/05/04 07:59:54 belaban Exp $
+ * @version $Id: TP.java,v 1.139 2007/05/04 09:11:10 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1659,8 +1659,6 @@ public abstract class TP extends Protocol {
         BundlingTimer                      bundling_timer=null;
         Future                             bundling_timer_future=null;
         final ReentrantLock                lock=new ReentrantLock();
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-        final ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
 
         private void send(Message msg, Address dest) throws Exception {
@@ -1752,6 +1750,9 @@ public abstract class TP extends Protocol {
             Buffer    buffer;
             Map.Entry<Address,List<Message>> entry;
             Address   dst;
+            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+            ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
+            boolean first=true;
 
             for(Iterator<Map.Entry<Address,List<Message>>> it=msgs.entrySet().iterator(); it.hasNext();) {
                 entry=it.next();
@@ -1760,17 +1761,20 @@ public abstract class TP extends Protocol {
                     continue;
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
-                synchronized(out_stream) {
-                    try {
+                try {
+                    if(first) {
+                        first=false;
+                    }
+                    else {
                         out_stream.reset();
                         dos.reset();
-                        writeMessageList(list, dos, multicast); // flushes output stream when done
-                        buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-                        doSend(buffer, dst, multicast);
                     }
-                    catch(Throwable e) {
-                        if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
-                    }
+                    writeMessageList(list, dos, multicast); // flushes output stream when done
+                    buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+                    doSend(buffer, dst, multicast);
+                }
+                catch(Throwable e) {
+                    if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
                 }
             }
         }
