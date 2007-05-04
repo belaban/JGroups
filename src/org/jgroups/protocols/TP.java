@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.135 2007/05/04 06:38:22 belaban Exp $
+ * @version $Id: TP.java,v 1.136 2007/05/04 06:46:47 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1657,7 +1657,7 @@ public abstract class TP extends Protocol {
         int                               num_msgs=0;
         long                              last_bundle_time;
         BundlingTimer                     bundling_timer=null;
-        Future                            bundling_timer_result=null;
+        Future                            bundling_timer_future=null;
         final ReentrantLock               lock=new ReentrantLock();
 
 
@@ -1690,17 +1690,17 @@ public abstract class TP extends Protocol {
         
         /** Never called concurrently with cancelTimer - no need for synchronization */
         private void startTimer() {
-            if(bundling_timer_result == null || bundling_timer_result.isDone()) {
+            if(bundling_timer_future == null || bundling_timer_future.isDone()) {
                 bundling_timer=new BundlingTimer();
-                bundling_timer_result=timer.schedule(bundling_timer, max_bundle_timeout, TimeUnit.MILLISECONDS);
+                bundling_timer_future=timer.schedule(bundling_timer, max_bundle_timeout, TimeUnit.MILLISECONDS);
             }
         }
 
         /** Never called concurrently with startTimer() - no need for synchronization */
         private void cancelTimer() {
-            if(bundling_timer_result != null) {
-                bundling_timer_result.cancel(false); // don't interrupt task
-                bundling_timer_result=null;
+            if(bundling_timer_future != null) {
+                bundling_timer_future.cancel(false); // don't interrupt task
+                bundling_timer_future=null;
             }
         }
 
@@ -1759,18 +1759,15 @@ public abstract class TP extends Protocol {
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
                 synchronized(out_stream) {
-                    int size=0;
                     try {
                         out_stream.reset();
                         dos.reset();
                         writeMessageList(list, dos, multicast); // flushes output stream when done
                         buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-                        size=buffer.getLength();
                         doSend(buffer, dst, multicast);
                     }
                     catch(Throwable e) {
                         if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
-                        System.out.println("buffer size=" + size + ", msg_list_length=" + list.size());
                     }
                 }
             }
