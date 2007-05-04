@@ -2,39 +2,43 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Util;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Promise;
 
-import java.util.Vector;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.Date;
+import java.util.*;
 
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.3 2007/05/03 20:17:47 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.4 2007/05/04 05:47:28 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
     private MyReceiver r2;
     private final static long LATENCY=30L;
+    private final static long SLEEP=5000L;
     private static final boolean BUNDLING=true;
+    private static final int MAX_BYTES=20000;
 
     public void setUp() throws Exception {
         super.setUp();
-        ch1=createChannel();
-        setBundling(ch1, BUNDLING, 64000, LATENCY);
+        // ch1=createChannel();
+        ch1=new JChannel("c:\\udp.xml");
+        setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
         ch1.setReceiver(new NullReceiver());
         ch1.connect("x");
-        ch2=createChannel();
-        setBundling(ch2, BUNDLING, 64000, LATENCY);
+        // ch2=createChannel();
+        ch2=new JChannel("c:\\udp.xml");
+        setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
         r2=new MyReceiver();
         ch2.setReceiver(r2);
         ch2.connect("x");
+
+        View view=ch2.getView();
+        assertEquals(2, view.size());
     }
 
 
@@ -53,10 +57,13 @@ public class MessageBundlingTest extends ChannelTestBase {
     public void testLatencyWithoutMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
         Message tmp=new Message();
         setBundling(ch1, false, 20000, 30);
+        r2.setNumExpectedMesssages(1);
+        Promise promise=new Promise();
+        r2.setPromise(promise);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
-        System.out.println("sent message at " + new Date());
-        Util.sleep(LATENCY * 2);
+        System.out.println(">>> sent message at " + new Date());
+        promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
         assertEquals(1, list.size());
         Long time2=list.get(0);
@@ -68,11 +75,13 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     public void testLatencyWithMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
         Message tmp=new Message();
-
+        r2.setNumExpectedMesssages(1);
+        Promise promise=new Promise();
+        r2.setPromise(promise);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
-        System.out.println("sent message at " + new Date());
-        Util.sleep(LATENCY * 2);
+        System.out.println(">>> sent message at " + new Date());
+        promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
         assertEquals(1, list.size());
         Long time2=list.get(0);
@@ -88,11 +97,13 @@ public class MessageBundlingTest extends ChannelTestBase {
         Message tmp=new Message();
         setLoopback(ch1, true);
         setLoopback(ch2, true);
+        r2.setNumExpectedMesssages(1);
+        Promise promise=new Promise();
+        r2.setPromise(promise);
         long time=System.currentTimeMillis();
-        System.out.println("sending message at " + new Date());
+        System.out.println(">>> sending message at " + new Date());
         ch1.send(tmp);
-
-        Util.sleep(LATENCY * 2);
+        promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
         assertEquals(1, list.size());
         Long time2=list.get(0);
@@ -100,6 +111,29 @@ public class MessageBundlingTest extends ChannelTestBase {
         System.out.println("latency: " + diff + " ms");
         assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
                 "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
+    }
+
+
+    public void testLatencyWithMessageBundlingAndMaxBytes() throws ChannelClosedException, ChannelNotConnectedException {
+        setLoopback(ch1, true);
+        setLoopback(ch2, true);
+        r2.setNumExpectedMesssages(20);
+        Promise promise=new Promise();
+        r2.setPromise(promise);
+        long time=System.currentTimeMillis();
+        System.out.println(">>> sending 20 messages at " + new Date());
+        for(int i=0; i < 20; i++)
+            ch1.send(new Message(null, null, new byte[2000]));
+
+        promise.getResult(SLEEP); // we should get the messages immediately because max_bundle_size has been exceeded by the 20 messages
+        List<Long> list=r2.getTimes();
+        assertEquals(20, list.size());
+
+        for(Iterator<Long> it=list.iterator(); it.hasNext();) {
+            Long val=it.next();
+            System.out.println(val);
+        }
+
     }
 
     private void setLoopback(JChannel ch, boolean b) {
@@ -134,14 +168,33 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     private static class MyReceiver extends ReceiverAdapter {
         private final List<Long> times=new LinkedList<Long>();
+        private int num_expected_msgs;
+        private Promise promise;
 
         public List<Long> getTimes() {
             return times;
         }
 
+
+        public void setNumExpectedMesssages(int num_expected_msgs) {
+            this.num_expected_msgs=num_expected_msgs;
+        }
+
+
+        public void setPromise(Promise promise) {
+            this.promise=promise;
+        }
+
+        public int size() {
+            return times.size();
+        }
+
         public void receive(Message msg) {
             times.add(new Long(System.currentTimeMillis()));
-            System.out.println("received message from " + msg.getSrc() + " at " + new Date());
+            System.out.println("<<< received message from " + msg.getSrc() + " at " + new Date());
+            if(times.size() >= num_expected_msgs && promise != null) {
+                promise.setResult(times.size());
+            }
         }
     }
 
