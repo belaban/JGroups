@@ -1,16 +1,13 @@
 package org.jgroups.tests;
 
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Util;
-import org.jgroups.*;
-
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
-import java.net.DatagramPacket;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.2 2007/05/04 12:58:24 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.3 2007/05/04 13:03:29 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
