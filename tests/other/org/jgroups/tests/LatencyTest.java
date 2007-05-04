@@ -8,7 +8,7 @@ import java.net.MulticastSocket;
 
 /**
  * @author Bela Ban
- * @version $Id: LatencyTest.java,v 1.2 2007/05/04 12:48:52 belaban Exp $
+ * @version $Id: LatencyTest.java,v 1.3 2007/05/04 12:49:38 belaban Exp $
  */
 public class LatencyTest {
     InetAddress GROUP=null;
@@ -37,6 +37,7 @@ public class LatencyTest {
                 System.out.println("took " + (System.currentTimeMillis() - start) + " ms");
                 Util.sleep(1000);
             }
+            return;
         }
 
         if(sender) {
