@@ -7,15 +7,13 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.3 2007/05/04 13:03:29 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.4 2007/05/04 15:50:26 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
 
 
     private void start(boolean sender, boolean local, String props) throws Exception {
-
-
         if(local) {
             JChannel ch1, ch2;
             ch1=new JChannel(props);
