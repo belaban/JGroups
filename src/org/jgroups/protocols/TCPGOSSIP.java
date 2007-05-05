@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.24 2007/04/27 07:59:20 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.25 2007/05/05 18:51:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class TCPGOSSIP extends Discovery {
             }
         }
 
-        if(initial_hosts == null || initial_hosts.size() == 0) {
+        if(initial_hosts == null || initial_hosts.isEmpty()) {
             if(log.isErrorEnabled()) log.error("initial_hosts must contain the address of at least one GossipRouter");
             return false;
         }
@@ -94,7 +94,7 @@ public class TCPGOSSIP extends Discovery {
     }
 
 
-    public void handleConnectOK() {
+    public void handleConnect() {
         if(group_addr == null || local_addr == null) {
             if(log.isErrorEnabled())
                 log.error("group_addr or local_addr is null, cannot register with GossipRouter(s)");
@@ -149,8 +149,8 @@ public class TCPGOSSIP extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return list of IpAddresses
      */
-    private Vector createInitialHosts(String l) throws UnknownHostException {
-        Vector tmp=new Vector();
+    private Vector<Address> createInitialHosts(String l) throws UnknownHostException {
+        Vector<Address> tmp=new Vector<Address>();
         String host;
         int port;
         IpAddress addr;
