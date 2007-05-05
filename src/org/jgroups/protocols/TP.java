@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.139 2007/05/04 09:11:10 belaban Exp $
+ * @version $Id: TP.java,v 1.140 2007/05/05 19:12:06 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1060,7 +1060,7 @@ public abstract class TP extends Protocol {
      */
     private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
         Message                msg=null;
-        short                  version;
+        short                  version=0;
         boolean                is_message_list, multicast;
         byte                   flags;
         List<Message>          msgs;
@@ -1068,7 +1068,14 @@ public abstract class TP extends Protocol {
         try {
             synchronized(in_stream) {
                 in_stream.setData(data, offset, length);
-                version=dis.readShort();
+                try {
+                    version=dis.readShort();
+                }
+                catch(IOException ex) {
+                    if(discard_incompatible_packets)
+                        return;
+                    throw ex;
+                }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
                         StringBuffer sb=new StringBuffer();
@@ -1447,7 +1454,7 @@ public abstract class TP extends Protocol {
 
         /** Code copied from handleIncomingPacket */
         public void run() {
-            short                        version;
+            short                        version=0;
             boolean                      is_message_list, multicast;
             byte                         flags;
             ExposedByteArrayInputStream  in_stream=null;
@@ -1456,7 +1463,14 @@ public abstract class TP extends Protocol {
             try {
                 in_stream=new ExposedByteArrayInputStream(buf, offset, length);
                 dis=new DataInputStream(in_stream);
-                version=dis.readShort();
+                try {
+                    version=dis.readShort();
+                }
+                catch(IOException ex) {
+                    if(discard_incompatible_packets)
+                        return;
+                    throw ex;
+                }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
                         StringBuffer sb=new StringBuffer();
