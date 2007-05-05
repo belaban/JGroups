@@ -21,7 +21,7 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.16 2006/10/25 08:23:58 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.17 2007/05/05 18:52:18 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
@@ -33,7 +33,7 @@ public class GossipClient {
     boolean timer_running=false;
     boolean refresher_enabled=true;
     long EXPIRY_TIME=20000;                    // must be less than in GossipRouter
-    final int SOCKET_TIMEOUT=5000;            // max number of ms to wait for socket establishment to GossipRouter
+    static final int SOCKET_TIMEOUT=5000;            // max number of ms to wait for socket establishment to GossipRouter
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -395,7 +395,7 @@ public class GossipClient {
             return;
         }
 
-        if(gossip_hosts.size() == 0) {
+        if(gossip_hosts.isEmpty()) {
             System.err.println("At least 1 GossipRouter has to be given");
             return;
         }
