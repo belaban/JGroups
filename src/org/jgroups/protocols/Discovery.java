@@ -23,7 +23,7 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.25 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.26 2007/05/05 18:51:19 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector  members=new Vector(11);
@@ -47,10 +47,6 @@ public abstract class Discovery extends Protocol {
 
     public abstract void sendGetMembersRequest();
 
-
-    /** Called when CONNECT has returned */
-    public void handleConnectOK() {
-    }
 
     public void handleDisconnect() {
     }
