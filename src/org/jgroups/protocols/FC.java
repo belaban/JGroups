@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.82 2007/05/02 11:34:48 belaban Exp $
+ * @version $Id: FC.java,v 1.83 2007/05/07 09:55:23 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -101,8 +101,8 @@ public class FC extends Protocol {
      * Determines whether or not to block on down(). Set when not enough credit is available to send a message
      * to all or a single member
      */
-    @GuardedBy("sent_lock")
-    private boolean insufficient_credit=false;
+    // @GuardedBy("sent_lock")
+    // private boolean insufficient_credit=false;
 
     /**
      * the lowest credits of any destination (sent_msgs)
@@ -118,7 +118,7 @@ public class FC extends Protocol {
 
 
     /** Mutex to block on down() */
-    final Condition mutex=sent_lock.newCondition();
+    final Condition credits_available=sent_lock.newCondition();
 
     /**
      * Whether an up thread that comes back down should be allowed to
@@ -188,10 +188,6 @@ public class FC extends Protocol {
         this.min_credits=min_credits;
     }
 
-    public boolean isBlocked() {
-        return insufficient_credit;
-    }
-
     public int getNumberOfBlockings() {
         return num_blockings;
     }
@@ -252,6 +248,7 @@ public class FC extends Protocol {
         retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
         retval.put("num_replenishments", new Integer(this.num_credit_responses_received));
         retval.put("total_time_blocked", new Long(total_time_blocking));
+        retval.put("num_credit_requests", new Long(num_credit_requests_sent));
         return retval;
     }
 
@@ -275,8 +272,7 @@ public class FC extends Protocol {
 
             lowest_credit=computeLowestCredit(sent);
             creditors.clear();
-            insufficient_credit=false;
-            mutex.signalAll();
+            credits_available.signalAll();
         }
         finally {
             sent_lock.unlock();
@@ -337,7 +333,6 @@ public class FC extends Protocol {
         sent_lock.lock();
         try {
             running=true;
-            insufficient_credit=false;
             lowest_credit=max_credits;
         }
         finally {
@@ -351,7 +346,7 @@ public class FC extends Protocol {
         try {
             running=false;
             ignore_thread=null;
-            mutex.signalAll(); // notify all threads waiting on the mutex that we are done
+            credits_available.signalAll(); // notify all threads waiting on the mutex that we are done
         }
         finally {
             sent_lock.unlock();
@@ -430,27 +425,29 @@ public class FC extends Protocol {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
                 if(ignore_synchronous_response && ignore_thread == Thread.currentThread()) { // JGRP-465
                     if(log.isTraceEnabled())
-                        log.trace("Bypassing blocking to avoid deadlocking " + Thread.currentThread());
+                        log.trace("bypassing blocking to avoid deadlocking " + Thread.currentThread());
                 }
                 else {
                     determineCreditors(dest, length);
-                    insufficient_credit=true;
                     long start_blocking=System.currentTimeMillis();
                     num_blockings++; // we count overall blockings, not blockings for *all* threads
                     if(log.isTraceEnabled())
                         log.trace("Starting blocking. lowest_credit=" + lowest_credit + "; msg length =" + length);
 
-                    while(insufficient_credit && running) {
+                    while(length > lowest_credit && running) {
                         try {
-                            mutex.await(max_block_time, TimeUnit.MILLISECONDS);
-                        }
-                        catch(InterruptedException e) {
-                            // set the interrupted flag again, so the caller's thread can handle the interrupt as well
-                            Thread.currentThread().interrupt();
-                        }
-                        if(insufficient_credit && running) {
+                            credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
+                            if(length <= lowest_credit || !running)
+                                break;
+
                             long wait_time=System.currentTimeMillis() - last_credit_request;
                             if(wait_time >= max_block_time) {
+
+                                // we have to set this var now, because we release the lock below (for sending a
+                                // credit request), so all blocked threads would send a credit request, leading to
+                                // a credit request storm
+                                last_credit_request=System.currentTimeMillis();
+
                                 // we need to send the credit requests down *without* holding the sent_lock, otherwise we might
                                 // run into the deadlock described in http://jira.jboss.com/jira/browse/JGRP-292
                                 Map<Address,Long> sent_copy=new HashMap<Address,Long>(sent);
@@ -465,10 +462,15 @@ public class FC extends Protocol {
                                 finally {
                                     sent_lock.lock();
                                 }
-                                last_credit_request=System.currentTimeMillis();
                             }
                         }
+                        catch(InterruptedException e) {
+                            // set the interrupted flag again, so the caller's thread can handle the interrupt as well
+                            Thread.currentThread().interrupt();
+                        }
                     }
+                    // if(!running) // don't send the message if not running anymore
+                       // return null;
 
                     long block_time=System.currentTimeMillis() - start_blocking;
                     if(log.isTraceEnabled())
@@ -569,16 +571,17 @@ public class FC extends Protocol {
 
             sent.put(sender, new_credit);
             lowest_credit=computeLowestCredit(sent);
+            // boolean was_empty=true;
             if(!creditors.isEmpty()) {  // we are blocked because we expect credit from one or more members
+                // was_empty=false;
                 creditors.remove(sender);
                 if(log.isTraceEnabled()) {
                     sb.append("\nCreditors after removal of ").append(sender).append(" are: ").append(creditors);
                     log.trace(sb);
                 }
             }
-            if(insufficient_credit && lowest_credit > 0 && creditors.isEmpty()) {
-                insufficient_credit=false;
-                mutex.signalAll();
+            if(creditors.isEmpty()) {// && !was_empty) {
+                credits_available.signalAll();
             }
         }
         finally {
@@ -745,10 +748,9 @@ public class FC extends Protocol {
             }
 
             if(log.isTraceEnabled()) log.trace("creditors are " + creditors);
-            if(insufficient_credit && creditors.isEmpty()) {
+            if(creditors.isEmpty()) {
                 lowest_credit=computeLowestCredit(sent);
-                insufficient_credit=false;
-                mutex.signalAll();
+                credits_available.signalAll();
             }
         }
         finally {
