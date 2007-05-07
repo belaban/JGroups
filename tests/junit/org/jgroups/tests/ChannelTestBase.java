@@ -6,6 +6,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.mux.MuxChannel;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Util;
 
 import java.io.InputStream;
@@ -47,6 +48,12 @@ public class ChannelTestBase extends TestCase
    protected String thread_dump = null;    
    
    protected int currentChannelGeneratedName = LETTER_A;
+   
+   private static final int ROUTER_PORT = 12001;
+   
+   private static final String BIND_ADDR = "127.0.0.1";
+   
+   GossipRouter router = null;
 
    protected final Log log = LogFactory.getLog(this.getClass());
 
@@ -70,6 +77,11 @@ public class ChannelTestBase extends TestCase
       
       currentChannelGeneratedName = LETTER_A;
       
+      if (isTunnelUsed()){
+    	  router = new GossipRouter(ROUTER_PORT, BIND_ADDR);
+          router.start();
+      }
+      
       if (isMuxChannelUsed())
       {                
          muxFactory = new JChannelFactory[getMuxFactoryCount()];
@@ -88,6 +100,12 @@ public class ChannelTestBase extends TestCase
       }             
    }
 
+   protected boolean isTunnelUsed() {
+	   
+	   //TODO add maybe a bit more foolproof check later
+	   return CHANNEL_CONFIG.contains("tunnel");
+   }
+
    protected void tearDown() throws Exception
    {
       super.tearDown();
@@ -98,6 +116,10 @@ public class ChannelTestBase extends TestCase
          {
             muxFactory[i].destroy();
          }
+      }
+      
+      if(router != null){
+    	  router.stop();
       }
 
 
