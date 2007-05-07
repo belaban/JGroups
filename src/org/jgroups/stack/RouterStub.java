@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.24 2007/05/07 16:36:41 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.25 2007/05/07 17:17:39 belaban Exp $
  */
 public class RouterStub {
 	
@@ -54,9 +54,9 @@ public class RouterStub {
 	/**
 	 * Creates a stub for a remote Router object.
 	 * 
-	 * @param router_host
+	 * @param routerHost
 	 *            The name of the router's host
-	 * @param router_port
+	 * @param routerPort
 	 *            The router's port
 	 */
 	public RouterStub(String routerHost,int routerPort,InetAddress bindAddress){
