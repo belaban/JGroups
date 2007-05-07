@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: FC.java,v 1.5 2005/08/26 14:19:09 belaban Exp $
+ * @version $Id: FC.java,v 1.6 2007/05/07 09:55:37 belaban Exp $
  */
 public class FC extends Protocol implements FCMBean {
     org.jgroups.protocols.FC p;
@@ -46,9 +46,6 @@ public class FC extends Protocol implements FCMBean {
         p.setMinCredits(min_credits);
     }
 
-    public boolean isBlocked() {
-        return p.isBlocked();
-    }
 
     public int getBlockings() {
         return p.getNumberOfBlockings();
