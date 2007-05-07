@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.25 2007/02/12 23:38:26 vlada Exp $
+  Version: $Id: stacks.xml,v 1.26 2007/05/07 16:37:44 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -374,9 +374,8 @@
                   gossip_host="127.0.0.1"
                   gossip_port="12001"/>
             <MERGE2 max_interval="20000"
-                      min_interval="5000"/>
-            <FD_SOCK/>
-            <FD timeout="2000" max_tries="3"   shun="true"/>
+                      min_interval="5000"/>            
+            <FD timeout="2000" max_tries="3" shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
             <pbcast.NAKACK max_xmit_size="60000"
                            use_mcast_xmit="false" gc_lag="0"
