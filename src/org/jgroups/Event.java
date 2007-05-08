@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.41 2007/03/19 15:27:21 vlada Exp $
+// $Id: Event.java,v 1.42 2007/05/08 18:47:05 vlada Exp $
 
 package org.jgroups;
 
@@ -40,7 +40,7 @@ public class Event {
     public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE             = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-    public static final int SUSPEND					  = 68;  // arg = View|null (used by FLUSH)
+    public static final int SUSPEND					  = 68;  // arg = HashMap (used by FLUSH)
     public static final int RESUME					  = 70;  // arg = null (used by FLUSH)
     public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
     public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass

@@ -180,19 +180,26 @@ public class FLUSH extends Protocol {
 		return numberOfFlushes;
 	}
 
-	public boolean startFlush(long timeout) {
-		return startFlush(new Event(Event.SUSPEND), timeout, 5, false);
+	public boolean startFlush(long timeout) {		
+		Map atts = new HashMap();	           	
+     	atts.put("timeout",4000);
+		return startFlush(new Event(Event.SUSPEND,atts), 5, false);
 	}
 
-	private boolean startFlush(Event evt, long timeout, int numberOfAttempts, boolean isRetry) {
+	private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
 		boolean successfulFlush = false;
 		if (!flushPhase.isFlushInProgress() || isRetry) {
 			flush_promise.reset();
-			View v = (View) evt.getArg();
-			if (log.isDebugEnabled())
-				log.debug("Received SUSPEND at " + localAddress + ", view is "+ v);
+			Map atts = (Map) evt.getArg();			
+			long timeout = ((Long)atts.get("timeout")).longValue();		
+			if (log.isDebugEnabled()){
+				if(isRetry)
+					log.debug("Retrying FLUSH at " + localAddress + ", "+ evt + ". Attempts left " + numberOfAttempts);
+				else
+					log.debug("Received " + evt+ " at " + localAddress + ". Running FLUSH...");				
+			}
 
-			onSuspend(v);
+			onSuspend((View)atts.get("view"));
 			try {
 				Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
 				successfulFlush = r.booleanValue();
@@ -213,7 +220,7 @@ public class FLUSH extends Protocol {
 						+ numberOfAttempts);
 
 			Util.sleep(backOffSleepTime * 1000);
-			successfulFlush = startFlush(evt, timeout, --numberOfAttempts, true);
+			successfulFlush = startFlush(evt, --numberOfAttempts, true);
 		}
 		return successfulFlush;
 	}
@@ -247,7 +254,7 @@ public class FLUSH extends Protocol {
 			break;
 
 		case Event.SUSPEND:
-			return startFlush(evt, 4000, 5, false);
+			return startFlush(evt, 5, false);
 
 		case Event.RESUME:
 			onResume();
@@ -381,8 +388,8 @@ public class FLUSH extends Protocol {
 			onSuspect((Address) evt.getArg());
 			break;
 
-		case Event.SUSPEND:
-			return startFlush(evt, 4000, 5, false);
+		case Event.SUSPEND:			           	         
+			return startFlush(evt, 5, false);
 
 		case Event.RESUME:
 			onResume();

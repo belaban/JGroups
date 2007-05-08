@@ -286,7 +286,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol
                boolean successfulFlush = false;
                if (flushProtocolInStack)
                {
-                  successfulFlush = (Boolean)up_prot.up(new Event(Event.SUSPEND));
+	        	  Map atts = new HashMap();	           	
+	           	  atts.put("timeout",new Long(4000)); 
+	              successfulFlush = (Boolean)up_prot.up(new Event(Event.SUSPEND,atts));
                }
                if (successfulFlush)
                {

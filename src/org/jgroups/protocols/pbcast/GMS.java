@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.103 2007/05/01 10:55:15 belaban Exp $
+ * @version $Id: GMS.java,v 1.104 2007/05/08 18:47:02 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -599,8 +599,11 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view){
-         return (Boolean) up_prot.up(new Event(Event.SUSPEND, new_view));
+    boolean startFlush(View new_view, long timeout){       
+    	Map atts = new HashMap();
+    	atts.put("view", new_view);
+    	atts.put("timeout",new Long(timeout));
+    	return (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
     }
 
     void stopFlush(View view) {
@@ -1173,7 +1176,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.103 2007/05/01 10:55:15 belaban Exp $
+     * @version $Id: GMS.java,v 1.104 2007/05/08 18:47:02 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1381,7 +1384,7 @@ public class GMS extends Protocol {
                         log.error("more than one VIEW request to process, ignoring the others");
                     try {
                         if (flushProtocolInStack){
-                           boolean successfulFlush = startFlush(firstReq.view);
+                           boolean successfulFlush = startFlush(firstReq.view,4000);
                            if (successfulFlush){
                               log.info("Successful GMS flush by coordinator at " + getLocalAddress());
                            }
