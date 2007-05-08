@@ -5,14 +5,16 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.*;
+import org.jgroups.util.Promise;
+import org.jgroups.util.Queue;
+import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.Util;
 import org.w3c.dom.Element;
 
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -69,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.130 2007/05/08 18:47:05 vlada Exp $
+ * @version $Id: JChannel.java,v 1.131 2007/05/08 18:56:30 belaban Exp $
  */
 public class JChannel extends Channel {
 
