@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.40 2007/05/08 15:30:52 vlada Exp $
+// $Id: TUNNEL.java,v 1.41 2007/05/08 19:10:35 vlada Exp $
 
 
 package org.jgroups.protocols;
@@ -166,15 +166,13 @@ public class TUNNEL extends TP {
         try {
             if(reconnectorFuture == null || reconnectorFuture.isDone()) {             
             	final Runnable reconnector = new Runnable(){
-					public void run() {
-						if(!stub.isConnected()){
-							try{
-								stub.connect(channel_name);
-							}catch(Exception ex){
-								if(log.isTraceEnabled())
-									log.trace("failed reconnecting", ex);
-							}
-						}
+					public void run() {						
+						try{
+							stub.connect(channel_name);
+						}catch(Exception ex){
+							if(log.isTraceEnabled())
+								log.trace("failed reconnecting", ex);
+						}						
 					}            	
             	};
                 reconnectorFuture=timer.scheduleWithFixedDelay(reconnector, 0, reconnect_interval, TimeUnit.MILLISECONDS);                

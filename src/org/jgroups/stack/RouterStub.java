@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.26 2007/05/08 15:23:22 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.27 2007/05/08 19:10:34 vlada Exp $
  */
 public class RouterStub {
 	
@@ -37,7 +37,7 @@ public class RouterStub {
 
 	Address local_addr = null; // addr of group mbr. Once assigned, remains the same
 	
-	private volatile int connectionState = STATUS_DISCONNECTED;
+	private int connectionState = STATUS_DISCONNECTED;
 
 	protected static final Log log = LogFactory.getLog(RouterStub.class);
 
@@ -65,7 +65,7 @@ public class RouterStub {
 		bind_addr = bindAddress;
 	}
 	
-	public boolean isConnected() {
+	public synchronized boolean isConnected() {
 		return connectionState == STATUS_CONNECTED;
 	}
 
@@ -173,14 +173,14 @@ public class RouterStub {
 		}
 	}
 
-	public DataInputStream getInputStream() throws IOException {
+	public synchronized DataInputStream getInputStream() throws IOException {
 		if(!isConnected()){
 			throw new IOException("InputStream is closed");
 		}
 		return input;
 	}
 	
-	private void connectionStateChanged(int newState) {
+	private synchronized void connectionStateChanged(int newState) {
 		boolean notify = connectionState != newState;
 		connectionState = newState;
 		if(notify && conn_listener != null){
