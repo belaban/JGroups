@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.54 2007/04/19 18:47:19 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.55 2007/05/08 03:33:26 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -29,8 +29,6 @@ public class Multiplexer implements UpHandler {
     static final String SEPARATOR="::";
     static final short SEPARATOR_LEN=(short)SEPARATOR.length();
     static final String NAME="MUX";    
-
-    private MergeView temp_merge_view=null;
 
     private boolean flush_present=true;
     private boolean blocked=false;
@@ -264,14 +262,14 @@ public class Multiplexer implements UpHandler {
 
 
     public void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
-        sendServiceMessage(ServiceInfo.SERVICE_UP, service, host,bypassFlush);
+        sendServiceMessage(ServiceInfo.SERVICE_UP, service, host,bypassFlush, null);
         if(local_addr != null && host != null && local_addr.equals(host))
             handleServiceUp(service, host, false);
     }
 
 
     public void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
-        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host,bypassFlush);
+        sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host,bypassFlush, null);
         if(local_addr != null && host != null && local_addr.equals(host))
             handleServiceDown(service, host, false);
     }
@@ -320,36 +318,29 @@ public class Multiplexer implements UpHandler {
                 Vector left_members=Util.determineLeftMembers(old_members, new_members);
 
                 if(view instanceof MergeView) {
-                    temp_merge_view=(MergeView)view.clone();
+                    final MergeView temp_merge_view=(MergeView)view.clone();
                     if(log.isTraceEnabled())
-                        log.trace("received a MergeView: " + temp_merge_view + ", adjusting the service view");
-                    if(!flush_present && temp_merge_view != null) {
-                        try {
-                            if(log.isTraceEnabled())
-                                log.trace("calling handleMergeView() from VIEW_CHANGE (flush_present=" + flush_present + ")");
-                            Thread merge_handler=new Thread() {
-                                public void run() {
-                                    try {
-                                        handleMergeView(temp_merge_view);
-                                    }
-                                    catch(Exception e) {
-                                        if(log.isErrorEnabled())
-                                            log.error("problems handling merge view", e);
-                                    }
+                        log.trace("received a MergeView: " + temp_merge_view + ", adjusting the service view");                    
+                    try {                        
+                        Thread merge_handler=new Thread() {
+                            public void run() {
+                                try {
+                                    handleMergeView(temp_merge_view);
                                 }
-                            };
-                            merge_handler.setName("merge handler view_change");
-                            merge_handler.setDaemon(false);
-                            merge_handler.start();
-                        }
-                        catch(Exception e) {
-                            if(log.isErrorEnabled())
-                                log.error("failed handling merge view", e);
-                        }
+                                catch(Exception e) {
+                                    if(log.isErrorEnabled())
+                                        log.error("problems handling merge view", e);
+                                }
+                            }
+                        };
+                        merge_handler.setName("merge handler view_change");
+                        merge_handler.setDaemon(false);
+                        merge_handler.start();
                     }
-                    else {
-                        ; // don't do anything because we are blocked sending messages anyway
-                    }
+                    catch(Exception e) {
+                        if(log.isErrorEnabled())
+                            log.error("failed handling merge view", e);
+                    }                                       
                 }
                 else { // regular view
                     synchronized(service_responses) {
@@ -398,30 +389,7 @@ public class Multiplexer implements UpHandler {
                 }
                 else
                     blocked=false;
-                if(temp_merge_view != null) {
-                    if(log.isTraceEnabled())
-                        log.trace("calling handleMergeView() from UNBLOCK (flush_present=" + flush_present + ")");
-                    try {
-                        Thread merge_handler=new Thread() {
-                            public void run() {
-                                try {
-                                    handleMergeView(temp_merge_view);
-                                }
-                                catch(Exception e) {
-                                    if(log.isErrorEnabled())
-                                        log.error("problems handling merge view", e);
-                                }
-                            }
-                        };
-                        merge_handler.setName("merge handler (unblock)");
-                        merge_handler.setDaemon(false);
-                        merge_handler.start();
-                    }
-                    catch(Exception e) {
-                        if(log.isErrorEnabled())
-                            log.error("failed handling merge view", e);
-                    }
-                }
+                
                 passToAllMuxChannels(evt);
                 break;
 
@@ -554,11 +522,7 @@ public class Multiplexer implements UpHandler {
     private void sendServiceState() throws Exception {
         Object[] my_services=services.keySet().toArray();
         byte[] data=Util.objectToByteBuffer(my_services);
-        ServiceInfo sinfo=new ServiceInfo(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), data);
-        Message rsp=new Message(); // send to everyone
-        MuxHeader hdr=new MuxHeader(sinfo);
-        rsp.putHeader(NAME, hdr);
-        channel.send(rsp);
+        sendServiceMessage(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data);
     }
 
 
@@ -608,7 +572,7 @@ public class Multiplexer implements UpHandler {
         return result;       
     }
 
-    private void sendServiceMessage(byte type, String service, Address host,boolean bypassFlush) throws Exception {
+    private void sendServiceMessage(byte type, String service, Address host,boolean bypassFlush, byte[] payload) throws Exception {
         if(host == null)
             host=getLocalAddress();
         if(host == null) {
@@ -618,11 +582,11 @@ public class Multiplexer implements UpHandler {
             return;
         }
 
-        ServiceInfo si=new ServiceInfo(type, service, host, null);
+        ServiceInfo si=new ServiceInfo(type, service, host, payload);
         MuxHeader hdr=new MuxHeader(si);
         Message service_msg=new Message();
         service_msg.putHeader(NAME, hdr);
-        if(bypassFlush)
+        if(bypassFlush && flush_present)
            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
         
         channel.send(service_msg);
@@ -866,8 +830,7 @@ public class Multiplexer implements UpHandler {
 
         // merges service_responses with service_state and emits MergeViews for the services affected (MuxChannel)
         mergeServiceState(view, copy);
-        service_responses.clear();
-        temp_merge_view=null;
+        service_responses.clear();       
     }
 
     private int numResponses(Map m) {
