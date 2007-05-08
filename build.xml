@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.95 2007/05/07 20:03:37 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.96 2007/05/08 03:27:04 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -479,7 +479,15 @@
 		 	<param name="testname.ext" value="mux-udp"/>
 		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
 		</antcall>		
-		
+
+		 <antcall target="runtests">		 	
+		 	<param name="testset" value="all.tests"/>
+		 	<param name="channel.conf" value="tunnel.xml"/>
+		 	<param name="channel.conf.flush" value="tunnel.xml"/>
+		 	<param name="mux.conf.stack" value="tunnel"/>
+		 	<param name="testname.ext" value="tunnel"/>
+		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>		 	
+		 </antcall>		
 	</target>
 	
 	<!-- 
@@ -535,7 +543,7 @@
 		-->
 		
 	<target name="all-tests-tunnel" depends="makeKeystore" 
-			description="Runs entire testsuite with default udp confguration specified by udp.xml">		 
+			description="Runs entire testsuite with default tunnel confguration specified by tunnel.xml">		 
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>
 		 	<param name="channel.conf" value="tunnel.xml"/>

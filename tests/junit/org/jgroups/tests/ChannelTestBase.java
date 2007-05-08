@@ -120,6 +120,8 @@ public class ChannelTestBase extends TestCase
       
       if(router != null){
     	  router.stop();
+    	  //TODO ensure proper thread/socket cleanup when stopping GossipRouter
+    	  Util.sleep(100);
       }
 
 
