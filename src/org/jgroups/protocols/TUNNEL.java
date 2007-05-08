@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.38 2007/05/07 16:36:41 vlada Exp $
+// $Id: TUNNEL.java,v 1.39 2007/05/08 15:23:23 vlada Exp $
 
 
 package org.jgroups.protocols;
@@ -9,11 +9,17 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.Enumeration;
 import java.util.Properties;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.RouterStub;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 
@@ -24,6 +30,7 @@ import org.jgroups.util.Util;
  * <code>router_port</code>. All outgoing traffic is sent via this TCP socket to the Router which
  * distributes it to all connected TUNNELs in this group. Incoming traffic received from Router will
  * simply be passed up the stack.
+ * 
  * <p>A TUNNEL layer can be used to penetrate a firewall, most firewalls allow creating TCP connections
  * to the outside world, however, they do not permit outside hosts to initiate a TCP connection to a host
  * inside the firewall. Therefore, the connection created by the inside host is reused by Router to
@@ -36,6 +43,12 @@ public class TUNNEL extends TP {
     private RouterStub stub;    
     long reconnect_interval=5000; /** time to wait in ms between reconnect attempts */
 
+    TimeScheduler         timer=null;
+
+    @GuardedBy("reconnectorLock")
+    private Future        reconnectorFuture=null;
+    private final Lock    reconnectorLock=new ReentrantLock();
+    
     public TUNNEL() {
     	//loopback turned on is mandatory
     	loopback = true;
@@ -49,6 +62,13 @@ public class TUNNEL extends TP {
 
     public String getName() {
         return "TUNNEL";
+    }
+    
+    public void init() throws Exception {
+        if(stack != null && stack.timer != null)
+            timer=stack.timer;
+        else
+            throw new Exception("TUNNEL.init(): timer cannot be retrieved from protocol stack");
     }
 
     public void start() throws Exception {
@@ -127,6 +147,7 @@ public class TUNNEL extends TP {
 
     /** Tears the TCP connection to the router down */
     void teardownTunnel() {
+    	stopReconnecting();
         stub.disconnect();
     }
     
@@ -151,16 +172,52 @@ public class TUNNEL extends TP {
 		return retEvent;
 	}
     
+    private void startReconnecting() {
+        reconnectorLock.lock();
+        try {
+            if(reconnectorFuture == null || reconnectorFuture.isDone()) {             
+            	final Runnable reconnector = new Runnable(){
+					public void run() {
+						if(!stub.isConnected()){
+							try{
+								stub.connect(channel_name);
+							}catch(Exception ex){
+								if(log.isTraceEnabled())
+									log.trace("failed reconnecting", ex);
+							}
+						}
+					}            	
+            	};
+                reconnectorFuture=timer.scheduleWithFixedDelay(reconnector, 0, reconnect_interval, TimeUnit.MILLISECONDS);                
+            }
+        }
+        finally {
+            reconnectorLock.unlock();
+        }
+    }
+
+    private void stopReconnecting() {
+        reconnectorLock.lock();
+        try {
+            if(reconnectorFuture != null) {
+                reconnectorFuture.cancel(true);
+                reconnectorFuture=null;
+            }
+        }
+        finally {
+            reconnectorLock.unlock();
+        }
+    }
+    
     private class StubConnectionListener implements RouterStub.ConnectionListener{
 
     	private volatile int currentState = RouterStub.STATUS_DISCONNECTED;
 		public void connectionStatusChange(int newState) {
 			if(currentState == RouterStub.STATUS_CONNECTED && newState == RouterStub.STATUS_CONNECTION_LOST){
-				 Thread reconnector = new Thread(Util.getGlobalThreadGroup(), new TunnelReconnector(), "TUNNEL reconnector");
-            	 reconnector.setDaemon(true);
-            	 reconnector.start();	
+				startReconnecting();	
 		    }
 			else if(currentState != RouterStub.STATUS_CONNECTED && newState == RouterStub.STATUS_CONNECTED){
+				stopReconnecting();
 				Thread receiver = new Thread(Util.getGlobalThreadGroup(), new TunnelReceiver(), "TUNNEL receiver");
 				receiver.setDaemon(true);
 				receiver.start();
@@ -168,9 +225,7 @@ public class TUNNEL extends TP {
 			currentState = newState;
 		}    	
     }
-    /* ------------------------------------------------------------------------------- */
-
-
+    
     private class TunnelReceiver implements Runnable {
 		public void run() {
 			while(stub.isConnected()){
@@ -198,20 +253,8 @@ public class TUNNEL extends TP {
 				}
 			}
 		}
-	}
-
-    private class TunnelReconnector implements Runnable {       
-
-        public void run() {
-        	try{
-				stub.reconnect(reconnect_interval);
-			}catch(Exception e){
-				if(log.isErrorEnabled())
-					log.error(this + " failed reconnecting to GossipRouter at " + router_host + ":"
-							+ router_port);
-			}            
-        }
-    }	
+	}   
+    
 	public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
 		stub.sendToAllMembers(data, offset, length);		
 	}
