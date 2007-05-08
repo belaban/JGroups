@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.55 2007/05/08 03:33:26 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.56 2007/05/08 18:47:04 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -958,8 +958,10 @@ public class Multiplexer implements UpHandler {
 
 
     /** Tell the underlying channel to start the flush protocol, this will be handled by FLUSH */
-    private void startFlush() {
-        channel.down(new Event(Event.SUSPEND));
+    private void startFlush(long timeout) {
+    	Map atts = new HashMap();	           	
+     	atts.put("timeout",new Long(timeout));
+        channel.down(new Event(Event.SUSPEND,atts));
     }
 
     /** Tell the underlying channel to stop the flush, and resume message sending. This will be handled by FLUSH */

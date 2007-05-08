@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.67 2007/04/27 07:59:23 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.68 2007/05/08 18:47:02 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -392,7 +392,7 @@ public class CoordGmsImpl extends GmsImpl {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
                 // (below in finally clause) and members are allowed to send messages again                                      
-                boolean successfulFlush = gms.startFlush(new_view);                
+                boolean successfulFlush = gms.startFlush(new_view,4000);                
                 if (successfulFlush){
                    if(log.isInfoEnabled())
                       log.info("Successful GMS flush by coordinator at " + gms.getLocalAddress());
