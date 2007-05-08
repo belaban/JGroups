@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.25 2007/05/07 17:17:39 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.26 2007/05/08 15:23:22 vlada Exp $
  */
 public class RouterStub {
 	
@@ -74,18 +74,14 @@ public class RouterStub {
 	}
 
 	public synchronized Address getLocalAddress() throws SocketException {
-		if(local_addr == null)
-			local_addr = generateLocalAddress();
+		if(local_addr == null){
+			DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
+			local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
+			Util.close(my_sock);
+		}
 		return local_addr;
 	}
-
-	private synchronized Address generateLocalAddress() throws SocketException {
-		DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
-		local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
-		Util.close(my_sock);
-		return local_addr;
-	}
-
+	
 	/**
 	 * Register this process with the router under <code>groupname</code>.
 	 * 
@@ -183,35 +179,6 @@ public class RouterStub {
 		}
 		return input;
 	}
-
-	/** Tries to establish connection to router. Tries until router is up again. */
-	public void reconnect(int max_attempts, long sleeptimeBetweenAttempts) throws Exception {
-		int num_atttempts = 0;
-
-		if(isConnected()){
-			return;
-		}
-		disconnect();
-		while(num_atttempts++ < max_attempts || max_attempts == -1){
-			try{
-				connect(groupname);
-				break;
-			}catch(Exception ex){ // this is a normal case
-				if(log.isTraceEnabled())
-					log.trace("failed reconnecting", ex);
-			}
-			Util.sleep(sleeptimeBetweenAttempts);
-		}
-		if(!isConnected())
-			throw new Exception(this + " failed reconnecting to router");
-
-		if(log.isTraceEnabled())
-			log.trace(this + " reconnected to router");
-	}
-
-	public void reconnect(long sleeptimeBetweenAttempts) throws Exception {
-		reconnect(-1, sleeptimeBetweenAttempts);
-	}	
 	
 	private void connectionStateChanged(int newState) {
 		boolean notify = connectionState != newState;
