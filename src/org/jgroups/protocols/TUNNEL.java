@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.39 2007/05/08 15:23:23 vlada Exp $
+// $Id: TUNNEL.java,v 1.40 2007/05/08 15:30:52 vlada Exp $
 
 
 package org.jgroups.protocols;
@@ -49,10 +49,7 @@ public class TUNNEL extends TP {
     private Future        reconnectorFuture=null;
     private final Lock    reconnectorLock=new ReentrantLock();
     
-    public TUNNEL() {
-    	//loopback turned on is mandatory
-    	loopback = true;
-    }
+    public TUNNEL() {}
 
 
     public String toString() {
@@ -72,6 +69,9 @@ public class TUNNEL extends TP {
     }
 
     public void start() throws Exception {
+    	//loopback turned on is mandatory
+    	loopback = true;
+    	
     	stub = new RouterStub(router_host,router_port,bind_addr);
     	stub.setConnectionListener(new StubConnectionListener());
         local_addr=stub.getLocalAddress();
@@ -135,16 +135,6 @@ public class TUNNEL extends TP {
         return true;
     }     
 
-    /** Creates a TCP connection to the router */
-    void createTunnel() throws Exception {
-        if(router_host == null || router_port == 0)
-            throw new Exception("router_host and/or router_port not set correctly; tunnel cannot be created");
-
-       
-        stub.connect(channel_name);            
-    }
-
-
     /** Tears the TCP connection to the router down */
     void teardownTunnel() {
     	stopReconnecting();
@@ -156,12 +146,11 @@ public class TUNNEL extends TP {
 		switch(evt.getType()){
 		case Event.CONNECT:
 			try{
-				createTunnel();				
+				stub.connect(channel_name); 			
 			}catch(Exception e){
 				if(log.isErrorEnabled())
 					log.error("failed connecting to GossipRouter at " + router_host + ":"
-							+ router_port);				
-				break;
+							+ router_port);			
 			}		
 			break;
 
