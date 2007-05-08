@@ -13,8 +13,7 @@
           gossip_port="12001"
           num_ping_requests="1"/>
     <MERGE2 max_interval="20000"
-              min_interval="5000"/>
-    <FD_SOCK/>
+              min_interval="5000"/>    
     <FD timeout="2000" max_tries="3"   shun="true"/>
     <VERIFY_SUSPECT timeout="1500"  />
     <pbcast.NAKACK max_xmit_size="60000"
@@ -30,8 +29,7 @@
                 view_ack_collection_timeout="5000"/>
     <FC max_credits="2000000"
         min_threshold="0.10"/>
-    <FRAG2 frag_size="60000"  />
-    <pbcast.STREAMING_STATE_TRANSFER   use_reading_thread="true"/>
-    <!-- pbcast.STATE_TRANSFER  / -->
-    <pbcast.FLUSH   timeout="0"/>
+    <FRAG2 frag_size="60000"/>    
+    <pbcast.STATE_TRANSFER/>
+    <pbcast.FLUSH timeout="0"/>
 </config>
