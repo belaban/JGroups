@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.26 2007/05/07 16:37:44 vlada Exp $
+  Version: $Id: stacks.xml,v 1.27 2007/05/08 00:27:25 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -29,17 +29,17 @@
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
 		         thread_pool.max_threads="25"
-		         thread_pool.keep_alive_time="30000"
-		         thread_pool.queue_enabled="true"
-		         thread_pool.queue_max_size="10"
+		         thread_pool.keep_alive_time="5000"
+		         thread_pool.queue_enabled="false"
+		         thread_pool.queue_max_size="100"
 		         thread_pool.rejection_policy="Run"
 		
 		         oob_thread_pool.enabled="true"
 		         oob_thread_pool.min_threads="1"
-		         oob_thread_pool.max_threads="4"
-		         oob_thread_pool.keep_alive_time="10000"
-		         oob_thread_pool.queue_enabled="true"
-		         oob_thread_pool.queue_max_size="10"
+		         oob_thread_pool.max_threads="8"
+		         oob_thread_pool.keep_alive_time="5000"
+		         oob_thread_pool.queue_enabled="false"
+		         oob_thread_pool.queue_max_size="100"
 		         oob_thread_pool.rejection_policy="Run"/>		         
             <PING timeout="2000"
                     num_initial_members="3"/>
@@ -97,17 +97,17 @@
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
 		         thread_pool.max_threads="25"
-		         thread_pool.keep_alive_time="30000"
-		         thread_pool.queue_enabled="true"
-		         thread_pool.queue_max_size="10"
+		         thread_pool.keep_alive_time="5000"
+		         thread_pool.queue_enabled="false"
+		         thread_pool.queue_max_size="100"
 		         thread_pool.rejection_policy="Run"
 		
 		         oob_thread_pool.enabled="true"
 		         oob_thread_pool.min_threads="1"
-		         oob_thread_pool.max_threads="4"
-		         oob_thread_pool.keep_alive_time="10000"
-		         oob_thread_pool.queue_enabled="true"
-		         oob_thread_pool.queue_max_size="10"
+		         oob_thread_pool.max_threads="8"
+		         oob_thread_pool.keep_alive_time="5000"
+		         oob_thread_pool.queue_enabled="false"
+		         oob_thread_pool.queue_max_size="100"
 		         oob_thread_pool.rejection_policy="Run"/>		         
             <PING timeout="2000"
                     num_initial_members="3"/>
@@ -158,17 +158,17 @@
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
 		         thread_pool.max_threads="25"
-		         thread_pool.keep_alive_time="30000"
-		         thread_pool.queue_enabled="true"
-		         thread_pool.queue_max_size="10"
+		         thread_pool.keep_alive_time="5000"
+		         thread_pool.queue_enabled="false"
+		         thread_pool.queue_max_size="100"
 		         thread_pool.rejection_policy="Run"
 		
 		         oob_thread_pool.enabled="true"
 		         oob_thread_pool.min_threads="1"
-		         oob_thread_pool.max_threads="4"
-		         oob_thread_pool.keep_alive_time="10000"
-		         oob_thread_pool.queue_enabled="true"
-		         oob_thread_pool.queue_max_size="10"
+		         oob_thread_pool.max_threads="8"
+		         oob_thread_pool.keep_alive_time="5000"
+		         oob_thread_pool.queue_enabled="false"
+		         oob_thread_pool.queue_max_size="100"
 		         oob_thread_pool.rejection_policy="Run"/>
 		         
             <TCPPING timeout="3000"
@@ -221,17 +221,17 @@
                  thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
 		         thread_pool.max_threads="25"
-		         thread_pool.keep_alive_time="30000"
-		         thread_pool.queue_enabled="true"
-		         thread_pool.queue_max_size="10"
+		         thread_pool.keep_alive_time="5000"
+		         thread_pool.queue_enabled="false"
+		         thread_pool.queue_max_size="100"
 		         thread_pool.rejection_policy="Run"
 		
 		         oob_thread_pool.enabled="true"
 		         oob_thread_pool.min_threads="1"
-		         oob_thread_pool.max_threads="4"
-		         oob_thread_pool.keep_alive_time="10000"
-		         oob_thread_pool.queue_enabled="true"
-		         oob_thread_pool.queue_max_size="10"
+		         oob_thread_pool.max_threads="8"
+		         oob_thread_pool.keep_alive_time="5000"
+		         oob_thread_pool.queue_enabled="false"
+		         oob_thread_pool.queue_max_size="100"
 		         oob_thread_pool.rejection_policy="Run"/>
 		         
             <TCPPING timeout="3000"
