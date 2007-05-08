@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.138 2007/05/03 16:00:54 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.139 2007/05/08 18:04:15 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1073,18 +1073,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns a message digest: for each member P the highest seqno received from P is added to the digest.
      */
     private Digest getDigest() {
-        Range range;
+        Digest.Entry entry;
 
         Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
         for(Address sender: members) {
-            range=getLowestAndHighestSeqno(sender, false);  // get the highest received seqno
-            if(range == null) {
+            entry=getEntry(sender);
+            if(entry == null) {
                 if(log.isErrorEnabled()) {
                     log.error("range is null");
                 }
                 continue;
             }
-            map.put(sender, new Digest.Entry(range.low, range.high));
+            map.put(sender, entry);
         }
         return new Digest(map);
     }
@@ -1097,22 +1097,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * whether the last seqno from a sender was received (see "Last Message Dropped" topic in DESIGN).
      */
     private Digest getDigestHighestDeliveredMsgs() {
-        Range range;
-        long highest_received;
+        Digest.Entry entry;
 
         Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
         for(Address sender: members) {
-            range=getLowestAndHighestSeqno(sender, true);  // get the highest deliverable seqno
-            if(range == null) {
+            entry=getEntry(sender);
+            if(entry == null) {
                 if(log.isErrorEnabled()) {
                     log.error("range is null");
                 }
                 continue;
             }
-            highest_received=getHighestReceivedSeqno(sender);
-            map.put(sender, new Digest.Entry(range.low, range.high, highest_received));
+            map.put(sender, entry);
         }
-
         return new Digest(map);
     }
 
@@ -1220,34 +1217,55 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Returns the lowest seqno still in cache (so it can be retransmitted) and the highest seqno received so far.
      *
      * @param sender       The address for which the highest and lowest seqnos are to be retrieved
-     * @param stop_at_gaps If true, the highest seqno *deliverable* will be returned. If false, the highest seqno
-     *                     *received* will be returned. E.g. for [+3 +4 +5 -6 +7 +8], the highest_seqno_received is 8,
-     *                     whereas the higheset_seqno_seen (deliverable) is 5.
      */
-    private Range getLowestAndHighestSeqno(Address sender, boolean stop_at_gaps) {
-        Range r=null;
+//    private Range getLowestAndHighestSeqno(Address sender, boolean stop_at_gaps) {
+//        Range r=null;
+//        NakReceiverWindow win;
+//
+//        if(sender == null) {
+//            if(log.isErrorEnabled()) {
+//                log.error("sender is null");
+//            }
+//            return r;
+//        }
+//        win=xmit_table.get(sender);
+//        if(win == null) {
+//            if(log.isErrorEnabled()) {
+//                log.error("sender " + sender + " not found in xmit_table");
+//            }
+//            return r;
+//        }
+//        if(stop_at_gaps) {
+//            r=new Range(win.getLowestSeen(), win.getHighestDelivered());   // deliverable messages (no gaps)
+//        }
+//        else {
+//            r=new Range(win.getLowestSeen(), win.getHighestReceived());    // received messages
+//        }
+//        return r;
+//    }
+
+
+
+    private Digest.Entry getEntry(Address sender) {
         NakReceiverWindow win;
 
         if(sender == null) {
             if(log.isErrorEnabled()) {
                 log.error("sender is null");
             }
-            return r;
+            return null;
         }
         win=xmit_table.get(sender);
         if(win == null) {
             if(log.isErrorEnabled()) {
                 log.error("sender " + sender + " not found in xmit_table");
             }
-            return r;
+            return null;
         }
-        if(stop_at_gaps) {
-            r=new Range(win.getLowestSeen(), win.getHighestDelivered());   // deliverable messages (no gaps)
-        }
-        else {
-            r=new Range(win.getLowestSeen(), win.getHighestReceived());    // received messages
-        }
-        return r;
+        long low=win.getLowestSeen(),
+                highest_delivered=win.getHighestDelivered(),
+                highest_received=win.getHighestReceived();
+        return new Digest.Entry(low, highest_delivered, highest_received);
     }
 
 
@@ -1256,27 +1274,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * (doesn't take gaps into account). If we are the sender, we will return the highest seqno <em>sent</em> rather
      * then <em>received</em>
      */
-    private long getHighestReceivedSeqno(Address sender) {
-        NakReceiverWindow win;
-        long ret=0;
-
-        if(sender == null) {
-            if(log.isErrorEnabled()) {
-                log.error("sender is null");
-            }
-            return ret;
-        }
-
-        win=xmit_table.get(sender);
-        if(win == null) {
-            if(log.isErrorEnabled()) {
-                log.error("sender " + sender + " not found in xmit_table");
-            }
-            return ret;
-        }
-        ret=win.getHighestReceived();
-        return ret;
-    }
+//    private long getHighestReceivedSeqno(Address sender) {
+//        NakReceiverWindow win;
+//        long ret=0;
+//
+//        if(sender == null) {
+//            if(log.isErrorEnabled()) {
+//                log.error("sender is null");
+//            }
+//            return ret;
+//        }
+//
+//        win=xmit_table.get(sender);
+//        if(win == null) {
+//            if(log.isErrorEnabled()) {
+//                log.error("sender " + sender + " not found in xmit_table");
+//            }
+//            return ret;
+//        }
+//        ret=win.getHighestReceived();
+//        return ret;
+//    }
 
 
     /**
