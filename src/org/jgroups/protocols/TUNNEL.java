@@ -1,8 +1,15 @@
-// $Id: TUNNEL.java,v 1.41 2007/05/08 19:10:35 vlada Exp $
+// $Id: TUNNEL.java,v 1.42 2007/05/09 21:53:21 belaban Exp $
 
 
 package org.jgroups.protocols;
 
+
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.annotations.GuardedBy;
+import org.jgroups.stack.RouterStub;
+import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -13,14 +20,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.stack.RouterStub;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 
 /**
@@ -42,8 +41,6 @@ public class TUNNEL extends TP {
     private int router_port=0;     
     private RouterStub stub;    
     long reconnect_interval=5000; /** time to wait in ms between reconnect attempts */
-
-    TimeScheduler         timer=null;
 
     @GuardedBy("reconnectorLock")
     private Future        reconnectorFuture=null;
