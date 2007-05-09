@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.72 2007/05/01 11:00:17 belaban Exp $
+ * @version $Id: Message.java,v 1.73 2007/05/09 22:01:49 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -832,7 +832,7 @@ public class Message implements Externalizable, Streamable {
             if(magic_number != -1) {
                 clazz=ClassConfigurator.getInstance(false).get(magic_number);
                 if(clazz == null)
-                    log.error("magic number " + magic_number + " is not available in magic map");
+                    throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
             }
             else {
                 classname=in.readUTF();
