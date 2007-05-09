@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.13 2006/12/29 08:15:06 belaban Exp $
+// $Id: NotificationBus.java,v 1.14 2007/05/09 22:19:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -71,7 +71,8 @@ public class NotificationBus implements Receiver {
     public NotificationBus(Channel channel, String bus_name) throws Exception {
         if(bus_name != null) this.bus_name=bus_name;
         this.channel=channel;
-        channel.setReceiver(this);
+        if(channel != null)
+            channel.setReceiver(this);
     }
 
 
