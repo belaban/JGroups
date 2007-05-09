@@ -6,11 +6,10 @@ import javax.management.MBeanServer;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.4 2006/05/02 11:06:00 belaban Exp $
+ * @version $Id: JChannelFactory.java,v 1.5 2007/05/09 23:50:19 belaban Exp $
  */
 public class JChannelFactory implements JChannelFactoryMBean {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
-    MBeanServer server=null;
 
 
     public JChannelFactory(org.jgroups.JChannelFactory factory) {

@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.62 2007/05/01 10:55:10 belaban Exp $
+// $Id: FD_SOCK.java,v 1.63 2007/05/09 23:50:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -52,9 +52,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     InetAddress         bind_addr=null;                    // the NIC on which the ServerSocket should listen
 
     String              group_name=null;                   // the name of the group (set on CONNECT, nulled on DISCONNECT)
-
-    /** @deprecated Use {@link #bind_addr} instead */
-    InetAddress         srv_sock_bind_addr=null;           // the NIC on which the ServerSocket should listen
 
     private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress           srv_sock_addr=null;                // pair of server_socket:port

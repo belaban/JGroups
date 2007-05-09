@@ -41,7 +41,6 @@ public abstract class BasicConnectionTable {
     boolean             use_reaper=false;            // by default we don't reap idle conns
     static final int    backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
     ServerSocket        srv_sock=null;
-    boolean             reuse_addr=false;
     boolean             tcp_nodelay=false;
     int                 linger=-1;
 

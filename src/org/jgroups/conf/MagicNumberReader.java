@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.12 2007/05/01 09:15:18 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.13 2007/05/09 23:50:21 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -128,13 +128,9 @@ public class MagicNumberReader {
             return new ClassMap(clazzname, desc, Boolean.valueOf(preload).booleanValue(), Short.valueOf(magicnumber).shortValue());
         }
         catch(Exception x) {
-            if(x instanceof java.io.IOException)
-                throw (java.io.IOException)x;
-            else {
-                IOException tmp=new IOException();
-                tmp.initCause(x);
-                throw tmp;
-            }
+            IOException tmp=new IOException();
+            tmp.initCause(x);
+            throw tmp;
         }
     }
 

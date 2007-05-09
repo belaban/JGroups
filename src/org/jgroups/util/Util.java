@@ -25,7 +25,7 @@ import java.security.MessageDigest;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.121 2007/05/09 22:57:51 belaban Exp $
+ * @version $Id: Util.java,v 1.122 2007/05/09 23:50:24 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1912,7 +1912,7 @@ public class Util {
         return retval;
     }
 
-    public static Vector unmodifiableVector(Vector v) {
+    public static <T> Vector<T> unmodifiableVector(Vector<? extends T> v) {
         if(v == null) return null;
         return new UnmodifiableVector(v);
     }

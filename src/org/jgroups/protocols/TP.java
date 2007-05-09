@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.142 2007/05/09 22:01:49 belaban Exp $
+ * @version $Id: TP.java,v 1.143 2007/05/09 23:50:22 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -59,10 +59,6 @@ public abstract class TP extends Protocol {
 
     /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
     boolean         use_local_host=false;
-
-    /** If true, the transport should use all available interfaces to receive multicast messages
-     * @deprecated  Use {@link #receive_on_all_interfaces} instead */
-    boolean         bind_to_all_interfaces=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
     boolean         receive_on_all_interfaces=false;
@@ -213,16 +209,7 @@ public abstract class TP extends Protocol {
     String diagnostics_addr="224.0.0.75";
     int    diagnostics_port=7500;
 
-
-    /** HashMap<Address, Address>. Keys=senders, values=destinations. For each incoming message M with sender S, adds
-     * an entry with key=S and value= sender's IP address and port.
-     */
-    HashMap addr_translation_table=new HashMap();
-
-    boolean use_addr_translation=false;
-
     TpHeader header;
-
     final String name=getName();
 
     static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
@@ -865,12 +852,6 @@ public abstract class TP extends Protocol {
             props.remove("enable_bundling");
         }
 
-        str=props.getProperty("use_addr_translation");
-        if(str != null) {
-            use_addr_translation=Boolean.valueOf(str).booleanValue();
-            props.remove("use_addr_translation");
-        }
-
         str=props.getProperty("enable_diagnostics");
         if(str != null) {
             enable_diagnostics=Boolean.valueOf(str).booleanValue();
@@ -1398,7 +1379,6 @@ public abstract class TP extends Protocol {
         pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
 
         pool.setThreadFactory(new ThreadFactory() {
-            int num=1;
             ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, thread_group_name);
             public Thread newThread(Runnable command) {
                 Thread retval=new Thread(unmarshaller_threads, command, thread_name);
@@ -1616,8 +1596,6 @@ public abstract class TP extends Protocol {
     	
     	public static final String THREAD_NAME = "IncomingMessageHandler"; 
         Thread t;
-        int i=0;
-
 
         Thread getThread(){
         	return t;
