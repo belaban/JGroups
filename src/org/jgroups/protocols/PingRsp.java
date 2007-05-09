@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.9 2005/08/08 12:45:43 belaban Exp $
+// $Id: PingRsp.java,v 1.10 2007/05/09 23:50:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -30,16 +30,14 @@ public class PingRsp implements Serializable, Streamable {
     }
 
     public boolean equals(Object obj) {
+        if(!(obj instanceof PingRsp))
+            return false;
         PingRsp other=(PingRsp)obj;
         return own_addr != null && other.own_addr != null && own_addr.equals(other.own_addr);
     }
 
     public boolean isCoord() {
-        if(!is_server)
-            return false;
-        if(own_addr != null && coord_addr != null)
-            return own_addr.equals(coord_addr);
-        return false;
+        return is_server && own_addr != null && coord_addr != null && own_addr.equals(coord_addr);
     }
 
     public int size() {

@@ -1,13 +1,12 @@
 package org.jgroups.jmx;
 
-import org.jgroups.*;
-import org.jgroups.stack.ProtocolStack;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Attr;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -16,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.15 2007/02/16 07:32:10 belaban Exp $
+ * @version $Id: JChannel.java,v 1.16 2007/05/09 23:50:19 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -167,7 +166,7 @@ public class JChannel implements JChannelMBean {
     public void setReceiveBlockEvents(boolean flag) {
         this.receive_blocks=flag;
         if(channel != null)
-            channel.setOpt(Channel.BLOCK, new Boolean(flag));
+            channel.setOpt(Channel.BLOCK, Boolean.valueOf(flag));
     }
 
     public boolean getReceiveLocalMessages() {
@@ -179,7 +178,7 @@ public class JChannel implements JChannelMBean {
     public void setReceiveLocalMessages(boolean flag) {
         this.receive_local_msgs=flag;
         if(channel != null)
-            channel.setOpt(Channel.LOCAL, new Boolean(flag));
+            channel.setOpt(Channel.LOCAL, Boolean.valueOf(flag));
     }
 
     public boolean getAutoReconnect() {
@@ -190,8 +189,9 @@ public class JChannel implements JChannelMBean {
 
     public void setAutoReconnect(boolean flag) {
         this.auto_reconnect=flag;
-        if(channel != null)
-            channel.setOpt(Channel.AUTO_RECONNECT, new Boolean(flag));
+        if(channel != null) {
+            channel.setOpt(Channel.AUTO_RECONNECT, Boolean.valueOf(flag));
+        }
     }
 
     public boolean getAutoGetState() {
@@ -203,7 +203,7 @@ public class JChannel implements JChannelMBean {
     public void setAutoGetState(boolean flag) {
         this.auto_getstate=flag;
         if(channel != null)
-            channel.setOpt(Channel.AUTO_GETSTATE, new Boolean(flag));
+            channel.setOpt(Channel.AUTO_GETSTATE, Boolean.valueOf(flag));
     }
 
     public boolean getStatsEnabled() {
@@ -336,7 +336,7 @@ public class JChannel implements JChannelMBean {
         return channel.toString(print_details);
     }
 
-    public void connect(String channel_name) throws ChannelException, ChannelClosedException {
+    public void connect(String channel_name) throws ChannelException {
         channel.connect(channel_name);
     }
 
@@ -393,10 +393,10 @@ public class JChannel implements JChannelMBean {
     }
 
     private void setOptions() {
-        channel.setOpt(Channel.BLOCK, new Boolean(this.receive_blocks));
-        channel.setOpt(Channel.LOCAL, new Boolean(this.receive_local_msgs));
-        channel.setOpt(Channel.AUTO_RECONNECT, new Boolean(this.auto_reconnect));
-        channel.setOpt(Channel.AUTO_GETSTATE, new Boolean(this.auto_getstate));
+        channel.setOpt(Channel.BLOCK, Boolean.valueOf(this.receive_blocks));
+        channel.setOpt(Channel.LOCAL, Boolean.valueOf(this.receive_local_msgs));
+        channel.setOpt(Channel.AUTO_RECONNECT, Boolean.valueOf(this.auto_reconnect));
+        channel.setOpt(Channel.AUTO_GETSTATE, Boolean.valueOf(this.auto_getstate));
     }
 
 }

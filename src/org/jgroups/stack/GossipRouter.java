@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.24 2007/04/18 06:10:50 belaban Exp $
+// $Id: GossipRouter.java,v 1.25 2007/05/09 23:50:26 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -769,7 +769,7 @@ public class GossipRouter {
         }
 
         public boolean equals(Object other) {
-            return logical_addr.equals(((AddressEntry)other).logical_addr);
+            return other instanceof AddressEntry && logical_addr.equals(((AddressEntry)other).logical_addr);
         }
 
         public String toString() {

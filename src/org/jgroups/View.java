@@ -18,7 +18,7 @@ import java.util.Vector;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.15 2007/01/08 12:10:30 belaban Exp $
+ * @version $Id: View.java,v 1.16 2007/05/09 23:50:27 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -112,10 +112,8 @@ public class View implements Externalizable, Cloneable, Streamable {
 
 
     public boolean equals(Object obj) {
-        if(obj == null)
-            return false;
         if(!(obj instanceof View))
-            throw new ClassCastException(obj.getClass().getName() + " is not a View");
+            return false;
         if(vid != null) {
             int rc=vid.compareTo(((View)obj).vid);
             if(rc != 0)
@@ -129,6 +127,11 @@ public class View implements Externalizable, Cloneable, Streamable {
                 return true;
         }
         return false;
+    }
+
+
+    public int hashCode() {
+        return vid != null? vid.hashCode() : 0;
     }
 
     /**
@@ -148,7 +151,7 @@ public class View implements Externalizable, Cloneable, Streamable {
      */
     public Object clone() {
         ViewId vid2=vid != null ? (ViewId)vid.clone() : null;
-        Vector<Address> members2=members != null ? (Vector<Address>)members.clone() : null;
+        Vector<Address> members2=members != null ? new Vector<Address>(members) : null;
         return new View(vid2, members2);
     }
 
