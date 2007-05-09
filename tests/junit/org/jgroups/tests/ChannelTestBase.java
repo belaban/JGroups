@@ -33,7 +33,7 @@ public class ChannelTestBase extends TestCase
    
    private static final int LETTER_A = 64;
    
-   protected static String DEFAULT_MUX_FACTORY_COUNT = "4";
+   protected final static String DEFAULT_MUX_FACTORY_COUNT = "4";
 
    protected static String CHANNEL_CONFIG = "udp.xml";  
    

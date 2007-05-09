@@ -17,13 +17,13 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.27 2007/05/08 19:10:34 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.28 2007/05/09 22:57:50 belaban Exp $
  */
 public class RouterStub {
 	
-	public static int STATUS_CONNECTED = 0;
-	public static int STATUS_DISCONNECTED = 1;
-	public static int STATUS_CONNECTION_LOST = 2;
+	public final static int STATUS_CONNECTED = 0;
+	public final static int STATUS_DISCONNECTED = 1;
+	public final static int STATUS_CONNECTION_LOST = 2;
 
 	String router_host = null; // name of the router host
 

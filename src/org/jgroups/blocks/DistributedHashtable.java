@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.30 2007/04/19 18:45:06 vlada Exp $
+// $Id: DistributedHashtable.java,v 1.31 2007/05/09 22:57:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -40,7 +40,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.30 2007/04/19 18:45:06 vlada Exp $
+ * @version $Id: DistributedHashtable.java,v 1.31 2007/05/09 22:57:51 belaban Exp $
  */
 public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
 
@@ -57,9 +57,9 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
 
     private transient Channel               channel;
     protected transient RpcDispatcher       disp=null;
-    private transient String                groupname=null;
+    private String                          groupname=null;
     private final transient Vector          notifs=new Vector();  // to be notified when mbrship changes
-    private final transient Vector          members=new Vector(); // keeps track of all DHTs
+    private final Vector                    members=new Vector(); // keeps track of all DHTs
     private transient Class[]               put_signature=null;
     private transient Class[]               putAll_signature=null;
     private transient Class[]               clear_signature=null;
