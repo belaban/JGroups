@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.16 2007/03/27 14:46:24 belaban Exp $
+// $Id: DistributedTree.java,v 1.17 2007/05/09 22:57:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -455,8 +455,10 @@ public class DistributedTree implements MessageListener, MembershipListener {
         if(n == null) {
             _add(fqn, element);
         }
-        old_el=n.element;
-        n.element=element;
+        else {
+            old_el=n.element;
+            n.element=element;
+        }
         notifyNodeModified(fqn, old_el, element);
     }
 

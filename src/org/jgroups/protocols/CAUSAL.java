@@ -1,4 +1,4 @@
-// $Id: CAUSAL.java,v 1.15 2007/05/01 10:55:10 belaban Exp $
+// $Id: CAUSAL.java,v 1.16 2007/05/09 22:57:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +56,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.15 $
+ *  @version $Revision: 1.16 $
  *
  **/
 
@@ -172,7 +172,7 @@ public class CAUSAL extends Protocol
          */
         private static final long serialVersionUID = 3257569486185183289L;
         
-        public static String NAME="CAUSAL_NEWVIEW_HEADER";
+        public final static String NAME="CAUSAL_NEWVIEW_HEADER";
         
         /**
          * New view id.
@@ -335,7 +335,7 @@ public class CAUSAL extends Protocol
         
         public String toString() {
             int missingLocalTimes[]=this.missingTimeIndexes, tmpMissingCompletionIndexes[]=this.missingCompletionIndexes;
-            StringBuffer sb =new StringBuffer("MissingIndexes[");
+            StringBuilder sb=new StringBuilder("MissingIndexes[");
             if (missingLocalTimes==null) {
                 sb.append("? missing times - not deserialized, ");
             } else {
@@ -397,7 +397,8 @@ public class CAUSAL extends Protocol
         }
         
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuffer sb;
+            sb=new StringBuffer();
             sb.append(viewId).append("; ").append(members.length).append(" members: ");
             for(int i=0;i<members.length;i++) {
                 if (i>0) sb.append(", ");
@@ -625,7 +626,7 @@ public class CAUSAL extends Protocol
         }
         
         public synchronized String timeVectorString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             for(int i=0;i<timeVector.length;i++) {
                 if (i>0) sb.append(", ");
                 sb.append(timeVector[i]);
@@ -983,7 +984,7 @@ public class CAUSAL extends Protocol
             
             TransportedVectorTime queuedVector = null;
             
-            while ((upwardWaitingQueue.size() > 0) &&
+            while ((!upwardWaitingQueue.isEmpty()) &&
                     currentView.isCausallyNext((queuedVector = (TransportedVectorTime) upwardWaitingQueue.getFirst()))) {
                 upwardWaitingQueue.remove(queuedVector);
                 Message tmp=queuedVector.getAssociatedMessage();

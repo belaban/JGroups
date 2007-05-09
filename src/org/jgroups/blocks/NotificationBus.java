@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.14 2007/05/09 22:19:12 belaban Exp $
+// $Id: NotificationBus.java,v 1.15 2007/05/09 22:57:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -114,13 +114,11 @@ public class NotificationBus implements Receiver {
         Object first_mbr=null;
 
         synchronized(members) {
-            first_mbr=members.size() > 0 ? members.elementAt(0) : null;
+            first_mbr=!members.isEmpty()? members.elementAt(0) : null;
             if(first_mbr == null)
                 return true;
         }
-        if(getLocalAddress() != null)
-            return getLocalAddress().equals(first_mbr);
-        return false;
+        return getLocalAddress() != null && getLocalAddress().equals(first_mbr);
     }
 
 
@@ -188,7 +186,7 @@ public class NotificationBus implements Receiver {
     public Serializable getCacheFromMember(Address mbr, long timeout, int max_tries) {
         Serializable cache=null;
         int num_tries=0;
-        Info info=new Info(Info.GET_CACHE_REQ);
+        Info info;
         Message msg;
         Address dst=mbr;  // member from which to fetch the cache
 
@@ -337,10 +335,10 @@ public class NotificationBus implements Receiver {
         }
 
         if(consumer != null) {
-            if(joined_mbrs.size() > 0)
+            if(!joined_mbrs.isEmpty())
                 for(int i=0; i < joined_mbrs.size(); i++)
                     consumer.memberJoined((Address) joined_mbrs.elementAt(i));
-            if(left_mbrs.size() > 0)
+            if(!left_mbrs.isEmpty())
                 for(int i=0; i < left_mbrs.size(); i++)
                     consumer.memberLeft((Address) left_mbrs.elementAt(i));
         }
@@ -425,7 +423,7 @@ public class NotificationBus implements Receiver {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append("type= ");
             if(type == NOTIFICATION)
                 sb.append("NOTIFICATION");

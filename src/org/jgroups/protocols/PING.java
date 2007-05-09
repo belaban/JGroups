@@ -1,4 +1,3 @@
-// $Id: PING.java,v 1.33 2007/04/27 07:59:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,6 +24,8 @@ import java.util.*;
  * The following properties are available
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
+ * @author Bela Ban
+ * @version $Id: PING.java,v 1.34 2007/05/09 22:57:50 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -32,7 +33,7 @@ public class PING extends Discovery {
     long         gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
     GossipClient client;
     int          port_range=1;        // number of ports to be probed for initial membership
-    List         initial_hosts=null;  // hosts to be contacted for the initial membership
+    private List         initial_hosts=null;  // hosts to be contacted for the initial membership
     public static final String name="PING";
 
 
@@ -160,7 +161,7 @@ public class PING extends Discovery {
 
         if(client != null) {
             gossip_rsps=client.getMembers(group_addr);
-            if(gossip_rsps != null && gossip_rsps.size() > 0) {
+            if(gossip_rsps != null && !gossip_rsps.isEmpty()) {
                 // Set a temporary membership in the UDP layer, so that the following multicast
                 // will be sent to all of them
                 Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector(gossip_rsps)));
@@ -171,7 +172,7 @@ public class PING extends Discovery {
                 return;
             }
 
-            if(gossip_rsps.size() > 0) {
+            if(!gossip_rsps.isEmpty()) {
                 for(Iterator it=gossip_rsps.iterator(); it.hasNext();) {
                     Address dest=(Address)it.next();
                     msg=new Message(dest, null, null);  // unicast msg
