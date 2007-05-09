@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.15 2007/01/05 14:48:37 belaban Exp $
+// $Id: MessageTest.java,v 1.16 2007/05/09 22:19:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -81,6 +81,19 @@ public class MessageTest extends TestCase {
 
         assertEquals(4, b1.length);
         assertEquals(3, b2.length);
+    }
+
+
+    public void testSetBufferWithNullBuffer() {
+        byte[] buf={'b', 'e', 'l', 'a'};
+        m1=new Message();
+        m1.setBuffer(buf, 1, 2); // dummy data with non 0 oiffset and length
+        assertEquals(1, m1.getOffset());
+        assertEquals(2, m1.getLength());
+
+        m1.setBuffer(null, 1, 2); // dummy offset and length, is ignored
+        assertEquals(0, m1.getOffset());
+        assertEquals(0, m1.getLength());
     }
 
 

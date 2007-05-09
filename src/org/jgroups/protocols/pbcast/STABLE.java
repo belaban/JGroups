@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.75 2007/05/01 10:55:15 belaban Exp $
+ * @version $Id: STABLE.java,v 1.76 2007/05/09 22:19:13 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -258,8 +258,8 @@ public class STABLE extends Protocol {
             return;
         Address dest=msg.getDest();
         if(dest == null || dest.isMulticastAddress()) {
-            boolean unlocked=false;
             received.lock();
+            boolean locked=true;
             try {
                 num_bytes_received+=(long)msg.getLength();
                 if(num_bytes_received >= max_bytes) {
@@ -269,7 +269,7 @@ public class STABLE extends Protocol {
                     }
                     num_bytes_received=0;
                     received.unlock();
-                    unlocked=true;
+                    locked=false;
 
                     // asks the NAKACK protocol for the current digest,
                     Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
@@ -282,7 +282,7 @@ public class STABLE extends Protocol {
                 }
             }
             finally {
-                if(!unlocked)
+                if(locked)
                     received.unlock();
             }
         }
