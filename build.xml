@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.96 2007/05/08 03:27:04 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.97 2007/05/10 03:34:52 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -480,14 +480,14 @@
 		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
 		</antcall>		
 
-		 <antcall target="runtests">		 	
+		 <!-- <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>
 		 	<param name="channel.conf" value="tunnel.xml"/>
 		 	<param name="channel.conf.flush" value="tunnel.xml"/>
 		 	<param name="mux.conf.stack" value="tunnel"/>
 		 	<param name="testname.ext" value="tunnel"/>
 		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>		 	
-		 </antcall>		
+		 </antcall>	-->	
 	</target>
 	
 	<!-- 
