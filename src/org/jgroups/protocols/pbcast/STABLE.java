@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.77 2007/05/09 23:50:26 belaban Exp $
+ * @version $Id: STABLE.java,v 1.78 2007/05/10 15:22:38 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -69,7 +69,7 @@ public class STABLE extends Protocol {
     @GuardedBy("received")
     private long                  num_bytes_received=0;
 
-    private Lock                  received=new ReentrantLock();
+    private final Lock            received=new ReentrantLock();
 
     /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
      * handle STABILITY messages */
@@ -123,7 +123,7 @@ public class STABLE extends Protocol {
 
     public Vector<Integer> requiredDownServices() {
         Vector<Integer> retval=new Vector<Integer>();
-        retval.addElement(new Integer(Event.GET_DIGEST_STABLE));  // NAKACK layer
+        retval.addElement(Event.GET_DIGEST_STABLE);  // NAKACK layer
         return retval;
     }
 
@@ -301,7 +301,7 @@ public class STABLE extends Protocol {
             long timeout=0;
             Object t=evt.getArg();
             if(t != null && t instanceof Long)
-                timeout=((Long)t).longValue();
+                timeout=(Long)t;
             suspend(timeout);
             break;
 
@@ -348,7 +348,7 @@ public class STABLE extends Protocol {
 
 
     /** Digest and members are guaranteed to be non-null */
-    private static void adjustSenders(MutableDigest digest, Vector members) {
+    private static void adjustSenders(MutableDigest digest, Vector<Address> members) {
         synchronized(digest) {
             // 1. remove all members from digest who are not in the view
             Iterator<Address> it=digest.getSenders().keySet().iterator();
@@ -359,8 +359,8 @@ public class STABLE extends Protocol {
                     it.remove();
             }
             // 2. add members to digest which are in the new view but not in the digest
-            for(int i=0; i < members.size(); i++) {
-                mbr=(Address)members.get(i);
+            for(Address member : members) {
+                mbr=member;
                 if(!digest.contains(mbr))
                     digest.add(mbr, -1, -1);
             }
@@ -406,10 +406,8 @@ public class STABLE extends Protocol {
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
         long highest_seen_seqno, my_highest_seen_seqno, new_highest_seen_seqno;
-        Map.Entry<Address,Digest.Entry> entry;
         Digest.Entry val;
-        for(Iterator<Map.Entry<Address, Digest.Entry>> it=d.getSenders().entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
+        for(Map.Entry<Address, Digest.Entry> entry: d.getSenders().entrySet()) {
             mbr=entry.getKey();
             val=entry.getValue();
             low=val.getLow();

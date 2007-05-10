@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.83 2007/05/07 09:55:23 belaban Exp $
+ * @version $Id: FC.java,v 1.84 2007/05/10 15:22:37 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -44,7 +44,7 @@ public class FC extends Protocol {
      * currently used as there might be null values
      */
     @GuardedBy("sent_lock")
-    final Map<Address, Long> sent=new HashMap<Address, Long>(11);
+    private final Map<Address, Long> sent=new HashMap<Address, Long>(11);
     // final Map sent=new ConcurrentHashMap(11);
 
     /**
@@ -54,24 +54,24 @@ public class FC extends Protocol {
      * is received after reaching <tt>min_credits</tt> credits.
      */
     @GuardedBy("received_lock")
-    final Map<Address, Long> received=new ConcurrentHashMap<Address, Long>(11);
+    private final Map<Address, Long> received=new ConcurrentHashMap<Address, Long>(11);
 
 
     /**
      * List of members from whom we expect credits
      */
     @GuardedBy("sent_lock")
-    final Set<Address> creditors=new HashSet<Address>(11);
+    private final Set<Address> creditors=new HashSet<Address>(11);
 
     /** Peers who have asked for credit that we didn't have */
-    final Set<Address> pending_requesters=new HashSet<Address>(11);
+    private final Set<Address> pending_requesters=new HashSet<Address>(11);
 
     /**
      * Max number of bytes to send per receiver until an ack must
      * be received before continuing sending
      */
     private long max_credits=500000;
-    private Long max_credits_constant=new Long(max_credits);
+    private Long max_credits_constant=max_credits;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
@@ -111,14 +111,14 @@ public class FC extends Protocol {
     private long lowest_credit=max_credits;
 
     /** Lock protecting sent credits table and some other vars (creditors for example) */
-    final Lock sent_lock=new ReentrantLock();
+    private final Lock sent_lock=new ReentrantLock();
 
     /** Lock protecting received credits table */
-    final Lock received_lock=new ReentrantLock();
+    private final Lock received_lock=new ReentrantLock();
 
 
     /** Mutex to block on down() */
-    final Condition credits_available=sent_lock.newCondition();
+    private final Condition credits_available=sent_lock.newCondition();
 
     /**
      * Whether an up thread that comes back down should be allowed to
@@ -134,7 +134,7 @@ public class FC extends Protocol {
      */
     private Thread ignore_thread;
 
-    static final String name="FC";
+    private static final String name="FC";
 
     /** Last time a credit request was sent. Used to prevent credit request storms */
     @GuardedBy("sent_lock")
@@ -145,10 +145,10 @@ public class FC extends Protocol {
     private int num_credit_responses_sent=0, num_credit_responses_received=0;
     private long total_time_blocking=0;
 
-    final BoundedList last_blockings=new BoundedList(50);
+    private final BoundedList last_blockings=new BoundedList(50);
 
-    final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
-    final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
+    private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
+    private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
 
 
     public final String getName() {
@@ -169,7 +169,7 @@ public class FC extends Protocol {
 
     public void setMaxCredits(long max_credits) {
         this.max_credits=max_credits;
-        max_credits_constant=new Long(this.max_credits);
+        max_credits_constant=this.max_credits;
     }
 
     public double getMinThreshold() {
@@ -244,11 +244,11 @@ public class FC extends Protocol {
             retval=new HashMap<String, Object>();
         retval.put("senders", printMap(sent));
         retval.put("receivers", printMap(received));
-        retval.put("num_blockings", new Integer(this.num_blockings));
-        retval.put("avg_time_blocked", new Double(getAverageTimeBlocked()));
-        retval.put("num_replenishments", new Integer(this.num_credit_responses_received));
-        retval.put("total_time_blocked", new Long(total_time_blocking));
-        retval.put("num_credit_requests", new Long(num_credit_requests_sent));
+        retval.put("num_blockings", this.num_blockings);
+        retval.put("avg_time_blocked", getAverageTimeBlocked());
+        retval.put("num_replenishments", this.num_credit_responses_received);
+        retval.put("total_time_blocked", total_time_blocking);
+        retval.put("num_credit_requests", (long)num_credit_requests_sent);
         return retval;
     }
 
@@ -316,7 +316,7 @@ public class FC extends Protocol {
         Util.checkBufferSize("FC.max_credits", max_credits);
         str=props.getProperty("ignore_synchronous_response");
         if(str != null) {
-            ignore_synchronous_response=Boolean.valueOf(str).booleanValue();
+            ignore_synchronous_response=Boolean.valueOf(str);
             props.remove("ignore_synchronous_response");
         }
 
@@ -324,7 +324,7 @@ public class FC extends Protocol {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
-        max_credits_constant=new Long(max_credits);
+        max_credits_constant=max_credits;
         return true;
     }
 
@@ -506,13 +506,13 @@ public class FC extends Protocol {
             for(Map.Entry<Address,Long> entry: sent.entrySet()) {
                 mbr=entry.getKey();
                 credits=entry.getValue();
-                if(credits.longValue() <= length)
+                if(credits <= length)
                     creditors.add(mbr);
             }
         }
         else {
             credits=sent.get(dest);
-            if(credits != null && credits.longValue() <= length)
+            if(credits != null && credits <= length)
                 creditors.add(dest);
         }
     }
@@ -544,7 +544,7 @@ public class FC extends Protocol {
         else {
             val=m.get(dest);
             if(val != null) {
-                lowest=val.longValue();
+                lowest=val;
                 lowest-=credits;
                 m.put(dest, lowest);
                 return lowest;
@@ -561,7 +561,7 @@ public class FC extends Protocol {
         sent_lock.lock();
         try {
             Long old_credit=sent.get(sender);
-            Long new_credit=Math.min(max_credits, old_credit.longValue() + increase.longValue());
+            Long new_credit=Math.min(max_credits, old_credit + increase.longValue());
 
             if(log.isTraceEnabled()) {
                 sb=new StringBuilder();
@@ -591,8 +591,7 @@ public class FC extends Protocol {
 
     private static long computeLowestCredit(Map<Address, Long> m) {
         Collection<Long> credits=m.values(); // List of Longs (credits)
-        Long retval=Collections.min(credits);
-        return retval.longValue();
+        return Collections.min(credits);
     }
 
 
@@ -643,7 +642,7 @@ public class FC extends Protocol {
         try {
             Long old_credit=map.get(sender);
             if(old_credit != null) {
-                credit_response=Math.min(max_credits, max_credits - old_credit.longValue());
+                credit_response=Math.min(max_credits, max_credits - old_credit);
             }
 
             if(credit_response > 0) {
@@ -685,9 +684,9 @@ public class FC extends Protocol {
     private void sendCredit(Address dest, long credit) {
         Number number;
         if(credit < Integer.MAX_VALUE)
-            number=new Integer((int)credit);
+            number=(int)credit;
         else
-            number=new Long(credit);
+            number=credit;
         Message msg=new Message(dest, null, number);
         msg.setFlag(Message.OOB);
         msg.putHeader(name, REPLENISH_HDR);
