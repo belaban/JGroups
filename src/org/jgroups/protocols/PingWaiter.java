@@ -16,19 +16,18 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Class that waits for n PingRsp'es, or m milliseconds to return the initial membership
  * @author Bela Ban
- * @version $Id: PingWaiter.java,v 1.17 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: PingWaiter.java,v 1.18 2007/05/10 16:44:00 belaban Exp $
  */
 public class PingWaiter implements Runnable {
     @GuardedBy("thread_lock")
-    Thread              thread=null;
+    private Thread      thread=null;
     private final Lock  thread_lock=new ReentrantLock();
     final List          rsps=new LinkedList();
-    long                timeout=3000;
-    int                 num_rsps=3;
+    private long        timeout=3000;
+    private int         num_rsps=3;
     Protocol            parent=null;
-    PingSender          ping_sender;
+    private PingSender  ping_sender;
     protected final Log log=LogFactory.getLog(this.getClass());
-    private boolean     trace=log.isTraceEnabled();
 
 
     public PingWaiter(long timeout, int num_rsps, Protocol parent, PingSender ping_sender) {
@@ -162,8 +161,7 @@ public class PingWaiter implements Runnable {
                 return new Vector(rsps);
             }
             finally {
-                if(ping_sender != null)
-                    ping_sender.stop();
+                ping_sender.stop();
             }
         }
     }

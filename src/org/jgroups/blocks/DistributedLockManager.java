@@ -20,7 +20,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.8 2006/08/15 09:18:53 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.9 2007/05/10 16:42:04 belaban Exp $
  */
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
@@ -90,7 +90,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         this.id = id;
         this.votingAdapter = channel;
         this.votingAdapter.addListener(this);
-        if(votingAdapter != null && votingAdapter.getVoteChannel() != null)
+        if(votingAdapter.getVoteChannel() != null)
             votingAdapter.getVoteChannel().addMembershipListener(this);
         setInitialMembership(votingAdapter.getVoteChannel().getMembers());
     }
@@ -143,10 +143,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         removeExpired(decree);
 
         LockDecree lock = (LockDecree)heldLocks.get(decree.getKey());
-        if (lock == null)
-            return true;
-        else
-            return lock.requester.equals(decree.requester);
+        return lock == null || lock.requester.equals(decree.requester);
     }
 
     /**
@@ -163,11 +160,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         // we need to check only hold locks, because
         // prepared locks cannot contain the lock
         LockDecree lock = (LockDecree)heldLocks.get(decree.getKey());
-        if (lock == null)
-            // check if this holds...
-            return true;
-        else
-            return lock.requester.equals(decree.requester);
+        return lock == null || lock.requester.equals(decree.requester);
     }
 
     /**
@@ -332,7 +325,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
      * @param requestedDecree instance of <code>LockDecree</code> representing
      * the lock.
      */
-    private boolean checkPrepared(HashMap preparedContainer,
+    private static boolean checkPrepared(HashMap preparedContainer,
                                   LockDecree requestedDecree)
     {
         LockDecree preparedDecree =
@@ -345,11 +338,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
             preparedDecree = null;
         }
 
-        if (preparedDecree != null) {
-            return requestedDecree.requester.equals(preparedDecree.requester);
-        } else
-            // it was not prepared... sorry...
-            return true;
+        return preparedDecree == null || requestedDecree.requester.equals(preparedDecree.requester);
     }
 
     /**
@@ -651,7 +640,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         System.out.println("-- VIEW: " + current_members + ", old view: " + prev_view);
 
         prev_view.removeAll(current_members);
-        if(prev_view.size() > 0) { // we have left members, so we need to check for locks which are still held by them
+        if(!prev_view.isEmpty()) { // we have left members, so we need to check for locks which are still held by them
             for(Iterator it=prev_view.iterator(); it.hasNext();) {
                 Object mbr=it.next();
                 removeLocksHeldBy(preparedLocks, mbr);
@@ -737,11 +726,7 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
 
         public boolean equals(Object other) {
 
-            if (other instanceof LockDecree) {
-                return ((LockDecree)other).lockId.equals(this.lockId);
-            } else {
-                return false;
-            }
+            return other instanceof LockDecree && ((LockDecree)other).lockId.equals(this.lockId);
         }
     }
 
