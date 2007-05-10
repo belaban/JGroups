@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.84 2007/05/10 15:22:37 belaban Exp $
+ * @version $Id: FC.java,v 1.85 2007/05/10 16:31:29 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -436,8 +436,8 @@ public class FC extends Protocol {
 
                     while(length > lowest_credit && running) {
                         try {
-                            credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
-                            if(length <= lowest_credit || !running)
+                            boolean rc=credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
+                            if(rc || length <= lowest_credit || !running)
                                 break;
 
                             long wait_time=System.currentTimeMillis() - last_credit_request;
