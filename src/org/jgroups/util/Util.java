@@ -25,7 +25,7 @@ import java.security.MessageDigest;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.122 2007/05/09 23:50:24 belaban Exp $
+ * @version $Id: Util.java,v 1.123 2007/05/10 16:21:26 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -398,8 +398,6 @@ public class Util {
         retval=(Streamable)cl.newInstance();
         retval.readFrom(in);
         in.close();
-        if(retval == null)
-            return null;
         return retval;
     }
 
@@ -412,8 +410,6 @@ public class Util {
         retval=(Streamable)cl.newInstance();
         retval.readFrom(in);
         in.close();
-        if(retval == null)
-            return null;
         return retval;
     }
 
@@ -500,8 +496,15 @@ public class Util {
     }
 
     private static Address readOtherAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        ClassConfigurator conf=null;
-        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
+        ClassConfigurator conf;
+        try {
+            conf=ClassConfigurator.getInstance(false);
+        }
+        catch(ChannelException e) {
+            IllegalAccessException new_ex=new IllegalAccessException();
+            new_ex.initCause(e);
+            throw new_ex;
+        }
         int b=in.read();
         short magic_number;
         String classname;
@@ -522,7 +525,14 @@ public class Util {
 
     private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
         ClassConfigurator conf=null;
-        try {conf=ClassConfigurator.getInstance(false);} catch(Exception e) {}
+        try {
+            conf=ClassConfigurator.getInstance(false);
+        }
+        catch(ChannelException e) {
+            IOException new_ex=new IOException();
+            new_ex.initCause(e);
+            throw new_ex;
+        }
         short magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
 
         // write the class info
@@ -1975,21 +1985,15 @@ public class Util {
 
     public static InetAddress getFirstNonLoopbackIPv6Address() throws SocketException {
         Enumeration en=NetworkInterface.getNetworkInterfaces();
-        boolean preferIpv4=false;
-        boolean preferIPv6=true;
         while(en.hasMoreElements()) {
             NetworkInterface i=(NetworkInterface)en.nextElement();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
                 InetAddress addr=(InetAddress)en2.nextElement();
                 if(!addr.isLoopbackAddress()) {
                     if(addr instanceof Inet4Address) {
-                        if(preferIPv6)
-                            continue;
-                        return addr;
+                        continue;
                     }
                     if(addr instanceof Inet6Address) {
-                        if(preferIpv4)
-                            continue;
                         return addr;
                     }
                 }
