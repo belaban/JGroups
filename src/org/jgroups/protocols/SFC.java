@@ -21,7 +21,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.15 2007/05/09 23:50:23 belaban Exp $
+ * @version $Id: SFC.java,v 1.16 2007/05/10 16:32:27 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -207,8 +207,8 @@ public class SFC extends Protocol {
                         try {
                             num_blockings++;
                             // will be signalled when we have credit responses from all members
-                            credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
-                            if(curr_credits_available <=0 && running) {
+                            boolean rc=credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
+                            if(rc || (curr_credits_available <=0 && running)) {
                                 if(log.isTraceEnabled())
                                     log.trace("returned from await but credits still unavailable (credits=" +curr_credits_available +")");
                                 long now=System.currentTimeMillis();
