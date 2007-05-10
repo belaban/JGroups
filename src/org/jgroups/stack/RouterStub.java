@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.28 2007/05/09 22:57:50 belaban Exp $
+ * @version $Id: RouterStub.java,v 1.29 2007/05/10 04:40:47 vlada Exp $
  */
 public class RouterStub {
 	
@@ -25,27 +25,29 @@ public class RouterStub {
 	public final static int STATUS_DISCONNECTED = 1;
 	public final static int STATUS_CONNECTION_LOST = 2;
 
-	String router_host = null; // name of the router host
+	private String router_host = null; // name of the router host
 
-	int router_port = 0; // port on which router listens on router_host
+	private int router_port = 0; // port on which router listens on router_host
 
-	Socket sock = null; // socket connecting to the router
+	private Socket sock = null; // socket connecting to the router
 
-	DataOutputStream output = null; // output stream associated with sock
+	private DataOutputStream output = null; // output stream associated with sock
 
-	DataInputStream input = null; // input stream associated with sock
+	private DataInputStream input = null; // input stream associated with sock
 
-	Address local_addr = null; // addr of group mbr. Once assigned, remains the same
+	private Address local_addr = null; // addr of group mbr. Once assigned, remains the same
 	
 	private int connectionState = STATUS_DISCONNECTED;
 
-	protected static final Log log = LogFactory.getLog(RouterStub.class);
+	private  static final Log log = LogFactory.getLog(RouterStub.class);
 
-	protected ConnectionListener conn_listener;
+	private ConnectionListener conn_listener;
 
 	private String groupname = null;
 
 	private InetAddress bind_addr = null;
+	
+	private DatagramSocket my_sock = null;
 
 	public interface ConnectionListener {		
 		void connectionStatusChange(int state);
@@ -75,9 +77,8 @@ public class RouterStub {
 
 	public synchronized Address getLocalAddress() throws SocketException {
 		if(local_addr == null){
-			DatagramSocket my_sock = new DatagramSocket(0, bind_addr);
-			local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());
-			Util.close(my_sock);
+			my_sock = new DatagramSocket(0, bind_addr);
+			local_addr = new IpAddress(bind_addr, my_sock.getLocalPort());			
 		}
 		return local_addr;
 	}
@@ -126,7 +127,8 @@ public class RouterStub {
 				Util.close(output);
 				Util.close(input);
 				Util.close(sock);
-				sock = null;
+				Util.close(my_sock);
+				sock = null;				
 				connectionStateChanged(STATUS_DISCONNECTED);
 			}
 		}
