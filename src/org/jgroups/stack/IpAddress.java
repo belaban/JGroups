@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.38 2006/12/19 14:12:17 belaban Exp $
+// $Id: IpAddress.java,v 1.39 2007/05/11 16:25:18 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -199,7 +199,7 @@ public class IpAddress implements Address {
         else {
             out.writeByte(0);
         }
-        out.writeInt(port);
+        out.writeShort(port);
         if(additional_data != null) {
             out.writeBoolean(true);
             out.writeShort(additional_data.length);
@@ -225,7 +225,7 @@ public class IpAddress implements Address {
             this.ip_addr=InetAddress.getByAddress(a);
         }
         //then read the port
-        port=in.readInt();
+        port=in.readShort();
 
         if(in.readBoolean() == false)
             return;
@@ -245,7 +245,7 @@ public class IpAddress implements Address {
         else {
             out.writeByte(0);
         }
-        out.writeInt(port);
+        out.writeShort(port);
         if(additional_data != null) {
             out.writeBoolean(true); // 1 byte
             out.writeShort(additional_data.length);
@@ -263,7 +263,7 @@ public class IpAddress implements Address {
             in.readFully(a);
             this.ip_addr=InetAddress.getByAddress(a);
         }
-        port=in.readInt();
+        port=in.readShort();
 
         if(in.readBoolean() == false)
             return;
@@ -278,7 +278,7 @@ public class IpAddress implements Address {
         if(size >= 0)
             return size;
         // length (1 bytes) + 4 bytes for port + 1 for additional_data available
-        int tmp_size=Global.BYTE_SIZE+ Global.INT_SIZE + Global.BYTE_SIZE;
+        int tmp_size=Global.BYTE_SIZE+ Global.SHORT_SIZE + Global.BYTE_SIZE;
         if(ip_addr != null)
             tmp_size+=ip_addr.getAddress().length; // 4 bytes for IPv4
         if(additional_data != null)
