@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.20 2007/04/04 05:23:35 belaban Exp $$
+// $Id: SizeTest.java,v 1.21 2007/05/11 16:42:00 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -105,6 +105,29 @@ public class SizeTest extends TestCase {
         cache.put(a2, a1);
         sockhdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.SUSPECT, cache);
         _testSize(sockhdr);
+    }
+
+
+    public void testFdSockHeaders() throws Exception {
+        FD_SOCK.FdHeader hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
+        _testSize(hdr);
+
+        hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, new IpAddress("127.0.0.1", 4567));
+        _testSize(hdr);
+
+        Set<Address> set=new HashSet<Address>();
+        set.add(new IpAddress(3452));
+        set.add(new IpAddress("127.0.0.1", 5000));
+
+        hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, set);
+        _testSize(hdr);
+
+        Hashtable<Address,IpAddress> map=new Hashtable<Address,IpAddress>();
+        map.put(new IpAddress("127.0.0.1", 5000), new IpAddress(4553));
+        map.put(new IpAddress("127.0.0.1", 6000), new IpAddress(4523));
+        map.put(new IpAddress(7000), new IpAddress(4553));
+         hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, map);
+        _testSize(hdr);
     }
 
 
