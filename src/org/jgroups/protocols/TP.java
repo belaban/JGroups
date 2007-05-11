@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.143 2007/05/09 23:50:22 belaban Exp $
+ * @version $Id: TP.java,v 1.144 2007/05/11 15:03:15 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -105,7 +105,7 @@ public abstract class TP extends Protocol {
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
-    boolean         discard_incompatible_packets=false;
+    protected boolean discard_incompatible_packets=false;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
@@ -1189,7 +1189,7 @@ public abstract class TP extends Protocol {
      * @return
      * @throws java.io.IOException
      */
-    private void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
+    private static void writeMessage(Message msg, DataOutputStream dos, boolean multicast) throws Exception {
         byte flags=0;
         dos.writeShort(Version.version); // write the version
         if(multicast)
@@ -1209,7 +1209,7 @@ public abstract class TP extends Protocol {
 
 
 
-    private void writeMessageList(List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
+    private static void writeMessageList(List<Message> msgs, DataOutputStream dos, boolean multicast) throws Exception {
         Address src;
         byte flags=0;
         int len=msgs != null? msgs.size() : 0;
@@ -1403,7 +1403,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private void shutdownThreadPool(ThreadPoolExecutor thread_pool) {
+    private static void shutdownThreadPool(ThreadPoolExecutor thread_pool) {
         thread_pool.shutdownNow();
         try {
             thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
