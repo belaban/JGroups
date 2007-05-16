@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.24 2006/12/31 13:17:17 belaban Exp $
+// $Id: GroupRequest.java,v 1.25 2007/05/16 20:22:07 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -75,7 +75,7 @@ public class GroupRequest implements RspCollector, Command {
     private final Collection members=new TreeSet();
 
     /** keep suspects vector bounded */
-    private final int max_suspects=40;
+    private static final int max_suspects=40;
     protected Message request_msg;
     protected RequestCorrelator corr; // either use RequestCorrelator or ...
     protected Transport transport;    // Transport (one of them has to be non-null)
@@ -314,7 +314,7 @@ public class GroupRequest implements RspCollector, Command {
     public void viewChange(View new_view) {
         Address mbr;
         Vector mbrs=new_view != null? new_view.getMembers() : null;
-        if(requests == null || requests.size() == 0 || mbrs == null)
+        if(requests == null || requests.isEmpty() || mbrs == null)
             return;
 
         synchronized(this.members) {
@@ -374,7 +374,7 @@ public class GroupRequest implements RspCollector, Command {
                 ret.append(mbr).append(": ").append(rsp).append("\n");
             }
         }
-        if(suspects.size() > 0)
+        if(!suspects.isEmpty())
             ret.append("\nsuspects: ").append(suspects);
         ret.append("\nrequest_msg: ").append(request_msg);
         ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
@@ -404,7 +404,7 @@ public class GroupRequest implements RspCollector, Command {
 
     /* --------------------------------- Private Methods -------------------------------------*/
 
-    private int determineMajority(int i) {
+    private static int determineMajority(int i) {
         return i < 2? i : (i / 2) + 1;
     }
 
@@ -487,6 +487,7 @@ public class GroupRequest implements RspCollector, Command {
             }
             else {
                 start_time=System.currentTimeMillis();
+                long timeout_time=start_time + timeout; 
                 while(timeout > 0) { /* Wait for responses: */
                     if(responsesComplete()) {
                         if(corr != null)
@@ -496,7 +497,7 @@ public class GroupRequest implements RspCollector, Command {
                         }
                         return true;
                     }
-                    timeout=timeout - (System.currentTimeMillis() - start_time);
+                    timeout=timeout_time - System.currentTimeMillis(); 
                     if(timeout > 0) {
                         try {
                             requests.wait(timeout);
@@ -558,13 +559,7 @@ public class GroupRequest implements RspCollector, Command {
                     rsp_mode=GET_ALL;
                     return responsesComplete();
                 }
-                if(num_received >= expected_mbrs) {
-                    return true;
-                }
-                if(num_received + num_not_received < expected_mbrs) {
-                    return num_received + num_suspected >= expected_mbrs;
-                }
-                return false;
+                return num_received >= expected_mbrs || num_received + num_not_received < expected_mbrs && num_received + num_suspected >= expected_mbrs;
             case GET_NONE:
                 return true;
             default :
@@ -590,7 +585,7 @@ public class GroupRequest implements RspCollector, Command {
      * a the rsp_mutex locked, so this should not be a problem).
      */
     private void adjustMembership() {
-        if(requests.size() == 0)
+        if(requests.isEmpty())
             return;
 
         Map.Entry entry;
@@ -615,12 +610,12 @@ public class GroupRequest implements RspCollector, Command {
     private void addSuspect(Address suspected_mbr) {
         if(!suspects.contains(suspected_mbr)) {
             suspects.addElement(suspected_mbr);
-            while(suspects.size() >= max_suspects && suspects.size() > 0)
+            while(suspects.size() >= max_suspects && !suspects.isEmpty())
                 suspects.remove(0); // keeps queue bounded
         }
     }
 
-    private String modeToString(int m) {
+    private static String modeToString(int m) {
         switch(m) {
             case GET_FIRST: return "GET_FIRST";
             case GET_ALL: return "GET_ALL";
