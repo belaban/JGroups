@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.21.2.2 2006/12/09 22:55:26 belaban Exp $
+// $Id: GroupRequest.java,v 1.21.2.3 2007/05/16 20:26:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.21.2.2 $
+ * @version $Revision: 1.21.2.3 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -488,6 +488,7 @@ public class GroupRequest implements RspCollector, Command {
             }
             else {
                 start_time=System.currentTimeMillis();
+                long timeout_time=start_time + timeout; 
                 while(timeout > 0) { /* Wait for responses: */
                     if(responsesComplete()) {
                         if(corr != null)
@@ -495,7 +496,7 @@ public class GroupRequest implements RspCollector, Command {
                         if(log.isTraceEnabled()) log.trace("received all responses: " + toString());
                         return true;
                     }
-                    timeout=timeout - (System.currentTimeMillis() - start_time);
+                    timeout=timeout_time - System.currentTimeMillis(); 
                     if(timeout > 0) {
                         try {
                             requests.wait(timeout);
