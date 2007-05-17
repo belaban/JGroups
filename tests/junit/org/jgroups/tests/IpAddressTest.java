@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.17 2007/05/11 16:25:18 belaban Exp $
+// $Id: IpAddressTest.java,v 1.18 2007/05/17 21:55:45 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -335,6 +335,31 @@ public class IpAddressTest extends TestCase {
         assertEquals(0, y2.getPort());
         assertNotNull(y2.getAdditionalData());
         assertEquals(4, y2.getAdditionalData().length);
+    }
+
+
+
+    public void testStreamableWithHighPort() throws Exception {
+        ByteArrayOutputStream bos=new ByteArrayOutputStream();
+        DataOutputStream      oos=new DataOutputStream(bos);
+        byte[]                buf=null;
+        ByteArrayInputStream  bis=null;
+        DataInputStream       dis;
+        IpAddress             x, x2;
+
+        x=new IpAddress(65535);
+        x.writeTo(oos);
+
+        buf=bos.toByteArray();
+        bis=new ByteArrayInputStream(buf);
+        dis=new DataInputStream(bis);
+
+        x2=new IpAddress();
+        x2.readFrom(dis);
+        System.out.println("x: " + x + ", x2: " + x2);
+
+        assertTrue(x2.getPort() > 0);
+        assertEquals(x.getPort(), x2.getPort());
     }
 
 

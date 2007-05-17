@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.21 2007/05/11 16:42:00 belaban Exp $$
+// $Id: SizeTest.java,v 1.22 2007/05/17 21:55:58 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -388,6 +388,11 @@ public class SizeTest extends TestCase {
 
     public void testIpAddress1() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
+        _testSize(addr);
+    }
+
+    public void testIpAddressWithHighPort() throws Exception {
+        IpAddress addr=new IpAddress("127.0.0.1", 65535);
         _testSize(addr);
     }
 
