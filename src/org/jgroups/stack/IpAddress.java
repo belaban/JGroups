@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.39 2007/05/11 16:25:18 belaban Exp $
+// $Id: IpAddress.java,v 1.40 2007/05/17 21:49:54 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -225,7 +225,7 @@ public class IpAddress implements Address {
             this.ip_addr=InetAddress.getByAddress(a);
         }
         //then read the port
-        port=in.readShort();
+        port=in.readUnsignedShort();
 
         if(in.readBoolean() == false)
             return;
@@ -263,11 +263,12 @@ public class IpAddress implements Address {
             in.readFully(a);
             this.ip_addr=InetAddress.getByAddress(a);
         }
-        port=in.readShort();
+        // changed from readShort(): we need the full 65535, with a short we'd only get up to 32K !
+        port=in.readUnsignedShort();
 
         if(in.readBoolean() == false)
             return;
-        len=in.readShort();
+        len=in.readUnsignedShort();
         if(len > 0) {
             additional_data=new byte[len];
             in.readFully(additional_data, 0, additional_data.length);
