@@ -183,7 +183,7 @@ public class FLUSH extends Protocol {
 	public boolean startFlush(long timeout) {		
 		Map atts = new HashMap();	           	
      	atts.put("timeout",4000);
-		return startFlush(new Event(Event.SUSPEND,atts), 5, false);
+		return startFlush(new Event(Event.SUSPEND,atts), 3, false);
 	}
 
 	private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
@@ -220,7 +220,10 @@ public class FLUSH extends Protocol {
 						+ numberOfAttempts);
 
 			Util.sleep(backOffSleepTime * 1000);
-			successfulFlush = startFlush(evt, --numberOfAttempts, true);
+			Boolean succeededWhileWeSlept = (Boolean)flush_promise.getResult(1);
+			boolean shouldRetry = !(succeededWhileWeSlept !=null && succeededWhileWeSlept.booleanValue());
+			if(shouldRetry)
+				successfulFlush = startFlush(evt, --numberOfAttempts, true);
 		}
 		return successfulFlush;
 	}
@@ -254,7 +257,7 @@ public class FLUSH extends Protocol {
 			break;
 
 		case Event.SUSPEND:
-			return startFlush(evt, 5, false);
+			return startFlush(evt, 3, false);
 
 		case Event.RESUME:
 			onResume();
@@ -389,7 +392,7 @@ public class FLUSH extends Protocol {
 			break;
 
 		case Event.SUSPEND:			           	         
-			return startFlush(evt, 5, false);
+			return startFlush(evt, 3, false);
 
 		case Event.RESUME:
 			onResume();
@@ -533,10 +536,13 @@ public class FLUSH extends Protocol {
 			isThisOurFirstView = receivedFirstView && !receivedMoreThanOneView;
 			suspected.retainAll(view.getMembers());
 			currentView = view;
-			amINewCoordinator = flushCoordinator != null
-					&& !view.getMembers().contains(flushCoordinator)
-					&& localAddress.equals(view.getMembers().get(0));
-		}
+			boolean coordinatorLeft = flushCoordinator != null && !view.containsMember(flushCoordinator);
+		
+			if(coordinatorLeft){
+				flushCoordinator = view.getMembers().get(0);				
+				amINewCoordinator = localAddress.equals(flushCoordinator);			
+			}			
+		}		
 
 		// If coordinator leaves, its STOP FLUSH message will be discarded by
 		// other members at NAKACK layer. Remaining members will be hung,
