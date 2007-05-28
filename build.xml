@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.98 2007/05/28 01:15:09 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.99 2007/05/28 01:35:14 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -289,7 +289,7 @@
     <target name="check-docbook-support">
         <available file="${root.dir}/../docbook-support" type="dir"
                    property="docbook.support.present"/>
-        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support)"
+        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support-svn)"
               unless="docbook.support.present"/>
     </target>
 
@@ -300,6 +300,13 @@
                 dest="${root.dir}/.."/>
     </target>
 
+    <target name="checkout-docbook-support-svn">
+        <exec executable="svn">
+            <arg value="co"/>
+            <arg value="http://anonsvn.jboss.org/repos/jbossas/trunk/docbook-support"/>
+            <arg value="${root.dir}/../"/>
+        </exec>
+    </target>
 
     <!-- clean up directories -->
     <target name="clean"
