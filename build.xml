@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.99 2007/05/28 01:35:14 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.100 2007/05/28 01:38:28 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -304,7 +304,7 @@
         <exec executable="svn">
             <arg value="co"/>
             <arg value="http://anonsvn.jboss.org/repos/jbossas/trunk/docbook-support"/>
-            <arg value="${root.dir}/../"/>
+            <arg value="${root.dir}/../docbook-support"/>
         </exec>
     </target>
 
