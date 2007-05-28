@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.97 2007/05/10 03:34:52 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.98 2007/05/28 01:15:09 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -256,11 +256,10 @@
             author="true"
             version="true"
             use="true"
-            bottom="Copyright &#169; 1998-2006 Bela Ban. All Rights Reserved."
+            bottom="Copyright &#169; 1998-2008 Bela Ban. All Rights Reserved."
 			useexternalfile="yes"
 			doctitle="JGroups"
-			overview="${src.dir}/org/jgroups/overview.html"
-            source="1.4">
+			overview="${src.dir}/org/jgroups/overview.html">
 			<!-- The tag option for Javadoc is available in Java 1.4 or later. -->
 			<tag name="todo" description="To do:"/>
 			</javadoc>
