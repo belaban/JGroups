@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.44 2007/05/29 13:04:05 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.45 2007/05/29 14:14:05 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -110,7 +110,7 @@ public class NakReceiverWindow {
     final BoundedList xmit_times_history=new BoundedList(1000);
 
     /** The highest stable() seqno received */
-    long highest_stability_seqno;
+    long highest_stability_seqno=0;
 
 
     /**
@@ -209,10 +209,6 @@ public class NakReceiverWindow {
         return size > 0? total / size : -1;
     }
 
-
-    public long getHighestStabilitySeqno() {
-        return highest_stability_seqno;
-    }
 
     /**
      * Adds a message according to its seqno (sequence number).
@@ -367,8 +363,8 @@ public class NakReceiverWindow {
                     xmit_table.remove(i);
                 }
             }
-            low=seqno;
             highest_stability_seqno=Math.max(highest_stability_seqno, seqno);
+            low=Math.max(low, seqno);
         }
         finally {
             lock.writeLock().unlock();
