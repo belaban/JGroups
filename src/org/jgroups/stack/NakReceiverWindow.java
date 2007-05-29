@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.42 2007/05/29 08:12:50 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.43 2007/05/29 11:00:09 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -342,16 +342,15 @@ public class NakReceiverWindow {
 
 
     /**
-     * Delete all messages <= seqno (they are stable, that is, have been
-     * received at all members). Stop when a number > seqno is encountered
-     * (all messages are ordered on seqnos).
+     * Delete all messages <= seqno (they are stable, that is, have been received at all members).
+     * Stop when a number > seqno is encountered (all messages are ordered on seqnos).
      */
     public void stable(long seqno) {
         lock.writeLock().lock();
         try {
-            if(seqno > highest_delivered +1) {
+            if(seqno > highest_delivered) {
                 if(log.isErrorEnabled())
-                    log.error("seqno " + seqno + " is >= highest_delivered " + highest_delivered + "; ignoring stability message");
+                    log.error("seqno " + seqno + " is > highest_delivered " + highest_delivered + "; ignoring stability message");
                 return;
             }
             
