@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.43 2007/05/29 11:00:09 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.44 2007/05/29 13:04:05 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -108,6 +108,9 @@ public class NakReceiverWindow {
     final ConcurrentMap<Long,Long> xmit_stats=new ConcurrentHashMap<Long,Long>();
 
     final BoundedList xmit_times_history=new BoundedList(1000);
+
+    /** The highest stable() seqno received */
+    long highest_stability_seqno;
 
 
     /**
@@ -206,6 +209,10 @@ public class NakReceiverWindow {
         return size > 0? total / size : -1;
     }
 
+
+    public long getHighestStabilitySeqno() {
+        return highest_stability_seqno;
+    }
 
     /**
      * Adds a message according to its seqno (sequence number).
@@ -361,6 +368,7 @@ public class NakReceiverWindow {
                 }
             }
             low=seqno;
+            highest_stability_seqno=Math.max(highest_stability_seqno, seqno);
         }
         finally {
             lock.writeLock().unlock();
@@ -508,7 +516,8 @@ public class NakReceiverWindow {
                 if(entry.getValue() == NULL_MSG)
                     non_received++;
             }
-            sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).append(')');
+            sb.append(" (size=").append(xmit_table.size()).append(", missing=").append(non_received).
+                    append(", highest stability=").append(highest_stability_seqno).append(')');
         }
         sb.append(']');
         return sb.toString();
@@ -534,6 +543,7 @@ public class NakReceiverWindow {
         low=0;
         highest_delivered=0; // next (=first) to deliver will be 1
         highest_received=0;
+        highest_stability_seqno=0;
     }
     /* --------------------------- End of Private Methods ----------------------------------- */
 
