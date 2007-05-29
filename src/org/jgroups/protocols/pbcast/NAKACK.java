@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.139 2007/05/08 18:04:15 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.140 2007/05/29 08:13:50 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1450,20 +1450,47 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-   public String printMessages() {
-       StringBuilder ret=new StringBuilder();
-       Map.Entry<Address,NakReceiverWindow> entry;
-       Address addr;
-       Object w;
+    public String printMessages() {
+        StringBuilder ret=new StringBuilder();
+        Map.Entry<Address,NakReceiverWindow> entry;
+        Address addr;
+        Object w;
 
-       for(Iterator<Map.Entry<Address,NakReceiverWindow>> it=xmit_table.entrySet().iterator(); it.hasNext();) {
-           entry=it.next();
-           addr=entry.getKey();
-           w=entry.getValue();
-           ret.append(addr).append(": ").append(w.toString()).append('\n');
-       }
-       return ret.toString();
-   }
+        for(Iterator<Map.Entry<Address,NakReceiverWindow>> it=xmit_table.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
+            addr=entry.getKey();
+            w=entry.getValue();
+            ret.append(addr).append(": ").append(w.toString()).append('\n');
+        }
+        return ret.toString();
+    }
+
+
+    public String printRetransmissionTimes() {
+        StringBuilder sb=new StringBuilder();
+        double total_avg=0.0, tmp;
+        int i=0;
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            tmp=entry.getValue().getAverageXmitTime();
+            total_avg+=tmp;
+            sb.append(entry.getKey()).append(": ").append(tmp).append("\n");
+            i++;
+        }
+
+        sb.append("\ntotal: ").append(total_avg / i);
+        return sb.toString();
+    }
+
+    public double getTotalAverageRetransmissionTime() {
+        double total_avg=0.0, tmp;
+        int i=0;
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            tmp=entry.getValue().getAverageXmitTime();
+            total_avg+=tmp;
+            i++;
+        }
+        return total_avg / i;
+    }
 
 
 
