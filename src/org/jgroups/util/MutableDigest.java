@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * A mutable version of Digest (which is immutable
  * @author Bela Ban
- * @version $Id: MutableDigest.java,v 1.5 2007/04/19 20:57:46 belaban Exp $
+ * @version $Id: MutableDigest.java,v 1.6 2007/05/29 10:10:47 belaban Exp $
  */
 public class MutableDigest extends Digest {
     private boolean sealed=false;
@@ -56,7 +56,7 @@ public class MutableDigest extends Digest {
         }
         checkSealed();
         Object retval=senders.put(sender, entry);
-        if(retval != null && warn)
+        if(retval != null && log.isWarnEnabled())
             log.warn("entry for " + sender + " was overwritten with " + entry);
     }
 
