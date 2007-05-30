@@ -30,14 +30,14 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.78 2007/05/10 15:22:38 belaban Exp $
+ * @version $Id: STABLE.java,v 1.79 2007/05/30 11:18:29 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
     private final Vector<Address> mbrs=new Vector<Address>();
 
 
-    private final MutableDigest digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    private final MutableDigest   digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
     private final MutableDigest   latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
     private final Vector<Address> heard_from=new Vector<Address>();      // keeps track of who we already heard from (STABLE_GOSSIP msgs)
 
@@ -389,19 +389,16 @@ public class STABLE extends Protocol {
         }
 
         if(!digest.sameSenders(d)) {
-//            if(log.isTraceEnabled())
-//                log.trace(new StringBuffer("received a digest ").append(d.printHighSeqnos()).append(" from ").
-//                          append(sender).append(" which has different members than mine (").
-//                          append(digest.printHighSeqnos()).append("), discarding it and resetting heard_from list"));
             // to avoid sending incorrect stability/stable msgs, we simply reset our heard_from list, see DESIGN
             resetDigest(mbrs);
             return false;
         }
 
-        StringBuffer sb=null;
+        StringBuilder sb=null;
         if(log.isTraceEnabled()) {
-            sb=new StringBuffer("[").append(local_addr).append("] handling digest from ").append(sender).append(":\n");
-            sb.append("mine:   ").append(digest.printHighestDeliveredSeqnos()).append("\nother:  ").append(d.printHighestDeliveredSeqnos());
+            sb=new StringBuilder("[").append(local_addr).append("] handling digest from ").append(sender).append(" (").
+                    append(heard_from.size()).append(" pending):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
+                    .append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
         Address mbr;
         long highest_seqno, my_highest_seqno, new_highest_seqno, my_low, low, new_low;
@@ -461,8 +458,8 @@ public class STABLE extends Protocol {
      */
     private boolean removeFromHeardFromList(Address mbr) {
         synchronized(heard_from) {
-            heard_from.remove(mbr);
-            if(heard_from.isEmpty()) {
+            boolean removed=heard_from.remove(mbr);
+            if(removed && heard_from.isEmpty()) {
                 resetDigest(this.mbrs);
                 return true;
             }
@@ -652,6 +649,8 @@ public class STABLE extends Protocol {
         // our random sleep, we will not send the STABILITY msg. this prevents that all mbrs mcast a
         // STABILITY msg at the same time
         delay=Util.random(stability_delay);
+        if(log.isTraceEnabled()) log.trace("sending stability msg (in " + delay + " ms) " + tmp.printHighestDeliveredSeqnos() +
+        " (copy=" + tmp.hashCode() + ")");
         startStabilityTask(tmp, delay);
     }
 
@@ -842,10 +841,10 @@ public class STABLE extends Protocol {
      * Multicasts a STABILITY message.
      */
     private class StabilitySendTask implements Runnable {
-        Digest   d=null;
+        Digest stability_digest=null;
 
         StabilitySendTask(Digest d) {
-            this.d=d;
+            this.stability_digest=d;
         }
 
         public void run() {
@@ -859,15 +858,15 @@ public class STABLE extends Protocol {
                 return;
             }
 
-            if(d != null) {
+            if(stability_digest != null) {
                 msg=new Message();
                 msg.setFlag(Message.OOB);
-                hdr=new StableHeader(StableHeader.STABILITY, d);
+                hdr=new StableHeader(StableHeader.STABILITY, stability_digest);
                 msg.putHeader(STABLE.name, hdr);
-                if(log.isTraceEnabled()) log.trace("sending stability msg " + d.printHighestDeliveredSeqnos());
+                if(log.isTraceEnabled()) log.trace("sending stability msg " + stability_digest.printHighestDeliveredSeqnos() +
+                " (copy=" + stability_digest.hashCode() + ")");
                 num_stability_msgs_sent++;
                 down_prot.down(new Event(Event.MSG, msg));
-                d=null;
             }
         }
     }
