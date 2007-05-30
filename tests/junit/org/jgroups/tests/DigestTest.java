@@ -1,4 +1,4 @@
-// $Id: DigestTest.java,v 1.17 2007/04/19 21:00:00 belaban Exp $
+// $Id: DigestTest.java,v 1.18 2007/05/30 10:31:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -344,6 +344,14 @@ public class DigestTest extends TestCase {
     }
 
 
+    public void testMutableCopy() {
+        Digest copy=md.copy();
+        System.out.println("md=" + md + "\ncopy=" + copy);
+        assertEquals(md, copy);
+        md.add(a1, 4, 500, 1000);
+        System.out.println("md=" + md + "\ncopy=" + copy);
+        assertFalse(md.equals(copy));
+    }
 
 
     public void testMerge() {
