@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.Channel;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -43,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.144 2007/05/11 15:03:15 belaban Exp $
+ * @version $Id: TP.java,v 1.145 2007/05/30 06:47:45 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1645,14 +1646,16 @@ public abstract class TP extends Protocol {
 
 
     private class Bundler {
+    	static final int 		   		   MIN_NUMBER_OF_BUNDLING_TASKS=2;
         /** HashMap<Address, List<Message>>. Keys are destinations, values are lists of Messages */
         final Map<Address,List<Message>>   msgs=new HashMap<Address,List<Message>>(36);
+        @GuardedBy("lock")
         long                               count=0;    // current number of bytes accumulated
         int                                num_msgs=0;
-        long                               last_bundle_time;
-        BundlingTimer                      bundling_timer=null;
-        Future                             bundling_timer_future=null;
-        final ReentrantLock                lock=new ReentrantLock();
+        @GuardedBy("lock")
+        int                                num_bundling_tasks=0;
+        long                               last_bundle_time;        
+        final ReentrantLock                lock=new ReentrantLock();               
 
 
         private void send(Message msg, Address dest) throws Exception {
@@ -1662,41 +1665,26 @@ public abstract class TP extends Protocol {
 
             lock.lock();
             try {
-                if(count + length >= max_bundle_size) {
-                    cancelTimer();
+                if(count + length >= max_bundle_size) {                    
                     bundled_msgs=removeBundledMessages();
                 }
-
                 addMessage(msg, dest);
                 count+=length;
-                startTimer(); // start timer if not running
+                if(num_bundling_tasks < MIN_NUMBER_OF_BUNDLING_TASKS) {
+                    num_bundling_tasks++;
+                    timer.schedule(new BundlingTimer(), max_bundle_timeout, TimeUnit.MILLISECONDS);
+                }
             }
             finally {
                 lock.unlock();
             }
 
-            if(bundled_msgs != null) {
+            if(bundled_msgs != null) {            	
                 sendBundledMessages(bundled_msgs);
             }
         }
 
-        
-        /** Never called concurrently with cancelTimer - no need for synchronization */
-        private void startTimer() {
-            if(bundling_timer_future == null || bundling_timer_future.isDone()) {
-                bundling_timer=new BundlingTimer();
-                bundling_timer_future=timer.schedule(bundling_timer, max_bundle_timeout, TimeUnit.MILLISECONDS);
-            }
-        }
-
-        /** Never called concurrently with startTimer() - no need for synchronization */
-        private void cancelTimer() {
-            if(bundling_timer_future != null) {
-                bundling_timer_future.cancel(false); // don't interrupt task
-                bundling_timer_future=null;
-            }
-        }
-
+        /** Run with lock acquired */
         private void addMessage(Message msg, Address dest) { // no sync needed, always called with lock held
             if(msgs.isEmpty())
                 last_bundle_time=System.currentTimeMillis();
@@ -1714,24 +1702,24 @@ public abstract class TP extends Protocol {
         private Map<Address,List<Message>> removeBundledMessages() {
             if(msgs.isEmpty())
                 return null;
-                Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
-                if(log.isTraceEnabled()) {
-                    long stop=System.currentTimeMillis();
-                    double percentage=100.0 / max_bundle_size * count;
-                    StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
-                    num_msgs=0;
-                    sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
-                    if(last_bundle_time > 0) {
-                        sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
-                    }
-                    sb.append(" to ").append(copy.size()).append(" destination(s)");
-                    if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
-                    log.trace(sb);
+            Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
+            if(log.isTraceEnabled()) {
+                long stop=System.currentTimeMillis();
+                double percentage=100.0 / max_bundle_size * count;
+                StringBuilder sb=new StringBuilder("sending ").append(num_msgs).append(" msgs (");
+                num_msgs=0;
+                sb.append(count).append(" bytes (" + f.format(percentage) + "% of max_bundle_size)");
+                if(last_bundle_time > 0) {
+                    sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
                 }
-                msgs.clear();
-                count=0;
-                return copy;
+                sb.append(" to ").append(copy.size()).append(" destination(s)");
+                if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
+                log.trace(sb);
             }
+            msgs.clear();
+            count=0;
+            return copy;
+        }
 
 
         /**
@@ -1781,25 +1769,31 @@ public abstract class TP extends Protocol {
                         "). Set the fragmentation/bundle size in FRAG and TP correctly");
         }
 
-        
+
         private class BundlingTimer implements Runnable {
 
             public void run() {
-                Map<Address,List<Message>> msgs=null;
+                Map<Address, List<Message>> msgs=null;
+                boolean unlocked=false;
+
                 lock.lock();
                 try {
                     msgs=removeBundledMessages();
+                    if(msgs != null) {
+                        lock.unlock();
+                        unlocked=true;
+                        sendBundledMessages(msgs);
+                    }
                 }
                 finally {
+                    if(unlocked)
+                        lock.lock();
+                    num_bundling_tasks--;
                     lock.unlock();
                 }
-
-                if(msgs != null)
-                    sendBundledMessages(msgs);
             }
         }
     }
-
 
 
     private class DiagnosticsHandler implements Runnable {
