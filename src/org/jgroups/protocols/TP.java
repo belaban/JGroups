@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -40,7 +41,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.77.2.3 2007/04/27 08:03:51 belaban Exp $
+ * @version $Id: TP.java,v 1.77.2.4 2007/05/30 07:08:24 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1573,7 +1574,8 @@ public abstract class TP extends Protocol {
         long                count=0;    // current number of bytes accumulated
         int                 num_msgs=0;
         long                start=0;
-        BundlingTimer       bundling_timer=null;
+        int                 num_bundling_tasks=0;
+        static final int    MIN_NUMBER_OF_BUNDLING_TASKS=2;
 
 
         private synchronized void send(Message msg, Address dest) throws Exception {
@@ -1583,30 +1585,17 @@ public abstract class TP extends Protocol {
             if(start == 0)
                 start=System.currentTimeMillis();
             if(count + length >= max_bundle_size) {
-                cancelTimer();
                 bundleAndSend();  // clears msgs and resets num_msgs
             }
 
             addMessage(msg, dest);
             count+=length;
-            startTimer(); // start timer if not running
-        }
-
-        /** Never called concurrently with cancelTimer - no need for synchronization */
-        private void startTimer() {
-            if(bundling_timer == null || bundling_timer.cancelled()) {
-                bundling_timer=new BundlingTimer();
-                timer.add(bundling_timer);
+            if(num_bundling_tasks < MIN_NUMBER_OF_BUNDLING_TASKS) {
+                num_bundling_tasks++;
+                timer.schedule(new BundlingTimer(this), max_bundle_timeout);
             }
         }
 
-        /** Never called concurrently with startTimer() - no need for synchronization */
-        private void cancelTimer() {
-            if(bundling_timer != null) {
-                bundling_timer.cancel();
-                bundling_timer=null;
-            }
-        }
 
         private void addMessage(Message msg, Address dest) { // no sync needed, never called by multiple threads concurrently
             List    tmp;
@@ -1631,7 +1620,7 @@ public abstract class TP extends Protocol {
             Map copy;
 
             synchronized(msgs) {
-                if(msgs.size() == 0)
+                if(msgs.isEmpty())
                     return;
                 copy=new HashMap(msgs);
                 if(log.isTraceEnabled()) {
@@ -1682,24 +1671,22 @@ public abstract class TP extends Protocol {
                         "). Set the fragmentation/bundle size in FRAG and TP correctly");
         }
 
-        private class BundlingTimer implements TimeScheduler.Task {
-            boolean cancelled=false;
+        private class BundlingTimer extends TimerTask {
+            final Object mutex;
 
-            void cancel() {
-                cancelled=true;
-            }
-
-            public boolean cancelled() {
-                return cancelled;
-            }
-
-            public long nextInterval() {
-                return max_bundle_timeout;
+            public BundlingTimer(Object mutex) {
+                this.mutex=mutex;
             }
 
             public void run() {
-                bundleAndSend();
-                cancelled=true;
+                try {
+                    bundleAndSend();
+                }
+                finally {
+                    synchronized(this) {
+                        num_bundling_tasks--;
+                    }
+                }
             }
         }
     }
