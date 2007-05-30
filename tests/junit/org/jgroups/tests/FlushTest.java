@@ -42,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.32 2007/05/03 19:13:46 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.33 2007/05/30 13:50:47 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -362,9 +362,8 @@ public class FlushTest extends ChannelTestBase
 
          //verify block/unblock/view/              
          List<Digest> digests = new ArrayList<Digest>();
-         for (Iterator iter = channels.iterator(); iter.hasNext();)
-         {
-            FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
+         for (FlushTestReceiver receiver : channels)
+         {           
             checkEventSequence(receiver,isMuxChannelUsed());  
                      
             Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
@@ -387,9 +386,8 @@ public class FlushTest extends ChannelTestBase
       }
       finally
       {
-         for (Iterator iter = channels.iterator(); iter.hasNext();)
-         {
-            FlushTestReceiver app = (FlushTestReceiver) iter.next();
+         for (FlushTestReceiver app : channels)
+         {            
             app.cleanup();
             sleepThread(500);
          }  
@@ -400,7 +398,7 @@ public class FlushTest extends ChannelTestBase
    {
       int count = names.length;
 
-      ArrayList channels = new ArrayList(count);      
+      ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);      
       try
       {
          // Create a semaphore and take all its permits
@@ -445,11 +443,9 @@ public class FlushTest extends ChannelTestBase
          //clear all channels of view events
          if (useTransfer)
          {  
-            for (Iterator iter = channels.iterator(); iter.hasNext();)
-            {
-               FlushTestReceiver app = (FlushTestReceiver) iter.next();
-               app.clear();
-               
+            for (FlushTestReceiver app:channels)
+            {              
+               app.clear();               
             }            
             semaphore.release(count);
          }
@@ -465,21 +461,20 @@ public class FlushTest extends ChannelTestBase
          a.verify(channels);         
          
          //kill random member
-         FlushTestReceiver randomRecv = (FlushTestReceiver)channels.remove(RANDOM.nextInt(count));  
+         FlushTestReceiver randomRecv = channels.remove(RANDOM.nextInt(count));  
          log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
          ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
          randomRecv.cleanup();
          
          //let the view propagate and verify related asserts
-         sleepThread(5000);
+         sleepThread(8000);         
          closeAssert.verify(channels);
          
 
          //verify block/unblock/view/get|set state sequence              
 
-         for (Iterator iter = channels.iterator(); iter.hasNext();)
-         {
-            FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
+         for (FlushTestReceiver receiver:channels)
+         {            
             if (useTransfer)
             {               
                checkEventStateTransferSequence(receiver);
@@ -497,9 +492,8 @@ public class FlushTest extends ChannelTestBase
       }
       finally
       {
-         for (Iterator iter = channels.iterator(); iter.hasNext();)
-         {
-            FlushTestReceiver app = (FlushTestReceiver) iter.next();
+         for (FlushTestReceiver app:channels)
+         {           
             app.cleanup();
             sleepThread(500);
          }  
