@@ -42,7 +42,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.33 2007/05/30 13:50:47 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.34 2007/05/31 18:00:30 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -182,8 +182,9 @@ public class FlushTest extends ChannelTestBase
       String[] names = null;
       if(isMuxChannelUsed())
       {
-         names = createMuxApplicationNames(1); 
-         testChannels(names,false,getMuxFactoryCount());
+    	 int muxFactoryCount = 2; 
+         names = createMuxApplicationNames(1,muxFactoryCount); 
+         testChannels(names,muxFactoryCount,false,muxFactoryCount);
       }
       else
       {
@@ -241,8 +242,9 @@ public class FlushTest extends ChannelTestBase
       String[] names = null;
       if(isMuxChannelUsed())
       {
-         names = createMuxApplicationNames(1); 
-         testChannels(names,true,getMuxFactoryCount());
+    	 int muxFactoryCount = 2;
+         names = createMuxApplicationNames(1,muxFactoryCount); 
+         testChannels(names,muxFactoryCount,true,muxFactoryCount);
       }
       else
       {
@@ -263,8 +265,8 @@ public class FlushTest extends ChannelTestBase
       String[] names = null;
       if(isMuxChannelUsed())
       {
-         names = createMuxApplicationNames(2);
-         testChannels(names,true,getMuxFactoryCount());
+         names = createMuxApplicationNames(2,2);
+         testChannels(names,2,true,2);
       }         
    }
    
@@ -425,7 +427,7 @@ public class FlushTest extends ChannelTestBase
             {
                semaphore.release(1);
             }
-            sleepThread(2000);
+            sleepThread(1000);
          }
 
          
@@ -499,10 +501,15 @@ public class FlushTest extends ChannelTestBase
          }  
       }      
    }
-
+   
    public void testChannels(String names[], boolean useTransfer,int viewSize)
    {     
       testChannels(names, getMuxFactoryCount(), useTransfer,new ChannelAssertable(viewSize));
+   }
+
+   public void testChannels(String names[], int muxFactoryCount, boolean useTransfer,int viewSize)
+   {     
+      testChannels(names, muxFactoryCount, useTransfer,new ChannelAssertable(viewSize));
    }
    
    private class ChannelCloseAssertable implements Assertable
