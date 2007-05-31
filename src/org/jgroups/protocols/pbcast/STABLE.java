@@ -7,10 +7,8 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
+import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -30,7 +28,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.80 2007/05/30 12:27:36 belaban Exp $
+ * @version $Id: STABLE.java,v 1.81 2007/05/31 07:50:27 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -42,7 +40,7 @@ public class STABLE extends Protocol {
 
     /** Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is initialized with all members, and we
      * remove the sender when a STABLE message is received. When the list is empty, we send a STABILITY message */
-    private final Vector<Address> votes=new Vector<Address>();
+    private final List<Address>   votes=new ArrayList<Address>();
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
     private long                  desired_avg_gossip=20000;
@@ -438,6 +436,7 @@ public class STABLE extends Protocol {
     private void resetDigest(Vector<Address> new_members) {
         if(new_members == null || new_members.isEmpty())
             return;
+
         synchronized(votes) {
             votes.clear();
             votes.addAll(new_members);
@@ -452,6 +451,8 @@ public class STABLE extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighestDeliveredSeqnos());
         }
+
+
     }
 
     /**
@@ -459,7 +460,7 @@ public class STABLE extends Protocol {
      * Resets the heard_from list (populates with membership)
      * @param mbr
      */
-    private boolean removeVotes(Address mbr) {
+    private boolean removeVote(Address mbr) {
         synchronized(votes) {
             boolean removed=votes.remove(mbr);
             if(removed && votes.isEmpty()) {
@@ -596,7 +597,7 @@ public class STABLE extends Protocol {
             copy=digest.copy();
         }
 
-        boolean was_last=removeVotes(sender);
+        boolean was_last=removeVote(sender);
         if(was_last) {
             sendStabilityMessage(copy);
         }
