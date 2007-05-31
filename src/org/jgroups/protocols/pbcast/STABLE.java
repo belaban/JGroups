@@ -8,7 +8,6 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -28,19 +27,23 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running).
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.81 2007/05/31 07:50:27 belaban Exp $
+ * @version $Id: STABLE.java,v 1.82 2007/05/31 09:58:07 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
-    private final Vector<Address> mbrs=new Vector<Address>();
+    private final Set<Address>    mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
 
-
+    @GuardedBy("lock")
     private final MutableDigest   digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
-    private final MutableDigest   latest_local_digest=new MutableDigest(10); // keeps track of the latest digests received from NAKACK
 
-    /** Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is initialized with all members, and we
-     * remove the sender when a STABLE message is received. When the list is empty, we send a STABILITY message */
-    private final List<Address>   votes=new ArrayList<Address>();
+    /** Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is cleared initially, and we
+     * add the sender when a STABLE message is received. When the list is full (responses from all members),
+     * we send a STABILITY message */
+    @GuardedBy("lock")
+    private final Set<Address>    votes=new HashSet<Address>();
+
+
+    private final Lock            lock=new ReentrantLock();
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
     private long                  desired_avg_gossip=20000;
@@ -188,8 +191,15 @@ public class STABLE extends Protocol {
     }
 
     private void resume() {
-        resetDigest(mbrs); // start from scratch
-        suspended=false;
+        lock.lock();
+        try {
+            resetDigest(); // start from scratch
+            suspended=false;
+        }
+        finally {
+            lock.unlock();
+        }
+
         if(log.isDebugEnabled())
             log.debug("resuming message garbage collection");
         stopResumeTask();
@@ -206,7 +216,6 @@ public class STABLE extends Protocol {
 
     public void stop() {
         stopStableTask();
-        clearDigest();
     }
 
 
@@ -271,12 +280,7 @@ public class STABLE extends Protocol {
                     num_bytes_received=0;
                     received.unlock();
                     locked=false;
-
-                    // asks the NAKACK protocol for the current digest,
-                    Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
-                    synchronized(latest_local_digest) {
-                        latest_local_digest.replace(my_digest);
-                    }
+                    Digest my_digest=getDigest();  // asks the NAKACK protocol for the current digest,
                     if(log.isTraceEnabled())
                         log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
                     sendStableMessage(my_digest);
@@ -315,10 +319,7 @@ public class STABLE extends Protocol {
 
 
     public void runMessageGarbageCollection() {
-        Digest copy;
-        synchronized(digest) {
-            copy=digest.copy();
-        }
+        Digest copy=getDigest();
         sendStableMessage(copy);
     }
 
@@ -329,56 +330,27 @@ public class STABLE extends Protocol {
 
     private void handleViewChange(View v) {
         Vector<Address> tmp=v.getMembers();
-        mbrs.clear();
-        mbrs.addAll(tmp);
-        adjustSenders(digest, tmp);
-        adjustSenders(latest_local_digest, tmp);
-
-        // asks the NAKACK protocol for the current digest
-        Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
-        if(my_digest != null) {
-            synchronized(latest_local_digest) {
-                latest_local_digest.replace(my_digest);
-            }
+        synchronized(mbrs) {
+            mbrs.clear();
+            mbrs.addAll(tmp);
         }
-
-        resetDigest(tmp);
-        if(!initialized)
-            initialized=true;
-    }
-
-
-    /** Digest and members are guaranteed to be non-null */
-    private static void adjustSenders(MutableDigest digest, Vector<Address> members) {
-        synchronized(digest) {
-            // 1. remove all members from digest who are not in the view
-            Iterator<Address> it=digest.getSenders().keySet().iterator();
-            Address mbr;
-            while(it.hasNext()) {
-                mbr=it.next();
-                if(!members.contains(mbr))
-                    it.remove();
-            }
-            // 2. add members to digest which are in the new view but not in the digest
-            for(Address member : members) {
-                mbr=member;
-                if(!digest.contains(mbr))
-                    digest.add(mbr, -1, -1);
-            }
+        lock.lock();
+        try {
+            resetDigest();
+            if(!initialized)
+                initialized=true;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
-
-    private void clearDigest() {
-        synchronized(digest) {
-            digest.clear();
-        }
-    }
 
 
 
     /** Update my own digest from a digest received by somebody else. Returns whether the update was successful.
      *  Needs to be called with a lock on digest */
+    @GuardedBy("lock")
     private boolean updateLocalDigest(Digest d, Address sender) {
         if(d == null || d.size() == 0)
             return false;
@@ -390,15 +362,15 @@ public class STABLE extends Protocol {
         }
 
         if(!digest.sameSenders(d)) {
-            // to avoid sending incorrect stability/stable msgs, we simply reset our heard_from list, see DESIGN
-            resetDigest(mbrs);
+            // to avoid sending incorrect stability/stable msgs, we simply reset our votes list, see DESIGN
+            resetDigest();
             return false;
         }
 
         StringBuilder sb=null;
         if(log.isTraceEnabled()) {
             sb=new StringBuilder("[").append(local_addr).append("] handling digest from ").append(sender).append(" (").
-                    append(votes.size()).append(" pending):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
+                    append(votes.size()).append(" votes):\nmine:   ").append(digest.printHighestDeliveredSeqnos())
                     .append("\nother:  ").append(d.printHighestDeliveredSeqnos());
         }
         Address mbr;
@@ -425,6 +397,7 @@ public class STABLE extends Protocol {
             digest.setHighestDeliveredAndSeenSeqnos(mbr, new_low, new_highest_seqno, new_highest_seen_seqno);
         }
         if(log.isTraceEnabled()) {
+            assert sb != null;
             sb.append("\nresult: ").append(digest.printHighestDeliveredSeqnos()).append("\n");
             log.trace(sb);
         }
@@ -432,43 +405,28 @@ public class STABLE extends Protocol {
     }
 
 
-
-    private void resetDigest(Vector<Address> new_members) {
-        if(new_members == null || new_members.isEmpty())
-            return;
-
-        synchronized(votes) {
-            votes.clear();
-            votes.addAll(new_members);
-        }
-
-        Digest copy_of_latest;
-        synchronized(latest_local_digest) {
-            copy_of_latest=latest_local_digest.copy();
-        }
-        synchronized(digest) {
-            digest.replace(copy_of_latest);
-            if(log.isTraceEnabled())
-                log.trace("resetting digest from NAKACK: " + copy_of_latest.printHighestDeliveredSeqnos());
-        }
-
-
+    @GuardedBy("lock")
+    private void resetDigest() {
+        Digest tmp=getDigest();
+        digest.replace(tmp);
+        if(log.isTraceEnabled())
+            log.trace("resetting digest from NAKACK: " + digest.printHighestDeliveredSeqnos());
+        votes.clear();
     }
 
     /**
-     * Removes mbr from heard_from and returns true if this was the last member, otherwise false.
-     * Resets the heard_from list (populates with membership)
+     * Adds mbr to votes and returns true if we have all the votes, otherwise false.
      * @param mbr
      */
-    private boolean removeVote(Address mbr) {
-        synchronized(votes) {
-            boolean removed=votes.remove(mbr);
-            if(removed && votes.isEmpty()) {
-                resetDigest(this.mbrs);
-                return true;
-            }
-        }
-        return false;
+    @GuardedBy("lock")
+    private boolean addVote(Address mbr) {
+        boolean added=votes.add(mbr);
+        return added && allVotesReceived(votes);
+    }
+
+    /** Votes is already locked and guaranteed to be non-null */
+    private boolean allVotesReceived(Set<Address> votes) {
+        return votes.equals(mbrs); // compares identity, size and element-wise (if needed)
     }
 
 
@@ -583,32 +541,38 @@ public class STABLE extends Protocol {
             return;
         }
 
-        if(!votes.contains(sender)) {  // already received gossip from sender; discard it
-            return;
-        }
-
-        num_stable_msgs_received++;
-
-        Digest copy;
-        synchronized(digest) {
-            boolean success=updateLocalDigest(d, sender);
-            if(!success) // we can only remove the sender from heard_from if *all* elements of my digest were updated
+        Digest copy=null;
+        boolean all_votes_received=false;
+        lock.lock();
+        try {
+            if(votes.contains(sender))  // already received gossip from sender; discard it
                 return;
-            copy=digest.copy();
+            num_stable_msgs_received++;
+            boolean success=updateLocalDigest(d, sender);
+            if(!success) // we can only add the sender to votes if *all* elements of my digest were updated
+                return;
+
+            all_votes_received=addVote(sender);
+            if(all_votes_received)
+                copy=digest.copy();
+        }
+        finally {
+            lock.unlock();
         }
 
-        boolean was_last=removeVote(sender);
-        if(was_last) {
+        // we don't yet reset digest: new STABLE messages will be discarded anyway as we have already
+        // received votes from their senders
+        if(copy != null) {
             sendStabilityMessage(copy);
         }
     }
 
 
-    private void handleStabilityMessage(Digest d, Address sender) {
-         if(d == null) {
-             if(log.isErrorEnabled()) log.error("stability digest is null");
-             return;
-         }
+    private void handleStabilityMessage(Digest stable_digest, Address sender) {
+        if(stable_digest == null) {
+            if(log.isErrorEnabled()) log.error("stability digest is null");
+            return;
+        }
 
          if(!initialized) {
              if(log.isTraceEnabled())
@@ -624,26 +588,31 @@ public class STABLE extends Protocol {
          }
 
          if(log.isTraceEnabled())
-             log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(d.printHighestDeliveredSeqnos()));
+             log.trace(new StringBuffer("received stability msg from ").append(sender).append(": ").append(stable_digest.printHighestDeliveredSeqnos()));
          stopStabilityTask();
 
-         // we won't handle the gossip d, if d's members don't match the membership in my own digest,
-         // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
-         if(!this.digest.sameSenders(d)) {
-             if(log.isDebugEnabled()) {
-                 log.debug("received digest (digest=" + d + ") which does not match my own digest ("+
-                         this.digest + "): ignoring digest and re-initializing own digest");
-             }
-             return;
-         }
+        lock.lock();
+        try {
+            // we won't handle the gossip d, if d's members don't match the membership in my own digest,
+            // this is part of the fix for the NAKACK problem (bugs #943480 and #938584)
+            if(!this.digest.sameSenders(stable_digest)) {
+                if(log.isDebugEnabled()) {
+                    log.debug("received digest (digest=" + stable_digest + ") which does not match my own digest ("+
+                            this.digest + "): ignoring digest and re-initializing own digest");
+                }
+                resetDigest();
+                return;
+            }
+            num_stability_msgs_received++;
+            resetDigest();
+        }
+        finally {
+            lock.unlock();
+        }
 
-         num_stability_msgs_received++;
-
-         resetDigest(mbrs);
-
-         // pass STABLE event down the stack, so NAKACK can garbage collect old messages
-         down_prot.down(new Event(Event.STABLE, d));
-     }
+        // pass STABLE event down the stack, so NAKACK can garbage collect old messages
+        down_prot.down(new Event(Event.STABLE, stable_digest));
+    }
 
 
 
@@ -703,6 +672,9 @@ public class STABLE extends Protocol {
     }
 
 
+    private Digest getDigest() {
+        return (Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+    }
 
 
     /* ------------------------------------End of Private Methods ------------------------------------- */
@@ -817,14 +789,11 @@ public class STABLE extends Protocol {
             }
 
             // asks the NAKACK protocol for the current digest
-            Digest my_digest=(Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+            Digest my_digest=getDigest();
             if(my_digest == null) {
                 if(log.isWarnEnabled())
                     log.warn("received null digest, skipped sending of stable message");
                 return;
-            }
-            synchronized(latest_local_digest) {
-                latest_local_digest.replace(my_digest);
             }
             if(log.isTraceEnabled())
                 log.trace("setting latest_local_digest from NAKACK: " + my_digest.printHighestDeliveredSeqnos());
