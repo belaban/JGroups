@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.104 2007/05/08 18:47:02 vlada Exp $
+ * @version $Id: GMS.java,v 1.105 2007/06/01 20:56:16 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1176,7 +1176,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.104 2007/05/08 18:47:02 vlada Exp $
+     * @version $Id: GMS.java,v 1.105 2007/06/01 20:56:16 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1386,11 +1386,13 @@ public class GMS extends Protocol {
                         if (flushProtocolInStack){
                            boolean successfulFlush = startFlush(firstReq.view,4000);
                            if (successfulFlush){
-                              log.info("Successful GMS flush by coordinator at " + getLocalAddress());
+                               if(log.isTraceEnabled())
+                                  log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
                            }
                            else {
-                              log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
-                           }
+                               if(log.isWarnEnabled())
+                                  log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
+                           }                         
                         }
                         castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);
                     }
