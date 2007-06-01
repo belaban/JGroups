@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
-import java.util.LinkedList;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import junit.framework.Test;
@@ -16,7 +17,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.7 2007/03/15 10:51:26 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.8 2007/06/01 16:11:39 vlada Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
@@ -89,7 +90,7 @@ public class JoinTest extends ChannelTestBase {
         c1.send(m1);
         c2.send(m2);
 
-        Util.sleep(1000);
+        Util.sleep(1500);
         List c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
         System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
         assertNotNull(c1_list);
@@ -113,11 +114,12 @@ public class JoinTest extends ChannelTestBase {
 
 
     private static class MyReceiver extends ReceiverAdapter {
-        String name;
-        List msgs=new LinkedList();
+        private final String name;
+        private final List<String> msgs;
 
         public MyReceiver(String name) {
             this.name=name;
+            msgs = Collections.synchronizedList(new ArrayList<String>());
         }
 
         public List getMsgs() {
@@ -135,6 +137,5 @@ public class JoinTest extends ChannelTestBase {
         public void viewAccepted(View new_view) {
             System.out.println("[" + name + "] view: " + new_view);
         }
-
     }
 }
