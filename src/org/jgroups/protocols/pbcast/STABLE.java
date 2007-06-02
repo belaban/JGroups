@@ -25,9 +25,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * message is mcast, which causes all members to send a STABLE event up the stack (triggering garbage collection
  * in the NAKACK layer).<p>
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
- * a STABLE task will be started (unless it is already running).
+ * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.82 2007/05/31 09:58:07 belaban Exp $
+ * @version $Id: STABLE.java,v 1.83 2007/06/02 03:43:08 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
