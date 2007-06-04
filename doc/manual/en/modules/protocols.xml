@@ -590,7 +590,7 @@
 
                         <row>
                             <entry>disable_initial_coord</entry>
-
+                               This feature is deprecated and will be phased out in 3.0
                             <entry></entry>
                         </row>
 

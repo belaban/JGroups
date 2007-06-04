@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.105 2007/06/01 20:56:16 vlada Exp $
+ * @version $Id: GMS.java,v 1.106 2007/06/04 15:15:42 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -851,6 +851,8 @@ public class GMS extends Protocol {
         if(str != null) {
             disable_initial_coord=Boolean.valueOf(str).booleanValue();
             props.remove("disable_initial_coord");
+            if(log.isWarnEnabled())
+                log.warn("disable_initial_coord has been deprecated and will be phased out by 3.0, please don't use it anymore");
         }
 
         str=props.getProperty("handle_concurrent_startup");
@@ -1176,7 +1178,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.105 2007/06/01 20:56:16 vlada Exp $
+     * @version $Id: GMS.java,v 1.106 2007/06/04 15:15:42 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
