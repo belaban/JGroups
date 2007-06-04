@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.82 2007/05/01 10:55:10 belaban Exp $
+// $Id: UNICAST.java,v 1.83 2007/06/04 14:25:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -45,8 +45,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private boolean          use_gms=true;
     private boolean          started=false;
 
-    /** whether to loop back messages sent to self (will be removed in the future, default=true) */
-    private boolean          loopback=true;
+    /** whether to loop back messages sent to self (will be removed in the future, default=false) */
+    private boolean          loopback=false;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
     private final BoundedList previous_members=new BoundedList(50);
