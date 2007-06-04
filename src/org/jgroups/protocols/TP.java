@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.145 2007/05/30 06:47:45 belaban Exp $
+ * @version $Id: TP.java,v 1.146 2007/06/04 13:37:20 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -924,9 +924,18 @@ public abstract class TP extends Protocol {
 
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
-            Message copy=msg.copy();
+            final Message copy=msg.copy();
             if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
-            up_prot.up(new Event(Event.MSG, copy));
+            // up_prot.up(new Event(Event.MSG, copy));
+
+            // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
+            Executor pool=msg.isFlagSet(Message.OOB)? oob_thread_pool : thread_pool;
+            pool.execute(new Runnable() {
+                public void run() {
+                    up_prot.up(new Event(Event.MSG, copy));
+                }
+            });
+
             if(!multicast)
                 return null;
         }
