@@ -159,8 +159,8 @@ public abstract class BasicTCP extends TP {
                 dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");
 
             if(dynamic_discovery_prot != null) {
-                if(log.isInfoEnabled())
-                    log.info("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + start_port + " is okay");
+                if(log.isDebugEnabled())
+                    log.debug("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + start_port + " is okay");
             }
             else {
                 throw new IllegalArgumentException("start_port cannot be set to " + start_port +

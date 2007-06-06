@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.131 2007/05/08 18:56:30 belaban Exp $
+ * @version $Id: JChannel.java,v 1.132 2007/06/06 11:02:29 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -359,7 +359,7 @@ public class JChannel extends Channel {
 
         /*make sure we have a valid channel name*/
         if(cluster_name == null) {
-            if(log.isInfoEnabled()) log.info("cluster_name is null, assuming unicast channel");
+            if(log.isDebugEnabled()) log.debug("cluster_name is null, assuming unicast channel");
         }
         else
             this.cluster_name=cluster_name;
@@ -1265,8 +1265,8 @@ public class JChannel extends Channel {
 
 
     protected final void init(ProtocolStackConfigurator configurator) throws ChannelException {
-        if(log.isInfoEnabled())
-            log.info("JGroups version: " + Version.description);
+        if(log.isDebugEnabled())
+            log.debug("JGroups version: " + Version.description);
         ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
         props=configurator.getProtocolStackString();
         prot_stack=new ProtocolStack(this, props);
@@ -1468,8 +1468,8 @@ public class JChannel extends Channel {
         if(closer != null && !closer.isAlive())
             closer=null;
         if(closer == null) {
-            if(log.isInfoEnabled())
-                log.info("received an EXIT event, will leave the channel");
+            if(log.isDebugEnabled())
+                log.debug("received an EXIT event, will leave the channel");
             closer=new CloserThread(evt);
             closer.start();
         }
@@ -1555,8 +1555,8 @@ public class JChannel extends Channel {
         public void run() {
             try {
                 String old_cluster_name=cluster_name; // remember because close() will null it
-                if(log.isInfoEnabled())
-                    log.info("closing the channel");
+                if(log.isDebugEnabled())
+                    log.debug("closing the channel");
                 _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
 
                 if(up_handler != null)
@@ -1582,7 +1582,7 @@ public class JChannel extends Channel {
 
                 if(auto_reconnect) {
                     try {
-                        if(log.isInfoEnabled()) log.info("reconnecting to group " + old_cluster_name);
+                        if(log.isDebugEnabled()) log.debug("reconnecting to group " + old_cluster_name);
                         open();
                     }
                     catch(Exception ex) {
@@ -1606,14 +1606,14 @@ public class JChannel extends Channel {
                 }
 
                 if(auto_getstate) {
-                    if(log.isInfoEnabled())
-                        log.info("fetching the state (auto_getstate=true)");
+                    if(log.isDebugEnabled())
+                        log.debug("fetching the state (auto_getstate=true)");
                     boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
-                    if(log.isInfoEnabled()) {
+                    if(log.isDebugEnabled()) {
                         if(rc)
-                            log.info("state was retrieved successfully");
+                            log.debug("state was retrieved successfully");
                         else
-                            log.info("state transfer failed");
+                            log.debug("state transfer failed");
                     }
                 }
 

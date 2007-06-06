@@ -204,8 +204,8 @@ public class FLUSH extends Protocol {
 				Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
 				successfulFlush = r.booleanValue();
 			} catch (TimeoutException e) {
-				if (log.isInfoEnabled())
-					log.info("At " + localAddress
+				if (log.isTraceEnabled())
+					log.trace("At " + localAddress
 							+ " timed out waiting for flush responses after "
 							+ timeout + " msec");
 			}
@@ -214,8 +214,8 @@ public class FLUSH extends Protocol {
 		if (!successfulFlush && numberOfAttempts > 0) {
 			long backOffSleepTime = Util.random(5);
 			backOffSleepTime = backOffSleepTime < 2 ? backOffSleepTime + 2: backOffSleepTime;
-			if (log.isInfoEnabled())
-				log.info("At " + localAddress + ". Backing off for "
+			if (log.isTraceEnabled())
+				log.trace("At " + localAddress + ". Backing off for "
 						+ backOffSleepTime + " sec. Attempts left "
 						+ numberOfAttempts);
 
@@ -760,8 +760,8 @@ public class FLUSH extends Protocol {
 				fh.addDigest(d);
 				msg.putHeader(getName(), fh);
 				
-				if (log.isInfoEnabled())
-					log.info("Reconciling flush mebers due to virtual synchrony gap, digest is "
+				if (log.isTraceEnabled())
+					log.trace("Reconciling flush mebers due to virtual synchrony gap, digest is "
 									+ d + " flush members are " + flushMembers);
 				
 				flushCompletedMap.clear();

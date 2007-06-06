@@ -768,9 +768,9 @@ public abstract class BasicConnectionTable {
            Map.Entry entry;
            long curr_time;
 
-           if(log.isInfoEnabled()) log.info("connection reaper thread was started. Number of connections=" +
-                                            conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
-                                            conn_expire_time);
+           if(log.isDebugEnabled()) log.debug("connection reaper thread was started. Number of connections=" +
+                   conns.size() + ", reaper_interval=" + reaper_interval + ", conn_expire_time=" +
+                   conn_expire_time);
 
            while(!haveZeroConnections() && t != null && t.equals(Thread.currentThread())) {
                Util.sleep(reaper_interval);
@@ -781,11 +781,11 @@ public abstract class BasicConnectionTable {
                    for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {
                        entry=(Map.Entry)it.next();
                        value=(Connection)entry.getValue();
-                       if(log.isInfoEnabled()) log.info("connection is " +
+                       if(log.isTraceEnabled()) log.trace("connection is " +
                                                         ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
                                                         curr_time + ", last_access=" + value.last_access + ')');
                        if(value.last_access + conn_expire_time < curr_time) {
-                           if(log.isInfoEnabled()) log.info("connection " + value +
+                           if(log.isTraceEnabled()) log.trace("connection " + value +
                                                             " has been idle for too long (conn_expire_time=" + conn_expire_time +
                                                             "), will be removed");
                            value.destroy();
@@ -794,7 +794,7 @@ public abstract class BasicConnectionTable {
                    }
                }
            }
-           if(log.isInfoEnabled()) log.info("reaper terminated");
+           if(log.isDebugEnabled()) log.debug("reaper terminated");
            t=null;
        }
    }

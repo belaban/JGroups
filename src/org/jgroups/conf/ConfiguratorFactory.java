@@ -31,7 +31,7 @@ import java.security.AccessControlException;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ConfiguratorFactory.java,v 1.22 2006/10/09 13:34:00 belaban Exp $
+ * @version $Id: ConfiguratorFactory.java,v 1.23 2007/06/06 11:02:35 belaban Exp $
  */
 public class ConfiguratorFactory {
     public static final String JAXP_MISSING_ERROR_MSG=
@@ -56,8 +56,8 @@ public class ConfiguratorFactory {
             propertiesOverride = null;
         }
 
-        if(propertiesOverride != null && log.isInfoEnabled()) {
-            log.info("using properties override: " + propertiesOverride);
+        if(propertiesOverride != null && log.isDebugEnabled()) {
+            log.debug("using properties override: " + propertiesOverride);
         }
     }
 

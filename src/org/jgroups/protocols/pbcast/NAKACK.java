@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.141 2007/05/29 10:46:33 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.142 2007/06/06 11:02:33 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1498,8 +1498,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
         if(map.containsKey("frag_size")) {
             max_xmit_size=((Integer)map.get("frag_size")).intValue();
-            if(log.isInfoEnabled()) {
-                log.info("max_xmit_size=" + max_xmit_size);
+            if(log.isDebugEnabled()) {
+                log.debug("max_xmit_size=" + max_xmit_size);
             }
         }
     }

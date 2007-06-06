@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.29 2007/04/16 18:23:37 vlada Exp $
+// $Id: ConnectionTableNIO.java,v 1.31 2007/06/06 11:04:05 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -303,7 +303,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             addConnection(dest, conn);
 
             notifyConnectionOpened(dest);
-            if (LOG.isInfoEnabled()) LOG.info("created socket to " + dest);
+            if (LOG.isTraceEnabled()) LOG.trace("created socket to " + dest);
          }
          return conn;
       }
@@ -323,7 +323,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        else
            local_addr=new IpAddress(srv_sock.getLocalPort());
 
-       if(log.isInfoEnabled()) log.info("server socket created on " + local_addr);
+       if(log.isDebugEnabled()) log.debug("server socket created on " + local_addr);
 
 
        //Roland Kurmann 4/7/2003, put in thread_group
@@ -485,8 +485,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   continue;
                }
 
-               if (LOG.isInfoEnabled())
-                  LOG.info("accepted connection, client_sock=" + client_sock_ch.socket());
+               if (LOG.isTraceEnabled())
+                  LOG.trace("accepted connection, client_sock=" + client_sock_ch.socket());
 
                try {
 
@@ -795,7 +795,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                o = QUEUE.poll(0L, TimeUnit.MILLISECONDS); // get a connection
             } catch (InterruptedException e)
             {
-               if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
+               if (LOG.isTraceEnabled()) LOG.trace("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
                // We must give up
                continue;
             }
@@ -805,7 +805,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                try {
                   SELECTOR.close();
                } catch(IOException e) {
-                  if (LOG.isInfoEnabled()) LOG.info("Read selector close operation failed" , e);
+                  if (LOG.isTraceEnabled()) LOG.trace("Read selector close operation failed" , e);
                }
                return;                       // stop reading
             }
@@ -816,7 +816,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                sc.register(SELECTOR, SelectionKey.OP_READ, conn);
             } catch (ClosedChannelException e)
             {
-               if (LOG.isInfoEnabled()) LOG.info("Socket channel was closed while we were trying to register it to selector" , e);
+               if (LOG.isTraceEnabled()) LOG.trace("Socket channel was closed while we were trying to register it to selector" , e);
                // Channel becomes bad. The connection must be bad,
                // close socket, then remove it from table!
                conn.destroy();
@@ -1211,7 +1211,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                      try {
                         SELECTOR.close();
                      } catch(IOException e) {
-                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                        if (LOG.isTraceEnabled()) LOG.trace("Write selector close operation failed" , e);
                      }
                      return;
                   }
@@ -1253,7 +1253,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                      try {
                         SELECTOR.close();
                      } catch(IOException e) {
-                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                        if (LOG.isTraceEnabled()) LOG.trace("Write selector close operation failed" , e);
                      }
                      return;
                   }
