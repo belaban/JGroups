@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.85 2007/06/06 06:36:07 belaban Exp $
+// $Id: UNICAST.java,v 1.86 2007/06/06 11:39:11 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -407,7 +407,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
-                // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-357
+                // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-348
                 if(view instanceof MergeView) {
                     if(log.isTraceEnabled())
                         log.trace("removing all connections for the current members due to a merge");
@@ -442,8 +442,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
         if(entry != null) {
             entry.reset();
-            if(log.isTraceEnabled())
-                log.trace(local_addr + ": removed connection for dst " + mbr);
             return true;
         }
         else
