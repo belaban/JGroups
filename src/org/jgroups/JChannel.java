@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.132 2007/06/06 11:02:29 belaban Exp $
+ * @version $Id: JChannel.java,v 1.133 2007/06/06 16:27:11 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1265,8 +1265,8 @@ public class JChannel extends Channel {
 
 
     protected final void init(ProtocolStackConfigurator configurator) throws ChannelException {
-        if(log.isDebugEnabled())
-            log.debug("JGroups version: " + Version.description);
+        if(log.isInfoEnabled())
+            log.info("JGroups version: " + Version.description);
         ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
         props=configurator.getProtocolStackString();
         prot_stack=new ProtocolStack(this, props);
