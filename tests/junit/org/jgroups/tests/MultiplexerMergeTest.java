@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
 /**
  * Tests merging with a multiplexer channel
  * @author Jerry Gauthier
- * @version $Id: MultiplexerMergeTest.java,v 1.3 2007/03/12 14:28:02 vlada Exp $
+ * @version $Id: MultiplexerMergeTest.java,v 1.4 2007/06/06 11:05:53 belaban Exp $
  */
 public class MultiplexerMergeTest extends TestCase {
 	// stack file must be on classpath
@@ -120,7 +120,7 @@ public class MultiplexerMergeTest extends TestCase {
         router.stop();
     }
 
-    private final class MessageListenerAdaptor implements ExtendedMessageListener {
+    private static final class MessageListenerAdaptor implements ExtendedMessageListener {
     	private String m_name;
         private byte[] m_state = null;
         
@@ -204,10 +204,8 @@ public class MultiplexerMergeTest extends TestCase {
         }
         finally {
           try {
-            if ( baos != null ) {
               b = baos.toByteArray();
               baos.close();
-            }
           }
           catch ( Exception e ) {
             e.printStackTrace();
