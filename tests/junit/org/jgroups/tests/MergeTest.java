@@ -3,17 +3,17 @@ package org.jgroups.tests;
 
 
 import junit.framework.TestCase;
-import org.jgroups.JChannel;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.jgroups.stack.GossipRouter;
+
+import java.util.Vector;
 
 
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.10 2007/03/12 11:00:58 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.11 2007/06/06 06:31:34 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
@@ -23,6 +23,9 @@ public class MergeTest extends TestCase {
     GossipRouter router;
     JChannel     ch1, ch2;
     private ViewChecker  checker;
+    private static final int  NUM_MCASTS=5;
+    private static final int  NUM_UCASTS=10;
+    private static final long WAIT_TIME=2000L;
 
     String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
             "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
@@ -77,6 +80,22 @@ public class MergeTest extends TestCase {
         System.out.println("view is " + v);
         assertEquals("channel is supposed to have 2 members", 2, ch2.getView().size());
 
+        System.out.println("sending " + NUM_MCASTS + " multicast messages");
+        for(int i=0; i < NUM_MCASTS; i++) {
+            Message msg=new Message();
+            ch1.send(msg);
+        }
+        System.out.println("sending " + NUM_UCASTS + " unicast messages to " + v.size() + " members");
+        Vector<Address> mbrs=v.getMembers();
+        for(Address mbr: mbrs) {
+            for(int i=0; i < NUM_UCASTS; i++) {
+                Channel ch=i % 2 == 0? ch1 : ch2;
+                ch.send(new Message(mbr));
+            }
+        }
+        System.out.println("done, sleeping for " + WAIT_TIME + " time");
+        Util.sleep(WAIT_TIME);
+
         System.out.println("++ simulating network partition by stopping the GossipRouter");
         stopRouter();
 
@@ -125,6 +144,7 @@ public class MergeTest extends TestCase {
         final Object mutex=new Object();
         int          count=0;
 
+        
         public void viewAccepted(View new_view) {
             synchronized(mutex) {
                 count++;
@@ -147,6 +167,13 @@ public class MergeTest extends TestCase {
                         break;
                 }
             }
+        }
+
+
+        public void receive(Message msg) {
+            Address sender=msg.getSrc(), receiver=msg.getDest();
+            boolean multicast=receiver == null || receiver.isMulticastAddress();
+            System.out.println("[" + receiver + "]: received " + (multicast? " multicast " : " unicast ") + " message from " + sender);
         }
     }
 
