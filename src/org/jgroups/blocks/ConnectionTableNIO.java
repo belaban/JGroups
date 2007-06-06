@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.31 2007/06/06 11:04:05 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.30 2007/06/06 11:02:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -795,7 +795,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                o = QUEUE.poll(0L, TimeUnit.MILLISECONDS); // get a connection
             } catch (InterruptedException e)
             {
-               if (LOG.isTraceEnabled()) LOG.trace("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
+               if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
                // We must give up
                continue;
             }
@@ -805,7 +805,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                try {
                   SELECTOR.close();
                } catch(IOException e) {
-                  if (LOG.isTraceEnabled()) LOG.trace("Read selector close operation failed" , e);
+                  if (LOG.isInfoEnabled()) LOG.info("Read selector close operation failed" , e);
                }
                return;                       // stop reading
             }
@@ -816,7 +816,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                sc.register(SELECTOR, SelectionKey.OP_READ, conn);
             } catch (ClosedChannelException e)
             {
-               if (LOG.isTraceEnabled()) LOG.trace("Socket channel was closed while we were trying to register it to selector" , e);
+               if (LOG.isInfoEnabled()) LOG.info("Socket channel was closed while we were trying to register it to selector" , e);
                // Channel becomes bad. The connection must be bad,
                // close socket, then remove it from table!
                conn.destroy();
@@ -1211,7 +1211,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                      try {
                         SELECTOR.close();
                      } catch(IOException e) {
-                        if (LOG.isTraceEnabled()) LOG.trace("Write selector close operation failed" , e);
+                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
                      }
                      return;
                   }
@@ -1253,7 +1253,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                      try {
                         SELECTOR.close();
                      } catch(IOException e) {
-                        if (LOG.isTraceEnabled()) LOG.trace("Write selector close operation failed" , e);
+                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
                      }
                      return;
                   }
