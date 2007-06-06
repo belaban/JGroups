@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.45 2007/04/27 07:59:23 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.46 2007/06/06 12:15:51 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.45 $
+ * @version $Revision: 1.46 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -278,6 +278,8 @@ public class ClientGmsImpl extends GmsImpl {
         msg=new Message(coord, null, null);
         hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr);
         msg.putHeader(gms.getName(), hdr);
+        
+        // we have to enable unicasts to coord, as coord is not in our membership (the unicast message would get dropped)
         gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
