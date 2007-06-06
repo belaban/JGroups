@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.50 2007/03/06 12:31:00 belaban Exp $
+// $Id: ConnectionTable.java,v 1.51 2007/06/06 11:02:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -161,7 +161,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                notifyConnectionOpened(dest);
                addConnection(dest, conn);
                conn.init();
-               if(log.isInfoEnabled()) log.info("created socket to " + dest);
+               if(log.isTraceEnabled()) log.trace("created socket to " + dest);
            }
            return conn;
        }
@@ -179,7 +179,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
-        if(log.isInfoEnabled()) log.info("server socket listening on " + local_addr);
+        if(log.isDebugEnabled()) log.debug("server socket listening on " + local_addr);
 
         //Roland Kurmann 4/7/2003, build new thread group
         thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
@@ -304,7 +304,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                conn.init(); // starts handler thread on this socket
            }
            catch(SocketException sock_ex) {
-               if(log.isInfoEnabled()) log.info("exception is " + sock_ex);
+               if(log.isWarnEnabled()) log.warn("exception is " + sock_ex);
                if(conn != null)
                    conn.destroy();
                if(srv_sock == null)

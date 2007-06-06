@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.33 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.34 2007/06/06 11:02:30 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -94,8 +94,8 @@ public class FRAG2 extends Protocol {
             return false;
         }
 
-        if(log.isInfoEnabled())
-            log.info("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
+        if(log.isDebugEnabled())
+            log.debug("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
 
         if(!props.isEmpty()) {
             log.error("FRAG2.setProperties(): the following properties are not recognized: " + props);
@@ -189,7 +189,7 @@ public class FRAG2 extends Protocol {
 
         case Event.CONFIG:
             Object ret=up_prot.up(evt);
-            if(log.isInfoEnabled()) log.info("received CONFIG event: " + evt.getArg());
+            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((HashMap)evt.getArg());
             return ret;
         }

@@ -284,8 +284,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 					successfulFlush = (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
 				}
 				if(successfulFlush){
-					if(log.isInfoEnabled())
-						log.info("Successful flush at " + local_addr);
+					if(log.isTraceEnabled())
+						log.trace("Successful flush at " + local_addr);
 				}else{
 					if(flushProtocolInStack && log.isWarnEnabled()){
 						log.warn("Could not get successful flush from " + local_addr);

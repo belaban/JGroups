@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.16 2007/05/09 23:50:19 belaban Exp $
+ * @version $Id: JChannel.java,v 1.17 2007/06/06 11:02:32 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
@@ -135,8 +135,8 @@ public class JChannel implements JChannelMBean {
         // Remove the trailing ':'
         buffer.setLength(buffer.length() - 1);
         setProperties(buffer.toString());
-        if(log.isInfoEnabled())
-            log.info("setting cluster properties from xml to: " + props);
+        if(log.isDebugEnabled())
+            log.debug("setting cluster properties from xml to: " + props);
     }
 
     public String getGroupName() {

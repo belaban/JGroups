@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.141 2007/06/05 07:57:27 belaban Exp $
+ * @version $Id: UDP.java,v 1.142 2007/06/06 11:02:30 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -419,7 +419,7 @@ public class UDP extends TP implements Runnable {
             bind_addr=InetAddress.getLocalHost();
 
         if(bind_addr != null)
-            if(log.isInfoEnabled()) log.info("sockets will use interface " + bind_addr.getHostAddress());
+            if(log.isDebugEnabled()) log.debug("sockets will use interface " + bind_addr.getHostAddress());
 
 
         // 2. Create socket for receiving unicast UDP packets. The address and port
@@ -508,7 +508,7 @@ public class UDP extends TP implements Runnable {
         }
 
         setBufferSizes();
-        if(log.isInfoEnabled()) log.info("socket information:\n" + dumpSocketInfo());
+        if(log.isDebugEnabled()) log.debug("socket information:\n" + dumpSocketInfo());
     }
 
 
