@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.69 2007/06/06 11:02:33 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.70 2007/06/07 12:25:26 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -191,7 +191,7 @@ public class STATE_TRANSFER extends Protocol {
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");
 
-                    // suspend sending and handling of mesage garbage collection gossip messages,
+                    // suspend sending and handling of message garbage collection gossip messages,
                     // fixes bugs #943480 and #938584). Wake up when state has been received
                     if(log.isDebugEnabled())
                         log.debug("passing down a SUSPEND_STABLE event");
