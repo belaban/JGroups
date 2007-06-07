@@ -8,34 +8,28 @@ import org.jgroups.util.Util;
 import org.jgroups.stack.GossipRouter;
 
 import java.util.Vector;
+import java.util.List;
+import java.util.LinkedList;
 
 
 /**
  * Tests merging
  * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.11 2007/06/06 06:31:34 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.12 2007/06/07 10:42:12 belaban Exp $
  */
 public class MergeTest extends TestCase {
     JChannel     channel;
     static final int    TIMES=10;
-    static final int    router_port=12000;
+    static final int    router_port=12001;
     static final String bind_addr="127.0.0.1";
     GossipRouter router;
     JChannel     ch1, ch2;
-    private ViewChecker  checker;
+    private ViewChecker  checker1, checker2;
     private static final int  NUM_MCASTS=5;
     private static final int  NUM_UCASTS=10;
     private static final long WAIT_TIME=2000L;
 
-    String props="TUNNEL(router_port=" + router_port + ";router_host=" +bind_addr+ ";loopback=true):" +
-            "PING(timeout=1000;num_initial_members=2;gossip_host=" +bind_addr+";gossip_port=" + router_port + "):" +
-            "MERGE2(min_interval=3000;max_interval=5000):" +
-            "FD(timeout=1000;max_tries=2;shun=false):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "print_local_addr=false;shun=false)";
+    String props="tunnel.xml";
 
 
 
@@ -46,12 +40,13 @@ public class MergeTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         startRouter();
-        checker=new ViewChecker();
         ch1=new JChannel(props);
-        ch1.setReceiver(checker);
+        checker1=new ViewChecker(ch1);
+        ch1.setReceiver(checker1);
         ch1.connect("demo");
         ch2=new JChannel(props);
-        ch2.setReceiver(checker);
+        checker2=new ViewChecker(ch2);
+        ch2.setReceiver(checker2);
         ch2.connect("demo");
         Util.sleep(1000);
     }
@@ -100,22 +95,21 @@ public class MergeTest extends TestCase {
         stopRouter();
 
         System.out.println("sleeping for 10 secs");
-        // Util.sleep(10000);
-        checker.waitForNViews(2, 10000);
-
+        checker1.waitForNViews(1, 10000);
+        checker2.waitForNViews(1, 10000);
         v=ch1.getView();
         System.out.println("-- ch1.view: " + v);
 
         v=ch2.getView();
         System.out.println("-- ch2.view: " + v);
-        assertEquals("view should be 1 (channels should have excluded each other", 1, v.size());
+        assertEquals("view should be 1 (channels should have excluded each other): " + v, 1, v.size());
 
         System.out.println("++ simulating merge by starting the GossipRouter again");
         startRouter();
 
         System.out.println("sleeping for 30 secs");
-        // Util.sleep(30000);
-        checker.waitForNViews(2, 30000);
+        checker1.waitForNViews(1, 30000);
+        checker2.waitForNViews(1, 30000);
 
         v=ch1.getView();
         System.out.println("-- ch1.view: " + v);
@@ -141,14 +135,22 @@ public class MergeTest extends TestCase {
     }
 
     private static class ViewChecker extends ReceiverAdapter {
-        final Object mutex=new Object();
-        int          count=0;
+        final Object    mutex=new Object();
+        int             count=0;
+        final Channel   channel;
+        final List<View> views=new LinkedList<View>();
 
-        
+
+        public ViewChecker(Channel channel) {
+            this.channel=channel;
+        }
+
         public void viewAccepted(View new_view) {
             synchronized(mutex) {
                 count++;
-                System.out.println("-- view: " + new_view);
+                View view=channel != null? channel.getView() : null;
+                views.add(view);
+                // System.out.println("-- view: " + new_view + " (count=" + count + ", channel's view=" + view + ")");
                 mutex.notifyAll();
             }
         }
@@ -157,6 +159,7 @@ public class MergeTest extends TestCase {
         public void waitForNViews(int n, long timeout) {
             long sleep_time=timeout, curr, start;
             synchronized(mutex) {
+                views.clear();
                 count=0;
                 start=System.currentTimeMillis();
                 while(count < n) {
@@ -167,6 +170,9 @@ public class MergeTest extends TestCase {
                         break;
                 }
             }
+
+            // System.out.println("+++++ VIEW_CHECKER for " + channel.getLocalAddress() + " terminated, view=" + channel.getView() +
+            // ", views=" + views + ")");
         }
 
 
