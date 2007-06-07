@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.4 2006/11/22 20:27:53 vlada Exp $
+// $Id: ChannelTest.java,v 1.5 2007/06/07 10:06:59 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,18 +6,13 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
+import org.jgroups.*;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.4 2006/11/22 20:27:53 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.5 2007/06/07 10:06:59 belaban Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -145,6 +140,22 @@ public class ChannelTest extends ChannelTestBase {
         }
     }
 
+
+    public void testViewChange() throws Exception {
+        ViewChecker checker=new ViewChecker(ch);
+        ch.setReceiver(checker);
+
+        Channel ch2=createChannel();
+        ch2.connect(GROUP);
+        assertTrue(checker.getReason(), checker.isSuccess());
+
+        ch2.close();
+        assertTrue(checker.getReason(), checker.isSuccess());
+    }
+
+
+
+
     public void testReceiveTimeout() throws ChannelException, TimeoutException {
         ch.receive(1000); // this one works, because we're expecting a View
 
@@ -173,10 +184,37 @@ public class ChannelTest extends ChannelTestBase {
         }
     }
 
+     private static class ViewChecker extends ReceiverAdapter {
+        final Channel channel;
+        boolean success=true;
+        String reason="";
+
+        public ViewChecker(Channel channel) {
+            this.channel=channel;
+        }
+
+        public String getReason() {
+            return reason;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+
+        public void viewAccepted(View new_view) {
+            View view=channel.getView();
+            String str="viewAccepted(): channel's view=" + view + "\nreceived view=" + new_view;
+            System.out.println(str);
+            if(!view.equals(new_view)) {
+                success=false;
+                reason+=str + "\n";
+            }
+        }
+    }
+
 
     public static Test suite() {
-        TestSuite s=new TestSuite(ChannelTest.class);
-        return s;
+        return new TestSuite(ChannelTest.class);
     }
 
     public static void main(String[] args) {
