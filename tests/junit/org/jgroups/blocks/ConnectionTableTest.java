@@ -12,12 +12,14 @@ import java.net.UnknownHostException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.ThreadMXBean;
 import java.lang.management.ThreadInfo;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.4 2007/03/06 12:31:15 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.5 2007/06/08 16:11:46 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -62,6 +64,31 @@ public class ConnectionTableTest extends TestCase {
         super.tearDown();
     }
 
+
+    public void testBlockingQueue() {
+        final BlockingQueue queue=new LinkedBlockingQueue();
+
+        Thread taker=new Thread() {
+
+            public void run() {
+                try {
+                    System.out.println("taking an element from the queue");
+                    Object obj=queue.take();
+                    System.out.println("clear");
+                }
+                catch(InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+        taker.start();
+
+        Util.sleep(500);
+
+        queue.clear(); // does this release the taker thread ?
+        Util.sleep(200);
+        assertFalse("taker: " + taker, taker.isAlive());
+    }
 
 
     public void testStopConnectionTableNoSendQueues() throws Exception {
