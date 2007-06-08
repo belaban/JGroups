@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.106 2007/06/04 15:15:42 belaban Exp $
+ * @version $Id: GMS.java,v 1.107 2007/06/08 08:31:56 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -411,25 +411,34 @@ public class GMS extends Protocol {
     }
 
 
+    public void installView(View new_view) {
+        installView(new_view, null);
+    }
+
+
     /**
      * Sets the new view and sends a VIEW_CHANGE event up and down the stack. If the view is a MergeView (subclass
      * of View), then digest will be non-null and has to be set before installing the view.
      */
     public void installView(View new_view, Digest digest) {
-        if(digest != null)
-            mergeDigest(digest);
-        installView(new_view);
-    }
-
-
-    /**
-     * Sets the new view and sends a VIEW_CHANGE event up and down the stack.
-     */
-    public void installView(View new_view) {
         Address coord;
         int rc;
         ViewId vid=new_view.getVid();
         Vector mbrs=new_view.getMembers();
+
+        // Discards view with id lower than our own. Will be installed without check if first view
+        if(view_id != null) {
+            rc=vid.compareTo(view_id);
+            if(rc <= 0) {
+                if(log.isWarnEnabled() && rc < 0) // only scream if view is smaller, silently discard same views
+                    log.warn("[" + local_addr + "] received view < current view;" +
+                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
+                return;
+            }
+        }
+
+        if(digest != null)
+            mergeDigest(digest);
 
         if(log.isDebugEnabled()) log.debug("[local_addr=" + local_addr + "] view is " + new_view);
         if(stats) {
@@ -438,17 +447,6 @@ public class GMS extends Protocol {
         }
 
         ack_collector.handleView(new_view);
-
-        // Discards view with id lower than our own. Will be installed without check if first view
-        if(view_id != null) {
-            rc=vid.compareTo(view_id);
-            if(rc <= 0) {
-                if(log.isTraceEnabled() && rc < 0) // only scream if view is smaller, silently discard same views
-                    log.trace("[" + local_addr + "] received view < current view;" +
-                            " discarding it (current vid: " + view_id + ", new vid: " + vid + ')');
-                return;
-            }
-        }
 
         ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
 
@@ -600,7 +598,7 @@ public class GMS extends Protocol {
     }
 
     boolean startFlush(View new_view, long timeout){       
-    	Map atts = new HashMap();
+    	Map<String,Object> atts = new HashMap<String,Object>();
     	atts.put("view", new_view);
     	atts.put("timeout",new Long(timeout));
     	return (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
@@ -671,6 +669,7 @@ public class GMS extends Protocol {
                         return null; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
+                        down_prot.down(new Event(Event.SUSPEND_STABLE, 20000));
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
@@ -682,10 +681,12 @@ public class GMS extends Protocol {
 
                     case GmsHeader.INSTALL_MERGE_VIEW:
                         impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
+                        down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
 
                     case GmsHeader.CANCEL_MERGE:
                         impl.handleMergeCancelled(hdr.merge_id);
+                        down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
 
                     default:
@@ -1178,7 +1179,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.106 2007/06/04 15:15:42 belaban Exp $
+     * @version $Id: GMS.java,v 1.107 2007/06/08 08:31:56 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1385,7 +1386,7 @@ public class GMS extends Protocol {
                     if(requests.size() > 1)
                         log.error("more than one VIEW request to process, ignoring the others");
                     try {
-                        if (flushProtocolInStack){
+                        if(flushProtocolInStack) {
                            boolean successfulFlush = startFlush(firstReq.view,4000);
                            if (successfulFlush){
                                if(log.isTraceEnabled())
