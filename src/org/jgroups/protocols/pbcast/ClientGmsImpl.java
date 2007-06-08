@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.46 2007/06/06 12:15:51 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.47 2007/06/08 08:27:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.46 $
+ * @version $Revision: 1.47 $
  */
 public class ClientGmsImpl extends GmsImpl {
     private final Vector  initial_mbrs=new Vector(11);
@@ -92,7 +92,7 @@ public class ClientGmsImpl extends GmsImpl {
                     log.trace("could not determine coordinator from responses " + initial_mbrs);
 
                 // so the member to become singleton member (and thus coord) is the first of all clients
-                Set clients=new TreeSet(); // sorted
+                Set<Address> clients=new TreeSet<Address>(); // sorted
                 clients.add(mbr); // add myself again (was removed by findInitialMembers())
                 for(int i=0; i < initial_mbrs.size(); i++) {
                     PingRsp pingRsp=(PingRsp)initial_mbrs.elementAt(i);
@@ -102,7 +102,7 @@ public class ClientGmsImpl extends GmsImpl {
                 }
                 if(log.isTraceEnabled())
                     log.trace("clients to choose new coord from are: " + clients);
-                Address new_coord=(Address)clients.iterator().next();
+                Address new_coord=clients.iterator().next();
                 if(new_coord.equals(mbr)) {
                     if(log.isTraceEnabled())
                         log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
