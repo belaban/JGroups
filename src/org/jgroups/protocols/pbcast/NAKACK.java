@@ -1,9 +1,6 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
@@ -37,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.142 2007/06/06 11:02:33 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.143 2007/06/08 08:35:24 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -471,7 +468,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 Vector<Address> mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                adjustReceivers(false);
+                // adjustReceivers(false);
                 break;
 
             case Event.VIEW_CHANGE:
@@ -774,7 +771,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         LinkedList<Message> list=new LinkedList<Message>();
         NakReceiverWindow win=xmit_table.get(original_sender);
         for(long i=first_seqno; i <= last_seqno; i++) {
-
             msg=win != null? win.get(i) : null;
             if(msg == null || msg == NakReceiverWindow.NULL_MSG) {
                 if(log.isErrorEnabled()) {
@@ -1169,7 +1165,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Address sender;
         Digest.Entry val;
         NakReceiverWindow win;
-        long initial_seqno, low;
+        long highest_delivered_seqno, low_seqno;
 
         for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
@@ -1182,21 +1178,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 continue;
             }
-            initial_seqno=val.getHighestDeliveredSeqno();
-            low=val.getLow();
+            highest_delivered_seqno=val.getHighestDeliveredSeqno();
+            low_seqno=val.getLow();
 
             win=xmit_table.get(sender);
             if(win == null) {
-                win=createNakReceiverWindow(sender, initial_seqno, low);
+                win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
                 xmit_table.putIfAbsent(sender, win);
             }
             else {
-                if(win.getHighestReceived() < initial_seqno) {
-                    win.reset();
-                    xmit_table.remove(sender);
-                    win=createNakReceiverWindow(sender, initial_seqno, low);
-                    xmit_table.put(sender, win);
-                }
+                // don't touch existing entries as merges should be between non-overlapping memberships !
             }
         }
     }
@@ -1359,7 +1350,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             // delete *delivered* msgs that are stable
             if(recv_win != null) {
-                // System.out.println("STABLE(" + sender + ", " + high_seqno_delivered + "): " + recv_win.toString() + "\n");
                 recv_win.stable(high_seqno_delivered);  // delete all messages with seqnos <= seqno
             }
         }
