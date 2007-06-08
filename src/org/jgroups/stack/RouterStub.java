@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * Client stub that talks to a remote GossipRouter
  * 
  * @author Bela Ban
- * @version $Id: RouterStub.java,v 1.29 2007/05/10 04:40:47 vlada Exp $
+ * @version $Id: RouterStub.java,v 1.30 2007/06/08 08:25:14 belaban Exp $
  */
 public class RouterStub {
 	
@@ -67,7 +67,7 @@ public class RouterStub {
 		bind_addr = bindAddress;
 	}
 	
-	public synchronized boolean isConnected() {
+	public boolean isConnected() {
 		return connectionState == STATUS_CONNECTED;
 	}
 
@@ -175,14 +175,14 @@ public class RouterStub {
 		}
 	}
 
-	public synchronized DataInputStream getInputStream() throws IOException {
+	public DataInputStream getInputStream() throws IOException {
 		if(!isConnected()){
 			throw new IOException("InputStream is closed");
 		}
 		return input;
 	}
 	
-	private synchronized void connectionStateChanged(int newState) {
+	private void connectionStateChanged(int newState) {
 		boolean notify = connectionState != newState;
 		connectionState = newState;
 		if(notify && conn_listener != null){
