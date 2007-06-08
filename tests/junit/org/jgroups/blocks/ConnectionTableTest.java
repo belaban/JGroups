@@ -19,7 +19,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.5 2007/06/08 16:11:46 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.6 2007/06/08 16:16:38 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -86,6 +86,7 @@ public class ConnectionTableTest extends TestCase {
         Util.sleep(500);
 
         queue.clear(); // does this release the taker thread ?
+        // taker.interrupt();
         Util.sleep(200);
         assertFalse("taker: " + taker, taker.isAlive());
     }
