@@ -20,12 +20,15 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.List;
 import java.security.MessageDigest;
+import java.lang.management.ThreadMXBean;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
 
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.123 2007/05/10 16:21:26 belaban Exp $
+ * @version $Id: Util.java,v 1.124 2007/06/11 06:55:23 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -928,6 +931,29 @@ public class Util {
             if(exit)
                 System.exit(0);
         }
+    }
+
+
+    public static String dumpThreads() {
+        StringBuilder sb=new StringBuilder();
+        ThreadMXBean bean=ManagementFactory.getThreadMXBean();
+        long[] ids=bean.getAllThreadIds();
+        ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
+        for(int i=0; i < threads.length; i++) {
+            ThreadInfo info=threads[i];
+            if(info == null)
+                continue;
+            sb.append(info.getThreadName()).append(":\n");
+            StackTraceElement[] stack_trace=info.getStackTrace();
+            for(int j=0; j < stack_trace.length; j++) {
+                StackTraceElement el=stack_trace[j];
+                sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
+                sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
+                sb.append("\n");
+            }
+            sb.append("\n\n");
+        }
+        return sb.toString();
     }
 
 
