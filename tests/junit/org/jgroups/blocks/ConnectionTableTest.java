@@ -9,9 +9,6 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadMXBean;
-import java.lang.management.ThreadInfo;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -19,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.6 2007/06/08 16:16:38 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.7 2007/06/11 07:09:43 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -73,11 +70,10 @@ public class ConnectionTableTest extends TestCase {
             public void run() {
                 try {
                     System.out.println("taking an element from the queue");
-                    Object obj=queue.take();
+                    queue.take();
                     System.out.println("clear");
                 }
                 catch(InterruptedException e) {
-                    e.printStackTrace();
                 }
             }
         };
@@ -86,8 +82,7 @@ public class ConnectionTableTest extends TestCase {
         Util.sleep(500);
 
         queue.clear(); // does this release the taker thread ?
-        // taker.interrupt();
-        Util.sleep(200);
+        taker.interrupt();
         assertFalse("taker: " + taker, taker.isAlive());
     }
 
@@ -146,33 +141,9 @@ public class ConnectionTableTest extends TestCase {
         assertEquals(0, table2.getNumConnections());
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        assertEquals("threads:\n" + dumpThreads(), active_threads, current_active_threads);
+        assertEquals("threads:\n" + Util.dumpThreads(), active_threads, current_active_threads);
     }
 
-
-
-
-    private String dumpThreads() {
-        StringBuilder sb=new StringBuilder();
-        ThreadMXBean bean=ManagementFactory.getThreadMXBean();
-        long[] ids=bean.getAllThreadIds();
-        ThreadInfo[] threads=bean.getThreadInfo(ids, 20);
-        for(int i=0; i < threads.length; i++) {
-            ThreadInfo info=threads[i];
-            if(info == null)
-                continue;
-            sb.append(info.getThreadName()).append(":\n");
-            StackTraceElement[] stack_trace=info.getStackTrace();
-            for(int j=0; j < stack_trace.length; j++) {
-                StackTraceElement el=stack_trace[j];
-                sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
-                sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
-                sb.append("\n");
-            }
-            sb.append("\n\n");
-        }
-        return sb.toString();
-    }
 
 
     public static Test suite() {
