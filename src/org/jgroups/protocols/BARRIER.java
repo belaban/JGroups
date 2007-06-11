@@ -5,12 +5,14 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.Properties;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.locks.*;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * All messages up the stack have to go through a barrier (read lock, RL). By default, the barrier is open.
@@ -20,7 +22,7 @@ import java.util.concurrent.locks.*;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.5 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.6 2007/06/11 08:14:39 belaban Exp $
  */
 
 public class BARRIER extends Protocol {
@@ -31,9 +33,10 @@ public class BARRIER extends Protocol {
     /** signals to waiting threads that the barrier is open again */
     Condition barrier_opened=lock.newCondition();
     Condition no_msgs_pending=lock.newCondition();
-    Set<Thread> in_flight_threads=new HashSet<Thread>();
+    ConcurrentMap<Thread,Object> in_flight_threads=new ConcurrentHashMap<Thread,Object>();
     Future barrier_opener_future=null;
     TimeScheduler timer;
+    private static final Object NULL=new Object();
 
 
     public String getName() {
@@ -98,7 +101,7 @@ public class BARRIER extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 Thread current_thread=Thread.currentThread();
-                in_flight_threads.add(current_thread);
+                in_flight_threads.put(current_thread, NULL);
                 if(barrier_closed.get()) {
                     lock.lock();
                     try {
@@ -121,7 +124,7 @@ public class BARRIER extends Protocol {
                 finally {
                     lock.lock();
                     try {
-                        if(in_flight_threads.remove(current_thread) &&
+                        if(in_flight_threads.remove(current_thread) == NULL &&
                                 in_flight_threads.isEmpty() &&
                                 barrier_closed.get()) {
                             no_msgs_pending.signalAll();
@@ -143,11 +146,11 @@ public class BARRIER extends Protocol {
 
 
     private void closeBarrier() {
+        if(!barrier_closed.compareAndSet(false, true))
+            return; // barrier was already closed
+
         lock.lock();
         try {
-            if(!barrier_closed.compareAndSet(false, true))
-                return; // barrier was already closed
-
             // wait until all pending (= in-progress) msgs have returned
             in_flight_threads.remove(Thread.currentThread());
             while(!in_flight_threads.isEmpty()) {
