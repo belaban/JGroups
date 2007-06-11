@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.31 2007/04/27 07:59:20 belaban Exp $
+// $Id: TCPPING.java,v 1.32 2007/06/11 06:15:34 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -33,10 +33,10 @@ import java.net.UnknownHostException;
  * @author Bela Ban
  */
 public class TCPPING extends Discovery {
-    int             port_range=1;        // number of ports to be probed for initial membership
+    int                 port_range=1;        // number of ports to be probed for initial membership
 
     /** List<IpAddress> */
-    ArrayList       initial_hosts=null;  // hosts to be contacted for the initial membership
+    List<Address>       initial_hosts=null;  // hosts to be contacted for the initial membership
     final static String name="TCPPING";
 
 
@@ -45,6 +45,15 @@ public class TCPPING extends Discovery {
         return name;
     }
 
+    /**
+     * Returns the list of initial hosts as configured by the user via XML. Note that the returned list is mutable, so
+     * careful with changes !
+     * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
+     * set Properties() has been called
+     */
+    public List<Address> getInitialHosts() {
+        return initial_hosts;
+    }
 
 
     public boolean setProperties(Properties props) {
@@ -112,11 +121,11 @@ public class TCPPING extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
-    private ArrayList createInitialHosts(String l) throws UnknownHostException {
+    private List<Address> createInitialHosts(String l) throws UnknownHostException {
         StringTokenizer tok=new StringTokenizer(l, ",");
         String          t;
         IpAddress       addr;
-        ArrayList       retval=new ArrayList();
+        List<Address>   retval=new ArrayList<Address>();
 
         while(tok.hasMoreTokens()) {
             try {
