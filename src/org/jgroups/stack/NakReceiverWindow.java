@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.45 2007/05/29 14:14:05 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.46 2007/06/11 20:18:14 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -363,6 +363,11 @@ public class NakReceiverWindow {
                     xmit_table.remove(i);
                 }
             }
+            // remove all seqnos below seqno from retransmission
+            for(long i=low; i <= seqno; i++) {
+                retransmitter.remove(i);
+            }
+
             highest_stability_seqno=Math.max(highest_stability_seqno, seqno);
             low=Math.max(low, seqno);
         }
