@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.142 2007/06/06 11:02:30 belaban Exp $
+ * @version $Id: UDP.java,v 1.143 2007/06/11 13:26:35 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -458,7 +458,7 @@ public class UDP extends TP implements Runnable {
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
             if(tos > 0) {
                 try {
-                    mcast_sock.setTrafficClass(tos); // high throughput
+                    mcast_sock.setTrafficClass(tos);
                 }
                 catch(SocketException e) {
                     log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
