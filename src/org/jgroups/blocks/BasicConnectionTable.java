@@ -657,8 +657,8 @@ public abstract class BasicConnectionTable {
                if(senderThread == null || !senderThread.isAlive()) {
                    senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender local_addr=" + local_addr + " [" + getSockAddress() + "]");
                    senderThread.setDaemon(true);
-                   senderThread.start();
                    is_it_running=true;
+                   senderThread.start();
                    if(log.isTraceEnabled())
                        log.trace("sender thread started: " + senderThread);
                }
