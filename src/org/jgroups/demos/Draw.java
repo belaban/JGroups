@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.43 2007/03/09 09:34:12 belaban Exp $
+// $Id: Draw.java,v 1.44 2007/06/12 08:18:20 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -277,7 +277,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     public void setState(byte[] state) {
         panel.setState(state);
-
     }
 
 
@@ -401,15 +400,15 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
         public DrawPanel(boolean use_state) {
             if(use_state)
-                state=new LinkedHashMap();
+                state=new LinkedHashMap<Point,Color>();
             else
                 state=null;
-            createOffscreenImage();
+            createOffscreenImage(false);
             addMouseMotionListener(this);
             addComponentListener(new ComponentAdapter() {
                 public void componentResized(ComponentEvent e) {
                     if(getWidth() <= 0 || getHeight() <= 0) return;
-                    createOffscreenImage();
+                    createOffscreenImage(false);
                 }
             });
         }
@@ -433,10 +432,11 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         public void setState(byte[] buf) {
             synchronized(state) {
                 try {
-                    Map tmp=(Map)Util.objectFromByteBuffer(buf);
+                    Map<Point,Color> tmp=(Map<Point,Color>)Util.objectFromByteBuffer(buf);
                     state.clear();
                     state.putAll(tmp);
                     System.out.println("received state: " + buf.length + " bytes, " + state.size() + " entries");
+                    createOffscreenImage(true);
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -485,8 +485,12 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
 
-        final void createOffscreenImage() {
+        final void createOffscreenImage(boolean discard_image) {
             d=getSize();
+            if(discard_image) {
+                img=null;
+                imgsize=null;
+            }
             if(img == null || imgsize == null || imgsize.width != d.width || imgsize.height != d.height) {
                 img=createImage(d.width, d.height);
                 if(img != null) {
