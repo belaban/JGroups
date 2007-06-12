@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5
 =========================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.8 2007/06/12 10:08:01 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.9 2007/06/12 10:08:52 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
@@ -54,7 +54,7 @@ An OOB message is reliably transmitted, that is if the network drops it, JGroups
 defined by the stack is ignored for an OOB messages, e.g. in the above case, M3 and M5 can be delivered out of sequence
 with regard to the other messages.
 
-This is perfect for messages like heartbeats or diecovery requests or responses, which do not need to be delivered in
+This is perfect for messages like heartbeats or discovery requests or responses, which do not need to be delivered in
 FIFO order with respect to other messages from the same sender. If a message is tagged as OOB, it will be handled by the
 OOB thread pool rather than the regular thread pool.
 
