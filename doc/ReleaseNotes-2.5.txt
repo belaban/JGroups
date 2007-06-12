@@ -1,8 +1,8 @@
 
-Release Notes JGroups 2.5 beta 1
-================================
+Release Notes JGroups 2.5
+=========================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.6 2007/03/21 09:42:32 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.7 2007/06/12 08:58:50 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
