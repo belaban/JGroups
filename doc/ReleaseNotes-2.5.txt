@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5
 =========================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.7 2007/06/12 08:58:50 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.8 2007/06/12 10:08:01 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
@@ -156,10 +156,25 @@ Manual
 The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
 
 
+Performance
+-----------
+Preliminary results (same setup as described at http://www.jgroups.org/javagroupsnew/perf/Report.html):
+
+- 6 nodes, 5M 5K messages with tcp.xml, 500 threads/sender: 15'105 msgs/sec/node, throughput=75.52MB/sec
+
+- 6 nodes, 5M 5K messages with tcp.xml: 17'832 msgs/sec/node, throughput=89.16MB/sec
+
+- 8 nodes, 5M 1K messages with tcp.xml: 63'513 msgs/sec/node, throughput=63.51MB/sec
+
+- 8 nodes, 5M 5K messages with tcp.xml: 16'600 msgs/sec/node, throughput=83MB/sec
+
+We'll present more comprehensive performance numbers in 2.6.
+
+
 Bela Ban, Kreuzlingen, Switzerland, March 21 2007
 
 
 [1] Reliable communication in presence of failures.
-    Kenneth P..Birman, Thomas.A.Joseph.
+    Kenneth P. Birman, Thomas A.Joseph.
     ACM Transactions on Computer Systems, Vol. 5, No. 1, Feb. 1987
 
