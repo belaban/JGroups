@@ -58,7 +58,7 @@
                 view_bundling="true" view_ack_collection_timeout="5000"/>
     <FC max_credits="20000000" min_threshold="0.10"/>
     <FRAG2 frag_size="60000"/>
-    <pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/>
+    <pbcast.STREAMING_STATE_TRANSFER />
     <!-- <pbcast.STATE_TRANSFER/> -->
     <pbcast.FLUSH timeout="0"/>
 </config>

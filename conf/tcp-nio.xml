@@ -7,7 +7,7 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: tcp-nio.xml,v 1.6 2007/05/08 00:25:29 belaban Exp $
+    version: $Id: tcp-nio.xml,v 1.7 2007/06/13 17:33:36 vlada Exp $
 -->
 <config>
     <TCP_NIO
@@ -71,6 +71,6 @@
     <FC max_credits="2000000"
         min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />
-    <pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/>
+    <pbcast.STREAMING_STATE_TRANSFER/>
     <!-- pbcast.STATE_TRANSFER/> -->
 </config>
