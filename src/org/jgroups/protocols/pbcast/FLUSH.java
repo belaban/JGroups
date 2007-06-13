@@ -182,7 +182,7 @@ public class FLUSH extends Protocol {
 
 	public boolean startFlush(long timeout) {		
 		Map atts = new HashMap();	           	
-     	atts.put("timeout",4000);
+     	atts.put("timeout", new Long(4000));
 		return startFlush(new Event(Event.SUSPEND,atts), 3, false);
 	}
 
