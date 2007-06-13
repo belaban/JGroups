@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.124 2007/06/11 06:55:23 belaban Exp $
+ * @version $Id: Util.java,v 1.125 2007/06/13 11:40:16 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1638,11 +1638,14 @@ public class Util {
 
     public static InputStream getResourceAsStream(String name, Class clazz) {
         ClassLoader loader;
+        InputStream retval=null;
 
         try {
             loader=Thread.currentThread().getContextClassLoader();
             if(loader != null) {
-                return loader.getResourceAsStream(name);
+                retval=loader.getResourceAsStream(name);
+                if(retval != null)
+                    return retval;
             }
         }
         catch(Throwable t) {
@@ -1652,12 +1655,15 @@ public class Util {
             try {
                 loader=clazz.getClassLoader();
                 if(loader != null) {
-                    return loader.getResourceAsStream(name);
+                    retval=loader.getResourceAsStream(name);
+                    if(retval != null)
+                        return retval;
                 }
             }
             catch(Throwable t) {
             }
         }
+        
         try {
             loader=ClassLoader.getSystemClassLoader();
             if(loader != null) {
@@ -1667,7 +1673,7 @@ public class Util {
         catch(Throwable t) {
         }
 
-        return null;
+        return retval;
     }
 
 
