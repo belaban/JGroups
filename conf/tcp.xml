@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.14 2007/05/08 00:24:56 belaban Exp $
+    version: $Id: tcp.xml,v 1.15 2007/06/13 17:33:36 vlada Exp $
 -->
 <config>
     <TCP start_port="7800"
@@ -61,6 +61,6 @@
     <FC max_credits="2000000"
         min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />
-    <pbcast.STREAMING_STATE_TRANSFER use_reading_thread="true"/>
+    <pbcast.STREAMING_STATE_TRANSFER/>
     <!-- <pbcast.STATE_TRANSFER/> -->  
 </config>

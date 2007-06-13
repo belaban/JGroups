@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.6 2007/05/08 00:28:03 belaban Exp $
+  version: $Id: sfc.xml,v 1.7 2007/06/13 17:33:36 vlada Exp $
 -->
 
 <config>
@@ -64,7 +64,7 @@
                 view_bundling="true" />
     <SFC max_credits="10000000"/>
     <FRAG2 frag_size="60000" />
-    <!--pbcast.STREAMING_STATE_TRANSFER use_flush="true" use_reading_thread="true"/-->
+    <!--pbcast.STREAMING_STATE_TRANSFER/-->
     <pbcast.STATE_TRANSFER  />
     <!-- pbcast.FLUSH  /-->
 </config>
