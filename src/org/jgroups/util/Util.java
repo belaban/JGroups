@@ -26,7 +26,7 @@ import EDU.oswego.cs.dl.util.concurrent.Sync;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.105.2.3 2007/04/12 20:24:45 bstansberry Exp $
+ * @version $Id: Util.java,v 1.105.2.4 2007/06/13 11:47:32 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1669,11 +1669,14 @@ public class Util {
 
     public static InputStream getResourceAsStream(String name, Class clazz) {
         ClassLoader loader;
+        InputStream retval=null;
 
         try {
             loader=Thread.currentThread().getContextClassLoader();
             if(loader != null) {
-                return loader.getResourceAsStream(name);
+                retval=loader.getResourceAsStream(name);
+                if(retval != null)
+                    return retval;
             }
         }
         catch(Throwable t) {
@@ -1683,12 +1686,15 @@ public class Util {
             try {
                 loader=clazz.getClassLoader();
                 if(loader != null) {
-                    return loader.getResourceAsStream(name);
+                    retval=loader.getResourceAsStream(name);
+                    if(retval != null)
+                        return retval;
                 }
             }
             catch(Throwable t) {
             }
         }
+
         try {
             loader=ClassLoader.getSystemClassLoader();
             if(loader != null) {
@@ -1698,7 +1704,7 @@ public class Util {
         catch(Throwable t) {
         }
 
-        return null;
+        return retval;
     }
 
 
