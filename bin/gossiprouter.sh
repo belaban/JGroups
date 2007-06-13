@@ -33,5 +33,5 @@ if [ "$cygwin" = "true" ]; then
 fi
 
 #-Djava.util.logging.config.file=./java.logging.config
-java -classpath $CLASSPATH $JAVA_OPTS org.jgroups.stack.GossipRouter -port 5556
+java -classpath $CLASSPATH $JAVA_OPTS org.jgroups.stack.GossipRouter -port 12001 $*
 
