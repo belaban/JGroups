@@ -85,6 +85,8 @@ public class FLUSH extends Protocol {
 	 * <code>isBlockingFlushDown</code>
 	 */
 	private long timeout = 8000;
+	
+	private boolean enable_reconciliation = true;
 
 	@GuardedBy ("sharedLock")
 	private boolean receivedFirstView = false;
@@ -126,6 +128,7 @@ public class FLUSH extends Protocol {
 		super.setProperties(props);
 
 		timeout = Util.parseLong(props, "timeout", timeout);
+		enable_reconciliation = Util.parseBoolean(props, "enable_reconciliation", enable_reconciliation);
 		String str = props.getProperty("auto_flush_conf");
 		if (str != null) {
 			log.warn("auto_flush_conf has been deprecated and its value will be ignored");
@@ -747,7 +750,7 @@ public class FLUSH extends Protocol {
 						+ ",completed " + flushCompleted + ",flushCompleted "
 						+ flushCompletedMap.keySet());
 			
-			needsReconciliationPhase = flushCompleted && hasVirtualSynchronyGaps();
+			needsReconciliationPhase = enable_reconciliation && flushCompleted && hasVirtualSynchronyGaps();
 			if (needsReconciliationPhase){
 				
 				Digest d = findHighestSequences();			
