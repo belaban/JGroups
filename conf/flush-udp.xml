@@ -18,7 +18,7 @@
          max_bundle_timeout="30"
          use_incoming_packet_handler="true"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
-         enable_bundling="false"
+         enable_bundling="true"
          enable_diagnostics="true"
 
          use_concurrent_stack="true"
