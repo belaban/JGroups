@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.15 2007/06/13 17:33:36 vlada Exp $
+    version: $Id: tcp.xml,v 1.16 2007/06/15 12:32:55 belaban Exp $
 -->
 <config>
     <TCP start_port="7800"
@@ -28,7 +28,7 @@
          thread_pool.keep_alive_time="5000"
          thread_pool.queue_enabled="false"
          thread_pool.queue_max_size="100"
-         thread_pool.rejection_policy="Run"
+         thread_pool.rejection_policy="discard"
 
          oob_thread_pool.enabled="true"
          oob_thread_pool.min_threads="1"
@@ -36,7 +36,7 @@
          oob_thread_pool.keep_alive_time="5000"
          oob_thread_pool.queue_enabled="false"
          oob_thread_pool.queue_max_size="100"
-         oob_thread_pool.rejection_policy="Run"/>
+         oob_thread_pool.rejection_policy="discard"/>
                          
     <TCPPING timeout="3000"
              initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
