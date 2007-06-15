@@ -21,7 +21,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.16 2007/05/10 16:32:27 belaban Exp $
+ * @version $Id: SFC.java,v 1.17 2007/06/15 11:42:16 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -230,10 +230,11 @@ public class SFC extends Protocol {
                             }
                         }
                         catch(InterruptedException e) {
-                            if(log.isWarnEnabled())
-                                log.warn("thread was interrupted", e);
-                            Thread.currentThread().interrupt(); // pass the exception on to the  caller
-                            return null;
+                            // bela June 16 2007: http://jira.jboss.com/jira/browse/JGRP-536
+//                            if(log.isWarnEnabled())
+//                                log.warn("thread was interrupted", e);
+//                            Thread.currentThread().interrupt(); // pass the exception on to the  caller
+//                            return null;
                         }
                     }
 
