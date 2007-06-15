@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.85 2007/05/10 16:31:29 belaban Exp $
+ * @version $Id: FC.java,v 1.86 2007/06/15 11:42:16 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -466,7 +466,10 @@ public class FC extends Protocol {
                         }
                         catch(InterruptedException e) {
                             // set the interrupted flag again, so the caller's thread can handle the interrupt as well
-                            Thread.currentThread().interrupt();
+
+                            // bela June 15 2007: don't do this as this will trigger an infinite loop !!
+                            // (http://jira.jboss.com/jira/browse/JGRP-536)
+                            // Thread.currentThread().interrupt();
                         }
                     }
                     // if(!running) // don't send the message if not running anymore
