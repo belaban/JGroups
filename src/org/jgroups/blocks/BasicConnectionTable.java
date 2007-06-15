@@ -16,6 +16,8 @@ import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Shared class for TCP connection tables.
@@ -308,7 +310,7 @@ public abstract class BasicConnectionTable {
        DataInputStream  in=null;                  // for receiving messages
        Thread           receiverThread=null;      // thread for receiving messages
        Address          peer_addr=null;           // address of the 'other end' of the connection
-       final Object     send_mutex=new Object();  // serialize sends
+       final Lock       send_lock=new ReentrantLock();  // serialize send()
        long             last_access=System.currentTimeMillis(); // last time a message was sent or received
 
        /** Bounded queue of data to be sent to the peer of this connection */
@@ -435,36 +437,48 @@ public abstract class BasicConnectionTable {
                }
            }
            else
-               _send(data, offset, length);
+               _send(data, offset, length, true);
        }
 
 
-       private void _send(byte[] data, int offset, int length) {
-           synchronized(send_mutex) {
+       /**
+        * Sends data using the 'out' output stream of the socket
+        * @param data
+        * @param offset
+        * @param length
+        * @param acquire_lock
+        */
+       private void _send(byte[] data, int offset, int length, boolean acquire_lock) {
+           if(acquire_lock)
+               send_lock.lock();
+
+           try {
+               doSend(data, offset, length);
+               updateLastAccessed();
+           }
+           catch(IOException io_ex) {
+               if(log.isWarnEnabled())
+                   log.warn("peer closed connection, trying to re-send msg");
                try {
                    doSend(data, offset, length);
                    updateLastAccessed();
                }
-               catch(IOException io_ex) {
-                   if(log.isWarnEnabled())
-                       log.warn("peer closed connection, trying to re-send msg");
-                   try {
-                       doSend(data, offset, length);
-                       updateLastAccessed();
-                   }
-                   catch(IOException io_ex2) {
-                       if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
-                   }
-                   catch(Exception ex2) {
-                       if(log.isErrorEnabled()) log.error("exception is " + ex2);
-                   }
+               catch(IOException io_ex2) {
+                   if(log.isErrorEnabled()) log.error("2nd attempt to send data failed too");
                }
-               catch(InterruptedException iex) {
-                   Thread.currentThread().interrupt(); // set interrupt flag again
+               catch(Exception ex2) {
+                   if(log.isErrorEnabled()) log.error("exception is " + ex2);
                }
-               catch(Throwable ex) {
-                   if(log.isErrorEnabled()) log.error("exception is " + ex);
-               }
+           }
+           catch(InterruptedException iex) {
+               Thread.currentThread().interrupt(); // set interrupt flag again
+           }
+           catch(Throwable ex) {
+               if(log.isErrorEnabled()) log.error("exception is " + ex);
+           }
+           finally {
+               if(acquire_lock)
+                   send_lock.unlock();
            }
        }
 
@@ -696,7 +710,8 @@ public abstract class BasicConnectionTable {
                        data=send_queue.take();
                        if(data == null)
                            continue;
-                       _send(data, 0, data.length);
+                       // we don't need to serialize access to 'out' as we're the only thread sending messages
+                       _send(data, 0, data.length, false);
                    }
                    catch(InterruptedException e) {
                        ;
