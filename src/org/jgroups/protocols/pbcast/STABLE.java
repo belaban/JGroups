@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.83 2007/06/02 03:43:08 belaban Exp $
+ * @version $Id: STABLE.java,v 1.84 2007/06/17 05:16:35 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -633,11 +633,20 @@ public class STABLE extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("sending stable msg " + d.printHighestDeliveredSeqnos());
             num_stable_msgs_sent++;
-            Message msg=new Message(); // mcast message
+            final Message msg=new Message(); // mcast message
             msg.setFlag(Message.OOB);
             StableHeader hdr=new StableHeader(StableHeader.STABLE_GOSSIP, d);
             msg.putHeader(name, hdr);
-            down_prot.down(new Event(Event.MSG, msg));
+
+            Runnable r=new Runnable() {
+                public void run() {
+                    down_prot.down(new Event(Event.MSG, msg));
+                }
+            };
+
+            // Run in a separate thread so we don't potentially block (http://jira.jboss.com/jira/browse/JGRP-532)
+            timer.execute(r);
+            // down_prot.down(new Event(Event.MSG, msg));
         }
     }
 
