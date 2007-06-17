@@ -24,9 +24,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
-    final HashMap       conns=new HashMap();       // keys: Addresses (peer address), values: Connection
+    final HashMap       conns=new HashMap();         // keys: Addresses (peer address), values: Connection
     Receiver            receiver=null;
-    boolean             use_send_queues=true;
+    boolean             use_send_queues=true;        // max number of messages in a send queue
+    int                 send_queue_size=10000;
     InetAddress         bind_addr=null;
     Address             local_addr=null;             // bind_addr + port of srv_sock
     int                 srv_port=7800;
@@ -125,7 +126,15 @@ public abstract class BasicConnectionTable {
 
    public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
 
-   public void start() throws Exception {
+    public int getSendQueueSize() {
+        return send_queue_size;
+    }
+
+    public void setSendQueueSize(int send_queue_size) {
+        this.send_queue_size=send_queue_size;
+    }
+
+    public void start() throws Exception {
        running=true;
    }
 
@@ -340,7 +349,7 @@ public abstract class BasicConnectionTable {
            this.peer_addr=peer_addr;
 
            if(use_send_queues) {
-               send_queue=new LinkedBlockingQueue<byte[]>(1000);
+               send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);
                sender=new Sender();
            }
 
