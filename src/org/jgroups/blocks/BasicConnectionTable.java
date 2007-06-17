@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public abstract class BasicConnectionTable {
     final HashMap       conns=new HashMap();         // keys: Addresses (peer address), values: Connection
     Receiver            receiver=null;
-    boolean             use_send_queues=true;        // max number of messages in a send queue
+    boolean             use_send_queues=false;       // max number of messages in a send queue
     int                 send_queue_size=10000;
     InetAddress         bind_addr=null;
     Address             local_addr=null;             // bind_addr + port of srv_sock
