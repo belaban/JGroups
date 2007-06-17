@@ -38,6 +38,7 @@ public abstract class BasicTCP extends TP {
     protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
     /** Use separate send queues for each connection */
     boolean                use_send_queues=true;
+    int                    send_queue_size=10000; // max number of messages in a send queue
     int                    recv_buf_size=150000;
     int                    send_buf_size=150000;
     int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
@@ -130,6 +131,12 @@ public abstract class BasicTCP extends TP {
         if(str != null) {
             use_send_queues=Boolean.valueOf(str).booleanValue();
             props.remove("use_send_queues");
+        }
+
+        str=props.getProperty("send_queue_size");
+        if(str != null) {
+            send_queue_size=Integer.parseInt(str);
+            props.remove("send_queue_size");
         }
 
         str=props.getProperty("tcp_nodelay");
