@@ -21,7 +21,7 @@ import java.util.Properties;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.25 2007/06/06 11:02:30 belaban Exp $
+ * @version $Id: MPING.java,v 1.26 2007/06/18 05:43:12 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket     mcast_sock=null;
@@ -123,7 +123,7 @@ public class MPING extends PING implements Runnable {
 
         str=props.getProperty("bind_to_all_interfaces");
         if(str != null) {
-            bind_to_all_interfaces=new Boolean(str).booleanValue();
+            bind_to_all_interfaces=Boolean.parseBoolean(str);
             props.remove("bind_to_all_interfaces");
         }
 
