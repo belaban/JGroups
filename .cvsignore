@@ -4,6 +4,6 @@ classes
 dist
 eclipse-bin
 *.iml
-jgroups.ipr
-jgroups.iws
+*.ipr
+*.iws
 eclipse-classes
