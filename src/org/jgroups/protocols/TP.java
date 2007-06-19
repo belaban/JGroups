@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+
 
 
 /**
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.77.2.4 2007/05/30 07:08:24 belaban Exp $
+ * @version $Id: TP.java,v 1.77.2.5 2007/06/19 10:50:59 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -59,7 +59,7 @@ public abstract class TP extends Protocol {
     boolean         use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages
-     * @deprecated  Use {@link receive_on_all_interfaces} instead */
+     * @deprecated  Use {@link #receive_on_all_interfaces} instead */
     boolean         bind_to_all_interfaces=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
