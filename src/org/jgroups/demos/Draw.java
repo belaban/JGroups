@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.44 2007/06/12 08:18:20 belaban Exp $
+// $Id: Draw.java,v 1.45 2007/06/19 10:27:39 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -480,6 +480,8 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                 synchronized(state) {
                     state.clear();
                     state.putAll(new_state);
+                    System.out.println("read state: " + state.size() + " entries");
+                    createOffscreenImage(true);
                 }
             }
         }
