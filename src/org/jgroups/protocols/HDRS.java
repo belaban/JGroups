@@ -1,10 +1,13 @@
-// $Id: HDRS.java,v 1.5 2007/01/12 14:20:18 belaban Exp $
+// $Id: HDRS.java,v 1.6 2007/06/20 10:41:02 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.Header;
 import org.jgroups.stack.Protocol;
+
+import java.util.Map;
 
 
 /**
@@ -14,12 +17,30 @@ public class HDRS extends Protocol {
     public String  getName() {return "HDRS";}
 
 
-    private void printMessage(Message msg, String label) {
-        System.out.println("------------------------- " + label + " ----------------------");
-        System.out.println(msg);
-        msg.printObjectHeaders();
-        System.out.println("--------------------------------------------------------------");
+    private static void printMessage(Message msg, String label) {
+        StringBuilder sb=new StringBuilder();
+        sb.append(label).append(":\n");
+        Map<String, Header> hdrs=msg.getHeaders();
+        sb.append(print(msg, hdrs));
+        System.out.println(sb);
     }
+
+    private static String print(Message msg, Map<String, Header> hdrs) {
+        StringBuilder sb=new StringBuilder();
+        int hdrs_size=0;
+        for(Map.Entry<String,Header> entry: hdrs.entrySet()) {
+            String name=entry.getKey();
+            Header hdr=entry.getValue();
+            int size=hdr.size();
+            hdrs_size+=size;
+            sb.append(name).append(": ").append(" ").append(size).append(" bytes\n");
+        }
+        sb.append("headers=").append(hdrs_size).append(", total msg size=").append(msg.size());
+        sb.append(", msg payload=").append(msg.getLength()).append("\n");
+        return sb.toString();
+    }
+
+
 
 
     public Object up(Event evt) {
