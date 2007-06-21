@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.37 2007/06/21 10:52:17 belaban Exp $
+// $Id: ENCRYPT.java,v 1.38 2007/06/21 11:41:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -668,8 +668,9 @@ public class ENCRYPT extends Protocol {
                 if (!suppliedKey) {
                     drainUpQueue();
                 }
-                // try and decrypt the message
-                Message tmpMsg=decryptMessage(symDecodingCipher, msg);
+                // try and decrypt the message - we need to copy msg as we modify its
+                // buffer (http://jira.jboss.com/jira/browse/JGRP-538)
+                Message tmpMsg=decryptMessage(symDecodingCipher, msg.copy());
                 if (tmpMsg != null){
                     if(log.isTraceEnabled())
                         log.trace("decrypted message " + tmpMsg);
@@ -753,7 +754,7 @@ public class ENCRYPT extends Protocol {
         //synchronized(upLock){
         Event tmp =null;
         while ((tmp = (Event)upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
-            Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
+            Message msg = decryptMessage(symDecodingCipher, ((Message)tmp.getArg()).copy());
 
             if (msg != null){
                 if(log.isTraceEnabled()){
