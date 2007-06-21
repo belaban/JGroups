@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.36 2007/05/01 10:55:10 belaban Exp $
+// $Id: ENCRYPT.java,v 1.37 2007/06/21 10:52:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -179,7 +179,7 @@ public class ENCRYPT extends Protocol {
       * GetAlgorithm: Get the algorithm name from "algorithm/mode/padding"
       *  taken m original ENCRYPT file
       */
-    private String getAlgorithm(String s)
+    private static String getAlgorithm(String s)
     {
         int index = s.indexOf("/");
         if (index == -1)
@@ -753,17 +753,15 @@ public class ENCRYPT extends Protocol {
         //synchronized(upLock){
         Event tmp =null;
         while ((tmp = (Event)upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
-            if (tmp != null){
-                Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
+            Message msg = decryptMessage(symDecodingCipher, (Message)tmp.getArg());
 
-                if (msg != null){
-                    if(log.isTraceEnabled()){
-                        log.trace("passing up message from drain " + msg);
-                    }
-                    passItUp(new Event(Event.MSG, msg));
-                }else{
-                    log.warn("discarding message in queue up drain as cannot decode it");
+            if (msg != null){
+                if(log.isTraceEnabled()){
+                    log.trace("passing up message from drain " + msg);
                 }
+                passItUp(new Event(Event.MSG, msg));
+            } else{
+                log.warn("discarding message in queue up drain as cannot decode it");
             }
         }
     }
@@ -833,13 +831,13 @@ public class ENCRYPT extends Protocol {
     }
 
 
-    private Message _decrypt(Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
+    private static Message _decrypt(Cipher cipher, Message msg, boolean decrypt_entire_msg) throws Exception {
         if(!decrypt_entire_msg) {
-            msg.setBuffer(cipher.doFinal(msg.getBuffer()));
+            msg.setBuffer(cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
             return msg;
         }
 
-        byte[] decrypted_msg=cipher.doFinal(msg.getBuffer());
+        byte[] decrypted_msg=cipher.doFinal(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
         Message ret=(Message)Util.streamableFromByteBuffer(Message.class, decrypted_msg);
         if(ret.getDest() == null)
             ret.setDest(msg.getDest());
@@ -1046,7 +1044,7 @@ public class ENCRYPT extends Protocol {
 
         if(encrypt_entire_message) {
             byte[] serialized_msg=Util.streamableToByteBuffer(msg);
-            byte[] encrypted_msg=encryptMessage(symEncodingCipher, serialized_msg);
+            byte[] encrypted_msg=encryptMessage(symEncodingCipher, serialized_msg, 0, serialized_msg.length);
             Message tmp=msg.copy(false); // we need to preserve headers which may already be present
             tmp.setBuffer(encrypted_msg);
             tmp.setSrc(local_addr);
@@ -1061,7 +1059,7 @@ public class ENCRYPT extends Protocol {
 
         // copy neeeded because same message (object) may be retransmitted -> no double encryption
         Message msgEncrypted = msg.copy(false);
-        msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getBuffer()));
+        msgEncrypted.setBuffer(encryptMessage(symEncodingCipher, msg.getRawBuffer(), msg.getOffset(), msg.getLength()));
         passItDown(new Event(Event.MSG, msgEncrypted));
     }
 
@@ -1073,9 +1071,9 @@ public class ENCRYPT extends Protocol {
      * @return
      * @throws Exception
      */
-    private byte[] encryptMessage(Cipher cipher, byte[] plain) throws Exception
+    private static byte[] encryptMessage(Cipher cipher, byte[] plain, int offset, int length) throws Exception
     {
-        return cipher.doFinal(plain);
+        return cipher.doFinal(plain, offset, length);
     }
 
 
@@ -1126,7 +1124,7 @@ public class ENCRYPT extends Protocol {
       * simple helper method so we can see the format of the byte arrays in a
       * readable form could be better to use Base64 but will do for now
       */
-    private String formatArray(byte[] array)
+    private static String formatArray(byte[] array)
     {
         StringBuilder buf=new StringBuilder();
         for (int i = 0; i < array.length; i++)
@@ -1212,7 +1210,7 @@ public class ENCRYPT extends Protocol {
     /**
      * @return Returns the symProvider.
      */
-    protected String getSymProvider()
+    protected static String getSymProvider()
     {
         return symProvider;
     }
