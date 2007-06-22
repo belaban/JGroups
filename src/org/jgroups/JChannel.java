@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.133 2007/06/06 16:27:11 belaban Exp $
+ * @version $Id: JChannel.java,v 1.134 2007/06/22 14:56:40 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -968,9 +968,11 @@ public class JChannel extends Channel {
              * viewAccepted() callback invoked on this thread
              * (see Event.VIEW_CHANGE handling below)
              */
-            if(connected == false) {
-                connected=true;
-            }
+
+            // not good: we are only connected when we returned from connect() - bela June 22 2007
+            //            if(connected == false) {
+            //                connected=true;
+            //            }
             break;
 
         case Event.CONFIG:
@@ -1164,8 +1166,11 @@ public class JChannel extends Channel {
             try {
                 mq.add(evt);
             }
+            catch(QueueClosedException queue_closed) {
+                ; // ignore
+            }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception adding event " + evt + " to message queue", e);
+                if(log.isWarnEnabled()) log.warn("exception adding event " + evt + " to message queue", e);
             }
         }
 
