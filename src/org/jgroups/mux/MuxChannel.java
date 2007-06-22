@@ -1,6 +1,7 @@
 package org.jgroups.mux;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.stack.ProtocolStack;
 
 import java.io.Serializable;
@@ -11,7 +12,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.32 2007/04/19 14:08:04 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.33 2007/06/22 14:58:57 belaban Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -77,7 +78,7 @@ public class MuxChannel extends JChannel {
      * @return The service view (list of nodes on which this service is running)
      */
     public View getView() {
-	return closed || !connected ? null : mux.getServiceView(id);
+        return closed || !connected ? null : mux.getServiceView(id);
     }
 
     /** Returns the JGroups view of a cluster, e.g. if we have nodes A, B and C, then the view will
@@ -123,8 +124,8 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
-	/*make sure the channel is not closed*/
-	checkClosed();
+        /*make sure the channel is not closed*/
+        checkClosed();
 
         /*if we already are connected, then ignore this*/
         if(connected) {
@@ -144,14 +145,14 @@ public class MuxChannel extends JChannel {
     public synchronized void disconnect() {
         try {
             closed=false;
-            connected=false;
+            setConnected(false);
             factory.disconnect(this);
         }
         catch(Throwable t) {
             log.error("disconnecting channel failed", t);
         }
         closed=false;
-        connected=false;
+        setConnected(false);
         notifyChannelDisconnected(this);
     }
 
@@ -164,12 +165,12 @@ public class MuxChannel extends JChannel {
     public synchronized void close() {
         try {
             closed=true;
-            connected=false;
+            setConnected(false);
             factory.close(this);
         }
         finally {
             closed=true;
-            connected=false;
+            setConnected(false);
             closeMessageQueue(true);
         }
 
@@ -179,7 +180,7 @@ public class MuxChannel extends JChannel {
     protected void _close(boolean disconnect, boolean close_mq) {
         super._close(disconnect, close_mq);
         closed=!ch.isOpen();
-        connected=ch.isConnected();
+        setConnected(ch.isConnected());
         notifyChannelClosed(this);
     }
 
@@ -189,7 +190,7 @@ public class MuxChannel extends JChannel {
         }
         finally {
             closed=true;
-            connected=false;
+            setConnected(false);
             closeMessageQueue(true);
         }
     }
