@@ -19,11 +19,11 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.56 2007/05/08 18:47:04 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.57 2007/06/22 14:54:40 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
-    private final Map<String,MuxChannel> services=new HashMap<String,MuxChannel>();
+    private final ConcurrentMap<String,MuxChannel> services=new ConcurrentHashMap<String,MuxChannel>();
     private final JChannel channel;
     static final Log log=LogFactory.getLog(Multiplexer.class);
     static final String SEPARATOR="::";
@@ -88,11 +88,11 @@ public class Multiplexer implements UpHandler {
      * @return The set of service IDs
      */
     public Set getApplicationIds() {
-        return services != null? services.keySet() : null;
+        return services != null? Collections.unmodifiableSet(services.keySet()) : null;
     }
 
     public Set<String> getServiceIds() {
-        return services != null? services.keySet() : null;
+        return services != null? Collections.unmodifiableSet(services.keySet()) : null;
     }
 
 
@@ -161,41 +161,41 @@ public class Multiplexer implements UpHandler {
         return rc;
     }
     
-    protected ExecutorService createThreadPool() {
-	int min_threads = 1, max_threads = 4;
-	long keep_alive = 30000;
+    protected static ExecutorService createThreadPool() {
+        int min_threads = 1, max_threads = 4;
+        long keep_alive = 30000;
 
-	ThreadFactory factory = new ThreadFactory() {
-	    int num = 1;
+        ThreadFactory factory = new ThreadFactory() {
+            int num = 1;
 
-	    ThreadGroup mux_threads = new ThreadGroup(Util.getGlobalThreadGroup(),
-						      "MultiplexerThreads");
+            ThreadGroup mux_threads = new ThreadGroup(Util.getGlobalThreadGroup(),
+                                                      "MultiplexerThreads");
 
-	    public Thread newThread(Runnable command) {
-		Thread ret = new Thread(mux_threads, command, "Multiplexer-" + num++);
-		ret.setDaemon(true);
-		return ret;
-	    }
-	};
+            public Thread newThread(Runnable command) {
+                Thread ret = new Thread(mux_threads, command, "Multiplexer-" + num++);
+                ret.setDaemon(true);
+                return ret;
+            }
+        };
 
-	min_threads = Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
-	max_threads = Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
-	keep_alive = Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
+        min_threads = Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
+        max_threads = Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
+        keep_alive = Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
 
-	return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
-				      new SynchronousQueue(), factory,
-				      new ThreadPoolExecutor.CallerRunsPolicy());
+        return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
+                                      new SynchronousQueue(), factory,
+                                      new ThreadPoolExecutor.CallerRunsPolicy());
     }
     
     protected void shutdownThreadPool() {
-	if(thread_pool != null && !thread_pool.isShutdown()){
-	    thread_pool.shutdownNow();
-	    try{
-		thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME,
-					     TimeUnit.MILLISECONDS);
-	    }catch(InterruptedException e){
-	    }
-	}
+        if(thread_pool != null && !thread_pool.isShutdown()){
+            thread_pool.shutdownNow();
+            try{
+                thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME,
+                                             TimeUnit.MILLISECONDS);
+            }catch(InterruptedException e){
+            }
+        }
     }
 
     /** Fetches the app states for all service IDs in keys.
@@ -378,7 +378,7 @@ public class Multiplexer implements UpHandler {
             case Event.BLOCK:
                 blocked=true;
                 if(!services.isEmpty()) {
-                    passToAllMuxChannels(evt);
+                    passToAllMuxChannels(evt, true); // do block
                 }
                 return null;
 
@@ -403,12 +403,10 @@ public class Multiplexer implements UpHandler {
 
     public Channel createMuxChannel(JChannelFactory f, String id, String stack_name) throws Exception {
         MuxChannel ch;
-        synchronized(services) {
-            if(services.containsKey(id))
-                throw new Exception("service ID \"" + id + "\" is already registered, cannot register duplicate ID");
-            ch=new MuxChannel(f, channel, id, stack_name, this);
-            services.put(id, ch);
-        }
+        if(services.containsKey(id))
+            throw new Exception("service ID \"" + id + "\" is already registered, cannot register duplicate ID");
+        ch=new MuxChannel(f, channel, id, stack_name, this);
+        services.put(id, ch);
         return ch;
     }
 
@@ -416,20 +414,23 @@ public class Multiplexer implements UpHandler {
 
 
     private void passToAllMuxChannels(Event evt) {
+        passToAllMuxChannels(evt, false);
+    }
+
+
+    private void passToAllMuxChannels(Event evt, boolean block) {
         String service_name;
         MuxChannel ch;
         for(Map.Entry<String,MuxChannel> entry: services.entrySet()) {
             service_name=entry.getKey();
             ch=entry.getValue();
             // these events are directly delivered, don't get added to any queue
-            passToMuxChannel(ch, evt, fifo_queue, null, service_name, false);
+            passToMuxChannel(ch, evt, fifo_queue, null, service_name, block);
         }
     }
 
     public MuxChannel remove(String id) {
-        synchronized(services) {
-            return services.remove(id);
-        }
+        return services.remove(id);
     }
 
 
@@ -437,80 +438,70 @@ public class Multiplexer implements UpHandler {
     /** Closes the underlying JChannel if all MuxChannels have been disconnected */
     public void disconnect() {
         boolean all_disconnected=true;
-        synchronized(services) {
-            for(MuxChannel mux_ch: services.values()) {
-                if(mux_ch.isConnected()) {
-                    all_disconnected=false;
-                    break;
-                }
+        for(MuxChannel mux_ch: services.values()) {
+            if(mux_ch.isConnected()) {
+                all_disconnected=false;
+                break;
             }
-            if(all_disconnected) {
-                if(log.isTraceEnabled()) {
-                    log.trace("disconnecting underlying JChannel as all MuxChannels are disconnected");
-                }
-                channel.disconnect();
+        }
+        if(all_disconnected) {
+            if(log.isTraceEnabled()) {
+                log.trace("disconnecting underlying JChannel as all MuxChannels are disconnected");
             }
+            channel.disconnect();
         }
     }
 
 
     public void unregister(String appl_id) {
-        synchronized(services) {
-            services.remove(appl_id);
-        }
+        services.remove(appl_id);
     }
 
     public boolean close() {
         boolean all_closed=true;
-        synchronized(services) {
-            for(MuxChannel mux_ch: services.values()) {
-                if(mux_ch.isOpen()) {
-                    all_closed=false;
-                    break;
-                }
+        for(MuxChannel mux_ch: services.values()) {
+            if(mux_ch.isOpen()) {
+                all_closed=false;
+                break;
             }
-            if(all_closed) {
-                if(log.isTraceEnabled()) {
-                    log.trace("closing underlying JChannel as all MuxChannels are closed");
-                }
-                channel.close();
-                services.clear();
-                shutdownThreadPool();
-            }
-            return all_closed;
         }
+        if(all_closed) {
+            if(log.isTraceEnabled()) {
+                log.trace("closing underlying JChannel as all MuxChannels are closed");
+            }
+            channel.close();
+            services.clear();
+            shutdownThreadPool();
+        }
+        return all_closed;
     }
 
     public void closeAll() {
-        synchronized(services) {
-            for(MuxChannel mux_ch: services.values()) {
-                mux_ch.setConnected(false);
-                mux_ch.setClosed(true);
-                mux_ch.closeMessageQueue(true);
-            }
+        for(MuxChannel mux_ch: services.values()) {
+            mux_ch.setConnected(false);
+            mux_ch.setClosed(true);
+            mux_ch.closeMessageQueue(true);
         }
         shutdownThreadPool();
     }
 
     public boolean shutdown() {
         boolean all_closed=true;
-        synchronized(services) {
-            for(MuxChannel mux_ch: services.values()) {
-                if(mux_ch.isOpen()) {
-                    all_closed=false;
-                    break;
-                }
+        for(MuxChannel mux_ch: services.values()) {
+            if(mux_ch.isOpen()) {
+                all_closed=false;
+                break;
             }
-            if(all_closed) {
-                if(log.isTraceEnabled()) {
-                    log.trace("shutting down underlying JChannel as all MuxChannels are closed");
-                }
-                channel.shutdown();
-                services.clear();
-                shutdownThreadPool();
-            }
-            return all_closed;
         }
+        if(all_closed) {
+            if(log.isTraceEnabled()) {
+                log.trace("shutting down underlying JChannel as all MuxChannels are closed");
+            }
+            channel.shutdown();
+            services.clear();
+            shutdownThreadPool();
+        }
+        return all_closed;
     }
 
 
@@ -762,6 +753,9 @@ public class Multiplexer implements UpHandler {
         List    hosts, hosts_copy;
         boolean added=false;
 
+
+
+
         // discard if we sent this message
         if(received && host != null && local_addr != null && local_addr.equals(host)) {
             return;
@@ -997,13 +991,7 @@ public class Multiplexer implements UpHandler {
     }
 
     public void addServiceIfNotPresent(String id, MuxChannel ch) {
-        MuxChannel tmp;
-        synchronized(services) {
-            tmp=services.get(id);
-            if(tmp == null) {
-                services.put(id, ch);
-            }
-        }
+        services.putIfAbsent(id, ch);
     }
 
 
