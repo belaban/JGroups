@@ -1,8 +1,6 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -42,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.34 2007/05/31 18:00:30 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.35 2007/06/22 15:29:59 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -275,6 +273,46 @@ public class FlushTest extends ChannelTestBase
 	   String[] names = createApplicationNames(4);
 	   testVsyncGap(names);	   
    }
+
+
+
+    public void testVirtualSynchrony() throws Exception {
+        c1=createChannel(CONFIG);
+        Cache cache_1=new Cache(c1, "cache-1");
+        c1.connect("bla");
+
+        c2=createChannel(CONFIG);
+        Cache cache_2=new Cache(c2, "cache-2");
+        c2.connect("bla");
+        assertEquals("view: " + c1.getView(), 2, c2.getView().size());
+
+        // start adding messages
+        flush(c1, 5000); // flush all pending message out of the system so everyone receives them
+
+        for(int i=1; i <= 20; i++) {
+            if(i % 2 == 0) {
+                cache_1.put("key-" + i, Boolean.TRUE); // even numbers
+            }
+            else {
+                cache_2.put("key-" + i, Boolean.TRUE); // odd numbers
+            }
+        }
+
+        flush(c1, 5000);
+        System.out.println("cache_1 (" + cache_1.size() + " elements): " + cache_1 + "\ncache_2 (" + cache_2.size() + " elements): " + cache_2);
+        assertEquals(cache_1.size(), cache_2.size());
+        assertEquals(20, cache_1.size());
+    }
+
+    private static void flush(Channel channel, long timeout) {
+        if(channel.flushSupported()) {
+            boolean success=channel.startFlush(timeout, true);
+            System.out.println("startFlush(): " + success);
+            assertTrue(success);
+        }
+        else
+            Util.sleep(timeout);
+    }
    
    private void testVsyncGap(String names[])
    {
@@ -909,6 +947,161 @@ public class FlushTest extends ChannelTestBase
          log.info("-- MySimpleReplier[" + channel.getLocalAddress() + "]: unblock()");
       }
    }
+
+
+
+    private static class Cache extends ExtendedReceiverAdapter {
+        protected final Map data ;
+        Channel ch;
+        String name;
+
+        public Cache(Channel ch, String name) {
+        	this.data=new HashMap();
+            this.ch=ch;
+            this.name=name;
+            this.ch.setReceiver(this);
+        }
+
+        protected Object get(Object key) {
+            synchronized(data) {
+                return data.get(key);
+            }
+        }
+
+        protected  void put(Object key, Object val) throws Exception {
+            Object[] buf=new Object[2];
+            buf[0]=key; buf[1]=val;
+            Message msg=new Message(null, null, buf);
+            ch.send(msg);
+        }
+
+        protected int size() {
+            synchronized(data) {
+                return data.size();
+            }
+        }
+
+
+        public void receive(Message msg) {
+            Object[] modification=(Object[])msg.getObject();
+            Object key=modification[0];
+            Object val=modification[1];
+            synchronized(data) {
+                // System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
+                data.put(key,val);
+            }
+        }
+
+        public byte[] getState() {
+            byte[] state=null;
+            synchronized(data) {
+                try {
+                    state=Util.objectToByteBuffer(data);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+            return state;
+        }
+
+        public byte[] getState(String state_id) {
+            return getState();
+        }
+
+
+        public void setState(byte[] state) {
+            Map m;
+            try {
+                m=(Map)Util.objectFromByteBuffer(state);
+                synchronized(data) {
+                    data.clear();
+                    data.putAll(m);
+                }
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+            }
+        }
+
+        public void setState(String state_id, byte[] state) {
+            setState(state);
+        }
+
+        public void getState(OutputStream ostream){
+            ObjectOutputStream oos = null;
+            try{
+               oos = new ObjectOutputStream(ostream);
+               synchronized(data){
+                  oos.writeObject(data);
+               }
+               oos.flush();
+            }
+            catch (IOException e){}
+            finally{
+               try{
+                  if(oos != null)
+                     oos.close();
+               }
+               catch (IOException e){
+                  System.err.println(e);
+               }
+            }
+        }
+
+        public void getState(String state_id, OutputStream ostream) {
+           getState(ostream);
+        }
+
+        public void setState(InputStream istream) {
+           ObjectInputStream ois = null;
+           try {
+               ois = new ObjectInputStream(istream);
+               Map m = (Map)ois.readObject();
+               synchronized (data)
+               {
+                  data.clear();
+                  data.putAll(m);
+               }
+
+           } catch (Exception e) {}
+           finally{
+               try {
+                   if(ois != null)
+                      ois.close();
+               } catch (IOException e) {
+                   System.err.println(e);
+               }
+           }
+        }
+
+        public void setState(String state_id, InputStream istream) {
+           setState(istream);
+        }
+
+        public void clear() {
+            synchronized (data){
+               data.clear();
+            }
+        }
+
+
+        public void viewAccepted(View new_view) {
+            log("view is " + new_view);
+        }
+
+        public String toString() {
+        	synchronized(data){
+        		return data.toString();
+        	}
+        }
+
+        private void log(String msg) {
+            System.out.println("-- [" + name + "] " + msg);
+        }
+
+    }
    
    public static Test suite()
    {      
