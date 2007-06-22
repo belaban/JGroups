@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.36 2007/06/22 14:57:59 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.37 2007/06/22 15:22:51 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -266,6 +266,46 @@ public class MultiplexerTest extends ChannelTestBase {
 
         assertEquals("Centurion", c1.get("bike"));
         assertEquals("Centurion", c1_repl.get("bike"));
+    }
+
+
+    public void testVirtualSynchrony() throws Exception {
+        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        c1=new Cache(ch1, "cache-1");
+        ch1.connect("bla");
+
+        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
+        ch1_repl.connect("bla");
+        assertEquals("view: " + ch1.getView(), 2, ch1.getView().size());
+
+        // start adding messages
+        flush(ch1, 5000); // flush all pending message out of the system so everyone receives them
+
+        for(int i=1; i <= 20; i++) {
+            if(i % 2 == 0) {
+                c1.put("key-" + i, Boolean.TRUE); // even numbers
+            }
+            else {
+                c1_repl.put("key-" + i, Boolean.TRUE); // odd numbers
+            }
+        }
+
+        flush(ch1, 5000);
+        System.out.println("c1 (" + c1.size() + " elements): " + c1 + "\nc1_repl (" + c1_repl.size() + " elements): " + c1_repl);
+        assertEquals(c1.size(), c1_repl.size());
+        assertEquals(20, c1.size());
+    }
+
+
+    private static void flush(Channel channel, long timeout) {
+        if(channel.flushSupported()) {
+            boolean success=channel.startFlush(timeout, true);
+            System.out.println("startFlush(): " + success);
+            assertTrue(success);
+        }
+        else
+            Util.sleep(timeout);
     }
 
     public void testReplicationWithReconnect() throws Exception {
