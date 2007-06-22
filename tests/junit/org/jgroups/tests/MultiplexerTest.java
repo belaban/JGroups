@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.35 2007/04/30 14:25:32 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.36 2007/06/22 14:57:59 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -226,8 +226,11 @@ public class MultiplexerTest extends ChannelTestBase {
 
         // System.out.println("****** [c1] PUT(name, Bela) *******");
         c1.put("name", "Bela");
-        if(ch1.flushSupported())
-            ch1.startFlush(5000, true);
+        if(ch1.flushSupported()) {
+            boolean success=ch1.startFlush(5000, true);
+            System.out.println("startFlush(): " + success);
+            assertTrue(success);
+        }
         else
             Util.sleep(10000);
 
@@ -242,8 +245,11 @@ public class MultiplexerTest extends ChannelTestBase {
         c1.put("id", new Long(322649));
         c1_repl.put("hobbies", "biking");
         c1_repl.put("bike", "Centurion");
-         if(ch1.flushSupported())
-            ch1.startFlush(5000, true);
+         if(ch1.flushSupported()) {
+             boolean success=ch1.startFlush(5000, true);
+             System.out.println("startFlush(): " + success);
+             assertTrue(success);
+         }
         else
             Util.sleep(10000);
 
@@ -836,7 +842,7 @@ public class MultiplexerTest extends ChannelTestBase {
             Object key=modification[0];
             Object val=modification[1];
             synchronized(data) {
-                // System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
+                System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
                 data.put(key,val);
             }
         }
