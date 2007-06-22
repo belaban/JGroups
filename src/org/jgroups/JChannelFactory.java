@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.38 2007/02/28 08:45:08 belaban Exp $
+// $Id: JChannelFactory.java,v 1.39 2007/06/22 14:57:05 belaban Exp $
 
 package org.jgroups;
 
@@ -21,10 +21,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -363,7 +360,7 @@ public class JChannelFactory implements ChannelFactory {
                 if(entry.multiplexer != null) {
                     try {
                         Address addr=entry.channel.getLocalAddress();                   
-                        if(entry.channel.flushSupported()){                           
+                        if(entry.channel.flushSupported()){
                            boolean successfulFlush = entry.channel.startFlush(3000, false);
                            if(!successfulFlush && log.isWarnEnabled()){
                               log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
@@ -380,10 +377,10 @@ public class JChannelFactory implements ChannelFactory {
                           entry.channel.stopFlush();
                     }
                 }                
-            }           
+            }
+            ch.setClosed(false);
+            ch.setConnected(true);
         }
-        ch.setClosed(false);
-        ch.setConnected(true);
     }
 
 
@@ -532,9 +529,9 @@ public class JChannelFactory implements ChannelFactory {
                 if(!entry.channel.isOpen())
                     entry.channel.open();
             }
+            ch.setClosed(false);
+            ch.setConnected(false); //  needs to be connected next
         }
-        ch.setClosed(false);
-        ch.setConnected(false); //  needs to be connected next
     }
 
 

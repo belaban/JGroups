@@ -3,16 +3,16 @@ package org.jgroups.tests;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.util.Util;
 import org.jgroups.mux.MuxChannel;
+import org.jgroups.util.Util;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.12 2006/12/04 19:29:04 vlada Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.13 2007/06/22 14:58:27 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -304,22 +304,27 @@ public class MultiplexerViewTest extends ChannelTestBase {
         Util.sleep(500);
         v=c1.getView();
         assertEquals(2, v.size());
+
         c3.disconnect();
+        boolean connected=c3.isConnected();
+        System.out.println("c3.isConnected() after c3.disconnect(): " + connected);
+        assertFalse("c3 must be disconnected because we called disconnect()", connected);
 
         Util.sleep(500);
         v=c1.getView();
         assertEquals(1, v.size());
 
         c3.connect("foobar");
-        Util.sleep(500);
+        Util.sleep(2000);
         v=c1.getView();
-        assertEquals(2, v.size());
+        assertEquals("v is " + v, 2, v.size());
 
         c4.close();
         Util.sleep(500);
         v=c1.getView();
         assertEquals(2, v.size());
     }
+
 
 
 
