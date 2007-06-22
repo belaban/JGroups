@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.5 2007/06/07 10:06:59 belaban Exp $
+// $Id: ChannelTest.java,v 1.6 2007/06/22 14:55:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import org.jgroups.*;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.5 2007/06/07 10:06:59 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.6 2007/06/22 14:55:20 belaban Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -154,6 +154,15 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
+    public void testIsConnectedOnFirstViewChange() throws Exception {
+        Channel ch2=createChannel();
+        ConnectedChecker tmp=new ConnectedChecker(ch2);
+        ch2.setReceiver(tmp);
+        ch2.connect("bla");
+
+        assertFalse(tmp.isConnected());
+        ch2.close();
+    }
 
 
     public void testReceiveTimeout() throws ChannelException, TimeoutException {
@@ -184,7 +193,27 @@ public class ChannelTest extends ChannelTestBase {
         }
     }
 
-     private static class ViewChecker extends ReceiverAdapter {
+
+    private static class ConnectedChecker extends ReceiverAdapter {
+        boolean connected=false;
+
+        public ConnectedChecker(Channel channel) {
+            this.channel=channel;
+        }
+
+        final Channel channel;
+
+        public boolean isConnected() {
+            return connected;
+        }
+
+        public void viewAccepted(View new_view) {
+            connected=channel.isConnected();
+            System.out.println("ConnectedChecker: channel.isConnected()=" + channel.isConnected() + ", view=" + new_view);
+        }
+    }
+
+    private static class ViewChecker extends ReceiverAdapter {
         final Channel channel;
         boolean success=true;
         String reason="";
