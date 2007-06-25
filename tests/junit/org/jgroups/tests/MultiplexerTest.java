@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.38 2007/06/25 06:41:53 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.39 2007/06/25 07:56:20 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -239,6 +239,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertEquals(1, c1.size());
         assertEquals("Bela", c1.get("name"));
 
+        Util.sleep(500); // async repl - wait until replicated to other member
         assertEquals(1, c1_repl.size());
         assertEquals("Bela", c1_repl.get("name"));
 
@@ -284,15 +285,16 @@ public class MultiplexerTest extends ChannelTestBase {
 
         for(int i=1; i <= 20; i++) {
             if(i % 2 == 0) {
-                c1.put("key-" + i, Boolean.TRUE); // even numbers
+                c1.put(i, Boolean.TRUE); // even numbers
             }
             else {
-                c1_repl.put("key-" + i, Boolean.TRUE); // odd numbers
+                c1_repl.put(i, Boolean.TRUE); // odd numbers
             }
         }
 
         flush(ch1, 5000);
-        System.out.println("c1 (" + c1.size() + " elements): " + c1 + "\nc1_repl (" + c1_repl.size() + " elements): " + c1_repl);
+        System.out.println("c1 (" + c1.size() + " elements):\n" + c1.printKeys() +
+                "\nc1_repl (" + c1_repl.size() + " elements):\n" + c1_repl.printKeys());
         assertEquals(c1.size(), c1_repl.size());
         assertEquals(20, c1.size());
     }
@@ -851,7 +853,7 @@ public class MultiplexerTest extends ChannelTestBase {
         String name;
 
         public Cache(Channel ch, String name) {
-        	this.data=new HashMap();
+        	this.data=new TreeMap();
             this.ch=ch;
             this.name=name;
             this.ch.setReceiver(this);
@@ -866,6 +868,9 @@ public class MultiplexerTest extends ChannelTestBase {
         protected  void put(Object key, Object val) throws Exception {
             Object[] buf=new Object[2];
             buf[0]=key; buf[1]=val;
+            synchronized(data) {
+                data.put(key, val);
+            }
             Message msg=new Message(null, null, buf);
             ch.send(msg);
         }
@@ -878,6 +883,8 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
         public void receive(Message msg) {
+            if(ch.getLocalAddress().equals(msg.getSrc()))
+                return;
             Object[] modification=(Object[])msg.getObject();
             Object key=modification[0];
             Object val=modification[1];
@@ -990,6 +997,11 @@ public class MultiplexerTest extends ChannelTestBase {
         	synchronized(data){
         		return data.toString();
         	}            
+        }
+
+
+        public String printKeys() {
+            return data.keySet().toString();
         }
 
         private void log(String msg) {
