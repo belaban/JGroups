@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.25 2007/05/16 20:22:07 belaban Exp $
+// $Id: GroupRequest.java,v 1.26 2007/06/25 11:41:12 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.25 $
+ * @version $Revision: 1.26 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -608,10 +608,12 @@ public class GroupRequest implements RspCollector, Command {
      * to keep the list bounded ('max_suspects' number of elements)
      */
     private void addSuspect(Address suspected_mbr) {
-        if(!suspects.contains(suspected_mbr)) {
-            suspects.addElement(suspected_mbr);
-            while(suspects.size() >= max_suspects && !suspects.isEmpty())
-                suspects.remove(0); // keeps queue bounded
+        synchronized(suspects) {
+            if(!suspects.contains(suspected_mbr)) {
+                suspects.addElement(suspected_mbr);
+                while(suspects.size() >= max_suspects && !suspects.isEmpty())
+                    suspects.remove(0); // keeps queue bounded
+            }
         }
     }
 
