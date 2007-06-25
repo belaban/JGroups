@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.41 2007/06/25 11:12:10 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.42 2007/06/25 11:28:28 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -892,14 +892,14 @@ public class MultiplexerTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();
-            System.out.println("-- received " + num);
-            Util.sleepRandom(200);
             synchronized(nums) {
+                System.out.println("-- received " + num);
                 nums.add(num);
                 if(nums.size() >= expected) {
                     nums.notifyAll();
                 }
             }
+            Util.sleepRandom(200);
         }
     }
 
