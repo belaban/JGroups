@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.125 2007/06/13 11:40:16 belaban Exp $
+ * @version $Id: Util.java,v 1.126 2007/06/25 20:55:26 vlada Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -955,12 +955,30 @@ public class Util {
         }
         return sb.toString();
     }
+    
+    public static boolean interruptAndWaitToDie(Thread t) {
+		return interruptAndWaitToDie(t, Global.THREAD_SHUTDOWN_WAIT_TIME);
+	}
+    
+    public static boolean interruptAndWaitToDie(Thread t, long timeout) {
+		if(t == null)
+			throw new IllegalArgumentException("Thread can not be null");
+
+		t.interrupt(); // interrupts the sleep()
+		try{
+			t.join(timeout);
+		}catch(InterruptedException e){
+			Thread.currentThread().interrupt(); // set interrupt flag again
+		}
+		return t.isAlive();
+	}
 
 
     /**
-     * Debugging method used to dump the content of a protocol queue in a condensed form. Useful
-     * to follow the evolution of the queue's content in time.
-     */
+	 * Debugging method used to dump the content of a protocol queue in a
+	 * condensed form. Useful to follow the evolution of the queue's content in
+	 * time.
+	 */
     public static String dumpQueue(Queue q) {
         StringBuilder sb=new StringBuilder();
         LinkedList values=q.values();
