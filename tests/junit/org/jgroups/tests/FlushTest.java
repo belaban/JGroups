@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.35 2007/06/22 15:29:59 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.36 2007/06/25 09:43:29 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -182,12 +182,12 @@ public class FlushTest extends ChannelTestBase
       {
     	 int muxFactoryCount = 2; 
          names = createMuxApplicationNames(1,muxFactoryCount); 
-         testChannels(names,muxFactoryCount,false,muxFactoryCount);
+         _testChannels(names,muxFactoryCount,false,muxFactoryCount);
       }
       else
       {
          names = createApplicationNames(4);
-         testChannels(names,false,4);
+         _testChannels(names,false,4);
       }           
    }
    
@@ -205,7 +205,7 @@ public class FlushTest extends ChannelTestBase
       if(isMuxChannelUsed())
       {
          names = createMuxApplicationNames(4,muxFactoryCount);
-         testChannels(names,muxFactoryCount,false,new ChannelAssertable(1));
+         _testChannels(names,muxFactoryCount,false,new ChannelAssertable(1));
       }                 
    }  
    
@@ -224,7 +224,7 @@ public class FlushTest extends ChannelTestBase
       if(isMuxChannelUsed())
       {
          names = createMuxApplicationNames(2,muxFactoryCount);
-         testChannels(names,muxFactoryCount,false,new ChannelAssertable(2));
+         _testChannels(names,muxFactoryCount,false,new ChannelAssertable(2));
       }                 
    }
 
@@ -242,12 +242,12 @@ public class FlushTest extends ChannelTestBase
       {
     	 int muxFactoryCount = 2;
          names = createMuxApplicationNames(1,muxFactoryCount); 
-         testChannels(names,muxFactoryCount,true,muxFactoryCount);
+         _testChannels(names,muxFactoryCount,true,muxFactoryCount);
       }
       else
       {
          names = createApplicationNames(4);
-         testChannels(names,true,4);
+         _testChannels(names,true,4);
       }      
    }
    
@@ -264,14 +264,14 @@ public class FlushTest extends ChannelTestBase
       if(isMuxChannelUsed())
       {
          names = createMuxApplicationNames(2,2);
-         testChannels(names,2,true,2);
+         _testChannels(names,2,true,2);
       }         
    }
    
    public void testVirtualSync()
    {
 	   String[] names = createApplicationNames(4);
-	   testVsyncGap(names);	   
+	   _testVsyncGap(names);
    }
 
 
@@ -314,7 +314,7 @@ public class FlushTest extends ChannelTestBase
             Util.sleep(timeout);
     }
    
-   private void testVsyncGap(String names[])
+   private void _testVsyncGap(String names[])
    {
       int count = names.length;
 
@@ -329,7 +329,7 @@ public class FlushTest extends ChannelTestBase
          for (int i = 0; i < count; i++)
          {
            
-        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false,true);                           
+        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false);
             channels.add(channel);                                                                           
             sleepThread(2000);
          }
@@ -434,7 +434,7 @@ public class FlushTest extends ChannelTestBase
       }      
    }
    
-   private void testChannels(String names[], int muxFactoryCount, boolean useTransfer,Assertable a)
+   private void _testChannels(String names[], int muxFactoryCount, boolean useTransfer,Assertable a)
    {
       int count = names.length;
 
@@ -540,14 +540,14 @@ public class FlushTest extends ChannelTestBase
       }      
    }
    
-   public void testChannels(String names[], boolean useTransfer,int viewSize)
+   public void _testChannels(String names[], boolean useTransfer,int viewSize)
    {     
-      testChannels(names, getMuxFactoryCount(), useTransfer,new ChannelAssertable(viewSize));
+      _testChannels(names, getMuxFactoryCount(), useTransfer,new ChannelAssertable(viewSize));
    }
 
-   public void testChannels(String names[], int muxFactoryCount, boolean useTransfer,int viewSize)
+   public void _testChannels(String names[], int muxFactoryCount, boolean useTransfer,int viewSize)
    {     
-      testChannels(names, muxFactoryCount, useTransfer,new ChannelAssertable(viewSize));
+      _testChannels(names, muxFactoryCount, useTransfer,new ChannelAssertable(viewSize));
    }
    
    private class ChannelCloseAssertable implements Assertable
@@ -760,7 +760,7 @@ public class FlushTest extends ChannelTestBase
    {
       JChannel ret = new JChannel(CHANNEL_CONFIG);
       ret.setOpt(Channel.BLOCK, Boolean.TRUE);
-      Protocol flush = ((JChannel) ret).getProtocolStack().findProtocol("FLUSH");
+      Protocol flush = ret.getProtocolStack().findProtocol("FLUSH");
       if (flush != null)
       {
          Properties p = new Properties();
@@ -787,12 +787,8 @@ public class FlushTest extends ChannelTestBase
       boolean shouldFetchState;
       int msgCount = 0;
 
+
       protected FlushTestReceiver(String name, Semaphore semaphore, int msgCount, boolean shouldFetchState) throws Exception
-      {
-         this(name,semaphore,msgCount,shouldFetchState,false);
-      }
-      
-      protected FlushTestReceiver(String name, Semaphore semaphore, int msgCount, boolean shouldFetchState, boolean insertDiscard) throws Exception
       {
          super(name, semaphore);
          this.shouldFetchState = shouldFetchState;
