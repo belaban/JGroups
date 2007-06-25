@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.4 2007/05/16 20:21:14 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.5 2007/06/25 11:45:11 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -24,8 +24,8 @@ public class GroupRequestTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        a1=new IpAddress(1111);
-        a2=new IpAddress(2222);
+        a1=new IpAddress("127.0.0.1", 1111);
+        a2=new IpAddress("127.0.0.1", 2222);
         dests.add(a1);
         dests.add(a2);
     }
@@ -79,7 +79,7 @@ public class GroupRequestTest extends TestCase {
         
         dests = new Vector();
         for (int i = 0; i < destCount; i++) {
-            Address addr = new IpAddress(Integer.parseInt(String.valueOf(i) + i + i + i));
+            Address addr = new IpAddress("127.0.0.1", Integer.parseInt(String.valueOf(i) + i + i + i));
             dests.add(addr);
             // how long does this simulated destination take to execute? the sum is just less than the total timeout
             responses[i] = new Message(null, addr, new Long(i));
@@ -135,9 +135,9 @@ public class GroupRequestTest extends TestCase {
 
     private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
         Vector new_dests=new Vector(dests);
-        new_dests.add(new IpAddress(3333));
+        new_dests.add(new IpAddress("127.0.0.1", 3333));
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
-                                        new View(new IpAddress(9999), 322649, new_dests),
+                                        new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
         transport=new MyTransport(async, responses);
         req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
@@ -156,7 +156,7 @@ public class GroupRequestTest extends TestCase {
         Vector new_dests=new Vector(dests);
         new_dests.remove(a1);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
-                                        new View(new IpAddress(9999), 322649, new_dests)};
+                                        new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests)};
         transport=new MyTransport(async, responses);
         req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
