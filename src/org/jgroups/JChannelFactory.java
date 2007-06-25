@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.39 2007/06/22 14:57:05 belaban Exp $
+// $Id: JChannelFactory.java,v 1.40 2007/06/25 07:06:11 belaban Exp $
 
 package org.jgroups;
 
@@ -363,7 +363,7 @@ public class JChannelFactory implements ChannelFactory {
                         if(entry.channel.flushSupported()){
                            boolean successfulFlush = entry.channel.startFlush(3000, false);
                            if(!successfulFlush && log.isWarnEnabled()){
-                              log.warn("Flush failed at " + ch.getLocalAddress() + ch.getId());
+                              log.warn("Flush failed at " + ch.getLocalAddress() + " " + ch.getId());
                            }
                         }
                         entry.multiplexer.sendServiceUpMessage(ch.getId(), addr,true);
