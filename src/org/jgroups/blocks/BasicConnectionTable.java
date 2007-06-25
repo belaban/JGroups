@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
-    final HashMap       conns=new HashMap();         // keys: Addresses (peer address), values: Connection
+    final HashMap<Address,Connection>       conns=new HashMap<Address,Connection>();         // keys: Addresses (peer address), values: Connection
     Receiver            receiver=null;
     boolean             use_send_queues=false;       // max number of messages in a send queue
     int                 send_queue_size=10000;
@@ -33,7 +33,7 @@ public abstract class BasicConnectionTable {
     int                 srv_port=7800;
     int                 recv_buf_size=120000;
     int                 send_buf_size=60000;
-    final Vector        conn_listeners=new Vector(); // listeners to be notified when a conn is established/torn down
+    final Vector<ConnectionListener>        conn_listeners=new Vector<ConnectionListener>(); // listeners to be notified when a conn is established/torn down
     Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
     long                reaper_interval=60000;       // reap unused conns once a minute
     long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
@@ -149,7 +149,7 @@ public abstract class BasicConnectionTable {
        Connection conn;
 
        synchronized(conns) {
-           conn=(Connection)conns.remove(addr);
+           conn=conns.remove(addr);
        }
 
        if(conn != null) {
@@ -179,10 +179,10 @@ public abstract class BasicConnectionTable {
        Address key;
        Connection val;
        Map.Entry entry;
-       HashMap copy;
+       HashMap<Address,Connection> copy;
 
        synchronized(conns) {
-           copy=new HashMap(conns);
+           copy=new HashMap<Address,Connection>(conns);
        }
        ret.append("local_addr=" + local_addr).append("\n");
        ret.append("connections (" + copy.size() + "):\n");
@@ -199,13 +199,13 @@ public abstract class BasicConnectionTable {
    void notifyConnectionOpened(Address peer) {
        if(peer == null) return;
        for(int i=0; i < conn_listeners.size(); i++)
-           ((ConnectionListener)conn_listeners.elementAt(i)).connectionOpened(peer);
+           conn_listeners.elementAt(i).connectionOpened(peer);
    }
 
    void notifyConnectionClosed(Address peer) {
        if(peer == null) return;
        for(int i=0; i < conn_listeners.size(); i++)
-           ((ConnectionListener)conn_listeners.elementAt(i)).connectionClosed(peer);
+           conn_listeners.elementAt(i).connectionClosed(peer);
    }
 
    void addConnection(Address peer, Connection c) {
@@ -275,9 +275,9 @@ public abstract class BasicConnectionTable {
        */
       public void retainAll(Collection current_mbrs) {
           if(current_mbrs == null) return;
-          HashMap copy;
+          HashMap<Address,Connection> copy;
           synchronized(conns) {
-              copy=new HashMap(conns);
+              copy=new HashMap<Address,Connection>(conns);
               conns.keySet().retainAll(current_mbrs);
           }
 
@@ -407,17 +407,7 @@ public abstract class BasicConnectionTable {
            Thread tmp=receiverThread;
            receiverThread=null;
            if(tmp != null) {
-               try {
-                   tmp.interrupt();
-                   tmp.join(MAX_JOIN_TIMEOUT);
-               }
-               catch(InterruptedException e) {
-                   Thread.currentThread().interrupt(); // set interrupt flag again
-               }
-               if(tmp.isAlive()) {
-                   if(log.isWarnEnabled())
-                   log.warn("stopped receiver thread, but thread (" + tmp + ") is still alive !");
-               }
+               Util.interruptAndWaitToDie(tmp);
            }
        }
 
@@ -694,17 +684,7 @@ public abstract class BasicConnectionTable {
                if(senderThread != null) {
                    Thread tmp=senderThread;
                    senderThread=null;
-                   tmp.interrupt();
-                   try {
-                       tmp.join(MAX_JOIN_TIMEOUT);
-                   }
-                   catch(InterruptedException e) {
-                       Thread.currentThread().interrupt(); // set interrupt flag again
-                   }
-                   if(tmp.isAlive()) {
-                       if(log.isWarnEnabled())
-                           log.warn("sender thread was interrupted, but is still alive: " + tmp);
-                   }
+                   Util.interruptAndWaitToDie(tmp);
                }
            }
 
@@ -768,17 +748,7 @@ public abstract class BasicConnectionTable {
            if(t != null)
                t=null;
            if(tmp != null) {
-               tmp.interrupt(); // interrupts the sleep()
-               try {
-                   tmp.join(MAX_JOIN_TIMEOUT);
-               }
-               catch(InterruptedException e) {
-                   Thread.currentThread().interrupt(); // set interrupt flag again
-               }
-               if(tmp.isAlive()) {
-                   if(log.isWarnEnabled())
-                       log.warn("reaper thread was interrupted, but is still alive: " + tmp);
-               }
+               Util.interruptAndWaitToDie(tmp);
            }
        }
 
