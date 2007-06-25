@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.103 2007/06/12 08:58:50 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.104 2007/06/25 17:03:50 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -315,6 +315,7 @@
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
+    	<delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
@@ -459,7 +460,15 @@
 	-->
 		
 	<target name="all-tests-cc" depends="makeKeystore" 
-			description="Runs entire testsuite for nightly Cruise Control builds">		 
+			description="Runs entire testsuite for nightly Cruise Control builds">		
+		
+		
+		 <!-- jboss-test.jar contains org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter 
+		 	  get jboss-test.jar only if not present locally -->
+		
+		 <get usetimestamp="true" 
+		 	  src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar" 
+		 	  dest="${lib.dir}/jboss-test.jar"/>	 
 		
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>
