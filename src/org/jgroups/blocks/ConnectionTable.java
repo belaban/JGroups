@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.51 2007/06/06 11:02:34 belaban Exp $
+// $Id: ConnectionTable.java,v 1.52 2007/06/25 20:57:01 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -213,25 +213,23 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                 ServerSocket tmp=srv_sock;
                 srv_sock=null;
                 tmp.close();
+                if(acceptor != null)
+                	Util.interruptAndWaitToDie(acceptor);
             }
             catch(Exception e) {
             }
         }
 
-        // 3. then close the connections
-        Connection conn;
-        Collection tmp=null;
+        // 3. then close the connections       
+        Collection<Connection> connsCopy=null;
         synchronized(conns) {
-            tmp=new LinkedList(conns.values());
+            connsCopy=new LinkedList<Connection>(conns.values());
             conns.clear();
+        }        
+        for(Connection conn:connsCopy) {                
+            conn.destroy();
         }
-        if(tmp != null) {
-            for(Iterator it=tmp.iterator(); it.hasNext();) {
-                conn=(Connection)it.next();
-                conn.destroy();
-            }
-            tmp.clear();
-        }
+        connsCopy.clear();        
         local_addr=null;
     }
 
