@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.13 2007/06/22 14:58:27 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.14 2007/06/25 07:38:16 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -307,7 +307,6 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
         c3.disconnect();
         boolean connected=c3.isConnected();
-        System.out.println("c3.isConnected() after c3.disconnect(): " + connected);
         assertFalse("c3 must be disconnected because we called disconnect()", connected);
 
         Util.sleep(500);

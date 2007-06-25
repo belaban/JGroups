@@ -2,13 +2,12 @@
 Release Notes JGroups 2.5
 =========================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.9 2007/06/12 10:08:52 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.10 2007/06/25 07:34:18 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
  - JDK 5 is required
- - a major number of older protocols were tossed out, e.g. if you used protocols listed in vsync.xml, they won't be
-   found anymore
+ - some older protocols were tossed out, e.g. if you used protocols listed in vsync.xml, they won't be found anymore
 
 The biggest new functionality is the concurrent stack, which allows for concurrent processing of
 unrelated messages.
@@ -22,18 +21,22 @@ Concurrent stack
 [http://jira.jboss.com/jira/browse/JGRP-181]
 
 The concurrent stack is a major performance improvement for clusters where multiple nodes are sending messages at the
-same time. Up to and including 2.4.x, all messages from all senders were placed into a single queue and delivered in order
-of reception (FIFO) to the application.
+same time. Up to and including 2.4.x, all messages from all senders were placed into a single queue and delivered in
+order of reception (FIFO) to the application.
 
 This means that, for a given message M, all messages ahead of M had to get processed before M could get processed, even
 if some of those messages were from different senders.
 
-Now, messages from different senders are processed concurrently. This is done through 2 thread pools, a pool for default
-messages and a pool for out-of-band messages.
+Now, messages from different senders are processed concurrently. This is done through 2 thread pools, one for default
+messages and another one for out-of-band messages. Both pools can be configured through XML, e.g. core and max number
+of threads, rejection policy ("run", "discard", "discardoldest" etc), whether to use a queue and if so, queue length etc.
 
-The concurrent stack will improve performance dramatically when there are multiple senders and/or the processing
-of a message takes some time. In a cluster of N with N senders, X messages and T think time/message,
-we have seen total processing time of all messages drop from X * N * T to (X * T) + <overhead for thread pools> !
+The concurrent stack will improve performance dramatically when
+- there are multiple senders and/or
+- the processing of a message takes some time.
+
+In a cluster of N with N senders, X messages and T think time/message, we have seen total processing time of
+all messages drop from X * N * T to (X * T) + <overhead for thread pools> !
 
 
 
@@ -64,8 +67,8 @@ Concurrent Multiplexer
 ----------------------
 [http://jira.jboss.com/jira/browse/JGRP-415]
 
-A similar problem that the concurrent stack solved, was encountered in the Multiplexer: requests to the same service,
-sent by the same sender, were processed sequentially (even with the concurrent stack, where messages from the same sender
+A similar problem that the concurrent stack solved, was encountered in the Multiplexer: requests to different services,
+but sent by the same sender, were processed sequentially (even with the concurrent stack, where messages from the same sender
 are processed in FIFO order).
 
 This was solved by adding a thread pool to the Multiplexer, which handles requests to different services concurrently,
@@ -77,8 +80,10 @@ Simplified and fast flow control (SFC)
 --------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-402]
 
-SFC is a simple flow control protocol for group (= multipoint) messages. It is simpler than FC and doesn't run out
-of memory, unlike FC when it is configured too aggressively.
+SFC is a simple flow control protocol for group (= multipoint) messages. It is simpler than FC, but as the performance
+report (http://www.jgroups.org/javagroupsnew/perfnew/Report.html) shows, it has about the same performance as FC, so
+we may combine the 2 in the future. Note, however, that SFC does not apply flow control to unicast messages, whereas
+FC does.
 
 Every sender has max_credits bytes for sending multicast messages to the group.
 
@@ -109,7 +114,7 @@ The FLUSH protocol in 2.4.x supported virtual synchrony ([1]), but the flush pha
 reconciliation part. This has now been added in 2.5.
 
 FLUSH is very important for the Multiplexer, where a flush phase is run whenever a member joins, leaves or crashes, or
-when a new member acquires the state from an existing member.
+when a new member acquires the state from an existing member (state transfer).
 
 
 
@@ -147,7 +152,7 @@ Switch to java.util.concurrent classes (JDK 5)
 [http://jira.jboss.com/jira/browse/JGRP-391]
 
 We switched from concurrent.jar to java.util.concurrent, resulting in slightly better performance and we could also
-drop 1 JAR (concurrent.jar).
+drop a JAR (concurrent.jar).
 
 
 
@@ -158,20 +163,19 @@ The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/in
 
 Performance
 -----------
-Preliminary results (same setup as described at http://www.jgroups.org/javagroupsnew/perf/Report.html):
 
-- 6 nodes, 5M 5K messages with tcp.xml, 500 threads/sender: 15'105 msgs/sec/node, throughput=75.52MB/sec
+We measured the performance of the 2.5 stack in a cluster of 4, 6 and 8 nodes. The results are discussed in
+http://www.jgroups.org/javagroupsnew/perfnew/Report.html.
 
-- 6 nodes, 5M 5K messages with tcp.xml: 17'832 msgs/sec/node, throughput=89.16MB/sec
-
-- 8 nodes, 5M 1K messages with tcp.xml: 63'513 msgs/sec/node, throughput=63.51MB/sec
-
-- 8 nodes, 5M 5K messages with tcp.xml: 16'600 msgs/sec/node, throughput=83MB/sec
-
-We'll present more comprehensive performance numbers in 2.6.
+We'll present more comprehensive performance numbers (sepecially for the concurrent stack) in 2.6.
 
 
-Bela Ban, Kreuzlingen, Switzerland, March 21 2007
+Bug fixes
+---------
+The list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland, June 2007
 
 
 [1] Reliable communication in presence of failures.
