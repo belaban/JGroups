@@ -16,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.7 2007/06/11 07:09:43 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.8 2007/06/25 20:57:57 vlada Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -74,6 +74,7 @@ public class ConnectionTableTest extends TestCase {
                     System.out.println("clear");
                 }
                 catch(InterruptedException e) {
+                	Thread.currentThread().interrupted();
                 }
             }
         };
@@ -82,7 +83,7 @@ public class ConnectionTableTest extends TestCase {
         Util.sleep(500);
 
         queue.clear(); // does this release the taker thread ?
-        taker.interrupt();
+        Util.interruptAndWaitToDie(taker);
         assertFalse("taker: " + taker, taker.isAlive());
     }
 
