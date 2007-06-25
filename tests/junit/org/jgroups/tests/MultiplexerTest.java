@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.39 2007/06/25 07:56:20 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.40 2007/06/25 10:17:39 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -837,7 +837,72 @@ public class MultiplexerTest extends ChannelTestBase {
         Util.sleep(500);
         System.out.println("c2_repl (removed odd substate): " + c2_repl);
         _testEvenNumbersPresent(c2_repl);
-    }    
+    }
+
+
+    public void testOrdering() throws Exception {
+        final int NUM=100;
+        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1.connect("bla");
+        MyReceiver receiver=new MyReceiver(NUM);
+        ch1.setReceiver(receiver);
+        for(int i=1; i <= NUM; i++) {
+            ch1.send(new Message(null, null, new Integer(i)));
+            System.out.println("-- sent " + i);
+        }
+
+        receiver.waitForCompletion();
+
+        List<Integer> nums=receiver.getNums();
+        checkMonotonicallyIncreasingNumbers(nums);
+    }
+
+    private static void checkMonotonicallyIncreasingNumbers(List<Integer> nums) {
+        int current=-1;
+        for(int num: nums) {
+            if(current < 0) {
+                current=num;
+            }
+            else {
+                assertEquals(++current,  num);
+            }
+        }
+    }
+
+
+    private static class MyReceiver extends ReceiverAdapter {
+        final List<Integer> nums=new LinkedList<Integer>();
+        final int expected;
+
+        public MyReceiver(int expected) {
+            this.expected=expected;
+        }
+
+        public List<Integer> getNums() {
+            return nums;
+        }
+
+        public void waitForCompletion() throws InterruptedException {
+            synchronized(nums) {
+                while(nums.size() < expected) {
+                    nums.wait();
+                }
+            }
+        }
+
+        public void receive(Message msg) {
+            Integer num=(Integer)msg.getObject();
+            System.out.println("-- received " + num);
+            Util.sleepRandom(1000);
+            synchronized(nums) {
+                nums.add(num);
+                if(nums.size() >= expected) {
+                    nums.notifyAll();
+                }
+            }
+        }
+    }
+
     
     public static Test suite() {
         return new TestSuite(MultiplexerTest.class);
