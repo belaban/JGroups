@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.37 2007/06/22 15:22:51 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.38 2007/06/25 06:41:53 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -882,7 +882,7 @@ public class MultiplexerTest extends ChannelTestBase {
             Object key=modification[0];
             Object val=modification[1];
             synchronized(data) {
-                System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
+                // System.out.println("****** [" + name + "] received PUT(" + key + ", " + val + ") " + " from " + msg.getSrc() + " *******");
                 data.put(key,val);
             }
         }
