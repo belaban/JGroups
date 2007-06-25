@@ -15,11 +15,11 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.40 2007/06/25 10:17:39 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.41 2007/06/25 11:12:10 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
-    private Channel ch1, ch2, ch1_repl, ch2_repl;   
+    private Channel ch1, ch2, ch1_repl, ch2_repl;
     JChannelFactory factory, factory2;   
 
     public MultiplexerTest(String name) {
@@ -864,7 +864,7 @@ public class MultiplexerTest extends ChannelTestBase {
                 current=num;
             }
             else {
-                assertEquals(++current,  num);
+                assertEquals("list is " + nums, ++current,  num);
             }
         }
     }
@@ -893,7 +893,7 @@ public class MultiplexerTest extends ChannelTestBase {
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();
             System.out.println("-- received " + num);
-            Util.sleepRandom(1000);
+            Util.sleepRandom(200);
             synchronized(nums) {
                 nums.add(num);
                 if(nums.size() >= expected) {
