@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.14 2007/04/16 18:23:38 vlada Exp $
+// $Id: Scheduler.java,v 1.15 2007/06/26 18:51:16 belaban Exp $
 
 package org.jgroups.util;
 
@@ -128,7 +128,6 @@ public class Scheduler implements Runnable {
                     if(listener != null) listener.suspended(current_task.target);
                     current_task.suspended=true;
                 }
-                Thread.interrupted(); // clears the interrupt-flag
             }
             catch(QueueClosedException closed_ex) {
                 return;
