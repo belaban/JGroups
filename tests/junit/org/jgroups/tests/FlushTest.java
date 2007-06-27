@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.36 2007/06/25 09:43:29 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.37 2007/06/27 18:11:15 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -270,7 +270,7 @@ public class FlushTest extends ChannelTestBase
    
    public void testVirtualSync()
    {
-	   String[] names = createApplicationNames(4);
+	   String[] names = createApplicationNames(2);
 	   _testVsyncGap(names);
    }
 
@@ -507,7 +507,7 @@ public class FlushTest extends ChannelTestBase
          randomRecv.cleanup();
          
          //let the view propagate and verify related asserts
-         sleepThread(8000);         
+         sleepThread(3000);         
          closeAssert.verify(channels);
          
 
