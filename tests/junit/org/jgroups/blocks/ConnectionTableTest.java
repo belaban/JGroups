@@ -16,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.8 2007/06/25 20:57:57 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.9 2007/06/27 18:38:42 vlada Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -73,8 +73,7 @@ public class ConnectionTableTest extends TestCase {
                     queue.take();
                     System.out.println("clear");
                 }
-                catch(InterruptedException e) {
-                	Thread.currentThread().interrupted();
+                catch(InterruptedException e) {                	
                 }
             }
         };
