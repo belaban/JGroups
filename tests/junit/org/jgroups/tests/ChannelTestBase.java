@@ -347,7 +347,12 @@ public class ChannelTestBase extends TestCase
 
       protected Throwable exception;
 
-      protected String name;          
+      protected String name;  
+      
+      public ChannelApplication(String name) throws Exception
+      {
+    	  ChannelTestBase.this.createChannel(name);
+      }
 
       public ChannelApplication(String name,JChannelFactory f) throws Exception
       {
@@ -603,7 +608,8 @@ public class ChannelTestBase extends TestCase
 
       protected PushChannelApplicationWithSemaphore(String name, Semaphore semaphore) throws Exception
       {
-         this(name, new DefaultChannelTestFactory(), semaphore, false);
+    	 super(name); 
+         this.semaphore = semaphore;
       }
       
       protected PushChannelApplicationWithSemaphore(String name, JChannelFactory f,Semaphore semaphore) throws Exception
