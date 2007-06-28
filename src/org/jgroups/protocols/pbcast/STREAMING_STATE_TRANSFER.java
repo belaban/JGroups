@@ -204,18 +204,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
 	public Object up(Event evt) {
 		switch(evt.getType()){
-		case Event.BECOME_SERVER:
-			break;
-
-		case Event.SET_LOCAL_ADDRESS:
-			local_addr = (Address) evt.getArg();
-			break;
-
-		case Event.TMP_VIEW:
-		case Event.VIEW_CHANGE:
-			handleViewChange((View) evt.getArg());
-			break;
-
+		
 		case Event.MSG:
 			Message msg = (Message) evt.getArg();
 			StateHeader hdr = (StateHeader) msg.getHeader(getName());
@@ -238,12 +227,28 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 				return null;
 			}
 			break;
+			
+		case Event.BECOME_SERVER:
+			break;
+
+		case Event.SET_LOCAL_ADDRESS:
+			local_addr = (Address) evt.getArg();
+			break;
+
+		case Event.TMP_VIEW:
+		case Event.VIEW_CHANGE:
+			handleViewChange((View) evt.getArg());
+			break;
+
 		case Event.CONFIG:
 			Map config = (Map) evt.getArg();
 			if(bind_addr == null && (config != null && config.containsKey("bind_addr"))){
 				bind_addr = (InetAddress) config.get("bind_addr");
 				if(log.isDebugEnabled())
 					log.debug("using bind_addr from CONFIG event " + bind_addr);
+			}
+			if(config != null && config.containsKey("state_transfer")){
+				log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
 			}
 			break;
 		}
