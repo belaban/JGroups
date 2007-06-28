@@ -1,13 +1,6 @@
-
 package org.jgroups.tests;
 
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.util.Util;
-import org.jgroups.util.Promise;
-
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,244 +9,222 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.ReentrantLock;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
+import org.jgroups.Message;
+import org.jgroups.util.Util;
 
 /**
- * Tests correct state transfer while other members continue sending messages to the group
+ * Tests correct state transfer while other members continue sending messages to
+ * the group
+ * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.11 2007/02/13 16:39:11 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.12 2007/06/28 19:08:27 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
-    final int NUM=10000;
-    final int NUM_THREADS=2;   
+	private static final int MSG_SEND_COUNT = 10000;
+	private static final int APP_COUNT = 2;
 
+	public StateTransferTest(String name){
+		super(name);
+	}
 
-    public StateTransferTest(String name) {
-        super(name);
-    }    
+	public void testStateTransferWhileSending() throws Exception {
+		StateTransferApplication[] apps = new StateTransferApplication[APP_COUNT];
 
-    public void testStateTransferWhileSending() throws Exception {
-        Worker[] workers=new Worker[NUM_THREADS];
+		// Create a semaphore and take all its permits
+		Semaphore semaphore = new Semaphore(APP_COUNT);
+		semaphore.acquire(APP_COUNT);
 
-        int from=0, to=NUM;
+		int from = 0, to = MSG_SEND_COUNT;
+		String[] names = createApplicationNames(APP_COUNT);
+		for(int i = 0;i < apps.length;i++){
+			apps[i] = new StateTransferApplication(semaphore, names[i], from, to);
+			from += MSG_SEND_COUNT;
+			to += MSG_SEND_COUNT;
+		}
 
-        for(int i=0; i < workers.length; i++) {
-            workers[i]=new Worker(from, to);
-            from+=NUM;
-            to+=NUM;
-        }
+		for(int i = 0;i < apps.length;i++){
+			StateTransferApplication app = apps[i];
+			app.start();
+			semaphore.release();
+			Util.sleep(500);
+		}
 
-        for(int i=0; i < workers.length; i++) {
-            Worker worker=workers[i];
-            worker.start();
-            Util.sleep(50); // to have threads join the group a bit later and get the state
-        }
+		// Reacquire the semaphore tickets; when we have them all
+		// we know the threads are done
+		semaphore.tryAcquire(APP_COUNT, 30, TimeUnit.SECONDS);
+		
+		//have we received all and the correct messages?
+		for(int i = 0;i < apps.length;i++){
+			StateTransferApplication w = apps[i];
+			Map m = w.getMap();
+			log("map has " + m.size() + " elements");
+			assertEquals(MSG_SEND_COUNT * APP_COUNT, m.size());
+		}
 
-        for(int i=0; i < workers.length; i++) {
-            Worker worker=workers[i];
-            worker.waitUntilDone();
-        }
-        for(int i=0; i < workers.length; i++) {
-            Worker worker=workers[i];
-            worker.stop();
-        }
+		Set keys = apps[0].getMap().keySet();
+		for(int i = 0;i < apps.length;i++){
+			StateTransferApplication app = apps[i];
+			Map m = app.getMap();
+			Set s = m.keySet();
+			assertEquals(keys, s);
+		}
+	}
 
-        log("\n\nhashmaps\n");
-        for(int i=0; i < workers.length; i++) {
-            Worker w=workers[i];
-            Map m=w.getMap();
-            log("map has " + m.size() + " elements");
-            assertEquals(NUM * NUM_THREADS, m.size());
-        }
+	protected int getMuxFactoryCount() {
+		//one MuxChannel per real Channel
+		return APP_COUNT;
+	}
 
-        Set keys=workers[0].getMap().keySet();
-        for(int i=0; i < workers.length; i++) {
-            Worker w=workers[i];
-            Map m=w.getMap();
-            Set s=m.keySet();
-            assertEquals(keys, s);
-        }
-        
-        log("all good,done.");
-        Util.sleep(2000);
-    }
+	protected class StateTransferApplication extends PushChannelApplicationWithSemaphore {
+		private final ReentrantLock mapLock = new ReentrantLock();
+		private Map map = new HashMap(MSG_SEND_COUNT * APP_COUNT);
+		private int from, to;
 
+		public StateTransferApplication(Semaphore semaphore,String name,int from,int to) throws Exception{
+			super(name, semaphore);
+			this.from = from;
+			this.to = to;
+		}
 
+		public Map getMap() {
+			Map result = null;
+			mapLock.lock();
+			result = Collections.unmodifiableMap(map);
+			mapLock.unlock();
+			return result;
+		}
+		
+		@Override
+		public void receive(Message msg) {
+			Object[] data = (Object[]) msg.getObject();
+			mapLock.lock();
+			map.put(data[0], data[1]);
+			mapLock.unlock();
+			int num_received = map.size();
+			if(num_received % 1000 == 0)
+				log("received " + num_received);
+			
+			//are we done?
+			if(num_received >= MSG_SEND_COUNT * APP_COUNT)
+				semaphore.release();
+		}
 
+		@Override
+		public byte[] getState() {
+			byte[] result = null;
+			mapLock.lock();
+			try{
+				result = Util.objectToByteBuffer(map);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			finally{
+				mapLock.unlock();
+			}
+			return result;
+		}		
 
-    class Worker implements Runnable {
-        JChannel        ch;
-        int             to;
-        int             from;
-        final Promise   promise=new Promise();
-        Thread          t;
-        Receiver        receiver;
+		@Override
+		public void setState(byte[] state) {
+			mapLock.lock();
+			try{
+				map = (Map) Util.objectFromByteBuffer(state);
+			}catch(Exception e){
+				e.printStackTrace();
+			}
+			finally{
+				mapLock.unlock();
+			}
+			log("received state, map has " + map.size() + " elements");
+			
+		}
+		@Override
+		public void getState(OutputStream ostream) {
+			ObjectOutputStream out;
+			mapLock.lock();
+			try{
+				out = new ObjectOutputStream(ostream);
+				out.writeObject(map);				
+				out.close();
+			}catch(IOException e){				
+				e.printStackTrace();
+			}
+			finally{
+				mapLock.unlock();
+			}
+			
+		}
 
+		@Override
+		public void setState(InputStream istream) {
+			ObjectInputStream in;
+			mapLock.lock();
+			try{
+				in = new ObjectInputStream(istream);
+				map = (Map) in.readObject();
+				log("received state, map has " + map.size() + " elements");
+				in.close();
+			}catch(IOException e){
+				e.printStackTrace();
+			}catch(ClassNotFoundException e){
+				e.printStackTrace();
+			}
+			finally{
+				mapLock.unlock();
+			}
+		}
 
-        public Worker(int from, int to) {
-            this.to=to;
-            this.from=from;
-        }
+		@Override
+		protected void useChannel() throws Exception {
+			channel.connect("StateTransferTest-Group");
+			channel.getState(null, 10000);
+			Object[] data = new Object[2];
+			for(int i = from;i < to;i++){
+				data[0] = new Integer(i);
+				data[1] = "Value #" + i;
+				try{
+					channel.send(null, null, data);
+					if(i % 1000 == 0)
+						log("sent " + i);
+				}catch(Exception e){
+					e.printStackTrace();
+					break;
+				}
+			}
+		}
 
-        public Map getMap() {
-            return receiver.getMap();
-        }
+		public void run() {
+			boolean acquired = false;
+			try{
+				acquired = semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
+				if(!acquired){
+					throw new Exception(name + " cannot acquire semaphore");
+				}
+				useChannel();
+			}catch(Exception e){
+				log.error(name + ": " + e.getLocalizedMessage(), e);
+				// Save it for the test to check
+				exception = e;
+			}
+		}
+	}
 
-        void start() throws Exception {
-            ch=new JChannel(CHANNEL_CONFIG);
-            ch.connect("StateTransferTest-Group");
-            receiver=new Receiver(ch, promise);
-            boolean rc=ch.getState(null, 10000);
-            if(rc)
-                log("state transfer: OK");
-            else {
-                if(ch.getView().size() == 1)
-                    log("state transfer: OK");
-                else
-                    log("state transfer: FAIL");
-            }
+	static void log(String msg) {
+		System.out.println(Thread.currentThread() + " -- " + msg);
+	}
 
-            receiver.setName("Receiver [" + from + " - " + to + "]");
-            receiver.start();
-            if(rc)
-                promise.getResult();
+	public static Test suite() {
+		return new TestSuite(StateTransferTest.class);
+	}
 
-            t=new Thread(this);
-            t.setName("Worker [" + from + " - " + to + "]");
-            t.start();
-        }
-
-        public void stop() {
-            ch.close();
-        }
-
-        void waitUntilDone() throws InterruptedException {
-            t.join();
-            receiver.join();
-        }
-
-        public void run() {
-            Object[] data=new Object[2];
-            log("Worker thread started (sending msgs from " + from + " to " + to + " (excluding " + to + ")");
-            for(int i=from; i < to; i++) {
-                data[0]=new Integer(i);
-                data[1]="Value #" + i;
-                try {
-                    ch.send(null, null, data);
-                    if(i % 1000 == 0)
-                        log("sent " + i);
-                    // log("sent " + data[0]);
-                }
-                catch(Exception e) {
-                    e.printStackTrace();
-                    break;
-                }
-            }
-        }
-    }
-
-    class Receiver extends Thread {
-        JChannel ch;
-        Promise promise;
-        Map map;
-
-        public Receiver(JChannel ch, Promise promise) {
-            this.ch=ch;
-            this.promise=promise;
-            map=Collections.synchronizedMap(new HashMap(NUM * NUM_THREADS));
-        }
-
-        public Map getMap() {
-            return map;
-        }
-
-        public void run() {
-            Object obj, prev_val;
-            Object[] data;
-            int num_received=0, to_be_received=NUM * NUM_THREADS;
-
-            log("Receiver thread started");
-            while(ch.isConnected()) {
-                try {
-                    obj=ch.receive(0);
-                    if(obj instanceof Message) {
-                        data=(Object[])((Message)obj).getObject();
-                        prev_val=map.put(data[0], data[1]);
-                        if(prev_val != null) // we have a duplicate value
-                            continue;
-                        num_received=map.size();
-                        if(num_received % 1000 == 0)
-                            log("received " + num_received);
-
-                        // log("received " + data[0] + " total: " + num_received + ")");
-
-                        if(num_received >= to_be_received) {
-                            log("DONE: received " + num_received + " messages");
-                            break;
-                        }
-                    }
-                    else if(obj instanceof View) {
-                        log("VIEW: " + obj);
-                    }
-                    else if(obj instanceof GetStateEvent) {
-                        byte[] state=Util.objectToByteBuffer(map);
-                        log("returning state, map has " + map.size() + " elements");
-                        ch.returnState(state);
-                    }
-                    else if(obj instanceof SetStateEvent) {
-                        byte state[]=((SetStateEvent)obj).getArg();
-                        if(state == null) {
-                            log("received null state");
-                        }
-                        else {
-                            Map tmp=(Map)Util.objectFromByteBuffer(state);
-                            log("received state, map has " + tmp.size() + " elements");
-                            map=Collections.synchronizedMap(tmp);
-                        }
-                        promise.setResult(Boolean.TRUE);
-                    }
-                    else if(obj instanceof StreamingGetStateEvent) {
-                        StreamingGetStateEvent evt=(StreamingGetStateEvent)obj;
-                        OutputStream stream = evt.getArg();
-                        ObjectOutputStream out = new ObjectOutputStream(stream);
-                        synchronized(map){
-                           out.writeObject(map);
-                        }
-                        out.close();
-                   }
-                   else if(obj instanceof StreamingSetStateEvent) {
-                        StreamingSetStateEvent evt=(StreamingSetStateEvent)obj;
-                        InputStream stream = evt.getArg();
-                        ObjectInputStream in = new ObjectInputStream(stream);
-                        map=Collections.synchronizedMap((Map) in.readObject());
-                        in.close();
-                        promise.setResult(Boolean.TRUE);
-                   }
-                }
-                catch(Exception e) {
-                    log("receiver thread terminated due to exception: " + e);
-                    break;
-                }
-            }
-            log("Receiver thread terminated");
-        }
-    }
-
-
-    static void log(String msg) {
-        System.out.println(Thread.currentThread() + " -- "+ msg);
-    }
-
-    public static Test suite() {
-        return new TestSuite(StateTransferTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
-
-
-
+	public static void main(String[] args) {
+		junit.textui.TestRunner.run(suite());
+	}
 }
-
-
