@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.70 2007/06/07 12:25:26 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.71 2007/06/28 19:09:25 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -107,18 +107,6 @@ public class STATE_TRANSFER extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
 
-        case Event.BECOME_SERVER:
-            break;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr=(Address)evt.getArg();
-            break;
-
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            handleViewChange((View)evt.getArg());
-            break;
-
         case Event.MSG:
             Message msg=(Message)evt.getArg();
             StateHeader hdr=(StateHeader)msg.getHeader(name);
@@ -140,6 +128,25 @@ public class STATE_TRANSFER extends Protocol {
                 break;
             }
             return null;
+            
+        case Event.BECOME_SERVER:
+            break;
+
+        case Event.SET_LOCAL_ADDRESS:
+            local_addr=(Address)evt.getArg();
+            break;
+
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            handleViewChange((View)evt.getArg());
+            break;
+            
+        case Event.CONFIG :
+            Map config = (Map) evt.getArg();                            
+            if(config != null && config.containsKey("state_transfer")){
+				log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+			}
+            break;           
         }
         return up_prot.up(evt);
     }
