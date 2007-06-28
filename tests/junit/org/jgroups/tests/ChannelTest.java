@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.6 2007/06/22 14:55:20 belaban Exp $
+// $Id: ChannelTest.java,v 1.7 2007/06/28 08:09:55 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -7,12 +7,16 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
+
+import java.util.List;
+import java.util.LinkedList;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.6 2007/06/22 14:55:20 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.7 2007/06/28 08:09:55 belaban Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -190,6 +194,70 @@ public class ChannelTest extends ChannelTestBase {
         }
         catch(NullPointerException e) {
             System.out.println("caught NullPointerException - this is expected");
+        }
+    }
+
+
+
+     public void testOrdering() throws Exception {
+        final int NUM=100;
+        MyReceiver receiver=new MyReceiver(NUM);
+        ch.setReceiver(receiver);
+        for(int i=1; i <= NUM; i++) {
+            ch.send(new Message(null, null, new Integer(i)));
+            System.out.println("-- sent " + i);
+        }
+
+        receiver.waitForCompletion();
+
+        List<Integer> nums=receiver.getNums();
+        checkMonotonicallyIncreasingNumbers(nums);
+    }
+
+    private static void checkMonotonicallyIncreasingNumbers(List<Integer> nums) {
+        int current=-1;
+        for(int num: nums) {
+            if(current < 0) {
+                current=num;
+            }
+            else {
+                assertEquals("list is " + nums, ++current,  num);
+            }
+        }
+    }
+
+
+    private static class MyReceiver extends ReceiverAdapter {
+        final List<Integer> nums=new LinkedList<Integer>();
+        final int expected;
+
+        public MyReceiver(int expected) {
+            this.expected=expected;
+        }
+
+        public List<Integer> getNums() {
+            return nums;
+        }
+
+        public void waitForCompletion() throws InterruptedException {
+            synchronized(nums) {
+                while(nums.size() < expected) {
+                    nums.wait();
+                }
+            }
+        }
+
+        public void receive(Message msg) {
+            Util.sleepRandom(100);
+            Integer num=(Integer)msg.getObject();
+            synchronized(nums) {
+                System.out.println("-- received " + num);
+                nums.add(num);
+                if(nums.size() >= expected) {
+                    nums.notifyAll();
+                }
+            }
+            Util.sleepRandom(100);
         }
     }
 
