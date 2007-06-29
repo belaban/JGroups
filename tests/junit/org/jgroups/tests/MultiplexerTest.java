@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.43 2007/06/26 17:55:21 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.44 2007/06/29 11:02:36 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -855,6 +855,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
         List<Integer> nums=receiver.getNums();
         checkMonotonicallyIncreasingNumbers(nums);
+        System.out.println(NUM + " messages were received in the correct order");
     }
 
     private static void checkMonotonicallyIncreasingNumbers(List<Integer> nums) {
