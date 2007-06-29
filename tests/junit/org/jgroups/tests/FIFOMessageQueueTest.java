@@ -14,7 +14,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.7 2007/03/05 09:34:47 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.8 2007/06/29 10:56:42 belaban Exp $
  */
 public class FIFOMessageQueueTest extends TestCase {
     FIFOMessageQueue<String,Integer> queue;
@@ -50,6 +50,7 @@ public class FIFOMessageQueueTest extends TestCase {
         Integer ret=queue.poll(5);
         assertNotNull(ret);
         queue.done(a1, s1); // 2 is made available (moved into 'queue')
+        queue.done(a1, s1); // done() by the first putter
         ret=queue.poll(5);
         assertNotNull(ret);
         assertEquals(0, queue.size());
