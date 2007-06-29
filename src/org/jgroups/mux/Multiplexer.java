@@ -9,7 +9,6 @@ import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.FIFOMessageQueue;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.jgroups.util.Digest.Entry;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -21,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.60 2007/06/25 21:00:38 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.61 2007/06/29 10:53:06 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -941,8 +940,9 @@ public class Multiplexer implements UpHandler {
 
     private Object passToMuxChannel(MuxChannel ch, Event evt, final FIFOMessageQueue<String,Runnable> queue,
                                     final Address sender, final String dest, boolean block, boolean bypass_thread_pool) {
-        if(thread_pool == null || bypass_thread_pool)
+        if(thread_pool == null || bypass_thread_pool) {
             return ch.up(evt);
+        }
 
         Task task=new Task(ch, evt, queue, sender, dest, block);
         ExecuteTask execute_task=new ExecuteTask(fifo_queue);  // takes Task from queue and executes it
