@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Only when A1 is done will A2 be processed, same for B2: it will get processed when B1 is done. Thus, messages
  * for different services are processed concurrently; messages from the same service are processed FIFO.
  * @author Bela Ban
- * @version $Id: FIFOMessageQueue.java,v 1.7 2007/06/26 17:54:46 belaban Exp $
+ * @version $Id: FIFOMessageQueue.java,v 1.8 2007/06/29 10:57:40 belaban Exp $
  */
 public class FIFOMessageQueue<K, V> {
     /** Used for consolidated takes */
@@ -54,16 +54,19 @@ public class FIFOMessageQueue<K, V> {
         ConcurrentMap<K,Entry<V>> dests=queues.get(sender);
         if(dests == null) {
             dests=new ConcurrentHashMap<K,Entry<V>>();
-            queues.putIfAbsent(sender, dests);
+            if(queues.putIfAbsent(sender, dests) != null) // already existed (someone else inserted the key/value mapping)
+                dests=queues.get(sender);
         }
 
         Entry<V> entry=dests.get(dest);
         if(entry == null) {
             entry=new Entry<V>();
-            dests.putIfAbsent(dest, entry);
+            if(dests.putIfAbsent(dest, entry) != null)
+                entry=dests.get(dest);
         }
 
         synchronized(entry) {
+            size.incrementAndGet();
             if(entry.ready) {
                 entry.ready=false;
                 queue.add(el);
@@ -71,7 +74,6 @@ public class FIFOMessageQueue<K, V> {
             else {
                 entry.list.add(el);
             }
-            size.incrementAndGet();
         }
     }
 
@@ -88,12 +90,11 @@ public class FIFOMessageQueue<K, V> {
             synchronized(entry) {
                 if(!entry.list.isEmpty()) {
                     el=entry.list.removeFirst();
-                }
-                if(entry.list.isEmpty())
-                    entry.ready=true;
-
-                if(el != null)
                     queue.add(el);
+                }
+                else {
+                    entry.ready=true;
+                }
             }
         }
     }
