@@ -1,10 +1,12 @@
 package org.jgroups.jmx.protocols;
 
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.1 2005/06/14 10:10:10 belaban Exp $
+ * @version $Id: MPING.java,v 1.2 2007/07/02 11:16:07 belaban Exp $
  */
 public class MPING extends PING implements MPINGMBean {
     org.jgroups.protocols.MPING mping;
@@ -30,12 +32,21 @@ public class MPING extends PING implements MPINGMBean {
         mping.setBindAddr(bind_addr);
     }
 
-    public boolean isBindToAllInterfaces() {
-        return mping.isBindToAllInterfaces();
+
+    public List<NetworkInterface> getReceiveInterfaces() {
+        return mping.getReceiveInterfaces();
     }
 
-    public void setBindToAllInterfaces(boolean bind_to_all_interfaces) {
-        mping.setBindToAllInterfaces(bind_to_all_interfaces);
+    public List<NetworkInterface> getSendInterfaces() {
+        return mping.getSendInterfaces();
+    }
+
+    public boolean isReceiveOnAllInterfaces() {
+        return mping.isReceiveOnAllInterfaces();
+    }
+
+    public boolean isSendOnAllInterfaces() {
+        return mping.isSendOnAllInterfaces();
     }
 
     public int getTTL() {
