@@ -16,7 +16,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.9 2007/06/27 18:38:42 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.10 2007/07/02 14:49:01 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -124,6 +124,7 @@ public class ConnectionTableTest extends TestCase {
 
     private void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
         table1.send(addr1, data, 0, data.length); // send to self
+        assertEquals(0, table1.getNumConnections()); // sending to self should not create a connection
         table1.send(addr2, data, 0, data.length); // send to other
 
         table2.send(addr2, data, 0, data.length); // send to self
