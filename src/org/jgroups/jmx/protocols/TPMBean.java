@@ -8,7 +8,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: TPMBean.java,v 1.11 2006/12/20 16:28:55 belaban Exp $
+ * @version $Id: TPMBean.java,v 1.12 2007/07/02 11:15:21 belaban Exp $
  */
 public interface TPMBean extends ProtocolMBean {
     Address getLocalAddress();
@@ -18,7 +18,7 @@ public interface TPMBean extends ProtocolMBean {
     long getMessagesReceived();
     long getBytesSent();
     long getBytesReceived();
-    public void setBindAddress(String bind_address) throws UnknownHostException;
+    void setBindAddress(String bind_address) throws UnknownHostException;
     boolean isReceiveOnAllInterfaces();
     List getReceiveInterfaces();
     boolean isSendOnAllInterfaces();
