@@ -44,10 +44,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.147 2007/06/06 06:39:25 belaban Exp $
+ * @version $Id: TP.java,v 1.148 2007/07/02 10:30:54 belaban Exp $
  */
 public abstract class TP extends Protocol {
-
 
     /** The address (host and port) of this member */
     protected Address         local_addr=null;
@@ -59,28 +58,28 @@ public abstract class TP extends Protocol {
     protected InetAddress     bind_addr=null;
 
     /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
-    boolean         use_local_host=false;
+    boolean                   use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
-    boolean         receive_on_all_interfaces=false;
+    boolean                   receive_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
      * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
      * If this property is set, it override receive_on_all_interfaces.
      */
-    java.util.List  receive_interfaces=null;
+    List<NetworkInterface>    receive_interfaces=null;
 
     /** If true, the transport should use all available interfaces to send multicast messages. This means
      * the same multicast message is sent N times, so use with care */
-    boolean         send_on_all_interfaces=false;
+    boolean                   send_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
      * same multicast message on all of these interfaces. This is a comma-separated list of IP addresses or
      * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
      * If this property is set, it override send_on_all_interfaces.
      */
-    java.util.List  send_interfaces=null;
+    List<NetworkInterface>    send_interfaces=null;
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
@@ -632,7 +631,7 @@ public abstract class TP extends Protocol {
         str=props.getProperty("receive_interfaces");
         if(str != null) {
             try {
-                receive_interfaces=parseInterfaceList(str);
+                receive_interfaces=Util.parseInterfaceList(str);
                 props.remove("receive_interfaces");
             }
             catch(Exception e) {
@@ -650,7 +649,7 @@ public abstract class TP extends Protocol {
         str=props.getProperty("send_interfaces");
         if(str != null) {
             try {
-                send_interfaces=parseInterfaceList(str);
+                send_interfaces=Util.parseInterfaceList(str);
                 props.remove("send_interfaces");
             }
             catch(Exception e) {
@@ -1261,61 +1260,6 @@ public abstract class TP extends Protocol {
         return list;
     }
 
-
-
-
-    /**
-     *
-     * @param s
-     * @return List<NetworkInterface>
-     */
-    private java.util.List parseInterfaceList(String s) throws Exception {
-        java.util.List<NetworkInterface> interfaces=new ArrayList<NetworkInterface>(10);
-        if(s == null)
-            return null;
-
-        StringTokenizer tok=new StringTokenizer(s, ",");
-        String interface_name;
-        NetworkInterface intf;
-
-        while(tok.hasMoreTokens()) {
-            interface_name=tok.nextToken();
-
-            // try by name first (e.g. (eth0")
-            intf=NetworkInterface.getByName(interface_name);
-
-            // next try by IP address or symbolic name
-            if(intf == null)
-                intf=NetworkInterface.getByInetAddress(InetAddress.getByName(interface_name));
-
-            if(intf == null)
-                throw new Exception("interface " + interface_name + " not found");
-            if(interfaces.contains(intf)) {
-                log.warn("did not add interface " + interface_name + " (already present in " + print(interfaces) + ")");
-            }
-            else {
-                interfaces.add(intf);
-            }
-        }
-        return interfaces;
-    }
-
-    private static String print(java.util.List interfaces) {
-        StringBuilder sb=new StringBuilder();
-        boolean first=true;
-        NetworkInterface intf;
-        for(Iterator it=interfaces.iterator(); it.hasNext();) {
-            intf=(NetworkInterface)it.next();
-            if(first) {
-                first=false;
-            }
-            else {
-                sb.append(", ");
-            }
-            sb.append(intf.getName());
-        }
-        return sb.toString();
-    }
 
 
     protected Object handleDownEvent(Event evt) {
