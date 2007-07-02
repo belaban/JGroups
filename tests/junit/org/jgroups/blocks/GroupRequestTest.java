@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.6 2007/07/02 11:54:34 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.7 2007/07/02 11:57:25 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -15,7 +15,7 @@ import java.util.Vector;
 public class GroupRequestTest extends TestCase {
     GroupRequest req;
     Address a1, a2;
-    Vector dests=new Vector();
+    Vector<Address> dests=new Vector<Address>();
     private MyTransport transport;
 
     public GroupRequestTest(String testName) {
@@ -77,7 +77,7 @@ public class GroupRequestTest extends TestCase {
         final long delay = 75L;
         Object[] responses = new Message[destCount];
         
-        dests = new Vector();
+        dests = new Vector<Address>();
         for (int i = 0; i < destCount; i++) {
             Address addr = new IpAddress("127.0.0.1", Integer.parseInt(String.valueOf(i) + i + i + i));
             dests.add(addr);
@@ -134,7 +134,7 @@ public class GroupRequestTest extends TestCase {
 
 
     private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
-        Vector new_dests=new Vector(dests);
+        Vector<Address> new_dests=new Vector<Address>(dests);
         new_dests.add(new IpAddress("127.0.0.1", 3333));
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests),
@@ -153,7 +153,7 @@ public class GroupRequestTest extends TestCase {
 
 
     private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
-        Vector new_dests=new Vector(dests);
+        Vector<Address> new_dests=new Vector<Address>(dests);
         new_dests.remove(a1);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests)};
