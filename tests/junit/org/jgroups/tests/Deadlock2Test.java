@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.11 2006/11/22 19:33:07 vlada Exp $
+// $Id: Deadlock2Test.java,v 1.12 2007/07/02 15:48:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.RspList;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  */
 public class Deadlock2Test extends ChannelTestBase {
 
@@ -130,7 +130,7 @@ public class Deadlock2Test extends ChannelTestBase {
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
 
-        Vector dests=new Vector();
+        Vector<Address> dests=new Vector<Address>();
         dests.add(c1.getLocalAddress());
         dests.add(c2.getLocalAddress());
 
@@ -150,8 +150,7 @@ public class Deadlock2Test extends ChannelTestBase {
 
 
     public static Test suite() {
-        TestSuite s=new TestSuite(Deadlock2Test.class);
-        return s;
+        return new TestSuite(Deadlock2Test.class);
     }
 
     public static void main(String[] args) {
@@ -165,7 +164,7 @@ public class Deadlock2Test extends ChannelTestBase {
     }
 
 
-    public class ServerObject {
+    public static class ServerObject {
         String myName;
 
         public ServerObject(String name) {
@@ -189,7 +188,7 @@ public class Deadlock2Test extends ChannelTestBase {
             RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
             Vector results = rspList.getResults();
             log("results of calling innerMethod():\n" + rspList);
-            StringBuffer sb = new StringBuffer("outerMethod[");
+            StringBuilder sb=new StringBuilder("outerMethod[");
             for(Enumeration e = results.elements(); e.hasMoreElements(); ) {
                 String s = (String)e.nextElement();
                 sb.append(s);
@@ -201,7 +200,7 @@ public class Deadlock2Test extends ChannelTestBase {
             return sb.toString();
         }
 
-        public String innerMethod() {
+        public static String innerMethod() {
             log("**** innerMethod() received, returning result");
             return "innerMethod";
         }
