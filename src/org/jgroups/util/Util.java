@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.126 2007/06/25 20:55:26 vlada Exp $
+ * @version $Id: Util.java,v 1.127 2007/07/02 10:29:31 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1808,6 +1808,57 @@ public class Util {
             props.remove(property);
         }
         return bind_addr;
+    }
+
+
+    /**
+     *
+     * @param s
+     * @return List<NetworkInterface>
+     */
+    public static List<NetworkInterface> parseInterfaceList(String s) throws Exception {
+        List<NetworkInterface> interfaces=new ArrayList<NetworkInterface>(10);
+        if(s == null)
+            return null;
+
+        StringTokenizer tok=new StringTokenizer(s, ",");
+        String interface_name;
+        NetworkInterface intf;
+
+        while(tok.hasMoreTokens()) {
+            interface_name=tok.nextToken();
+
+            // try by name first (e.g. (eth0")
+            intf=NetworkInterface.getByName(interface_name);
+
+            // next try by IP address or symbolic name
+            if(intf == null)
+                intf=NetworkInterface.getByInetAddress(InetAddress.getByName(interface_name));
+
+            if(intf == null)
+                throw new Exception("interface " + interface_name + " not found");
+            if(!interfaces.contains(intf)) {
+                interfaces.add(intf);
+            }
+        }
+        return interfaces;
+    }
+
+
+    public static String print(List<NetworkInterface> interfaces) {
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+
+        for(NetworkInterface intf: interfaces) {
+            if(first) {
+                first=false;
+            }
+            else {
+                sb.append(", ");
+            }
+            sb.append(intf.getName());
+        }
+        return sb.toString();
     }
 
 
