@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.5 2007/06/25 11:45:11 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.6 2007/07/02 11:54:34 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -71,7 +71,7 @@ public class GroupRequestTest extends TestCase {
         int destCount = 10;
         
         // total timeout to hear from all members
-        final long timeout = destCount * 100;
+        final long timeout = destCount * 300;
         
         // how long each destination should delay
         final long delay = 75L;
