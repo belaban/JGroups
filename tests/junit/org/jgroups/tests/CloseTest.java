@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.12 2006/11/22 19:33:07 vlada Exp $
+// $Id: CloseTest.java,v 1.13 2007/07/02 08:08:30 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -244,11 +244,12 @@ public class CloseTest extends ChannelTestBase {
     }   
 
 
-     public void testMultipleConnectsAndDisconnects() throws Exception {
+    public void testMultipleConnectsAndDisconnects() throws Exception {
         c1=createChannel("A");
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
         c1.connect("bla");
+        System.out.println("view after c1.connect(): " + c1.getView());
         assertTrue(c1.isOpen());
         assertTrue(c1.isConnected());
         assertServiceAndClusterView(c1, 1);
@@ -258,6 +259,7 @@ public class CloseTest extends ChannelTestBase {
         assertFalse(c2.isConnected());
 
         c2.connect("bla");
+        System.out.println("view after c2.connect(): " + c2.getView());
         assertTrue(c2.isOpen());
         assertTrue(c2.isConnected());
         assertServiceAndClusterView(c2, 2);
@@ -265,12 +267,14 @@ public class CloseTest extends ChannelTestBase {
         assertServiceAndClusterView(c1, 2);
 
         c2.disconnect();
+        System.out.println("view after c2.disconnect(): " + c2.getView());
         assertTrue(c2.isOpen());
         assertFalse(c2.isConnected());
         Util.sleep(500);
         assertServiceAndClusterView(c1, 1);
 
         c2.connect("bla");
+        System.out.println("view after c2.connect(): " + c2.getView());
         assertTrue(c2.isOpen());
         assertTrue(c2.isConnected());
         assertServiceAndClusterView(c2, 2);
@@ -292,6 +296,7 @@ public class CloseTest extends ChannelTestBase {
         assertFalse(c3.isConnected());
 
         c1.connect("bla");
+        System.out.println("view after c1.connect(): " + c1.getView());
         assertTrue(c1.isOpen());
         assertTrue(c1.isConnected());
         assertServiceAndClusterView(c1, 2);
