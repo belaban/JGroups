@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.143 2007/06/11 13:26:35 belaban Exp $
+ * @version $Id: UDP.java,v 1.144 2007/07/02 11:10:55 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -362,8 +362,7 @@ public class UDP extends TP implements Runnable {
             createSockets();
         }
         catch(Exception ex) {
-            String tmp="problem creating sockets (bind_addr=" + bind_addr +
-                    ", mcast_addr=" + mcast_addr + ")";
+            String tmp="problem creating sockets (bind_addr=" + bind_addr + ", mcast_addr=" + mcast_addr + ")";
             throw new Exception(tmp, ex);
         }
         super.start();
