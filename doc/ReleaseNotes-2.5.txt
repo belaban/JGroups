@@ -2,7 +2,7 @@
 Release Notes JGroups 2.5
 =========================
 
-Version: $Id: ReleaseNotes-2.5.txt,v 1.10 2007/06/25 07:34:18 belaban Exp $
+Version: $Id: ReleaseNotes-2.5.txt,v 1.11 2007/07/03 12:28:05 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.5 is still API-backwards compatible with previous versions (down to 2.2.5). However, there are some changes:
@@ -140,10 +140,19 @@ FD_ALL is interchangeable with FD.
 
 Better naming of threads
 ------------------------
-
 Almost all threads have the cluster name and local address appended to their names. This is good if we have multiple
 clusters in the same JVM (e.g. in JBossAS), allowing for more meaningful stack traces (knowing which thread
 belongs to which cluster).
+
+
+No need for escape characters in stack configuration
+----------------------------------------------------
+Now backslashes are not needed for protocol attribute values, e.g. to define an IPv6 mcast_addr, the following works:
+
+<UDP mcast_addr="ff18:eb72:479f::2:3" mcast_port="2553" ... />
+
+The colons in mcast_addr do not need to be escaped with a backslash any longer. Note that '(', ')' and '=' are
+still reserved characters and cannot be used as part of an attribute name or value.
 
 
 
