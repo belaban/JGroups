@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.12 2007/06/28 19:08:27 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.13 2007/07/03 13:46:59 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -58,8 +58,10 @@ public class StateTransferTest extends ChannelTestBase {
 
 		// Reacquire the semaphore tickets; when we have them all
 		// we know the threads are done
-		semaphore.tryAcquire(APP_COUNT, 30, TimeUnit.SECONDS);
+		semaphore.tryAcquire(APP_COUNT, 40, TimeUnit.SECONDS);
 		
+		
+		Util.sleep(1000);
 		//have we received all and the correct messages?
 		for(int i = 0;i < apps.length;i++){
 			StateTransferApplication w = apps[i];
