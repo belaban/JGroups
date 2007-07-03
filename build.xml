@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.106 2007/07/02 14:39:09 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.107 2007/07/03 14:37:12 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -647,7 +647,7 @@
 	-->
 	
 	<target name="one-test" 
-			description="Runs a single junit test indicated by -Dtest=testname parameter">		 
+			description="Runs a single junit test indicated by -Dtest=testname parameter, e.g. -Dtest=Deadlock2Test (no package names needed)">
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="one.test"/>
 		 	<param name="test.verbose" value="true"/>
