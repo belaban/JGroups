@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadFactory;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.46 2007/04/02 10:59:05 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.47 2007/07/03 12:35:16 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -177,8 +177,8 @@ public class ProtocolStack extends Protocol implements Transport {
         if(top_prot == null) {
             top_prot=conf.setupProtocolStack(setup_string, this);
             top_prot.setUpProtocol(this);
-            bottom_prot=conf.getBottommostProtocol(top_prot);
-            conf.initProtocolStack(bottom_prot);         // calls init() on each protocol, from bottom to top
+            bottom_prot=Configurator.getBottommostProtocol(top_prot);
+            Configurator.initProtocolStack(bottom_prot);         // calls init() on each protocol, from bottom to top
         }
     }
 
@@ -195,7 +195,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * @exception Exception Will be thrown when the new protocol cannot be created
      */
     public Protocol createProtocol(String prot_spec) throws Exception {
-        return conf.createProtocol(prot_spec, this);
+        return Configurator.createProtocol(prot_spec, this);
     }
 
 
@@ -215,7 +215,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * @exception Exception Will be thrown when the new protocol cannot be created, or inserted.
      */
     public void insertProtocol(Protocol prot, int position, String neighbor_prot) throws Exception {
-        conf.insertProtocol(prot, position, neighbor_prot, this);
+        Configurator.insertProtocol(prot, position, neighbor_prot, this);
     }
 
 
@@ -230,7 +230,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * @exception Exception Thrown if the protocol cannot be stopped correctly.
      */
     public Protocol removeProtocol(String prot_name) throws Exception {
-        return conf.removeProtocol(top_prot, prot_name);
+        return Configurator.removeProtocol(top_prot, prot_name);
     }
 
 
@@ -250,7 +250,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void destroy() {
         if(top_prot != null) {
-            conf.destroyProtocolStack(top_prot);           // destroys msg queues and threads
+            Configurator.destroyProtocolStack(top_prot);           // destroys msg queues and threads
             top_prot=null;
         }        
         try {
@@ -271,7 +271,7 @@ public class ProtocolStack extends Protocol implements Transport {
         if(stopped == false) return;
 
         timer.start();
-        conf.startProtocolStack(top_prot);
+        Configurator.startProtocolStack(top_prot);
         stopped=false;
     }
 
@@ -287,7 +287,7 @@ public class ProtocolStack extends Protocol implements Transport {
      */
     public void stopStack() {       
         if(stopped) return;
-        conf.stopProtocolStack(top_prot);
+        Configurator.stopProtocolStack(top_prot);
         stopped=true;
     }
 
