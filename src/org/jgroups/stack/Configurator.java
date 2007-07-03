@@ -22,7 +22,7 @@ import java.util.Vector;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.26 2007/07/03 12:35:16 belaban Exp $
+ * @version $Id: Configurator.java,v 1.27 2007/07/03 12:50:11 belaban Exp $
  */
 public class Configurator {
 
@@ -49,7 +49,7 @@ public class Configurator {
      *   -----------------------
      * </pre>
      */
-    public Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {
+    public static Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {
         Protocol protocol_stack=null;
         Vector<ProtocolConfiguration> protocol_configs;
         Vector<Protocol> protocols;
@@ -276,6 +276,9 @@ public class Configurator {
                 sb.append(attrs);
                 retval.add(sb.toString());
             }
+            else {
+                retval.add(sb.toString());
+            }
 
             while(true) {
                 ch=read(reader);
@@ -362,7 +365,7 @@ public class Configurator {
      * @param stack The protocol stack
      * @return Vector of Protocols
      */
-    private Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, ProtocolStack stack) throws Exception {
+    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, ProtocolStack stack) throws Exception {
         Vector<Protocol> retval=new Vector<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
@@ -734,7 +737,7 @@ public class Configurator {
 
         try {
             protocol_configs=Configurator.parseConfigurations(config_str);
-            protocols=conf.createProtocols(protocol_configs, null);
+            protocols=Configurator.createProtocols(protocol_configs, null);
             if(protocols == null)
                 return;
             protocol_stack=Configurator.connectProtocols(protocols);
