@@ -22,7 +22,7 @@ import java.util.Vector;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.27 2007/07/03 12:50:11 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28 2007/07/03 13:16:55 belaban Exp $
  */
 public class Configurator {
 
@@ -345,7 +345,7 @@ public class Configurator {
         int ch;
 
         while((ch=read(reader)) != -1) {
-            if(Character.isLetterOrDigit(ch) || ch == '_' || ch == '.') {
+            if(Character.isLetterOrDigit(ch) || ch == '_' || ch == '.' || ch == '$') {
                 sb.append((char)ch);
             }
             else {
