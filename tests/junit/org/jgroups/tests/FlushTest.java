@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.38 2007/06/28 20:00:47 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.39 2007/07/03 17:46:18 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -268,10 +268,125 @@ public class FlushTest extends ChannelTestBase
       }         
    }
    
-   public void testVirtualSync()
+   public void testReconciliation()
    {
-	   String[] names = createApplicationNames(2);
-	   _testVsyncGap(names);
+	   String[] names = createApplicationNames(4);
+	   int count = names.length;
+
+	      ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);      
+	      try
+	      {
+	         // Create a semaphore and take all its permits
+	         Semaphore semaphore = new Semaphore(count);
+	         semaphore.acquire(count);
+
+	         // Create channels and their threads that will block on the semaphore        
+	         for (int i = 0; i < count; i++)
+	         {
+	           
+	        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false);
+	            channels.add(channel);                                                                           
+	            sleepThread(2000);
+	         }
+
+	         
+	        
+	         blockUntilViewsReceived(channels, 60000);  
+	         
+	         //insert DISCARD
+	         for (FlushTestReceiver receiver : channels) {
+	        	Properties prop = new Properties();
+	 			prop.setProperty("up", "0.5");
+	 			prop.setProperty("excludeitself", "true");
+
+	 			DISCARD d = new DISCARD(); 			 		
+	 			d.setProperties(prop);
+
+	 			Channel channel = receiver.getChannel();
+	 			if (channel instanceof JChannel) 
+	 			{ 				
+	 				((JChannel) channel).getProtocolStack().insertProtocol(d,
+	 						ProtocolStack.BELOW, "NAKACK");
+	 			}
+			 }                
+	         
+	         FlushTestReceiver lastMember =channels.get(count-1);
+	         List<Address> ignoreList = new ArrayList<Address>();
+	         ignoreList.add(lastMember.getLocalAddress());
+	         Message msg = new Message();
+	         msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
+	         
+	         lastMember.getChannel().send(msg);
+	         
+	         //Sleep to ensure all members receive discard message
+	         sleepThread(1000);               
+	         
+
+	         // send messages, some will be dropped due to DISCARD
+	         for (FlushTestReceiver receiver : channels) {
+	        	 receiver.start();  
+			 } 
+	         
+	         semaphore.release(count);
+	         
+	         sleepThread(3000); 
+	         
+	         // Reacquire the semaphore tickets; when we have them all
+	         // we know the threads are done         
+	         semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
+	         
+	         //remove DISCARD
+	         for (FlushTestReceiver receiver : channels) {         	
+	  			Channel channel = receiver.getChannel();
+	  			if (channel instanceof JChannel) 
+	  			{ 				
+	  				((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
+	  			}
+	 		 }  
+	         
+	         //kill last member to trigger FLUSH with vsynch gaps
+	         FlushTestReceiver randomRecv =channels.remove(count-1);
+	         log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
+	         ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
+	         randomRecv.cleanup();
+	         
+	         //let the view propagate and verify related asserts
+	         sleepThread(4000);
+	         closeAssert.verify(channels);
+	         
+
+	         //verify block/unblock/view/              
+	         List<Digest> digests = new ArrayList<Digest>();
+	         for (FlushTestReceiver receiver : channels)
+	         {           
+	            checkEventSequence(receiver,isMuxChannelUsed());  
+	                     
+	            Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
+	            digests.add(d);
+	         }  
+	         
+	         //verify digests are the same at all surviving members
+	         for (Digest digestO : digests) 
+	         {
+				for (Digest digestI : digests) 
+				{
+					assertEquals("virtual synchrony not satisfied",digestO, digestI);
+				}
+			 }             
+	      }
+	      catch (Exception ex)
+	      {
+	         log.warn("Exception encountered during test", ex);
+	         fail("Exception encountered during test execution");
+	      }
+	      finally
+	      {
+	         for (FlushTestReceiver app : channels)
+	         {            
+	            app.cleanup();
+	            sleepThread(500);
+	         }  
+	      }      
    }
 
 
@@ -313,127 +428,7 @@ public class FlushTest extends ChannelTestBase
         else
             Util.sleep(timeout);
     }
-   
-   private void _testVsyncGap(String names[])
-   {
-      int count = names.length;
-
-      ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);      
-      try
-      {
-         // Create a semaphore and take all its permits
-         Semaphore semaphore = new Semaphore(count);
-         semaphore.acquire(count);
-
-         // Create channels and their threads that will block on the semaphore        
-         for (int i = 0; i < count; i++)
-         {
-           
-        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false);
-            channels.add(channel);                                                                           
-            sleepThread(2000);
-         }
-
-         
-        
-         blockUntilViewsReceived(channels, 60000);  
-         
-         //insert DISCARD
-         for (FlushTestReceiver receiver : channels) {
-        	Properties prop = new Properties();
- 			prop.setProperty("up", "0.3");
- 			prop.setProperty("excludeitself", "true");
-
- 			DISCARD d = new DISCARD(); 			 		
- 			d.setProperties(prop);
-
- 			Channel channel = receiver.getChannel();
- 			if (channel instanceof JChannel) 
- 			{ 				
- 				((JChannel) channel).getProtocolStack().insertProtocol(d,
- 						ProtocolStack.BELOW, "NAKACK");
- 			}
-		 }                
-         
-         FlushTestReceiver lastMember =channels.get(count-1);
-         List<Address> ignoreList = new ArrayList<Address>();
-         ignoreList.add(lastMember.getLocalAddress());
-         Message msg = new Message();
-         msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
-         
-         lastMember.getChannel().send(msg);
-         
-         //Sleep to ensure all members receive discard message
-         sleepThread(1000);               
-         
-
-         // send messages, some will be dropped due to DISCARD
-         for (FlushTestReceiver receiver : channels) {
-        	 receiver.start();  
-		 } 
-         
-         semaphore.release(count);
-         
-         sleepThread(3000); 
-         
-         // Reacquire the semaphore tickets; when we have them all
-         // we know the threads are done         
-         semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
-         
-         //remove DISCARD
-         for (FlushTestReceiver receiver : channels) {         	
-  			Channel channel = receiver.getChannel();
-  			if (channel instanceof JChannel) 
-  			{ 				
-  				((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
-  			}
- 		 }  
-         
-         //kill last member to trigger FLUSH with vsynch gaps
-         FlushTestReceiver randomRecv =channels.remove(count-1);
-         log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
-         ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
-         randomRecv.cleanup();
-         
-         //let the view propagate and verify related asserts
-         sleepThread(4000);
-         closeAssert.verify(channels);
-         
-
-         //verify block/unblock/view/              
-         List<Digest> digests = new ArrayList<Digest>();
-         for (FlushTestReceiver receiver : channels)
-         {           
-            checkEventSequence(receiver,isMuxChannelUsed());  
-                     
-            Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
-            digests.add(d);
-         }  
-         
-         //verify digests are the same at all surviving members
-         for (Digest digestO : digests) 
-         {
-			for (Digest digestI : digests) 
-			{
-				assertEquals("virtual synchrony not satisfied",digestO, digestI);
-			}
-		 }             
-      }
-      catch (Exception ex)
-      {
-         log.warn("Exception encountered during test", ex);
-         fail("Exception encountered during test execution");
-      }
-      finally
-      {
-         for (FlushTestReceiver app : channels)
-         {            
-            app.cleanup();
-            sleepThread(500);
-         }  
-      }      
-   }
-   
+    
    private void _testChannels(String names[], int muxFactoryCount, boolean useTransfer,Assertable a)
    {
       int count = names.length;
