@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.Channel;
-import org.jgroups.util.Util;
 import org.jgroups.blocks.ReplicatedHashMap;
 
 import java.util.HashMap;
@@ -10,12 +9,9 @@ import java.util.Map;
 /**
  * Test methods for ReplicatedHashMap
  * @author Bela Ban
- * @version $Id: ReplicatedHashMapTest.java,v 1.1 2007/07/04 14:30:59 belaban Exp $
+ * @version $Id: ReplicatedHashMapTest.java,v 1.2 2007/07/04 14:32:25 belaban Exp $
  **/
 public class ReplicatedHashMapTest extends ChannelTestBase {
-
-    private static int testCount = 1;
-
     private ReplicatedHashMap<String,String> map1;
     private ReplicatedHashMap<String,String> map2;
 
@@ -25,8 +21,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        System.out.println("#### Setup Test " + testCount);
-
         Channel c1=createChannel("A");
         this.map1=new ReplicatedHashMap<String,String>(c1, false, 5000);
         map1.setBlockingUpdates(true);
@@ -43,8 +37,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     protected void tearDown() throws Exception {
         this.map1.stop();
         this.map2.stop();
-        System.out.println("#### TearDown Test " + testCount + "\n\n");
-        testCount++;
         super.tearDown();
     }
 
