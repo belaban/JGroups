@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.31 2007/05/09 22:57:51 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.32 2007/07/04 14:30:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -12,16 +12,8 @@ import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
+import java.io.*;
 import java.util.*;
-
-
-
 
 
 /**
@@ -40,7 +32,8 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.31 2007/05/09 22:57:51 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.32 2007/07/04 14:30:58 belaban Exp $
+ * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
 
