@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.107 2007/07/03 14:37:12 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.108 2007/07/04 07:24:52 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -14,6 +14,7 @@
     <property name="src.dir" value="${root.dir}/src"/>
     <property name="tests.dir" value="${root.dir}/tests/other"/>
     <property name="junit.dir" value="${root.dir}/tests/junit"/>
+    <property name="junit-functional.dir" value="${root.dir}/tests/junit-functional"/>
     <property name="stress.dir" value="${root.dir}/tests/stress"/>
     <property name="perf.dir" value="${root.dir}/tests/perf"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
@@ -99,6 +100,7 @@
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
             <src path="${junit.dir}"/>
+            <src path="${junit-functional.dir}"/>
             <src path="${stress.dir}"/>
             <src path="${perf.dir}"/>
         </javac>
@@ -377,6 +379,23 @@
     </target>
 
 
+     <target name="unittests-functional"
+            depends="compile, makeKeystore"
+            description="Runs all unit tests in tests/junit-functional and prints results to stdout">
+        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <classpath refid="jg.classpath"/>
+            <formatter type="brief" usefile="false"/>
+            <batchtest todir="${tmp.dir}">
+                <fileset dir="${junit-functional.dir}"
+                         includes="**/*Test.java"/>
+            </batchtest>
+        </junit>
+        <delete dir="${keystore.dir}" failonerror="false"/>
+    </target>
+
+
     <target name="unittests-xml" depends="compile, makeKeystore">
         <delete dir="${tmp.dir}/tests-results"/>
         <mkdir dir="${tmp.dir}/tests-results"/>
@@ -393,11 +412,28 @@
             </batchtest>
         </junit>
     </target>
-	
-	<!-- 
+
+    <target name="unittests-functional-xml" depends="compile, makeKeystore">
+        <delete dir="${tmp.dir}/tests-results"/>
+        <mkdir dir="${tmp.dir}/tests-results"/>
+        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+            <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
+            <classpath refid="jg.classpath"/>
+            <formatter type="xml" usefile="true"/>
+            <batchtest todir="${tmp.dir}/tests-results">
+                <fileset dir="${junit-functional.dir}"
+                         includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
+            </batchtest>
+        </junit>
+    </target>
+
+
+    <!--
 		 Main macro definition for test running. Work in progress.
 	-->
-		
 	<macrodef name="testrunner">
 		<text name="text"/>
 		<attribute name="set"/>		
@@ -433,13 +469,50 @@
 	        </junit>
 		</sequential>	
 	</macrodef>
-	
-	<!-- 
+
+
+    <macrodef name="testrunner-functional">
+		<text name="text"/>
+		<attribute name="set"/>
+		<sequential>
+			<echo>@{text}</echo>
+			<echo>Using set: @{set}</echo>
+			<mkdir dir="${tmp.dir}/tests-results"/>
+	        <property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
+	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
+	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+	        	<jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
+	            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
+	            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
+	        	<sysproperty key="channel.conf" value="${channel.conf}" />
+	        	<sysproperty key="channel.conf.flush" value="${channel.conf.flush}" />
+	        	<sysproperty key="mux.on" value="${mux.on}" />
+		 		<sysproperty key="mux.conf" value="${mux.conf}" />
+			 	<sysproperty key="mux.conf.stack" value="${mux.conf.stack}" />
+		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
+		 		<sysproperty key="threadcount" value="${threadcount}" />
+	            <classpath refid="jg.classpath"/>
+	            <formatter type="xml" usefile="true" unless="testname.ext"/>
+	            <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
+	            <formatter classname="${formatter.class}"  extension="-${testname.ext}.xml" if="testname.ext"/>
+	            <batchtest todir="${tmp.dir}/tests-results">
+	                <fileset dir="${junit-functional.dir}">
+	                	<patternset refid="@{set}"/>
+	                	<patternset refid="junit.excludes"/>
+	                </fileset>
+	            </batchtest>
+	        </junit>
+		</sequential>
+	</macrodef>
+
+
+    <!--
 		 Target wrapping macro definition for test running. All test targets 
 		 use this target. 
 	-->
-		
-	<target name="runtests" depends="compile">		 
+	<target name="runtests" depends="compile">
 		 <testrunner set="${testset}">Tests running with parameters:
 		 	channel.conf=${channel.conf}
 		 	channel.conf.flush=${channel.conf.flush}
@@ -455,48 +528,69 @@
 	</target>
 
 
+    <target name="runtests-functional" depends="compile">
+		 <testrunner-functional set="all.tests">Tests running with parameters:
+		 	channel.conf=${channel.conf}
+		 	channel.conf.flush=${channel.conf.flush}
+			mux.on=${mux.on}
+			mux.conf=${mux.conf}
+			mux.conf.stack=${mux.conf.stack}
+			mux.factorycount=${mux.factorycount}
+			threadcount=${threadcount}
+			test.verbose=${test.verbose}
+		 	testname.ext=${testname.ext}
+		 	formatter.class=${formatter.class}
+		 </testrunner-functional>
+	</target>
+
 
 
     <!--
 			 Runs entire testsuite for nightly Cruise Control builds. 		 
 	-->
     <target name="all-tests-cc" depends="makeKeystore"
-			description="Runs entire testsuite for nightly Cruise Control builds">		
+            description="Runs entire testsuite for nightly Cruise Control builds">
 		
 		
-		 <!-- jboss-test.jar contains org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter 
+        <!-- jboss-test.jar contains org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter
 		 	  get jboss-test.jar only if not present locally -->
 		
-		 <get usetimestamp="true" 
-		 	  src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar" 
-		 	  dest="${lib.dir}/jboss-test.jar"/>	 
-		
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="channel.conf" value="udp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
-		 	<param name="testname.ext" value="udp"/>
-		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-		 </antcall>		
-		
-		
-		<antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>	
-		 	<param name="channel.conf" value="tcp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>
-			<param name="testname.ext" value="tcp"/>
-			<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-		</antcall>
+        <get usetimestamp="true"
+             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
+             dest="${lib.dir}/jboss-test.jar"/>
 
-		<antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="mux.on" value="true"/>
-			<param name="mux.conf.stack" value="udp"/>
-		 	<param name="testname.ext" value="mux-udp"/>
-		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
-		</antcall>		
+        <antcall target="runtests-functional">
+            <param name="testset" value="all.tests"/>
+            <param name="testname.ext" value="functional"/>
+            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
 
-		 <!-- <antcall target="runtests">		 	
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="udp.xml"/>
+            <param name="channel.conf.flush" value="flush-udp.xml"/>
+            <param name="testname.ext" value="udp"/>
+            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+		
+		
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="tcp.xml"/>
+            <param name="channel.conf.flush" value="flush-tcp.xml"/>
+            <param name="testname.ext" value="tcp"/>
+            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp"/>
+            <param name="testname.ext" value="mux-udp"/>
+            <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+
+        <!-- <antcall target="runtests">
 		 	<param name="testset" value="all.tests"/>
 		 	<param name="channel.conf" value="tunnel.xml"/>
 		 	<param name="channel.conf.flush" value="tunnel.xml"/>
@@ -504,16 +598,16 @@
 		 	<param name="testname.ext" value="tunnel"/>
 		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>		 	
 		 </antcall>	-->	
-	</target>
-	
-	<!-- 
+    </target>
+
+
+    <!--
 			 Runs entire testsuite.
 			 
 			 Note: report generated will NOT contain results for all stacks.
 			 See all-tests-cc. 		 
 		        	     
 	-->
-		
 	<target name="all-tests" depends="makeKeystore" 
 			description="Runs entire testsuite">		 
 		
