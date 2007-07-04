@@ -741,8 +741,7 @@ public class FLUSH extends Protocol {
 		synchronized (sharedLock) {
 			flushCompletedMap.put(address, digest);
 			if (flushCompletedMap.size() >= flushMembers.size()) {
-				flushCompleted = flushCompletedMap.keySet().containsAll(
-						flushMembers);
+				flushCompleted = flushCompletedMap.keySet().containsAll(flushMembers);
 			}
 			
 			if (log.isDebugEnabled())
@@ -756,9 +755,7 @@ public class FLUSH extends Protocol {
 				Digest d = findHighestSequences();			
 				msg = new Message();
 				msg.setFlag(Message.OOB);				
-				FlushHeader fh = new FlushHeader(
-						FlushHeader.FLUSH_RECONCILE, currentViewId(),
-						flushMembers);
+				FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_RECONCILE, currentViewId(), flushMembers);
 				reconcileOks.clear();
 				fh.addDigest(d);
 				msg.putHeader(getName(), fh);
