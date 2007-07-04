@@ -11,9 +11,6 @@ import org.jgroups.util.Util;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -118,7 +115,7 @@ public class ChannelTestBase extends TestCase
          }
       }
       
-      if(router != null){
+      if(router != null) {
     	  router.stop();
     	  //TODO ensure proper thread/socket cleanup when stopping GossipRouter
     	  Util.sleep(100);
@@ -133,7 +130,7 @@ public class ChannelTestBase extends TestCase
 	  
 	 // Therefore we include a slight delay of 20 msec 
 	 
-	 Util.sleep(20); 
+         Util.sleep(20); 
          int current_active_threads = Thread.activeCount();
 
          String msg = "";
@@ -327,7 +324,6 @@ public class ChannelTestBase extends TestCase
    }
    /**
     * Decouples channel creation for junit tests
-    *
     */
    protected interface ChannelTestFactory
    {
@@ -336,8 +332,6 @@ public class ChannelTestBase extends TestCase
 
    /**
     * Base class for all aplications using channel
-    *   
-    *
     */
    protected abstract class ChannelApplication implements Runnable, MemberRetrievable
    {
@@ -665,7 +659,7 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */
-   protected boolean isMuxChannelUsed()
+   protected static boolean isMuxChannelUsed()
    {
       return Boolean.valueOf(System.getProperty("mux.on", "false")).booleanValue();
    }
@@ -676,7 +670,7 @@ public class ChannelTestBase extends TestCase
     * 
     * @return
     */
-   protected boolean shouldCompareThreadCount()
+   protected static boolean shouldCompareThreadCount()
    {
       return Boolean.valueOf(System.getProperty("threadcount", "false")).booleanValue();
    }
