@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.21 2007/04/30 15:18:45 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.22 2007/07/04 08:31:41 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -132,14 +132,14 @@ public class ConcurrentStartupTest extends ChannelTestBase
          }
 
          // Sleep to ensure the threads get all the semaphore tickets
-         sleepThread(1000);
+         Util.sleep(1000);
 
          // Reacquire the semaphore tickets; when we have them all
          // we know the threads are done         
          acquireSemaphore(semaphore, 60000, count);
          
          //Sleep to ensure async message arrive
-         sleepThread(6000);
+         Util.sleep(6000);
 
          //do test verification
          List[] lists = new List[count];
@@ -172,7 +172,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
       {    
          for (int i = 0; i < count; i++)
          {
-            sleepThread(500);
+            Util.sleep(500);
             channels[i].cleanup();
          }        
       }
@@ -250,7 +250,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
 
             // Start threads and let them join the channel                           
             channels[i].start();
-            sleepThread(2000);
+            Util.sleep(2000);
          }
 
          // Make sure everyone is in sync
@@ -263,19 +263,19 @@ public class ConcurrentStartupTest extends ChannelTestBase
             blockUntilViewsReceived(channels, 60000);
          }
 
-         sleepThread(2000);
+         Util.sleep(2000);
          //Unleash hell !
          semaphore.release(count);
 
          // Sleep to ensure the threads get all the semaphore tickets
-         sleepThread(2000);
+         Util.sleep(2000);
 
          //Reacquire the semaphore tickets; when we have them all
          //we know the threads are done         
          acquireSemaphore(semaphore, 60000, count);
 
          //Sleep to ensure async message arrive
-         sleepThread(6000);
+         Util.sleep(6000);
          //do test verification
          List[] lists = new List[count];
          for (int i = 0; i < count; i++)
@@ -307,7 +307,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
       {      
          for (int i = 0; i < count; i++)
          {
-            sleepThread(500);
+            Util.sleep(500);
             channels[i].cleanup();
          }         
       }
@@ -378,25 +378,25 @@ public class ConcurrentStartupTest extends ChannelTestBase
       public void setState(byte[] state)
       {
          super.setState(state);
-         sleepThread(5000);
+         Util.sleep(5000);
       }
 
       public byte[] getState()
       {
-         sleepThread(5000);
+         Util.sleep(5000);
          return super.getState();        
       }
 
       public void getState(OutputStream ostream)
       {
          super.getState(ostream); 
-         sleepThread(5000);
+         Util.sleep(5000);
       }
 
       public void setState(InputStream istream)
       {
          super.setState(istream);
-         sleepThread(5000);
+         Util.sleep(5000);
       }
    }
    
@@ -415,25 +415,25 @@ public class ConcurrentStartupTest extends ChannelTestBase
       public void setState(byte[] state)
       {
          super.setState(state);
-         sleepThread(5000);
+         Util.sleep(5000);
       }
 
       public byte[] getState()
       {
-         sleepThread(5000);
+         Util.sleep(5000);
          return super.getState();        
       }
 
       public void getState(OutputStream ostream)
       {
          super.getState(ostream); 
-         sleepThread(5000);
+         Util.sleep(5000);
       }
 
       public void setState(InputStream istream)
       {
          super.setState(istream);
-         sleepThread(5000);
+         Util.sleep(5000);
       }
    }
    

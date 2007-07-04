@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.40 2007/07/04 07:24:41 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.41 2007/07/04 08:31:41 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -110,13 +110,13 @@ public class FlushTest extends ChannelTestBase
       blockUntilViewsReceived(receivers, 60000);
 
       // Sleep to ensure the threads get all the semaphore tickets
-      sleepThread(1000);
+      Util.sleep(1000);
 
       // Reacquire the semaphore tickets; when we have them all
       // we know the threads are done  
       s.tryAcquire(1, 60, TimeUnit.SECONDS);      
       receivers[0].cleanup();
-      sleepThread(1000);      
+      Util.sleep(1000);
 
       checkEventSequence(receivers[0],false);
 
@@ -271,120 +271,120 @@ public class FlushTest extends ChannelTestBase
 	   String[] names = createApplicationNames(4);
 	   int count = names.length;
 
-	      ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);      
-	      try
-	      {
-	         // Create a semaphore and take all its permits
-	         Semaphore semaphore = new Semaphore(count);
-	         semaphore.acquire(count);
+       ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
+       try
+       {
+           // Create a semaphore and take all its permits
+           Semaphore semaphore = new Semaphore(count);
+           semaphore.acquire(count);
 
-	         // Create channels and their threads that will block on the semaphore        
-	         for (int i = 0; i < count; i++)
-	         {
+           // Create channels and their threads that will block on the semaphore
+           for (int i = 0; i < count; i++)
+           {
 	           
-	        	FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore,10, false);
-	            channels.add(channel);                                                                           
-	            sleepThread(2000);
-	         }
+               FlushTestReceiver receiver = new FlushTestReceiver(names[i], semaphore,10, false);
+               channels.add(receiver);
+               // Util.sleep(2000);
+           }
 
 	         
 	        
-	         blockUntilViewsReceived(channels, 60000);  
+           blockUntilViewsReceived(channels, 60000);
 	         
-	         //insert DISCARD
-	         for (FlushTestReceiver receiver : channels) {
-	        	Properties prop = new Properties();
-	 			prop.setProperty("up", "0.5");
-	 			prop.setProperty("excludeitself", "true");
+           //insert DISCARD
+           for (FlushTestReceiver receiver : channels) {
+               Properties prop = new Properties();
+               prop.setProperty("up", "0.5");
+               prop.setProperty("excludeitself", "true");
 
-	 			DISCARD d = new DISCARD(); 			 		
-	 			d.setProperties(prop);
+               DISCARD d = new DISCARD();
+               d.setProperties(prop);
 
-	 			Channel channel = receiver.getChannel();
-	 			if (channel instanceof JChannel) 
-	 			{ 				
-	 				((JChannel) channel).getProtocolStack().insertProtocol(d,
-	 						ProtocolStack.BELOW, "NAKACK");
-	 			}
-			 }                
+               Channel channel = receiver.getChannel();
+               if (channel instanceof JChannel)
+               {
+                   ((JChannel) channel).getProtocolStack().insertProtocol(d,
+                                                                          ProtocolStack.BELOW, "NAKACK");
+               }
+           }
 	         
-	         FlushTestReceiver lastMember =channels.get(count-1);
-	         List<Address> ignoreList = new ArrayList<Address>();
-	         ignoreList.add(lastMember.getLocalAddress());
-	         Message msg = new Message();
-	         msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
+           FlushTestReceiver lastMember =channels.get(count-1);
+           List<Address> ignoreList = new ArrayList<Address>();
+           ignoreList.add(lastMember.getLocalAddress());
+           Message msg = new Message();
+           msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
 	         
-	         lastMember.getChannel().send(msg);
+           lastMember.getChannel().send(msg);
 	         
-	         //Sleep to ensure all members receive discard message
-	         sleepThread(1000);               
-	         
-
-	         // send messages, some will be dropped due to DISCARD
-	         for (FlushTestReceiver receiver : channels) {
-	        	 receiver.start();  
-			 } 
-	         
-	         semaphore.release(count);
-	         
-	         sleepThread(3000); 
-	         
-	         // Reacquire the semaphore tickets; when we have them all
-	         // we know the threads are done         
-	         semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);    
-	         
-	         //remove DISCARD
-	         for (FlushTestReceiver receiver : channels) {         	
-	  			Channel channel = receiver.getChannel();
-	  			if (channel instanceof JChannel) 
-	  			{ 				
-	  				((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
-	  			}
-	 		 }  
-	         
-	         //kill last member to trigger FLUSH with vsynch gaps
-	         FlushTestReceiver randomRecv =channels.remove(count-1);
-	         log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
-	         ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
-	         randomRecv.cleanup();
-	         
-	         //let the view propagate and verify related asserts
-	         sleepThread(4000);
-	         closeAssert.verify(channels);
+           //Sleep to ensure all members receive discard message
+           Util.sleep(1000);
 	         
 
-	         //verify block/unblock/view/              
-	         List<Digest> digests = new ArrayList<Digest>();
-	         for (FlushTestReceiver receiver : channels)
-	         {           
-	            checkEventSequence(receiver,isMuxChannelUsed());  
+           // send messages, some will be dropped due to DISCARD
+           for (FlushTestReceiver receiver : channels) {
+               receiver.start();
+           }
+	         
+           semaphore.release(count);
+	         
+           Util.sleep(3000);
+	         
+           // Reacquire the semaphore tickets; when we have them all
+           // we know the threads are done
+           semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);
+	         
+           //remove DISCARD
+           for (FlushTestReceiver receiver : channels) {
+               Channel channel = receiver.getChannel();
+               if (channel instanceof JChannel)
+               {
+                   ((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
+               }
+           }
+	         
+           //kill last member to trigger FLUSH with vsynch gaps
+           FlushTestReceiver randomRecv =channels.remove(count-1);
+           log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
+           ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
+           randomRecv.cleanup();
+	         
+           //let the view propagate and verify related asserts
+           Util.sleep(4000);
+           closeAssert.verify(channels);
+	         
+
+           //verify block/unblock/view/
+           List<Digest> digests = new ArrayList<Digest>();
+           for (FlushTestReceiver receiver : channels)
+           {
+               checkEventSequence(receiver,isMuxChannelUsed());
 	                     
-	            Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
-	            digests.add(d);
-	         }  
+               Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
+               digests.add(d);
+           }
 	         
-	         //verify digests are the same at all surviving members
-	         for (Digest digestO : digests) 
-	         {
-				for (Digest digestI : digests) 
-				{
-					assertEquals("virtual synchrony not satisfied",digestO, digestI);
-				}
-			 }             
-	      }
-	      catch (Exception ex)
-	      {
-	         log.warn("Exception encountered during test", ex);
-	         fail("Exception encountered during test execution");
-	      }
-	      finally
-	      {
-	         for (FlushTestReceiver app : channels)
-	         {            
-	            app.cleanup();
-	            sleepThread(500);
-	         }  
-	      }      
+           //verify digests are the same at all surviving members
+           for (Digest digestO : digests)
+           {
+               for (Digest digestI : digests)
+               {
+                   assertEquals("virtual synchrony not satisfied",digestO, digestI);
+               }
+           }
+       }
+       catch (Exception ex)
+       {
+           log.warn("Exception encountered during test", ex);
+           fail("Exception encountered during test execution");
+       }
+       finally
+       {
+           for (FlushTestReceiver app : channels)
+           {
+               app.cleanup();
+               Util.sleep(500);
+           }
+       }
    }
 
 
@@ -458,7 +458,7 @@ public class FlushTest extends ChannelTestBase
             {
                semaphore.release(1);
             }
-            sleepThread(1000);
+            Util.sleep(1000);
          }
 
          
@@ -484,7 +484,7 @@ public class FlushTest extends ChannelTestBase
          }
 
          // Sleep to ensure the threads get all the semaphore tickets
-         sleepThread(1000);
+         Util.sleep(1000);
 
          // Reacquire the semaphore tickets; when we have them all
          // we know the threads are done         
@@ -529,7 +529,7 @@ public class FlushTest extends ChannelTestBase
          for (FlushTestReceiver app:channels)
          {           
             app.cleanup();
-            sleepThread(500);
+            Util.sleep(500);
          }  
       }      
    }
@@ -883,7 +883,7 @@ public class FlushTest extends ChannelTestBase
          {
         	 for (int i = 0; i < msgCount; i++) {
         		 channel.send(new Message());
-        		 sleepThread(100);
+        		 Util.sleep(100);
 			 }
          }
       }
