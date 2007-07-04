@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.46 2007/07/04 16:06:11 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.47 2007/07/04 16:26:29 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -438,9 +438,6 @@ public class FlushTest extends ChannelTestBase
         }
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
-
         System.out.println("\nDigests after C sent 5 messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
         System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
@@ -468,8 +465,9 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
 
+        discard.resetIgnoredMembers();
+        c2.getProtocolStack().removeProtocol("DISCARD");
 
-        // Now kill C
         System.out.println("\nJoining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
         c4=createChannel();
         c4.connect("x");
@@ -545,9 +543,6 @@ public class FlushTest extends ChannelTestBase
         }
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
-
         System.out.println("\nDigests after C sent 5 messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
         System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
@@ -575,10 +570,11 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
 
+        discard.resetIgnoredMembers();
+        c2.getProtocolStack().removeProtocol("DISCARD");
 
-        // Now kill C
         System.out.println("\nTriggering a manual FLUSH; this will update B with C's 5 messages:");
-        boolean rc=c1.startFlush(100000, false);
+        boolean rc=c1.startFlush(0, false);
         System.out.println("rc=" + rc);
         c1.stopFlush();
 
@@ -640,8 +636,6 @@ public class FlushTest extends ChannelTestBase
         }
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
 
         System.out.println("\nDigests after C sent 5 messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
@@ -669,7 +663,9 @@ public class FlushTest extends ChannelTestBase
         list=map.get(c3.getLocalAddress());
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
-
+        
+        discard.resetIgnoredMembers();
+        c2.getProtocolStack().removeProtocol("DISCARD");
 
         // Now kill C
         Address cAddress = c3.getLocalAddress();
