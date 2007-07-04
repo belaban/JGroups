@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.45 2007/07/04 12:22:26 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.46 2007/07/04 16:06:11 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -672,6 +672,7 @@ public class FlushTest extends ChannelTestBase
 
 
         // Now kill C
+        Address cAddress = c3.getLocalAddress();
         System.out.println("\nLeaving C, this will trigger FLUSH and a subsequent view change to {A,B}");
         c3.close();
 
@@ -693,8 +694,8 @@ public class FlushTest extends ChannelTestBase
 
         // check B (should have received all 5 of C's messages, through B as part of the flush phase)
         map=b.getMsgs();
-        assertEquals("we should have 1 sender at this time", 1, map.size());
-        list=map.get(c3.getLocalAddress());
+        assertEquals("we should have 1 sender at this time", 1, map.size());        
+        list=map.get(cAddress);
         System.out.println("B: messages received from C: " + list);
         assertEquals(5, list.size());
     }
