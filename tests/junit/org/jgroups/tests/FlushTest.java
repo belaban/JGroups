@@ -1,15 +1,7 @@
 package org.jgroups.tests;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -40,7 +32,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.43 2007/07/04 09:55:58 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.44 2007/07/04 11:11:55 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -54,7 +46,7 @@ public class FlushTest extends ChannelTestBase
       super(name);
    }
 
-   Channel c1, c2, c3;
+   JChannel c1, c2, c3;
 
    static final String CONFIG = "flush-udp.xml";
 
@@ -311,7 +303,7 @@ public class FlushTest extends ChannelTestBase
            }
 	         
            FlushTestReceiver lastMember = channels.get(count-1);
-           List<Address> ignoreList = new ArrayList<Address>();
+           Set<Address> ignoreList = new HashSet<Address>();
            ignoreList.add(lastMember.getLocalAddress());
            Message msg = new Message();
            msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
@@ -391,6 +383,135 @@ public class FlushTest extends ChannelTestBase
            }
        }
    }
+
+
+    /**
+     * Test scenario:
+     * <ul>
+     * <li>3 members: A,B,C
+     * <li>All members have DISCARD which does <em>not</em> discard any messages !
+     * <li>B (in DISCARD) ignores all messages from C
+     * <li>C multicasts 5 messages to the cluster, A and C receive them
+     * <li>C then 'crashes' (Channel.shutdown())
+     * <li>Before installing view {A,B}, FLUSH makes A sends its 5 messages received from C to B
+     * </ul>
+     */
+    public void testReconciliation2() throws Exception {
+        String[] names={"A", "B", "C"};
+        int count=names.length;
+        List<Digest> digests;
+
+
+
+        c1=createChannel();
+        c2=createChannel();
+        c3=createChannel();
+        MyReceiver a=new MyReceiver(c1, "A"), b=new MyReceiver(c2, "B"), c=new MyReceiver(c3, "C");
+        c1.setReceiver(a);
+        c2.setReceiver(b);
+        c3.setReceiver(c);
+
+        c1.connect("x");
+        c2.connect("x");
+        c3.connect("x");
+
+        View v=c3.getView();
+        assertEquals("view: " + v, 3, v.size());
+
+        Properties prop=new Properties();
+        prop.setProperty("excludeitself", "true"); // don't discard messages to self
+        DISCARD discard=new DISCARD();
+        discard.setProperties(prop);
+        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
+        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+
+
+        // now C sends 5 messages:
+        System.out.println("C sending 5 messages; B will ignore them, but A and C will receive them");
+        for(int i=1; i <=5; i++) {
+            c3.send(null, null, new Integer(i));
+        }
+        Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
+
+        c2.getProtocolStack().removeProtocol("DISCARD");
+
+        // check C (must have received its own messages)
+        Map<Address, List<Integer>> map=c.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        List<Integer> list=map.get(c3.getLocalAddress());
+        System.out.println("C: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+
+        // check A (should have received C's messages)
+        map=a.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("A: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+        // check B (should have received none of C's messages)
+        map=b.getMsgs();
+        assertEquals("we should have no sender at this time", 0, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertNull(list);
+
+
+        // Now kill C
+        c3.close();
+
+        // wait until view {A,B} has been installed
+        int cnt=10;
+        while((v=c1.getView()) != null && count > 0) {
+            count--;
+            if(v.size() == 2)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("v=" + v);
+        assert v != null;
+        assertEquals(2, v.size());
+
+        // check B (should have received all 5 of C's messages, through B as part of the flush phase)
+        map=b.getMsgs();
+        assertEquals("we should have 1 sender at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertEquals(5, list.size());
+    }
+
+    private static class MyReceiver extends ExtendedReceiverAdapter {
+        Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
+        Channel channel;
+        String name;
+
+        public MyReceiver(Channel ch, String name) {
+            this.channel=ch; this.name=name;
+        }
+
+        public Map<Address, List<Integer>> getMsgs() {
+            return msgs;
+        }
+
+        public void reset() {msgs.clear();}
+
+        public void receive(Message msg) {
+            List<Integer> list=msgs.get(msg.getSrc());
+            if(list == null) {
+                list=new ArrayList<Integer>();
+                msgs.put(msg.getSrc(), list);
+            }
+            list.add((Integer)msg.getObject());
+            System.out.println("[" + name + " / " + channel.getLocalAddress() + "]: received message from " +
+                    msg.getSrc() + ": " + msg.getObject());
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[" + name + " / " + channel.getLocalAddress() + "]: " + new_view);
+        }
+    }
+
 
     private static String printDigests(List<Digest> digests) {
         StringBuilder sb=new StringBuilder();
