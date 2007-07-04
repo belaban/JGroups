@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.44 2007/07/04 11:11:55 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.45 2007/07/04 12:22:26 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -46,7 +46,7 @@ public class FlushTest extends ChannelTestBase
       super(name);
    }
 
-   JChannel c1, c2, c3;
+   JChannel c1, c2, c3, c4;
 
    static final String CONFIG = "flush-udp.xml";
 
@@ -58,6 +58,13 @@ public class FlushTest extends ChannelTestBase
 
    public void tearDown() throws Exception
    {
+       if (c4 != null)
+       {
+           c4.close();
+           assertFalse(c4.isOpen());
+           assertFalse(c4.isConnected());
+           c4 = null;
+       }
       if (c3 != null)
       {
          c3.close();
@@ -392,17 +399,11 @@ public class FlushTest extends ChannelTestBase
      * <li>All members have DISCARD which does <em>not</em> discard any messages !
      * <li>B (in DISCARD) ignores all messages from C
      * <li>C multicasts 5 messages to the cluster, A and C receive them
-     * <li>C then 'crashes' (Channel.shutdown())
-     * <li>Before installing view {A,B}, FLUSH makes A sends its 5 messages received from C to B
+     * <li>New member D joins
+     * <li>Before installing view {A,B,C,D}, FLUSH updates B with all of C's 5 messages
      * </ul>
      */
-    public void testReconciliation2() throws Exception {
-        String[] names={"A", "B", "C"};
-        int count=names.length;
-        List<Digest> digests;
-
-
-
+    public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
         c1=createChannel();
         c2=createChannel();
         c3=createChannel();
@@ -425,15 +426,25 @@ public class FlushTest extends ChannelTestBase
         discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
         c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
 
+        System.out.println("\nDigests before C sends any messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
 
         // now C sends 5 messages:
-        System.out.println("C sending 5 messages; B will ignore them, but A and C will receive them");
+        System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
         for(int i=1; i <=5; i++) {
             c3.send(null, null, new Integer(i));
         }
         Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
 
+        discard.resetIgnoredMembers();
         c2.getProtocolStack().removeProtocol("DISCARD");
+
+        System.out.println("\nDigests after C sent 5 messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
 
         // check C (must have received its own messages)
         Map<Address, List<Integer>> map=c.getMsgs();
@@ -459,19 +470,26 @@ public class FlushTest extends ChannelTestBase
 
 
         // Now kill C
-        c3.close();
+        System.out.println("\nJoining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
+        c4=createChannel();
+        c4.connect("x");
 
         // wait until view {A,B} has been installed
-        int cnt=10;
-        while((v=c1.getView()) != null && count > 0) {
-            count--;
-            if(v.size() == 2)
+        int cnt=1000;
+        while((v=c1.getView()) != null && cnt > 0) {
+            cnt--;
+            if(v.size() == 4)
                 break;
             Util.sleep(500);
         }
         System.out.println("v=" + v);
         assert v != null;
-        assertEquals(2, v.size());
+        assertEquals(4, v.size());
+
+        System.out.println("\nDigests after D joined (FLUSH protocol should have updated B with C's messages)");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
 
         // check B (should have received all 5 of C's messages, through B as part of the flush phase)
         map=b.getMsgs();
@@ -480,6 +498,208 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertEquals(5, list.size());
     }
+
+    /**
+     * Test scenario:
+     * <ul>
+     * <li>3 members: A,B,C
+     * <li>All members have DISCARD which does <em>not</em> discard any messages !
+     * <li>B (in DISCARD) ignores all messages from C
+     * <li>C multicasts 5 messages to the cluster, A and C receive them
+     * <li>A then runs a manual flush by calling Channel.start/stopFlush()
+     * <li>Before installing view {A,B}, FLUSH makes A sends its 5 messages received from C to B
+     * </ul>
+     */
+    public void testReconciliationFlushTriggeredByManualFlush() throws Exception {
+        c1=createChannel();
+        c2=createChannel();
+        c3=createChannel();
+        MyReceiver a=new MyReceiver(c1, "A"), b=new MyReceiver(c2, "B"), c=new MyReceiver(c3, "C");
+        c1.setReceiver(a);
+        c2.setReceiver(b);
+        c3.setReceiver(c);
+
+        c1.connect("x");
+        c2.connect("x");
+        c3.connect("x");
+
+        View v=c3.getView();
+        assertEquals("view: " + v, 3, v.size());
+
+        Properties prop=new Properties();
+        prop.setProperty("excludeitself", "true"); // don't discard messages to self
+        DISCARD discard=new DISCARD();
+        discard.setProperties(prop);
+        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
+        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+
+        System.out.println("\nDigests before C sends any messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
+
+        // now C sends 5 messages:
+        System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
+        for(int i=1; i <=5; i++) {
+            c3.send(null, null, new Integer(i));
+        }
+        Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
+
+        discard.resetIgnoredMembers();
+        c2.getProtocolStack().removeProtocol("DISCARD");
+
+        System.out.println("\nDigests after C sent 5 messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
+
+        // check C (must have received its own messages)
+        Map<Address, List<Integer>> map=c.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        List<Integer> list=map.get(c3.getLocalAddress());
+        System.out.println("C: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+
+        // check A (should have received C's messages)
+        map=a.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("A: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+        // check B (should have received none of C's messages)
+        map=b.getMsgs();
+        assertEquals("we should have no sender at this time", 0, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertNull(list);
+
+
+        // Now kill C
+        System.out.println("\nTriggering a manual FLUSH; this will update B with C's 5 messages:");
+        boolean rc=c1.startFlush(100000, false);
+        System.out.println("rc=" + rc);
+        c1.stopFlush();
+
+        System.out.println("\nDigests afterC left (FLUSH protocol should have updated B with C's messages)");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+
+        // check B (should have received all 5 of C's messages, through B as part of the flush phase)
+        map=b.getMsgs();
+        assertEquals("we should have 1 sender at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertEquals(5, list.size());
+    }
+
+    /**
+     * Test scenario:
+     * <ul>
+     * <li>3 members: A,B,C
+     * <li>All members have DISCARD which does <em>not</em> discard any messages !
+     * <li>B (in DISCARD) ignores all messages from C
+     * <li>C multicasts 5 messages to the cluster, A and C receive them
+     * <li>C then 'crashes' (Channel.shutdown())
+     * <li>Before installing view {A,B}, FLUSH makes A sends its 5 messages received from C to B
+     * </ul>
+     */
+    public void testReconciliationFlushTriggeredByMemberLeaving() throws Exception {
+        c1=createChannel();
+        c2=createChannel();
+        c3=createChannel();
+        MyReceiver a=new MyReceiver(c1, "A"), b=new MyReceiver(c2, "B"), c=new MyReceiver(c3, "C");
+        c1.setReceiver(a);
+        c2.setReceiver(b);
+        c3.setReceiver(c);
+
+        c1.connect("x");
+        c2.connect("x");
+        c3.connect("x");
+
+        View v=c3.getView();
+        assertEquals("view: " + v, 3, v.size());
+
+        Properties prop=new Properties();
+        prop.setProperty("excludeitself", "true"); // don't discard messages to self
+        DISCARD discard=new DISCARD();
+        discard.setProperties(prop);
+        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
+        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+
+        System.out.println("\nDigests before C sends any messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
+
+        // now C sends 5 messages:
+        System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
+        for(int i=1; i <=5; i++) {
+            c3.send(null, null, new Integer(i));
+        }
+        Util.sleep(1000); // until al messages have been received, this is asynchronous so we need to wait a bit
+
+        discard.resetIgnoredMembers();
+        c2.getProtocolStack().removeProtocol("DISCARD");
+
+        System.out.println("\nDigests after C sent 5 messages:");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
+
+        // check C (must have received its own messages)
+        Map<Address, List<Integer>> map=c.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        List<Integer> list=map.get(c3.getLocalAddress());
+        System.out.println("C: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+
+        // check A (should have received C's messages)
+        map=a.getMsgs();
+        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("A: messages received from C: " + list);
+        assertEquals("msgs for C: " + list, 5, list.size());
+
+        // check B (should have received none of C's messages)
+        map=b.getMsgs();
+        assertEquals("we should have no sender at this time", 0, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertNull(list);
+
+
+        // Now kill C
+        System.out.println("\nLeaving C, this will trigger FLUSH and a subsequent view change to {A,B}");
+        c3.close();
+
+        // wait until view {A,B} has been installed
+        int cnt=1000;
+        while((v=c1.getView()) != null && cnt > 0) {
+            cnt--;
+            if(v.size() == 2)
+                break;
+            Util.sleep(500);
+        }
+        System.out.println("v=" + v);
+        assert v != null;
+        assertEquals(2, v.size());
+
+        System.out.println("\nDigests afterC left (FLUSH protocol should have updated B with C's messages)");
+        System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
+        System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
+
+        // check B (should have received all 5 of C's messages, through B as part of the flush phase)
+        map=b.getMsgs();
+        assertEquals("we should have 1 sender at this time", 1, map.size());
+        list=map.get(c3.getLocalAddress());
+        System.out.println("B: messages received from C: " + list);
+        assertEquals(5, list.size());
+    }
+
+
 
     private static class MyReceiver extends ExtendedReceiverAdapter {
         Map<Address,List<Integer>> msgs=new HashMap<Address,List<Integer>>(10);
@@ -530,6 +750,7 @@ public class FlushTest extends ChannelTestBase
         }
         return retval;
     }
+    
 
 
     public void testVirtualSynchrony() throws Exception {
