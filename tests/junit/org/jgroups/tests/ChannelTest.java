@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.7 2007/06/28 08:09:55 belaban Exp $
+// $Id: ChannelTest.java,v 1.8 2007/07/04 08:31:42 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.7 2007/06/28 08:09:55 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.8 2007/07/04 08:31:42 belaban Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -40,7 +40,7 @@ public class ChannelTest extends ChannelTestBase {
        String groupName = GROUP;
        Channel c1 = createChannel("A");
        c1.connect(groupName);
-       sleepThread(1000);
+       Util.sleep(1000);
        assertTrue(c1.isOpen());
        assertTrue(c1.isConnected());
        
@@ -96,7 +96,7 @@ public class ChannelTest extends ChannelTestBase {
        Channel c2 = createChannel("A");
        c2.connect(groupName);
        
-       sleepThread(1000);
+       Util.sleep(1000);
        
        assertTrue(c1.isOpen());
        assertTrue(c1.isConnected());
@@ -115,7 +115,7 @@ public class ChannelTest extends ChannelTestBase {
        assertTrue(c2.getView().getMembers().contains(c1.getLocalAddress()));
        
        c2.close();
-       sleepThread(1000);
+       Util.sleep(1000);
        
        assertFalse(c2.isOpen());
        assertFalse(c2.isConnected());

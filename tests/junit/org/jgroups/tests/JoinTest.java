@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.8 2007/06/01 16:11:39 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.9 2007/07/04 08:31:42 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     Channel c1, c2;
@@ -59,7 +59,7 @@ public class JoinTest extends ChannelTestBase {
         c2.connect("X");
         
         //no blocking is used, let the view propagate
-        sleepThread(2000);
+        Util.sleep(2000);
         
         View v1=c1.getView(), v2=c2.getView();
         System.out.println("v1=" + v1 + ", v2=" + v2);

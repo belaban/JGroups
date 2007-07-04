@@ -113,7 +113,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
             channels.add(channel);
             semaphore.release(1);
             channel.start();            
-            sleepThread(2000);
+            Util.sleep(2000);
             
             if(crash && !crashed && i>2)
             {
@@ -143,7 +143,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
          int partialGetStateInvokedCount = 0;
          int partialSetStateInvokedCount = 0;
          
-         sleepThread(3000);
+         Util.sleep(3000);
          for (int i = 0; i < channels.size(); i++)
          {
             StreamingStateTransferApplication current = (StreamingStateTransferApplication) channels.get(i);
@@ -198,7 +198,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
          for (int i = 0; i < channels.size(); i++)
          {
             StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(i);
-            sleepThread(500);
+            Util.sleep(500);
             app.cleanup();
          }
       }
@@ -275,7 +275,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void getState(OutputStream ostream)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          super.getState(ostream);
          ObjectOutputStream oos = null;
@@ -304,7 +304,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public byte[] getState()
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          byte[] result = null;
          try
@@ -328,7 +328,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void setState(byte [] state)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          Map result = null;
          try
@@ -353,7 +353,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void setState(InputStream istream)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          super.setState(istream);
          ObjectInputStream ois = null;
@@ -381,7 +381,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void setState(String stateId,byte [] state)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          Object nameTransfer = null;         
          try
@@ -402,7 +402,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public byte[] getState(String stateId)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          byte[] result = null;
          try
@@ -423,7 +423,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void setState(String state_id, InputStream istream)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          super.setState(state_id, istream);
          ObjectInputStream ois = null;
@@ -446,7 +446,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       public void getState(String state_id, OutputStream ostream)
       {
          if(largeTransfer)
-            sleepThread(4000);
+            Util.sleep(4000);
          
          super.getState(state_id, ostream);
          ObjectOutputStream oos = null;

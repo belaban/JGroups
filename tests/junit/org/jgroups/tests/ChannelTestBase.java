@@ -748,7 +748,7 @@ public class ChannelTestBase extends TestCase
 
       while (System.currentTimeMillis() < failTime)
       {
-         sleepThread(100);
+         Util.sleep(100);
          if (areViewsComplete(channels,count))
          {
             return;
@@ -765,7 +765,7 @@ public class ChannelTestBase extends TestCase
       
       while (System.currentTimeMillis() < failTime)
       {
-         sleepThread(100);
+         Util.sleep(100);
          if (areViewsComplete((MemberRetrievable[])channels.toArray(new MemberRetrievable[channels.size()]),count))
          {
             return;
@@ -846,24 +846,9 @@ public class ChannelTestBase extends TestCase
 
    public static void sleepRandom(int maxTime)
    {
-      sleepThread(RANDOM.nextInt(maxTime));
+      Util.sleep(RANDOM.nextInt(maxTime));
    }
 
-   /**
-    * Puts the current thread to sleep for the desired number of ms, suppressing
-    * any exceptions.
-    *
-    * @param sleeptime number of ms to sleep
-    */
-   public static void sleepThread(long sleeptime)
-   {
-      try
-      {
-         Thread.sleep(sleeptime);
-      }
-      catch (InterruptedException ie)
-      {
-      }
-   }
+
 
 }
