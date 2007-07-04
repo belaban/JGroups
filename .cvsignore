@@ -7,3 +7,4 @@ eclipse-bin
 *.ipr
 *.iws
 eclipse-classes
+junit*.properties
