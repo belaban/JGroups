@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.41 2007/07/04 08:31:41 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.42 2007/07/04 08:43:40 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -284,10 +284,8 @@ public class FlushTest extends ChannelTestBase
 	           
                FlushTestReceiver receiver = new FlushTestReceiver(names[i], semaphore,10, false);
                channels.add(receiver);
-               // Util.sleep(2000);
            }
 
-	         
 	        
            blockUntilViewsReceived(channels, 60000);
 	         
@@ -362,14 +360,14 @@ public class FlushTest extends ChannelTestBase
                Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
                digests.add(d);
            }
-	         
+
+           assertTrue(!digests.isEmpty());
+
            //verify digests are the same at all surviving members
-           for (Digest digestO : digests)
+           Digest firstDigest=digests.get(0);
+           for (Digest digest : digests)
            {
-               for (Digest digestI : digests)
-               {
-                   assertEquals("virtual synchrony not satisfied",digestO, digestI);
-               }
+               assertEquals("virtual synchrony not satisfied",firstDigest, digest);
            }
        }
        catch (Exception ex)
