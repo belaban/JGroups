@@ -40,20 +40,18 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.39 2007/07/03 17:46:18 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.40 2007/07/04 07:24:41 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
    public FlushTest()
    {
       super();
-      // TODO Auto-generated constructor stub
    }
 
    public FlushTest(String name)
    {
       super(name);
-      // TODO Auto-generated constructor stub
    }
 
    Channel c1, c2, c3;
@@ -764,7 +762,7 @@ public class FlushTest extends ChannelTestBase
          flush.setProperties(p);
 
          // send timeout up and down the stack, so other protocols can use the same value too
-         Map map = new HashMap();
+         Map<Object,Object> map = new HashMap<Object,Object>();
          map.put("flush_timeout", new Long(0));
          flush.getUpProtocol().up(new Event(Event.CONFIG, map));
          flush.getDownProtocol().down(new Event(Event.CONFIG, map));
@@ -778,7 +776,7 @@ public class FlushTest extends ChannelTestBase
 
    private class FlushTestReceiver extends PushChannelApplicationWithSemaphore
    {
-      List events;
+      List<Object> events;
 
       boolean shouldFetchState;
       int msgCount = 0;
@@ -789,7 +787,7 @@ public class FlushTest extends ChannelTestBase
          super(name, semaphore);
          this.shouldFetchState = shouldFetchState;
          this.msgCount = msgCount;
-         events = Collections.synchronizedList(new LinkedList());              
+         events = Collections.synchronizedList(new LinkedList<Object>());
          channel.connect("test");
       }
       
@@ -797,7 +795,7 @@ public class FlushTest extends ChannelTestBase
       {
          super(name, factory,semaphore);
          this.shouldFetchState = shouldFetchState;
-         events = Collections.synchronizedList(new LinkedList());
+         events = Collections.synchronizedList(new LinkedList<Object>());
          channel.connect("test");
       }
 
@@ -806,9 +804,9 @@ public class FlushTest extends ChannelTestBase
          events.clear();
       }
 
-      public List getEvents()
+      public List<Object> getEvents()
       {
-         return new LinkedList(events);
+         return new LinkedList<Object>(events);
       }
 
       public void block()
@@ -943,12 +941,12 @@ public class FlushTest extends ChannelTestBase
 
 
     private static class Cache extends ExtendedReceiverAdapter {
-        protected final Map data ;
+        protected final Map<Object,Object> data ;
         Channel ch;
         String name;
 
         public Cache(Channel ch, String name) {
-        	this.data=new HashMap();
+        	this.data=new HashMap<Object,Object>();
             this.ch=ch;
             this.name=name;
             this.ch.setReceiver(this);
@@ -1004,9 +1002,9 @@ public class FlushTest extends ChannelTestBase
 
 
         public void setState(byte[] state) {
-            Map m;
+            Map<Object,Object> m;
             try {
-                m=(Map)Util.objectFromByteBuffer(state);
+                m=(Map<Object,Object>)Util.objectFromByteBuffer(state);
                 synchronized(data) {
                     data.clear();
                     data.putAll(m);
@@ -1050,7 +1048,7 @@ public class FlushTest extends ChannelTestBase
            ObjectInputStream ois = null;
            try {
                ois = new ObjectInputStream(istream);
-               Map m = (Map)ois.readObject();
+               Map<Object,Object> m = (Map<Object,Object>)ois.readObject();
                synchronized (data)
                {
                   data.clear();
