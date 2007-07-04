@@ -1,12 +1,11 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.108 2007/07/04 07:24:52 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.109 2007/07/04 07:52:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
-
 
 
     <property file="build.properties"/>
@@ -31,50 +30,50 @@
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="180000"/>
     <property name="version" value="2.5.0"/>
-	
-	<!-- default properties used in all test targets -->
-	<property name="channel.conf" value="udp.xml"/>
-	<property name="channel.conf.flush" value="flush-udp.xml"/>
-	<property name="mux.on" value="false"/>
-	<property name="mux.conf" value="stacks.xml"/>	
-	<property name="mux.conf.stack" value="udp"/>	
-	<property name="mux.factorycount" value="4"/>
-	<property name="threadcount" value="false"/>
-	<property name="test.verbose" value="false"/>
+
+    <!-- default properties used in all test targets -->
+    <property name="channel.conf" value="udp.xml"/>
+    <property name="channel.conf.flush" value="flush-udp.xml"/>
+    <property name="mux.on" value="false"/>
+    <property name="mux.conf" value="stacks.xml"/>
+    <property name="mux.conf.stack" value="udp"/>
+    <property name="mux.factorycount" value="4"/>
+    <property name="threadcount" value="false"/>
+    <property name="test.verbose" value="false"/>
 
 
     <path id="jg.classpath">
         <pathelement location="${compile.dir}"/>
         <pathelement location="${conf.dir}"/>
-    	<pathelement location="${keystore.dir}"/>
+        <pathelement location="${keystore.dir}"/>
         <fileset dir="${lib.dir}">
             <include name="*.jar"/>
         </fileset>
     </path>
-	
-	<!-- patternsets used to define test sets -->	
-	<patternset id="flush.tests">	     
-		<include name="org/jgroups/tests/FlushTest*"/>
-		<include name="org/jgroups/tests/ConcurrentStartupTest*"/>
-	</patternset>
-	
-	<patternset id="mux.tests">	     
-		<include name="org/jgroups/tests/Multiplexer*"/>			
-	</patternset>
-	
-	<patternset id="one.test">	     
-		<include name="**/*${test}*"/>			
-	</patternset>
-	
-	<patternset id="all.tests">	     
-		<include name="org/jgroups/tests/**Test**"/>		
-		<include name="org/jgroups/blocks/**Test**"/>		
-	</patternset>
-	
-	<patternset id="junit.excludes">	     
-		<exclude name="**/DistributedQueueTest*"/>
-		<exclude name="**/ChannelTestBase*"/>
-	</patternset>	     
+
+    <!-- patternsets used to define test sets -->
+    <patternset id="flush.tests">
+        <include name="org/jgroups/tests/FlushTest*"/>
+        <include name="org/jgroups/tests/ConcurrentStartupTest*"/>
+    </patternset>
+
+    <patternset id="mux.tests">
+        <include name="org/jgroups/tests/Multiplexer*"/>
+    </patternset>
+
+    <patternset id="one.test">
+        <include name="**/*${test}*"/>
+    </patternset>
+
+    <patternset id="all.tests">
+        <include name="org/jgroups/tests/**Test**"/>
+        <include name="org/jgroups/blocks/**Test**"/>
+    </patternset>
+
+    <patternset id="junit.excludes">
+        <exclude name="**/DistributedQueueTest*"/>
+        <exclude name="**/ChannelTestBase*"/>
+    </patternset>
 
 
     <target name="prepare">
@@ -86,16 +85,16 @@
 
 
     <target name="compile"
-        depends="prepare"
-        description="Compiles are Java files">
+            depends="prepare"
+            description="Compiles are Java files">
         <javac destdir="${compile.dir}"
-            source="1.5"
-            classpathref="jg.classpath"
-            debug="on"
-            deprecation="off"
-            optimize="off"
-            listfiles="false"
-            includes="org/jgroups/**">
+               source="1.5"
+               classpathref="jg.classpath"
+               debug="on"
+               deprecation="off"
+               optimize="off"
+               listfiles="false"
+               includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
             <src path="${src.dir}"/>
             <src path="${tests.dir}"/>
@@ -107,37 +106,32 @@
     </target>
 
 
-    <target name="draw" depends="compile">
-        <java classname="org.jgroups.demos.Draw" classpathref="jg.classpath"/>
-    </target>
-
     <target name="jar"
-        description="Compiles and creates JAR files in the ./dist directory"
-        depends="compile,
+            description="Compiles and creates JAR files in the ./dist directory"
+            depends="compile,
                 jgroups-all.jar,
                 jgroups-core.jar">
     </target>
 
 
-
     <target name="jgroups-all.jar"
-        description="Creates the jgroups-all.jar (includes everything)">
+            description="Creates the jgroups-all.jar (includes everything)">
         <jar destfile="${dist.dir}/jgroups-all.jar"
-            basedir="${compile.dir}"
-            manifest="${conf.dir}/manifest.mf"
-            includes="org/jgroups/**">
-            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml" />
+             basedir="${compile.dir}"
+             manifest="${conf.dir}/manifest.mf"
+             includes="org/jgroups/**">
+            <fileset dir="${conf.dir}" includes="*.dtd, *.xml" excludes="*-service.xml"/>
         </jar>
     </target>
 
     <target name="jgroups-core.jar"
-        description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile">
+            description="Creates the jgroups-core.jar. Includes only core file, no demos" depends="compile">
         <mkdir dir="${dist.dir}"/>
         <jar jarfile="${dist.dir}/jgroups-core.jar"
-            basedir="${compile.dir}"
-            manifest="${conf.dir}/manifest.mf"
-            includes="org/jgroups/**"
-            excludes="org/jgroups/demos/**,
+             basedir="${compile.dir}"
+             manifest="${conf.dir}/manifest.mf"
+             includes="org/jgroups/**"
+             excludes="org/jgroups/demos/**,
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
@@ -168,54 +162,54 @@
         <delete dir="${tmp.dir}" failonerror="false"/>
     </target>
 
-     <target name="bin-dist" depends="jar">
-         <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
-         <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
-         <copy todir="${tmp.dir}/JGroups-${version}.bin">
-             <fileset dir="${root.dir}">
-                 <include name="CREDITS"/>
-                 <include name="INSTALL.html"/>
-                 <include name="LICENSE"/>
-                 <include name="EULA"/>
-             </fileset>
-             <fileset dir="${lib.dir}">
-                 <include name="commons-logging*.jar"/>
-                 <include name="log4j*.jar"/>
-                 <include name="licenses/*"/>
-             </fileset>
-             <fileset dir="${dist.dir}">
-                 <include name="jgroups-all*.jar"/>
-             </fileset>
-             <fileset dir="${conf.dir}">
-                 <include name="config.txt"/>
-                 <include name="udp.xml"/>
-                 <include name="tcp*.xml"/>
-                 <include name="mping.xml"/>
-                 <include name="sfc.xml"/>
-             </fileset>
-             <fileset dir="${bin.dir}">
-                 <include name="jgroups*"/>
-             </fileset>
-         </copy>
-         <mkdir dir="${dist.dir}"/>
-         <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
-         <delete dir="${tmp.dir}" failonerror="false"/>
+    <target name="bin-dist" depends="jar">
+        <echo message="Creating binary distribution ${dist.dir}/JGroups-${version}.bin.zip"/>
+        <mkdir dir="${tmp.dir}/JGroups-${version}.bin"/>
+        <copy todir="${tmp.dir}/JGroups-${version}.bin">
+            <fileset dir="${root.dir}">
+                <include name="CREDITS"/>
+                <include name="INSTALL.html"/>
+                <include name="LICENSE"/>
+                <include name="EULA"/>
+            </fileset>
+            <fileset dir="${lib.dir}">
+                <include name="commons-logging*.jar"/>
+                <include name="log4j*.jar"/>
+                <include name="licenses/*"/>
+            </fileset>
+            <fileset dir="${dist.dir}">
+                <include name="jgroups-all*.jar"/>
+            </fileset>
+            <fileset dir="${conf.dir}">
+                <include name="config.txt"/>
+                <include name="udp.xml"/>
+                <include name="tcp*.xml"/>
+                <include name="mping.xml"/>
+                <include name="sfc.xml"/>
+            </fileset>
+            <fileset dir="${bin.dir}">
+                <include name="jgroups*"/>
+            </fileset>
+        </copy>
+        <mkdir dir="${dist.dir}"/>
+        <zip zipfile="${dist.dir}/JGroups-${version}.bin.zip" basedir="${tmp.dir}" filesonly="true"/>
+        <delete dir="${tmp.dir}" failonerror="false"/>
     </target>
 
     <target name="gossip-service"
             description="Creates the service archive used to deploy GossipRouter as a JBoss MBean"
             depends="compile">
         <mkdir dir="${dist.dir}/gossiptemp"/>
-        <copy  file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
+        <copy file="${conf.dir}/gossip-service.xml" tofile="${dist.dir}/gossiptemp/jboss-service.xml"/>
         <jar jarfile="${dist.dir}/gossip-router.sar"
-            basedir="${compile.dir}"
-            includes="org/jgroups/**"
-            excludes="org/jgroups/demos/**,
+             basedir="${compile.dir}"
+             includes="org/jgroups/**"
+             excludes="org/jgroups/demos/**,
                       org/jgroups/tests/**,
                       org/jgroups/**/*Test.class,
                       org/jgroups/**/*Test\$*.class">
             <metainf dir="${dist.dir}/gossiptemp"
-                includes="jboss-service.xml"/>
+                     includes="jboss-service.xml"/>
             <fileset dir="${conf.dir}" includes="jg-magic-map.xml"/>
         </jar>
         <delete dir="${dist.dir}/gossiptemp"/>
@@ -224,8 +218,8 @@
     <target name="multiplexer-service" depends="jgroups-core.jar"
             description="Creates the service archive used to deploy the JChannelFactory (multiplexer) MBean">
         <mkdir dir="${dist.dir}/muxtemp"/>
-        <copy  file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
-        <copy  file="${conf.dir}/multiplexer-xmbean.xml" todir="${dist.dir}/muxtemp/"/>
+        <copy file="${conf.dir}/multiplexer-service.xml" tofile="${dist.dir}/muxtemp/jboss-service.xml"/>
+        <copy file="${conf.dir}/multiplexer-xmbean.xml" todir="${dist.dir}/muxtemp/"/>
         <jar jarfile="${dist.dir}/Multiplexer.sar">
             <fileset dir="${dist.dir}" includes="jgroups-core.jar"/>
             <fileset dir="${lib.dir}" includes="commons-logging*.jar,log4j*.jar"/>
@@ -249,22 +243,22 @@
 
     <!-- generate java doc -->
     <target name="javadoc"
-        depends="prepare"
-        description="Create Javadoc documentation in the ./dist/javadoc directory">
+            depends="prepare"
+            description="Create Javadoc documentation in the ./dist/javadoc directory">
         <javadoc packagenames="${javadoc.packages}"
-            sourcepath="${src.dir}"
-            destdir="${javadoc.dir}"
-            classpathref="jg.classpath"
-            author="true"
-            version="true"
-            use="true"
-            bottom="Copyright &#169; 1998-2008 Bela Ban. All Rights Reserved."
-			useexternalfile="yes"
-			doctitle="JGroups"
-			overview="${src.dir}/org/jgroups/overview.html">
-			<!-- The tag option for Javadoc is available in Java 1.4 or later. -->
-			<tag name="todo" description="To do:"/>
-			</javadoc>
+                 sourcepath="${src.dir}"
+                 destdir="${javadoc.dir}"
+                 classpathref="jg.classpath"
+                 author="true"
+                 version="true"
+                 use="true"
+                 bottom="Copyright &#169; 1998-2008 Bela Ban. All Rights Reserved."
+                 useexternalfile="yes"
+                 doctitle="JGroups"
+                 overview="${src.dir}/org/jgroups/overview.html">
+            <!-- The tag option for Javadoc is available in Java 1.4 or later. -->
+            <tag name="todo" description="To do:"/>
+        </javadoc>
     </target>
 
 
@@ -291,18 +285,12 @@
     <target name="check-docbook-support">
         <available file="${root.dir}/../docbook-support" type="dir"
                    property="docbook.support.present"/>
-        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support-svn)"
+        <fail message="docbook-support directory does not exist, please check it out from jboss first (run target checkout-docbook-support)"
               unless="docbook.support.present"/>
     </target>
 
 
-    <target name="checkout-docbook-support" description="Checks out docbook-support from jboss.com (requires cvs on the path)">
-        <cvs cvsroot=":pserver:anonymous@anoncvs.forge.jboss.com:/cvsroot/jboss"
-                package="docbook-support"
-                dest="${root.dir}/.."/>
-    </target>
-
-    <target name="checkout-docbook-support-svn">
+    <target name="checkout-docbook-support">
         <exec executable="svn">
             <arg value="co"/>
             <arg value="http://anonsvn.jboss.org/repos/jbossas/trunk/docbook-support"/>
@@ -310,90 +298,47 @@
         </exec>
     </target>
 
-    <!-- clean up directories -->
     <target name="clean"
-        description="Removes all class files and the ./dist directory">
+            description="Removes all class files and the ./dist directory">
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
-    	<delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
+        <delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
             </fileset>
         </delete>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
     </target>
 
-
-    <target name="cleanall" depends="clean">
-        <echo message="Cleaning documentation"/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
-             target="clean"/>
-    </target>
-
-
-    <target name="all"
-        depends="jar,javadoc"
-        description="Compiles all files, creates JARs and Javadoc documentation"/>
 
     <target name="version"
-        depends="compile"
-        description="Prints some info about the Ant version and the OS/JDK used">
+            depends="compile"
+            description="Prints some info about the Ant version and the OS/JDK used">
         <echo message="${ant.version}"/>
         <echo message="JDK=${java.vm.version} on ${os.name} ${os.version}"/>
         <java classname="org.jgroups.Version" classpathref="jg.classpath"/>
     </target>
 
-	<target name="makeKeystore"
-			depends="compile"
-			description="Generates an appropraite temporary keystore file for the unit tests and the JVM in use">
-			<mkdir dir="${keystore.dir}"/>
-			<java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-				<arg value="--storeName"/>
-				<arg value="keystore/defaultStore.keystore"/>
-				<classpath refid="jg.classpath"/>			   
-			</java>
-			<java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
-				<arg value="--storeName"/>
-				<arg value="keystore/defaultStore2.keystore"/>
-				<classpath refid="jg.classpath"/>			   
-			</java>
-		</target>
-	
-	
-    <target name="unittests"
-            depends="compile, makeKeystore"
-            description="Runs all unit tests in tests/junit and prints results to stdout">
-        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+    
+    <target name="makeKeystore"
+            depends="compile"
+            description="Generates an appropraite temporary keystore file for the unit tests and the JVM in use">
+        <mkdir dir="${keystore.dir}"/>
+        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
+            <arg value="--storeName"/>
+            <arg value="keystore/defaultStore.keystore"/>
             <classpath refid="jg.classpath"/>
-            <formatter type="brief" usefile="false"/>
-            <batchtest todir="${tmp.dir}">
-                <fileset dir="${junit.dir}"
-                         includes="**/AUTHTest.java"/>
-            </batchtest>
-        </junit>
-        <delete dir="${keystore.dir}" failonerror="false"/>
+        </java>
+        <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
+            <arg value="--storeName"/>
+            <arg value="keystore/defaultStore2.keystore"/>
+            <classpath refid="jg.classpath"/>
+        </java>
     </target>
 
-
-     <target name="unittests-functional"
-            depends="compile, makeKeystore"
-            description="Runs all unit tests in tests/junit-functional and prints results to stdout">
-        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <classpath refid="jg.classpath"/>
-            <formatter type="brief" usefile="false"/>
-            <batchtest todir="${tmp.dir}">
-                <fileset dir="${junit-functional.dir}"
-                         includes="**/*Test.java"/>
-            </batchtest>
-        </junit>
-        <delete dir="${keystore.dir}" failonerror="false"/>
-    </target>
 
 
     <target name="unittests-xml" depends="compile, makeKeystore">
@@ -407,154 +352,139 @@
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
-                <fileset dir="${junit.dir}"
-                         includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
+                <fileset dir="${junit.dir}" includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
+                <fileset dir="${junit-functional.dir}" includes="**/*Test.java"/>
             </batchtest>
         </junit>
     </target>
 
-    <target name="unittests-functional-xml" depends="compile, makeKeystore">
-        <delete dir="${tmp.dir}/tests-results"/>
-        <mkdir dir="${tmp.dir}/tests-results"/>
-        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
-            <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
-            <classpath refid="jg.classpath"/>
-            <formatter type="xml" usefile="true"/>
-            <batchtest todir="${tmp.dir}/tests-results">
-                <fileset dir="${junit-functional.dir}"
-                         includes="**/*Test.java" excludes="**/DistributedQueueTest.java"/>
-            </batchtest>
-        </junit>
-    </target>
 
 
     <!--
 		 Main macro definition for test running. Work in progress.
 	-->
-	<macrodef name="testrunner">
-		<text name="text"/>
-		<attribute name="set"/>		
-		<sequential>
-			<echo>@{text}</echo>
-			<echo>Using set: @{set}</echo>
-			<mkdir dir="${tmp.dir}/tests-results"/>
-	        <property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
-	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">	        	
-	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-	        	<jvmarg value="-Djava.net.preferIPv4Stack=true"/>
-	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />	        	
-	            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
-	            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-	        	<sysproperty key="channel.conf" value="${channel.conf}" />
-	        	<sysproperty key="channel.conf.flush" value="${channel.conf.flush}" />	      
-	        	<sysproperty key="mux.on" value="${mux.on}" />
-		 		<sysproperty key="mux.conf" value="${mux.conf}" />
-			 	<sysproperty key="mux.conf.stack" value="${mux.conf.stack}" />
-		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
-		 		<sysproperty key="threadcount" value="${threadcount}" />
-	            <classpath refid="jg.classpath"/>
-	            <formatter type="xml" usefile="true" unless="testname.ext"/>
-	            <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
-	            <formatter classname="${formatter.class}"  extension="-${testname.ext}.xml" if="testname.ext"/>
-	            <batchtest todir="${tmp.dir}/tests-results">
-	                <fileset dir="${junit.dir}">
-	                	<patternset refid="@{set}"/>
-	                	<patternset refid="junit.excludes"/>
-	                </fileset>	           	
-	            </batchtest>	        	
-	        </junit>
-		</sequential>	
-	</macrodef>
+    <macrodef name="testrunner">
+        <text name="text"/>
+        <attribute name="set"/>
+        <sequential>
+            <echo>@{text}</echo>
+            <echo>Using set: @{set}</echo>
+            <mkdir dir="${tmp.dir}/tests-results"/>
+            <property name="formatter.class"
+                      value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
+            <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
+                <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+                <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+                <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
+                <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
+                <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
+                <sysproperty key="channel.conf" value="${channel.conf}"/>
+                <sysproperty key="channel.conf.flush" value="${channel.conf.flush}"/>
+                <sysproperty key="mux.on" value="${mux.on}"/>
+                <sysproperty key="mux.conf" value="${mux.conf}"/>
+                <sysproperty key="mux.conf.stack" value="${mux.conf.stack}"/>
+                <sysproperty key="mux.factorycount" value="${mux.factorycount}"/>
+                <sysproperty key="threadcount" value="${threadcount}"/>
+                <classpath refid="jg.classpath"/>
+                <formatter type="xml" usefile="true" unless="testname.ext"/>
+                <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
+                <formatter classname="${formatter.class}" extension="-${testname.ext}.xml" if="testname.ext"/>
+                <batchtest todir="${tmp.dir}/tests-results">
+                    <fileset dir="${junit.dir}">
+                        <patternset refid="@{set}"/>
+                        <patternset refid="junit.excludes"/>
+                    </fileset>
+                </batchtest>
+            </junit>
+        </sequential>
+    </macrodef>
 
 
     <macrodef name="testrunner-functional">
-		<text name="text"/>
-		<attribute name="set"/>
-		<sequential>
-			<echo>@{text}</echo>
-			<echo>Using set: @{set}</echo>
-			<mkdir dir="${tmp.dir}/tests-results"/>
-	        <property name="formatter.class" value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
-	        <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
-	            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-	            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-	        	<jvmarg value="-Djava.net.preferIPv4Stack=true"/>
-	        	<sysproperty key="cfg" value="${conf.dir}/stacks.xml" />
-	            <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties" />
-	            <sysproperty key="tests.tmp.dir" value="${tmp.dir}" />
-	        	<sysproperty key="channel.conf" value="${channel.conf}" />
-	        	<sysproperty key="channel.conf.flush" value="${channel.conf.flush}" />
-	        	<sysproperty key="mux.on" value="${mux.on}" />
-		 		<sysproperty key="mux.conf" value="${mux.conf}" />
-			 	<sysproperty key="mux.conf.stack" value="${mux.conf.stack}" />
-		 		<sysproperty key="mux.factorycount" value="${mux.factorycount}" />
-		 		<sysproperty key="threadcount" value="${threadcount}" />
-	            <classpath refid="jg.classpath"/>
-	            <formatter type="xml" usefile="true" unless="testname.ext"/>
-	            <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
-	            <formatter classname="${formatter.class}"  extension="-${testname.ext}.xml" if="testname.ext"/>
-	            <batchtest todir="${tmp.dir}/tests-results">
-	                <fileset dir="${junit-functional.dir}">
-	                	<patternset refid="@{set}"/>
-	                	<patternset refid="junit.excludes"/>
-	                </fileset>
-	            </batchtest>
-	        </junit>
-		</sequential>
-	</macrodef>
+        <text name="text"/>
+        <attribute name="set"/>
+        <sequential>
+            <echo>@{text}</echo>
+            <echo>Using set: @{set}</echo>
+            <mkdir dir="${tmp.dir}/tests-results"/>
+            <property name="formatter.class"
+                      value="org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter"/>
+            <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
+                <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+                <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
+                <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
+                <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
+                <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
+                <sysproperty key="channel.conf" value="${channel.conf}"/>
+                <sysproperty key="channel.conf.flush" value="${channel.conf.flush}"/>
+                <sysproperty key="mux.on" value="${mux.on}"/>
+                <sysproperty key="mux.conf" value="${mux.conf}"/>
+                <sysproperty key="mux.conf.stack" value="${mux.conf.stack}"/>
+                <sysproperty key="mux.factorycount" value="${mux.factorycount}"/>
+                <sysproperty key="threadcount" value="${threadcount}"/>
+                <classpath refid="jg.classpath"/>
+                <formatter type="xml" usefile="true" unless="testname.ext"/>
+                <sysproperty key="jboss-junit-configuration" value="${testname.ext}"/>
+                <formatter classname="${formatter.class}" extension="-${testname.ext}.xml" if="testname.ext"/>
+                <batchtest todir="${tmp.dir}/tests-results">
+                    <fileset dir="${junit-functional.dir}">
+                        <patternset refid="@{set}"/>
+                        <patternset refid="junit.excludes"/>
+                    </fileset>
+                </batchtest>
+            </junit>
+        </sequential>
+    </macrodef>
 
 
     <!--
 		 Target wrapping macro definition for test running. All test targets 
 		 use this target. 
 	-->
-	<target name="runtests" depends="compile">
-		 <testrunner set="${testset}">Tests running with parameters:
-		 	channel.conf=${channel.conf}
-		 	channel.conf.flush=${channel.conf.flush}
-			mux.on=${mux.on} 
-			mux.conf=${mux.conf}
-			mux.conf.stack=${mux.conf.stack}
-			mux.factorycount=${mux.factorycount}
-			threadcount=${threadcount}	
-			test.verbose=${test.verbose}
-		 	testname.ext=${testname.ext}	
-		 	formatter.class=${formatter.class}
-		 </testrunner>
-	</target>
+    <target name="runtests" depends="compile">
+        <testrunner set="${testset}">Tests running with parameters:
+            channel.conf=${channel.conf}
+            channel.conf.flush=${channel.conf.flush}
+            mux.on=${mux.on}
+            mux.conf=${mux.conf}
+            mux.conf.stack=${mux.conf.stack}
+            mux.factorycount=${mux.factorycount}
+            threadcount=${threadcount}
+            test.verbose=${test.verbose}
+            testname.ext=${testname.ext}
+            formatter.class=${formatter.class}
+        </testrunner>
+    </target>
 
 
     <target name="runtests-functional" depends="compile">
-		 <testrunner-functional set="all.tests">Tests running with parameters:
-		 	channel.conf=${channel.conf}
-		 	channel.conf.flush=${channel.conf.flush}
-			mux.on=${mux.on}
-			mux.conf=${mux.conf}
-			mux.conf.stack=${mux.conf.stack}
-			mux.factorycount=${mux.factorycount}
-			threadcount=${threadcount}
-			test.verbose=${test.verbose}
-		 	testname.ext=${testname.ext}
-		 	formatter.class=${formatter.class}
-		 </testrunner-functional>
-	</target>
-
+        <testrunner-functional set="all.tests">Tests running with parameters:
+            channel.conf=${channel.conf}
+            channel.conf.flush=${channel.conf.flush}
+            mux.on=${mux.on}
+            mux.conf=${mux.conf}
+            mux.conf.stack=${mux.conf.stack}
+            mux.factorycount=${mux.factorycount}
+            threadcount=${threadcount}
+            test.verbose=${test.verbose}
+            testname.ext=${testname.ext}
+            formatter.class=${formatter.class}
+        </testrunner-functional>
+    </target>
 
 
     <!--
-			 Runs entire testsuite for nightly Cruise Control builds. 		 
-	-->
+              Runs entire testsuite for nightly Cruise Control builds.
+     -->
     <target name="all-tests-cc" depends="makeKeystore"
             description="Runs entire testsuite for nightly Cruise Control builds">
-		
-		
+
+
         <!-- jboss-test.jar contains org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter
-		 	  get jboss-test.jar only if not present locally -->
-		
+                 get jboss-test.jar only if not present locally -->
+
         <get usetimestamp="true"
              src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
              dest="${lib.dir}/jboss-test.jar"/>
@@ -572,8 +502,8 @@
             <param name="testname.ext" value="udp"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-		
-		
+
+
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp.xml"/>
@@ -589,242 +519,216 @@
             <param name="testname.ext" value="mux-udp"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-
-        <!-- <antcall target="runtests">
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="channel.conf" value="tunnel.xml"/>
-		 	<param name="channel.conf.flush" value="tunnel.xml"/>
-		 	<param name="mux.conf.stack" value="tunnel"/>
-		 	<param name="testname.ext" value="tunnel"/>
-		 	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>		 	
-		 </antcall>	-->	
     </target>
 
 
     <!--
 			 Runs entire testsuite.
-			 
 			 Note: report generated will NOT contain results for all stacks.
 			 See all-tests-cc. 		 
-		        	     
 	-->
-	<target name="all-tests" depends="makeKeystore" 
-			description="Runs entire testsuite">		 
-		
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="channel.conf" value="udp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
-		 </antcall>		
-		
-		
-		<antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>	
-		 	<param name="channel.conf" value="tcp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
-		</antcall>
-		
-	</target>
-	
-	
-	<!-- 
-		 Runs entire testsuite with default udp confguration specified by udp.xml. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-	<target name="all-tests-udp" depends="makeKeystore" 
-			description="Runs entire testsuite with default udp confguration specified by udp.xml">		 
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="channel.conf" value="udp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-udp.xml"/>
-		 </antcall>
-	</target>
+    <target name="all-tests" depends="makeKeystore"
+            description="Runs entire testsuite">
 
-	<!-- 
-		 Runs entire testsuite with default tunnel confguration specified by tunnel.xml. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-		-->
-		
-	<target name="all-tests-tunnel" depends="makeKeystore" 
-			description="Runs entire testsuite with default tunnel confguration specified by tunnel.xml">		 
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>
-		 	<param name="channel.conf" value="tunnel.xml"/>
-		 	<param name="channel.conf.flush" value="tunnel.xml"/>
-		 	<param name="mux.conf.stack" value="tunnel"/>
-		 </antcall>
-	</target>	
-	
-	
-	<!-- 
-		 Runs entire testsuite in multiplexer mode with default stacks.xml 
-		 multiplexer udp stack configuration.		  
-	     Other valid parameters that can additionally be specified are:
-	     
-	     channel.conf
-		 channel.conf.flush
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-	<target name="all-tests-mux-udp" depends="makeKeystore" 
-			description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">		 
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>	
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="udp"/>
-		 </antcall>
-	</target>
-	
-	<!-- 
-		 Runs entire testsuite with default tcp confguration specified by tcp.xml. 		  
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-	<target name="all-tests-tcp" depends="makeKeystore" 
-			description="Runs entire testsuite with default tcp confguration specified by tcp.xml">		 
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>	
-		 	<param name="channel.conf" value="tcp.xml"/>
-		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
-		 </antcall>
-	</target>
-	
-	<!-- 
-		 Runs entire testsuite in multiplexer mode with default stacks.xml 
-		 multiplexer tcp stack configuration.		  
-	     Other valid parameters that can additionally be specified are:
-	     
-	     channel.conf
-		 channel.conf.flush
-	     threadcount
-	     test.verbose		     
-	-->
-	
-	<target name="all-tests-mux-tcp" depends="makeKeystore" 
-			description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">		 
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="all.tests"/>	
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="tcp"/>
-		 </antcall>
-	</target>
-	
-	<!-- 
-		 Runs a single junit test indicated by -Dtest=<testname> parameter. 
-		 Note that indication of full class name is not necessary to invoke 
-		 a single test but rather a unique substring of <testname>. For example, 
-		 in order to invoke org.jgroups.tests.ConcurrentStartupTest from a 
-		 command line, invoking build.sh one-test -Dtest=Conc is good enough since 
-		 Conc is a unique substring among all test names.
-	     
-	     Other valid parameters that can additionally be specified are:
-	     
-	     channel.conf
-		 channel.conf.flush
-		 mux.on
-		 mux.conf
-	     mux.conf.stack	
-	     mux.factorycount
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-	<target name="one-test" 
-			description="Runs a single junit test indicated by -Dtest=testname parameter, e.g. -Dtest=Deadlock2Test (no package names needed)">
-		 <antcall target="runtests">		 	
-		 	<param name="testset" value="one.test"/>
-		 	<param name="test.verbose" value="true"/>
-		 </antcall>
-	</target>
-	
-	<!-- 
-		 Runs multiplexer specific tests with default stacks.xml multiplexer 
-		 udp stack configuration. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-		
-    <target name="mux-test-udp" 
-    		description="Runs multiplexer specific tests with multiplexer udp stack configuration">			
-    	<antcall target="runtests">
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="udp"/>
-		 	<param name="testset" value="mux.tests"/>
-    		<param name="test.verbose" value="true"/>
-    	</antcall>
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="udp.xml"/>
+            <param name="channel.conf.flush" value="flush-udp.xml"/>
+        </antcall>
+
+
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="tcp.xml"/>
+            <param name="channel.conf.flush" value="flush-tcp.xml"/>
+        </antcall>
+
     </target>
-	
-	<!-- 
-		 Runs multiplexer specific tests with default stacks.xml multiplexer 
-		 udp-sync stack configuration. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-    <target name="mux-test-udp-sync" 
-    		description="Runs multiplexer specific tests with multiplexer udp-sync stack configuration">			
-    	<antcall target="runtests">
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="udp-sync"/>
-		 	<param name="testset" value="mux.tests"/>
-    		<param name="test.verbose" value="true"/>
-    	</antcall>			
+
+
+    <!--
+          Runs entire testsuite with default udp confguration specified by udp.xml.
+          Other valid parameters that can additionally be specified are:
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-udp" depends="makeKeystore"
+            description="Runs entire testsuite with default udp confguration specified by udp.xml">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="udp.xml"/>
+            <param name="channel.conf.flush" value="flush-udp.xml"/>
+        </antcall>
     </target>
-	
-	<!-- 
-		 Runs multiplexer specific tests with default stacks.xml multiplexer 
-		 tcp stack configuration. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-    <target name="mux-test-tcp" 
-    		description="Runs multiplexer specific tests with multiplexer tcp stack configuration">		
-    	<antcall target="runtests">
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="udp-sync"/>
-		 	<param name="testset" value="mux.tests"/>
-    		<param name="test.verbose" value="true"/>
-    	</antcall>
+
+    <!--
+          Runs entire testsuite with default tunnel confguration specified by tunnel.xml.
+          Other valid parameters that can additionally be specified are:
+          threadcount
+          test.verbose
+         -->
+    <target name="all-tests-tunnel" depends="makeKeystore"
+            description="Runs entire testsuite with default tunnel confguration specified by tunnel.xml">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="tunnel.xml"/>
+            <param name="channel.conf.flush" value="tunnel.xml"/>
+            <param name="mux.conf.stack" value="tunnel"/>
+        </antcall>
     </target>
-	
-	<!-- 
-		 Runs multiplexer specific tests with default stacks.xml multiplexer 
-		 tcp-sync stack configuration. 		 
-	     Other valid parameters that can additionally be specified are:
-	     
-	     threadcount
-	     test.verbose	     	     
-	-->
-	
-	<target name="mux-test-tcp-sync" 
-			description="Runs multiplexer specific tests with default stacks.xml multiplexer 
-			tcp-sync stack configuration">		
-    	<antcall target="runtests">
-		 	<param name="mux.on" value="true"/>
-		 	<param name="mux.conf.stack" value="tcp-sync"/>
-		 	<param name="testset" value="mux.tests"/>
-    		<param name="test.verbose" value="true"/>
-    	</antcall>			
-	</target>
-	
+
+
+    <!--
+          Runs entire testsuite in multiplexer mode with default stacks.xml
+          multiplexer udp stack configuration.
+          Other valid parameters that can additionally be specified are:
+          channel.conf
+          channel.conf.flush
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-mux-udp" depends="makeKeystore"
+            description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs entire testsuite with default tcp confguration specified by tcp.xml.
+          Other valid parameters that can additionally be specified are:
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-tcp" depends="makeKeystore"
+            description="Runs entire testsuite with default tcp confguration specified by tcp.xml">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="tcp.xml"/>
+            <param name="channel.conf.flush" value="flush-tcp.xml"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs entire testsuite in multiplexer mode with default stacks.xml
+          multiplexer tcp stack configuration.
+          Other valid parameters that can additionally be specified are:
+          channel.conf
+          channel.conf.flush
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-mux-tcp" depends="makeKeystore"
+            description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="tcp"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs a single junit test indicated by -Dtest=<testname> parameter.
+          Note that indication of full class name is not necessary to invoke
+          a single test but rather a unique substring of <testname>. For example,
+          in order to invoke org.jgroups.tests.ConcurrentStartupTest from a
+          command line, invoking build.sh one-test -Dtest=Conc is good enough since
+          Conc is a unique substring among all test names.
+
+          Other valid parameters that can additionally be specified are:
+
+          channel.conf
+          channel.conf.flush
+          mux.on
+          mux.conf
+          mux.conf.stack
+          mux.factorycount
+          threadcount
+          test.verbose
+     -->
+    <target name="one-test"
+            description="Runs a single junit test indicated by -Dtest=testname parameter, e.g. -Dtest=Deadlock2Test (no package names needed)">
+        <antcall target="runtests">
+            <param name="testset" value="one.test"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs multiplexer specific tests with default stacks.xml multiplexer
+          udp stack configuration.
+          Other valid parameters that can additionally be specified are:
+
+          threadcount
+          test.verbose
+     -->
+    <target name="mux-test-udp"
+            description="Runs multiplexer specific tests with multiplexer udp stack configuration">
+        <antcall target="runtests">
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp"/>
+            <param name="testset" value="mux.tests"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs multiplexer specific tests with default stacks.xml multiplexer
+          udp-sync stack configuration.
+          Other valid parameters that can additionally be specified are:
+
+          threadcount
+          test.verbose
+     -->
+    <target name="mux-test-udp-sync"
+            description="Runs multiplexer specific tests with multiplexer udp-sync stack configuration">
+        <antcall target="runtests">
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp-sync"/>
+            <param name="testset" value="mux.tests"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs multiplexer specific tests with default stacks.xml multiplexer
+          tcp stack configuration.
+          Other valid parameters that can additionally be specified are:
+
+          threadcount
+          test.verbose
+     -->
+    <target name="mux-test-tcp"
+            description="Runs multiplexer specific tests with multiplexer tcp stack configuration">
+        <antcall target="runtests">
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp-sync"/>
+            <param name="testset" value="mux.tests"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+
+    <!--
+          Runs multiplexer specific tests with default stacks.xml multiplexer
+          tcp-sync stack configuration.
+          Other valid parameters that can additionally be specified are:
+
+          threadcount
+          test.verbose
+     -->
+    <target name="mux-test-tcp-sync"
+            description="Runs multiplexer specific tests with default stacks.xml multiplexer
+			tcp-sync stack configuration">
+        <antcall target="runtests">
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="tcp-sync"/>
+            <param name="testset" value="mux.tests"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+
 
     <target name="findxalan">
         <available property="xalan.available" classname="org.apache.xalan.Version"/>
@@ -834,9 +738,9 @@
 
 
     <target name="testreport"
-        depends="findxalan,unittests-xml"
-        if="xalan.available"
-        description="Generates HTML from unit tests (target unitests-xml must have run before)">
+            depends="findxalan,unittests-xml"
+            if="xalan.available"
+            description="Generates HTML from unit tests (target unitests-xml must have run before)">
         <delete dir="${tmp.dir}/html"/>
         <mkdir dir="${tmp.dir}/html"/>
         <junitreport todir="${tmp.dir}/html">
