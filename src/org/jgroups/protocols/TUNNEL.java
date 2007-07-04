@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.42 2007/05/09 21:53:21 belaban Exp $
+// $Id: TUNNEL.java,v 1.43 2007/07/04 06:05:13 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -9,6 +9,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.RouterStub;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -72,7 +73,9 @@ public class TUNNEL extends TP {
     	stub = new RouterStub(router_host,router_port,bind_addr);
     	stub.setConnectionListener(new StubConnectionListener());
         local_addr=stub.getLocalAddress();
-        super.start();              
+         if(additional_data != null && local_addr instanceof IpAddress)
+            ((IpAddress)local_addr).setAdditionalData(additional_data); 
+        super.start();
     }
 
 
