@@ -14,6 +14,7 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.lang.reflect.Method;
 
 
 /**
@@ -32,9 +33,11 @@ import java.util.Vector;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.1 2007/07/04 13:19:12 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.2 2007/07/04 14:30:58 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedMessageListener, ExtendedMembershipListener {
+
+
 
 
     public interface Notification {
@@ -49,16 +52,26 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         void contentsCleared();
     }
 
+    protected static Map<Short, Method> methods;
+
+    static {
+        try {
+            methods=new HashMap<Short,Method>(10);
+            methods.put(new Short((short)1), ReplicatedHashMap.class.getMethod("_put", Serializable.class, Serializable.class));
+            methods.put(new Short((short)2), ReplicatedHashMap.class.getMethod("_putAll", Map.class));
+            methods.put(new Short((short)3), ReplicatedHashMap.class.getMethod("_remove", Object.class));
+            methods.put(new Short((short)4), ReplicatedHashMap.class.getMethod("_clear"));
+        }
+        catch(NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     private transient Channel channel;
     protected transient RpcDispatcher disp=null;
     private String cluster_name=null;
     private final transient Vector<Notification> notifs=new Vector<Notification>();  // to be notified when mbrship changes
     private final Vector<Address> members=new Vector<Address>(); // keeps track of all DHTs
-    private transient Class[] put_signature=null;
-    private transient Class[] putAll_signature=null;
-    private transient Class[] clear_signature=null;
-    private transient Class[] remove_signature=null;
     private transient boolean persistent=false; // whether to use PersistenceManager to save state
     private transient PersistenceManager persistence_mgr=null;
 
@@ -94,7 +107,6 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     public ReplicatedHashMap(String clustername, ChannelFactory factory, String properties, long state_timeout)
             throws ChannelException {
         this.cluster_name=clustername;
-        initSignatures();
         if(factory != null) {
             channel=properties != null? factory.createChannel(properties) : factory.createChannel();
         }
@@ -102,6 +114,11 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             channel=new JChannel(properties);
         }
         disp=new RpcDispatcher(channel, this, this, this);
+        disp.setMethodLookup(new MethodLookup() {
+            public Method findMethod(short id) {
+                return methods.get(id);
+            }
+        });
         channel.connect(clustername);
         start(state_timeout);
     }
@@ -122,7 +139,6 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             throws ChannelException {
         this.cluster_name=clustername;
         this.persistent=persistent;
-        initSignatures();
         if(factory != null) {
             channel=properties != null? factory.createChannel(properties) : factory.createChannel();
         }
@@ -130,6 +146,11 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             channel=new JChannel(properties);
         }
         disp=new RpcDispatcher(channel, this, this, this);
+        disp.setMethodLookup(new MethodLookup() {
+            public Method findMethod(short id) {
+                return methods.get(id);
+            }
+        });
         channel.connect(clustername);
         start(state_timeout);
     }
@@ -149,8 +170,12 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
 
     protected final void init(long state_timeout) {
-        initSignatures();
         disp=new RpcDispatcher(channel, this, this, this);
+        disp.setMethodLookup(new MethodLookup() {
+            public Method findMethod(short id) {
+                return methods.get(id);
+            }
+        });
 
         // Changed by bela (jan 20 2003): start() has to be called by user (only when providing
         // own channel). First, Channel.connect() has to be called, then start().
@@ -307,7 +332,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
         if(send_message == true) {
             try {
-                disp.callRemoteMethods(null, "_put", new Object[]{key, value}, put_signature, update_mode, timeout);
+                MethodCall call=new MethodCall((short)1, new Object[]{key, value});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
                 throw new RuntimeException("put(" + key + ", " + value + ") failed", e);
@@ -328,7 +354,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     public void putAll(Map<? extends K, ? extends V> m) {
         if(send_message == true) {
             try {
-                disp.callRemoteMethods(null, "_putAll", new Object[]{m}, putAll_signature, update_mode, timeout);
+                MethodCall call=new MethodCall((short)2, new Object[]{m});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Throwable t) {
                 throw new RuntimeException("putAll() failed", t);
@@ -347,7 +374,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                disp.callRemoteMethods(null, "_clear", null, clear_signature, update_mode, timeout);
+                MethodCall call=new MethodCall((short)4, null);
+                disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
                 throw new RuntimeException("clear() failed", e);
@@ -370,7 +398,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                disp.callRemoteMethods(null, "_remove", new Object[]{key}, remove_signature, update_mode, timeout);
+                MethodCall call=new MethodCall((short)3, new Object[]{key});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
                  throw new RuntimeException("remove(" + key + ") failed", e);
@@ -584,27 +613,6 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
 
-    final void initSignatures() {
-        try {
-            if(put_signature == null) {
-                put_signature=new Class[]{Object.class, Object.class};
-            }
-
-            if(putAll_signature == null) {
-                putAll_signature=new Class[]{Map.class};
-            }
-
-            if(clear_signature == null)
-                clear_signature=new Class[0];
-
-            if(remove_signature == null) {
-                remove_signature=new Class[]{Object.class};
-            }
-        }
-        catch(Throwable ex) {
-            if(log.isErrorEnabled()) log.error("exception=" + ex);
-        }
-    }
 
 
     public byte[] getState(String state_id) {
