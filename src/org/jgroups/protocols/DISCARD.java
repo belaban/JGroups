@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.14 2007/02/14 21:52:50 vlada Exp $
+// $Id: DISCARD.java,v 1.15 2007/07/04 11:12:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
-import org.jgroups.protocols.pbcast.FLUSH.FlushHeader;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -16,14 +15,7 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Properties;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -40,7 +32,7 @@ public class DISCARD extends Protocol {
     Address localAddress;
     int num_down=0, num_up=0;
     
-    final List<Address> ignoredMembers = new ArrayList<Address>();
+    final Set<Address> ignoredMembers = new HashSet<Address>();
 
 
     /**
@@ -82,6 +74,12 @@ public class DISCARD extends Protocol {
     }
 
 
+    /** Messages from this sender will get dropped */
+    public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}
+
+    public void resetIgnoredMembers() {ignoredMembers.clear();}
+
+
     public Object up(Event evt) {
         Message msg;
         double r;
@@ -92,26 +90,34 @@ public class DISCARD extends Protocol {
 
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
+            Address sender=msg.getSrc();
             DiscardHeader dh = (DiscardHeader) msg.getHeader(getName());
 			if (dh != null) {
 				ignoredMembers.clear();
-				ignoredMembers.addAll(dh.dropMessagesAddressList);
+				ignoredMembers.addAll(dh.dropMessages);
 				if (log.isTraceEnabled())
 					log.trace("will potentially drop messages from " + ignoredMembers);
 			} else {
-				if (up > 0) {
+                boolean dropMessage=ignoredMembers.contains(sender);
+                if (dropMessage) {
+                    if (log.isTraceEnabled())
+                        log.trace("dropping message from " + sender);
+                    num_up++;
+                    return null;
+                }
+
+                if (up > 0) {
 					r = Math.random();
 					if (r < up) {
-						if (excludeItself && msg.getSrc().equals(localAddress)) {
+						if (excludeItself && sender.equals(localAddress)) {
 							if (log.isTraceEnabled())
 								log.trace("excluding itself");
 						} else {
-							boolean dropMessage = ignoredMembers.isEmpty() || 
-												(!ignoredMembers.isEmpty() && ignoredMembers.contains(msg.getSrc()));
+							dropMessage = ignoredMembers.contains(sender);
 								
 							if (dropMessage) {
 								if (log.isTraceEnabled())
-									log.trace("dropping message from " + msg.getSrc());
+									log.trace("dropping message from " + sender);
 								num_up++;
 								return null;
 							}
@@ -165,35 +171,32 @@ public class DISCARD extends Protocol {
     
     public static class DiscardHeader extends Header implements Streamable {
 
-		private final List<Address> dropMessagesAddressList;
+		private final Set<Address> dropMessages;
 
 		public DiscardHeader() {
-			this.dropMessagesAddressList = new ArrayList<Address>();			
+			this.dropMessages= new HashSet<Address>();
 		}
 
-		public DiscardHeader(List<Address> ignoredAddresses) {
+		public DiscardHeader(Set<Address> ignoredAddresses) {
 			super();
-			this.dropMessagesAddressList = ignoredAddresses;
+			this.dropMessages= ignoredAddresses;
 		}
 
-		public void readFrom(DataInputStream in) throws IOException,
-				IllegalAccessException, InstantiationException {
+		public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
 			int size = in.readShort();
 			if (size > 0) {
-				dropMessagesAddressList.clear();
+				dropMessages.clear();
 				for (int i = 0; i < size; i++) {
-					dropMessagesAddressList.add(Util.readAddress(in));
+					dropMessages.add(Util.readAddress(in));
 				}
 			}
 		}
 
 		public void writeTo(DataOutputStream out) throws IOException {
-			if (dropMessagesAddressList != null && !dropMessagesAddressList.isEmpty()) {
-				out.writeShort(dropMessagesAddressList.size());
-				for (Iterator iter = dropMessagesAddressList.iterator(); iter
-						.hasNext();) {
-					Address address = (Address) iter.next();
-					Util.writeAddress(address, out);
+			if (dropMessages != null && !dropMessages.isEmpty()) {
+				out.writeShort(dropMessages.size());
+				for (Address addr: dropMessages) {
+					Util.writeAddress(addr, out);
 				}
 			} else {
 				out.writeShort(0);
@@ -201,17 +204,14 @@ public class DISCARD extends Protocol {
 
 		}
 
-		@SuppressWarnings("unchecked")
-		public void readExternal(ObjectInput in) throws IOException,
-				ClassNotFoundException {
-			List tmp = (List) in.readObject();
-			dropMessagesAddressList.clear();
-			dropMessagesAddressList.addAll(tmp);
-
+		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+			Set tmp = (Set) in.readObject();
+			dropMessages.clear();
+			dropMessages.addAll(tmp);
 		}
 
 		public void writeExternal(ObjectOutput out) throws IOException {
-			out.writeObject(dropMessagesAddressList);
+			out.writeObject(dropMessages);
 		}
 	}
 }
