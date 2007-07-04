@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.42 2007/07/04 08:43:40 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.43 2007/07/04 09:55:58 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -270,6 +270,7 @@ public class FlushTest extends ChannelTestBase
    {
 	   String[] names = createApplicationNames(4);
 	   int count = names.length;
+       List<Digest> digests;
 
        ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
        try
@@ -288,6 +289,10 @@ public class FlushTest extends ChannelTestBase
 
 	        
            blockUntilViewsReceived(channels, 60000);
+
+           //verify block/unblock/view/
+           digests = getDigests(channels);
+           System.out.println("Digests (after startup):\n" + printDigests(digests));
 	         
            //insert DISCARD
            for (FlushTestReceiver receiver : channels) {
@@ -301,12 +306,11 @@ public class FlushTest extends ChannelTestBase
                Channel channel = receiver.getChannel();
                if (channel instanceof JChannel)
                {
-                   ((JChannel) channel).getProtocolStack().insertProtocol(d,
-                                                                          ProtocolStack.BELOW, "NAKACK");
+                   ((JChannel) channel).getProtocolStack().insertProtocol(d, ProtocolStack.BELOW, "NAKACK");
                }
            }
 	         
-           FlushTestReceiver lastMember =channels.get(count-1);
+           FlushTestReceiver lastMember = channels.get(count-1);
            List<Address> ignoreList = new ArrayList<Address>();
            ignoreList.add(lastMember.getLocalAddress());
            Message msg = new Message();
@@ -326,10 +330,16 @@ public class FlushTest extends ChannelTestBase
            semaphore.release(count);
 	         
            Util.sleep(3000);
+
+
 	         
            // Reacquire the semaphore tickets; when we have them all
            // we know the threads are done
            semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);
+
+
+           digests = getDigests(channels);
+           System.out.println("Digests (after sending messages (members 1-3 dropped msgs from 4)):\n" + printDigests(digests));
 	         
            //remove DISCARD
            for (FlushTestReceiver receiver : channels) {
@@ -350,18 +360,15 @@ public class FlushTest extends ChannelTestBase
            Util.sleep(4000);
            closeAssert.verify(channels);
 	         
-
            //verify block/unblock/view/
-           List<Digest> digests = new ArrayList<Digest>();
+           digests = getDigests(channels);
+           System.out.println("Digests (after exclusion of crashed member):\n" + printDigests(digests));
+           assertTrue(!digests.isEmpty());
+
            for (FlushTestReceiver receiver : channels)
            {
                checkEventSequence(receiver,isMuxChannelUsed());
-	                     
-               Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
-               digests.add(d);
            }
-
-           assertTrue(!digests.isEmpty());
 
            //verify digests are the same at all surviving members
            Digest firstDigest=digests.get(0);
@@ -385,6 +392,23 @@ public class FlushTest extends ChannelTestBase
        }
    }
 
+    private static String printDigests(List<Digest> digests) {
+        StringBuilder sb=new StringBuilder();
+        for(Digest digest: digests) {
+            sb.append(digest).append("\n");
+        }
+        return sb.toString();
+    }
+
+    private List<Digest> getDigests(List<FlushTestReceiver> list) {
+        List<Digest> retval=new ArrayList<Digest>();
+        for (FlushTestReceiver receiver : list)
+        {
+            Digest d = (Digest) receiver.getChannel().downcall(new Event(Event.GET_DIGEST));
+            retval.add(d);
+        }
+        return retval;
+    }
 
 
     public void testVirtualSynchrony() throws Exception {
