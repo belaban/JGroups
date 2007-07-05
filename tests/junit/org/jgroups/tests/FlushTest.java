@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.47 2007/07/04 16:26:29 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.48 2007/07/05 11:27:34 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -265,131 +265,131 @@ public class FlushTest extends ChannelTestBase
       }         
    }
    
-   public void testReconciliation()
-   {
-	   String[] names = createApplicationNames(4);
-	   int count = names.length;
-       List<Digest> digests;
-
-       ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
-       try
-       {
-           // Create a semaphore and take all its permits
-           Semaphore semaphore = new Semaphore(count);
-           semaphore.acquire(count);
-
-           // Create channels and their threads that will block on the semaphore
-           for (int i = 0; i < count; i++)
-           {
-	           
-               FlushTestReceiver receiver = new FlushTestReceiver(names[i], semaphore,10, false);
-               channels.add(receiver);
-           }
-
-	        
-           blockUntilViewsReceived(channels, 60000);
-
-           //verify block/unblock/view/
-           digests = getDigests(channels);
-           System.out.println("Digests (after startup):\n" + printDigests(digests));
-	         
-           //insert DISCARD
-           for (FlushTestReceiver receiver : channels) {
-               Properties prop = new Properties();
-               prop.setProperty("up", "0.5");
-               prop.setProperty("excludeitself", "true");
-
-               DISCARD d = new DISCARD();
-               d.setProperties(prop);
-
-               Channel channel = receiver.getChannel();
-               if (channel instanceof JChannel)
-               {
-                   ((JChannel) channel).getProtocolStack().insertProtocol(d, ProtocolStack.BELOW, "NAKACK");
-               }
-           }
-	         
-           FlushTestReceiver lastMember = channels.get(count-1);
-           Set<Address> ignoreList = new HashSet<Address>();
-           ignoreList.add(lastMember.getLocalAddress());
-           Message msg = new Message();
-           msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
-	         
-           lastMember.getChannel().send(msg);
-	         
-           //Sleep to ensure all members receive discard message
-           Util.sleep(1000);
-	         
-
-           // send messages, some will be dropped due to DISCARD
-           for (FlushTestReceiver receiver : channels) {
-               receiver.start();
-           }
-	         
-           semaphore.release(count);
-	         
-           Util.sleep(3000);
-
-
-	         
-           // Reacquire the semaphore tickets; when we have them all
-           // we know the threads are done
-           semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);
-
-
-           digests = getDigests(channels);
-           System.out.println("Digests (after sending messages (members 1-3 dropped msgs from 4)):\n" + printDigests(digests));
-	         
-           //remove DISCARD
-           for (FlushTestReceiver receiver : channels) {
-               Channel channel = receiver.getChannel();
-               if (channel instanceof JChannel)
-               {
-                   ((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
-               }
-           }
-	         
-           //kill last member to trigger FLUSH with vsynch gaps
-           FlushTestReceiver randomRecv =channels.remove(count-1);
-           log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
-           ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
-           randomRecv.cleanup();
-	         
-           //let the view propagate and verify related asserts
-           Util.sleep(4000);
-           closeAssert.verify(channels);
-	         
-           //verify block/unblock/view/
-           digests = getDigests(channels);
-           System.out.println("Digests (after exclusion of crashed member):\n" + printDigests(digests));
-           assertTrue(!digests.isEmpty());
-
-           for (FlushTestReceiver receiver : channels)
-           {
-               checkEventSequence(receiver,isMuxChannelUsed());
-           }
-
-           //verify digests are the same at all surviving members
-           Digest firstDigest=digests.get(0);
-           for (Digest digest : digests)
-           {
-               assertEquals("virtual synchrony not satisfied",firstDigest, digest);
-           }
-       }
-       catch (Exception ex)
-       {
-           log.warn("Exception encountered during test", ex);
-           fail("Exception encountered during test execution");
-       }
-       finally
-       {
-           for (FlushTestReceiver app : channels)
-           {
-               app.cleanup();
-               Util.sleep(500);
-           }
-       }
-   }
+//   public void testReconciliation()
+//   {
+//	   String[] names = createApplicationNames(4);
+//	   int count = names.length;
+//       List<Digest> digests;
+//
+//       ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
+//       try
+//       {
+//           // Create a semaphore and take all its permits
+//           Semaphore semaphore = new Semaphore(count);
+//           semaphore.acquire(count);
+//
+//           // Create channels and their threads that will block on the semaphore
+//           for (int i = 0; i < count; i++)
+//           {
+//
+//               FlushTestReceiver receiver = new FlushTestReceiver(names[i], semaphore,10, false);
+//               channels.add(receiver);
+//           }
+//
+//
+//           blockUntilViewsReceived(channels, 60000);
+//
+//           //verify block/unblock/view/
+//           digests = getDigests(channels);
+//           System.out.println("Digests (after startup):\n" + printDigests(digests));
+//
+//           //insert DISCARD
+//           for (FlushTestReceiver receiver : channels) {
+//               Properties prop = new Properties();
+//               prop.setProperty("up", "0.5");
+//               prop.setProperty("excludeitself", "true");
+//
+//               DISCARD d = new DISCARD();
+//               d.setProperties(prop);
+//
+//               Channel channel = receiver.getChannel();
+//               if (channel instanceof JChannel)
+//               {
+//                   ((JChannel) channel).getProtocolStack().insertProtocol(d, ProtocolStack.BELOW, "NAKACK");
+//               }
+//           }
+//
+//           FlushTestReceiver lastMember = channels.get(count-1);
+//           Set<Address> ignoreList = new HashSet<Address>();
+//           ignoreList.add(lastMember.getLocalAddress());
+//           Message msg = new Message();
+//           msg.putHeader("DISCARD", new DISCARD.DiscardHeader(ignoreList));
+//
+//           lastMember.getChannel().send(msg);
+//
+//           //Sleep to ensure all members receive discard message
+//           Util.sleep(1000);
+//
+//
+//           // send messages, some will be dropped due to DISCARD
+//           for (FlushTestReceiver receiver : channels) {
+//               receiver.start();
+//           }
+//
+//           semaphore.release(count);
+//
+//           Util.sleep(3000);
+//
+//
+//
+//           // Reacquire the semaphore tickets; when we have them all
+//           // we know the threads are done
+//           semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);
+//
+//
+//           digests = getDigests(channels);
+//           System.out.println("Digests (after sending messages (members 1-3 dropped msgs from 4)):\n" + printDigests(digests));
+//
+//           //remove DISCARD
+//           for (FlushTestReceiver receiver : channels) {
+//               Channel channel = receiver.getChannel();
+//               if (channel instanceof JChannel)
+//               {
+//                   ((JChannel) channel).getProtocolStack().removeProtocol("DISCARD");
+//               }
+//           }
+//
+//           //kill last member to trigger FLUSH with vsynch gaps
+//           FlushTestReceiver randomRecv =channels.remove(count-1);
+//           log.info("Closing random member " + randomRecv.getName() + " at " + randomRecv.getLocalAddress());
+//           ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
+//           randomRecv.cleanup();
+//
+//           //let the view propagate and verify related asserts
+//           Util.sleep(4000);
+//           closeAssert.verify(channels);
+//
+//           //verify block/unblock/view/
+//           digests = getDigests(channels);
+//           System.out.println("Digests (after exclusion of crashed member):\n" + printDigests(digests));
+//           assertTrue(!digests.isEmpty());
+//
+//           for (FlushTestReceiver receiver : channels)
+//           {
+//               checkEventSequence(receiver,isMuxChannelUsed());
+//           }
+//
+//           //verify digests are the same at all surviving members
+//           Digest firstDigest=digests.get(0);
+//           for (Digest digest : digests)
+//           {
+//               assertEquals("virtual synchrony not satisfied",firstDigest, digest);
+//           }
+//       }
+//       catch (Exception ex)
+//       {
+//           log.warn("Exception encountered during test", ex);
+//           fail("Exception encountered during test execution");
+//       }
+//       finally
+//       {
+//           for (FlushTestReceiver app : channels)
+//           {
+//               app.cleanup();
+//               Util.sleep(500);
+//           }
+//       }
+//   }
 
 
     /**
@@ -419,12 +419,7 @@ public class FlushTest extends ChannelTestBase
         View v=c3.getView();
         assertEquals("view: " + v, 3, v.size());
 
-        Properties prop=new Properties();
-        prop.setProperty("excludeitself", "true"); // don't discard messages to self
-        DISCARD discard=new DISCARD();
-        discard.setProperties(prop);
-        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
-        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+        insertDISCARD(c2, c3.getLocalAddress());
 
         System.out.println("\nDigests before C sends any messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
@@ -450,7 +445,6 @@ public class FlushTest extends ChannelTestBase
         System.out.println("C: messages received from C: " + list);
         assertEquals("msgs for C: " + list, 5, list.size());
 
-
         // check A (should have received C's messages)
         map=a.getMsgs();
         assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
@@ -465,8 +459,7 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
 
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
+        removeDISCARD(c2);
 
         System.out.println("\nJoining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
         c4=createChannel();
@@ -524,12 +517,7 @@ public class FlushTest extends ChannelTestBase
         View v=c3.getView();
         assertEquals("view: " + v, 3, v.size());
 
-        Properties prop=new Properties();
-        prop.setProperty("excludeitself", "true"); // don't discard messages to self
-        DISCARD discard=new DISCARD();
-        discard.setProperties(prop);
-        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
-        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+        insertDISCARD(c2, c3.getLocalAddress());
 
         System.out.println("\nDigests before C sends any messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
@@ -570,8 +558,7 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
 
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
+        removeDISCARD(c2);
 
         System.out.println("\nTriggering a manual FLUSH; this will update B with C's 5 messages:");
         boolean rc=c1.startFlush(0, false);
@@ -601,7 +588,7 @@ public class FlushTest extends ChannelTestBase
      * <li>Before installing view {A,B}, FLUSH makes A sends its 5 messages received from C to B
      * </ul>
      */
-    public void testReconciliationFlushTriggeredByMemberLeaving() throws Exception {
+    public void testReconciliationFlushTriggeredByMemberCrashing() throws Exception {
         c1=createChannel();
         c2=createChannel();
         c3=createChannel();
@@ -617,12 +604,7 @@ public class FlushTest extends ChannelTestBase
         View v=c3.getView();
         assertEquals("view: " + v, 3, v.size());
 
-        Properties prop=new Properties();
-        prop.setProperty("excludeitself", "true"); // don't discard messages to self
-        DISCARD discard=new DISCARD();
-        discard.setProperties(prop);
-        discard.addIgnoreMember(c3.getLocalAddress()); // B ignores messages from C
-        c2.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+        insertDISCARD(c2, c3.getLocalAddress());
 
         System.out.println("\nDigests before C sends any messages:");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
@@ -664,13 +646,12 @@ public class FlushTest extends ChannelTestBase
         System.out.println("B: messages received from C: " + list);
         assertNull(list);
         
-        discard.resetIgnoredMembers();
-        c2.getProtocolStack().removeProtocol("DISCARD");
+        removeDISCARD(c2);
 
         // Now kill C
         Address cAddress = c3.getLocalAddress();
-        System.out.println("\nLeaving C, this will trigger FLUSH and a subsequent view change to {A,B}");
-        c3.close();
+        System.out.println("\nKilling C, this will trigger FLUSH and a subsequent view change to {A,B}");
+        c3.shutdown();
 
         // wait until view {A,B} has been installed
         int cnt=1000;
@@ -684,7 +665,7 @@ public class FlushTest extends ChannelTestBase
         assert v != null;
         assertEquals(2, v.size());
 
-        System.out.println("\nDigests afterC left (FLUSH protocol should have updated B with C's messages)");
+        System.out.println("\nDigests after C left (FLUSH protocol should have updated B with C's messages)");
         System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
         System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
 
@@ -696,6 +677,21 @@ public class FlushTest extends ChannelTestBase
         assertEquals(5, list.size());
     }
 
+
+    private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
+        Properties prop=new Properties();
+        prop.setProperty("excludeitself", "true"); // don't discard messages to self
+        DISCARD discard=new DISCARD();
+        discard.setProperties(prop);
+        discard.addIgnoreMember(exclude); // ignore messages from this member
+        ch.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
+    }
+
+    private static void removeDISCARD(JChannel ... channels) throws Exception {
+        for(JChannel ch: channels) {
+            ch.getProtocolStack().removeProtocol("DISCARD");
+        }
+    }
 
 
     private static class MyReceiver extends ExtendedReceiverAdapter {
