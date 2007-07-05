@@ -19,19 +19,20 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.28 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.29 2007/07/05 11:27:14 belaban Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
-    private Address     local_addr=null;
-    private             long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
-    private             int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
-    final Hashtable     suspects=new Hashtable();  // keys=Addresses, vals=time in mcses since added
-    private Thread      timer=null;
-    private boolean     use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
-    private InetAddress bind_addr;          // interface for ICMP pings
+    private Address                local_addr=null;
+    private                        long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
+    private                        int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
+    final Hashtable<Address,Long>  suspects=new Hashtable<Address,Long>();  // keys=Addresses, vals=time in mcses since added
+    private Thread                 timer=null;
+    private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
+    private InetAddress            bind_addr;          // interface for ICMP pings
     /** network interface to be used to send the ICMP packets */
-    private NetworkInterface intf=null;
-    static final String name="VERIFY_SUSPECT";
+    private NetworkInterface       intf=null;
+    static final String            name="VERIFY_SUSPECT";
+    protected boolean              shutting_down=false;
 
 
     public String getName() {
@@ -87,14 +88,24 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
+    public Object down(Event evt) {
+        if(evt.getType() == Event.SHUTDOWN) {
+            shutting_down=true;
+        }
+        return down_prot.down(evt);
+    }
+
     public Object up(Event evt) {
         switch(evt.getType()) {
 
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
+                shutting_down=false;
                 break;
 
             case Event.SUSPECT:  // it all starts here ...
+                if(shutting_down)
+                    return null;
                 Address suspected_mbr=(Address)evt.getArg();
                 if(suspected_mbr == null) {
                     if(log.isErrorEnabled()) log.error("suspected member is null");
@@ -119,6 +130,8 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 VerifyHeader hdr=(VerifyHeader)msg.getHeader(name);
                 if(hdr == null)
                     break;
+                if(shutting_down)
+                    return null;
                 switch(hdr.type) {
                     case VerifyHeader.ARE_YOU_DEAD:
                         if(hdr.from == null) {
@@ -169,7 +182,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         while(timer != null && Thread.currentThread().equals(timer) && !suspects.isEmpty()) {
             diff=0;
 
-            List tmp=null;
+            List<Address> tmp=null;
             synchronized(suspects) {
                 for(Enumeration e=suspects.keys(); e.hasMoreElements();) {
                     mbr=(Address)e.nextElement();
@@ -179,7 +192,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
                         if(log.isTraceEnabled())
                             log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
-                        if(tmp == null) tmp=new LinkedList();
+                        if(tmp == null) tmp=new LinkedList<Address>();
                         tmp.add(mbr);
                         suspects.remove(mbr);
                         continue;
@@ -287,6 +300,10 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
             intf=NetworkInterface.getByInetAddress(bind_addr);
     }
 
+    public void start() throws Exception {
+        super.start();
+        shutting_down=false;
+    }
 
     public void stop() {
         Thread tmp;

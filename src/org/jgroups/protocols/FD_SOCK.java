@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.63 2007/05/09 23:50:22 belaban Exp $
+// $Id: FD_SOCK.java,v 1.64 2007/07/05 11:27:28 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -181,7 +181,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         running=false;
         bcast_task.removeAll();
         stopPingerThread();
-        stopServerSocket();
+        stopServerSocket(true); // graceful close
     }
 
     public void resetStats() {
@@ -337,8 +337,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
                 }
 
-                stopServerSocket();
+                stopServerSocket(true); // graceful close
+                break;
 
+            case Event.SHUTDOWN:
+                stopServerSocket(false);
                 break;
 
             case Event.VIEW_CHANGE:
@@ -601,9 +604,9 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
     }
 
-    void stopServerSocket() {
+    void stopServerSocket(boolean graceful) {
         if(srv_sock_handler != null)
-            srv_sock_handler.stop();
+            srv_sock_handler.stop(graceful);
     }
 
 
@@ -1040,7 +1043,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
 
 
-        final void stop() {
+        final void stop(boolean graceful) {
             if(acceptor != null && acceptor.isAlive()) {
                 try {
                     srv_sock.close(); // this will terminate thread, peer will receive SocketException (socket close)
@@ -1051,7 +1054,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             synchronized(clients) {
                 for(Iterator it=clients.iterator(); it.hasNext();) {
                     ClientConnectionHandler handler=(ClientConnectionHandler)it.next();
-                    handler.stopThread();
+                    handler.stopThread(graceful);
                 }
                 clients.clear();
             }
@@ -1100,13 +1103,15 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.clients.addAll(clients);
         }
 
-        void stopThread() {
+        void stopThread(boolean graceful) {
             synchronized(mutex) {
                 if(client_sock != null) {
                     try {
-                        OutputStream out=client_sock.getOutputStream();
-                        out.write(NORMAL_TERMINATION);
-                        out.flush();
+                        if(graceful) {
+                            OutputStream out=client_sock.getOutputStream();
+                            out.write(NORMAL_TERMINATION);
+                            out.flush();
+                        }
                         closeClientSocket();
                     }
                     catch(Throwable t) {
