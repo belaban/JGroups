@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.143 2007/06/08 08:35:24 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.144 2007/07/05 11:25:59 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -942,6 +942,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 log.warn("message is null");
             return;
         }
+
         try {
             list=Util.byteBufferToMessageList(msg.getRawBuffer(), msg.getOffset(), msg.getLength());
             if(list != null) {
@@ -1005,7 +1006,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(their_high > my_high) {
                     if(log.isTraceEnabled())
                         log.trace("sending XMIT request to " + sender + " for messages " + my_high + " - " + their_high);
-                    retransmit(my_high, their_high, sender);
+                    retransmit(my_high, their_high, sender, true); // use multicast to send retransmit request
                     xmitted=true;
                 }
             }
@@ -1364,16 +1365,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Implementation of Retransmitter.RetransmitCommand. Called by retransmission thread when gap is detected.
      */
     public void retransmit(long first_seqno, long last_seqno, Address sender) {
+        retransmit(first_seqno, last_seqno, sender, false);
+    }
+
+
+
+    protected void retransmit(long first_seqno, long last_seqno, Address sender, boolean multicast_xmit_request) {
         NakAckHeader hdr;
         Message retransmit_msg;
         Address dest=sender; // to whom do we send the XMIT request ?
 
-        if(xmit_from_random_member && !local_addr.equals(sender)) {
-            Address random_member=(Address)Util.pickRandomElement(members);
-            if(random_member != null && !local_addr.equals(random_member)) {
-                dest=random_member;
-                if(log.isTraceEnabled())
-                    log.trace("picked random member " + dest + " to send XMIT request to");
+        if(multicast_xmit_request) {
+            dest=null;
+        }
+        else {
+            if(xmit_from_random_member && !local_addr.equals(sender)) {
+                Address random_member=(Address)Util.pickRandomElement(members);
+                if(random_member != null && !local_addr.equals(random_member)) {
+                    dest=random_member;
+                    if(log.isTraceEnabled())
+                        log.trace("picked random member " + dest + " to send XMIT request to");
+                }
             }
         }
 
