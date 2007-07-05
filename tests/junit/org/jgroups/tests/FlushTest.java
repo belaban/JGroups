@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.51 2007/07/05 19:02:35 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.52 2007/07/05 19:47:41 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
 	private JChannel c1, c2;
@@ -270,9 +270,9 @@ public class FlushTest extends ChannelTestBase {
 			}
 
 			if(isMuxChannelUsed()){
-				blockUntilViewsReceived(channels, muxFactoryCount, 60000);
+				blockUntilViewsReceived(channels, muxFactoryCount, 10000);
 			}else{
-				blockUntilViewsReceived(channels, 60000);
+				blockUntilViewsReceived(channels, 10000);
 			}
 
 			// if state transfer is used release all at once
@@ -303,7 +303,7 @@ public class FlushTest extends ChannelTestBase {
 			randomRecv.cleanup();
 
 			// let the view propagate and verify related asserts
-			blockUntilViewsReceived(channels, 60000);
+			Util.sleep(5000);
 			closeAssert.verify(channels);
 
 			// verify block/unblock/view/get|set state sequence
