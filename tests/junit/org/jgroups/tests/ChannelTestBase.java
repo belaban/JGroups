@@ -466,6 +466,7 @@ public class ChannelTestBase extends TestCase
             log.info("Closing channel [" + getName() + "]");
          }
          channel.close();
+         log.info("Closed channel " + a + "[" + getName() + "]");
       }
    }
    
