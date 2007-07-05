@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.135 2007/07/05 07:32:38 belaban Exp $
+ * @version $Id: JChannel.java,v 1.136 2007/07/05 11:26:35 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -480,6 +480,7 @@ public class JChannel extends Channel {
 
     /** Shuts down the channel without disconnecting */
     public synchronized void shutdown() {
+        down(new Event(Event.SHUTDOWN));
         _close(false, true); // by default disconnect before closing channel and close mq
     }
 
