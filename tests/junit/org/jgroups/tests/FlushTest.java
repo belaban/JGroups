@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and configured to use FLUSH
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.49 2007/07/05 11:46:24 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.50 2007/07/05 12:24:45 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase
 {
@@ -817,7 +817,7 @@ public class FlushTest extends ChannelTestBase
       catch (Exception ex)
       {
          log.warn("Exception encountered during test", ex);
-         fail("Exception encountered during test execution");
+         fail("Exception encountered during test execution: " + ex);
       }
       finally
       {
