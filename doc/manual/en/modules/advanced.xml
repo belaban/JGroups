@@ -1261,4 +1261,57 @@
             </screen>
         </section>
     </section>
+
+
+    <section>
+        <title>Flushing: making sure every node in the cluster received a message</title>
+
+        When sending messages, the properties of the default stacks (udp.xml, tcp.xml) are that all messages are delivered
+        reliably to all (non-crashed) members. However, there are no guarantees with respect to the view in which a message
+        will get delivered. For example, when a member A with view V1={A,B,C} multicasts message M1 to the group and D joins
+        at about the same time, then D may or may not receive M1, and there is no guarantee that A, B and C receive M1 in
+        V1 or V2={A,B,C,D}.
+
+        <para>
+            To change this, we can turn on virtual synchrony (by adding FLUSH to the top of the stack), which guarantees that
+            <itemizedlist>
+                <listitem>
+                    A message M sent in V1 will be delivered in V1. So, in the example above, M1 would get delivered in
+                    view V1; by A, B and C, but not by D.
+                </listitem>
+
+                <listitem>
+                    The set of messages seen by members in V1 is the same for all members before a new view V2 is installed.
+                    This is important, as it ensures that all members in a given view see the same messages. For example,
+                    in a group {A,B,C}, C sends 5 messages. A receives all 5 messages, but B doesn't. Now C crashes before
+                    it can retransmit the messages to B. FLUSH will now ensure, that before installing V2={A,B} (excluding
+                    C), B gets C's 5 messages. This is done through the flush protocol, which has all members reconcile
+                    their messages before a new view is installed. In this case, A will send C's 5 messages to B.
+                </listitem>
+            </itemizedlist>
+        </para>
+
+        <para>
+            Sometimes it is important to know that every node in the cluster received all messages up to a certain point,
+            even if there is no new view being installed. To do this (initiate a manual flush), an application programmer
+            can call Channel.startFlush() to start a flush and Channel.stopFlush() to terminate it.
+        </para>
+
+        <para>
+            Channel.startFlush() flushes all pending messages out of the system. This stops all senders (calling
+            Channel.down() during a flush will block until the flush has completed)<footnote><para>Note that block()
+            will be called in a Receiver when the flush is about to start and unblock() will be called when it ends</para></footnote>.
+            When startFlush() returns, the caller knows that (a) no messages will get sent anymore until stopFlush() is
+            called and (b) all members have received all messages sent before startFlush() was called.
+        </para>
+
+        <para>
+            Channel.stopFlush() terminates the flush protocol, no blocked senders can resume sending messages.
+        </para>
+
+        <para>
+            Note that the FLUSH protocol has to be present on top of the stack, or else the flush will fail.
+        </para>
+        
+    </section>
 </chapter>

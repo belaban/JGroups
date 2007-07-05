@@ -1283,100 +1283,94 @@
         <section>
             <title>pbcast.FLUSH</title>
 
-            <para></para>
+            <para>Flushing forces group members to send all their pending messages
+                prior to a certain event. The process of flushing acquiesces the
+                cluster so that state transfer or a join can be done. It is also
+                called the stop-the-world model as nobody will be able to send
+                messages while a flush is in process. Flush is used:
+            </para>
 
-            <section>
-                <title>Introduction and overview</title>
+            <para>
+                <itemizedlist>
+                    <listitem>
+                        <para>State transfer</para>
 
-                <para>Flushing forces group members to send all their pending messages
-                    prior to a certain event. The process of flushing acquiesces the
-                    cluster so that state transfer or a join can be done. It is also
-                    called the stop-the-world model as nobody will be able to send
-                    messages while a flush is in process. Flush is used:
-                </para>
+                        <para>When a member requests state transfer it tells everyone to
+                            stop sending messages and waits for everyone's ack. Then it asks
+                            the application for its state and ships it back to the
+                            requester. After the requester has received and set the state
+                            successfully, the requester tells everyone to resume sending
+                            messages.
+                        </para>
+                    </listitem>
 
-                <para>
-                    <itemizedlist>
-                        <listitem>
-                            <para>State transfer</para>
+                    <listitem>
+                        <para>View changes (e.g.a join). Before installing a new view
+                            V2, flushing would ensure that all messages *sent* in the
+                            current view V1 are indeed *delivered* in V1, rather than in V2
+                            (in all non-faulty members). This is essentially Virtual
+                            Synchrony.
+                        </para>
+                    </listitem>
+                </itemizedlist>
+            </para>
 
-                            <para>When a member requests state transfer it tells everyone to
-                                stop sending messages and waits for everyone's ack. Then it asks
-                                the application for its state and ships it back to the
-                                requester. After the requester has received and set the state
-                                successfully, the requester tells everyone to resume sending
-                                messages.
-                            </para>
-                        </listitem>
+            <para>FLUSH is designed as another protocol positioned just below the
+                channel, e.g. above STATE_TRANSFER and FC. STATE_TRANSFER and GMS
+                protocol request flush by sending a SUSPEND event up the stack, where
+                it is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by
+                the FLUSH protocol let's the caller know that the flush has completed.
+                When done (e.g. view was installed or state transferred), the protocol
+                sends up a RESUME event, which will allow everyone in the cluster to
+                resume sending.
+            </para>
 
-                        <listitem>
-                            <para>View changes (e.g.a join). Before installing a new view
-                                V2, flushing would ensure that all messages *sent* in the
-                                current view V1 are indeed *delivered* in V1, rather than in V2
-                                (in all non-faulty members). This is essentially Virtual
-                                Synchrony.
-                            </para>
-                        </listitem>
-                    </itemizedlist>
-                </para>
+            <para>Channel can be notified that FLUSH phase has been started by
+                turning channel block option on. By default it is turned off. If
+                channel blocking is turned on FLUSH notifies application layer that
+                channel has been blocked by sending EVENT.BLOCK event. Channel
+                responds by sending EVENT.BLOCK_OK event down to FLUSH protocol. We
+                recommend turning on channel block notification only if channel is
+                used in push mode. In push mode application that uses channel can
+                perform block logic by implementing MembershipListener.block()
+                callback method.
+            </para>
 
-                <para>FLUSH is designed as another protocol positioned just below the
-                    channel, e.g. above STATE_TRANSFER and FC. STATE_TRANSFER and GMS
-                    protocol request flush by sending a SUSPEND event up the stack, where
-                    it is handled by the FLUSH protcol. The SUSPEND_OK ack sent back by
-                    the FLUSH protocol let's the caller know that the flush has completed.
-                    When done (e.g. view was installed or state transferred), the protocol
-                    sends up a RESUME event, which will allow everyone in the cluster to
-                    resume sending.
-                </para>
+            <table>
+                <title>Properties</title>
 
-                <para>Channel can be notified that FLUSH phase has been started by
-                    turning channel block option on. By default it is turned off. If
-                    channel blocking is turned on FLUSH notifies application layer that
-                    channel has been blocked by sending EVENT.BLOCK event. Channel
-                    responds by sending EVENT.BLOCK_OK event down to FLUSH protocol. We
-                    recommend turning on channel block notification only if channel is
-                    used in push mode. In push mode application that uses channel can
-                    perform block logic by implementing MembershipListener.block()
-                    callback method.
-                </para>
+                <tgroup cols="2">
+                    <colspec align="left"/>
 
-                <table>
-                    <title>Properties</title>
+                    <thead>
+                        <row>
+                            <entry align="center">Name</entry>
 
-                    <tgroup cols="2">
-                        <colspec align="left"/>
+                            <entry align="center">Description</entry>
+                        </row>
+                    </thead>
 
-                        <thead>
-                            <row>
-                                <entry align="center">Name</entry>
+                    <tbody>
+                        <row>
+                            <entry>timeout</entry>
 
-                                <entry align="center">Description</entry>
-                            </row>
-                        </thead>
+                            <entry>Maximum time that FLUSH.down() will be blocked before
+                                being unblocked. Should be sufficient enough to allow large
+                                state transfers,default=8000 msec
+                            </entry>
+                        </row>
 
-                        <tbody>
-                            <row>
-                                <entry>timeout</entry>
+                        <row>
+                            <entry>block_timeout</entry>
 
-                                <entry>Maximum time that FLUSH.down() will be blocked before
-                                    being unblocked. Should be sufficient enough to allow large
-                                    state transfers,default=8000 msec
-                                </entry>
-                            </row>
-
-                            <row>
-                                <entry>block_timeout</entry>
-
-                                <entry>Maximum amount of time that FLUSH will be waiting for
-                                    EVENT.BLOCK_OK once Event.BLOCK has been sent to application
-                                    level, default=10000 msec
-                                </entry>
-                            </row>
-                        </tbody>
-                    </tgroup>
-                </table>
-            </section>
+                            <entry>Maximum amount of time that FLUSH will be waiting for
+                                EVENT.BLOCK_OK once Event.BLOCK has been sent to application
+                                level, default=10000 msec
+                            </entry>
+                        </row>
+                    </tbody>
+                </tgroup>
+            </table>
         </section>
     </section>
 
