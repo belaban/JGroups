@@ -1,4 +1,4 @@
-// $Id: QuoteServer.java,v 1.10 2006/05/03 08:20:15 belaban Exp $
+// $Id: QuoteServer.java,v 1.11 2007/07/05 08:42:04 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -20,15 +20,8 @@ import java.util.Hashtable;
  * Example of a replicated quote server. The server maintains state which consists of a list
  * of quotes and their corresponding values. When it is started, it tries to reach other
  * quote servers to get its initial state. If it does not receive any response after 5
- * seconds, it assumes it is the first server and starts processing requests. When it
- * receives a view notification it checks whether there are more members in the view than in
- * its previous view. If this is the case, it broadcasts a request for the state to all
- * members. Integration of different states is simply the union of all states (with the
- * danger of overwriting mutually inconsistent state).<p> This mechanism allows both for
- * fast discovery of initial servers, and - in the case of partition merging - for
- * reintegration of existing servers. Broadcasting the state request upon every view change
- * (only when new members are joined) causes potentially a lot of network traffic, but it is
- * assumes that there will not be more than 5 quote servers at most.
+ * seconds, it assumes it is the first server and starts processing requests.<p>
+ * Any updates are multicast across the cluster
  * @author Bela Ban
  */
 
