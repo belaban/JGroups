@@ -33,7 +33,7 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.2 2007/07/04 14:30:58 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.3 2007/07/06 07:44:02 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedMessageListener, ExtendedMembershipListener {
 
@@ -45,7 +45,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
         void entryRemoved(Object key);
 
-        void viewChange(Vector new_mbrs, Vector old_mbrs);
+        void viewChange(View view, Vector new_mbrs, Vector old_mbrs);
 
         void contentsSet(Map new_entries);
 
@@ -557,10 +557,9 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         Vector<Address> new_mbrs=new_view.getMembers();
 
         if(new_mbrs != null) {
-            sendViewChangeNotifications(new_mbrs, members); // notifies observers (joined, left)
-            members.removeAllElements();
-            for(int i=0; i < new_mbrs.size(); i++)
-                members.addElement(new_mbrs.elementAt(i));
+            sendViewChangeNotifications(new_view, new_mbrs, new Vector<Address>(members)); // notifies observers (joined, left)
+            members.clear();
+            members.addAll(new_mbrs);
         }
         //if size is bigger than one, there are more peers in the group
         //otherwise there is only one server.
@@ -583,7 +582,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
 
-    void sendViewChangeNotifications(Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
+    void sendViewChangeNotifications(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
         Vector<Address> joined, left;
         Notification n;
 
@@ -608,7 +607,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
         for(int i=0; i < notifs.size(); i++) {
             n=notifs.elementAt(i);
-            n.viewChange(joined, left);
+            n.viewChange(view, joined, left);
         }
     }
 
