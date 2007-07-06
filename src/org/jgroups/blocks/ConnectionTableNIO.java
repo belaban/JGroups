@@ -1,9 +1,8 @@
-// $Id: ConnectionTableNIO.java,v 1.30 2007/06/06 11:02:34 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.32 2007/07/06 08:07:05 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
@@ -15,10 +14,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.*;
 import java.nio.channels.spi.SelectorProvider;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.Set;
-import java.util.ConcurrentModificationException;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -40,7 +36,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
    private ServerSocketChannel m_serverSocketChannel;
    private Selector m_acceptSelector;
-   protected final static Log LOG = LogFactory.getLog(ConnectionTableNIO.class);
 
    private WriteHandler[] m_writeHandlers;
    private int m_nextWriteHandler = 0;
@@ -54,7 +49,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    private Executor m_requestProcessors;
    private volatile boolean serverStopping=false;
 
-   private final LinkedList m_backGroundThreads = new LinkedList();  // Collection of all created threads
+   private final List<Thread> m_backGroundThreads = new LinkedList<Thread>();  // Collection of all created threads
 
    private int m_reader_threads = 3;
 
@@ -249,11 +244,11 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
             try
             {
-               if (LOG.isTraceEnabled())
-                  LOG.trace("About to change new connection send buff size from " + sock_ch.socket().getSendBufferSize() + " bytes");
+               if (log.isTraceEnabled())
+                  log.trace("About to change new connection send buff size from " + sock_ch.socket().getSendBufferSize() + " bytes");
                sock_ch.socket().setSendBufferSize(send_buf_size);
-               if (LOG.isTraceEnabled())
-                  LOG.trace("Changed new connection send buff size to " + sock_ch.socket().getSendBufferSize() + " bytes");
+               if (log.isTraceEnabled())
+                  log.trace("Changed new connection send buff size to " + sock_ch.socket().getSendBufferSize() + " bytes");
             }
             catch (IllegalArgumentException ex)
             {
@@ -262,11 +257,11 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             }
             try
             {
-               if (LOG.isTraceEnabled())
-                  LOG.trace("About to change new connection receive buff size from " + sock_ch.socket().getReceiveBufferSize() + " bytes");
+               if (log.isTraceEnabled())
+                  log.trace("About to change new connection receive buff size from " + sock_ch.socket().getReceiveBufferSize() + " bytes");
                sock_ch.socket().setReceiveBufferSize(recv_buf_size);
-               if (LOG.isTraceEnabled())
-                  LOG.trace("Changed new connection receive buff size to " + sock_ch.socket().getReceiveBufferSize() + " bytes");
+               if (log.isTraceEnabled())
+                  log.trace("Changed new connection receive buff size to " + sock_ch.socket().getReceiveBufferSize() + " bytes");
             }
             catch (IllegalArgumentException ex)
             {
@@ -292,8 +287,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
             } catch (InterruptedException e)
             {
-               if (LOG.isWarnEnabled())
-                  LOG.warn("Thread (" +Thread.currentThread().getName() + ") was interrupted, closing connection", e);
+               if (log.isWarnEnabled())
+                  log.warn("Thread (" +Thread.currentThread().getName() + ") was interrupted, closing connection", e);
                // What can we do? Remove it from table then.
                conn.destroy();
                throw e;
@@ -303,7 +298,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             addConnection(dest, conn);
 
             notifyConnectionOpened(dest);
-            if (LOG.isTraceEnabled()) LOG.trace("created socket to " + dest);
+            if (log.isTraceEnabled()) log.trace("created socket to " + dest);
          }
          return conn;
       }
@@ -352,7 +347,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          // Create worker thread pool for processing incoming buffers
           ThreadPoolExecutor requestProcessors = new ThreadPoolExecutor(getProcessorMinThreads(), getProcessorMaxThreads(),
                                                                         getProcessorKeepAliveTime(), TimeUnit.MILLISECONDS,
-                                                                        new LinkedBlockingQueue(getProcessorQueueSize()));
+                                                                        new LinkedBlockingQueue<Runnable>(getProcessorQueueSize()));
 
           requestProcessors.setThreadFactory(new ThreadFactory() {
               public Thread newThread(Runnable runnable) {
@@ -366,8 +361,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          m_requestProcessors = requestProcessors;
       }
 
-      m_writeHandlers = WriteHandler.create(getWriterThreads(), thread_group, m_backGroundThreads);
-      m_readHandlers = ReadHandler.create(getReaderThreads(), this, thread_group, m_backGroundThreads);
+      m_writeHandlers = WriteHandler.create(getWriterThreads(), thread_group, m_backGroundThreads, log);
+      m_readHandlers = ReadHandler.create(getReaderThreads(), this, thread_group, m_backGroundThreads, log);
    }
 
 
@@ -393,18 +388,18 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             m_readHandlers[i].add(new Shutdown());
          } catch (InterruptedException e)
          {
-            LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
+            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
          }
       }
       for (int i = 0; i < m_writeHandlers.length; i++)
       {
          try
          {
-            m_writeHandlers[i].QUEUE.put(new Shutdown());
-            m_writeHandlers[i].SELECTOR.wakeup();
+            m_writeHandlers[i].queue.put(new Shutdown());
+            m_writeHandlers[i].selector.wakeup();
          } catch (InterruptedException e)
          {
-            LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
+            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
          }
       }
 
@@ -430,12 +425,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
           conns.clear();
       }
 
-      while(m_backGroundThreads.size() > 0) {
-          Thread t = (Thread)m_backGroundThreads.removeFirst();
+      while(!m_backGroundThreads.isEmpty()) {
+          Thread t =m_backGroundThreads.remove(0);
           try {
             t.join();
           } catch(InterruptedException e) {
-            LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted while waiting on thread " + t.getName() + " to finish.");              
+            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted while waiting on thread " + t.getName() + " to finish.");
           }
       }
       m_backGroundThreads.clear();
@@ -446,175 +441,142 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     * Acceptor thread. Continuously accept new connections and assign readhandler/writehandler
     * to them.
     */
-   public void run()
-   {
-      Connection conn;
+   public void run() {
+       Connection conn;
 
-      while (m_serverSocketChannel.isOpen() && !serverStopping)
-      {
-         int num;
-         try
-         {
-            num = m_acceptSelector.select();
-         } catch (IOException e)
-         {
-            if (LOG.isWarnEnabled())
-               LOG.warn("Select operation on listening socket failed", e);
-            continue;   // Give up this time
-         }
+       while(m_serverSocketChannel.isOpen() && !serverStopping) {
+           int num;
+           try {
+               num=m_acceptSelector.select();
+           }
+           catch(IOException e) {
+               if(log.isWarnEnabled())
+                   log.warn("Select operation on listening socket failed", e);
+               continue;   // Give up this time
+           }
 
-         if (num > 0)
-         {
-            Set readyKeys = m_acceptSelector.selectedKeys();
-            for (Iterator i = readyKeys.iterator(); i.hasNext();)
-            {
-               SelectionKey key = (SelectionKey) i.next();
-               i.remove();
-               // We only deal with new incoming connections
+           if(num > 0) {
+               Set<SelectionKey> readyKeys=m_acceptSelector.selectedKeys();
+               for(Iterator<SelectionKey> i=readyKeys.iterator(); i.hasNext();) {
+                   SelectionKey key=i.next();
+                   i.remove();
+                   // We only deal with new incoming connections
 
-               ServerSocketChannel readyChannel = (ServerSocketChannel) key.channel();
-               SocketChannel client_sock_ch;
-               try
-               {
-                  client_sock_ch = readyChannel.accept();
-               } catch (IOException e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to accept new connection from listening socket failed" , e);
-                  // Give up this connection
-                  continue;
-               }
+                   ServerSocketChannel readyChannel=(ServerSocketChannel)key.channel();
+                   SocketChannel client_sock_ch;
+                   try {
+                       client_sock_ch=readyChannel.accept();
+                   }
+                   catch(IOException e) {
+                       if(log.isWarnEnabled())
+                           log.warn("Attempt to accept new connection from listening socket failed", e);
+                       // Give up this connection
+                       continue;
+                   }
 
-               if (LOG.isTraceEnabled())
-                  LOG.trace("accepted connection, client_sock=" + client_sock_ch.socket());
+                   if(log.isTraceEnabled())
+                       log.trace("accepted connection, client_sock=" + client_sock_ch.socket());
 
-               try {
+                   try {
+                       client_sock_ch.socket().setSendBufferSize(send_buf_size);
+                   }
+                   catch(IllegalArgumentException ex) {
+                       if(log.isErrorEnabled()) log.error("exception setting send buffer size to " + send_buf_size + " bytes: ", ex);
+                   }
+                   catch(SocketException e) {
+                       if(log.isErrorEnabled()) log.error("exception setting send buffer size to " + send_buf_size + " bytes: ", e);
+                   }
 
-                  if (LOG.isTraceEnabled())
-                     LOG.trace("About to change new connection send buff size from " + client_sock_ch.socket().getSendBufferSize() + " bytes");
-                  client_sock_ch.socket().setSendBufferSize(send_buf_size);
-                  if (LOG.isTraceEnabled())
-                     LOG.trace("Changed new connection send buff size to " + client_sock_ch.socket().getSendBufferSize() + " bytes");
-               }
-               catch (IllegalArgumentException ex)
-               {
-                  if (log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                     send_buf_size + " bytes: " ,ex);
-               }
-               catch (SocketException e)
-               {
-                  if (log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                     send_buf_size + " bytes: " , e);
-               }
+                   try {
+                       client_sock_ch.socket().setReceiveBufferSize(recv_buf_size);
+                   }
+                   catch(IllegalArgumentException ex) {
+                       if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " + send_buf_size + " bytes: ", ex);
+                   }
+                   catch(SocketException e) {
+                       if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " + recv_buf_size + " bytes: ", e);
+                   }
 
-               try
-               {
-                  if (LOG.isTraceEnabled())
-                     LOG.trace("About to change new connection receive buff size from " + client_sock_ch.socket().getReceiveBufferSize() + " bytes");
-                  client_sock_ch.socket().setReceiveBufferSize(recv_buf_size);
-                  if (LOG.isTraceEnabled())
-                     LOG.trace("Changed new connection receive buff size to " + client_sock_ch.socket().getReceiveBufferSize() + " bytes");
-               }
-               catch (IllegalArgumentException ex)
-               {
-                  if (log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                     send_buf_size + " bytes: " , ex);
-               }
-               catch (SocketException e)
-               {
-                  if (log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                     recv_buf_size + " bytes: " , e);
-               }
+                   conn=new Connection(client_sock_ch, null);
+                   try {
+                       conn.peer_addr=conn.readPeerAddress(client_sock_ch.socket());
+                       synchronized(conns) {
+                           if(conns.containsKey(conn.getPeerAddress())) {
+                               if(log.isTraceEnabled())
+                                   log.trace(conn.peer_addr + " is already there, will reuse connection");
+                               continue;
 
-               conn = new Connection(client_sock_ch, null);
-               try
-               {
-                  conn.peer_addr = conn.readPeerAddress(client_sock_ch.socket());
+//
+//                               if(conn.getPeerAddress().equals(getLocalAddress())) {
+//                                   if(log.isTraceEnabled())
+//                                       log.trace(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
+//                               }
+//                               else {
+//                                   if(log.isWarnEnabled())
+//                                       log.warn(conn.getPeerAddress() + " is already there, will terminate connection");
+//                                   // keep existing connection, close this new one
+//                                   conn.destroy();
+//                                   continue;
+//                               }
+                           }
+                           else {
+                               addConnection(conn.getPeerAddress(), conn);
+                           }
+                       }
+                       notifyConnectionOpened(conn.getPeerAddress());
+                       client_sock_ch.configureBlocking(false);
+                   }
+                   catch(IOException e) {
+                       if(log.isWarnEnabled())
+                           log.warn("Attempt to configure non-blocking mode failed", e);
+                       conn.destroy();
+                       continue;
+                   }
+                   catch(Exception e) {
+                       if(log.isWarnEnabled())
+                           log.warn("Attempt to handshake with other peer failed", e);
+                       conn.destroy();
+                       continue;
+                   }
 
-                  synchronized (conns)
-                  {
-                     if (conns.containsKey(conn.getPeerAddress()))
-                     {
-                        if (conn.getPeerAddress().equals(getLocalAddress()))
-                        {
-                           if (LOG.isTraceEnabled())
-                              LOG.trace(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
-                        } else
-                        {
-                           if (LOG.isWarnEnabled())
-                              LOG.warn(conn.getPeerAddress() + " is already there, will terminate connection");
-                           // keep existing connection, close this new one
-                           conn.destroy();
-                           continue;
-                        }
-                     } else {
-                        addConnection(conn.getPeerAddress(), conn);
-                     }
-                  }
-                  notifyConnectionOpened(conn.getPeerAddress());
-                  client_sock_ch.configureBlocking(false);
-               }
-               catch (IOException e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to configure non-blocking mode failed", e);
-                  // Give up this connection
-                  conn.destroy();
-                  continue;
-               }
-               catch (Exception e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to handshake with other peer failed", e);
-                  // Give up this connection
-                  conn.destroy();
-                  continue;
-               }
+                   int idx;
+                   synchronized(m_lockNextWriteHandler) {
+                       idx=m_nextWriteHandler=(m_nextWriteHandler + 1) % m_writeHandlers.length;
+                   }
+                   conn.setupWriteHandler(m_writeHandlers[idx]);
 
-               int idx;
-               synchronized (m_lockNextWriteHandler)
-               {
-                  idx = m_nextWriteHandler = (m_nextWriteHandler + 1) % m_writeHandlers.length;
-               }
-               conn.setupWriteHandler(m_writeHandlers[idx]);
+                   try {
+                       synchronized(m_lockNextReadHandler) {
+                           idx=m_nextReadHandler=(m_nextReadHandler + 1) % m_readHandlers.length;
+                       }
+                       m_readHandlers[idx].add(conn);
 
-               try
-               {
-                  synchronized (m_lockNextReadHandler)
-                  {
-                     idx = m_nextReadHandler = (m_nextReadHandler + 1) % m_readHandlers.length;
-                  }
-                  m_readHandlers[idx].add(conn);
+                   }
+                   catch(InterruptedException e) {
+                       if(log.isWarnEnabled())
+                           log.warn("Attempt to configure read handler for accepted connection failed", e);
+                       // close connection
+                       conn.destroy();
+                   }
+               }   // end of iteration
+           }   // end of selected key > 0
+       }   // end of thread
 
-               } catch (InterruptedException e)
-               {
-                  if (LOG.isWarnEnabled())
-                     LOG.warn("Attempt to configure read handler for accepted connection failed" , e);
-                  // close connection
-                  conn.destroy();
-               }
-            }   // end of iteration
-         }   // end of selected key > 0
-      }   // end of thread
-
-      if (m_serverSocketChannel.isOpen())
-      {
-         try
-         {
-            m_serverSocketChannel.close();
-         }
-         catch (Exception e)
-         {
-            log.error("exception closing server listening socket", e);
-         }
-      }
-      if (LOG.isTraceEnabled())
-         LOG.trace("acceptor thread terminated");
+       if(m_serverSocketChannel.isOpen()) {
+           try {
+               m_serverSocketChannel.close();
+           }
+           catch(Exception e) {
+               log.error("exception closing server listening socket", e);
+           }
+       }
+       if(log.isTraceEnabled())
+           log.trace("acceptor thread terminated");
 
    }
 
 
-   /**
+    /**
     * Finds first available port starting at start_port and returns server socket. Sets srv_port
     */
    protected ServerSocket createServerSocket(int start_port, int end_port) throws Exception
@@ -654,7 +616,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          }
          catch (IOException io_ex)
          {
-            if (LOG.isErrorEnabled()) LOG.error("Attempt to bind serversocket failed, port="+start_port+", bind addr=" + bind_addr ,io_ex);
+            if (log.isErrorEnabled()) log.error("Attempt to bind serversocket failed, port="+start_port+", bind addr=" + bind_addr ,io_ex);
             throw io_ex;
          }
          srv_port = start_port;
@@ -675,12 +637,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
    // ReadHandler has selector to deal with read, it runs in seperated thread
    private static class ReadHandler implements Runnable {
-      private final Selector SELECTOR = initHandler();
-      private final LinkedBlockingQueue QUEUE = new LinkedBlockingQueue();
+      private final Selector selector= initHandler();
+      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<Object>();
       private final ConnectionTableNIO connectTable;
+       private final Log log;
 
-      ReadHandler(ConnectionTableNIO ct) {
+      ReadHandler(ConnectionTableNIO ct, Log log) {
          connectTable= ct;
+          this.log=log;
       }
 
       public Selector initHandler()
@@ -691,7 +655,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             return Selector.open();
          } catch (IOException e)
          {
-            if (LOG.isErrorEnabled()) LOG.error(e);
+            if (log.isErrorEnabled()) log.error(e);
             throw new IllegalStateException(e.getMessage());
          }
 
@@ -702,12 +666,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct, ThreadGroup tg, LinkedList backGroundThreads)
+      private static ReadHandler[] create(int workerThreads, ConnectionTableNIO ct, ThreadGroup tg, List<Thread> backGroundThreads, Log log)
       {
          ReadHandler[] handlers = new ReadHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
          {
-            handlers[looper] = new ReadHandler(ct);
+            handlers[looper] = new ReadHandler(ct, log);
 
             Thread thread = new Thread(tg, handlers[looper], "nioReadHandlerThread");
             thread.setDaemon(true);
@@ -720,13 +684,13 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       private void add(Object conn) throws InterruptedException
       {
-         QUEUE.put(conn);
+         queue.put(conn);
          wakeup();
       }
 
       private void wakeup()
       {
-         SELECTOR.wakeup();
+         selector.wakeup();
       }
 
       public void run()
@@ -736,22 +700,22 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             int events;
             try
             {
-               events = SELECTOR.select();
+               events = selector.select();
             } catch (IOException e)
             {
-               if (LOG.isWarnEnabled())
-                  LOG.warn("Select operation on socket failed", e);
+               if (log.isWarnEnabled())
+                  log.warn("Select operation on socket failed", e);
                continue;   // Give up this time
             } catch (ClosedSelectorException e)
             {
-               if (LOG.isWarnEnabled())
-                  LOG.warn("Select operation on socket failed" , e);
+               if (log.isWarnEnabled())
+                  log.warn("Select operation on socket failed" , e);
                return;     // Selector gets closed, thread stops
             }
 
             if (events > 0)
             {   // there are read-ready channels
-               Set readyKeys = SELECTOR.selectedKeys();
+               Set readyKeys = selector.selectedKeys();
                try
                {
                    for (Iterator i = readyKeys.iterator(); i.hasNext();)
@@ -772,7 +736,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                             }
                         } catch (IOException e)
                         {
-                            if (LOG.isTraceEnabled()) LOG.trace("Read operation on socket failed" , e);
+                            if (log.isTraceEnabled()) log.trace("Read operation on socket failed" , e);
                             // The connection must be bad, cancel the key, close socket, then
                             // remove it from table!
                             key.cancel();
@@ -783,7 +747,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                    }
                }
                catch(ConcurrentModificationException e) {
-                   if (LOG.isTraceEnabled()) LOG.trace("Selection set changed", e);
+                   if (log.isTraceEnabled()) log.trace("Selection set changed", e);
                    // valid events should still be in the selection set the next time
                }
             }
@@ -792,10 +756,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             Object o;
             try
             {
-               o = QUEUE.poll(0L, TimeUnit.MILLISECONDS); // get a connection
+               o = queue.poll(0L, TimeUnit.MILLISECONDS); // get a connection
             } catch (InterruptedException e)
             {
-               if (LOG.isInfoEnabled()) LOG.info("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
+               if (log.isTraceEnabled()) log.trace("Thread ("+Thread.currentThread().getName() +") was interrupted while polling queue" ,e);
                // We must give up
                continue;
             }
@@ -803,9 +767,9 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                continue;
             if (o instanceof Shutdown) {     // shutdown command?
                try {
-                  SELECTOR.close();
+                  selector.close();
                } catch(IOException e) {
-                  if (LOG.isInfoEnabled()) LOG.info("Read selector close operation failed" , e);
+                  if (log.isTraceEnabled()) log.trace("Read selector close operation failed" , e);
                }
                return;                       // stop reading
             }
@@ -813,10 +777,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             SocketChannel sc = conn.getSocketChannel();
             try
             {
-               sc.register(SELECTOR, SelectionKey.OP_READ, conn);
+               sc.register(selector, SelectionKey.OP_READ, conn);
             } catch (ClosedChannelException e)
             {
-               if (LOG.isInfoEnabled()) LOG.info("Socket channel was closed while we were trying to register it to selector" , e);
+               if (log.isTraceEnabled()) log.trace("Socket channel was closed while we were trying to register it to selector" , e);
                // Channel becomes bad. The connection must be bad,
                // close socket, then remove it from table!
                conn.destroy();
@@ -855,7 +819,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          {
             // Cannot do call back, what can we do?
             // Give up handling the message then
-            LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted while assigning executor to process read request" , e);
+            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted while assigning executor to process read request" , e);
          }
       }
 
@@ -1012,10 +976,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          m_selectorWriteHandler = hdlr.add(sock_ch);
       }
 
-//      void destroy()
-//      {
-//         closeSocket();
-//      }
+
 
       void doSend(byte[] buffie, int offset, int length) throws Exception
       {
@@ -1024,8 +985,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
           Object ex = result.get();
          if (ex instanceof Exception)
          {
-             if (LOG.isErrorEnabled())
-                 LOG.error("failed sending message", (Exception)ex);
+             if (log.isErrorEnabled())
+                 log.error("failed sending message", (Exception)ex);
              if (((Exception)ex).getCause() instanceof IOException)
                  throw (IOException) ((Exception)ex).getCause();
              throw (Exception)ex;
@@ -1076,24 +1037,29 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     */
    private static class WriteHandler implements Runnable {
       // Create a queue for write requests (unbounded)
-      private final LinkedBlockingQueue QUEUE = new LinkedBlockingQueue();
+      private final LinkedBlockingQueue<Object> queue= new LinkedBlockingQueue<Object>();
 
-      private final Selector SELECTOR = initSelector();
+      private final Selector selector= initSelector();
       private int m_pendingChannels;                 // count of the number of channels that have pending writes
       // note that this variable is only accessed by one thread.
 
       // allocate and reuse the header for all buffer write operations
       private ByteBuffer m_headerBuffer = ByteBuffer.allocate(Connection.HEADER_SIZE);
+       private final Log log;
 
 
-      Selector initSelector() {
+       public WriteHandler(Log log) {
+           this.log=log;
+       }
+
+       Selector initSelector() {
          try
          {
             return SelectorProvider.provider().openSelector();
          }
          catch (IOException e)
          {
-            if (LOG.isErrorEnabled()) LOG.error(e);
+            if (log.isErrorEnabled()) log.error(e);
             throw new IllegalStateException(e.getMessage());
          }
       }
@@ -1103,12 +1069,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        *
        * @param workerThreads is the number of threads to create.
        */
-      private static WriteHandler[] create(int workerThreads, ThreadGroup tg, LinkedList backGroundThreads)
+      private static WriteHandler[] create(int workerThreads, ThreadGroup tg, List<Thread> backGroundThreads, Log log)
       {
          WriteHandler[] handlers = new WriteHandler[workerThreads];
          for (int looper = 0; looper < workerThreads; looper++)
          {
-            handlers[looper] = new WriteHandler();
+            handlers[looper] = new WriteHandler(log);
 
             Thread thread = new Thread(tg, handlers[looper], "nioWriteHandlerThread");
             thread.setDaemon(true);
@@ -1125,7 +1091,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        */
       private SelectorWriteHandler add(SocketChannel channel)
       {
-          return new SelectorWriteHandler(channel, SELECTOR, m_headerBuffer);
+          return new SelectorWriteHandler(channel, selector, m_headerBuffer);
       }
 
       /**
@@ -1141,15 +1107,15 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
        */
       private void write(SocketChannel channel, ByteBuffer buffer, MyFuture notification, SelectorWriteHandler hdlr) throws InterruptedException
       {
-         QUEUE.put(new WriteRequest(channel, buffer, notification, hdlr));
+         queue.put(new WriteRequest(channel, buffer, notification, hdlr));
       }
 
-      private void close(SelectorWriteHandler entry)
+      private static void close(SelectorWriteHandler entry)
       {
          entry.cancel();
       }
 
-      private void handleChannelError( SelectorWriteHandler entry, Throwable error)
+      private static void handleChannelError( SelectorWriteHandler entry, Throwable error)
       {
          // notify callers of the exception and drain all of the send buffers for this channel.
          do
@@ -1196,7 +1162,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       public void run()
       {
-         while (SELECTOR.isOpen())
+         while (selector.isOpen())
          {
             try
             {
@@ -1204,14 +1170,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                Object o;
 
                // When there are no more commands in the Queue, we will hit the blocking code after this loop.
-               while (null != (o = QUEUE.poll(0L, TimeUnit.MILLISECONDS)))
+               while (null != (o = queue.poll(0L, TimeUnit.MILLISECONDS)))
                {
                   if (o instanceof Shutdown)    // Stop the thread
                   {
                      try {
-                        SELECTOR.close();
+                        selector.close();
                      } catch(IOException e) {
-                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                        if (log.isTraceEnabled()) log.trace("Write selector close operation failed" , e);
                      }
                      return;
                   }
@@ -1233,14 +1199,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   try
                   {
                      // process any connections ready to be written to.
-                     if (SELECTOR.selectNow() > 0)
+                     if (selector.selectNow() > 0)
                      {
-                        processWrite(SELECTOR);
+                        processWrite(selector);
                      }
                   }
                   catch (IOException e)
                   {  // need to understand what causes this error so we can handle it properly
-                     if (LOG.isErrorEnabled()) LOG.error("SelectNow operation on write selector failed, didn't expect this to occur, please report this", e);
+                     if (log.isErrorEnabled()) log.error("SelectNow operation on write selector failed, didn't expect this to occur, please report this", e);
                      return;             // if select fails, give up so we don't go into a busy loop.
                   }
                }
@@ -1248,12 +1214,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                // if there isn't any pending work to do, block on queue to get next request.
                if (m_pendingChannels == 0)
                {
-                  o = QUEUE.take();
+                  o = queue.take();
                   if (o instanceof Shutdown){    // Stop the thread
                      try {
-                        SELECTOR.close();
+                        selector.close();
                      } catch(IOException e) {
-                        if (LOG.isInfoEnabled()) LOG.info("Write selector close operation failed" , e);
+                        if (log.isTraceEnabled()) log.trace("Write selector close operation failed" , e);
                      }
                      return;
                   }
@@ -1266,25 +1232,25 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                {
                   try
                   {
-                     if ((SELECTOR.select()) > 0)
+                     if ((selector.select()) > 0)
                      {
-                        processWrite(SELECTOR);
+                        processWrite(selector);
                      }
                   }
                   catch (IOException e)
                   {  // need to understand what causes this error
-                     if (LOG.isErrorEnabled()) LOG.error("Failure while writing to socket",e);
+                     if (log.isErrorEnabled()) log.error("Failure while writing to socket",e);
                   }
                }
             }
             catch (InterruptedException e)
             {
-               if (LOG.isErrorEnabled()) LOG.error("Thread ("+Thread.currentThread().getName() +") was interrupted", e);
+               if (log.isErrorEnabled()) log.error("Thread ("+Thread.currentThread().getName() +") was interrupted", e);
             }
             catch (Throwable e)     // Log throwable rather than terminating this thread.
             {                       // We are a daemon thread so we shouldn't prevent the process from terminating if
                // the controlling thread decides that should happen.
-               if (LOG.isErrorEnabled()) LOG.error("Thread ("+Thread.currentThread().getName() +") caught Throwable" , e);
+               if (log.isErrorEnabled()) log.error("Thread ("+Thread.currentThread().getName() +") caught Throwable" , e);
             }
          }
       }
@@ -1295,7 +1261,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    // mapped to a Selector.
    public static class SelectorWriteHandler {
 
-      private final LinkedList m_writeRequests = new LinkedList();  // Collection of writeRequests
+      private final List<WriteRequest> m_writeRequests = new LinkedList<WriteRequest>();  // Collection of writeRequests
       private boolean m_headerSent = false;
       private SocketChannel m_channel;
       private SelectionKey m_key;
@@ -1381,7 +1347,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       WriteRequest getCurrentRequest()
       {
-         return (WriteRequest) m_writeRequests.getFirst();
+         return m_writeRequests.get(0);
       }
 
       SocketChannel getChannel()
@@ -1426,7 +1392,7 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          m_headerSent = false;
          m_bytesWritten = 0;
 
-         m_writeRequests.removeFirst();            // remove current entry
+         m_writeRequests.remove(0);            // remove current entry
          boolean rc = !m_writeRequests.isEmpty();
          if (!rc)                                  // disable select for this channel if no more entries
             disable();
@@ -1508,9 +1474,9 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
             return null;
         }
     }
-    static final NullCallable NULLCALL = new NullCallable();
+    private static final NullCallable NULLCALL = new NullCallable();
 
-    public static class MyFuture extends FutureTask{  // make FutureTask work like the old FutureResult
+    public static class MyFuture extends FutureTask {  // make FutureTask work like the old FutureResult
         public MyFuture() {
             super(NULLCALL);
         }
