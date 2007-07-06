@@ -33,7 +33,7 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.3 2007/07/06 07:44:02 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.4 2007/07/06 07:44:40 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedMessageListener, ExtendedMembershipListener {
 
@@ -45,7 +45,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
         void entryRemoved(Object key);
 
-        void viewChange(View view, Vector new_mbrs, Vector old_mbrs);
+        void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs);
 
         void contentsSet(Map new_entries);
 
