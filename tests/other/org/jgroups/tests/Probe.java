@@ -5,19 +5,19 @@ import org.jgroups.util.Util;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
-import java.util.List;
-import java.util.ArrayList;
+import java.util.*;
 
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
 public class Probe {
     MulticastSocket mcast_sock;
-    boolean running=true;
+    volatile boolean running=true;
+    final Set<String> senders=new HashSet<String>();
 
 
     public Probe() {
@@ -31,7 +31,7 @@ public class Probe {
         if(bind_addr != null)
             mcast_sock.setInterface(bind_addr);
 
-        StringBuffer request=new StringBuffer("QUERY: ");
+        StringBuilder request=new StringBuilder("QUERY: ");
         for(int i=0; i < query.size(); i++) {
             request.append(query.get(i)).append(" ");
         }
@@ -62,9 +62,13 @@ public class Probe {
                 System.out.println("\n");
                 return;
             }
+
             byte[] data=rsp.getData();
-            // System.out.println("received " + rsp.getLength() + " bytes from " + rsp.getSocketAddress());
             response=new String(data, 0, rsp.getLength());
+            if(checkDuplicateResponse(response)) {
+                continue;
+            }
+
             if(matches(response, match)) {
                 matched++;
                 System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes): " + response);
@@ -75,7 +79,22 @@ public class Probe {
         System.out.println("\nTotal responses=" + count + ", " + matched + " matches, " + not_matched + " non-matches");
     }
 
-    private boolean matches(String response, String match) {
+    private boolean checkDuplicateResponse(String response) {
+        int index=response.indexOf("local_addr");
+        if(index != -1) {
+            String addr=parseAddress(response.substring(index+1 + "local_addr".length()));
+            return senders.add(addr) == false;
+        }
+
+        return false;
+    }
+
+    private static String parseAddress(String response) {
+        StringTokenizer st=new StringTokenizer(response);
+        return st.nextToken();
+    }
+
+    private static boolean matches(String response, String match) {
         if(response == null)
             return false;
         if(match == null)
@@ -92,7 +111,7 @@ public class Probe {
         long         timeout=10000;
         final String DEFAULT_DIAG_ADDR="224.0.0.75";
         final int    DEFAULT_DIAG_PORT=7500;
-        List         query=new ArrayList();
+        List<String> query=new ArrayList<String>();
         String       match=null;
 
         try {
