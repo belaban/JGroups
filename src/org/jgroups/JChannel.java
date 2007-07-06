@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.136 2007/07/05 11:26:35 belaban Exp $
+ * @version $Id: JChannel.java,v 1.137 2007/07/06 19:25:18 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -410,7 +410,7 @@ public class JChannel extends Channel {
                }
                catch (TimeoutException te){
                   if(log.isWarnEnabled())
-                     log.warn("waiting on UNBLOCK after connect timed out");
+                     log.warn(local_addr + " waiting on UNBLOCK after connect timed out");
                }
             }
         }
@@ -1150,12 +1150,9 @@ public class JChannel extends Channel {
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
                             log.error("failed calling unblock() on Receiver", t);
-                    }
-                    finally{
-                       flush_unblock_promise.setResult(Boolean.TRUE);
-                    }
-                    return null;
+                    }                                        
                 }
+                flush_unblock_promise.setResult(Boolean.TRUE);
                 break;
             default:
                 break;
@@ -1404,7 +1401,7 @@ public class JChannel extends Channel {
            }
            catch (TimeoutException te){
               if(log.isWarnEnabled())
-                 log.warn("Waiting on UNBLOCK after getState timed out");
+                 log.warn(local_addr + " waiting on UNBLOCK after getState timed out");
            }
         }
 
