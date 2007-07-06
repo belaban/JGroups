@@ -24,28 +24,28 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
-    final HashMap<Address,Connection>       conns=new HashMap<Address,Connection>();         // keys: Addresses (peer address), values: Connection
-    Receiver            receiver=null;
-    boolean             use_send_queues=false;       // max number of messages in a send queue
-    int                 send_queue_size=10000;
-    InetAddress         bind_addr=null;
-    Address             local_addr=null;             // bind_addr + port of srv_sock
-    int                 srv_port=7800;
-    int                 recv_buf_size=120000;
-    int                 send_buf_size=60000;
+    final Map<Address,Connection>  conns=new HashMap<Address,Connection>();         // keys: Addresses (peer address), values: Connection
+    Receiver              receiver=null;
+    boolean               use_send_queues=false;       // max number of messages in a send queue
+    int                   send_queue_size=10000;
+    InetAddress           bind_addr=null;
+    Address               local_addr=null;             // bind_addr + port of srv_sock
+    int                   srv_port=7800;
+    int                   recv_buf_size=120000;
+    int                   send_buf_size=60000;
     final Vector<ConnectionListener>        conn_listeners=new Vector<ConnectionListener>(); // listeners to be notified when a conn is established/torn down
-    Reaper              reaper=null;                 // closes conns that have been idle for more than n secs
-    long                reaper_interval=60000;       // reap unused conns once a minute
-    long                conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
-    int                 sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
-    ThreadGroup         thread_group=null;
-    protected final Log log= LogFactory.getLog(getClass());
-    final byte[]        cookie={'b', 'e', 'l', 'a'};
-    boolean             use_reaper=false;            // by default we don't reap idle conns
-    static final int    backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
-    ServerSocket        srv_sock=null;
-    boolean             tcp_nodelay=false;
-    int                 linger=-1;
+    Reaper                reaper=null;                 // closes conns that have been idle for more than n secs
+    long                  reaper_interval=60000;       // reap unused conns once a minute
+    long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
+    int                   sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
+    ThreadGroup           thread_group=null;
+    protected final Log   log= LogFactory.getLog(getClass());
+    final byte[]          cookie={'b', 'e', 'l', 'a'};
+    boolean               use_reaper=false;            // by default we don't reap idle conns
+    static final int      backlog=20;                  // 20 conn requests are queued by ServerSocket (addtl will be discarded)
+    volatile ServerSocket srv_sock=null;
+    boolean               tcp_nodelay=false;
+    int                   linger=-1;
 
    /**
     * The address which will be broadcast to the group (the externally visible address which this host should
