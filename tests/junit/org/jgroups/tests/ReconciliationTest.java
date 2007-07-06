@@ -32,12 +32,14 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.1 2007/07/05 19:02:35 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.2 2007/07/06 19:24:22 vlada Exp $
  */
-public class ReconciliationTest extends ChannelTestBase {
-	private JChannel c1, c2, c3, c4;
+public class ReconciliationTest extends ChannelTestBase {	
 
-	private MyReceiver a, b, c;
+	private JChannel c1, c2;
+	
+	private List<JChannel> channels;
+	private List<MyReceiver> receivers;
 
 	public ReconciliationTest(){
 		super();
@@ -53,33 +55,11 @@ public class ReconciliationTest extends ChannelTestBase {
 	}
 
 	public void tearDown() throws Exception {
-		if(c4 != null){
-			c4.close();
-			assertFalse(c4.isOpen());
-			assertFalse(c4.isConnected());
-			c4 = null;
-		}
-		if(c3 != null){
-			c3.close();
-			assertFalse(c3.isOpen());
-			assertFalse(c3.isConnected());
-			c3 = null;
-		}
-
-		if(c2 != null){
-			c2.close();
-			assertFalse(c2.isOpen());
-			assertFalse(c2.isConnected());
-			c2 = null;
-		}
-
-		if(c1 != null){
-			c1.close();
-			assertFalse(c1.isOpen());
-			assertFalse(c1.isConnected());
-			c1 = null;
-		}
-
+		if(channels != null){
+		for(JChannel channel:channels){
+			channel.close();		
+		}}
+		
 		Util.sleep(500);
 		super.tearDown();
 	}
@@ -102,71 +82,22 @@ public class ReconciliationTest extends ChannelTestBase {
 	 * </ul>
 	 */
 	public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
-		createMembers();
-
-		insertDISCARD(c2, c3.getLocalAddress());
-
-		printDigests("\nDigests before C sends any messages:");
-
-		// now C sends 5 messages:
-		System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
-		for(int i = 1;i <= 5;i++){
-			c3.send(null, null, new Integer(i));
-		}
-		Util.sleep(1000); // until al messages have been received, this is
-							// asynchronous so we need to wait a bit
-
-		printDigests("\nDigests after C sent 5 messages:");
-
-		// check C (must have received its own messages)
-		Map<Address, List<Integer>> map = c.getMsgs();
-		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		List<Integer> list = map.get(c3.getLocalAddress());
-		System.out.println("C: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check A (should have received C's messages)
-		map = a.getMsgs();
-		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("A: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check B (should have received none of C's messages)
-		map = b.getMsgs();
-		assertEquals("we should have no sender at this time", 0, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("B: messages received from C: " + list);
-		assertNull(list);
-
-		removeDISCARD(c2);
-
-		System.out.println("\nJoining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
-		c4 = createChannel();
-		c4.connect("x");
-
-		// wait until view {A,B} has been installed
-		int cnt = 1000;
-		View v;
-		while((v = c1.getView()) != null && cnt > 0){
-			cnt--;
-			if(v.size() == 4)
-				break;
-			Util.sleep(500);
-		}
-		System.out.println("v=" + v);
-		assert v != null;
-		assertEquals(4, v.size());
-
-		printDigests("\nDigests after D joined (FLUSH protocol should have updated B with C's messages)");
-
-		// check B (should have received all 5 of C's messages, through B as
-		// part of the flush phase)
-		map = b.getMsgs();
-		assertEquals("we should have 1 sender at this time", 1, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("B: messages received from C: " + list);
-		assertEquals(5, list.size());
+		
+		FlushTrigger t = new FlushTrigger() {
+			public void triggerFlush() {
+				log.info("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
+				JChannel newChannel;
+				try{
+					newChannel = createChannel();
+					newChannel.connect("x");
+					channels.add(newChannel);
+				}catch(ChannelException e){					
+					e.printStackTrace();
+				}								
+			};
+		};		
+		String apps [] = createApplicationNames(3);
+		reconciliationHelper(apps,t);
 	}
 
 	/**
@@ -182,62 +113,18 @@ public class ReconciliationTest extends ChannelTestBase {
 	 * received from C to B
 	 * </ul>
 	 */
-	public void testReconciliationFlushTriggeredByManualFlush() throws Exception {
-		createMembers();
-
-		insertDISCARD(c2, c3.getLocalAddress());
-
-		printDigests("\nDigests before C sends any messages:");
-
-		// now C sends 5 messages:
-		System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
-		for(int i = 1;i <= 5;i++){
-			c3.send(null, null, new Integer(i));
-		}
-		Util.sleep(1000); // until al messages have been received, this is
-							// asynchronous so we need to wait a bit
-
-		printDigests("\nDigests after C sent 5 messages:");
-
-		// check C (must have received its own messages)
-		Map<Address, List<Integer>> map = c.getMsgs();
-		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		List<Integer> list = map.get(c3.getLocalAddress());
-		System.out.println("C: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check A (should have received C's messages)
-		map = a.getMsgs();
-		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("A: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check B (should have received none of C's messages)
-		map = b.getMsgs();
-		assertEquals("we should have no sender at this time", 0, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("B: messages received from C: " + list);
-		assertNull(list);
-
-		removeDISCARD(c2);
-
-		System.out.println("\nTriggering a manual FLUSH; this will update B with C's 5 messages:");
-		boolean rc = c1.startFlush(0, false);
-		System.out.println("rc=" + rc);
-		c1.stopFlush();
-
-		System.out.println("\nDigests afterC left (FLUSH protocol should have updated B with C's messages)");
-		System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
-		System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
-
-		// check B (should have received all 5 of C's messages, through B as
-		// part of the flush phase)
-		map = b.getMsgs();
-		assertEquals("we should have 1 sender at this time", 1, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("B: messages received from C: " + list);
-		assertEquals(5, list.size());
+	public void testReconciliationFlushTriggeredByManualFlush() throws Exception {	
+		
+		FlushTrigger t = new FlushTrigger() {
+			public void triggerFlush() {
+				JChannel channel = channels.get(0);
+				boolean rc = channel.startFlush(0, false);			
+				log.info("manual flush success="+rc);
+				channel.stopFlush();						
+			};
+		};		
+		String apps [] = createApplicationNames(3);
+		reconciliationHelper(apps,t);
 	}
 
 	/**
@@ -254,99 +141,111 @@ public class ReconciliationTest extends ChannelTestBase {
 	 * </ul>
 	 */
 	public void testReconciliationFlushTriggeredByMemberCrashing() throws Exception {
-		createMembers();
+		
+		FlushTrigger t = new FlushTrigger() {
+			public void triggerFlush() {
+				JChannel channel = channels.remove(channels.size()-1);
+				channel.shutdown();				
+			};
+		};		
+		String apps [] = createApplicationNames(3);
+		reconciliationHelper(apps,t);
+	}
+	
+	public void reconciliationHelper(String [] names,FlushTrigger ft) throws Exception {
+		
+		//create channels and setup receivers
+		int channelCount = names.length;
+		channels = new ArrayList<JChannel>(names.length);
+		receivers = new ArrayList<MyReceiver>(names.length);
+		for(int i = 0;i < channelCount;i++){
+			JChannel channel = createChannel();
+			MyReceiver r = new MyReceiver(channel,names[i]);
+			receivers.add(r);
+			channels.add(channel);
+			channel.setReceiver(r);
+			channel.connect("x");
+			Util.sleep(250);
+		}	
+		JChannel last = channels.get(channels.size()-1);
+		JChannel nextToLast = channels.get(channels.size()-2);
+		
+		insertDISCARD(nextToLast, last.getLocalAddress());
 
-		insertDISCARD(c2, c3.getLocalAddress());
+		String lastsName = names[names.length-1];
+		String nextToLastName = names[names.length-2];
+		printDigests(channels,"\nDigests before " + lastsName +" sends any messages:");
+		
 
-		printDigests("\nDigests before C sends any messages:");
-
-		// now C sends 5 messages:
-		System.out.println("\nC sending 5 messages; B will ignore them, but A and C will receive them");
+		// now last sends 5 messages:
+		log.info("\n" + lastsName + " sending 5 messages;" + nextToLastName + " will ignore them, but others will receive them");
 		for(int i = 1;i <= 5;i++){
-			c3.send(null, null, new Integer(i));
+			last.send(null, null, new Integer(i));
 		}
 		Util.sleep(1000); // until al messages have been received, this is
 							// asynchronous so we need to wait a bit
 
-		printDigests("\nDigests after C sent 5 messages:");
+		printDigests(channels,"\nDigests after " + lastsName +" sent messages:");
 
-		// check C (must have received its own messages)
-		Map<Address, List<Integer>> map = c.getMsgs();
+		
+		MyReceiver lastReceiver = receivers.get(receivers.size()-1);
+		MyReceiver nextToLastReceiver = receivers.get(receivers.size()-2);
+		
+		// check last (must have received its own messages)
+		Map<Address, List<Integer>> map = lastReceiver.getMsgs();
 		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		List<Integer> list = map.get(c3.getLocalAddress());
-		System.out.println("C: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check A (should have received C's messages)
-		map = a.getMsgs();
-		assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("A: messages received from C: " + list);
-		assertEquals("msgs for C: " + list, 5, list.size());
-
-		// check B (should have received none of C's messages)
-		map = b.getMsgs();
+		List<Integer> list = map.get(last.getLocalAddress());
+		log.info(lastsName + ": messages received from "+ lastsName + ",list=" +list);
+		assertEquals("correct msgs: " + list, 5, list.size());
+		
+		//check nextToLast (should have received none of last messages)
+		map = nextToLastReceiver.getMsgs();
 		assertEquals("we should have no sender at this time", 0, map.size());
-		list = map.get(c3.getLocalAddress());
-		System.out.println("B: messages received from C: " + list);
+		list = map.get(last.getLocalAddress());
+		log.info(nextToLastName+": messages received from "+lastsName +" : " + list);
 		assertNull(list);
 
-		removeDISCARD(c2);
+		List<MyReceiver> otherReceivers = receivers.subList(0, receivers.size()-2);
+		
+		//check other (should have received last's messages)
+		for(MyReceiver receiver:otherReceivers){
+			map = receiver.getMsgs();
+			assertEquals("we should have only 1 sender", 1, map.size());
+			list = map.get(last.getLocalAddress());
+			log.info(receiver.name +" messages received from "+lastsName +":" + list);
+			assertEquals("correct msgs" + list, 5, list.size());		
+		}		
+	
 
-		// Now kill C
-		Address cAddress = c3.getLocalAddress();
-		System.out.println("\nKilling C, this will trigger FLUSH and a subsequent view change to {A,B}");
-		c3.shutdown();
+		removeDISCARD(nextToLast);
 
-		// wait until view {A,B} has been installed
+		Address address = last.getLocalAddress();
+		ft.triggerFlush();	
+		
 		int cnt = 1000;
 		View v;
-		while((v = c1.getView()) != null && cnt > 0){
+		while((v = channels.get(0).getView()) != null && cnt > 0){
 			cnt--;
-			if(v.size() == 2)
+			if(v.size() == channels.size())
 				break;
 			Util.sleep(500);
 		}
-		System.out.println("v=" + v);
-		assert v != null;
-		assertEquals(2, v.size());
+		
+		printDigests(channels,"");
 
-		System.out.println("\nDigests after C left (FLUSH protocol should have updated B with C's messages)");
-		System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
-		System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
-
-		// check B (should have received all 5 of C's messages, through B as
-		// part of the flush phase)
-		map = b.getMsgs();
+		// check that member with discard (should have received all missing messages	
+		map = nextToLastReceiver.getMsgs();
 		assertEquals("we should have 1 sender at this time", 1, map.size());
-		list = map.get(cAddress);
-		System.out.println("B: messages received from C: " + list);
+		list = map.get(address);
+		log.info(nextToLastName+": messages received from "+lastsName+" : " + list);
 		assertEquals(5, list.size());
-	}
-
-	private void createMembers() throws ChannelException {
-		c1 = createChannel();
-		c2 = createChannel();
-		c3 = createChannel();
-		a = new MyReceiver(c1, "A");
-		b = new MyReceiver(c2, "B");
-		c = new MyReceiver(c3, "C");
-		c1.setReceiver(a);
-		c2.setReceiver(b);
-		c3.setReceiver(c);
-		c1.connect("x");
-		c2.connect("x");
-		c3.connect("x");
-
-		View v = c3.getView();
-		assertEquals("view: " + v, 3, v.size());
-	}
-
-	private void printDigests(String message) {
-		System.out.println(message);
-		System.out.println("A: " + c1.downcall(Event.GET_DIGEST_EVT));
-		System.out.println("B: " + c2.downcall(Event.GET_DIGEST_EVT));
-		System.out.println("C: " + c3.downcall(Event.GET_DIGEST_EVT));
+	}	
+	
+	private void printDigests(List<JChannel> channels,String message) {
+		log.info(message);
+		for(JChannel channel:channels){
+			log.info(channel.downcall(Event.GET_DIGEST_EVT));
+		}		
 	}
 
 	private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
@@ -363,6 +262,10 @@ public class ReconciliationTest extends ChannelTestBase {
 		for(JChannel ch:channels){
 			ch.getProtocolStack().removeProtocol("DISCARD");
 		}
+	}
+	
+	private interface FlushTrigger {
+		void triggerFlush();
 	}
 
 	private static class MyReceiver extends ExtendedReceiverAdapter {
