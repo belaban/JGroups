@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.52 2007/06/25 20:57:01 vlada Exp $
+// $Id: ConnectionTable.java,v 1.53 2007/07/06 07:24:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -126,7 +126,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
        Socket sock;
 
        synchronized(conns) {
-           conn=(Connection)conns.get(dest);
+           conn=conns.get(dest);
            if(conn == null) {
                // changed by bela Jan 18 2004: use the bind address for the client sockets as well
                SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
@@ -259,15 +259,13 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    client_sock.setSendBufferSize(send_buf_size);
                }
                catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting send buffer size to " +
-                          send_buf_size + " bytes", ex);
+                   if(log.isErrorEnabled()) log.error("exception setting send buffer size to " + send_buf_size + " bytes", ex);
                }
                try {
                    client_sock.setReceiveBufferSize(recv_buf_size);
                }
                catch(IllegalArgumentException ex) {
-                   if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " +
-                          send_buf_size + " bytes", ex);
+                   if(log.isErrorEnabled()) log.error("exception setting receive buffer size to " + send_buf_size + " bytes", ex);
                }
 
                client_sock.setKeepAlive(true);
