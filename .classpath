@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry excluding="**/obsolete/*" kind="src" path="src"/>
+	<classpathentry kind="src" path="tests/junit-functional"/>
 	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/junit"/>
 	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/other"/>
 	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/perf"/>
