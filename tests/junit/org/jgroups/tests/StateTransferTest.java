@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.13 2007/07/03 13:46:59 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.14 2007/07/09 20:31:31 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -51,7 +51,8 @@ public class StateTransferTest extends ChannelTestBase {
 
 		for(int i = 0;i < apps.length;i++){
 			StateTransferApplication app = apps[i];
-			app.start();
+			app.start();			
+			Util.sleep(500);
 			semaphore.release();
 			Util.sleep(500);
 		}
@@ -66,7 +67,7 @@ public class StateTransferTest extends ChannelTestBase {
 		for(int i = 0;i < apps.length;i++){
 			StateTransferApplication w = apps[i];
 			Map m = w.getMap();
-			log("map has " + m.size() + " elements");
+			log.info("map has " + m.size() + " elements");
 			assertEquals(MSG_SEND_COUNT * APP_COUNT, m.size());
 		}
 
@@ -108,10 +109,11 @@ public class StateTransferTest extends ChannelTestBase {
 			Object[] data = (Object[]) msg.getObject();
 			mapLock.lock();
 			map.put(data[0], data[1]);
-			mapLock.unlock();
 			int num_received = map.size();
+			mapLock.unlock();
+			
 			if(num_received % 1000 == 0)
-				log("received " + num_received);
+				log.info("received " + num_received);
 			
 			//are we done?
 			if(num_received >= MSG_SEND_COUNT * APP_COUNT)
@@ -144,7 +146,7 @@ public class StateTransferTest extends ChannelTestBase {
 			finally{
 				mapLock.unlock();
 			}
-			log("received state, map has " + map.size() + " elements");
+			log.info("received state, map has " + map.size() + " elements");
 			
 		}
 		@Override
@@ -171,7 +173,7 @@ public class StateTransferTest extends ChannelTestBase {
 			try{
 				in = new ObjectInputStream(istream);
 				map = (Map) in.readObject();
-				log("received state, map has " + map.size() + " elements");
+				log.info("received state, map has " + map.size() + " elements");
 				in.close();
 			}catch(IOException e){
 				e.printStackTrace();
@@ -194,7 +196,7 @@ public class StateTransferTest extends ChannelTestBase {
 				try{
 					channel.send(null, null, data);
 					if(i % 1000 == 0)
-						log("sent " + i);
+						log.info("sent " + i);
 				}catch(Exception e){
 					e.printStackTrace();
 					break;
@@ -217,11 +219,7 @@ public class StateTransferTest extends ChannelTestBase {
 			}
 		}
 	}
-
-	static void log(String msg) {
-		System.out.println(Thread.currentThread() + " -- " + msg);
-	}
-
+	
 	public static Test suite() {
 		return new TestSuite(StateTransferTest.class);
 	}
