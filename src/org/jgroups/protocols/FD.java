@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.56 2007/07/10 11:34:49 belaban Exp $
+ * @version $Id: FD.java,v 1.57 2007/07/10 14:19:04 belaban Exp $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -292,7 +292,7 @@ public class FD extends Protocol {
                         if(hdr.mbrs != null) {
                             if(log.isTraceEnabled()) log.trace("[SUSPECT] suspect hdr is " + hdr);
                             for(int i=0; i < hdr.mbrs.size(); i++) {
-                                Address m=(Address)hdr.mbrs.elementAt(i);
+                                Address m=hdr.mbrs.elementAt(i);
                                 if(local_addr != null && m.equals(local_addr)) {
                                     if(log.isWarnEnabled())
                                         log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT " +
@@ -629,15 +629,12 @@ public class FD extends Protocol {
         protected void addSuspectedMember(Address mbr) {
             if(mbr == null) return;
             if(!members.contains(mbr)) return;
-            boolean added=false;
             synchronized(suspected_mbrs) {
                 if(!suspected_mbrs.contains(mbr)) {
                     suspected_mbrs.addElement(mbr);
-                    added=true;
+                    startBroadcastTask(mbr);
                 }
             }
-            if(added)
-                startBroadcastTask(mbr);
         }
 
         void removeSuspectedMember(Address suspected_mbr) {
