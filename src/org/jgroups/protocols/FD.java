@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.55 2007/07/10 11:07:14 belaban Exp $
+ * @version $Id: FD.java,v 1.56 2007/07/10 11:34:49 belaban Exp $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -42,11 +42,11 @@ public class FD extends Protocol {
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
-    final List            members=new CopyOnWriteArrayList();
-    final Hashtable       invalid_pingers=new Hashtable(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
+    final List<Address>   members=new CopyOnWriteArrayList<Address>();
+    final Hashtable<Address,Integer>  invalid_pingers=new Hashtable<Address,Integer>(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
-    final List            pingable_mbrs=new CopyOnWriteArrayList();
+    final List<Address>   pingable_mbrs=new CopyOnWriteArrayList<Address>();
 
     boolean               shun=true;
     TimeScheduler         timer=null;
@@ -373,6 +373,14 @@ public class FD extends Protocol {
         pingable_mbrs.addAll(members);
         pingable_mbrs.removeAll(bcast_task.getSuspectedMembers());
         ping_dest=(Address)getPingDest(pingable_mbrs);
+        if(ping_dest != null) {
+            try {
+                startMonitor();
+            }
+            catch(Exception ex) {
+                if(log.isWarnEnabled()) log.warn("exception when calling unsuspect(): " + ex);
+            }
+        }
     }
 
 
@@ -385,7 +393,7 @@ public class FD extends Protocol {
 
         if(hb_sender != null && members != null && !members.contains(hb_sender)) {
             if(invalid_pingers.containsKey(hb_sender)) {
-                num_pings=((Integer)invalid_pingers.get(hb_sender)).intValue();
+                num_pings=invalid_pingers.get(hb_sender).intValue();
                 if(num_pings >= max_tries) {
                     if(log.isDebugEnabled())
                         log.debug(hb_sender + " is not in " + members + " ! Shunning it");
@@ -416,7 +424,7 @@ public class FD extends Protocol {
 
 
         byte    type=HEARTBEAT;
-        Vector  mbrs=null;
+        Vector<Address>  mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
 
 
@@ -428,7 +436,7 @@ public class FD extends Protocol {
             this.type=type;
         }
 
-        public FdHeader(byte type, Vector mbrs, Address from) {
+        public FdHeader(byte type, Vector<Address> mbrs, Address from) {
             this(type);
             this.mbrs=mbrs;
             this.from=from;
@@ -470,7 +478,7 @@ public class FD extends Protocol {
             boolean mbrs_not_null=in.readBoolean();
             if(mbrs_not_null) {
                 int len=in.readInt();
-                mbrs=new Vector(11);
+                mbrs=new Vector<Address>(11);
                 for(int i=0; i < len; i++) {
                     Address addr=(Address)Marshaller.read(in);
                     mbrs.add(addr);
@@ -498,7 +506,7 @@ public class FD extends Protocol {
 
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readByte();
-            mbrs=(Vector)Util.readAddresses(in, Vector.class);
+            mbrs=(Vector<Address>)Util.readAddresses(in, Vector.class);
             from=Util.readAddress(in);
         }
 
@@ -565,7 +573,7 @@ public class FD extends Protocol {
      * any longer. Then the task terminates.
      */
     protected final class Broadcaster {
-        final Vector suspected_mbrs=new Vector(7);
+        final Vector<Address> suspected_mbrs=new Vector<Address>(7);
         final Lock bcast_lock=new ReentrantLock();
         @GuardedBy("bcast_lock")
         Future bcast_future=null;
@@ -585,7 +593,7 @@ public class FD extends Protocol {
             bcast_lock.lock();
             try {
                 if(bcast_future == null || bcast_future.isDone()) {
-                    task=new BroadcastTask((Vector)suspected_mbrs.clone());
+                    task=new BroadcastTask((Vector<Address>)suspected_mbrs.clone());
                     task.addSuspectedMember(suspect);
                     bcast_future=timer.scheduleWithFixedDelay(task,
                                                               0, // run immediately the first time
@@ -660,10 +668,10 @@ public class FD extends Protocol {
 
 
     protected final class BroadcastTask implements Runnable {
-        private final Vector suspected_members=new Vector();
+        private final Vector<Address> suspected_members=new Vector<Address>();
 
 
-        BroadcastTask(Vector suspected_members) {
+        BroadcastTask(Vector<Address> suspected_members) {
             this.suspected_members.addAll(suspected_members);
         }
 
@@ -686,7 +694,7 @@ public class FD extends Protocol {
                 }
 
                 hdr=new FdHeader(FdHeader.SUSPECT);
-                hdr.mbrs=(Vector)suspected_members.clone();
+                hdr.mbrs=(Vector<Address>)suspected_members.clone();
                 hdr.from=local_addr;
             }
             suspect_msg=new Message();       // mcast SUSPECT to all members
