@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.14 2007/07/09 20:31:31 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.15 2007/07/11 02:04:36 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -51,8 +51,7 @@ public class StateTransferTest extends ChannelTestBase {
 
 		for(int i = 0;i < apps.length;i++){
 			StateTransferApplication app = apps[i];
-			app.start();			
-			Util.sleep(500);
+			app.start();						
 			semaphore.release();
 			Util.sleep(500);
 		}
@@ -77,6 +76,10 @@ public class StateTransferTest extends ChannelTestBase {
 			Map m = app.getMap();
 			Set s = m.keySet();
 			assertEquals(keys, s);
+		}
+		
+		for(StateTransferApplication app:apps){
+			app.cleanup();
 		}
 	}
 
