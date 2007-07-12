@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.1 2007/07/04 07:29:37 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.2 2007/07/12 16:09:11 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -13,10 +13,10 @@ import org.jgroups.util.Util;
 import java.util.Vector;
 
 public class GroupRequestTest extends TestCase {
-    GroupRequest req;
+    // GroupRequest req;
     Address a1, a2;
-    Vector<Address> dests=new Vector<Address>();
-    private MyTransport transport;
+    Vector<Address> dests=null;
+    // private MyTransport transport;
 
     public GroupRequestTest(String testName) {
         super(testName);
@@ -26,6 +26,7 @@ public class GroupRequestTest extends TestCase {
         super.setUp();
         a1=new IpAddress("127.0.0.1", 1111);
         a2=new IpAddress("127.0.0.1", 2222);
+        dests=new Vector<Address>(2);
         dests.add(a1);
         dests.add(a2);
     }
@@ -88,8 +89,7 @@ public class GroupRequestTest extends TestCase {
         MyDelayedTransport tp = new MyDelayedTransport(async, responses, delay);
         
         // instantiate request with dummy correlator
-        req = new GroupRequest(new Message(), tp, dests,
-                               GroupRequest.GET_ALL, timeout, dests.size());
+        GroupRequest req=new GroupRequest(new Message(), tp, dests, GroupRequest.GET_ALL, timeout, dests.size());
         tp.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
@@ -103,25 +103,23 @@ public class GroupRequestTest extends TestCase {
 
 
     private void _testMessageReception(boolean async) throws Exception {
-        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
-                new Message(null, a2, new Long(2))};
-        transport=new MyTransport(async, responses);
-        req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
-         transport.setGroupRequest(req);
-         boolean rc=req.execute();
-         System.out.println("group request is " + req);
-         assertTrue(rc);
-         assertEquals(0, req.getSuspects().size());
-         assertTrue(req.isDone());
-         RspList results=req.getResults();
-         assertEquals(2, results.size());
-     }
+        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),new Message(null, a2, new Long(2))};
+        MyTransport transport=new MyTransport(async, responses);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        transport.setGroupRequest(req);
+        boolean rc=req.execute();
+        System.out.println("group request is " + req);
+        assertTrue(rc);
+        assertEquals(0, req.getSuspects().size());
+        assertTrue(req.isDone());
+        RspList results=req.getResults();
+        assertEquals(2, results.size());
+    }
 
     private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
-         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
-                                         new SuspectEvent(a2)};
-         transport=new MyTransport(async, responses);
-         req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+         Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
+         MyTransport transport=new MyTransport(async, responses);
+         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
          transport.setGroupRequest(req);
          boolean rc=req.execute();
          System.out.println("group request is " + req);
@@ -139,8 +137,8 @@ public class GroupRequestTest extends TestCase {
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests),
                                         new Message(null, a2, new Long(2))};
-        transport=new MyTransport(async, responses);
-        req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        MyTransport transport=new MyTransport(async, responses);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
@@ -157,8 +155,8 @@ public class GroupRequestTest extends TestCase {
         new_dests.remove(a1);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests)};
-        transport=new MyTransport(async, responses);
-        req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        MyTransport transport=new MyTransport(async, responses);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
