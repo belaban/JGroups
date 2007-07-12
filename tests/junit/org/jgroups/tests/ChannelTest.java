@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.8 2007/07/04 08:31:42 belaban Exp $
+// $Id: ChannelTest.java,v 1.9 2007/07/12 18:45:08 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -16,12 +16,14 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.8 2007/07/04 08:31:42 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.9 2007/07/12 18:45:08 vlada Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
 
-    private static final String GROUP="DiscardTestGroup";    
+    private static final String GROUP="DiscardTestGroup";
+    //used in testNoViewIsReceivedAferDisconnect()
+    boolean receivedViewWhenDisconnected;
 
 
     public void setUp() throws Exception {
@@ -166,6 +168,26 @@ public class ChannelTest extends ChannelTestBase {
 
         assertFalse(tmp.isConnected());
         ch2.close();
+    }
+    
+    public void testNoViewIsReceivedAferDisconnect() throws Exception {    	
+        final Channel ch2=createChannel();            
+        ReceiverAdapter ra = new ReceiverAdapter() {
+        	
+			@Override
+			public void viewAccepted(View new_view) {				
+				receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
+			}		
+		};
+        ch2.setReceiver(ra);
+        ch2.connect(GROUP);
+          
+        Util.sleep(1000);
+        ch2.disconnect();
+        Util.sleep(1000);
+        assertFalse("Received view where not member", receivedViewWhenDisconnected);
+        
+        ch2.close();        
     }
 
 
