@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.61 2007/06/29 10:53:06 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.62 2007/07/12 18:45:09 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -731,7 +731,8 @@ public class Multiplexer implements UpHandler {
                 if(ch != null) {
                     Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
                     // ch.up(view_evt);
-                    passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
+                    if(ch.isConnected())
+                    	passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
                 }
                 else {
                     if(log.isTraceEnabled())
@@ -903,7 +904,8 @@ public class Multiplexer implements UpHandler {
                         if(ch != null) {
                             Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
                             // ch.up(view_evt);
-                            passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
+                            if(ch.isConnected())
+                            	passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
                         }
                         else {
                             if(log.isTraceEnabled())
