@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.27 2007/07/10 14:32:17 belaban Exp $
+// $Id: GroupRequest.java,v 1.28 2007/07/13 10:06:32 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -14,9 +14,6 @@ import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 
 import java.util.*;
-
-
-
 
 
 /**
@@ -41,7 +38,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.27 $
+ * @version $Revision: 1.28 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -320,19 +317,31 @@ public class GroupRequest implements RspCollector, Command {
 
         Rsp rsp;
         boolean modified=false;
+        Set<Address> tmp=null;
         synchronized(requests) {
             for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
                 mbr=entry.getKey();
                 if(!mbrs.contains(mbr)) {
-                    addSuspect(mbr);
+                    if(tmp == null)
+                        tmp=new HashSet<Address>();
+                    tmp.add(mbr);
+                    // moved acquisition of suspects lock out of this scope (http://jira.jboss.com/jira/browse/JGRP-554)
+                    // addSuspect(mbr);
                     rsp=entry.getValue();
                     rsp.setValue(null);
                     rsp.setSuspected(true);
                     modified=true;
                 }
             }
-            if(modified)
+        }
+
+        if(modified || tmp != null) {
+            synchronized(requests) {
+                for(Address suspect: tmp) {
+                    addSuspect(suspect);
+                }
                 requests.notifyAll();
+            }
         }
     }
 
@@ -352,8 +361,7 @@ public class GroupRequest implements RspCollector, Command {
 
     public String toString() {
         StringBuilder ret=new StringBuilder(128);
-        ret.append("[GroupRequest:\n");
-        ret.append("req_id=").append(req_id).append('\n');
+        ret.append("[req_id=").append(req_id).append('\n');
         if(caller != null)
             ret.append("caller=").append(caller).append("\n");
 
@@ -372,8 +380,7 @@ public class GroupRequest implements RspCollector, Command {
         ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
         ret.append("\ndone: ").append(done);
         ret.append("\ntimeout: ").append(timeout);
-        ret.append("\nexpected_mbrs: ").append(expected_mbrs);
-        ret.append("\n]");
+        ret.append("\nexpected_mbrs: ").append(expected_mbrs).append(" (" + members + ")]");
         return ret.toString();
     }
 
@@ -578,13 +585,15 @@ public class GroupRequest implements RspCollector, Command {
 
         Address mbr;
         Rsp rsp;
-        for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
-            mbr=entry.getKey();
-            if((!this.members.contains(mbr)) || suspects.contains(mbr)) {
-                addSuspect(mbr);
-                rsp=entry.getValue();
-                rsp.setValue(null);
-                rsp.setSuspected(true);
+        synchronized(members) {
+            for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
+                mbr=entry.getKey();
+                if((!this.members.contains(mbr)) || suspects.contains(mbr)) {
+                    addSuspect(mbr);
+                    rsp=entry.getValue();
+                    rsp.setValue(null);
+                    rsp.setSuspected(true);
+                }
             }
         }
     }
