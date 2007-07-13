@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.2 2007/07/12 16:09:11 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.3 2007/07/13 10:06:30 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -29,6 +29,11 @@ public class GroupRequestTest extends TestCase {
         dests=new Vector<Address>(2);
         dests.add(a1);
         dests.add(a2);
+    }
+
+    protected void tearDown() throws Exception {
+        dests.clear();
+        super.tearDown();
     }
 
     public void testMessageTimeout() throws Exception {
@@ -132,7 +137,9 @@ public class GroupRequestTest extends TestCase {
 
 
     private void _testMessageReceptionWithViewChange(boolean async) throws Exception {
-        Vector<Address> new_dests=new Vector<Address>(dests);
+        Vector<Address> new_dests=new Vector<Address>();
+        new_dests.add(a1);
+        new_dests.add(a2);
         new_dests.add(new IpAddress("127.0.0.1", 3333));
         Object[] responses=new Object[]{new Message(null, a1, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests),
@@ -143,7 +150,7 @@ public class GroupRequestTest extends TestCase {
         boolean rc=req.execute();
         System.out.println("group request is " + req);
         assertTrue(rc);
-        assertEquals(0, req.getSuspects().size());
+        assertEquals("suspects are " + req.getSuspects(), 0, req.getSuspects().size());
         assertTrue(req.isDone());
         RspList results=req.getResults();
         assertEquals(2, results.size());
@@ -151,17 +158,19 @@ public class GroupRequestTest extends TestCase {
 
 
     private void _testMessageReceptionWithViewChangeMemberLeft(boolean async) throws Exception {
-        Vector<Address> new_dests=new Vector<Address>(dests);
-        new_dests.remove(a1);
+        Vector<Address> new_dests=new Vector<Address>();
+        new_dests.add(a2);
         Object[] responses=new Object[]{new Message(null, a2, new Long(1)),
                                         new View(new IpAddress("127.0.0.1", 9999), 322649, new_dests)};
         MyTransport transport=new MyTransport(async, responses);
         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+
         transport.setGroupRequest(req);
+        System.out.println("group request before execution: " + req);
         boolean rc=req.execute();
-        System.out.println("group request is " + req);
+        System.out.println("group request after execution: " + req);
         assertTrue(rc);
-        assertEquals(1, req.getSuspects().size());
+        assertEquals("suspects are " + req.getSuspects(), 1, req.getSuspects().size());
         assertTrue(req.isDone());
         RspList results=req.getResults();
         assertEquals(2, results.size());
