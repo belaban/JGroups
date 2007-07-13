@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.111 2007/07/12 23:10:14 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.112 2007/07/13 08:39:25 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -704,7 +704,7 @@
             description="Runs multiplexer specific tests with multiplexer tcp stack configuration">
         <antcall target="runtests">
             <param name="mux.on" value="true"/>
-            <param name="mux.conf.stack" value="udp-sync"/>
+            <param name="mux.conf.stack" value="tcp"/>
             <param name="testset" value="mux.tests"/>
             <param name="test.verbose" value="true"/>
         </antcall>
