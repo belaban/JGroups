@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableTest.java,v 1.7 2005/05/30 16:15:11 belaban Exp $
+// $Id: DistributedHashtableTest.java,v 1.8 2007/07/13 10:58:39 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.util.TreeSet;
 public class DistributedHashtableTest implements Runnable {
     DistributedHashtable ht;
     long timeout=500;
-    Thread t=null;
+    volatile Thread thread=null;
 
 
     public void start(String props, long timeout) throws Exception {
@@ -98,7 +98,6 @@ public class DistributedHashtableTest implements Runnable {
     public void deleteEntries() {
         try {
             DataInputStream in=new DataInputStream(System.in);
-            Address local=ht.getLocalAddress();
             Set keys;
             long start, stop;
             System.out.print("Number of entries: ");
@@ -136,15 +135,15 @@ public class DistributedHashtableTest implements Runnable {
     }
 
     public void start() {
-        if(t == null) {
-            t=new Thread(this, "Modifier thread");
-            t.start();
+        if(thread == null) {
+            thread=new Thread(this, "Modifier thread");
+            thread.start();
         }
     }
 
     public void stop() {
-        if(t != null)
-            t=null;
+        if(thread != null)
+            thread=null;
     }
 
     public void printSize() {
@@ -165,8 +164,7 @@ public class DistributedHashtableTest implements Runnable {
 
 
     public void run() {
-        while(t != null) {
-            // todo: random insertion, deletion, reads
+        while(thread != null) {
             Util.sleep(timeout);
         }
     }
@@ -174,19 +172,7 @@ public class DistributedHashtableTest implements Runnable {
 
     public static void main(String[] args) {
         long timeout=500; // timeout in ms between puts()/gets()/removes()
-        String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-                "ucast_recv_buf_size=16000;ucast_send_buf_size=16000;" +
-                "mcast_send_buf_size=32000;mcast_recv_buf_size=64000;loopback=true):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800;max_xmit_size=8192):" +
-                "UNICAST(timeout=2000):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
+        String props="udp.xml";
 
         for(int i=0; i < args.length; i++) {
             if("-help".equals(args[i])) {
@@ -199,7 +185,6 @@ public class DistributedHashtableTest implements Runnable {
             }
             if("-timeout".equals(args[i])) {
                 timeout=Long.parseLong(args[++i]);
-                continue;
             }
         }
 
