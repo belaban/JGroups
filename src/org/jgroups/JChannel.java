@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.137 2007/07/06 19:25:18 vlada Exp $
+ * @version $Id: JChannel.java,v 1.138 2007/07/13 08:53:10 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -125,10 +125,10 @@ public class JChannel extends Channel {
      *setting this to true, automatically forces auto_reconnect to true*/
     private boolean auto_getstate=false;
     /*channel connected flag*/
-    protected boolean connected=false;
+    protected volatile boolean connected=false;
 
     /*channel closed flag*/
-    protected boolean closed=false;      // close() has been called, channel is unusable
+    protected volatile boolean closed=false;      // close() has been called, channel is unusable
 
     /** True if a state transfer protocol is available, false otherwise */
     private boolean state_transfer_supported=false; // set by CONFIG event from STATE_TRANSFER protocol
