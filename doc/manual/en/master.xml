@@ -13,8 +13,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2007/07/16 07:47:56 $</pubdate>
-        <releaseinfo>$Revision: 1.8 $</releaseinfo>
+        <pubdate>$Date: 2007/07/16 07:48:34 $</pubdate>
+        <releaseinfo>$Revision: 1.9 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
