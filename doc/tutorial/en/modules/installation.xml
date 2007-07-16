@@ -1,281 +1,87 @@
 <chapter>
-    <title>Installation and Configuration</title>
+    <title>Download</title>
 
-    <para>The installation refers to version 2.3 of
-        JGroups. However, by the time this book is printed, the version
-        number will probably be higher. Refer to the installation
-        instructions that are shipped with JGroups for details.</para>
-
-    <para>Note that these instructions are also available in the
-        JGroups distribution (
-        <filename>INSTALL.HTML</filename>
-        ).
+    <para>
+        JGroups can be downloaded <ulink url="http://sourceforge.net/project/showfiles.php?group_id=6081">here</ulink>.
+        For this tutorial, I'm using the binary version of JGroups 2.5, so the ZIP file to download is
+        JGroups-2.5.0.bin.zip. <emphasis>Note that JGroups 2.5 requires JDK 1.5 or higher</emphasis>.
     </para>
 
-    <para>JGroups comes in a binary and a source version: the binary
-        version is
-        <filename>JGroups-2.x.x.bin.zip</filename>
-        , the source
-        version is
-        <filename>JGroups-2.x.x.src.zip</filename>
-        . The binary
-        version contains the JGroups JAR file, plus a number of JARs needed
-        by JGroups. The source version contains all source files, plus
-        several JAR files needed by JGroups, e.g. ANT to build JGroups from
-        source.
+    <para>
+        Unzip JGroups-2.5.0.bin.zip into a directory JGroups-2.5.0.bin. The contents of the directory are
+        <figure id="BinaryContents">
+            <title>Screenshot of the JGroups binary distribution</title>
+            <graphic fileref="images/BinaryContents.png" format="PNG" align="center"/>
+        </figure>
     </para>
 
-    <section>
-        <title>Requirements</title>
-
+    <para>
+        The most important files are:
         <itemizedlist>
             <listitem>
-                <para>JGroups 2.3 requires JDK 1.4 or higher (I'm using only JDK 5).</para>
+                <para>jgroups.bat and jgroups.sh: scripts to run a JGroups application (including the correct JARs and
+                    XML files)</para>
             </listitem>
             <listitem>
-                <para>There is no JNI code present so it should run on all platforms.</para>
+                <para>INSTALL.html: detailed configuration instructions plus trouble shooting</para>
             </listitem>
             <listitem>
-                <para>If you want to generate HTML-based test reports from the
-                    unittests, then xalan.jar needs to be in the CLASSPATH (also
-                    available in the lib directory)</para>
-            </listitem>
-        </itemizedlist>
-
-    </section>
-
-    <section>
-        <title>Installing the binary distribution</title>
-
-        <para>The binary version contains</para>
-
-        <orderedlist>
-            <listitem>
-                <para>jgroups-all.jar: the JGroups library including the
-                    demos</para>
+                <para>commons-logging.jar: <emphasis>required</emphasis> JAR that provides general logging. This
+                    might get dropped in 3.0</para>
             </listitem>
             <listitem>
-                <para>CREDITS: list of contributors</para>
+                <para>jgroups-all.jar (<emphasis>required</emphasis>): JGroups functionality, including demo and junit
+                    apps. If a smaller JAR is required, this can be done by downloading the source distribution and
+                    invoking the "jar" target, which creates a jgroups-core.jar file (ca 1MB).</para>
             </listitem>
             <listitem>
-                <para>INSTALL.html: this file</para>
+                <para>log4j.jar (optional): commons-logging can also use JDK logging</para>
             </listitem>
             <listitem>
-                <para>commons-logging.jar</para>
-            </listitem>
-            <listitem>
-                <para>concurrent.jar</para>
-            </listitem>
-            <listitem>
-                <para>log4j.jar</para>
-            </listitem>
-        </orderedlist>
-
-        <para>We no longer ship the Xerces JARs. To run JGroups you have
-            to have an XML parser installed on your system. If you use JDK
-            1.4 or higher, you can use the parser that is shipped with it.</para>
-
-        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>
-            , and you're ready to start using
-            JGroups. If you want to use the JGroups JMS protocol
-            (
-            <classname>org.jgroups.protocols.JMS</classname>
-            ), then you will
-            also need to place jms.jar somewhere in your CLASSPATH.
-        </para>
-
-    </section>
-
-    <section>
-        <title>Installing the source distribution</title>
-
-        <para>The source version consists of the following
-            directories:</para>
-
-        <orderedlist>
-            <listitem>
-                <para>src: the sources</para>
-            </listitem>
-            <listitem>
-                <para>test: unit and stress tests</para>
-            </listitem>
-            <listitem>
-                <para>conf: configuration files needed by JGroups, plus
-                    default protocol stack definitions</para>
-            </listitem>
-            <listitem>
-                <para>doc: documentation</para>
-            </listitem>
-            <listitem>
-                <para>lib: various JARs needed to build and run
-                    JGroups:</para>
-                <orderedlist>
-                    <listitem>
-                        <para>
-                            <ulink url="http://jakarta.apache.org/ant/">Ant
-                            </ulink>
-                            JARs: used to build JGroups. If you already have
-                            Ant installed, you won't need these files
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>jms.jar: JMS library. Needed if you intend to
-                            run the org.jgroups.protocols.JMS protocol</para>
-                    </listitem>
-                    <listitem>
-                        <para>junit.jar: to run the
-                            <ulink
-                                    url="http://www.junit.org/">JUnit</ulink>
-                            test
-                            cases
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>
-                            <ulink url="http://xml.apache.org/">xalan.jar</ulink>
-                            : to format the output of the JUnit tests using an XSLT
-                            converter to HTML
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>concurrent.jar</para>
-                    </listitem>
-                    <listitem>
-                        <para>commons-logging.jar</para>
-                    </listitem>
-                    <listitem>
-                        <para>log4j.jar</para>
-                    </listitem>
-                    <listitem>
-                        <para>etc</para>
-                    </listitem>
-                </orderedlist>
-            </listitem>
-        </orderedlist>
-
-    </section>
-
-    <section>
-        <title>Building JGroups (source distribution only)</title>
-
-        <orderedlist>
-            <listitem>
-                <para>Unzip the source distribution, e.g. unzip
-                    JGroups-2.x.x.src.zip. This will create the JGroups-2.x.x
-                    directory (root directory) under the current directory.</para>
-            </listitem>
-            <listitem>
-                <para>cd to the root directory</para>
-            </listitem>
-            <listitem>
-                <para>Modify build.properties if you want to use a Java
-                    compiler other than javac (e.g. jikes)</para>
-            </listitem>
-            <listitem>
-                <para>On UNIX systems use
-                    <filename>build.sh</filename>
-                    , on
-                    Windows
-                    <filename>build.bat</filename>
-                    :
-                    <userinput>$&gt;
-                        ./build.sh compile</userinput>
-                </para>
-            </listitem>
-            <listitem>
-                <para>This will compile all Java files (into the
-                    <filename>classes</filename>
-                    directory).
-                </para>
-            </listitem>
-            <listitem>
-                <para>To generate the JARs:
-                    <userinput>$&gt; ./build.sh
-                        jar</userinput>
-                </para>
-            </listitem>
-            <listitem>
-                <para>This will generate the following JAR files in the
-                    <filename>dist</filename>
-                    directory:
-                </para>
+                <para>Various XML file: different JGroups configurations, e.g.</para>
                 <itemizedlist>
                     <listitem>
-                        <para>
-                            <filename>jgroups-core.jar</filename>
-                            - the core JGroups libraries
-                        </para>
+                        <para>mping.xml: TCP based stack with dynamic discovery</para>
                     </listitem>
                     <listitem>
-                        <para>
-                            <filename>jgroups-all.jar</filename>
-                            - the complete JGroups libraries including demos and unit tests
-                        </para>
+                        <para>sfc.xml: UDP (using IP multicasting) based stack with simple flow control</para>
+                    </listitem>
+                    <listitem>
+                        <para>tcp-nio.xml: TCP based stack with fixed configuration (list of nodes) using NIO (thread
+                            pool for all TCP connections)</para>
+                    </listitem>
+                    <listitem>
+                        <para>tcp-nio.xml: TCP based stack with fixed configuration (list of nodes) using plain TCP
+                            (1 thread / TCP connection)</para>
+                    </listitem>
+                    <listitem>
+                        <para>tcpgossip.xml: tunnel based configuration which routes messages to a remote
+                            GossipRouter, used to tunnel firewalls</para>
+                    </listitem>
+                    <listitem>
+                        <para>udp.xml: default IP multicast based configuration</para>
                     </listitem>
                 </itemizedlist>
             </listitem>
             <listitem>
-                <para>The
-                    <filename>CLASSPATH</filename>
-                    now has to be set
-                    accordingly: the following directories and/or JARs have to be
-                    included:
-                </para>
-                <orderedlist>
-                    <listitem>
-                        <para>
-                            <filename>&lt;JGroups
-                                rootdir&gt;/classes</filename>
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>
-                            <filename>&lt;JGroups
-                                rootdir&gt;/conf</filename>
-                        </para>
-                    </listitem>
-                    <listitem>
-                        <para>All needed JAR files in
-                            <filename>&lt;JGroups
-                                rootdir&gt;/lib</filename>
-                            . To build from sources, the two
-                            Ant JARs are required. To run unit tests, the JUnit (and
-                            possibly Xalan) JARs are needed.
-                        </para>
-                    </listitem>
-                </orderedlist>
-            </listitem>
-            <listitem>
-                <para>To generate JavaDocs simple run
-                    <userinput>$&gt;
-                        ./build.sh javadoc</userinput>
-                    and the Javadoc documentation will
-                    be generated in the
-                    <filename>dist/javadoc</filename>
-                    directory
+                <para>
+                    config.txt: configuration file for performance tests
                 </para>
             </listitem>
-            <listitem>
-                <para>Note that - if you already have Ant installed on your
-                    system - you do not need to use build.sh or build.bat, simply
-                    invoke ant on the build.xml file. To be able to invoked ant
-                    from any directory below the root directory, place
-                    <userinput>ANT_ARGS="-find build.xml -emacs"</userinput>
-                    into
-                    the
-                    <filename>.antrc</filename>
-                    file in your home
-                    directory.
-                </para>
-            </listitem>
-            <listitem>
-                <para>For more details on Ant see
-                    <ulink
-                            url="http://jakarta.apache.org/ant/"/>
-                    .
-                </para>
-            </listitem>
-        </orderedlist>
+        </itemizedlist>
+    </para>
+
+
+    <section>
+        <title>Configuration</title>
+        <para>
+            Add jgroups-all.jar and commons-logging.jar to your CLASSPATH. If you use the log4j logging system, you also
+            have to add log4j.jar (this is not necessary if you use the JDK logging system).
+        </para>
+        <para>
+            As an alternative, you can also use jgroups.bat. Note that jgroups.sh requires work, as it uses backslashes
+            (developed under Cygwin/Windows), so it is currently not usable under UNIX as is.
+        </para>
     </section>
 
     <section>
@@ -288,7 +94,7 @@
             java org.jgroups.Version
         </screen>
 
-        <para>or (from JGroups 2.2.8 on)</para>
+        <para>or</para>
 
         <screen>
             java -jar jgroups-all.jar
@@ -298,11 +104,10 @@
             class is found:</para>
 
         <screen>
-            bela@dell /cygdrive/c/JGroups/dist
             $ java -jar jgroups-all.jar
 
-            Version:        2.3 alpha
-            CVS:            $Id: installation.xml,v 1.1 2007/07/16 08:21:15 belaban Exp $
+            Version:        2.5.0
+            CVS:            $Id: installation.xml,v 1.2 2007/07/16 10:17:23 belaban Exp $
             History:        (see doc/history.txt for details)
         </screen>
 
