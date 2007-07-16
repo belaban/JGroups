@@ -177,14 +177,13 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             , and implement receive() and viewAccepted():
             <screen>
-                public void viewAccepted(View new_view) {
-                    System.out.println("** view: " + new_view);
-                }
+   public void viewAccepted(View new_view) {
+        System.out.println("** view: " + new_view);
+    }
 
-                public void receive(Message msg) {
-                    System.out.println(msg.getSrc() + ": " + msg.getObject());
-                }
-
+    public void receive(Message msg) {
+        System.out.println(msg.getSrc() + ": " + msg.getObject());
+    }
             </screen>
         </para>
         <para>
@@ -199,6 +198,55 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             Note that we could also get the byte[] buffer (the payload) by calling Message.getBuffer() and then
             de-serializing it ourselves, e.g. String line=new String(msg.getBuffer()).
+        </para>
+    </section>
+
+
+    <section>
+        <title>Trying out the SimpleChat application</title>
+        <para>
+            Now that the demo chat application is fully functional, let's try it out. Start an instances of SimpleChat:
+            <screen>
+                [mac] /Users/bela$ java SimpleChat
+                -------------------------------------------------------
+                GMS: address is 192.168.0.6:49963
+                -------------------------------------------------------
+                ** view: [192.168.0.6:49963|0] [192.168.0.6:49963]
+                >
+            </screen>
+        </para>
+        <para>
+            The address of this instance is 192.168.0.6:49949 (IP address:port). It is the only instance so far. So let's
+            start the second instance and type something:
+        </para>
+        <para>
+            <screen>
+                [mac] /Users/bela$ java SimpleChat
+                -------------------------------------------------------
+                GMS: address is 192.168.0.6:49964
+                -------------------------------------------------------
+                ** view: [192.168.0.6:49963|1] [192.168.0.6:49963, 192.168.0.6:49964]
+                >
+            </screen>
+        </para>
+        <para>
+            The cluster list is now [192.168.0.6:49963, 192.168.0.6:49964], showing the first and second instance that
+            joined the cluster. Note that the first instance (192.168.0.6:49963) also received the same view, so both
+            instances have the exact same view with the same ordering of its instances in the list. The instances are
+            listed in order of joining the cluster, with the oldest instance as first element.
+        </para>
+        <para>
+            Sending messages is now as simple as typing a message after the prompt and pressing return. The message will
+            be sent to the cluster and therefore it will be received by both instances, including the sender.
+        </para>
+        <para>
+            If the word "exit" or "quit" is entered, then the instance will leave the cluster gracefully. This means, a new
+            view will be installed immediately.
+        </para>
+        <para>
+            To simulate a crash, simply kill an instance (e.g. via CTRL-C, or from the process manager). The other
+            surviving instance will receive a new view, with only 1 instance (itself) and excluding the crashed
+            instance.
         </para>
     </section>
 
