@@ -3,7 +3,6 @@ package org.jgroups.demos;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.jgroups.blocks.PullPushAdapter;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,21 +10,20 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
-import java.util.LinkedList;
-import java.util.Iterator;
 import java.io.*;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 
 /**
  * Simple chat demo
  * @author Bela Ban
- * @version $Id: Chat.java,v 1.15 2006/09/27 19:21:54 vlada Exp $
+ * @version $Id: Chat.java,v 1.16 2007/07/16 11:44:23 belaban Exp $
  */
-public class Chat implements MouseListener, WindowListener, ExtendedMessageListener, ExtendedMembershipListener {
+public class Chat  extends ExtendedReceiverAdapter implements MouseListener, WindowListener {
     Channel channel;
-    PullPushAdapter ad;
     Thread mainThread;
-    final String group_name="ChatGroup";
+    static final String group_name="ChatGroup";
     String props=null;
     Frame mainFrame;
     TextArea ta;
@@ -43,7 +41,8 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
         try {
             username=System.getProperty("user.name");
         }
-        catch(Throwable t) {}
+        catch(Throwable t) {
+        }
     }
 
 
@@ -110,7 +109,7 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
             channel.setOpt(Channel.BLOCK, Boolean.TRUE);
             System.out.println("Connecting to " + group_name);
             channel.connect(group_name);
-            ad=new PullPushAdapter(channel, this, this);
+            channel.setReceiver(this);
             channel.getState(null, 5000);
         }
         catch(Exception e) {
@@ -120,16 +119,14 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
         mainFrame.setLocation(15, 25);
         mainFrame.setBounds(new Rectangle(580, 480));
         mainFrame.setVisible(true);
-        mainFrame.show();
-        if(history.size() > 0) {
+        mainFrame.setVisible(true);
+        if(!history.isEmpty()) {
             for(Iterator it=history.iterator(); it.hasNext();) {
                 String s=(String)it.next();
                 ta.append(s + "\n");
             }
         }
     }
-
-
 
     /* -------------------- Interface MessageListener ------------------- */
 
@@ -145,12 +142,12 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
             ta.append("Chat.receive(): " + e);
         }
     }
-    
+
     public byte[] getState(String state_id) {
-    	//partial state transfer not used
-		return null;
-	}
-    
+        //partial state transfer not used
+        return null;
+    }
+
     public byte[] getState() {
         try {
             return Util.objectToByteBuffer(history);
@@ -168,60 +165,49 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
             e.printStackTrace();
         }
     }
-    
+
     public void setState(String state_id, byte[] state) {
-    	//partial state transfer not used		
-	}
-    
+        //partial state transfer not used
+    }
+
     public void getState(OutputStream os) {
-    	ObjectOutputStream oos =null;
-		try {
-			oos = new ObjectOutputStream(os);			
-			oos.writeObject(history);   
-	    	oos.flush();
-		} catch (IOException e) {}  
-		finally
-		{
-			try {				
-				oos.close();
-			} catch (IOException e) {
-				System.err.println(e);
-			}
-		}
+        ObjectOutputStream oos=null;
+        try {
+            oos=new ObjectOutputStream(os);
+            oos.writeObject(history);
+            oos.flush();
+        }
+        catch(IOException e) {
+        }
+        finally {
+            Util.close(oos);
+        }
     }
-    
+
     public void setState(InputStream is) {
-    	ObjectInputStream ois = null;
-		try {			
-			ois = new ObjectInputStream(is);
-			history = (LinkedList)ois.readObject();  
-		} catch (Exception e) {} 
-		finally
-		{
-			try {				
-				ois.close();
-			} catch (IOException e) {
-				System.err.println(e);
-			}
-		}
+        ObjectInputStream ois=null;
+        try {
+            ois=new ObjectInputStream(is);
+            history=(LinkedList)ois.readObject();
+        }
+        catch(Exception e) {
+        }
+        finally {
+            Util.close(ois);
+        }
     }
-    
+
     public void getState(String state_id, OutputStream ostream) {
-		//partial state transfer not used
-		
-	}
+        //partial state transfer not used
+
+    }
 
 
-	public void setState(String state_id, InputStream istream) {
-		//partial state transfer not used		
-	}
-
+    public void setState(String state_id, InputStream istream) {
+        //partial state transfer not used
+    }
 
     /* ----------------- End of Interface MessageListener --------------- */
-
-
-
-
 
     /* ------------------- Interface MembershipListener ----------------- */
 
@@ -234,19 +220,18 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
     }
 
 
-    public void block() {      
+    public void block() {
     }
-    public void unblock() {     
+
+    public void unblock() {
     }
 
     /* --------------- End of Interface MembershipListener -------------- */
 
 
-
     private synchronized void handleLeave() {
         try {
             System.out.print("Stopping PullPushAdapter");
-            ad.stop();
             System.out.println(" -- done");
 
             System.out.print("Disconnecting the channel");
@@ -282,22 +267,43 @@ public class Chat implements MouseListener, WindowListener, ExtendedMessageListe
         if(obj == leaveButton)
             handleLeave();
         else if(obj == sendButton)
-                handleSend();
+            handleSend();
         else if(obj == clearButton)
             ta.setText("");
     }
 
-    public void mouseEntered(MouseEvent e) {}
-    public void mouseExited(MouseEvent e) {}
-    public void mousePressed(MouseEvent e) {}
-    public void mouseReleased(MouseEvent e) {}
+    public void mouseEntered(MouseEvent e) {
+    }
 
-    public void windowActivated(WindowEvent e) {}
-    public void windowClosed(WindowEvent e) {}
-    public void windowClosing(WindowEvent e) { System.exit(0); }
-    public void windowDeactivated(WindowEvent e) {}
-    public void windowDeiconified(WindowEvent e) {}
-    public void windowIconified(WindowEvent e) {}
-    public void windowOpened(WindowEvent e) {}
+    public void mouseExited(MouseEvent e) {
+    }
+
+    public void mousePressed(MouseEvent e) {
+    }
+
+    public void mouseReleased(MouseEvent e) {
+    }
+
+    public void windowActivated(WindowEvent e) {
+    }
+
+    public void windowClosed(WindowEvent e) {
+    }
+
+    public void windowClosing(WindowEvent e) {
+        System.exit(0);
+    }
+
+    public void windowDeactivated(WindowEvent e) {
+    }
+
+    public void windowDeiconified(WindowEvent e) {
+    }
+
+    public void windowIconified(WindowEvent e) {
+    }
+
+    public void windowOpened(WindowEvent e) {
+    }
 
 }
