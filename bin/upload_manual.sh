@@ -3,3 +3,4 @@
 # Uploads the manual to SourceForge
 
 scp -r ../doc/manual/build/en/* belaban@shell.sf.net:/home/groups/j/ja/javagroups/htdocs/javagroupsnew/docs/manual
+scp -r ../doc/tutorial/build/en/* belaban@shell.sf.net:/home/groups/j/ja/javagroups/htdocs/javagroupsnew/docs/tutorial
