@@ -1,5 +1,5 @@
 <project name="Documentation" default="all.doc" basedir=".">
-    <property name="pdf.name" value="JGroups.pdf" />
+    <property name="pdf.name" value="manual.pdf" />
 
     <import file="../../../docbook-support/support.xml"/>
 
