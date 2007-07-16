@@ -1,6 +1,6 @@
 <?xml version="1.0" standalone="no"?>
 <!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.4//EN"
-        "../../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
+        "../../../../docbook-support/support/docbook-dtd/docbookx.dtd" [
         <!ENTITY overview     SYSTEM "modules/overview.xml">
         <!ENTITY blocks       SYSTEM "modules/blocks.xml">
         <!ENTITY protocols    SYSTEM "modules/protocols.xml">
@@ -13,8 +13,8 @@
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2007/07/16 07:08:01 $</pubdate>
-        <releaseinfo>$Revision: 1.7 $</releaseinfo>
+        <pubdate>$Date: 2007/07/16 07:47:56 $</pubdate>
+        <releaseinfo>$Revision: 1.8 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
