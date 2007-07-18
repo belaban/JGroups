@@ -167,7 +167,7 @@ public class SimpleChat extends ReceiverAdapter {
             <screen>
     private void start() throws Exception {
         channel=new JChannel();
-        channel.setReceiver(this); // changed
+        <emphasis role="bold">channel.setReceiver(this);</emphasis>
         channel.connect("ChatCluster");
         eventLoop();
         channel.close();
@@ -281,7 +281,7 @@ public class SimpleChat extends ReceiverAdapter {
         channel=new JChannel();
         channel.setReceiver(this);
         channel.connect("ChatCluster");
-        channel.getState(null, 10000); // changed
+        <emphasis role="bold">channel.getState(null, 10000);</emphasis>
         eventLoop();
         channel.close();
     }
