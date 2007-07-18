@@ -12,15 +12,15 @@
         </copy>
     </target>
 
-    <target name="all.doc" depends="clean">
+    <target name="all.doc" depends="clean, copy.code">
         <antcall target="lang.all"><param name="lang" value="en"/></antcall>
     </target>
 
-    <target name="pdf" depends="clean">
+    <target name="pdf" depends="clean, copy.code">
         <antcall target="lang.docpdf"><param name="lang" value="en"/></antcall>
     </target>
 
-    <target name="html" depends="clean">
+    <target name="html" depends="clean, copy.code">
         <antcall target="lang.dochtml"><param name="lang" value="en"/></antcall>
     </target>
 
