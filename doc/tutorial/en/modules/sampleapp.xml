@@ -300,7 +300,7 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             The list is defined as an instance variable:
             <screen>
-                final List$lt;String&gt; state=new LinkedList&lt;String&gt;();                
+                final List&lt;String&gt; state=new LinkedList&lt;String&gt;();                
             </screen>
         </para>
         <para>
@@ -356,6 +356,10 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
         <para>
             Then we synchronize on <code>state</code>, and set its contents from the received state.
+        </para>
+        <para>
+            We also print the number of messages in the received chat history to stdout. Note that this is not
+            feasible with a large chat history, but - again - we could have a bounded chat history list.
         </para>
     </section>
 
