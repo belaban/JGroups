@@ -250,6 +250,59 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
     </section>
 
+    <section>
+        <title>Extra credits: maintaining shared cluster state</title>
+        <para>
+            One of the uses of JGroups is for maintaining state that is replicated across a cluster. For example, state
+            could be all the HTTP sessions in a web server. If those sessions are replicated across a cluster, then clients
+            can access any server in the cluster after a server which hosted the client's session crashed, and the
+            user sessions will still be available.
+        </para>
+        <para>
+            Any update to a session is replicated across the cluster, e.g. by serializing the attribute that was
+            modified and sending the modification to every server in the cluster via JChannel.send(). This is needed
+            so that all server have the same state.
+        </para>
+        <para>
+            However, what happens when a new server is started ? That server has to somehow get the existing state
+            (e.g. all HTTP sessions) from an existing server in the cluster.
+            This is called <emphasis>state transfer</emphasis>.
+        </para>
+        <para>
+            State transfer in JGroups is done by implementing 2 (getState() and setState()) callbacks and
+            calling the JChannel.getState() method.
+            method. Note that, in order to be able to use state transfer in an application, the protocol stack has
+            to have a state transfer protocol (the default stack used by the demo app does).
+        </para>
+        <para>
+            The start() method is now modified to include the call to JChannel.getState():
+            <screen>
+    private void start() throws Exception {
+        channel=new JChannel();
+        channel.setReceiver(this);
+        channel.connect("ChatCluster");
+        channel.getState(null, 10000); // changed
+        eventLoop();
+        channel.close();
+    }
+            </screen>
+        </para>
+        <para>
+            The getState() method actually returns a boolean, which is false for the first instance in a cluster, and
+            should be true for subsequent instances.
+        </para>
+        <para>
+            The Receiver interface defines a callback getState() which is called on an existing instance to fetch the
+            cluster state. In our demo application, we define the state to be the chat conversation. This is a simple
+            list, to the tail of which we add every message we receive. (Note that this is probably not the best example
+            for state, as this state always grows. As a workaround, we could bound the list, which is not done here though).
+            The getState() implementation is
+            <screen>
+                
+            </screen>
+        </para>
+    </section>
+
 </chapter>
 
 
