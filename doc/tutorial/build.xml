@@ -3,6 +3,15 @@
 
     <import file="../../../docbook-support/support.xml"/>
 
+    <target name="copy.code">
+        <mkdir dir="${basedir}/${build.dir}/en/code"/>
+        <copy todir="${basedir}/${build.dir}/en/code">
+            <fileset dir="${basedir}/en/code">
+                <include name="**/*.java"/>
+            </fileset>
+        </copy>
+    </target>
+
     <target name="all.doc" depends="clean">
         <antcall target="lang.all"><param name="lang" value="en"/></antcall>
     </target>
