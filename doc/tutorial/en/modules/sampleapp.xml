@@ -22,9 +22,6 @@
                 (Optional) We maintain a common cluster-wide shared state, e.g. the chat history. New instances acquire
                 that history from existing instances.
             </listitem>
-            <listitem>
-                (Optional) We can run the same demo on different JGroups configurations, e.g. with both IP multicast and TCP.
-            </listitem>
         </itemizedlist>
     </para>
 
@@ -261,7 +258,7 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             Any update to a session is replicated across the cluster, e.g. by serializing the attribute that was
             modified and sending the modification to every server in the cluster via JChannel.send(). This is needed
-            so that all server have the same state.
+            so that all servers have the same state.
         </para>
         <para>
             However, what happens when a new server is started ? That server has to somehow get the existing state
@@ -365,6 +362,25 @@ public class SimpleChat extends ReceiverAdapter {
 
     <section>
         <title>Conclusion</title>
+        <para>
+            In this tutorial, we showed how to create a channel, join and leave a cluster, send and receive messages,
+            get notified of view changes and implement state transfer. This is the core functionality provided by
+            JGroups through the <code>JChannel</code> and <code>Receiver</code> APIs.
+        </para>
+        <para>
+            JGroups has two more areas that weren't covered: building blocks and the protocol stack.
+        </para>
+        <para>
+            Building blocks are classes residing on top of a JChannel and provide a higher abstraction level, e.g.
+            request-response correlators, cluster-wide method calls, replicated hashmaps and so forth.
+        </para>
+        <para>
+            The protocol stack allows for complete customization of JGroups: protocols can be configured, removed,
+            replaced, enhanced, or new protocols can be written and added to the stack.
+        </para>
+        <para>
+            We'll cover the protocol stack and available protocols in a later article.
+        </para>
         <para>
             The code for SimpleChat can be found <ulink url="../code/SimpleChat.java">here</ulink>.
         </para>
