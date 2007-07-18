@@ -295,11 +295,74 @@ public class SimpleChat extends ReceiverAdapter {
             The Receiver interface defines a callback getState() which is called on an existing instance to fetch the
             cluster state. In our demo application, we define the state to be the chat conversation. This is a simple
             list, to the tail of which we add every message we receive. (Note that this is probably not the best example
-            for state, as this state always grows. As a workaround, we could bound the list, which is not done here though).
-            The getState() implementation is
+            for state, as this state always grows. As a workaround, we could have a bounded list, which is not done here though).
+        </para>
+        <para>
+            The list is defined as an instance variable:
             <screen>
-                
+                final List$lt;String&gt; state=new LinkedList&lt;String&gt;();                
             </screen>
+        </para>
+        <para>
+            The getState() callback implementation is
+            <screen>
+    public byte[] getState() {
+        synchronized(state) {
+            try {
+                return Util.objectToByteBuffer(state);
+            }
+            catch(Exception e) {
+                e.printStackTrace();
+                return null;
+            }
+        }
+    }
+            </screen>
+        </para>
+        <para>
+            The getState() method is called in the <emphasis>state provider</emphasis>, ie. an existing instance, to
+            return the shared cluster state.
+        </para>
+        <para>
+            Since access to <code>state</code> may be concurrent, we synchronize it. Then we call Util.objectToByteBuffer()
+            which is a JGroups utility method using simple serialization to generate a byte buffer from an object.
+        </para>
+        <para>
+            The setState() method is called on the <emphasis>state requester</emphasis>, ie. the instance
+            which called JChannel.getState(). Its task is to deserialize the byte buffer and set its state
+            accordingly:
+            <screen>
+    public void setState(byte[] new_state) {
+        try {
+            List&lt;String&gt; list=(List&lt;String&gt;)Util.objectFromByteBuffer(new_state);
+            synchronized(state) {
+                state.clear();
+                state.addAll(list);
+            }
+            System.out.println("received state (" + list.size() + " messages in chat history):");
+            for(String str: list) {
+                System.out.println(str);
+            }
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+    }
+            </screen>
+        </para>
+        <para>
+            We again call a JGroups utility method (Util.objectFromByteBuffer()) to create an object from a byte
+            buffer (using Java serialization).
+        </para>
+        <para>
+            Then we synchronize on <code>state</code>, and set its contents from the received state.
+        </para>
+    </section>
+
+    <section>
+        <title>Conclusion</title>
+        <para>
+            The code for SimpleChat can be found <ulink url="code/SimpleChat.java">here</ulink>.
         </para>
     </section>
 
