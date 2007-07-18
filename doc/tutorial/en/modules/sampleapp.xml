@@ -307,7 +307,7 @@ public class SimpleChat extends ReceiverAdapter {
         <para>
             The list is defined as an instance variable:
             <screen>
-                final List&lt;String&gt; state=new LinkedList&lt;String&gt;();                
+    final List&lt;String&gt; state=new LinkedList&lt;String&gt;();
             </screen>
         </para>
         <para>
@@ -393,6 +393,26 @@ public class SimpleChat extends ReceiverAdapter {
         </para>
         <para>
             The code for SimpleChat can be found <ulink url="../code/SimpleChat.java">here</ulink>.
+        </para>
+        <para>
+            Here are some links for further information about JGroups:
+            <itemizedlist>
+                <listitem>
+                    SimpleChat code: <ulink url="../code/SimpleChat.java">SimpleChat.java</ulink>
+                </listitem>
+                <listitem>
+                    JGroups web site: <ulink url="http://www.jgroups.org">http://www.jgroups.org</ulink>
+                </listitem>
+                <listitem>
+                    Downloads: <ulink url="http://sourceforge.net/project/showfiles.php?group_id=6081">here</ulink>
+                </listitem>
+                <listitem>
+                    JIRA bug tracking: <ulink url="http://jira.jboss.com/jira/browse/JGRP">http://jira.jboss.com/jira/browse/JGRP</ulink>
+                </listitem>
+                <listitem>
+                    Mailing lists: <ulink url="http://sourceforge.net/mail/?group_id=6081">http://sourceforge.net/mail/?group_id=6081</ulink>
+                </listitem>
+            </itemizedlist>
         </para>
     </section>
 
