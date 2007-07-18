@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.43 2007/07/05 11:27:00 belaban Exp $
+// $Id: Event.java,v 1.44 2007/07/18 02:13:20 vlada Exp $
 
 package org.jgroups;
 
@@ -16,8 +16,7 @@ public class Event {
     public static final int SET_LOCAL_ADDRESS         =  8;
     public static final int SUSPECT                   =  9;  // arg = Address of suspected member
     public static final int BLOCK                     = 10;  // arg = null (used by FLUSH)
-    public static final int FIND_INITIAL_MBRS         = 12;
-    public static final int FIND_INITIAL_MBRS_OK      = 13;  // arg = Vector of PingRsps
+    public static final int FIND_INITIAL_MBRS         = 12;   
     public static final int MERGE                     = 14;  // arg = Vector of Objects
     public static final int TMP_VIEW                  = 15;  // arg = View
     public static final int BECOME_SERVER             = 16;  // sent when client has joined group
@@ -102,8 +101,7 @@ public class Event {
             case SET_LOCAL_ADDRESS:	     return "SET_LOCAL_ADDRESS";
             case SUSPECT:                return "SUSPECT";
             case BLOCK:	                 return "BLOCK";            
-            case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";
-            case FIND_INITIAL_MBRS_OK:   return "FIND_INITIAL_MBRS_OK";
+            case FIND_INITIAL_MBRS:	     return "FIND_INITIAL_MBRS";           
             case TMP_VIEW:	             return "TMP_VIEW";
             case BECOME_SERVER:	         return "BECOME_SERVER";
             case GET_APPLSTATE:          return "GET_APPLSTATE";

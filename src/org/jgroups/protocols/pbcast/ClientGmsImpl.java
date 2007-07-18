@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.47 2007/06/08 08:27:52 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.48 2007/07/18 02:13:19 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,11 +21,9 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.47 $
+ * @version $Revision: 1.48 $
  */
-public class ClientGmsImpl extends GmsImpl {
-    private final Vector  initial_mbrs=new Vector(11);
-    private boolean       initial_mbrs_received=false;
+public class ClientGmsImpl extends GmsImpl {   
     private final Promise join_promise=new Promise();
 
 
@@ -34,11 +32,7 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     public void init() throws Exception {
-        super.init();
-        synchronized(initial_mbrs) {
-            initial_mbrs.clear();
-            initial_mbrs_received=false;
-        }
+        super.init();     
         join_promise.reset();
     }
 
@@ -55,8 +49,8 @@ public class ClientGmsImpl extends GmsImpl {
      * <p>When GMS.disable_initial_coord is set to true, then we won't become coordinator on receiving an initial
      * membership of 0, but instead will retry (forever) until we get an initial membership of > 0.
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
-     */
-    public void join(Address mbr) {
+     */   
+	public void join(Address mbr) {
         Address coord;
         JoinRsp rsp;
         View    tmp_view;
@@ -64,9 +58,9 @@ public class ClientGmsImpl extends GmsImpl {
 
         join_promise.reset();
         while(!leaving) {
-            findInitialMembers();
-            if(log.isDebugEnabled()) log.debug("initial_mbrs are " + initial_mbrs);
-            if(initial_mbrs.isEmpty()) {
+        	List<PingRsp> responses = findInitialMembers();        
+            if(log.isDebugEnabled()) log.debug("initial_mbrs are " + responses);
+            if(responses.isEmpty()) {
                 if(gms.disable_initial_coord) {
                     if(log.isTraceEnabled())
                         log.trace("received an initial membership of 0, but cannot become coordinator " +
@@ -79,7 +73,7 @@ public class ClientGmsImpl extends GmsImpl {
                 return;
             }
 
-            coord=determineCoord(initial_mbrs);
+            coord=determineCoord(responses);
             if(coord == null) { // e.g. because we have all clients only
                 if(gms.handle_concurrent_startup == false) {
                     if(log.isTraceEnabled())
@@ -89,17 +83,16 @@ public class ClientGmsImpl extends GmsImpl {
                 }
 
                 if(log.isTraceEnabled())
-                    log.trace("could not determine coordinator from responses " + initial_mbrs);
+                    log.trace("could not determine coordinator from responses " + responses);
 
                 // so the member to become singleton member (and thus coord) is the first of all clients
                 Set<Address> clients=new TreeSet<Address>(); // sorted
                 clients.add(mbr); // add myself again (was removed by findInitialMembers())
-                for(int i=0; i < initial_mbrs.size(); i++) {
-                    PingRsp pingRsp=(PingRsp)initial_mbrs.elementAt(i);
-                    Address client_addr=pingRsp.getAddress();
-                    if(client_addr != null)
+                for(PingRsp response:responses){
+                	Address client_addr = response.getAddress();
+                	if(client_addr != null)
                         clients.add(client_addr);
-                }
+				}                
                 if(log.isTraceEnabled())
                     log.trace("clients to choose new coord from are: " + clients);
                 Address new_coord=clients.iterator().next();
@@ -184,6 +177,16 @@ public class ClientGmsImpl extends GmsImpl {
         }
     }
 
+	private List<PingRsp> findInitialMembers() {
+		
+		List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));		
+		for(Iterator<PingRsp> iter = responses.iterator();iter.hasNext();){
+			PingRsp response = iter.next();
+			if(response.own_addr !=null && response.own_addr.equals(gms.local_addr))
+				iter.remove();	
+		}	
+		return responses;
+	}
 
     public void leave(Address mbr) {
         leaving=true;
@@ -244,29 +247,6 @@ public class ClientGmsImpl extends GmsImpl {
     // }
 
 
-    public boolean handleUpEvent(Event evt) {
-        Vector tmp;
-
-        switch(evt.getType()) {
-
-            case Event.FIND_INITIAL_MBRS_OK:
-                tmp=(Vector)evt.getArg();
-                synchronized(initial_mbrs) {
-                    if(tmp != null && !tmp.isEmpty()) {
-                        initial_mbrs.addAll(tmp);
-                    }
-                    initial_mbrs_received=true;
-                    initial_mbrs.notifyAll();
-                }
-                return false;  // don't pass up the stack
-        }
-        return true;
-    }
-
-
-
-
-
     /* --------------------------- Private Methods ------------------------------------ */
 
 
@@ -284,59 +264,21 @@ public class ClientGmsImpl extends GmsImpl {
         gms.getDownProtocol().down(new Event(Event.MSG, msg));
     }
 
-
-    /**
-     * Pings initial members. Removes self before returning vector of initial members.
-     * Uses IP multicast or gossiping, depending on parameters.
-     */
-    void findInitialMembers() {
-        PingRsp ping_rsp;
-
-        synchronized(initial_mbrs) {
-            initial_mbrs.removeAllElements();
-            initial_mbrs_received=false;
-            gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
-
-            // the initial_mbrs_received flag is needed when down_prot.down() is executed on the same thread, so when
-            // it returns, a response might actually have been received (even though the initial_mbrs might still be empty)
-            if(initial_mbrs_received == false) {
-                try {
-                    initial_mbrs.wait();
-                }
-                catch(Exception e) {
-                }
-            }
-
-            for(int i=0; i < initial_mbrs.size(); i++) {
-                ping_rsp=(PingRsp)initial_mbrs.elementAt(i);
-                if(ping_rsp.own_addr != null && gms.local_addr != null &&
-                        ping_rsp.own_addr.equals(gms.local_addr)) {
-                    initial_mbrs.removeElementAt(i);
-                    break;
-                }
-            }
-        }
-    }
-
-
     /**
      The coordinator is determined by a majority vote. If there are an equal number of votes for
      more than 1 candidate, we determine the winner randomly.
      */
-    private Address determineCoord(Vector mbrs) {
-        PingRsp mbr;
-        Hashtable votes;
+    private Address determineCoord(List<PingRsp> mbrs) {                
         int count, most_votes;
         Address winner=null, tmp;
 
         if(mbrs == null || mbrs.size() < 1)
             return null;
 
-        votes=new Hashtable(5);
+        Hashtable<Address,Integer> votes=new Hashtable<Address,Integer>(5);
 
         // count *all* the votes (unlike the 2000 election)
-        for(int i=0; i < mbrs.size(); i++) {
-            mbr=(PingRsp)mbrs.elementAt(i);
+        for(PingRsp mbr:mbrs) {            
             if(mbr.is_server && mbr.coord_addr != null) {
                 if(!votes.containsKey(mbr.coord_addr))
                     votes.put(mbr.coord_addr, new Integer(1));

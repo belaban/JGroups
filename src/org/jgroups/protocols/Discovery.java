@@ -2,9 +2,17 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -23,22 +31,30 @@ import java.util.*;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.26 2007/05/05 18:51:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.27 2007/07/18 02:13:17 vlada Exp $
  */
 public abstract class Discovery extends Protocol {
-    final Vector  members=new Vector(11);
-    Address       local_addr=null;
-    String        group_addr=null;
-    long          timeout=3000;
-    int           num_initial_members=2;
-    boolean       is_server=false;
-    PingWaiter    ping_waiter;
+    final Vector<Address>	members=new Vector<Address>(11);
+    Address					local_addr=null;
+    String					group_addr=null;
+    long					timeout=3000;
+    int						num_initial_members=2;
+    boolean					is_server=false;
+    final MemberFinderTask	member_finder_task=new MemberFinderTask();
+    TimeScheduler			timer=null;
 
 
     /** Number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms */
     int           num_ping_requests=2;
 
     int           num_discovery_requests=0;
+    
+    public void init() throws Exception {
+        if(stack != null && stack.timer != null)
+            timer=stack.timer;
+        else
+            throw new Exception("Discovery.init(): timer cannot be retrieved from protocol stack");
+    }
 
 
     /** Called after local_addr was set */
@@ -59,9 +75,8 @@ public abstract class Discovery extends Protocol {
     }
 
     public void setTimeout(long timeout) {
-        this.timeout=timeout;
-        if(ping_waiter != null)
-            ping_waiter.setTimeout(timeout);
+        this.timeout=timeout;        
+        member_finder_task.setTimeout(timeout);
     }
 
     public int getNumInitialMembers() {
@@ -69,9 +84,8 @@ public abstract class Discovery extends Protocol {
     }
 
     public void setNumInitialMembers(int num_initial_members) {
-        this.num_initial_members=num_initial_members;
-        if(ping_waiter != null)
-            ping_waiter.setNumRsps(num_initial_members);
+        this.num_initial_members=num_initial_members;        
+        member_finder_task.setNumRsps(num_initial_members);
     }
 
     public int getNumPingRequests() {
@@ -87,8 +101,8 @@ public abstract class Discovery extends Protocol {
     }
 
 
-    public Vector providedUpServices() {
-        Vector ret=new Vector(1);
+    public Vector<Integer> providedUpServices() {
+        Vector<Integer> ret=new Vector<Integer>(1);
         ret.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return ret;
     }
@@ -151,27 +165,25 @@ public abstract class Discovery extends Protocol {
 
     public void start() throws Exception {
         super.start();
-        PingSender ping_sender=new PingSender(timeout, num_ping_requests, this);
-        if(ping_waiter == null)
-            ping_waiter=new PingWaiter(timeout, num_initial_members, this, ping_sender);
+        member_finder_task.setTimeout(timeout);
+        member_finder_task.setNumRsps(num_initial_members);       
     }
 
     public void stop() {
-        is_server=false;
-        if(ping_waiter != null)
-            ping_waiter.stop();
+        is_server=false;        
+        member_finder_task.stop();
     }
 
     /**
      * Finds the initial membership
      * @return Vector<PingRsp>
      */
-    public Vector findInitialMembers() {
-        return ping_waiter != null? ping_waiter.findInitialMembers() : null;
+    public List<PingRsp> findInitialMembers() {
+        return member_finder_task.findInitialMembers();
     }
 
     public String findInitialMembersAsString() {
-        Vector results=findInitialMembers();
+    	List<PingRsp> results=findInitialMembers();
         if(results == null || results.isEmpty()) return "<empty>";
         PingRsp rsp;
         StringBuilder sb=new StringBuilder();
@@ -245,7 +257,7 @@ public abstract class Discovery extends Protocol {
 
                 if(log.isTraceEnabled())
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
-                ping_waiter.addResponse(rsp);
+                member_finder_task.addResponse(rsp);
                 return null;
 
             default:
@@ -288,12 +300,11 @@ public abstract class Discovery extends Protocol {
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
             num_discovery_requests++;
-            ping_waiter.start();
-            return null;
+            return member_finder_task.find();            
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
-            Vector tmp;
+            Vector<Address> tmp;
             if((tmp=((View)evt.getArg()).getMembers()) != null) {
                 synchronized(members) {
                     members.clear();
@@ -327,7 +338,8 @@ public abstract class Discovery extends Protocol {
     /* -------------------------- Private methods ---------------------------- */
 
 
-    protected final View makeView(Vector mbrs) {
+    @SuppressWarnings("unchecked")
+	protected final View makeView(Vector mbrs) {
         Address coord;
         long id;
         ViewId view_id=new ViewId(local_addr);
@@ -337,6 +349,151 @@ public abstract class Discovery extends Protocol {
         return new View(coord, id, mbrs);
     }
 
+    class PingSenderTask{
+        @GuardedBy("lock")       
+        private final Lock	senderFutureLock=new ReentrantLock();
+        private double		interval;                     
+		private Future		senderFuture;
 
 
+        public PingSenderTask(long timeout,int num_requests){			
+			interval = timeout / (double) num_requests;
+		}
+
+		public void start() {
+			senderFutureLock.lock();
+			try{
+				if(senderFuture == null || senderFuture.isDone()){
+					senderFuture = timer.scheduleWithFixedDelay(new Runnable() {
+						public void run() {							
+							sendGetMembersRequest();							
+						}
+					}, 0, (long) interval, TimeUnit.MILLISECONDS);
+				}
+			}finally{
+				senderFutureLock.unlock();
+			}
+		}
+
+		public void stop() {
+			senderFutureLock.lock();
+			try{
+				if(senderFuture != null){
+					senderFuture.cancel(true);
+					senderFuture = null;
+				}
+			}finally{
+				senderFutureLock.unlock();
+			}
+		}	
+    }
+    
+    class MemberFinderTask {
+    	
+		@GuardedBy("lock")
+		private final Lock				lock = new ReentrantLock();
+		private Future<List<PingRsp>>	future;
+		private final List<PingRsp>		rsps = new LinkedList<PingRsp>();
+		private long					timeout = 3000;
+		private int						num_rsps = 3;	
+		private PingSenderTask			sender;
+
+		public MemberFinderTask(){}
+		
+		void setTimeout(long timeout) {
+			this.timeout = timeout;
+		}
+
+		void setNumRsps(int num) {
+			this.num_rsps = num;
+		}
+
+		public List<PingRsp> find() {
+			List<PingRsp> response = null;
+			lock.lock();
+			try{
+				if(future == null || future.isDone()){
+					future = timer.submit(new Callable<List<PingRsp>>() {
+						public List<PingRsp> call() throws Exception {							
+							return findInitialMembers();							
+						}
+					});
+				}
+				if(sender == null)
+					sender = new PingSenderTask(timeout, num_ping_requests);
+
+				sender.start();
+				response = future.get();			
+			}catch(InterruptedException e){
+				Thread.currentThread().interrupt();
+			}catch(ExecutionException e){
+				log.error("Could not execute initial member finding",e);
+			}finally{
+				sender.stop();
+				lock.unlock();
+			}
+			return response;
+		}
+
+		public void stop() {
+			lock.lock();
+			try{
+				if(future != null){
+					future.cancel(true);
+					future = null;
+				}
+				sender.stop();
+			}finally{
+				lock.unlock();
+			}
+
+			synchronized(rsps){
+				rsps.notifyAll();
+			}
+		}
+
+		public void addResponse(PingRsp rsp) {
+			if(rsp != null){
+				synchronized(rsps){
+					if(rsps.contains(rsp))
+						rsps.remove(rsp); // overwrite existing element
+					rsps.add(rsp);
+					rsps.notifyAll();
+				}
+			}
+		}
+
+		public void clearResponses() {
+			synchronized(rsps){
+				rsps.clear();
+				rsps.notifyAll();
+			}
+		}			
+
+		public List<PingRsp> findInitialMembers() {
+			long start_time, time_to_wait;
+			ArrayList<PingRsp> result;
+
+			synchronized(rsps){
+				rsps.clear();
+
+				start_time = System.currentTimeMillis();
+				time_to_wait = timeout;
+
+				while(rsps.size() < num_rsps && time_to_wait > 0){
+					try{
+						rsps.wait(time_to_wait);
+					}catch(InterruptedException intex){
+					}catch(Exception e){
+						log.error("got an exception waiting for responses", e);
+					}
+					time_to_wait = timeout - (System.currentTimeMillis() - start_time);
+				}
+				if(log.isTraceEnabled())
+					log.trace(new StringBuffer("initial mbrs are ").append(rsps));
+				result = new ArrayList<PingRsp>(rsps);
+			}			
+			return result;
+		}		
+	}
 }

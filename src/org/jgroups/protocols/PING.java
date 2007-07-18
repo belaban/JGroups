@@ -25,7 +25,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.34 2007/05/09 22:57:50 belaban Exp $
+ * @version $Id: PING.java,v 1.35 2007/07/18 02:13:17 vlada Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -164,11 +164,11 @@ public class PING extends Discovery {
             if(gossip_rsps != null && !gossip_rsps.isEmpty()) {
                 // Set a temporary membership in the UDP layer, so that the following multicast
                 // will be sent to all of them
-                Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector(gossip_rsps)));
+                Event view_event=new Event(Event.TMP_VIEW, makeView(new Vector<Address>(gossip_rsps)));
                 down_prot.down(view_event); // needed e.g. by failure detector or UDP
             }
             else {
-                up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, null));
+                //do nothing
                 return;
             }
 

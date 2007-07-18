@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.38 2007/04/27 07:59:20 belaban Exp $
+// $Id: MERGE2.java,v 1.39 2007/07/18 02:13:17 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -8,9 +8,10 @@ import org.jgroups.Event;
 import org.jgroups.View;
 import org.jgroups.Global;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 import java.util.Vector;
 
@@ -49,8 +50,7 @@ public class MERGE2 extends Protocol {
     private final Object  task_lock=new Object();
     long                  min_interval=5000;     // minimum time between executions of the FindSubgroups task
     long                  max_interval=20000;    // maximum time between executions of the FindSubgroups task
-    boolean               is_coord=false;
-    final Promise         find_promise=new Promise(); // to synchronize FindSubgroups.findInitialMembers() on
+    boolean               is_coord=false;  
 
     /** Use a new thread to send the MERGE event up the stack */
     boolean               use_separate_thread=false;
@@ -116,8 +116,8 @@ public class MERGE2 extends Protocol {
     }
 
 
-    public Vector requiredDownServices() {
-        Vector retval=new Vector(1);
+    public Vector<Integer> requiredDownServices() {
+        Vector<Integer> retval=new Vector<Integer>(1);
         retval.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return retval;
     }
@@ -136,10 +136,6 @@ public class MERGE2 extends Protocol {
             case Event.SET_LOCAL_ADDRESS:
                 local_addr=(Address)evt.getArg();
                 return up_prot.up(evt);
-
-            case Event.FIND_INITIAL_MBRS_OK:
-                find_promise.setResult(evt.getArg());
-                return up_prot.up(evt); // could be needed by GMS
 
             default:
                 return up_prot.up(evt);            // Pass up to the layer above us
@@ -247,8 +243,7 @@ public class MERGE2 extends Protocol {
             if(thread != null) {
                 Thread tmp=thread;
                 thread=null;
-                tmp.interrupt(); // wakes up sleeping thread
-                find_promise.reset();
+                tmp.interrupt(); // wakes up sleeping thread                
             }
             thread=null;
         }
@@ -256,8 +251,8 @@ public class MERGE2 extends Protocol {
 
         public void run() {
             long interval;
-            Vector coords;
-            Vector initial_mbrs;
+            Vector<Address> coords;
+            List<PingRsp> initial_mbrs;
 
             // if(log.isDebugEnabled()) log.debug("merge task started as I'm the coordinator");
             while(thread != null && Thread.currentThread().equals(thread)) {
@@ -303,11 +298,9 @@ public class MERGE2 extends Protocol {
         /**
          * Returns a list of PingRsp pairs.
          */
-        Vector findInitialMembers() {
-            PingRsp tmp=new PingRsp(local_addr, local_addr, true);
-            find_promise.reset();
-            down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
-            Vector retval=(Vector)find_promise.getResult(0); // wait indefinitely until response is received
+        List<PingRsp> findInitialMembers() {
+            PingRsp tmp=new PingRsp(local_addr, local_addr, true);            
+            List<PingRsp> retval=(List<PingRsp>) down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
             if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
                 retval.add(tmp);
             return retval;
@@ -320,19 +313,20 @@ public class MERGE2 extends Protocol {
          * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
          *         membership, and more than 1 for multiple coordinators
          */
-        Vector detectMultipleCoordinators(Vector initial_mbrs) {
-            Vector ret=new Vector(11);
+        Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
+        	Vector<Address> ret=new Vector<Address>(11);
             PingRsp rsp;
             Address coord;
 
-            if(initial_mbrs == null) return null;
+            if(initial_mbrs == null || initial_mbrs.isEmpty()) return null;
+            
             for(int i=0; i < initial_mbrs.size(); i++) {
-                rsp=(PingRsp)initial_mbrs.elementAt(i);
+                rsp=initial_mbrs.get(i);
                 if(!rsp.is_server)
                     continue;
                 coord=rsp.getCoordAddress();
                 if(!ret.contains(coord))
-                    ret.addElement(coord);
+                    ret.add(coord);
             }
 
             return ret;

@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.25 2007/05/05 18:51:58 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.26 2007/07/18 02:13:17 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -30,9 +30,7 @@ public class TCPGOSSIP extends Discovery {
 
     // we need to refresh the registration with the GossipRouter(s) periodically,
     // so that our entries are not purged from the cache
-    long gossip_refresh_rate=20000;
-
-    final static Vector EMPTY_VECTOR=new Vector();
+    long gossip_refresh_rate=20000;    
     final static String name="TCPGOSSIP";
 
 
@@ -113,15 +111,13 @@ public class TCPGOSSIP extends Discovery {
         Address mbr_addr;
 
         if(group_addr == null) {
-            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");
-            up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
+            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: group_addr is null, cannot get mbrship");            
             return;
         }
         if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
         tmp_mbrs=gossip_client.getMembers(group_addr);
         if(tmp_mbrs == null || tmp_mbrs.isEmpty()) {
-            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");
-            up_prot.up(new Event(Event.FIND_INITIAL_MBRS_OK, EMPTY_VECTOR));
+            if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");           
             return;
         }
         if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);

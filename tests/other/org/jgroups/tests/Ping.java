@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.9 2007/01/11 12:57:42 belaban Exp $
+// $Id: Ping.java,v 1.10 2007/07/18 02:13:21 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 
 import java.util.Enumeration;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Vector;
 
 
@@ -47,7 +48,16 @@ public class Ping implements UpHandler {
 
         try {
             channel.connect(groupname);
-            channel.down(Event.FIND_INITIAL_MBRS_EVT);
+            List<PingRsp> responses = (List<PingRsp>) channel.downcall(Event.FIND_INITIAL_MBRS_EVT);
+            for(int i=0; i < responses.size(); i++) {
+            	PingRsp rsp=(PingRsp)responses.get(i);
+                System.out.println("Rsp #" + (i + 1) + ": " + rsp);
+            }
+
+            if(!responses.isEmpty())
+                verifyCoordinator(responses);
+
+            System.exit(1);
         }
         catch(Exception e) {
             System.err.println("Ping.go(): " + e);
@@ -55,42 +65,14 @@ public class Ping implements UpHandler {
         }
     }
 
-
-
-    public Object up(Event evt) {
-        Vector v;
-        PingRsp rsp;
-
-        if(evt.getType() == Event.FIND_INITIAL_MBRS_OK) {
-            v=(Vector)evt.getArg();
-
-            System.out.println("Found " + v.size() + " members");
-            for(int i=0; i < v.size(); i++) {
-                rsp=(PingRsp)v.elementAt(i);
-                System.out.println("Rsp #" + (i + 1) + ": " + rsp);
-            }
-
-            if(!v.isEmpty())
-                verifyCoordinator(v);
-
-            System.exit(1);
-        }
-        else {
-            if(print_all_events)
-                System.out.println(">> " + evt);
-        }
-        return null;
-    }
-
-
-    static void verifyCoordinator(Vector rsps) {
+    static void verifyCoordinator(List<PingRsp> rsps) {
         Hashtable votes=new Hashtable();  // coord address, list of members who voted for this guy
         PingRsp rsp;
         Vector v;
         Address coord, mbr;
 
         for(int i=0; i < rsps.size(); i++) {
-            rsp=(PingRsp)rsps.elementAt(i);
+            rsp=(PingRsp)rsps.get(i);
             coord=rsp.getCoordAddress();
             mbr=rsp.getAddress();
             v=(Vector)votes.get(coord);
@@ -171,6 +153,11 @@ public class Ping implements UpHandler {
     static void usage() {
         System.out.println("Ping [-help] [-trace] [-group <groupname>] [-props <properties>] [-printall]");
     }
+
+
+	public Object up(Event evt) {	
+		return null;
+	}
 
 
 }
