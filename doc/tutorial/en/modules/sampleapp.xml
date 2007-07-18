@@ -98,16 +98,16 @@ public class SimpleChat {
     <section>
         <title>The main event loop and sending chat messages</title>
         <para>
-            We now continually run a simple event loop, which reads input from stdin ('a message') and sends it to all
-            instances currently in the cluster. When quit is pressed, we simply fall out of the loop and close
-            the channel.
+            We now run an event loop, which reads input from stdin ('a message') and sends it to all
+            instances currently in the cluster. When "exit" or "quit" quit are entered, we fall out of the
+            loop and close the channel.
         </para>
         <screen>
     private void start() throws Exception {
         channel=new JChannel();
         channel.connect("ChatCluster");
-        eventLoop();
-        channel.close();
+        <emphasis role="bold">eventLoop();</emphasis>
+        <emphasis role="bold">channel.close();</emphasis>
     }
 
     private void eventLoop() {
@@ -115,10 +115,11 @@ public class SimpleChat {
         while(true) {
             try {
                 System.out.print("&gt; "); System.out.flush();
-                String line="[" + user_name + "] " + in.readLine().toLowerCase();
+                String line=in.readLine().toLowerCase();
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
+                line="[" + user_name + "] " + line;
                 Message msg=new Message(null, null, line);
                 channel.send(msg);
             }
@@ -133,11 +134,20 @@ public class SimpleChat {
         </para>
         <para>
             The event loop blocks until a new line is ready (from standard input), then sends a message to the cluster.
-            This is done by creating a new Message and calling Channel.send() with it as argument. The first argument
+            This is done by creating a new Message and calling Channel.send() with it as argument.
+        </para>
+        <para>
+            The first argument
             of the Message constructor is the destination address. A null destination address means send the message
             to everyone in the cluster (a non-null address of an instance would send a message from us to only 1
-            instance). The second argument is our own address. This is null as well, as the stack will insert the
-            correct address anyway. The third argument is the line that we read from stdin, this uses Java
+            instance).
+        </para>
+        <para>
+            The second argument is our own address. This is null as well, as the stack will insert the
+            correct address anyway.
+        </para>
+        <para>
+            The third argument is the line that we read from stdin, this uses Java
             serialization to create a byte[] buffer and set the message's payload to it. Note that we could also
             serialize the object ourselves (which is actually the recommended way !) and use the Message contructor which
             takes a byte[] buffer as third argument.
@@ -153,7 +163,7 @@ public class SimpleChat {
         <para>
             Let's now register as a Receiver to receive message and view changes. To this end, we could implement
             org.jgroups.Receiver (with 6 methods), however, I chose to extend ReceiverAdapter which has default
-            implementations, and only override the 2 callbacks (receive() and viewChange()) we're interested in. We
+            implementations, and only override callbacks (receive() and viewChange()) we're interested in. We
             now need to extend ReceiverAdapter:
             <screen>
 public class SimpleChat extends ReceiverAdapter {
@@ -213,7 +223,7 @@ public class SimpleChat extends ReceiverAdapter {
             </screen>
         </para>
         <para>
-            The address of this instance is 192.168.0.6:49949 (IP address:port). It is the only instance so far. So let's
+            The address of this instance is 192.168.0.6:49963 (IP address:port). It is the only instance so far. So let's
             start the second instance and type something:
         </para>
         <para>

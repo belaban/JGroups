@@ -69,10 +69,11 @@ public class SimpleChat extends ReceiverAdapter {
         while(true) {
             try {
                 System.out.print("> "); System.out.flush();
-                String line="[" + user_name + "] " + in.readLine().toLowerCase();
+                String line=in.readLine().toLowerCase();
                 if(line.startsWith("quit") || line.startsWith("exit")) {
                     break;
                 }
+                line="[" + user_name + "] " + line;
                 Message msg=new Message(null, null, line);
                 channel.send(msg);
             }
