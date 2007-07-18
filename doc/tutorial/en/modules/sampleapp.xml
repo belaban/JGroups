@@ -366,7 +366,7 @@ public class SimpleChat extends ReceiverAdapter {
     <section>
         <title>Conclusion</title>
         <para>
-            The code for SimpleChat can be found <ulink url="code/SimpleChat.java">here</ulink>.
+            The code for SimpleChat can be found <ulink url="../code/SimpleChat.java">here</ulink>.
         </para>
     </section>
 
