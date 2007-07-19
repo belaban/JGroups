@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.44 2007/07/18 02:13:20 vlada Exp $
+// $Id: Event.java,v 1.45 2007/07/19 13:58:31 vlada Exp $
 
 package org.jgroups;
 
@@ -24,8 +24,6 @@ public class Event {
     public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
     public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
     public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
-    public static final int FLUSH                     = 27;  // arg = Vector (destinatinon for FLUSH)
-    public static final int FLUSH_OK                  = 28;  // arg = FlushRsp
     public static final int STABLE                    = 30;  // arg = long[] (stable seqnos for mbrs)
     public static final int GET_DIGEST                = 39;  //
     public static final int SET_DIGEST                = 41;  // arg = Digest
@@ -107,9 +105,7 @@ public class Event {
             case GET_APPLSTATE:          return "GET_APPLSTATE";
             case GET_STATE:              return "GET_STATE";
             case GET_STATE_OK:           return "GET_STATE_OK";
-            case STATE_RECEIVED:         return "STATE_RECEIVED";
-            case FLUSH:                  return "FLUSH";
-            case FLUSH_OK:               return "FLUSH_OK";
+            case STATE_RECEIVED:         return "STATE_RECEIVED";         
             case STABLE:                 return "STABLE";
             case GET_DIGEST:             return "GET_DIGEST";
             case SET_DIGEST:             return "SET_DIGEST";
