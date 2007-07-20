@@ -32,7 +32,7 @@ import java.util.concurrent.locks.Condition;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.30 2007/07/20 16:22:24 belaban Exp $
+ * @version $Id: Discovery.java,v 1.31 2007/07/20 19:10:18 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -194,7 +194,7 @@ public abstract class Discovery extends Protocol {
         catch(Exception e) {
             return null;
         }
-        finally{
+        finally {
         	sender.stop();
         }
     }
