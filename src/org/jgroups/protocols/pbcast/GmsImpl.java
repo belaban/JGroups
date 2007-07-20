@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.22 2007/04/04 05:23:33 belaban Exp $
+// $Id: GmsImpl.java,v 1.23 2007/07/20 08:48:28 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -16,7 +16,7 @@ public abstract class GmsImpl {
     protected final Log   log;
     final boolean         trace;
     final boolean         warn;
-    boolean               leaving=false;
+    volatile boolean      leaving=false;
 
     protected GmsImpl() {
         log=null;
