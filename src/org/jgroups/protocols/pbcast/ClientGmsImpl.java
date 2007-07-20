@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.48 2007/07/18 02:13:19 vlada Exp $
+// $Id: ClientGmsImpl.java,v 1.49 2007/07/20 11:33:31 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.48 $
+ * @version $Revision: 1.49 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise join_promise=new Promise();
@@ -178,8 +178,7 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 	private List<PingRsp> findInitialMembers() {
-		
-		List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));		
+		List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
 		for(Iterator<PingRsp> iter = responses.iterator();iter.hasNext();){
 			PingRsp response = iter.next();
 			if(response.own_addr !=null && response.own_addr.equals(gms.local_addr))
