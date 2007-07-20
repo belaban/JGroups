@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.10 2007/07/18 02:13:21 vlada Exp $
+// $Id: Ping.java,v 1.11 2007/07/20 09:15:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -36,9 +36,8 @@ public class Ping implements UpHandler {
     boolean print_all_events=false;
 
 
-    public Ping(String props, boolean trace, boolean printall) throws Exception {
+    public Ping(String props, boolean printall) throws Exception {
         print_all_events=printall;
-        if(trace)
         channel=new JChannel(props);
         channel.setUpHandler(this);
     }
@@ -50,7 +49,7 @@ public class Ping implements UpHandler {
             channel.connect(groupname);
             List<PingRsp> responses = (List<PingRsp>) channel.downcall(Event.FIND_INITIAL_MBRS_EVT);
             for(int i=0; i < responses.size(); i++) {
-            	PingRsp rsp=(PingRsp)responses.get(i);
+            	PingRsp rsp=responses.get(i);
                 System.out.println("Rsp #" + (i + 1) + ": " + rsp);
             }
 
@@ -72,7 +71,7 @@ public class Ping implements UpHandler {
         Address coord, mbr;
 
         for(int i=0; i < rsps.size(); i++) {
-            rsp=(PingRsp)rsps.get(i);
+            rsp=rsps.get(i);
             coord=rsp.getCoordAddress();
             mbr=rsp.getAddress();
             v=(Vector)votes.get(coord);
@@ -106,7 +105,6 @@ public class Ping implements UpHandler {
 
     public static void main(String[] args) {
         Ping ping=null;
-        boolean trace=false;
         String groupname=Util.shortName(Util.getHostname());
         boolean printall=false;
         String props="UDP(mcast_addr=224.0.0.200;mcast_port=7500;ip_ttl=0;" +
@@ -117,10 +115,6 @@ public class Ping implements UpHandler {
             if("-help".equals(args[i])) {
                 usage();
                 return;
-            }
-            if("-trace".equals(args[i])) {
-                trace=true;
-                continue;
             }
             if("-printall".equals(args[i])) {
                 printall=true;
@@ -140,7 +134,7 @@ public class Ping implements UpHandler {
 
 
         try {
-            ping=new Ping(props, trace, printall);
+            ping=new Ping(props, printall);
             ping.go(groupname);
         }
         catch(Exception e) {
@@ -151,7 +145,7 @@ public class Ping implements UpHandler {
 
 
     static void usage() {
-        System.out.println("Ping [-help] [-trace] [-group <groupname>] [-props <properties>] [-printall]");
+        System.out.println("Ping [-help] [-group <groupname>] [-props <properties>] [-printall]");
     }
 
 
