@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.40 2007/07/18 15:41:36 vlada Exp $
+// $Id: MERGE2.java,v 1.41 2007/07/20 09:00:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -187,103 +187,92 @@ public class MERGE2 extends Protocol {
 	 * whether there are subgroups (multiple coordinators for the same group). If yes, it sends a MERGE event
 	 * with the list of the coordinators up the stack
 	 */
-	private class FindSubgroupsTask {
-		private final Lock futureLock = new ReentrantLock();
+    private class FindSubgroupsTask {
+        @GuardedBy("this")
+        private Future future;
 
-		@GuardedBy("futureLock")
-		private Future future;
+        public synchronized void start() {
+            if(future == null || future.isDone()) {
+                future=timer.scheduleWithFixedDelay(new Runnable() {
+                    public void run() {
+                        findAndNotify();
+                    }
+                }, 0, (long)computeInterval(), TimeUnit.MILLISECONDS);
+            }
+        }
 
-		public void start() {
-			futureLock.lock();
-			try{
-				if(future == null || future.isDone()){
-					future = timer.scheduleWithFixedDelay(new Runnable() {
-						public void run() {
-							findAndNotify();
-						}
-					}, 0, (long) computeInterval(), TimeUnit.MILLISECONDS);
-				}
-			}finally{
-				futureLock.unlock();
-			}
-		}
+        public synchronized void stop() {
+            if(future != null) {
+                future.cancel(true);
+                future=null;
+            }
+        }
 
-		public void stop() {
-			futureLock.lock();
-			try{
-				if(future != null){
-					future.cancel(true);
-					future = null;
-				}
-			}finally{
-				futureLock.unlock();
-			}
-		}
+        public void findAndNotify() {
+            List<PingRsp> initial_mbrs=findInitialMembers();
+            if(log.isDebugEnabled())
+                log.debug("initial_mbrs=" + initial_mbrs);
+            Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
+            if(coords != null && coords.size() > 1) {
+                if(log.isDebugEnabled())
+                    log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
+                final Event evt=new Event(Event.MERGE, coords);
+                if(use_separate_thread) {
+                    Thread merge_notifier=new Thread() {
+                        public void run() {
+                            up_prot.up(evt);
+                        }
+                    };
+                    merge_notifier.setDaemon(true);
+                    merge_notifier.setName("merge notifier thread");
+                    merge_notifier.start();
+                }
+                else {
+                    up_prot.up(evt);
+                }
+            }
+            if(log.isTraceEnabled())
+                log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
+        }
 
-		public void findAndNotify() {
-			List<PingRsp> initial_mbrs = findInitialMembers();
-			if(log.isDebugEnabled())
-				log.debug("initial_mbrs=" + initial_mbrs);
-			Vector<Address> coords = detectMultipleCoordinators(initial_mbrs);
-			if(coords != null && coords.size() > 1){
-				if(log.isDebugEnabled())
-					log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
-				final Event evt = new Event(Event.MERGE, coords);
-				if(use_separate_thread){
-					Thread merge_notifier = new Thread() {
-						public void run() {
-							up_prot.up(evt);
-						}
-					};
-					merge_notifier.setDaemon(true);
-					merge_notifier.setName("merge notifier thread");
-					merge_notifier.start();
-				}else{
-					up_prot.up(evt);
-				}
-			}
-			if(log.isTraceEnabled())
-				log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
-		}
+        /**
+         * Returns a random value within [min_interval - max_interval]
+         */
+        long computeInterval() {
+            return min_interval + Util.random(max_interval - min_interval);
+        }
 
-		/**
-		 * Returns a random value within [min_interval - max_interval]
-		 */
-		long computeInterval() {
-			return min_interval + Util.random(max_interval - min_interval);
-		}
+        /**
+         * Returns a list of PingRsp pairs.
+         */
+        List<PingRsp> findInitialMembers() {
+            PingRsp tmp=new PingRsp(local_addr, local_addr, true);
+            List<PingRsp> retval=(List<PingRsp>)down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
+            if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
+                retval.add(tmp);
+            return retval;
+        }
 
-		/**
-		 * Returns a list of PingRsp pairs.
-		 */
-		List<PingRsp> findInitialMembers() {
-			PingRsp tmp = new PingRsp(local_addr, local_addr, true);
-			List<PingRsp> retval = (List<PingRsp>) down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
-			if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
-				retval.add(tmp);
-			return retval;
-		}
+        /**
+         * Finds out if there is more than 1 coordinator in the initial_mbrs vector (contains PingRsp elements).
+         * @param initial_mbrs A list of PingRsp pairs
+         * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
+         *         membership, and more than 1 for multiple coordinators
+         */
+        Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
+            if(initial_mbrs == null || initial_mbrs.isEmpty())
+                return null;
 
-		/**
-		 * Finds out if there is more than 1 coordinator in the initial_mbrs vector (contains PingRsp elements).
-		 * @param initial_mbrs A list of PingRsp pairs
-		 * @return Vector A list of the coordinators (Addresses) found. Will contain just 1 element for a correct
-		 *         membership, and more than 1 for multiple coordinators
-		 */
-		Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
-			if(initial_mbrs == null || initial_mbrs.isEmpty())
-				return null;
+            Vector<Address> ret=new Vector<Address>(11);
+            for(PingRsp response : initial_mbrs) {
+                if(!response.is_server)
+                    continue;
+                Address coord=response.getCoordAddress();
+                if(!ret.contains(coord))
+                    ret.add(coord);
+            }
 
-			Vector<Address> ret = new Vector<Address>(11);
-			for(PingRsp response:initial_mbrs){
-				if(!response.is_server)
-					continue;
-				Address coord = response.getCoordAddress();
-				if(!ret.contains(coord))
-					ret.add(coord);
-			}
-
-			return ret;
-		}
-	}
+            return ret;
+        }
+    }
 }
