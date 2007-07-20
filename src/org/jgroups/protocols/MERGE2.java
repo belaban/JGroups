@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.41 2007/07/20 09:00:03 belaban Exp $
+// $Id: MERGE2.java,v 1.42 2007/07/20 09:00:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,10 +16,6 @@ import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-
-
 
 
 /**
