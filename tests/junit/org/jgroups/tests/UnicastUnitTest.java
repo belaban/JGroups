@@ -8,7 +8,7 @@ import java.util.LinkedList;
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.1 2007/07/21 05:51:03 belaban Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.2 2007/07/21 06:09:21 belaban Exp $
  */
 public class UnicastUnitTest extends ChannelTestBase {
     JChannel ch1, ch2=null;
@@ -32,18 +32,9 @@ public class UnicastUnitTest extends ChannelTestBase {
 
 
 
-    public void testUnicastMessageInCallbackNewMember() throws Exception {
-        ch1.connect("x");
-
-        ch2.setReceiver(new MyReceiver(ch2));
-        ch2.connect("x");
-        ch2.setReceiver(null);
-    }
-
     public void testUnicastMessageInCallbackExistingMember() throws Exception {
-        MyReceiver receiver;
         ch1.connect("x");
-        receiver=new MyReceiver(ch1);
+        MyReceiver receiver=new MyReceiver(ch1);
         ch1.setReceiver(receiver);
         ch2.connect("x");
         Exception ex=receiver.getEx();
@@ -76,6 +67,8 @@ public class UnicastUnitTest extends ChannelTestBase {
             Address dest=members.get(0);
             Message unicast_msg=new Message(dest, null, null);
             try {
+                // uncomment line below for workaround
+                // channel.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
                 channel.send(unicast_msg);
             }
             catch(Exception e) {
