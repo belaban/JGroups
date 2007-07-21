@@ -1,4 +1,4 @@
-// $Id: MembershipListener.java,v 1.7 2006/09/27 12:53:22 belaban Exp $
+// $Id: MembershipListener.java,v 1.8 2007/07/21 06:21:55 belaban Exp $
 
 package org.jgroups;
 
@@ -20,8 +20,10 @@ public interface MembershipListener {
     
     /**
      * Called when a change in membership has occurred.
-     * <b>No long running actions should be done in this callback.</b>
-     * If some long running action needs to be performed, it should be done in a separate thread.
+     * <b>No long running actions or sending of messages should be done in this callback.</b>
+     * If some long running action needs to be performed, it should be done in a separate thread.<p/>
+     * Note that on reception of the first view (a new member just joined), the channel will not yet be
+     * in the connected state. This only happens when {@link Channel#connect(String)} returns.
      */
     void viewAccepted(View new_view);
     
