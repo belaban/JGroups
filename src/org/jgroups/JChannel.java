@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.138 2007/07/13 08:53:10 belaban Exp $
+ * @version $Id: JChannel.java,v 1.139 2007/07/21 05:34:19 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1000,10 +1000,16 @@ public class JChannel extends Channel {
             if(state != null) {
                 String state_id=info.state_id;
                 if(receiver != null) {
-                    if(receiver instanceof ExtendedReceiver && state_id!=null)
-                        ((ExtendedReceiver)receiver).setState(state_id, state);
-                    else
-                        receiver.setState(state);
+                    try {
+                        if(receiver instanceof ExtendedReceiver && state_id!=null)
+                            ((ExtendedReceiver)receiver).setState(state_id, state);
+                        else
+                            receiver.setState(state);
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling setState() in receiver", t);
+                    }
                 }
                 else {
                     try {mq.add(new Event(Event.STATE_RECEIVED, info));} catch(Exception e) {}
@@ -1021,20 +1027,26 @@ public class JChannel extends Channel {
                 return up_handler.up(evt);
             }
 
-            if(is != null) {        	
+            if(is != null) {
                 if(receiver instanceof ExtendedReceiver) {
-                    if(sti.state_id == null)
-                        ((ExtendedReceiver)receiver).setState(is);
-                    else
-                        ((ExtendedReceiver)receiver).setState(sti.state_id, is);
+                    try {
+                        if(sti.state_id == null)
+                            ((ExtendedReceiver)receiver).setState(is);
+                        else
+                            ((ExtendedReceiver)receiver).setState(sti.state_id, is);
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling setState() in receiver", t);
+                    }
                 }
                 else if(receiver instanceof Receiver){
-        	    if(log.isWarnEnabled()){
-        		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-        		         " application does not implement ExtendedMessageListener. State is not transfered");
-        		Util.close(is);        		     		        	
-        	    }
-        	}
+                    if(log.isWarnEnabled()){
+                        log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
+                                " application does not implement ExtendedMessageListener. State is not transfered");
+                        Util.close(is);
+                    }
+                }
                 else {
                     try {
                         mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
@@ -1071,32 +1083,56 @@ public class JChannel extends Channel {
         switch(type) {
             case Event.MSG:
                 if(receiver != null) {
-                    receiver.receive((Message)evt.getArg());
+                    try {
+                        receiver.receive((Message)evt.getArg());
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling receive() in receiver", t);
+                    }
                     return null;
                 }
                 break;
             case Event.VIEW_CHANGE:
                 if(receiver != null) {
-                    receiver.viewAccepted((View)evt.getArg());
+                    try {
+                        receiver.viewAccepted((View)evt.getArg());
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling viewAccepted() in receiver", t);
+                    }
                     return null;
                 }
                 break;
             case Event.SUSPECT:
                 if(receiver != null) {
-                    receiver.suspect((Address)evt.getArg());
+                    try {
+                        receiver.suspect((Address)evt.getArg());
+                    }
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling suspect() in receiver", t);
+                    }
                     return null;
                 }
                 break;
             case Event.GET_APPLSTATE:
                 if(receiver != null) {
                     StateTransferInfo info=(StateTransferInfo)evt.getArg();
-                    byte[] tmp_state;
+                    byte[] tmp_state=null;
                     String state_id=info.state_id;
-                    if(receiver instanceof ExtendedReceiver && state_id!=null) {
-                        tmp_state=((ExtendedReceiver)receiver).getState(state_id);
+                    try {
+                        if(receiver instanceof ExtendedReceiver && state_id!=null) {
+                            tmp_state=((ExtendedReceiver)receiver).getState(state_id);
+                        }
+                        else {
+                            tmp_state=receiver.getState();
+                        }
                     }
-                    else {
-                        tmp_state=receiver.getState();
+                    catch(Throwable t) {
+                        if(log.isWarnEnabled())
+                            log.warn("failed calling getState() in receiver", t);
                     }
                     return new StateTransferInfo(null, state_id, 0L, tmp_state);
                 }
@@ -1106,24 +1142,30 @@ public class JChannel extends Channel {
                 OutputStream os=sti.outputStream;
                 if(receiver instanceof ExtendedReceiver) {                    
                     if(os != null) {
-                        if(sti.state_id == null)
-                            ((ExtendedReceiver)receiver).getState(os);
-                        else
-                            ((ExtendedReceiver)receiver).getState(sti.state_id, os);
+                        try {
+                            if(sti.state_id == null)
+                                ((ExtendedReceiver)receiver).getState(os);
+                            else
+                                ((ExtendedReceiver)receiver).getState(sti.state_id, os);
+                        }
+                        catch(Throwable t) {
+                            if(log.isWarnEnabled())
+                                log.warn("failed calling getState() in receiver", t);
+                        }
                         return new StateTransferInfo(null, os, sti.state_id);
                     }                    
                 }
                 else if(receiver instanceof Receiver){
-        	    if(log.isWarnEnabled()){
-        		log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-        		         " application does not implement ExtendedMessageListener. State is not transfered");        		
-        		Util.close(os);     		        		
-        	    }
-        	}
-		break;
+                    if(log.isWarnEnabled()){
+                        log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
+                                " application does not implement ExtendedMessageListener. State is not transfered");
+                        Util.close(os);
+                    }
+                }
+                break;
 
             case Event.BLOCK:
-                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'                    
+                if(!receive_blocks) {  // discard if client has not set 'receiving blocks' to 'on'
                     return Boolean.TRUE;
                 }
 
@@ -1133,7 +1175,7 @@ public class JChannel extends Channel {
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
-                            log.error("failed calling block() on receiver", t);
+                            log.error("failed calling block() in receiver", t);
                     }                     
                     return Boolean.TRUE;
                 }
@@ -1149,7 +1191,7 @@ public class JChannel extends Channel {
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
-                            log.error("failed calling unblock() on Receiver", t);
+                            log.error("failed calling unblock() in receiver", t);
                     }                                        
                 }
                 flush_unblock_promise.setResult(Boolean.TRUE);
