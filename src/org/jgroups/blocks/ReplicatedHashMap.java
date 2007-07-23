@@ -33,21 +33,21 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.4 2007/07/06 07:44:40 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.5 2007/07/23 09:28:09 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedMessageListener, ExtendedMembershipListener {
 
 
 
 
-    public interface Notification {
-        void entrySet(Object key, Object value);
+    public interface Notification<K extends Serializable,V extends Serializable> {
+        void entrySet(K key, V value);
 
-        void entryRemoved(Object key);
+        void entryRemoved(K key);
 
         void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs);
 
-        void contentsSet(Map new_entries);
+        void contentsSet(Map<K,V> new_entries);
 
         void contentsCleared();
     }
@@ -502,8 +502,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
             }
         }
-        for(int i=0; i < notifs.size(); i++)
-            notifs.elementAt(i).entryRemoved(key);
+        for(Notification notif: notifs)
+            notif.entryRemoved((K)key);
 
         return retval;
     }
