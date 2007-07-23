@@ -33,9 +33,9 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.5 2007/07/23 09:28:09 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.6 2007/07/23 09:30:07 belaban Exp $
  */
-public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedMessageListener, ExtendedMembershipListener {
+public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedReceiver {
 
 
 
