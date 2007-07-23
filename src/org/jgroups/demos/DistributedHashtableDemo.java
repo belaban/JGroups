@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.7 2006/10/25 16:26:25 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.8 2007/07/23 08:25:34 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -134,7 +134,7 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
         add(listbox);
         setTitle("DistributedHashtable Demo");
         showAll();
-        pack();
+        // pack();
         setVisible(true);
 
 

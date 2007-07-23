@@ -1,4 +1,4 @@
-// $Id: DistributedQueueDemo.java,v 1.6 2004/09/23 16:29:35 belaban Exp $
+// $Id: DistributedQueueDemo.java,v 1.7 2007/07/23 08:28:35 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.ChannelException;
@@ -120,7 +120,7 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
         add(listbox);
         setTitle("DistributedQueue Demo");
         showAll();
-        pack();
+        // pack();
         setVisible(true);
 
         /*
@@ -259,14 +259,7 @@ public class DistributedQueueDemo extends Frame implements WindowListener, Actio
         boolean trace = false;
         boolean persist = false;
 
-        String props =
-            "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" + "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" + "FD_SOCK:" + "VERIFY_SUSPECT(timeout=1500):" +
-            "UNICAST(timeout=5000):" + "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-            "TOTAL_TOKEN(block_sending=50;unblock_sending=10):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" + "shun=false;print_local_addr=true):" +
-            "STATE_TRANSFER:" + "QUEUE";
+        String props ="udp.xml";
 
         try
         {
