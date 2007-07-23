@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.5 2005/05/30 16:14:37 belaban Exp $
+// $Id: Whiteboard.java,v 1.6 2007/07/23 10:42:07 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -96,17 +96,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
         if (!application)
             props = getParameter("properties");
         if (props == null) {
-            // props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
-            props = "UDP:PING:FD:" +
-                    "pbcast.PBCAST:UNICAST:FRAG:pbcast.GMS:" +
-                    "pbcast.STATE_TRANSFER";
-
-
-
-
-            //props="TCP:" +
-            //"TCPPING(port_range=3;initial_hosts=localhost[8880]):" +
-            //"FD:STABLE:NAKACK:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
+            props = "udp.xml";
         }
 
         System.out.println("properties are " + props);
@@ -115,7 +105,6 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
             channel = new JChannel(props);
             disp = new RpcDispatcher(channel, this, this, this);
             channel.connect(groupname);
-            System.out.println("INIT()");
             channel.getState(null, 0);
         } catch (Exception e) {
             log.error("Whiteboard.init(): " + e);
