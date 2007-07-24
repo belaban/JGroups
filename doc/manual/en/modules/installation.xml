@@ -183,9 +183,7 @@
             <listitem>
                 <para>The
                     <filename>CLASSPATH</filename>
-                    now has to be set
-                    accordingly: the following directories and/or JARs have to be
-                    included:
+                    now has to be set accordingly: the following directories and/or JARs have to be included:
                 </para>
                 <orderedlist>
                     <listitem>
@@ -236,9 +234,7 @@
             </listitem>
             <listitem>
                 <para>For more details on Ant see
-                    <ulink
-                            url="http://jakarta.apache.org/ant/"/>
-                    .
+                    <ulink url="http://jakarta.apache.org/ant/"/>.
                 </para>
             </listitem>
         </orderedlist>
@@ -267,9 +263,8 @@
             bela@dell /cygdrive/c/JGroups/dist
             $ java -jar jgroups-all.jar
 
-            Version:        2.3 alpha
-            CVS:            $Id: installation.xml,v 1.3 2007/07/24 14:48:16 belaban Exp $
-            History:        (see doc/history.txt for details)
+            Version:        2.6.0 pre-alpha
+            CVS:            $Id: installation.xml,v 1.4 2007/07/24 15:04:55 belaban Exp $
         </screen>
 
     </section>
