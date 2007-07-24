@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.148 2007/07/02 10:30:54 belaban Exp $
+ * @version $Id: TP.java,v 1.149 2007/07/24 13:33:12 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -197,8 +197,11 @@ public abstract class TP extends Protocol {
      */
     long max_bundle_timeout=20;
 
-    /** Enabled bundling of smaller messages into bigger ones */
+    /** Enable bundling of smaller messages into bigger ones */
     boolean enable_bundling=false;
+
+    /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
+    boolean enable_unicast_bundling=true;
 
     private Bundler    bundler=null;
 
@@ -852,6 +855,12 @@ public abstract class TP extends Protocol {
             props.remove("enable_bundling");
         }
 
+        str=props.getProperty("enable_unicast_bundling");
+        if(str != null) {
+            enable_unicast_bundling=Boolean.valueOf(str).booleanValue();
+            props.remove("enable_unicast_bundling");
+        }
+
         str=props.getProperty("enable_diagnostics");
         if(str != null) {
             enable_diagnostics=Boolean.valueOf(str).booleanValue();
@@ -1162,8 +1171,13 @@ public abstract class TP extends Protocol {
 
         // bundle only regular messages; send OOB messages directly
         if(enable_bundling && !msg.isFlagSet(Message.OOB)) {
-            bundler.send(msg, dest);
-            return;
+            if(!enable_unicast_bundling && !multicast) {
+                ; // don't bundle unicast msgs if enable_unicast_bundling is off (http://jira.jboss.com/jira/browse/JGRP-429)
+            }
+            else {
+                bundler.send(msg, dest);
+                return;
+            }
         }
 
         ExposedByteArrayOutputStream out_stream=null;
