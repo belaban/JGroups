@@ -1,5 +1,15 @@
 <chapter><title>Overview</title>
 
+    <para>
+        Group communication uses the terms <emphasis>group</emphasis> and <emphasis>member</emphasis>. Members are part
+        of a group. In the more common terminology, a member is a <emphasis>node</emphasis> and a groups is a
+        <emphasis>cluster</emphasis>. We use these words interchangeably.
+    </para>
+    <para>
+        A node is a process, residing on some host. A cluster can have one or more nodes belonging to it. There
+        can be multiple nodes on the same host, and all may or may not be part of the same cluster.
+    </para>
+
   <para>JGroups is toolkit for reliable group
   communication. Processes can join a group, send messages to all
   members or single members and receive messages from members in the
@@ -106,29 +116,14 @@
     is blocked until the next available message has been
     received.</para>
 
-    <para>A channel can be implemented over a number of alternatives
-    for group transport. Therefore, a channel is an abstract class,
-    and concrete implementations are derived from it, e.g. a channel
-    implementation using its own protocol stack, or others using
-    existing group transports. Currently, JGroups offers 2
-    implementations of channels: JChannel, which is the default group
-    transport and EnsChannel, which is based on Ensemble <xref
-    linkend="Ensemble:1997"/>, a reliable group communication toolkit
-    written in ML. Applications only deal with the abstract channel
-    class, and the actual implementation can be chosen at startup
-    time<footnote><para>The most recent version of Ensemble is not
-    supported as the format for communication between EnsChannel and
-    Ensemble has changed. Possibly Ensemble support will be dropped in
-    one of the next releases unless someone volunteers to port
-    EnsChannel to use the latest Ensemble version.</para>
-    </footnote>.</para>
+    <para>
+        There is currently only one implementation of Channel: JChannel.
+    </para>
 
-    <para> The properties for a channel are specified in a
-    colon-delimited string format.  When creating a channel (JChannel)
-    a protocol stack will be created according to these
-    properties. All messages will pass through this stack, ensuring
-    the quality of service specified by the properties string for a
-    given channel.</para>
+    <para>
+        The properties of a channel are typically defined in an XML file, but JGroups also allows for configuration
+        through simple strings, URIs, DOM trees or even programming.
+    </para>
   
     <para>The Channel API and its related classes is described in
     <xref linkend="user-channel"/>.</para>
@@ -179,10 +174,8 @@
 
   <section><title>The Protocol Stack</title>
 
-    <para>As discussed above, JGroups provides two channel
-    implementations: an Ensemble-based channel and its own channel
-    based on a Java protocol stack. The latter is a protocol stack
-    containing a number of protocol layers in a bidirectional
+    <para>The protocol stack
+    containins a number of protocol layers in a bidirectional
     list. All messages sent and received over the channel have to pass
     through the protocol stack. Every layer may modify, reorder, pass
     or drop a message, or add a header to a message. A fragmentation
@@ -191,7 +184,7 @@
     fragments on the receiver's side.</para>
 
     <para>The composition of the protocol stack, i.e. its layers, is
-    determined by the creator of the channel: a property string
+    determined by the creator of the channel: an XML file
     defines the layers to be used (and the parameters for each
     layer). This string might be interpreted differently by each
     channel implementation; in JChannel it is used to create the
@@ -212,13 +205,20 @@
 
   <section><title>Header</title>
 
-    <para></para>
+    <para>
+        A header is a custom bit of information that can be added to each message. JGroups uses headers extensively,
+        for example to add sequence numbers to each message (NAKACK and UNICAST), so that those messages can be
+        delivered in the order in which they were sent.
+    </para>
 
   </section>
 
   <section><title>Event</title>
 
-    <para></para>
+    <para>
+        Events are means by which JGroups protcols can talk to each other. Contrary to Messages, which travel over the
+        network between group members, events only travel up and down the stack.
+    </para>
 
   </section>
 

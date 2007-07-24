@@ -457,13 +457,7 @@
         <title>Ordering (FIFO covered by NAKACK)</title>
 
         <section>
-            <title>CAUSAL</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>Total Order (sequencer: TOTAL, token-passing: TOTAL_TOKEN</title>
+            <title>Total Order (SEQUENCER)</title>
 
             <para></para>
         </section>
