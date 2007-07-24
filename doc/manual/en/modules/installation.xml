@@ -1,24 +1,16 @@
 <chapter>
     <title>Installation and Configuration</title>
 
-    <para>The installation refers to version 2.3 of
-        JGroups. However, by the time this book is printed, the version
-        number will probably be higher. Refer to the installation
+    <para>The installation refers to version 2.5 of JGroups. Refer to the installation
         instructions that are shipped with JGroups for details.</para>
 
     <para>Note that these instructions are also available in the
-        JGroups distribution (
-        <filename>INSTALL.HTML</filename>
-        ).
+        JGroups distribution (<filename>INSTALL.HTML</filename>).
     </para>
 
     <para>JGroups comes in a binary and a source version: the binary
-        version is
-        <filename>JGroups-2.x.x.bin.zip</filename>
-        , the source
-        version is
-        <filename>JGroups-2.x.x.src.zip</filename>
-        . The binary
+        version is <filename>JGroups-2.x.x.bin.zip</filename>, the source
+        version is <filename>JGroups-2.x.x.src.zip</filename>. The binary
         version contains the JGroups JAR file, plus a number of JARs needed
         by JGroups. The source version contains all source files, plus
         several JAR files needed by JGroups, e.g. ANT to build JGroups from
@@ -30,7 +22,7 @@
 
         <itemizedlist>
             <listitem>
-                <para>JGroups 2.3 requires JDK 1.4 or higher (I'm using only JDK 5).</para>
+                <para>JGroups 2.5 requires JDK 5 or higher.</para>
             </listitem>
             <listitem>
                 <para>There is no JNI code present so it should run on all platforms.</para>
@@ -64,24 +56,13 @@
                 <para>commons-logging.jar</para>
             </listitem>
             <listitem>
-                <para>concurrent.jar</para>
-            </listitem>
-            <listitem>
-                <para>log4j.jar</para>
+                <para>log4j.jar. This JAR is optional, for example if JDK logging is used, we don't need it.</para>
             </listitem>
         </orderedlist>
 
-        <para>We no longer ship the Xerces JARs. To run JGroups you have
-            to have an XML parser installed on your system. If you use JDK
-            1.4 or higher, you can use the parser that is shipped with it.</para>
-
-        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>
-            , and you're ready to start using
-            JGroups. If you want to use the JGroups JMS protocol
-            (
-            <classname>org.jgroups.protocols.JMS</classname>
-            ), then you will
-            also need to place jms.jar somewhere in your CLASSPATH.
+        <para>Place the JAR files somewhere in your <envar>CLASSPATH</envar>, and you're ready to start using
+            JGroups. If you want to use the JGroups JMS protocol (<classname>org.jgroups.protocols.JMS</classname>),
+            then you will also need to place jms.jar somewhere in your CLASSPATH.
         </para>
 
     </section>
@@ -89,8 +70,7 @@
     <section>
         <title>Installing the source distribution</title>
 
-        <para>The source version consists of the following
-            directories:</para>
+        <para>The source version consists of the following directories and files:</para>
 
         <orderedlist>
             <listitem>
@@ -100,8 +80,7 @@
                 <para>test: unit and stress tests</para>
             </listitem>
             <listitem>
-                <para>conf: configuration files needed by JGroups, plus
-                    default protocol stack definitions</para>
+                <para>conf: configuration files needed by JGroups, plus default protocol stack definitions</para>
             </listitem>
             <listitem>
                 <para>doc: documentation</para>
@@ -119,26 +98,19 @@
                         </para>
                     </listitem>
                     <listitem>
-                        <para>jms.jar: JMS library. Needed if you intend to
+                        <para>jms.jar: JMS library. Needed only if you intend to
                             run the org.jgroups.protocols.JMS protocol</para>
                     </listitem>
                     <listitem>
                         <para>junit.jar: to run the
-                            <ulink
-                                    url="http://www.junit.org/">JUnit</ulink>
-                            test
-                            cases
+                            <ulink url="http://www.junit.org/">JUnit</ulink> test cases
                         </para>
                     </listitem>
                     <listitem>
                         <para>
-                            <ulink url="http://xml.apache.org/">xalan.jar</ulink>
-                            : to format the output of the JUnit tests using an XSLT
-                            converter to HTML
+                            <ulink url="http://xml.apache.org/">xalan.jar</ulink>: to format the output of
+                            the JUnit tests using an XSLT converter to HTML
                         </para>
-                    </listitem>
-                    <listitem>
-                        <para>concurrent.jar</para>
                     </listitem>
                     <listitem>
                         <para>commons-logging.jar</para>
@@ -169,23 +141,18 @@
             </listitem>
             <listitem>
                 <para>Modify build.properties if you want to use a Java
-                    compiler other than javac (e.g. jikes)</para>
+                    compiler other than javac (e.g. jikes), or if you want to change the
+                interface JGroups uses for sending and receiving messages</para>
             </listitem>
             <listitem>
-                <para>On UNIX systems use
-                    <filename>build.sh</filename>
-                    , on
-                    Windows
-                    <filename>build.bat</filename>
-                    :
+                <para>On UNIX systems use <filename>build.sh</filename>, on Windows
+                    <filename>build.bat</filename>:
                     <userinput>$&gt;
                         ./build.sh compile</userinput>
                 </para>
             </listitem>
             <listitem>
-                <para>This will compile all Java files (into the
-                    <filename>classes</filename>
-                    directory).
+                <para>This will compile all Java files (into the <filename>classes</filename> directory).
                 </para>
             </listitem>
             <listitem>
@@ -196,8 +163,7 @@
             </listitem>
             <listitem>
                 <para>This will generate the following JAR files in the
-                    <filename>dist</filename>
-                    directory:
+                    <filename>dist</filename>  directory:
                 </para>
                 <itemizedlist>
                     <listitem>
@@ -302,7 +268,7 @@
             $ java -jar jgroups-all.jar
 
             Version:        2.3 alpha
-            CVS:            $Id: installation.xml,v 1.2 2006/10/09 13:36:17 belaban Exp $
+            CVS:            $Id: installation.xml,v 1.3 2007/07/24 14:48:16 belaban Exp $
             History:        (see doc/history.txt for details)
         </screen>
 
