@@ -6,84 +6,6 @@
   with respect to using it and setting it up correctly.</para>
 
   <section>
-    <title>Setting up the protocol stack</title>
-
-    <para>This section applies only to the JChannel channel implementation,
-    not to the Ensemble or iBus channel implementations.</para>
-
-    <para>When creating a <classname>JChannel</classname> , the properties of
-    the underlying protocol stack can be specified as argument. A null
-    argument means use the default composition of layers in the protocol stack
-    (which may change between releases of JGroups).</para>
-
-    <para>A possible property specification may instruct JGroups to create an
-    unreliable, UDP-based channel, another one may specify a loss-less, FIFO
-    channel, and yet a third one may create a loss-less, FIFO, virtually
-    synchronous, total order channel.</para>
-
-    <para>This section discusses how to create a JChannel with a customized
-    protocol stack and the syntax of property strings will be described. It
-    does not describe the protocols in detail; see the Programmer's Guide for
-    details. Also, as JGroups is work in progress, new protocols may be added,
-    or existing ones removed/renamed. Refer to the Javadoc documentation for a
-    complete reference.</para>
-
-    <section>
-      <title>Properties</title>
-
-      <para>A property string consists of a number of properties separated by
-      colons:</para>
-
-      <screen>
-                "&lt;prop1&gt;(arg1=val1):&lt;prop2&gt;(arg1=val1;arg2=val2):&lt;prop3&gt;:&lt;propn&gt;"
-            </screen>
-
-      <para>Each property relates directly to a protocol layer, which is
-      implemented as a Java class. When a protocol stack is to be created
-      based on the above property string, the first property becomes the
-      bottom-most layer, the second one will be placed on the first, etc: the
-      stack is created from the bottom to the top, as the string is parsed
-      from left to right. Each property has to be the name of a Java class
-      that resides in the <classname>org.jgroups.stack.protocols</classname>
-      package <footnote>
-          <para>This package may change in the future.</para>
-        </footnote> . Note that only the base name has to be given, not the
-      fully specified class name ( <classname>UDP</classname> instead of
-      <classname>org.jgroups.stack.protocols.UDP</classname> ).</para>
-
-      <para>Each layer may have 0 or more arguments, which are specified as a
-      list of name/value pairs in parentheses directly after the property. In
-      the example above, the first protocol layer has 1 argument, the second
-      2, the third none. When a layer is created, these properties (if there
-      are any) will be set in a layer by invoking the layer's
-      <methodname>setProperties()</methodname> method <footnote>
-          <para>If in doubt what properties are accepted by a layer, this
-          method can always be consulted in the source code.</para>
-        </footnote> .</para>
-
-      <para>As an example the property string below instructs JGroups to
-      create a JChannel with protocols <classname>UDP</classname> ,
-      <classname>PING</classname> , <classname>FD</classname> and
-      <classname>GMS</classname> :</para>
-
-      <screen>
-                "UDP(mcast_addr=228.10.9.8;mcast_port=5678):PING:FD:GMS"
-            </screen>
-
-      <para>The <classname>UDP</classname> protocol layer is at the bottom of
-      the stack, and it should use mcast address
-      <literal>228.10.9.8.</literal> and port <literal>5678</literal> rather
-      than the default IP multicast address and port. The only other argument
-      instructs <classname>FD</classname> to output debug information while
-      executing. Property <classname>UDP</classname> refers to a class
-      <classname>org.jgroups.stack.protocols.UDP</classname> , which is
-      subsequently loaded and an instance of which is created as protocol
-      layer. If any of these classes are not found, an exception will be
-      thrown and the construction of the stack will be aborted.</para>
-    </section>
-  </section>
-
-  <section>
     <title>Using multiple channels</title>
 
     <para>When using a fully virtual synchronous protocol stack, the
@@ -404,24 +326,57 @@
     receiving messages to/from the network. There are a number of transport
     protocols in JGroups. They are discussed in the following sections.</para>
 
-    <para>A typical protocol stack configuration using UDP is <footnote>
-        <para>Consult the Programmer's Guide for details</para>
-      </footnote> :</para>
+    <para>A typical protocol stack configuration using UDP is:</para>
 
-    <screen>
-            "UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-            "UNICAST(timeout=5000;min_wait_time=2000):" +
-            "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=false;print_local_addr=true)"
-        </screen>
+      <screen>
+                    &lt;config&gt;
+                        &lt;UDP
+                             mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+                             mcast_port="${jgroups.udp.mcast_port:45588}"
+                             discard_incompatible_packets="true"
+                             max_bundle_size="60000"
+                             max_bundle_timeout="30"
+                             ip_ttl="${jgroups.udp.ip_ttl:2}"
+                             enable_bundling="true"
+                             use_concurrent_stack="true"
+                             thread_pool.enabled="true"
+                             thread_pool.min_threads="1"
+                             thread_pool.max_threads="25"
+                             thread_pool.keep_alive_time="5000"
+                             thread_pool.queue_enabled="false"
+                             thread_pool.queue_max_size="100"
+                             thread_pool.rejection_policy="Run"
+                             oob_thread_pool.enabled="true"
+                             oob_thread_pool.min_threads="1"
+                             oob_thread_pool.max_threads="8"
+                             oob_thread_pool.keep_alive_time="5000"
+                             oob_thread_pool.queue_enabled="false"
+                             oob_thread_pool.queue_max_size="100"
+                             oob_thread_pool.rejection_policy="Run"/&gt;
+                        &lt;PING timeout="2000"
+                                num_initial_members="3"/&gt;
+                        &lt;MERGE2 max_interval="30000"
+                                min_interval="10000"/&gt;
+                        &lt;FD_SOCK/&gt;
+                        &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
+                        &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+                        &lt;pbcast.NAKACK max_xmit_size="60000"
+                                       use_mcast_xmit="false" gc_lag="0"
+                                       retransmit_timeout="300,600,1200,2400,4800"
+                                       discard_delivered_msgs="true"/&gt;
+                        &lt;UNICAST timeout="300,600,1200,2400,3600"/&gt;
+                        &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                                       max_bytes="400000"/&gt;
+                        &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                                    join_retry_timeout="2000" shun="false"
+                                    view_bundling="true"/&gt;
+                        &lt;FC max_credits="20000000"
+                                        min_threshold="0.10"/&gt;
+                        &lt;FRAG2 frag_size="60000"  /&gt;
+                        &lt;pbcast.STATE_TRANSFER  /&gt;
+                    &lt;/config&gt;
+                </screen>
+    
 
     <para>In a nutshell the properties of the protocols are:</para>
 
@@ -430,8 +385,8 @@
         <term>UDP</term>
 
         <listitem>
-          <para>Uses IP multicast for group messages and UDP packets for
-          messages to individual members</para>
+          <para>This is the transport protocol. It uses IP multicasting to send messages to the entire cluster, or
+          individual nodes. Other transports include TCP, TCP_NIO and TUNNEL.</para>
         </listitem>
       </varlistentry>
 
@@ -441,7 +396,7 @@
         <listitem>
           <para>Uses IP multicast (by default) to find initial members. Once
           found, the current coordinator can be determined and a unicast JOIN
-          request will be sent to it</para>
+          request will be sent to it in order to join the cluster.</para>
         </listitem>
       </varlistentry>
 
@@ -449,7 +404,7 @@
         <term>MERGE2</term>
 
         <listitem>
-          <para>Will merge subgroups back into one group</para>
+          <para>Will merge subgroups back into one group, kicks in after a cluster partition.</para>
         </listitem>
       </varlistentry>
 
@@ -462,22 +417,21 @@
         </listitem>
       </varlistentry>
 
-      <varlistentry>
-        <term>VERIFY_SUSPECT</term>
+        <varlistentry>
+        <term>FD</term>
 
         <listitem>
-          <para>Double-checks whether suspected member is really dead,
-          otherwise suspicion generated from protocol below is
-          discarded</para>
+          <para>Failure detection based on heartbeats and are-you-alive messages (in a ring form between
+          members). Generates notification if a member fails</para>
         </listitem>
       </varlistentry>
 
       <varlistentry>
-        <term>pbcast.STABLE</term>
+        <term>VERIFY_SUSPECT</term>
 
         <listitem>
-          <para>Deletes messages that have been seen by all members
-          (distributed message garbage collection)</para>
+          <para>Double-checks whether a suspected member is really dead,
+          otherwise the suspicion generated from protocol below is discarded</para>
         </listitem>
       </varlistentry>
 
@@ -487,9 +441,8 @@
         <listitem>
           <para>Ensures (a) message reliability and (b) FIFO. Message
           reliability guarantees that a message will be received. If not,
-          receiver will request retransmission. FIFO guarantees that all
-          messages from sender P will be received in the order P sent
-          them</para>
+          the receiver(s) will request retransmission. FIFO guarantees that all
+          messages from sender P will be received in the order P sent them</para>
         </listitem>
       </varlistentry>
 
@@ -499,29 +452,47 @@
         <listitem>
           <para>Same as NAKACK for unicast messages: messages from sender P
           will not be lost (retransmission if necessary) and will be in FIFO
-          order (essentially the same as TCP in TCP/IP, without the flow
-          control)</para>
+          order (conceptually the same as TCP in TCP/IP)</para>
         </listitem>
       </varlistentry>
 
+           <varlistentry>
+        <term>pbcast.STABLE</term>
+
+        <listitem>
+          <para>Deletes messages that have been seen by all members (distributed message garbage collection)</para>
+        </listitem>
+      </varlistentry>
+
+        <varlistentry>
+            <term>pbcast.GMS</term>
+
+            <listitem>
+                <para>Membership protocol. Responsible for joining/leaving members and installing new views.</para>
+            </listitem>
+        </varlistentry>
+
       <varlistentry>
-        <term>FRAG</term>
+        <term>FRAG2</term>
 
         <listitem>
           <para>Fragments large messages into smaller ones and reassembles
-          them back at the receiver side. For both multicast and unicast
-          messages</para>
+          them back at the receiver side. For both multicast and unicast messages</para>
         </listitem>
       </varlistentry>
 
-      <varlistentry>
-        <term>pbcast.GMS</term>
+         <varlistentry>
+        <term>STATE_TRANSFER</term>
 
         <listitem>
-          <para>Membership protocol. Responsible for joining/leaving members
-          and installing new views.</para>
+          <para>
+              Ensures that state is correctly transferred from an existing member (usually the coordinator) to a
+              new member.
+          </para>
         </listitem>
       </varlistentry>
+
+
     </variablelist>
 
     <section>
@@ -624,10 +595,10 @@
         previous example:</para>
 
         <screen>
-                    "UDP(ip_mcast=false;mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
-                    "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                    "PING(gossip_host=localhost;gossip_port=5555;gossip_refresh=15000;" +
-                    "timeout=2000;num_initial_members=3):" +
+                    &lt;UDP ip_mcast="false" mcast_addr="224.0.0.35" mcast_port="45566" ip_ttl="32"
+                         mcast_send_buf_size="150000" mcast_recv_buf_size="80000"/&gt;
+                    &lt;PING gossip_host="localhost" gossip_port="5555" gossip_refresh="15000"
+                          timeout="2000" num_initial_members="3"/&gt;
                 </screen>
 
         <para>The property <parameter>ip_mcast</parameter> is set to
@@ -660,17 +631,24 @@
       WANs.</para>
 
       <para>The properties for a typical stack based on TCP might look like
-      this:</para>
+      this (edited/protocols removed for brevity):</para>
 
       <screen>
-                "TCP(start_port=7800):" +
-                "TCPPING(initial_hosts=localhost[7800];port_range=5;timeout=3000;" +
-                "num_initial_members=3;up_thread=true;down_thread=true):" +
-                "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
-                "pbcast.STABLE(desired_avg_gossip=20000;down_thread=false;up_thread=false):" +
-                "pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;" +
-                "print_local_addr=false;down_thread=true;up_thread=true)";
+    &lt;TCP start_port="7800" /&gt;
+    &lt;TCPPING timeout="3000"
+             initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
+             port_range="1"
+             num_initial_members="3"/&gt;
+    &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
+    &lt;pbcast.NAKACK max_xmit_size="60000"
+                   use_mcast_xmit="false" gc_lag="0"
+                   retransmit_timeout="300,600,1200,2400,4800"
+                   discard_delivered_msgs="true"/&gt;
+    &lt;pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
+                   max_bytes="400000"/&gt;
+    &lt;pbcast.GMS print_local_addr="true" join_timeout="3000"
+                join_retry_timeout="2000" shun="true"
+                view_bundling="true"/&gt;
             </screen>
 
       <variablelist>
@@ -702,19 +680,19 @@
         </varlistentry>
 
         <varlistentry>
+          <term>pbcast.NAKACK</term>
+
+          <listitem>
+            <para>Reliable and FIFO message delivery</para>
+          </listitem>
+        </varlistentry>
+
+          <varlistentry>
           <term>pbcast.STABLE</term>
 
           <listitem>
             <para>Distributed garbage collection of messages seen by all
             members</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term>pbcast.NAKACK</term>
-
-          <listitem>
-            <para>Reliable and FIFO message delivery</para>
           </listitem>
         </varlistentry>
 
@@ -766,12 +744,12 @@
         <title>Using TCP and TCPPING</title>
 
         <para>A protocol stack using TCP and TCPPING looks like this (other
-        protocol omitted):</para>
+        protocols omitted):</para>
 
         <screen>
-                    "TCP(start_port=7800):" +
-                    "TCPPING(initial_hosts=HostA[7800],HostB[7800];port_range=5;timeout=3000;" +
-                    "num_initial_members=3;up_thread=true;down_thread=true):" +
+                    &lt;TCP start_port="7800" /&gt; +
+                    &lt;TCPPING initial_hosts="HostA[7800],HostB[7800]" port_range="5"
+                             timeout="3000" num_initial_members="3" /&gt;
                 </screen>
 
         <para>The concept behind TCPPING is that no external daemon such as
@@ -810,9 +788,9 @@
         protocols are shown):</para>
 
         <screen>
-                    "TCP:" +
-                    "TCPGOSSIP(initial_hosts=localhost[5555],localhost[5556];gossip_refresh_rate=10000;" +
-                    "num_initial_members=3;up_thread=true;down_thread=true):" +
+                    &lt;TCP /&gt;
+                    &lt;TCPGOSSIP initial_hosts="localhost[5555],localhost[5556]" gossip_refresh_rate="10000"
+                               num_initial_members="3" /&gt;
                 </screen>
 
         <para>The <parameter>initial_hosts</parameter> properties combines
@@ -864,9 +842,9 @@
         two protocols shown):</para>
 
         <screen>
-                    "TUNNEL(router_host=localhost;router_port=12001):" +
-                    "TCPGOSSIP(initial_hosts=localhost[12001];gossip_refresh_rate=10000;" +
-                    "num_initial_members=3;up_thread=true;down_thread=true):"
+                    &lt;TUNNEL router_host="localhost" router_port="12001" /&gt;
+                    &lt;TCPGOSSIP initial_hosts="localhost[12001]" gossip_refresh_rate="10000"
+                               num_initial_members="3" /&gt;
                 </screen>
 
         <para><classname>TCPGOSSIP</classname> uses the GossipRouter (outside
@@ -982,6 +960,12 @@
         communicate, and finally, it is not always possible to enable outgoing
         traffic on 2 ports in a firewall, e.g. when a user does not 'own' the
         firewall.</para>
+
+          <note>
+              There will be a major overhaul of GossipRouter/TUNNEL in 2.6, where we'll streamline the connection
+              table and possibly introduce new functionality such as connecting to multiple GossipRouters,
+              connecting to both IP multicasting and TCP based clients etc.
+          </note>
       </section>
     </section>
   </section>
@@ -991,7 +975,8 @@
         <title>The concurrent stack</title>
 
         <para>
-            The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases:
+            The concurrent stack (introduced in 2.5) provides a number of improvements over previous releases,
+            which has some deficiencies:
             <itemizedlist>
                 <listitem>
                     Large number of threads: each protocol had by default 2 threads, one for the up and one for the
@@ -1024,6 +1009,9 @@
                 <figure id="ConcurrentStackFig"><title>The concurrent stack</title>
                     <graphic fileref="images/ConcurrentStack.png" format="PNG" align="left" />
                 </figure>
+            </para>
+            <para>
+                
             </para>
 
             <para>
@@ -1089,7 +1077,7 @@
 
                 <para>
                     The concurrent stack can be completely eliminated by setting use_concurrent_stack to false. (Note that
-                    this attribute might be removed in the final 2.5 release).
+                    this attribute might be removed in a future release).
                 </para>
                 <para>
                     The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
