@@ -2,6 +2,15 @@
 <chapter id="protlist">
     <title>List of Protocols</title>
 
+    <para>
+        This section is work in progress; we strive to update the documentation as we make changes to the code.
+    </para>
+    <para>
+        The most important properties are described on the
+        <ulink url="http://www.jboss.org/wiki/Wiki.jsp?page=JGroups">wiki</ulink>. The idea is that users take one
+        of the predefined configurations (shipped with JGroups) and make only minor changes to it.
+    </para>
+
     <para>For each protocol define:</para>
 
     <itemizedlist>
