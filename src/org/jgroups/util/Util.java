@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.128 2007/07/02 11:10:39 belaban Exp $
+ * @version $Id: Util.java,v 1.129 2007/07/27 11:00:59 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1284,6 +1284,21 @@ public class Util {
     public static void printFragments(byte[] frags[]) {
         for(int i=0; i < frags.length; i++)
             System.out.println('\'' + new String(frags[i]) + '\'');
+    }
+
+    public static <T> String printListWithDelimiter(List<T> list, String delimiter) {
+        boolean first=true;
+        StringBuilder sb=new StringBuilder();
+        for(T el: list) {
+            if(first) {
+                first=false;
+            }
+            else {
+                sb.append(delimiter);
+            }
+            sb.append(el);
+        }
+        return sb.toString();
     }
 
 

@@ -9,10 +9,10 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.BoundedList;
-import org.jgroups.util.List;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.46 2007/06/11 20:18:14 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.47 2007/07/27 11:01:03 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -107,7 +107,7 @@ public class NakReceiverWindow {
     /** Map of seqnos and timestamps, to keep track of xmit stats */
     final ConcurrentMap<Long,Long> xmit_stats=new ConcurrentHashMap<Long,Long>();
 
-    final BoundedList xmit_times_history=new BoundedList(1000);
+    final BoundedList<Long> xmit_times_history=new BoundedList<Long>(1000);
 
     /** The highest stable() seqno received */
     long highest_stability_seqno=0;
@@ -195,15 +195,14 @@ public class NakReceiverWindow {
     }
 
     public double getAverageXmitTime() {
-        List copy;
+        List<Long> copy;
         synchronized(xmit_times_history) {
-            copy=xmit_times_history.copy();
+            copy=new LinkedList<Long>(xmit_times_history);
         }
 
         int size=copy.size();
         long total=0L;
-        for(Enumeration en=copy.elements(); en.hasMoreElements();) {
-            Long val=(Long)en.nextElement();
+        for(Long val: copy) {
             total+=val.longValue();
         }
         return size > 0? total / size : -1;

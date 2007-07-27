@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.64 2007/07/05 11:27:28 belaban Exp $
+// $Id: FD_SOCK.java,v 1.65 2007/07/27 11:00:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -77,7 +77,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     private static final int ABNORMAL_TERMINATION=-1;
     private static final String name="FD_SOCK";
 
-    BoundedList          suspect_history=new BoundedList(20);
+    final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
 
     /** whether to use KEEP_ALIVE on the ping socket or not */
     private boolean      keep_alive=true;
@@ -96,8 +96,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
-            sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
+        for(Address suspect: suspect_history) {
+            sb.append(new Date()).append(": ").append(suspect).append("\n");
         }
         return sb.toString();
     }
@@ -187,7 +187,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     public void resetStats() {
         super.resetStats();
         num_suspect_events=0;
-        suspect_history.removeAll();
+        suspect_history.clear();
     }
 
 
@@ -580,7 +580,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * Oct 29 2001 (bela): completely removed Thread.interrupt(), but used socket close on all OSs. This makes this
      * code portable and we don't have to check for OSs.<p/>
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
-     * @see org.jgroups.tests.InterruptTest to determine whether Thread.interrupt() works for InputStream.read().
+     * @see InterruptTest to determine whether Thread.interrupt() works for InputStream.read().
      */
     void interruptPingerThread() {
         if(pinger_thread != null && pinger_thread.isAlive()) {

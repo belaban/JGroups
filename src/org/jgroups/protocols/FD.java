@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.57 2007/07/10 14:19:04 belaban Exp $
+ * @version $Id: FD.java,v 1.58 2007/07/27 11:00:58 belaban Exp $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -62,7 +62,7 @@ public class FD extends Protocol {
     protected final Broadcaster  bcast_task=new Broadcaster();
     final static String   name="FD";
 
-    BoundedList           suspect_history=new BoundedList(20);
+    final BoundedList<Address>   suspect_history=new BoundedList<Address>(20);
 
 
 
@@ -84,8 +84,8 @@ public class FD extends Protocol {
     public void setShun(boolean flag) {this.shun=flag;}
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
-            sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
+        for(Address addr: suspect_history) {
+            sb.append(new Date()).append(": ").append(addr).append("\n");
         }
         return sb.toString();
     }
@@ -122,7 +122,7 @@ public class FD extends Protocol {
 
     public void resetStats() {
         num_heartbeats=num_suspect_events=0;
-        suspect_history.removeAll();
+        suspect_history.clear();
     }
 
 

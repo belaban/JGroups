@@ -1,4 +1,3 @@
-// $Id: BoundedListTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,7 +7,8 @@ import org.jgroups.util.BoundedList;
 
 
 public class BoundedListTest extends TestCase {
-    private BoundedList l=null;
+    private BoundedList<Integer> list=null;
+    private BoundedList<String> strlist=null;
 
     public BoundedListTest(String name) {
         super(name);
@@ -16,94 +16,95 @@ public class BoundedListTest extends TestCase {
 
     public void setUp() throws Exception {
         super.setUp();
-        l=new BoundedList(3);
+        list=new BoundedList<Integer>(3);
+        strlist=new BoundedList<String>(3);
     }
 
 
     public void tearDown() throws Exception {
         super.tearDown();
-        l.removeAll();
-        l=null;
+        list.clear();
+        list=null;
     }
 
 
     public void testAdd() throws Exception {
-        assertEquals(l.size(), 0);
-        l.add(new Integer(1));
-        System.out.println(l);
-        assertEquals(l.size(), 1);
+        assertEquals(0, list.size());
+        list.add(new Integer(1));
+        System.out.println(list);
+        assertEquals(1, list.size());
 
-        l.add(new Integer(2));
-        System.out.println(l);
+        list.add(new Integer(2));
+        System.out.println(list);
 
-        l.add(new Integer(3));
-        System.out.println(l);
-        assertEquals(l.size(), 3);
+        list.add(new Integer(3));
+        System.out.println(list);
+        assertEquals(3, list.size());
 
-        l.add(new Integer(4));
-        System.out.println(l);
-        assertEquals(l.size(), 3);
+        list.add(new Integer(4));
+        System.out.println(list);
+        assertEquals(3, list.size());
 
 
         int tmp;
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 2);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(2, tmp);
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 3);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(3, tmp);
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 4);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(4, tmp);
     }
 
 
     public void testAddAtHead() throws Exception {
-        assertEquals(l.size(), 0);
-        l.addAtHead(new Integer(1));
-        System.out.println(l);
-        assertEquals(l.size(), 1);
+        assertEquals(0, list.size());
+        list.addAtHead(new Integer(1));
+        System.out.println(list);
+        assertEquals(1, list.size());
 
-        l.addAtHead(new Integer(2));
-        System.out.println(l);
+        list.addAtHead(new Integer(2));
+        System.out.println(list);
 
-        l.addAtHead(new Integer(3));
-        System.out.println(l);
-        assertEquals(l.size(), 3);
+        list.addAtHead(new Integer(3));
+        System.out.println(list);
+        assertEquals(3, list.size());
 
-        l.addAtHead(new Integer(4));
-        System.out.println(l);
-        assertEquals(l.size(), 3);
+        list.addAtHead(new Integer(4));
+        System.out.println(list);
+        assertEquals(3, list.size());
 
         int tmp;
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 4);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(4, tmp);
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 3);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(2, tmp);
 
-        tmp=((Integer)l.removeFromHead()).intValue();
-        assertEquals(tmp, 2);
+        tmp=list.removeFromHead().intValue();
+        assertEquals(1, tmp);
     }
 
 
     public void testContains() throws Exception {
-        l.add("Bela");
-        System.out.println(l);
+        strlist.add("Bela");
+        System.out.println(strlist);
 
-        l.add("Michelle");
-        System.out.println(l);
+        strlist.add("Michelle");
+        System.out.println(strlist);
 
-        l.add("Jeannette");
-        System.out.println(l);
+        strlist.add("Jeannette");
+        System.out.println(strlist);
 
-        l.add("Nicole");
-        System.out.println(l);
+        strlist.add("Nicole");
+        System.out.println(strlist);
 
-        assertTrue(l.contains("Bela") == false);
-        assertTrue(l.contains("Nicole"));
-        assertTrue(l.contains("Michelle"));
+        assertFalse(strlist.contains("Bela"));
+        assertTrue(strlist.contains("Nicole"));
+        assertTrue(strlist.contains("Michelle"));
     }
 
     public static void main(String[] args) {
