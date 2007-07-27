@@ -2,16 +2,17 @@ package org.jgroups.util;
 
 
 /**
- * A bounded subclass of List, oldest elements are removed once max capacity is exceeded
+ * A bounded subclass of LinkedList, oldest elements are removed once max capacity is exceeded. Note that this
+ * class is not synchronized (like LinkedList).
  * @author Bela Ban Nov 20, 2003
- * @version $Id: BoundedList.java,v 1.2 2004/07/26 15:23:26 belaban Exp $
+ * @version $Id: BoundedList.java,v 1.3 2007/07/27 11:01:00 belaban Exp $
  */
-public class BoundedList extends List {
+public class BoundedList<T> extends java.util.LinkedList<T> {
     int max_capacity=10;
 
 
-
     public BoundedList() {
+        super();
     }
 
     public BoundedList(int size) {
@@ -24,12 +25,12 @@ public class BoundedList extends List {
      * Adds an element at the tail. Removes an object from the head if capacity is exceeded
      * @param obj The object to be added
      */
-    public void add(Object obj) {
-        if(obj == null) return;
-        while(size >= max_capacity && size > 0) {
-            removeFromHead();
+    public boolean add(T obj) {
+        if(obj == null) return false;
+        while(size() >= max_capacity && size() > 0) {
+            removeFirst();
         }
-        super.add(obj);
+        return super.add(obj);
     }
 
 
@@ -37,11 +38,18 @@ public class BoundedList extends List {
      * Adds an object to the head, removes an element from the tail if capacity has been exceeded
      * @param obj The object to be added
      */
-    public void addAtHead(Object obj) {
+    public void addAtHead(T obj) {
         if(obj == null) return;
-        while(size >= max_capacity && size > 0) {
-            remove();
+        while(size() >= max_capacity && size() > 0) {
+            removeFirst();
         }
-        super.addAtHead(obj);
+        super.add(0, obj);
     }
+
+
+    public T removeFromHead() {
+        return removeFirst();
+    }
+
+
 }

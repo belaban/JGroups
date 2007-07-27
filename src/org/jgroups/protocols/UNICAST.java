@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.86 2007/06/06 11:39:11 belaban Exp $
+// $Id: UNICAST.java,v 1.87 2007/07/27 11:00:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,9 +49,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private boolean          loopback=false;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
-    private final BoundedList previous_members=new BoundedList(50);
+    private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
     /** Contains all members that were enabled for unicasts by Event.ENABLE_UNICAST_TO */
-    private final BoundedList enabled_members=new BoundedList(100);
+    private final BoundedList<Address> enabled_members=new BoundedList<Address>(100);
 
     private final static String name="UNICAST";
     private static final long DEFAULT_FIRST_SEQNO=1;
@@ -383,10 +383,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
                 // code by Matthias Weber May 23 2006
-                for(Enumeration e=previous_members.elements(); e.hasMoreElements();) {
-                    Address mbr=(Address)e.nextElement();
+                for(Address mbr: previous_members) {
                     if(members.contains(mbr)) {
-                        if(previous_members.removeElement(mbr) != null) {
+                        if(previous_members.remove(mbr)) {
                             if(log.isTraceEnabled())
                                 log.trace("removed " + mbr + " from previous_members as result of VIEW_CHANGE event, " +
                                         "previous_members=" + previous_members);
@@ -396,14 +395,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // remove all members from enabled_members
                 synchronized(members) {
                     for(Address mbr: members) {
-                        enabled_members.removeElement(mbr);
+                        enabled_members.remove(mbr);
                     }
                 }
 
                 synchronized(previous_members) {
-                    for(Enumeration e=previous_members.elements(); e.hasMoreElements();) {
-                        Address mbr=(Address)e.nextElement();
-                        enabled_members.removeElement(mbr);
+                    for(Address mbr: previous_members) {
+                        enabled_members.remove(mbr);
                     }
                 }
 
@@ -417,11 +415,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 break;
 
             case Event.ENABLE_UNICASTS_TO:
-                Object member=evt.getArg();
+                Address member=(Address)evt.getArg();
                 if(!enabled_members.contains(member))
                     enabled_members.add(member);
-                Object obj=previous_members.removeElement(member);
-                if(obj != null && log.isTraceEnabled())
+                boolean removed=previous_members.remove(member);
+                if(removed && log.isTraceEnabled())
                     log.trace("removing " + member + " from previous_members as result of ENABLE_UNICAST_TO event, " +
                             "previous_members=" + previous_members);
                 break;
@@ -521,7 +519,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
             if(log.isTraceEnabled())
                 log.trace("removed " + sender + " from previous_members as we received a message from it");
-            previous_members.removeElement(sender);
+            previous_members.remove(sender);
         }
 
         Entry    entry;

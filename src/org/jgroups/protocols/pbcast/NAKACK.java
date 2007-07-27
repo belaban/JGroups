@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.145 2007/07/05 16:20:13 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.146 2007/07/27 11:00:51 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -104,11 +104,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private int stats_list_size=20;
 
-    /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size XMIT requests */
-    private BoundedList receive_history;
+    /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size XMIT requests */
+    private BoundedList<MissingMessage> receive_history;
 
-    /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size missing messages received */
-    private BoundedList send_history;
+    /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size missing messages received */
+    private BoundedList<XmitRequest> send_history;
 
     /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
     private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
@@ -127,7 +127,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private static final int NUM_REBROADCAST_MSGS=3;
 
     /** BoundedList<Digest>, keeps the last 10 stability messages */
-    private final BoundedList stability_msgs=new BoundedList(10);
+    private final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
 
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     protected boolean print_stability_history_on_failed_xmit=false;
@@ -172,15 +172,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         sent.clear();
         received.clear();
         if(receive_history !=null)
-            receive_history.removeAll();
+            receive_history.clear();
         if(send_history != null)
-            send_history.removeAll();
+            send_history.clear();
     }
 
     public void init() throws Exception {
         if(stats) {
-            send_history=new BoundedList(stats_list_size);
-            receive_history=new BoundedList(stats_list_size);
+            send_history=new BoundedList<XmitRequest>(stats_list_size);
+            receive_history=new BoundedList<MissingMessage>(stats_list_size);
         }
     }
 
@@ -359,16 +359,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         sb.append("\nXMIT_REQS sent:\n");
-        XmitRequest tmp;
-        for(Enumeration en=send_history.elements(); en.hasMoreElements();) {
-            tmp=(XmitRequest)en.nextElement();
+        for(XmitRequest tmp: send_history) {
             sb.append(tmp).append("\n");
         }
 
         sb.append("\nMissing messages received\n");
-        MissingMessage missing;
-        for(Enumeration en=receive_history.elements(); en.hasMoreElements();) {
-            missing=(MissingMessage)en.nextElement();
+        for(MissingMessage missing: receive_history) {
             sb.append(missing).append("\n");
         }
 
@@ -380,16 +376,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public String printStabilityMessages() {
         StringBuilder sb=new StringBuilder();
-        sb.append(stability_msgs.toStringWithDelimiter("\n"));
+        sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
         return sb.toString();
     }
 
     public String printStabilityHistory() {
         StringBuilder sb=new StringBuilder();
         int i=1;
-        Digest digest;
-        for(Enumeration en=stability_msgs.elements(); en.hasMoreElements();) {
-            digest=(Digest)en.nextElement();
+        for(Digest digest: stability_msgs) {
             sb.append(i++).append(": ").append(digest).append("\n");
         }
         return sb.toString();

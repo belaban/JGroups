@@ -30,7 +30,7 @@ public abstract class BasicTCP extends TP {
     /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
      * events up the stack (one per message !)
      */
-    final BoundedList      suspected_mbrs=new BoundedList(20);
+    final BoundedList<Address>  suspected_mbrs=new BoundedList<Address>(20);
     protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
     protected int          start_port=7800;    // find first available port starting at this port
     protected int	       end_port=0;         // maximum port to bind to
@@ -243,7 +243,7 @@ public abstract class BasicTCP extends TP {
     protected Object handleDownEvent(Event evt) {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
-            suspected_mbrs.removeAll();
+            suspected_mbrs.clear();
             View v=(View)evt.getArg();
             Vector tmp_mbrs=v != null? v.getMembers() : null;
             if(tmp_mbrs != null) {
@@ -251,7 +251,8 @@ public abstract class BasicTCP extends TP {
             }
         }
         else if(evt.getType() == Event.UNSUSPECT) {
-            suspected_mbrs.removeElement(evt.getArg());
+            Address suspected_mbr=(Address)evt.getArg();
+            suspected_mbrs.remove(suspected_mbr);
         }
         return ret;
     }

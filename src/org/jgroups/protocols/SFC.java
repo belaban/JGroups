@@ -21,7 +21,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.17 2007/06/15 11:42:16 belaban Exp $
+ * @version $Id: SFC.java,v 1.18 2007/07/27 11:00:53 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -80,14 +80,15 @@ public class SFC extends Protocol {
     long              num_replenishments_received=0;
     long              num_replenishments_sent=0;
     long              total_block_time=0;
-    final BoundedList blockings=new BoundedList(50);
+
+    final BoundedList<Long> blockings=new BoundedList<Long>(50);
 
 
     public void resetStats() {
         super.resetStats();
         num_blockings=total_block_time=num_replenishments_received=num_credit_requests_sent=num_bytes_sent=0;
         num_replenishments_sent=num_credit_requests_received=0;
-        blockings.removeAll();
+        blockings.clear();
     }
 
     public long getMaxCredits() {return max_credits;}

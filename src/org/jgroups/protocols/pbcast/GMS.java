@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.107 2007/06/08 08:31:56 belaban Exp $
+ * @version $Id: GMS.java,v 1.108 2007/07/27 11:00:51 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -64,16 +64,16 @@ public class GMS extends Protocol {
     protected int             num_prev_mbrs=50;
 
     /** Keeps track of old members (up to num_prev_mbrs) */
-    BoundedList               prev_members=null;
+    BoundedList<Address>      prev_members=null;
 
     int num_views=0;
 
     /** Stores the last 20 views */
-    BoundedList               prev_views=new BoundedList(20);
+    BoundedList<View>         prev_views=new BoundedList<View>(20);
 
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    private final ViewHandler  view_handler=new ViewHandler();
+    private final ViewHandler view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
     final AckCollector ack_collector=new AckCollector();
@@ -114,8 +114,8 @@ public class GMS extends Protocol {
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
         if(prev_members != null) {
-            for(Enumeration en=prev_members.elements(); en.hasMoreElements();) {
-                sb.append(en.nextElement()).append("\n");
+            for(Address addr: prev_members) {
+                sb.append(addr).append("\n");
             }
         }
         return sb.toString();
@@ -142,8 +142,8 @@ public class GMS extends Protocol {
 
     public String printPreviousViews() {
         StringBuilder sb=new StringBuilder();
-        for(Enumeration en=prev_views.elements(); en.hasMoreElements();) {
-            sb.append(en.nextElement()).append("\n");
+        for(View view: prev_views) {
+            sb.append(view).append("\n");
         }
         return sb.toString();
     }
@@ -157,7 +157,7 @@ public class GMS extends Protocol {
     public void resetStats() {
         super.resetStats();
         num_views=0;
-        prev_views.removeAll();
+        prev_views.clear();
     }
 
 
@@ -188,7 +188,7 @@ public class GMS extends Protocol {
 
 
     public void init() throws Exception {
-        prev_members=new BoundedList(num_prev_mbrs);
+        prev_members=new BoundedList<Address>(num_prev_mbrs);
         timer=stack != null? stack.timer : null;
         if(timer == null)
             throw new Exception("GMS.init(): timer is null");
@@ -204,7 +204,7 @@ public class GMS extends Protocol {
         view_handler.stop(true);
         if(impl != null) impl.stop();
         if(prev_members != null)
-            prev_members.removeAll();
+            prev_members.clear();
     }
 
 
@@ -567,7 +567,7 @@ public class GMS extends Protocol {
     }
 
 
-    public View makeView(Vector<Address> mbrs, ViewId vid) {
+    public static View makeView(Vector<Address> mbrs, ViewId vid) {
         Address coord=null;
         long id=0;
 
@@ -1179,7 +1179,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.107 2007/06/08 08:31:56 belaban Exp $
+     * @version $Id: GMS.java,v 1.108 2007/07/27 11:00:51 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1188,7 +1188,7 @@ public class GMS extends Protocol {
         final static long                  INTERVAL=5000;
         private static final long          MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
-        private final BoundedList          history=new BoundedList(20);
+        private final BoundedList<String>  history=new BoundedList<String>(20);
 
         /** Map<Object,Future>. Keeps track of Resumer tasks which have not fired yet */
         private final Map<Object, Future>  resume_tasks=new HashMap<Object,Future>();
@@ -1339,8 +1339,8 @@ public class GMS extends Protocol {
 
         public String dumpHistory() {
             StringBuilder sb=new StringBuilder();
-            for(Enumeration en=history.elements(); en.hasMoreElements();) {
-                sb.append(en.nextElement() + "\n");
+            for(String line: history) {
+                sb.append(line + "\n");
             }
             return sb.toString();
         }

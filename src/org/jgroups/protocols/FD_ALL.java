@@ -19,7 +19,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.11 2007/05/01 10:55:10 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.12 2007/07/27 11:00:58 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -55,7 +55,7 @@ public class FD_ALL extends Protocol {
 
     final static String        name="FD_ALL";
 
-    BoundedList                suspect_history=new BoundedList(20);
+    final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
     final Map<Address,Integer> invalid_pingers=new HashMap(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     final Lock                 lock=new ReentrantLock();
@@ -80,8 +80,8 @@ public class FD_ALL extends Protocol {
 
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
-        for(Enumeration en=suspect_history.elements(); en.hasMoreElements();) {
-            sb.append(new Date()).append(": ").append(en.nextElement()).append("\n");
+        for(Address tmp: suspect_history) {
+            sb.append(new Date()).append(": ").append(tmp).append("\n");
         }
         return sb.toString();
     }
@@ -128,7 +128,7 @@ public class FD_ALL extends Protocol {
 
     public void resetStats() {
         num_heartbeats_sent=num_heartbeats_received=num_suspect_events=0;
-        suspect_history.removeAll();
+        suspect_history.clear();
     }
 
 
@@ -174,7 +174,7 @@ public class FD_ALL extends Protocol {
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
                         //    the sender to leave the group (and possibly rejoin it later)
-                        if(shun && sender != null && members != null && !members.contains(sender)) {
+                        if(shun && members != null && !members.contains(sender)) {
                             shunInvalidHeartbeatSender(sender);
                             break;
                         }
