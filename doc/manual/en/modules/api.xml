@@ -769,12 +769,12 @@
       to be joined:</para>
 
       <screen>
-                public void connect(String groupname) throws ChannelClosed;
+                public void connect(String clustername) throws ChannelClosed;
             </screen>
 
-      <para>The group address is a string, naming the group to be joined. All
-      channels that are connected to the same group (same name) form a group.
-      Messages multicast on any channel in the group will be received by all
+      <para>The cluster name is a string, naming the cluster to be joined. All
+      channels that are connected to the same name form a cluster.
+      Messages multicast on any channel in the cluster will be received by all
       members (including the one who sent it <footnote>
           <para>Local delivery can be turned on/off using
           <methodname>setOpt()</methodname> .</para>
@@ -808,11 +808,11 @@
                 public Address getLocalAddress();
             </screen>
 
-      <para>Method <methodname>getChannelName()</methodname> returns the name
-      of the group in which the channel is a member:</para>
+      <para>Method <methodname>getClusterlName()</methodname> returns the name
+      of the cluster in which the channel is a member:</para>
 
       <screen>
-                public String getChannelName();
+                public String getClusterName();
             </screen>
 
       <para>Again, the result is undefined if the channel is in the
@@ -849,8 +849,7 @@
 
       <screen>
                 public void send(Message msg) throws ChannelNotConnected, ChannelClosed;
-                public void send(Address dst, Address src, Object obj)
-                throws ChannelNotConnected, ChannelClosed;
+                public void send(Address dst, Address src, Object obj) throws ChannelNotConnected, ChannelClosed;
             </screen>
 
       <para>The first <methodname>send()</methodname> method has only one
@@ -875,15 +874,15 @@
       <screen>
                 Hashtable data; // any serializable data
                 try {
-                channel.send(null, null, data);
+                    channel.send(null, null, data);
                 }
                 catch(Exception ex) {
-                // handle errors
+                    // handle errors
                 }
             </screen>
 
       <para>The null value as destination address means that the message will
-      be sent to all members in th group. The sender's address will be filled
+      be sent to all members in the group. The sender's address will be filled
       in by the bottom-most protocol. The payload is a hashtable, which will
       be serialized into the message's buffer and unserialized at the
       receiver's end. Alternatively, any other means of generating a byte
@@ -898,11 +897,11 @@
                 Message msg;
                 Hashtable data;
                 try {
-                receiver=channel.getView().getMembers().first();
-                channel.send(receiver, null, data);
+                    receiver=channel.getView().getMembers().first();
+                    channel.send(receiver, null, data);
                 }
                 catch(Exception ex) {
-                // handle errors
+                    // handle errors
                 }
             </screen>
 
@@ -918,8 +917,7 @@
       messages, views, suspicions and blocks:</para>
 
       <screen>
-                public Object receive(long timeout)
-                throws ChannelNotConnected, ChannelClosed, Timeout;
+                public Object receive(long timeout) throws ChannelNotConnected, ChannelClosed, Timeout;
             </screen>
 
       <para>A channel receives messages asynchronously from the network and
@@ -1067,11 +1065,11 @@
                 View v;
                 obj=channel.receive(0); // wait forever
                 if(obj instanceof Message)
-                msg=(Message)obj;
+                    msg=(Message)obj;
                 else if(obj instanceof View)
-                v=(View)obj;
+                    v=(View)obj;
                 else
-                ; // don't handle suspicions or blocks
+                    ; // don't handle suspicions or blocks
             </screen>
 
       <para>If for example views, suspicions and blocks are disabled, then the
@@ -1090,11 +1088,11 @@
                 Message msg; // received above
                 String s;
                 try {
-                s=(String)msg.getObject(); // error if object not Serializable
-                // alternative: s=new String(msg.getBuffer());
+                    s=(String)msg.getObject(); // error if object not Serializable
+                    // alternative: s=new String(msg.getBuffer());
                 }
                 catch(Exception ex) {
-                // handle errors, e.g. casting error above)
+                    // handle errors, e.g. casting error above)
                 }
             </screen>
 
@@ -1134,6 +1132,10 @@
       messages/views, which can quickly get large if the receiver cannot
       process messages fast enough, and the sender keeps sending
       messages.</para>
+        <note>
+            Note that the Channel.receive() method has been deprecated, and will be removed in 3.0. Use the Receiver
+            interface instead and register as a Receiver with Channel.setReceiver(Receiver r).
+        </note>
     </section>
 
     <section>
@@ -1145,6 +1147,9 @@
       the type of the next message, e.g. whether it is a regular message, or a
       view change. The signature of this method is not shown here, it is the
       same as for <methodname>receive()</methodname> .</para>
+        <note>
+            The peek() method has also been deprecated, and will be removed in 3.0.
+        </note>
     </section>
 
     <section id="GetState">
@@ -1183,8 +1188,7 @@
       in state transfers:</para>
 
       <screen>
-                channel=new JChannel("UDP:PING:FD:GMS:STATE_TRANSFER:QUEUE");
-                channel.setOpt(Channel.GET_STATE_EVENTS, new Boolean(true)); // not needed anymore (no-op in 2.3 and higher)
+                channel=new JChannel();
                 channel.connect("TestChannel");
                 boolean rc=channel.getState(null, 5000);
 
@@ -1203,6 +1207,35 @@
                     state=e.getArg();
                 }
             </screen>
+
+        <para>
+            The same code can be rewritten to use a Receiver:
+        </para>
+        <screen>
+        MyState state;
+        JChannel channel=new JChannel();
+        channel.setReceiver(new ExtendedReceiverAdapter() {
+
+            public byte[] getState() {
+                return serialize(state);
+            }
+
+            public void setState(byte[] state) {
+                this.state=unserialize(state);
+            }
+        });
+
+        channel.connect("TestChannel");
+        boolean rc=channel.getState(null, 5000);
+        </screen>
+
+        <para>
+            MyState is some user defined state. The getState() method simply returns a serialized form of the state.
+            The setState() method unserializes the byte buffer argument back into an instance of MyState and sets it.
+        </para>
+        <para>
+            Note that access to the state variable should probably be synchronized in any real program.
+        </para>
 
       <para>A JChannel has to be created whose stack includes the
       <constant>STATE_TRANSFER</constant> or
