@@ -21,15 +21,15 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.17 2007/05/05 18:52:18 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.18 2007/07/27 09:04:45 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
 
     /** Hashtable<String,List<Address>> */
-    final Hashtable groups=new Hashtable();               // groups - List of Addresses
+    final Map<String,List<Address>> groups=new Hashtable<String,List<Address>>();               // groups - List of Addresses
     private Refresher refresher_task=new Refresher();
-    final Vector gossip_servers=new Vector();          // a list of GossipRouters (IpAddress)
+    final Vector<Address> gossip_servers=new Vector<Address>();          // a list of GossipRouters (IpAddress)
     boolean timer_running=false;
     boolean refresher_enabled=true;
     long EXPIRY_TIME=20000;                    // must be less than in GossipRouter
@@ -111,9 +111,9 @@ public class GossipClient {
             return;
         }
 
-        List mbrs=(List)groups.get(group);
+        List<Address> mbrs=groups.get(group);
         if(mbrs == null) {
-            mbrs=new LinkedList();
+            mbrs=new LinkedList<Address>();
             mbrs.add(mbr);
             groups.put(group, mbrs);
         }
@@ -150,12 +150,12 @@ public class GossipClient {
      @param group The group name
      @return List A list of Addresses
      */
-    public List getMembers(String group) {
+    public List<Address> getMembers(String group) {
         if(group == null) {
             if(log.isErrorEnabled()) log.error("group is null");
             return null;
         }
-        List result=_getMembers(group);
+        List<Address> result=_getMembers(group);
         if(log.isTraceEnabled())
             log.trace("GET(" + group + ") --> " + result);
         return result;
@@ -250,8 +250,8 @@ public class GossipClient {
     /**
      * Sends a GET_MBR_REQ to *all* GossipRouters, merges responses.
      */
-    private List _getMembers(String group) {
-        List ret=new LinkedList();
+    private List<Address> _getMembers(String group) {
+        List<Address> ret=new LinkedList<Address>();
         Socket sock=null;
         SocketAddress destAddr;
         DataOutputStream out=null;
@@ -318,16 +318,14 @@ public class GossipClient {
         public void run() {
             int num_items=0;
             String group;
-            List mbrs;
-            Address mbr;
+            List<Address> mbrs;
 
             if(log.isTraceEnabled()) log.trace("refresher task is run");
-            for(Enumeration e=groups.keys(); e.hasMoreElements();) {
-                group=(String)e.nextElement();
-                mbrs=(List)groups.get(group);
+            for(Map.Entry<String,List<Address>> entry: groups.entrySet()) {
+                group=entry.getKey();
+                mbrs=entry.getValue();
                 if(mbrs != null) {
-                    for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                        mbr=(Address)it.next();
+                    for(Address mbr: mbrs) {
                         if(log.isTraceEnabled()) log.trace("registering " + group + " : " + mbr);
                         register(group, mbr);
                         num_items++;
@@ -341,7 +339,7 @@ public class GossipClient {
 
 
     public static void main(String[] args) {
-        Vector gossip_hosts=new Vector();
+        Vector<Address> gossip_hosts=new Vector<Address>();
         String host;
         InetAddress ip_addr;
         int port;
@@ -368,7 +366,7 @@ public class GossipClient {
                 port=Integer.parseInt(args[++i]);
                 try {
                     ip_addr=InetAddress.getByName(host);
-                    gossip_hosts.addElement(new IpAddress(ip_addr, port));
+                    gossip_hosts.add(new IpAddress(ip_addr, port));
                 }
                 catch(Exception ex) {
                     System.err.println(ex);
