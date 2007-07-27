@@ -13,8 +13,7 @@
   accessed directly.  Building blocks are located in the
   <classname>org.jgroups.blocks</classname> package. Only the ones
   that are relevant for application programmers are discussed
-  below. For a more detailed description and for architecture and
-  implementation details refer to the Programmer's Guide.</para>
+  below.</para>
 
 
   <section><title>PullPushAdapter</title>
@@ -141,6 +140,11 @@
       <para>Note that, compared to the pull-style example, push-style
       message reception is considerably easier (no separate thread
       management) and requires less code to program.</para>
+
+        <note>
+            The PullPushAdapter has been deprecated, and will be removed in 3.0. Use a Receiver implementation
+            instead. The advantage of the Receiver-based (push) model is that we save 1 thread.
+        </note>
 
     </section>
     
@@ -698,11 +702,7 @@
     
   </section>
 
-  <section><title>DistributedLockManager</title>
-
-    <para></para>
-
-  </section>
+  
     
 </chapter>
 
