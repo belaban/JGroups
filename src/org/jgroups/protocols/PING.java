@@ -4,7 +4,6 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.List;
 import org.jgroups.util.Util;
 
 import java.net.InetAddress;
@@ -25,7 +24,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.35 2007/07/18 02:13:17 vlada Exp $
+ * @version $Id: PING.java,v 1.36 2007/07/27 09:04:44 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -33,7 +32,7 @@ public class PING extends Discovery {
     long         gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
     GossipClient client;
     int          port_range=1;        // number of ports to be probed for initial membership
-    private List         initial_hosts=null;  // hosts to be contacted for the initial membership
+    private List<Address> initial_hosts=null;  // hosts to be contacted for the initial membership
     public static final String name="PING";
 
 
@@ -122,24 +121,15 @@ public class PING extends Discovery {
 
     public void localAddressSet(Address addr) {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-        if(initial_hosts != null && local_addr != null) {
-            List hlist;
-            boolean inInitialHosts=false;
-            for(Enumeration en=initial_hosts.elements(); en.hasMoreElements() && !inInitialHosts;) {
-                hlist=(List)en.nextElement();
-                if(hlist.contains(local_addr)) {
-                    inInitialHosts=true;
-                }
-            }
-            if(!inInitialHosts) {
-                hlist=new List();
-                hlist.add(local_addr);
-                initial_hosts.add(hlist);
-                if(log.isDebugEnabled())
-                    log.debug("adding my address (" + local_addr + ") to initial_hosts; initial_hosts=" + initial_hosts);
+        if(initial_hosts != null && addr != null) {
+            if(initial_hosts.contains(addr)) {
+                initial_hosts.remove(addr);
+                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
+                        ") from initial_hosts; initial_hosts=" + initial_hosts);
             }
         }
     }
+
 
 
     public void handleConnect() {
@@ -155,9 +145,9 @@ public class PING extends Discovery {
 
 
     public void sendGetMembersRequest() {
-        Message msg;
-        PingHeader hdr;
-        java.util.List gossip_rsps;
+        Message       msg;
+        PingHeader    hdr;
+        List<Address> gossip_rsps;
 
         if(client != null) {
             gossip_rsps=client.getMembers(group_addr);
@@ -185,22 +175,17 @@ public class PING extends Discovery {
             Util.sleep(500);
         }
         else {
-            if(initial_hosts != null && initial_hosts.size() > 0) {
-                IpAddress h;
-                List hlist;
-                msg=new Message(null);
-                msg.setFlag(Message.OOB);
-                msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
-                for(Enumeration en=initial_hosts.elements(); en.hasMoreElements();) {
-                    hlist=(List)en.nextElement();
-                    boolean isMember=false;
-                    for(Enumeration hen=hlist.elements(); hen.hasMoreElements() && !isMember;) {
-                        h=(IpAddress)hen.nextElement();
-                        msg.setDest(h);
-                        if(log.isTraceEnabled())
-                            log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-                        down_prot.down(new Event(Event.MSG, msg.copy()));
-                    }
+            if(initial_hosts != null && !initial_hosts.isEmpty()) {
+                for(Address addr: initial_hosts) {
+                    // if(tmpMbrs.contains(addr)) {
+                    // ; // continue; // changed as suggested by Mark Kopec
+                    // }
+                    msg=new Message(addr, null, null);
+                    msg.setFlag(Message.OOB);
+                    msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, null));
+
+                    if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
+                    down_prot.down(new Event(Event.MSG, msg));
                 }
             }
             else {
@@ -225,27 +210,29 @@ public class PING extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
-    private List createInitialHosts(String l) throws UnknownHostException {
-        List tmp=new List();
+    private List<Address> createInitialHosts(String l) throws UnknownHostException {
         StringTokenizer tok=new StringTokenizer(l, ",");
-        String t;
+        String          t;
+        IpAddress       addr;
+        java.util.List<Address> retval=new ArrayList<Address>();
 
         while(tok.hasMoreTokens()) {
             try {
-                t=tok.nextToken();
+                t=tok.nextToken().trim();
                 String host=t.substring(0, t.indexOf('['));
+                host=host.trim();
                 int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-                List hosts=new List();
                 for(int i=port; i < port + port_range; i++) {
-                    hosts.add(new IpAddress(host, i));
+                    addr=new IpAddress(host, i);
+                    retval.add(addr);
                 }
-                tmp.add(hosts);
             }
             catch(NumberFormatException e) {
                 if(log.isErrorEnabled()) log.error("exeption is " + e);
             }
         }
-        return tmp;
+
+        return retval;
     }
 
 
