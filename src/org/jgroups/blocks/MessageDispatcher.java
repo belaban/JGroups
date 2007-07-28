@@ -6,16 +6,17 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.*;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.Vector;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.TreeSet;
-import java.util.ArrayList;
+import java.util.Vector;
 
 
 /**
@@ -36,7 +37,7 @@ import java.util.ArrayList;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.72 2007/04/19 19:16:19 vlada Exp $
+ * @version $Id: MessageDispatcher.java,v 1.73 2007/07/28 16:49:15 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
