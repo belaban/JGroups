@@ -1,4 +1,4 @@
-// $Id: GroupRequest.java,v 1.28 2007/07/13 10:06:32 belaban Exp $
+// $Id: GroupRequest.java,v 1.29 2007/07/30 07:05:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -38,7 +38,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.28 $
+ * @version $Revision: 1.29 $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -77,6 +77,8 @@ public class GroupRequest implements RspCollector, Command {
     protected RequestCorrelator corr; // either use RequestCorrelator or ...
     protected Transport transport;    // Transport (one of them has to be non-null)
 
+    protected RspFilter rsp_filter=null;
+
     protected int rsp_mode=GET_ALL;
     protected boolean done=false;
     protected long timeout=0;
@@ -88,6 +90,8 @@ public class GroupRequest implements RspCollector, Command {
     private static long last_req_id=1;
 
     private long req_id=-1; // request ID for this request
+
+
 
 
     /**
@@ -170,9 +174,13 @@ public class GroupRequest implements RspCollector, Command {
         this.caller=caller;
     }
 
-     public boolean execute() throws Exception {
-         return execute(false);
-     }
+    public void setResponseFilter(RspFilter filter) {
+        rsp_filter=filter;
+    }
+
+    public boolean execute() throws Exception {
+        return execute(false);
+    }
 
     /**
      * Sends the message. Returns when n responses have been received, or a
@@ -247,6 +255,15 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         synchronized(requests) {
+            if(rsp_filter != null && !rsp_filter.isAcceptable(response_value, sender)) {
+                if(!rsp_filter.needMoreResponses()) {
+                    done=true;
+                    requests.notifyAll(); // we're done as we don't need more responses
+                }
+                return;
+            }
+
+
             Rsp rsp=requests.get(sender);
             if(rsp != null) {
                 if(rsp.wasReceived() == false) {
@@ -255,6 +272,8 @@ public class GroupRequest implements RspCollector, Command {
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("received response for request ").append(req_id).append(", sender=").
                                   append(sender).append(", val=").append(response_value));
+                    if(rsp_filter != null && !rsp_filter.needMoreResponses())
+                        done=true;
                     requests.notifyAll(); // wakes up execute()
                 }
             }
@@ -335,7 +354,7 @@ public class GroupRequest implements RspCollector, Command {
             }
         }
 
-        if(modified || tmp != null) {
+        if(modified) {
             synchronized(requests) {
                 for(Address suspect: tmp) {
                     addSuspect(suspect);
@@ -515,6 +534,9 @@ public class GroupRequest implements RspCollector, Command {
         int num_received=0, num_not_received=0, num_suspected=0;
         final int num_total=requests.size();
 
+        if(done)
+            return true;
+
         for(Rsp rsp: requests.values()) {
             if(rsp.wasReceived()) {
                 num_received++;
@@ -623,4 +645,6 @@ public class GroupRequest implements RspCollector, Command {
             default: return "<unknown> (" + m + ")";
         }
     }
+
+
 }

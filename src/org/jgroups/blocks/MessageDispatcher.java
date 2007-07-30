@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.73 2007/07/28 16:49:15 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74 2007/07/30 07:05:40 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -381,6 +381,12 @@ public class MessageDispatcher implements RequestHandler {
      * @return RspList A list of responses. Each response is an <code>Object</code> and associated to its sender.
      */
     public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting) {
+        return castMessage(dests, msg, mode, timeout, use_anycasting, null);
+    }
+
+
+    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
+                               RspFilter filter) {
         GroupRequest _req=null;
         Vector real_dests;
         Channel tmp;
@@ -427,6 +433,7 @@ public class MessageDispatcher implements RequestHandler {
 
         _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
         _req.setCaller(this.local_addr);
+        _req.setResponseFilter(filter);
         try {
             _req.execute(use_anycasting);
         }
