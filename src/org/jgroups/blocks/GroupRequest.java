@@ -1,5 +1,3 @@
-// $Id: GroupRequest.java,v 1.29 2007/07/30 07:05:40 belaban Exp $
-
 package org.jgroups.blocks;
 
 
@@ -9,11 +7,17 @@ import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Transport;
 import org.jgroups.View;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Command;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -38,7 +42,7 @@ import java.util.*;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Revision: 1.29 $
+ * @version $Id: GroupRequest.java,v 1.30 2007/07/30 10:53:23 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -61,14 +65,22 @@ public class GroupRequest implements RspCollector, Command {
 
     private Address caller;
 
+    private final Lock lock=new ReentrantLock();
+
+    /** Is set as soon as the request has received all required responses */
+    private final Condition completed=lock.newCondition();
+
     /** Map<Address, Rsp>. Maps requests and responses */
+    @GuardedBy("lock")
     private final Map<Address,Rsp> requests=new HashMap<Address,Rsp>();
 
 
     /** bounded queue of suspected members */
-    private final Vector<Address> suspects=new Vector<Address>();
+    @GuardedBy("lock")
+    private final List<Address> suspects=new ArrayList<Address>();
 
     /** list of members, changed by viewChange() */
+    @GuardedBy("lock")
     private final Collection<Address> members=new TreeSet<Address>();
 
     /** keep suspects vector bounded */
@@ -193,6 +205,7 @@ public class GroupRequest implements RspCollector, Command {
             return false;
         }
 
+        lock.lock();
         try {
             done=false;
             boolean retval=doExecute(use_anycasting, timeout);
@@ -202,6 +215,7 @@ public class GroupRequest implements RspCollector, Command {
         }
         finally {
             done=true;
+            lock.unlock();
         }
     }
 
@@ -214,26 +228,26 @@ public class GroupRequest implements RspCollector, Command {
      * @param mbrs The new list of members
      */
     public final void reset(Vector<Address> mbrs) {
-        if(mbrs != null) {
-            synchronized(requests) {
+        lock.lock();
+        try {
+            if(mbrs != null) {
                 requests.clear();
                 for(Address mbr: mbrs) {
                     requests.put(mbr, new Rsp(mbr));
                 }
-            }
-            // maintain local membership
-            synchronized(this.members) {
+                // maintain local membership
                 this.members.clear();
                 this.members.addAll(mbrs);
             }
-        }
-        else {
-            synchronized(requests) {
+            else {
                 for(Rsp rsp: requests.values()) {
                     rsp.setReceived(false);
                     rsp.setValue(null);
                 }
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -245,20 +259,21 @@ public class GroupRequest implements RspCollector, Command {
      * <code>execute()</code> returns.
      */
     public void receiveResponse(Object response_value, Address sender) {
-        if(done) {
-            if(log.isWarnEnabled()) log.warn("command is done; cannot add response !");
-            return;
-        }
-        if(suspects.contains(sender)) {
-            if(log.isWarnEnabled()) log.warn("received response from suspected member " + sender + "; discarding");
-            return;
-        }
+        lock.lock();
+        try {
+            if(done) {
+                if(log.isTraceEnabled()) log.trace("command is done; cannot add response !");
+                return;
+            }
+            if(suspects.contains(sender)) {
+                if(log.isWarnEnabled()) log.warn("received response from suspected member " + sender + "; discarding");
+                return;
+            }
 
-        synchronized(requests) {
             if(rsp_filter != null && !rsp_filter.isAcceptable(response_value, sender)) {
                 if(!rsp_filter.needMoreResponses()) {
                     done=true;
-                    requests.notifyAll(); // we're done as we don't need more responses
+                    completed.signalAll(); // we're done as we don't need more responses
                 }
                 return;
             }
@@ -271,12 +286,15 @@ public class GroupRequest implements RspCollector, Command {
                     rsp.setReceived(true);
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("received response for request ").append(req_id).append(", sender=").
-                                  append(sender).append(", val=").append(response_value));
+                                append(sender).append(", val=").append(response_value));
                     if(rsp_filter != null && !rsp_filter.needMoreResponses())
                         done=true;
-                    requests.notifyAll(); // wakes up execute()
+                    completed.signalAll(); // wakes up execute()
                 }
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -288,20 +306,21 @@ public class GroupRequest implements RspCollector, Command {
      * (where available). It is used to exclude faulty members from the response list.
      */
     public void suspect(Address suspected_member) {
-        Rsp rsp;
-
         if(suspected_member == null)
             return;
 
-        addSuspect(suspected_member);
-
-        synchronized(requests) {
-            rsp=requests.get(suspected_member);
+        lock.lock();
+        try {
+            addSuspect(suspected_member);
+            Rsp rsp=requests.get(suspected_member);
             if(rsp != null) {
                 rsp.setSuspected(true);
                 rsp.setValue(null);
-                requests.notifyAll();
+                completed.signalAll();
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -326,41 +345,39 @@ public class GroupRequest implements RspCollector, Command {
     public void viewChange(View new_view) {
         Address mbr;
         Vector<Address> mbrs=new_view != null? new_view.getMembers() : null;
-        if(requests == null || requests.isEmpty() || mbrs == null)
-            return;
 
-        synchronized(this.members) {
+        lock.lock();
+        try {
+            if(requests == null || requests.isEmpty() || mbrs == null)
+                return;
+
             this.members.clear();
             this.members.addAll(mbrs);
-        }
 
-        Rsp rsp;
-        boolean modified=false;
-        Set<Address> tmp=null;
-        synchronized(requests) {
+            Rsp rsp;
+            Set<Address> tmp=null;
             for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
                 mbr=entry.getKey();
                 if(!mbrs.contains(mbr)) {
                     if(tmp == null)
                         tmp=new HashSet<Address>();
                     tmp.add(mbr);
-                    // moved acquisition of suspects lock out of this scope (http://jira.jboss.com/jira/browse/JGRP-554)
-                    // addSuspect(mbr);
+                    addSuspect(mbr);
                     rsp=entry.getValue();
                     rsp.setValue(null);
                     rsp.setSuspected(true);
-                    modified=true;
                 }
             }
-        }
 
-        if(modified) {
-            synchronized(requests) {
+            if(tmp != null) {
                 for(Address suspect: tmp) {
                     addSuspect(suspect);
                 }
-                requests.notifyAll();
+                completed.signalAll();
             }
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -371,9 +388,13 @@ public class GroupRequest implements RspCollector, Command {
 
     /** Returns the results as a RspList */
     public RspList getResults() {
-        synchronized(requests) {
-            Collection rsps=requests.values();
+        lock.lock();
+        try {
+            Collection<Rsp> rsps=requests.values();
             return new RspList(rsps);
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -386,20 +407,25 @@ public class GroupRequest implements RspCollector, Command {
 
         Address mbr;
         Rsp rsp;
-        synchronized(requests) {
+        lock.lock();
+        try {
             for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
                 mbr=entry.getKey();
                 rsp=entry.getValue();
                 ret.append(mbr).append(": ").append(rsp).append("\n");
+
+                if(!suspects.isEmpty())
+                    ret.append("\nsuspects: ").append(suspects);
+                ret.append("\nrequest_msg: ").append(request_msg);
+                ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
+                ret.append("\ndone: ").append(done);
+                ret.append("\ntimeout: ").append(timeout);
+                ret.append("\nexpected_mbrs: ").append(expected_mbrs).append(" (" + members + ")]");
             }
         }
-        if(!suspects.isEmpty())
-            ret.append("\nsuspects: ").append(suspects);
-        ret.append("\nrequest_msg: ").append(request_msg);
-        ret.append("\nrsp_mode: ").append(modeToString(rsp_mode));
-        ret.append("\ndone: ").append(done);
-        ret.append("\ntimeout: ").append(timeout);
-        ret.append("\nexpected_mbrs: ").append(expected_mbrs).append(" (" + members + ")]");
+        finally {
+            lock.unlock();
+        }
         return ret.toString();
     }
 
@@ -408,9 +434,9 @@ public class GroupRequest implements RspCollector, Command {
         return suspects.size();
     }
 
-
-    public Vector getSuspects() {
-        return suspects;
+    /** Returns the list of suspected members. An attempt to modify the return value will throw an excxeption */
+    public Vector<Address> getSuspects() {
+        return new Vector<Address>(suspects);
     }
 
 
@@ -436,19 +462,18 @@ public class GroupRequest implements RspCollector, Command {
         return result;
     }
 
-    /** This method runs with rsp_mutex locked (called by <code>execute()</code>). */
+    /** This method runs with lock locked (called by <code>execute()</code>). */
+    @GuardedBy("lock")
     private boolean doExecute(boolean use_anycasting, long timeout) throws Exception {
         long start_time=0;
         req_id=getRequestId();
         reset(null); // clear 'responses' array
 
-        synchronized(requests) {
-            for(Address suspect: suspects) {  // mark all suspects in 'received' array
-                Rsp rsp=requests.get(suspect);
-                if(rsp != null) {
-                    rsp.setSuspected(true);
-                    break; // we can break here because we ensure there are no duplicate members
-                }
+        for(Address suspect: suspects) {  // mark all suspects in 'received' array
+            Rsp rsp=requests.get(suspect);
+            if(rsp != null) {
+                rsp.setSuspected(true);
+                break; // we can break here because we ensure there are no duplicate members
             }
         }
 
@@ -481,55 +506,55 @@ public class GroupRequest implements RspCollector, Command {
             throw ex;
         }
 
-        synchronized(requests) {
-            if(timeout <= 0) {
-                while(true) { /* Wait for responses: */
-                    adjustMembership(); // may not be necessary, just to make sure...
-                    if(responsesComplete()) {
-                        if(corr != null) {
-                            corr.done(req_id);
-                        }
-                        if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
-                            log.trace("received all responses: " + toString());
-                        }
-                        return true;
+        if(timeout <= 0) {
+            while(true) { /* Wait for responses: */
+                adjustMembership(); // may not be necessary, just to make sure...
+                if(responsesComplete()) {
+                    if(corr != null) {
+                        corr.done(req_id);
                     }
+                    if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
+                        log.trace("received all responses: " + toString());
+                    }
+                    return true;
+                }
+                try {
+                    completed.await();
+                }
+                catch(Exception e) {
+                }
+            }
+        }
+        else {
+            start_time=System.currentTimeMillis();
+            long timeout_time=start_time + timeout;
+            while(timeout > 0) { /* Wait for responses: */
+                if(responsesComplete()) {
+                    if(corr != null)
+                        corr.done(req_id);
+                    if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
+                        log.trace("received all responses: " + toString());
+                    }
+                    return true;
+                }
+                timeout=timeout_time - System.currentTimeMillis();
+                if(timeout > 0) {
                     try {
-                        requests.wait();
+                        completed.await(timeout, TimeUnit.MILLISECONDS);
                     }
                     catch(Exception e) {
                     }
                 }
             }
-            else {
-                start_time=System.currentTimeMillis();
-                long timeout_time=start_time + timeout; 
-                while(timeout > 0) { /* Wait for responses: */
-                    if(responsesComplete()) {
-                        if(corr != null)
-                            corr.done(req_id);
-                        if(log.isTraceEnabled() && rsp_mode != GET_NONE) {
-                            log.trace("received all responses: " + toString());
-                        }
-                        return true;
-                    }
-                    timeout=timeout_time - System.currentTimeMillis(); 
-                    if(timeout > 0) {
-                        try {
-                            requests.wait(timeout);
-                        }
-                        catch(Exception e) {
-                        }
-                    }
-                }
-                if(corr != null) {
-                    corr.done(req_id);
-                }
-                return false;
+            if(corr != null) {
+                corr.done(req_id);
             }
+            return false;
         }
     }
 
+
+    @GuardedBy("lock")
     private boolean responsesComplete() {
         int num_received=0, num_not_received=0, num_suspected=0;
         final int num_total=requests.size();
@@ -599,38 +624,36 @@ public class GroupRequest implements RspCollector, Command {
      *     as SUSPECTED
      * </ul>
      * This call requires exclusive access to rsp_mutex (called by getResponses() which has
-     * a the rsp_mutex locked, so this should not be a problem).
+     * a the rsp_mutex locked, so this should not be a problem). This method needs to have lock held.
      */
+    @GuardedBy("lock")
     private void adjustMembership() {
         if(requests.isEmpty())
             return;
 
         Address mbr;
         Rsp rsp;
-        synchronized(members) {
-            for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
-                mbr=entry.getKey();
-                if((!this.members.contains(mbr)) || suspects.contains(mbr)) {
-                    addSuspect(mbr);
-                    rsp=entry.getValue();
-                    rsp.setValue(null);
-                    rsp.setSuspected(true);
-                }
+        for(Map.Entry<Address,Rsp> entry: requests.entrySet()) {
+            mbr=entry.getKey();
+            if((!this.members.contains(mbr)) || suspects.contains(mbr)) {
+                addSuspect(mbr);
+                rsp=entry.getValue();
+                rsp.setValue(null);
+                rsp.setSuspected(true);
             }
         }
     }
 
     /**
      * Adds a member to the 'suspects' list. Removes oldest elements from 'suspects' list
-     * to keep the list bounded ('max_suspects' number of elements)
+     * to keep the list bounded ('max_suspects' number of elements), Requires lock to be held
      */
+    @GuardedBy("lock")
     private void addSuspect(Address suspected_mbr) {
-        synchronized(suspects) {
-            if(!suspects.contains(suspected_mbr)) {
-                suspects.addElement(suspected_mbr);
-                while(suspects.size() >= max_suspects && !suspects.isEmpty())
-                    suspects.remove(0); // keeps queue bounded
-            }
+        if(!suspects.contains(suspected_mbr)) {
+            suspects.add(suspected_mbr);
+            while(suspects.size() >= max_suspects && !suspects.isEmpty())
+                suspects.remove(0); // keeps queue bounded
         }
     }
 
