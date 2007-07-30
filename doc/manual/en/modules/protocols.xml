@@ -626,6 +626,15 @@
                             <entry></entry>
                         </row>
 
+                         <row>
+                            <entry>reject_join_from_existing_member</entry>
+
+                            <entry> If we receive a JOIN request from P and P is already in the current membership,
+                                then we send back a JOIN response with an error message when this property is set
+                                to true (Channel.connect() will fail). Otherwise, we return the current view
+                            </entry>
+                        </row>
+
                         <row>
                             <entry>view_bundling</entry>
 
