@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.5 2007/07/30 08:07:22 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.6 2007/07/30 10:53:23 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -16,7 +16,6 @@ public class GroupRequestTest extends TestCase {
     // GroupRequest req;
     Address a1, a2, a3;
     Vector<Address> dests=null;
-    // private MyTransport transport;
 
     public GroupRequestTest(String testName) {
         super(testName);
