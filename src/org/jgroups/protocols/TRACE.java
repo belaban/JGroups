@@ -1,4 +1,4 @@
-// $Id: TRACE.java,v 1.5 2007/01/12 14:20:24 belaban Exp $
+// $Id: TRACE.java,v 1.6 2007/07/30 12:56:38 belaban Exp $
 
 package org.jgroups.protocols;
 import org.jgroups.Event;
