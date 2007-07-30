@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.4 2007/07/30 07:05:41 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.5 2007/07/30 08:07:22 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -68,7 +68,7 @@ public class GroupRequestTest extends TestCase {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
                 new Message(null, a3, new Long(3))};
-        MyTransport transport=new MyDelayedTransport(true, responses, 1000);
+        MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_FIRST, 0, 3);
         req.setResponseFilter(new RspFilter() {
@@ -102,7 +102,7 @@ public class GroupRequestTest extends TestCase {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
                 new Message(null, a3, new Long(3))};
-        MyTransport transport=new MyDelayedTransport(true, responses, 1000);
+        MyTransport transport=new MyDelayedTransport(true, responses, 500);
         dests.add(a3);
         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 3);
         req.setResponseFilter(new RspFilter() {
