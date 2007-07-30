@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.69 2007/06/01 20:56:16 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.70 2007/07/30 12:42:09 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -345,9 +345,15 @@ public class CoordGmsImpl extends GmsImpl {
         for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
             Address mbr=(Address)it.next();
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
-                if(log.isWarnEnabled())
-                    log.warn(mbr + " already present; returning existing view " + gms.view);
-                JoinRsp join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
+                JoinRsp join_rsp;
+                if(gms.reject_join_from_existing_member) {
+                    join_rsp=new JoinRsp("member " + mbr + " is already part of the group, JOIN request is rejected");
+                }
+                else {
+                    if(log.isWarnEnabled())
+                        log.warn(mbr + " already present; returning existing view " + gms.view);
+                    join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
+                }
                 sendJoinResponse(join_rsp, mbr);
                 it.remove();
             }
