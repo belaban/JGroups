@@ -1,4 +1,4 @@
-// $Id: RspList.java,v 1.7 2006/05/13 08:48:38 belaban Exp $
+// $Id: RspList.java,v 1.8 2007/07/30 07:05:41 belaban Exp $
 
 package org.jgroups.util;
 
@@ -137,8 +137,7 @@ public class RspList implements Map {
 
     public boolean isReceived(Address sender) {
         Rsp rsp=(Rsp)get(sender);
-        if(rsp == null) return false;
-        return rsp.received;
+        return rsp != null && rsp.received;
     }
 
     public int numSuspectedMembers() {
@@ -148,6 +147,18 @@ public class RspList implements Map {
         for(Iterator it=values.iterator(); it.hasNext();) {
             rsp=(Rsp)it.next();
             if(rsp.wasSuspected())
+                num++;
+        }
+        return num;
+    }
+
+    public int numReceived() {
+        int num=0;
+        Rsp rsp;
+        Collection values=values();
+        for(Iterator it=values.iterator(); it.hasNext();) {
+            rsp=(Rsp)it.next();
+            if(rsp.wasReceived())
                 num++;
         }
         return num;
@@ -197,8 +208,7 @@ public class RspList implements Map {
 
     public boolean isSuspected(Address sender) {
         Rsp rsp=(Rsp)get(sender);
-        if(rsp == null) return false;
-        return rsp.suspected;
+        return rsp != null && rsp.suspected;
     }
 
 
@@ -215,7 +225,6 @@ public class RspList implements Map {
      */
     public Object elementAt(int i) throws ArrayIndexOutOfBoundsException {
         Set keys=new TreeSet(keySet());
-        if(keys == null) return null;
         Object[] keys_array=keys.toArray();
         Object key=keys_array[i];
         return get(key);
@@ -223,7 +232,7 @@ public class RspList implements Map {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         Rsp rsp;
 
         for(Iterator it=values().iterator(); it.hasNext();) {

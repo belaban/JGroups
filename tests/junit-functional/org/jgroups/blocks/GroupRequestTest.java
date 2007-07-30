@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.3 2007/07/13 10:06:30 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.4 2007/07/30 07:05:41 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -14,7 +14,7 @@ import java.util.Vector;
 
 public class GroupRequestTest extends TestCase {
     // GroupRequest req;
-    Address a1, a2;
+    Address a1, a2, a3;
     Vector<Address> dests=null;
     // private MyTransport transport;
 
@@ -26,6 +26,7 @@ public class GroupRequestTest extends TestCase {
         super.setUp();
         a1=new IpAddress("127.0.0.1", 1111);
         a2=new IpAddress("127.0.0.1", 2222);
+        a3=new IpAddress("127.0.0.1", 3333);
         dests=new Vector<Address>(2);
         dests.add(a1);
         dests.add(a2);
@@ -62,7 +63,77 @@ public class GroupRequestTest extends TestCase {
         _testMessageReceptionWithViewChangeMemberLeft(false);
     }
 
-	/**
+
+    public void testGetFirstWithResponseFilter() throws Exception {
+        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
+                new Message(null, a2, new Long(2)),
+                new Message(null, a3, new Long(3))};
+        MyTransport transport=new MyDelayedTransport(true, responses, 1000);
+        dests.add(a3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_FIRST, 0, 3);
+        req.setResponseFilter(new RspFilter() {
+            int num_rsps=0;
+
+            public boolean isAcceptable(Object response, Address sender) {
+                boolean retval=response instanceof Long && ((Long)response).longValue() == 2L;
+                System.out.println("-- received " + response + " from " + sender + ": " + (retval? "OK" : "NOTOK"));
+                if(retval)
+                    num_rsps++;
+                return retval;
+            }
+
+            public boolean needMoreResponses() {
+                return num_rsps < 1;
+            }
+        });
+        transport.setGroupRequest(req);
+        boolean rc=req.execute();
+        System.out.println("group request is " + req);
+        assertTrue(rc);
+        assertEquals(0, req.getSuspects().size());
+        assertTrue(req.isDone());
+        RspList results=req.getResults();
+        assertEquals(3, results.size());
+        assertEquals(1, results.numReceived());
+    }
+
+
+    public void testGetAllWithResponseFilter() throws Exception {
+        Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
+                new Message(null, a2, new Long(2)),
+                new Message(null, a3, new Long(3))};
+        MyTransport transport=new MyDelayedTransport(true, responses, 1000);
+        dests.add(a3);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 3);
+        req.setResponseFilter(new RspFilter() {
+            int num_rsps=0;
+
+            public boolean isAcceptable(Object response, Address sender) {
+                boolean retval=response instanceof Long &&
+                        (((Long)response).longValue() == 1L || ((Long)response).longValue() == 2L);
+                System.out.println("-- received " + response + " from " + sender + ": " + (retval? "OK" : "NOTOK"));
+                if(retval)
+                    num_rsps++;
+                return retval;
+            }
+
+            public boolean needMoreResponses() {
+                return num_rsps < 2;
+            }
+        });
+        transport.setGroupRequest(req);
+        boolean rc=req.execute();
+        System.out.println("group request is " + req);
+        assertTrue(rc);
+        assertEquals(0, req.getSuspects().size());
+        assertTrue(req.isDone());
+        RspList results=req.getResults();
+        assertEquals(3, results.size());
+        assertEquals(2, results.numReceived());
+    }
+
+
+    /**
 	 * test group timeout. demonstrates that the timeout mechanism times out too
 	 * quickly as multiple responses are received by the GroupRequest.
 	 * Demonstrates by group request receiving multiple messages in a timeframe

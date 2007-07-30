@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.29 2007/02/16 08:57:17 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.30 2007/07/30 07:05:40 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -139,10 +139,16 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
     }
 
 
+
     public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
                                      Class[] types, int mode, long timeout, boolean use_anycasting) {
+        return callRemoteMethods(dests, method_name, args, types, mode, timeout, use_anycasting, null);
+    }
+
+    public RspList callRemoteMethods(Vector dests, String method_name, Object[] args,
+                                     Class[] types, int mode, long timeout, boolean use_anycasting, RspFilter filter) {
         MethodCall method_call=new MethodCall(method_name, args, types);
-        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting);
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting, false, filter);
     }
 
 
@@ -169,17 +175,23 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout,
                                      boolean use_anycasting, boolean oob) {
+        return callRemoteMethods(dests, method_call, mode, timeout, use_anycasting, oob, null);
+    }
+
+
+    public RspList callRemoteMethods(Vector dests, MethodCall method_call, int mode, long timeout,
+                                     boolean use_anycasting, boolean oob, RspFilter filter) {
         if(dests != null && dests.isEmpty()) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
                 log.trace(new StringBuffer("destination list of ").append(method_call.getName()).
-                          append("() is empty: no need to send message"));
+                        append("() is empty: no need to send message"));
             return new RspList();
         }
 
         if(log.isTraceEnabled())
             log.trace(new StringBuffer("dests=").append(dests).append(", method_call=").append(method_call).
-                      append(", mode=").append(mode).append(", timeout=").append(timeout));
+                    append(", mode=").append(mode).append(", timeout=").append(timeout));
 
         byte[] buf;
         try {
@@ -196,11 +208,10 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         Message msg=new Message(null, null, buf);
         if(oob)
             msg.setFlag(Message.OOB);
-        RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting);
+        RspList  retval=super.castMessage(dests, msg, mode, timeout, use_anycasting, filter);
         if(log.isTraceEnabled()) log.trace("responses: " + retval);
         return retval;
     }
-
 
 
     public Object callRemoteMethod(Address dest, String method_name, Object[] args,
