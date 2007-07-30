@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.114 2007/07/16 10:17:26 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.115 2007/07/30 11:30:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -348,7 +348,7 @@
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
-            <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
+            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
