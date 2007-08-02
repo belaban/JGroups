@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.139 2007/07/21 05:34:19 belaban Exp $
+ * @version $Id: JChannel.java,v 1.140 2007/08/02 15:12:38 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1453,7 +1453,7 @@ public class JChannel extends Channel {
 
     /**
      * Disconnects and closes the channel.
-     * This method does the folloing things
+     * This method does the following things
      * <ol>
      * <li>Calls <code>this.disconnect</code> if the disconnect parameter is true
      * <li>Calls <code>Queue.close</code> on mq if the close_mq parameter is true
