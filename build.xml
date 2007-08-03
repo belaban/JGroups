@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.115 2007/07/30 11:30:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.116 2007/08/03 02:13:50 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -261,6 +261,7 @@
         </javadoc>
     </target>
 
+    <target name="all" depends="compile"/>
 
     <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support">
         <echo message="Building docs from docbook ..."/>
