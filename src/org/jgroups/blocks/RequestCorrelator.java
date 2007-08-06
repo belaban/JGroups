@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.38 2007/05/01 10:55:18 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.39 2007/08/06 09:11:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -42,7 +42,7 @@ public class RequestCorrelator {
     protected Object transport=null;
 
     /** The table of pending requests (keys=Long (request IDs), values=<tt>RequestEntry</tt>) */
-    protected final ConcurrentMap<Long,RspCollector> requests=new ConcurrentHashMap();
+    protected final ConcurrentMap<Long,RspCollector> requests=new ConcurrentHashMap<Long,RspCollector>();
 
 
     /** The handler for the incoming requests. It is called from inside the dispatcher thread */
@@ -67,7 +67,7 @@ public class RequestCorrelator {
      * addreses of the senders with the address at the bottom being the
      * address of the first caller
      */
-    protected java.util.Stack call_stack=null;
+    protected java.util.Stack<Address> call_stack=null;
 
     /** Whether or not to perform deadlock detection for synchronous (potentially recursive) group method invocations.
      *  If on, we use a scheduler (handling a priority queue), otherwise we don't and call handleRequest() directly.
@@ -234,7 +234,7 @@ public class RequestCorrelator {
         this.marshaller=marshaller;
     }
 
-    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll) throws Exception {
+    public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
         sendRequest(id, dest_mbrs, msg, coll, false);
     }
 
@@ -255,7 +255,7 @@ public class RequestCorrelator {
      * <code>suspect()</code> will be invoked when a message has been received
      * or a member is suspected, respectively.
      */
-    public void sendRequest(long id, List dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
+    public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll, boolean use_anycasting) throws Exception {
         Header hdr;
 
         if(transport == null) {
@@ -278,8 +278,8 @@ public class RequestCorrelator {
                     if(log.isErrorEnabled()) log.error("local address is null !");
                     return;
                 }
-                java.util.Stack new_call_stack = (call_stack != null?
-                                                  (java.util.Stack)call_stack.clone():new java.util.Stack());
+                java.util.Stack<Address> new_call_stack = (call_stack != null?
+                                                  (java.util.Stack<Address>)call_stack.clone():new java.util.Stack<Address>());
                 new_call_stack.push(local_addr);
                 hdr.callStack=new_call_stack;
             }
@@ -700,10 +700,10 @@ public class RequestCorrelator {
         public String corrName=null;
 
         /** Stack<Address>. Contains senders (e.g. P --> Q --> R) */
-        public java.util.Stack callStack=null;
+        public java.util.Stack<Address> callStack=null;
 
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
-        public java.util.List dest_mbrs=null;
+        public java.util.List<Address> dest_mbrs=null;
 
 
         /**
@@ -763,8 +763,8 @@ public class RequestCorrelator {
             rsp_expected = in.readBoolean();
             if(in.readBoolean())
                 corrName         = in.readUTF();
-            callStack   = (java.util.Stack)in.readObject();
-            dest_mbrs=(java.util.List)in.readObject();
+            callStack   = (java.util.Stack<Address>)in.readObject();
+            dest_mbrs=(java.util.List<Address>)in.readObject();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
@@ -808,7 +808,7 @@ public class RequestCorrelator {
 
             present=in.readBoolean();
             if(present) {
-                callStack=new Stack();
+                callStack=new Stack<Address>();
                 short len=in.readShort();
                 Address tmp;
                 for(short i=0; i < len; i++) {
@@ -817,7 +817,7 @@ public class RequestCorrelator {
                 }
             }
 
-            dest_mbrs=(List)Util.readAddresses(in, java.util.LinkedList.class);
+            dest_mbrs=(List<Address>)Util.readAddresses(in, java.util.LinkedList.class);
         }
 
         public int size() {
@@ -883,7 +883,7 @@ public class RequestCorrelator {
 
             new_stack=hdr.callStack;
             if(new_stack != null)
-                call_stack=(java.util.Stack)new_stack.clone();
+                call_stack=(java.util.Stack<Address>)new_stack.clone();
         }
     }
 
