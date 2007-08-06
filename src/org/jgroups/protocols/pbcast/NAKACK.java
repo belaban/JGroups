@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.146 2007/07/27 11:00:51 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.147 2007/08/06 09:55:58 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1393,10 +1393,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(stats) {
             xmit_reqs_sent+=last_seqno - first_seqno +1;
             updateStats(sent, dest, 1, 0, 0);
-            for(long i=first_seqno; i <= last_seqno; i++) {
-                XmitRequest req=new XmitRequest(sender, i, dest);
-                send_history.add(req);
-            }
+            XmitRequest req=new XmitRequest(sender, first_seqno, last_seqno, dest);
+            send_history.add(req);
         }
     }
     /* ------------------- End of Interface Retransmitter.RetransmitCommand -------------------- */
@@ -1514,18 +1512,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     static class XmitRequest {
         Address original_sender; // original sender of message
-        long    seq, timestamp=System.currentTimeMillis();
+        long low, high, timestamp=System.currentTimeMillis();
         Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
 
-        XmitRequest(Address original_sender, long seqno, Address xmit_dest) {
+        XmitRequest(Address original_sender, long low, long high, Address xmit_dest) {
             this.original_sender=original_sender;
             this.xmit_dest=xmit_dest;
-            this.seq=seqno;
+            this.low=low;
+            this.high=high;
         }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #").append(seq);
+            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #[").append(low);
+            sb.append("-").append(high).append("]");
             sb.append(" (XMIT_REQ sent to ").append(xmit_dest).append(")");
             return sb.toString();
         }
