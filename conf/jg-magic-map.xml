@@ -116,12 +116,6 @@
         <magic-number>32</magic-number>
     </class>
     <class>
-        <description>List</description>
-        <class-name>org.jgroups.util.List</class-name>
-        <preload>true</preload>
-        <magic-number>33</magic-number>
-    </class>
-    <class>
         <description>Address</description>
         <class-name>org.jgroups.Address</class-name>
         <preload>true</preload>
