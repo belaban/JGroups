@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.2 2007/08/08 10:31:28 belaban Exp $
+// $Id: UtilTest.java,v 1.3 2007/08/08 10:34:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -182,7 +182,7 @@ public class UtilTest extends TestCase {
     public void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
         IpAddress addr=new IpAddress("localhost", 5000), addr2;
-        List list=new ArrayList(), list2;
+        List<String> list=new ArrayList<String>(), list2;
         list.add("Bela");
         list.add("Jeannette");
 
