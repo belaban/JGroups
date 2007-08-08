@@ -59,35 +59,6 @@ public class BoundedListTest extends TestCase {
     }
 
 
-    public void testAddAtHead() throws Exception {
-        assertEquals(0, list.size());
-        list.addAtHead(new Integer(1));
-        System.out.println(list);
-        assertEquals(1, list.size());
-
-        list.addAtHead(new Integer(2));
-        System.out.println(list);
-
-        list.addAtHead(new Integer(3));
-        System.out.println(list);
-        assertEquals(3, list.size());
-
-        list.addAtHead(new Integer(4));
-        System.out.println(list);
-        assertEquals(3, list.size());
-
-        int tmp;
-
-        tmp=list.removeFromHead().intValue();
-        assertEquals(4, tmp);
-
-        tmp=list.removeFromHead().intValue();
-        assertEquals(2, tmp);
-
-        tmp=list.removeFromHead().intValue();
-        assertEquals(1, tmp);
-    }
-
 
     public void testContains() throws Exception {
         strlist.add("Bela");
@@ -105,6 +76,14 @@ public class BoundedListTest extends TestCase {
         assertFalse(strlist.contains("Bela"));
         assertTrue(strlist.contains("Nicole"));
         assertTrue(strlist.contains("Michelle"));
+    }
+
+    public void testWithManyElements() {
+        for(int i=0; i < 100000; i++) {
+            list.add(i);
+        }
+        System.out.println("list: " + list);
+        assertEquals(3, list.size());
     }
 
     public static void main(String[] args) {
