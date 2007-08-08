@@ -1,4 +1,4 @@
-// $Id: ViewTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: ViewTest.java,v 1.2 2007/08/08 10:14:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -28,8 +28,8 @@ public class ViewTest extends TestCase {
         c=b;
         d=new IpAddress("localhost", 5556);
         e=new IpAddress("127.0.0.1", 5555);
-        f=new IpAddress("www.ibm.com", 80);
-        g=new IpAddress("www.ibm.com", 8080);
+        f=new IpAddress("127.0.0.1", 80);
+        g=new IpAddress("127.0.0.1", 8080);
         h=new IpAddress("224.0.0.1", 5555);
         i=new IpAddress("224.0.0.2", 5555);
         ViewId id=new ViewId(a, 34);
