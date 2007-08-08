@@ -1,4 +1,4 @@
-// $Id: List.java,v 1.13 2007/03/21 14:41:15 belaban Exp $
+// $Id: List.java.txt,v 1.1 2007/08/08 08:58:28 belaban Exp $
 
 package org.jgroups.util;
 
