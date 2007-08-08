@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.129 2007/07/27 11:00:59 belaban Exp $
+ * @version $Id: Util.java,v 1.130 2007/08/08 08:52:26 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -961,16 +961,16 @@ public class Util {
 	}
     
     public static boolean interruptAndWaitToDie(Thread t, long timeout) {
-		if(t == null)
-			throw new IllegalArgumentException("Thread can not be null");
-
-		t.interrupt(); // interrupts the sleep()
-		try{
-			t.join(timeout);
-		}catch(InterruptedException e){
-			Thread.currentThread().interrupt(); // set interrupt flag again
-		}
-		return t.isAlive();
+        if(t == null)
+            throw new IllegalArgumentException("Thread can not be null");
+        t.interrupt(); // interrupts the sleep()
+        try {
+            t.join(timeout);
+        }
+        catch(InterruptedException e){
+            Thread.currentThread().interrupt(); // set interrupt flag again
+        }
+        return t.isAlive();
 	}
 
 
@@ -1286,7 +1286,7 @@ public class Util {
             System.out.println('\'' + new String(frags[i]) + '\'');
     }
 
-    public static <T> String printListWithDelimiter(List<T> list, String delimiter) {
+    public static <T> String printListWithDelimiter(Collection<T> list, String delimiter) {
         boolean first=true;
         StringBuilder sb=new StringBuilder();
         for(T el: list) {
