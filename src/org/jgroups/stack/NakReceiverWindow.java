@@ -8,11 +8,8 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.util.BoundedList;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -48,12 +45,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.47 2007/07/27 11:01:03 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.48 2007/08/08 16:08:50 belaban Exp $
  */
 public class NakReceiverWindow {
 
     public interface Listener {
-        void missingMessageReceived(long seqno, Message msg);
+        void missingMessageReceived(long seqno, Address original_sender);
     }
 
     /** dummy for null values: ConcurrentHashMap doesn't allow null values */
@@ -103,11 +100,6 @@ public class NakReceiverWindow {
     private Listener listener=null;
 
     protected static final Log log=LogFactory.getLog(NakReceiverWindow.class);
-
-    /** Map of seqnos and timestamps, to keep track of xmit stats */
-    final ConcurrentMap<Long,Long> xmit_stats=new ConcurrentHashMap<Long,Long>();
-
-    final BoundedList<Long> xmit_times_history=new BoundedList<Long>(1000);
 
     /** The highest stable() seqno received */
     long highest_stability_seqno=0;
@@ -194,20 +186,6 @@ public class NakReceiverWindow {
         return retransmitter!= null? retransmitter.size() : 0;
     }
 
-    public double getAverageXmitTime() {
-        List<Long> copy;
-        synchronized(xmit_times_history) {
-            copy=new LinkedList<Long>(xmit_times_history);
-        }
-
-        int size=copy.size();
-        long total=0L;
-        for(Long val: copy) {
-            total+=val.longValue();
-        }
-        return size > 0? total / size : -1;
-    }
-
 
     /**
      * Adds a message according to its seqno (sequence number).
@@ -255,19 +233,10 @@ public class NakReceiverWindow {
                     // only set message if not yet received (bela July 23 2003)
                     xmit_table.put(seqno, msg);
                     retransmitter.remove(seqno);
-
-                    Long timestamp=xmit_stats.remove(seqno);
-                    if(timestamp != null) {
-                        long diff=System.currentTimeMillis() - timestamp;
-                        synchronized(xmit_times_history) {
-                            xmit_times_history.add(diff);
-                        }
-                    }
-
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
                     if(listener != null) {
-                        try {listener.missingMessageReceived(seqno, msg);} catch(Throwable t) {}
+                        try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
                     }
                     return true;
                 }
@@ -279,7 +248,6 @@ public class NakReceiverWindow {
             if(seqno > next_to_add) {
                 for(long i=next_to_add; i < seqno; i++) { // add all msgs (missing or not) into table
                     xmit_table.put(i, NULL_MSG);
-                    xmit_stats.putIfAbsent(i, System.currentTimeMillis());
                 }
                 xmit_table.put(seqno, msg);
                 retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
@@ -524,9 +492,6 @@ public class NakReceiverWindow {
     }
 
     /* ------------------------------- Private Methods -------------------------------------- */
-
-
-
 
 
 
