@@ -1,6 +1,9 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
@@ -9,7 +12,6 @@ import org.jgroups.util.*;
 
 import java.io.IOException;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.148 2007/08/08 16:11:39 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.149 2007/08/08 16:56:04 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1403,7 +1405,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
-
 
         ConcurrentMap<Long,Long> tmp=xmit_stats.get(sender);
         if(tmp == null) {
