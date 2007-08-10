@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.24 2007/01/18 18:12:30 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.25 2007/08/10 12:32:17 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     RetransmitCommand       retransmit_command = null;   // called to request XMIT of msg
     final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap();        // keys: seqnos (Long), values: Messages
-    long[]                  interval = new long[]{400,800,1200,1600};
+    Interval                interval=new StaticInterval(new long[]{400,800,1200,1600});
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
 
@@ -50,7 +50,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
 
-    public AckSenderWindow(RetransmitCommand com, long[] interval) {
+    public AckSenderWindow(RetransmitCommand com, Interval interval) {
         retransmit_command = com;
         this.interval = interval;
         retransmitter = new Retransmitter(null, this);
@@ -59,14 +59,14 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
 
-    public AckSenderWindow(RetransmitCommand com, long[] interval, TimeScheduler sched) {
+    public AckSenderWindow(RetransmitCommand com, Interval interval, TimeScheduler sched) {
         retransmit_command = com;
         this.interval = interval;
         retransmitter = new Retransmitter(null, this, sched);
         retransmitter.setRetransmitTimeouts(interval);
     }
 
-    public AckSenderWindow(RetransmitCommand com, long[] interval, TimeScheduler sched, Address sender) {
+    public AckSenderWindow(RetransmitCommand com, Interval interval, TimeScheduler sched, Address sender) {
         retransmit_command = com;
         this.interval = interval;
         retransmitter = new Retransmitter(sender, this, sched);
@@ -185,8 +185,8 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     public static void main(String[] args) {
-        long[] xmit_timeouts = {1000, 2000, 3000, 4000};
-        AckSenderWindow win = new AckSenderWindow(new Dummy(), xmit_timeouts);
+        Interval xmit_timeouts=new StaticInterval(new long[]{1000, 2000, 3000, 4000});
+        AckSenderWindow win=new AckSenderWindow(new Dummy(), xmit_timeouts);
 
 
 

@@ -1,4 +1,4 @@
-// $Id: AckSenderWindowTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: AckSenderWindowTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -8,6 +8,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
 import org.jgroups.stack.AckSenderWindow;
+import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
 
 import java.util.HashMap;
@@ -133,7 +134,7 @@ public class AckSenderWindowTest extends TestCase {
 	Entry entry;
 	int   num_non_correct_entries=0;
 
-	win=new AckSenderWindow(new MyRetransmitCommand(), xmit_timeouts);
+	win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts));
 	
 	// 1. Send NUM_MSGS messages:
 	System.out.println("-- sending " + NUM_MSGS + " messages:");

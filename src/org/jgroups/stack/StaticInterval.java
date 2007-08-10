@@ -10,27 +10,30 @@ import org.jgroups.annotations.GuardedBy;
  * so it shouldn't be shared between instances, as {@link #next()} will modify the state.
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Id: StaticInterval.java,v 1.1 2007/08/10 11:58:37 belaban Exp $
+ * @version $Id: StaticInterval.java,v 1.2 2007/08/10 12:32:17 belaban Exp $
  */
 public class StaticInterval implements Interval {
     private int          next=0;
-    private final long[] interval;
+    private final long[] values;
 
     public StaticInterval(long ... vals) {
         if (vals.length == 0)
             throw new IllegalArgumentException("zero length array passed as argument");
-        this.interval=vals;
+        this.values=vals;
     }
 
+    public Interval copy() {
+        return new StaticInterval(values);
+    }
 
     /** @return the next interval */
     @GuardedBy("interval")
     public long next() {
-        synchronized(interval) {
-            if (next >= interval.length)
-                return(interval[interval.length-1]);
+        synchronized(values) {
+            if (next >= values.length)
+                return(values[values.length-1]);
             else
-                return(interval[next++]);
+                return(values[next++]);
         }
     }
     

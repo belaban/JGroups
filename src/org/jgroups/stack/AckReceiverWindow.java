@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.21 2006/12/13 11:44:02 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.22 2007/08/10 12:32:16 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -46,7 +46,7 @@ public class AckReceiverWindow {
                 return false;
             }
             Long seq=new Long(seqno);
-            if(!msgs.containsKey(seq)) { // todo: replace with atomic action once we have util.concurrent (JDK 5)
+            if(!msgs.containsKey(seq)) {
                 msgs.put(seq, msg);
                 return true;
             }
@@ -91,10 +91,10 @@ public class AckReceiverWindow {
     }
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")");
         TreeSet s=new TreeSet(msgs.keySet());
-        if(s.size() > 0) {
+        if(!s.isEmpty()) {
             sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
             sb.append(": ").append(s);
         }
@@ -103,7 +103,7 @@ public class AckReceiverWindow {
 
 
     public String printDetails() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")").
                 append(", msgs=" ).append(new TreeSet(msgs.keySet()));
         return sb.toString();

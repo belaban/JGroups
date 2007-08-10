@@ -6,6 +6,7 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.TimeoutException;
 import org.jgroups.stack.Interval;
+import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -20,7 +21,7 @@ import java.util.concurrent.Future;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
  */
 public class TimeSchedulerTest extends TestCase {
     TimeScheduler timer=null;
@@ -426,7 +427,7 @@ public class TimeSchedulerTest extends TestCase {
         long third_xmit=0;  // time between third_xmit and second_xmit should be ca. 4000ms
         long fourth_xmit=0; // time between third_xmit and second_xmit should be ca. 8000ms
         boolean cancelled=false;
-        Interval interval=new Interval(xmit_timeouts);
+        Interval interval=new StaticInterval(xmit_timeouts);
         long seqno=0;
 
 

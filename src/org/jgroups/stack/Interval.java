@@ -1,4 +1,3 @@
-// $Id: Interval.java,v 1.2 2007/01/17 14:50:59 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,34 +6,15 @@ import org.jgroups.annotations.GuardedBy;
 
 
 /**
- * Manages retransmission timeouts. Always returns the next timeout, until the last timeout in the
- * array is reached. Returns the last timeout from then on.
- * @author John Giorgiadis
+ * Interface which returns a time series, one value at a time calling next()
  * @author Bela Ban
+ * @version $Id: Interval.java,v 1.3 2007/08/10 12:32:17 belaban Exp $
  */
-@Immutable
-public class Interval {
-    private int          next=0;
-    private final long[] interval;
-
-    public Interval(long[] interval) {
-        if (interval.length == 0)
-            throw new IllegalArgumentException("Interval()");
-        this.interval=interval;
-    }
-
-
+public interface Interval {
     /** @return the next interval */
-    @GuardedBy("interval")
-    public long next() {
-        synchronized(interval) {
-            if (next >= interval.length)
-                return(interval[interval.length-1]);
-            else
-                return(interval[next++]);
-        }
-    }
-    
+    public long next() ;
 
+    /** Returns a copy of the state. If there is no state, this method may return a ref to itself */
+    Interval copy();
 }
 
