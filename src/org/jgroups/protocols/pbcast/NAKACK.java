@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.150 2007/08/10 08:48:05 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.151 2007/08/10 08:58:55 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1573,13 +1573,27 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public double getTotalAverageSmoothedRetransmissionTime() {
         double total=0.0;
         int cnt=0;
-        for(Double val: smoothed_avg_xmit_times.values()) {
-            if(val != null) {
-                total+=val;
-                cnt++;
+        synchronized(smoothed_avg_xmit_times) {
+            for(Double val: smoothed_avg_xmit_times.values()) {
+                if(val != null) {
+                    total+=val;
+                    cnt++;
+                }
             }
         }
         return cnt > 0? total / cnt : -1;
+    }
+
+    /** Returns the smoothed average retransmission time for a given sender */
+    public double getSmoothedAverageRetransmissionTime(Address sender) {
+        synchronized(smoothed_avg_xmit_times) {
+            Double retval=smoothed_avg_xmit_times.get(sender);
+            if(retval == null) {
+                retval=INITIAL_SMOOTHED_AVG;
+                smoothed_avg_xmit_times.put(sender, retval);
+            }
+            return retval;
+        }
     }
 
 
