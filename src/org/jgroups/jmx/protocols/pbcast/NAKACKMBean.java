@@ -4,7 +4,7 @@ import org.jgroups.jmx.ProtocolMBean;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACKMBean.java,v 1.9 2007/08/08 16:11:39 belaban Exp $
+ * @version $Id: NAKACKMBean.java,v 1.10 2007/08/10 08:48:04 belaban Exp $
  */
 public interface NAKACKMBean extends ProtocolMBean {
     int getGcLag();
@@ -31,5 +31,7 @@ public interface NAKACKMBean extends ProtocolMBean {
     String printStabilityMessages();
     String printRetransmissionAvgs();
     String printRetransmissionTimes();
+    String printSmoothedRetransmissionAvgs();
     double getTotalAverageRetransmissionTime();
+    double getTotalAverageSmoothedRetransmissionTime();
 }

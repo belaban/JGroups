@@ -36,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.149 2007/08/08 16:56:04 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.150 2007/08/10 08:48:05 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -118,6 +118,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private int xmit_history_max_size=50;
 
     private final ConcurrentMap<Address,BoundedList<Long>> xmit_times_history=new ConcurrentHashMap<Address,BoundedList<Long>>();
+
+    /** Maintains a smoothed average of the retransmission times per sender, these are the actual values that are used for
+     * new retransmission requests */
+    private final Map<Address,Double> smoothed_avg_xmit_times=new HashMap<Address,Double>();
+
+    /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
+    private static final double WEIGHT=0.9;
+
+    private static final double INITIAL_SMOOTHED_AVG=30.0;
 
     /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
     private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
@@ -1441,9 +1450,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     xmit_times_history.putIfAbsent(original_sender, list);
                 }
                 list.add(diff);
+
+                // compute the smoothed average for retransmission times for original_sender
+                synchronized(smoothed_avg_xmit_times) {
+                    Double smoothed_avg=smoothed_avg_xmit_times.get(original_sender);
+                    if(smoothed_avg == null)
+                        smoothed_avg=INITIAL_SMOOTHED_AVG;
+                    // the smoothed avg takes 90% of the previous value, 100% of the new value and averages them
+                    // then, we add 10% to be on the safe side (an xmit value should rather err on the higher than lower side)
+                    smoothed_avg=((smoothed_avg * WEIGHT) + diff) / 2;
+                    smoothed_avg=smoothed_avg * (2 - WEIGHT);
+                    smoothed_avg_xmit_times.put(original_sender, smoothed_avg);
+                }
             }
         }
-        
+
         if(stats) {
             missing_msgs_received++;
             updateStats(received, original_sender, 0, 0, 1);
@@ -1517,6 +1538,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    public String printSmoothedRetransmissionAvgs() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,Double> entry: smoothed_avg_xmit_times.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
     public String printRetransmissionTimes() {
         StringBuilder sb=new StringBuilder();
 
@@ -1541,7 +1570,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return i > 0? total / i: -1;
     }
 
-
+    public double getTotalAverageSmoothedRetransmissionTime() {
+        double total=0.0;
+        int cnt=0;
+        for(Double val: smoothed_avg_xmit_times.values()) {
+            if(val != null) {
+                total+=val;
+                cnt++;
+            }
+        }
+        return cnt > 0? total / cnt : -1;
+    }
 
 
     private void handleConfigEvent(HashMap map) {
