@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.10 2007/08/08 16:11:39 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.11 2007/08/10 08:48:04 belaban Exp $
  */
 public class NAKACK extends Protocol implements NAKACKMBean {
     org.jgroups.protocols.pbcast.NAKACK p;
@@ -118,8 +118,15 @@ public class NAKACK extends Protocol implements NAKACKMBean {
         return p.printRetransmissionTimes();
     }
 
+    public String printSmoothedRetransmissionAvgs() {
+        return p.printSmoothedRetransmissionAvgs();
+    }
 
     public double getTotalAverageRetransmissionTime() {
         return p.getTotalAverageRetransmissionTime();
+    }
+
+    public double getTotalAverageSmoothedRetransmissionTime() {
+        return p.getTotalAverageSmoothedRetransmissionTime();
     }
 }
