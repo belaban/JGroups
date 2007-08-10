@@ -8,6 +8,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.*;
 
 import java.io.IOException;
@@ -36,10 +37,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.151 2007/08/10 08:58:55 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.152 2007/08/10 12:32:18 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
-    private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     private boolean             is_server=false;
     private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -267,7 +268,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             tmp=Util.parseCommaDelimitedLongs(str);
             props.remove("retransmit_timeout");
             if(tmp != null && tmp.length > 0) {
-                retransmit_timeout=tmp;
+                retransmit_timeouts=tmp;
             }
         }
 
@@ -1215,7 +1216,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
         NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer);
-        win.setRetransmitTimeouts(retransmit_timeout);
+        win.setRetransmitTimeouts(new StaticInterval(retransmit_timeouts));
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
         win.setMaxXmitBufSize(this.max_xmit_buf_size);
         if(stats)

@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.20 2007/03/19 16:46:07 belaban Exp $
+// $Id: Retransmitter.java,v 1.21 2007/08/10 12:32:16 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,13 +25,13 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 public class Retransmitter {
 
     private static final long SEC=1000;
     /** Default retransmit intervals (ms) - exponential approx. */
-    private static long[] RETRANSMIT_TIMEOUTS={2 * SEC, 3 * SEC, 5 * SEC, 8 * SEC};
+    private static Interval      RETRANSMIT_TIMEOUTS=new StaticInterval(2 * SEC, 3 * SEC, 5 * SEC, 8 * SEC);
 
     private Address              sender=null;
     private final List<Entry>    msgs=new LinkedList<Entry>();  // List<Entry> of elements to be retransmitted
@@ -78,9 +78,9 @@ public class Retransmitter {
     }
 
 
-    public void setRetransmitTimeouts(long[] timeouts) {
-        if(timeouts != null)
-            RETRANSMIT_TIMEOUTS=timeouts;
+    public void setRetransmitTimeouts(Interval interval) {
+        if(interval != null)
+            RETRANSMIT_TIMEOUTS=interval;
     }
 
 
@@ -98,7 +98,8 @@ public class Retransmitter {
             last_seqno=tmp;
         }
 
-        Entry entry=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS);
+        // each entry needs its own retransmission interval, intervals are stateful *and* mutable, so we *need* to copy !
+        Entry entry=new Entry(first_seqno, last_seqno, RETRANSMIT_TIMEOUTS.copy());
         synchronized(msgs) {
             msgs.add(entry);
         }
@@ -226,8 +227,8 @@ public class Retransmitter {
         private final Interval intervals;
         private Future         future;
 
-        protected Task(long[] intervals) {
-            this.intervals=new Interval(intervals);
+        protected Task(Interval intervals) {
+            this.intervals=intervals;
         }
 
         public long nextInterval() {
@@ -262,7 +263,7 @@ public class Retransmitter {
         /** List<long[2]> of ranges to be retransmitted */
         final java.util.List<long[]> list=new ArrayList<long[]>();
 
-        public Entry(long low, long high, long[] intervals) {
+        public Entry(long low, long high, Interval intervals) {
             super(intervals);
             this.low=low;
             this.high=high;
@@ -390,7 +391,7 @@ public class Retransmitter {
         try {
             sender=new org.jgroups.stack.IpAddress("localhost", 5555);
             xmitter=new Retransmitter(sender, new MyXmitter());
-            xmitter.setRetransmitTimeouts(new long[]{1000, 2000, 4000, 8000});
+            xmitter.setRetransmitTimeouts(new StaticInterval(new long[]{1000, 2000, 4000, 8000}));
 
             xmitter.add(1, 10);
             System.out.println("retransmitter: " + xmitter);

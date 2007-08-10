@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.48 2007/08/08 16:08:50 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.49 2007/08/10 12:32:17 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -161,7 +161,7 @@ public class NakReceiverWindow {
     }
 
 
-    public void setRetransmitTimeouts(long[] timeouts) {
+    public void setRetransmitTimeouts(Interval timeouts) {
         retransmitter.setRetransmitTimeouts(timeouts);
     }
 

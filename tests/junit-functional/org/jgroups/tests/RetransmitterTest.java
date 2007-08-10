@@ -1,4 +1,4 @@
-// $Id: RetransmitterTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,6 +6,7 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.Address;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.StaticInterval;
 
 
 public class RetransmitterTest extends TestCase {
@@ -15,7 +16,7 @@ public class RetransmitterTest extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         xmitter=new Retransmitter(sender, new MyXmitter());
-        xmitter.setRetransmitTimeouts(new long[]{1000, 2000, 4000, 8000});
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
     }
 
 

@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  * retransmissions because of timeouts.
  * @author Bela Ban June 9 1999, 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: AckMcastSenderWindow.java,v 1.13 2007/02/12 14:25:54 belaban Exp $
+ * @version $Id: AckMcastSenderWindow.java,v 1.14 2007/08/10 12:32:16 belaban Exp $
  */
 public class AckMcastSenderWindow {
     /**
@@ -58,11 +58,7 @@ public class AckMcastSenderWindow {
     /**
      * Default retransmit intervals (ms) - exponential approx.
      */
-    private static final long[] RETRANSMIT_TIMEOUTS={
-            2 * SEC,
-            3 * SEC,
-            5 * SEC,
-            8 * SEC};
+    private static final Interval RETRANSMIT_TIMEOUTS=new StaticInterval(2 * SEC, 3 * SEC, 5 * SEC, 8 * SEC);
     /**
      * Default retransmit thread suspend timeout (ms)
      */
@@ -108,7 +104,7 @@ public class AckMcastSenderWindow {
     /**
      * Retransmission intervals
      */
-    private long[] retransmit_intervals;
+    private Interval retransmit_intervals;
     /**
      * The callback object for retransmission
      */
@@ -168,7 +164,7 @@ public class AckMcastSenderWindow {
      *                             within this object
      * @throws IllegalArgumentException if <code>cmd</code> is null
      */
-    private void init(RetransmitCommand cmd, long[] retransmit_intervals, TimeScheduler timer, boolean sched_owned) {
+    private void init(RetransmitCommand cmd, Interval retransmit_intervals, TimeScheduler timer, boolean sched_owned) {
         if(cmd == null) {
             if(log.isErrorEnabled()) log.error("command is null. Cannot retransmit " + "messages !");
             throw new IllegalArgumentException("cmd");
@@ -190,7 +186,7 @@ public class AckMcastSenderWindow {
      * @throws IllegalArgumentException if <code>cmd</code> is null
      */
     public AckMcastSenderWindow(RetransmitCommand cmd,
-                                long[] retransmit_intervals, TimeScheduler sched) {
+                                Interval retransmit_intervals, TimeScheduler sched) {
         init(cmd, retransmit_intervals, sched, false);
     }
 
@@ -213,7 +209,7 @@ public class AckMcastSenderWindow {
      *                             retransmission attempts
      * @throws IllegalArgumentException if <code>cmd</code> is null
      */
-    public AckMcastSenderWindow(RetransmitCommand cmd, long[] retransmit_intervals) {
+    public AckMcastSenderWindow(RetransmitCommand cmd, Interval retransmit_intervals) {
         init(cmd, retransmit_intervals, new TimeScheduler(), true);
     }
 
@@ -240,7 +236,8 @@ public class AckMcastSenderWindow {
 
         synchronized(msgs) {
             if(msgs.get(new Long(seqno)) != null) return;
-            Entry e=new Entry(seqno, msg, receivers, retransmit_intervals);
+            // each entry needs its own retransmission interval, intervals are stateful *and* mutable, so we *need* to copy !
+            Entry e=new Entry(seqno, msg, receivers, retransmit_intervals.copy());
             Future future=timer.scheduleWithDynamicInterval(e);
             e.setFuture(future);
             msgs.put(new Long(seqno), e);
@@ -530,8 +527,8 @@ public class AckMcastSenderWindow {
         private final Interval intervals;
         private Future future;
 
-        protected Task(long[] intervals) {
-            this.intervals=new Interval(intervals);
+        protected Task(Interval intervals) {
+            this.intervals=intervals;
         }
 
 
@@ -574,7 +571,7 @@ public class AckMcastSenderWindow {
          */
         public int num_received=0;
 
-        public Entry(long seqno, Message msg, Vector dests, long[] intervals) {
+        public Entry(long seqno, Message msg, Vector dests, Interval intervals) {
             super(intervals);
             this.seqno=seqno;
             this.msg=msg;

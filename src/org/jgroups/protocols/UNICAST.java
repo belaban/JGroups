@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.88 2007/08/10 07:11:53 belaban Exp $
+// $Id: UNICAST.java,v 1.89 2007/08/10 12:32:16 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
@@ -36,7 +37,7 @@ import java.util.*;
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
     private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
-    private long[]                timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
+    private long[]                timeouts={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     private Address               local_addr=null;
     private TimeScheduler         timer=null;                    // used for retransmissions (passed to AckSenderWindow)
 
@@ -173,7 +174,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(str != null) {
         tmp=Util.parseCommaDelimitedLongs(str);
         if(tmp != null && tmp.length > 0)
-        timeout=tmp;
+        timeouts=tmp;
             props.remove("timeout");
         }
 
@@ -319,7 +320,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
                         if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, timeout, timer, this.local_addr); // use the protocol stack's timer
+                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the protocol stack's timer
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled())

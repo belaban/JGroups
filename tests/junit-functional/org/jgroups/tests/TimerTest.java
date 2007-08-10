@@ -1,4 +1,4 @@
-// $Id: TimerTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: TimerTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -6,6 +6,7 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.stack.Interval;
+import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
 
 import java.util.HashMap;
@@ -21,7 +22,7 @@ import java.util.TimerTask;
  */
 public class TimerTest extends TestCase {
     Timer win=null;
-    final int NUM_MSGS=1000;
+    static final int NUM_MSGS=1000;
     long[] xmit_timeouts={1000, 2000, 4000, 8000};
     double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
     HashMap msgs=new HashMap(); // keys=seqnos (Long), values=Entries
@@ -47,7 +48,7 @@ public class TimerTest extends TestCase {
         long second_xmit=0; // time between first_xmit and second_xmit should be ca. 2000ms
         long third_xmit=0;  // time between third_xmit and second_xmit should be ca. 4000ms
         long fourth_xmit=0; // time between third_xmit and second_xmit should be ca. 8000ms
-        Interval interval=new Interval(xmit_timeouts);
+        Interval interval=new StaticInterval(xmit_timeouts);
         long seqno=0;
 
         Entry(long seqno) {
@@ -121,7 +122,7 @@ public class TimerTest extends TestCase {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(first_xmit - start_time).append(", ").append(second_xmit - first_xmit).append(", ");
             sb.append(third_xmit - second_xmit).append(", ").append(fourth_xmit - third_xmit);
             return sb.toString();
@@ -176,7 +177,7 @@ public class TimerTest extends TestCase {
                     System.out.println(i + ": " + entry);
             }
         }
-        assertTrue(num_non_correct_entries == 0);
+        assertSame(0, num_non_correct_entries);
         try {
             win.cancel();
         }

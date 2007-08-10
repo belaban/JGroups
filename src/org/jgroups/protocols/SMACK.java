@@ -1,12 +1,10 @@
-// $Id: SMACK.java,v 1.24 2007/05/01 10:55:10 belaban Exp $
+// $Id: SMACK.java,v 1.25 2007/08/10 12:32:16 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.stack.AckMcastSenderWindow;
-import org.jgroups.stack.AckReceiverWindow;
-import org.jgroups.stack.Protocol;
+import org.jgroups.stack.*;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -45,11 +43,11 @@ import java.util.Vector;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
-    long[]                 timeout={1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
+    long[]                 timeout=new long[]{1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
     final Vector                 members=new Vector();      // contains Addresses
     AckMcastSenderWindow   sender_win=null;
@@ -245,7 +243,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
 //                 return;
 
                 Object ret=down_prot.down(evt);
-                sender_win=new AckMcastSenderWindow(this, timeout);
+                sender_win=new AckMcastSenderWindow(this, new StaticInterval(timeout));
 
                 // send join announcement
                 Message join_msg=new Message();
