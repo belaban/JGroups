@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.87 2007/07/27 11:00:53 belaban Exp $
+// $Id: UNICAST.java,v 1.88 2007/08/10 07:11:53 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -269,8 +269,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         switch (evt.getType()) {
 
             case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
-                Message msg=(Message) evt.getArg();
-                Address  dst=msg.getDest();
+                Message msg=(Message)evt.getArg();
+                Address dst=msg.getDest();
 
                 /* only handle unicast messages */
                 if (dst == null || dst.isMulticastAddress()) {
@@ -312,7 +312,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
-                Message tmp;
                 synchronized(entry) { // threads will only sync if they access the same entry
                     long seqno=-2;
 
@@ -326,8 +325,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         if(log.isTraceEnabled())
                             log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                                     append(seqno));
-                        tmp=msg;
-                        entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
+                        entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
                     }
                     catch(Throwable t) {
@@ -346,7 +344,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
                 // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
                 try {
-                    down_prot.down(new Event(Event.MSG, tmp));
+                    down_prot.down(evt);
                     num_msgs_sent++;
                     num_bytes_sent+=msg.getLength();
                 }
