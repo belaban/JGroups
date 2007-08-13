@@ -5,10 +5,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.stack.NakReceiverWindow;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.Retransmitter;
-import org.jgroups.stack.StaticInterval;
+import org.jgroups.stack.*;
 import org.jgroups.util.*;
 
 import java.io.IOException;
@@ -37,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.152 2007/08/10 12:32:18 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.153 2007/08/13 12:32:15 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -65,6 +62,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     private boolean xmit_from_random_member=false;
 
+
+    /** The first value (in milliseconds) to use in the exponential backoff retransmission mechanism. Only enabled
+     * if the value is > 0
+     */
+    private long exponential_backoff=0;
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
@@ -291,6 +293,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             use_mcast_xmit=Boolean.valueOf(str).booleanValue();
             props.remove("use_mcast_xmit");
+        }
+
+        str=props.getProperty("exponential_backoff");
+        if(str != null) {
+            exponential_backoff=Long.parseLong(str);
+            props.remove("exponential_backoff");
+            if(log.isWarnEnabled())
+                log.warn("note that \"exponential_backoff\" is an experimental feature and may be removed at any time");
         }
 
         str=props.getProperty("discard_delivered_msgs");
@@ -1216,7 +1226,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
         NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer);
-        win.setRetransmitTimeouts(new StaticInterval(retransmit_timeouts));
+        if(exponential_backoff > 0) {
+            win.setRetransmitTimeouts(new DynamicInterval(exponential_backoff));
+        }
+        else {
+            win.setRetransmitTimeouts(new StaticInterval(retransmit_timeouts));
+        }
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
         win.setMaxXmitBufSize(this.max_xmit_buf_size);
         if(stats)
