@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindowTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
+// $Id: AckMcastSenderWindowTest.java,v 1.3 2007/08/13 12:48:56 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -233,11 +233,11 @@ public class AckMcastSenderWindowTest extends TestCase {
         mywin.ack(seqno, sender2);
 
         System.out.println("entry is " + mywin.printDetails(seqno));
-        assertSame(3, mywin.getNumberOfResponsesExpected(seqno));
-        assertSame(2, mywin.getNumberOfResponsesReceived(seqno));
+        assertEquals(3, mywin.getNumberOfResponsesExpected(seqno));
+        assertEquals(2, mywin.getNumberOfResponsesReceived(seqno));
         mywin.waitUntilAllAcksReceived(4000);
         mywin.suspect(sender3);
-        assertSame(0, mywin.size()); // because suspect() removed that entry
+        assertEquals(0, mywin.size()); // because suspect() removed that entry
     }
 
 
