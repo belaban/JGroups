@@ -428,15 +428,180 @@
         <title>Reliable message transmission</title>
 
         <section>
-            <title>NAKACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
             <title>pbcast.NAKACK</title>
 
-            <para></para>
+            <para>
+                NAKACK provides reliable delivery and FIFO (= First In First Out) properties for messages sent to all
+                nodes in a cluster.
+                </para>
+            <para>
+                Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
+                numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
+                a message<footnote>
+                <para>
+                    Note that NAKACK can also be configured to send retransmission requests for M to
+                    <emphasis>anyone</emphasis> in the cluster, rather than only to the sender of M.
+                </para>
+            </footnote> if that sequence number is not received.
+            </para>
+            <para>
+                FIFO order means that all messages from a given sender are received in exactly the order in which
+                they were sent.
+            </para>
+
+            <table>
+                <title>Properties</title>
+
+                <tgroup cols="2">
+                    <colspec align="left"/>
+
+                    <thead>
+                        <row>
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                        </row>
+                    </thead>
+
+                    <tbody>
+                        <row>
+                            <entry>retransmit_timeout</entry>
+                            <entry>
+                                A comma-separated list of milliseconds, e.g. 100,200,400,800,1600. We ask for
+                                retransmission of a given message 100ms after it wasn't received, then 200ms, and so on,
+                                until we're at 1600ms. From then on, we will send retransmit requests for that message
+                                every 100ms, until the message is received, or the original sender crashed.
+                                <para>
+                                    Example: retransmit_timeout="300,600,1200,2400"
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>exponential_backoff</entry>
+                            <entry>
+                                Value in milliseconds. If greater than 0, exponential backoff for retransmission is
+                                enabled. The value is then the initial value, and we'll double it every time we ask
+                                for retransmission, until a max value of 5000ms.
+                                <para>
+                                    If the value is greater than 0, exponential backoff is enabled and retransmit_timeout
+                                    will be ignored.
+                                </para>
+                                <para>
+                                    Note that this property is experimental, and may be removed at any time.
+                                </para>
+                                <para>
+                                    Example: exponential_backoff="30"
+                                </para>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry>use_stats_for_retransmission</entry>
+                            <entry>
+                                Boolean. If true, we ignore both retransmit_timeout and exponential_backoff, and use
+                                statistics that we collect during retransmission to compute the ideal retransmission
+                                times, based on actual retransmission times.
+                                <para>
+                                    Note that this property is experimental, and may be removed at any time.
+                                </para>
+                                <para>
+                                    Example: use_stats_for_retransmission="true"
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>max_xmit_size</entry>
+                            <entry>
+                                The maximum size (in bytes) for bundled retransmissions. When a node gets retransmission
+                                requests for multiple messages, it would actually bundle all retransmitted messages into
+                                larger messages, up to max_xmit_size bytes.
+                                <para>
+                                    Note that this property might get removed in a future version, as we can do the same
+                                    with message bundling at the transport level.
+                                </para>
+                                <para>
+                                    Note that max_xmit_size should be smaller than the max bundling size in the transport
+                                    (if enabled).
+                                </para>
+                                <para>
+                                    Example: <code>max_xmit_size="60000"</code>
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>use_mcast_xmit</entry>
+                            <entry>
+                                When we get a retransmission request from P for a message M, then we send the retransmitted
+                                M to P. However, assuming that many nodes lost M, we might as well send M to the entire
+                                cluster, so that we can satisfy many retransmit requests at the same time.
+                                <para>
+                                    Setting this option to true only makes sense for an IP multicast capable transport
+                                    (e.g. UDP), where we send the retransmitted message one time. Otherwise, e.g. if
+                                    we use TCP, we send the message N-1 times, one time for each node.
+                                </para>
+                                <para>
+                                    Example: <code>use_mcast_xmit="true"</code>
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>xmit_from_random_member</entry>
+                            <entry>
+                                Instead of sending all retransmit requests to the original sender of a message, we could
+                                also pick a random member of the cluster. Setting xmit_from_random_member="true" does this.
+                                The advantage is that the retransmission load is distributed more equally across the cluster.
+                                The down side is that a random member may or may not yet have received a given message,
+                                so it may not be able to satisfy the retransmission request. In this case, it may take
+                                a few retransmission requests to different members in the cluster to finally get the
+                                requested message.
+                                <para>
+                                    Note that <code>discard_delivered_msgs</code> must be set to false if this option is
+                                    enabled.
+                                </para>
+                                <para>
+                                    Example: <code>xmit_from_random_member="true"</code>
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+                        <row>
+                            <entry></entry>
+                            <entry>
+                            </entry>
+                        </row>
+
+                    </tbody>
+                </tgroup>
+            </table>
+
         </section>
 
         <section>
@@ -464,6 +629,7 @@
 
     <section>
         <title>Ordering (FIFO covered by NAKACK)</title>
+        <para></para>
 
         <section>
             <title>Total Order (SEQUENCER)</title>
