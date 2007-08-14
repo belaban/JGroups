@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.70 2007/07/30 12:42:09 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.71 2007/08/14 07:49:15 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -91,6 +91,10 @@ public class CoordGmsImpl extends GmsImpl {
     public void join(Address mbr) {
         wrongMethod("join");
     }
+    
+    public void joinWithStateTransfer(Address mbr) {
+        wrongMethod("join");
+    }
 
     /** The coordinator itself wants to leave the group */
     public void leave(Address mbr) {
@@ -100,7 +104,7 @@ public class CoordGmsImpl extends GmsImpl {
         }
         if(mbr.equals(gms.local_addr))
             leaving=true;
-        gms.getViewHandler().add(new GMS.Request(GMS.Request.LEAVE, mbr, false, null));
+        gms.getViewHandler().add(new Request(Request.LEAVE, mbr, false, null));
         gms.getViewHandler().stop(true); // wait until all requests have been processed, then close the queue and leave
         gms.getViewHandler().waitUntilCompleted(gms.leave_timeout);
     }
@@ -115,11 +119,10 @@ public class CoordGmsImpl extends GmsImpl {
         if(mbr.equals(gms.local_addr)) {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm being am suspected -- will probably leave shortly");
             return;
-        }
-        Collection emptyVector=new LinkedHashSet(0);
-        Collection suspected=new LinkedHashSet(1);
-        suspected.add(mbr);
-        handleMembershipChange(emptyVector, emptyVector, suspected);
+        }        
+        Collection<Request> suspected=new LinkedHashSet<Request>(1);
+        suspected.add(new Request(Request.SUSPECT,mbr,true,null));
+        handleMembershipChange(suspected);
     }
 
     public void unsuspect(Address mbr) {
@@ -279,7 +282,7 @@ public class CoordGmsImpl extends GmsImpl {
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
 
-        GMS.Request req=new GMS.Request(GMS.Request.VIEW);
+        Request req=new Request(Request.VIEW);
         req.view=data.view;
         req.digest=data.digest;
         req.target_members=my_members;
@@ -316,14 +319,35 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
+    public void handleMembershipChange(Collection<Request> requests) {
+        boolean joinAndStateTransferInitiated=false;
+        Collection<Address> new_mbrs=new LinkedHashSet<Address>(requests.size());
+        Collection<Address> suspected_mbrs=new LinkedHashSet<Address>(requests.size());
+        Collection<Address> leaving_mbrs=new LinkedHashSet<Address>(requests.size());
 
-    public void handleMembershipChange(Collection new_mbrs, Collection leaving_mbrs, Collection suspected_mbrs) {
-        if(new_mbrs       == null) new_mbrs=new LinkedHashSet(0);
-        if(suspected_mbrs == null) suspected_mbrs=new LinkedHashSet(0);
-        if(leaving_mbrs   == null) leaving_mbrs=new LinkedHashSet(0);
-        boolean joining_mbrs=!new_mbrs.isEmpty();
+        for(Request req: requests) {
+            switch(req.type) {
+                case Request.JOIN:
+                    new_mbrs.add(req.mbr);
+                    break;
+                case Request.JOIN_WITH_STATE_TRANSFER:
+                    new_mbrs.add(req.mbr);
+                    joinAndStateTransferInitiated=true;
+                    break;
+                case Request.LEAVE:
+                    if(req.suspected)
+                        suspected_mbrs.add(req.mbr);
+                    else
+                        leaving_mbrs.add(req.mbr);
+                    break;
+                case Request.SUSPECT:
+                    suspected_mbrs.add(req.mbr);
+                    break;
+            }
+        }
 
         new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
+        boolean joining_mbrs=!new_mbrs.isEmpty();
 
         if(gms.view_id == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
@@ -334,7 +358,7 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
 
-        Vector current_members=gms.members.getMembers();
+        Vector<Address> current_members=gms.members.getMembers();
         leaving_mbrs.retainAll(current_members); // remove all elements of leaving_mbrs which are not current members
         if(suspected_mbrs.remove(gms.local_addr)) {
             if(log.isWarnEnabled()) log.warn("I am the coord and I'm being suspected -- will probably leave shortly");
@@ -342,8 +366,8 @@ public class CoordGmsImpl extends GmsImpl {
         suspected_mbrs.retainAll(current_members); // remove all elements of suspected_mbrs which are not current members
 
         // for the members that have already joined, return the current digest and membership
-        for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
-            Address mbr=(Address)it.next();
+        for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
+            Address mbr=it.next();
             if(gms.members.contains(mbr)) { // already joined: return current digest and membership
                 JoinRsp join_rsp;
                 if(gms.reject_join_from_existing_member) {
@@ -370,7 +394,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);
-        try {           
+        try {
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
@@ -393,26 +417,26 @@ public class CoordGmsImpl extends GmsImpl {
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
-            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;         
+            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;
             if(gms.flushProtocolInStack) {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
                 // (below in finally clause) and members are allowed to send messages again                                      
-                boolean successfulFlush = gms.startFlush(new_view,4000);                
-                if (successfulFlush){
-                   if(log.isTraceEnabled())
-                      log.trace("Successful GMS flush by coordinator at " + gms.getLocalAddress());
+                boolean successfulFlush=gms.startFlush(new_view, 4000);
+                if(successfulFlush) {
+                    if(log.isTraceEnabled())
+                        log.trace("Successful GMS flush by coordinator at " + gms.getLocalAddress());
                 }
                 else {
-                   if(log.isWarnEnabled())
-                      log.warn("GMS flush by coordinator at " + gms.getLocalAddress() + " failed");
+                    if(log.isWarnEnabled())
+                        log.warn("GMS flush by coordinator at " + gms.getLocalAddress() + " failed");
                 }
                 sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
                 gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
             }
             else {
-               if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
-                  tmp_mbrs.removeAll(new_mbrs);
+                if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
+                    tmp_mbrs.removeAll(new_mbrs);
                 // Broadcast the new view
                 // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
                 // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
@@ -425,14 +449,13 @@ public class CoordGmsImpl extends GmsImpl {
         finally {
             if(joining_mbrs)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
-            if(gms.flushProtocolInStack)
+            if(gms.flushProtocolInStack && !joinAndStateTransferInitiated)
                 gms.stopFlush(new_view);
             if(leaving) {
                 gms.initState(); // in case connect() is called again
             }
         }
     }
-
 
 
     /**
