@@ -1,12 +1,12 @@
-// $Id: UnicastChannelTest.java,v 1.5 2007/08/10 07:22:46 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.6 2007/08/14 15:33:36 belaban Exp $
 
 
 package org.jgroups.tests;
 
+import org.jgroups.Address;
+import org.jgroups.Event;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
-import org.jgroups.Event;
-import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.IpAddress;
 
@@ -133,7 +133,9 @@ public class UnicastChannelTest {
             else {
                 msg=(Message)obj;
                 System.out.println("-- " + msg.getObject());
-                rsp=new Message(msg.getSrc(), null, "ack for " + msg.getObject());
+                Address sender=msg.getSrc();
+                rsp=new Message(sender, null, "ack for " + msg.getObject());
+                ch.down(new Event(Event.ENABLE_UNICASTS_TO, sender));
                 ch.send(rsp);
             }
         }

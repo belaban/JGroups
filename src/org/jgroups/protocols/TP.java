@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.150 2007/08/14 08:16:44 belaban Exp $
+ * @version $Id: TP.java,v 1.151 2007/08/14 15:30:30 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1486,10 +1486,15 @@ public abstract class TP extends Protocol {
                 }
             }
             else {
-                if(log.isTraceEnabled())
-                    log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
-                            append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
-                return;
+                if(channel_name == null) {
+                    ;
+                }
+                else {
+                    if(log.isTraceEnabled())
+                        log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
+                                append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
+                    return;
+                }
             }
 
             Event evt=new Event(Event.MSG, msg);
