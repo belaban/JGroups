@@ -3,6 +3,7 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
@@ -78,7 +79,7 @@ public class FLUSH extends Protocol {
      * predicate associated with blockMutex
      */
     @GuardedBy("blockMutex")
-    private boolean isBlockingFlushDown = true;
+    private volatile boolean isBlockingFlushDown = true;
 
     /**
      * Default timeout for a group member to be in
@@ -196,7 +197,7 @@ public class FLUSH extends Protocol {
         if(!flushPhase.isFlushInProgress() || isRetry){
             flush_promise.reset();
             Map atts = (Map) evt.getArg();
-            long timeout = ((Long) atts.get("timeout")).longValue();
+            long flush_timeout= ((Long) atts.get("timeout")).longValue();
             if(log.isDebugEnabled()){
                 if(isRetry)
                     log.debug("Retrying FLUSH at " + localAddress
@@ -210,14 +211,14 @@ public class FLUSH extends Protocol {
 
             onSuspend((View) atts.get("view"));
             try{
-                Boolean r = (Boolean) flush_promise.getResultWithTimeout(timeout);
+                Boolean r = (Boolean) flush_promise.getResultWithTimeout(flush_timeout);
                 successfulFlush = r.booleanValue();
             }catch(TimeoutException e){
                 if(log.isTraceEnabled())
                     log.trace("At " + localAddress
                               + " timed out waiting for flush responses after "
-                              + timeout
-                              + " msec");
+                              + flush_timeout
+                            + " msec");
             }
         }
 
@@ -260,11 +261,18 @@ public class FLUSH extends Protocol {
                 blockMessageDuringFlush();
             }
             break;
-        case Event.GET_STATE:
-            blockMessageDuringFlush();
+        case Event.GET_STATE:            
+            StateTransferInfo info=(StateTransferInfo)evt.getArg();
+            
+            //we block regular state transfers but not NOT join and get state transfer
+            boolean blockThisThread = info.useFlushIfPresent;
+            if(blockThisThread)
+                blockMessageDuringFlush();
+            
             break;
 
         case Event.CONNECT:
+        case Event.CONNECT_WITH_STATE_TRANSFER:    
             sendBlockUpToChannel();
             break;
 
