@@ -1451,6 +1451,13 @@ public interface ExtendedMessageListener {
       which particular state transfer type to use.</para>
     </section>
 
+      <section>
+          <title>Connecting to a channel and getting the state in one operation</title>
+          <para>
+              
+          </para>
+      </section>
+
     <section>
       <title>Disconnecting from a channel</title>
 
