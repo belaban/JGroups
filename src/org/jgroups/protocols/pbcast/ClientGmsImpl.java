@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.49 2007/07/20 11:33:31 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.50 2007/08/14 08:07:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.49 $
+ * @version $Revision: 1.50 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise join_promise=new Promise();
@@ -35,36 +35,50 @@ public class ClientGmsImpl extends GmsImpl {
         super.init();     
         join_promise.reset();
     }
+    
+    public void join(Address address){
+        join(address, false);
+    }
+    
 
+    public void joinWithStateTransfer(Address address){
+        join(address, true);
+    }
 
     /**
-     * Joins this process to a group. Determines the coordinator and sends a unicast
-     * handleJoin() message to it. The coordinator returns a JoinRsp and then broadcasts the new view, which
-     * contains a message digest and the current membership (including the joiner). The joiner is then
-     * supposed to install the new view and the digest and starts accepting mcast messages. Previous
-     * mcast messages were discarded (this is done in PBCAST).<p>
+     * Joins this process to a group. Determines the coordinator and sends a
+     * unicast handleJoin() message to it. The coordinator returns a JoinRsp and
+     * then broadcasts the new view, which contains a message digest and the
+     * current membership (including the joiner). The joiner is then supposed to
+     * install the new view and the digest and starts accepting mcast messages.
+     * Previous mcast messages were discarded (this is done in PBCAST).
+     * <p>
      * If successful, impl is changed to an instance of ParticipantGmsImpl.
-     * Otherwise, we continue trying to send join() messages to	the coordinator,
-     * until we succeed (or there is no member in the group. In this case, we create our own singleton group).
-     * <p>When GMS.disable_initial_coord is set to true, then we won't become coordinator on receiving an initial
-     * membership of 0, but instead will retry (forever) until we get an initial membership of > 0.
+     * Otherwise, we continue trying to send join() messages to the coordinator,
+     * until we succeed (or there is no member in the group. In this case, we
+     * create our own singleton group).
+     * <p>
+     * When GMS.disable_initial_coord is set to true, then we won't become
+     * coordinator on receiving an initial membership of 0, but instead will
+     * retry (forever) until we get an initial membership of > 0.
+     * 
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
-     */   
-	public void join(Address mbr) {
+     */
+    private void join(Address mbr, boolean joinWithStateTransfer) {
         Address coord;
         JoinRsp rsp;
-        View    tmp_view;
+        View tmp_view;
         leaving=false;
 
         join_promise.reset();
         while(!leaving) {
-        	List<PingRsp> responses = findInitialMembers();        
-            if(log.isDebugEnabled()) log.debug("initial_mbrs are " + responses);
+            List<PingRsp> responses=findInitialMembers();
+            if(log.isDebugEnabled())
+                log.debug("initial_mbrs are " + responses);
             if(responses.isEmpty()) {
                 if(gms.disable_initial_coord) {
                     if(log.isTraceEnabled())
-                        log.trace("received an initial membership of 0, but cannot become coordinator " +
-                                "(disable_initial_coord=true), will retry fetching the initial membership");
+                        log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
                     continue;
                 }
                 if(log.isDebugEnabled())
@@ -85,27 +99,31 @@ public class ClientGmsImpl extends GmsImpl {
                 if(log.isTraceEnabled())
                     log.trace("could not determine coordinator from responses " + responses);
 
-                // so the member to become singleton member (and thus coord) is the first of all clients
+                // so the member to become singleton member (and thus coord) is
+                // the first of all clients
                 Set<Address> clients=new TreeSet<Address>(); // sorted
-                clients.add(mbr); // add myself again (was removed by findInitialMembers())
-                for(PingRsp response:responses){
-                	Address client_addr = response.getAddress();
-                	if(client_addr != null)
+                clients.add(mbr); // add myself again (was removed by
+                // findInitialMembers())
+                for(PingRsp response: responses) {
+                    Address client_addr=response.getAddress();
+                    if(client_addr != null)
                         clients.add(client_addr);
-				}                
+                }
                 if(log.isTraceEnabled())
                     log.trace("clients to choose new coord from are: " + clients);
                 Address new_coord=clients.iterator().next();
                 if(new_coord.equals(mbr)) {
                     if(log.isTraceEnabled())
-                        log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
+                        log.trace("I (" + mbr
+                                + ") am the first of the clients, will become coordinator");
                     becomeSingletonMember(mbr);
                     return;
                 }
                 else {
                     if(log.isTraceEnabled())
-                        log.trace("I (" + mbr + ") am not the first of the clients, " +
-                                "waiting for another client to become coordinator");
+                        log.trace("I (" + mbr
+                                + ") am not the first of the clients, "
+                                + "waiting for another client to become coordinator");
                     Util.sleep(500);
                 }
                 continue;
@@ -114,11 +132,12 @@ public class ClientGmsImpl extends GmsImpl {
             try {
                 if(log.isDebugEnabled())
                     log.debug("sending handleJoin(" + mbr + ") to " + coord);
-                sendJoinMessage(coord, mbr);
+                sendJoinMessage(coord, mbr, joinWithStateTransfer);
                 rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
 
                 if(rsp == null) {
-                    if(log.isWarnEnabled()) log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
+                    if(log.isWarnEnabled())
+                        log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
                 }
                 else {
                     // 1. check whether JOIN was rejected
@@ -131,19 +150,22 @@ public class ClientGmsImpl extends GmsImpl {
                     tmp_view=rsp.getView();
                     if(tmp_digest == null || tmp_view == null) {
                         if(log.isErrorEnabled())
-                            log.error("JoinRsp has a null view or digest: view=" + tmp_view + ", digest=" +
-                                    tmp_digest + ", skipping it");
+                            log.error("JoinRsp has a null view or digest: view=" + tmp_view
+                                    + ", digest="
+                                    + tmp_digest
+                                    + ", skipping it");
                     }
                     else {
-                        tmp_digest.incrementHighestDeliveredSeqno(coord); 	// see DESIGN for an explanantion
+                        tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
                         tmp_digest.seal();
                         gms.setDigest(tmp_digest);
 
-                        if(log.isDebugEnabled()) log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view +
-                                " [size=" + tmp_view.size() + "]\n\n");
+                        if(log.isDebugEnabled())
+                            log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
 
                         if(!installView(tmp_view)) {
-                            if(log.isErrorEnabled()) log.error("view installation failed, retrying to join group");
+                            if(log.isErrorEnabled())
+                                log.error("view installation failed, retrying to join group");
                             Util.sleep(gms.join_retry_timeout);
                             continue;
                         }
@@ -170,22 +192,23 @@ public class ClientGmsImpl extends GmsImpl {
                 throw illegal_arg;
             }
             catch(Throwable e) {
-                if(log.isDebugEnabled()) log.debug("exception=" + e + ", retrying");
+                if(log.isDebugEnabled())
+                    log.debug("exception=" + e + ", retrying");
             }
 
             Util.sleep(gms.join_retry_timeout);
         }
     }
 
-	private List<PingRsp> findInitialMembers() {
-		List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
-		for(Iterator<PingRsp> iter = responses.iterator();iter.hasNext();){
-			PingRsp response = iter.next();
-			if(response.own_addr !=null && response.own_addr.equals(gms.local_addr))
-				iter.remove();	
-		}	
-		return responses;
-	}
+    private List<PingRsp> findInitialMembers() {
+        List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
+        for(Iterator<PingRsp> iter = responses.iterator();iter.hasNext();){
+            PingRsp response = iter.next();
+            if(response.own_addr != null && response.own_addr.equals(gms.local_addr))
+                iter.remove();
+        }
+        return responses;
+    }
 
     public void leave(Address mbr) {
         leaving=true;
@@ -205,10 +228,9 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     public void unsuspect(Address mbr) {
-    }
-
-
-    public void handleMembershipChange (Collection newMembers, Collection leavingMembers, Collection suspectedMembers) {
+    }   
+    
+    public void handleMembershipChange (Collection<Request> requests) {
     }
 
 
@@ -250,12 +272,15 @@ public class ClientGmsImpl extends GmsImpl {
 
 
 
-    void sendJoinMessage(Address coord, Address mbr) {
+    void sendJoinMessage(Address coord, Address mbr,boolean joinWithTransfer) {
         Message msg;
         GMS.GmsHeader hdr;
 
         msg=new Message(coord, null, null);
-        hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr);
+        if(joinWithTransfer)
+            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr);
+        else
+            hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, mbr);
         msg.putHeader(gms.getName(), hdr);
         
         // we have to enable unicasts to coord, as coord is not in our membership (the unicast message would get dropped)
@@ -274,16 +299,16 @@ public class ClientGmsImpl extends GmsImpl {
         if(mbrs == null || mbrs.size() < 1)
             return null;
 
-        Hashtable<Address,Integer> votes=new Hashtable<Address,Integer>(5);
+        Map<Address,Integer> votes=new HashMap<Address,Integer>(5);
 
         // count *all* the votes (unlike the 2000 election)
         for(PingRsp mbr:mbrs) {            
             if(mbr.is_server && mbr.coord_addr != null) {
                 if(!votes.containsKey(mbr.coord_addr))
-                    votes.put(mbr.coord_addr, new Integer(1));
+                    votes.put(mbr.coord_addr, 1);
                 else {
-                    count=((Integer)votes.get(mbr.coord_addr)).intValue();
-                    votes.put(mbr.coord_addr, new Integer(count + 1));
+                    count=votes.get(mbr.coord_addr);
+                    votes.put(mbr.coord_addr, count + 1);
                 }
             }
         }
@@ -297,9 +322,9 @@ public class ClientGmsImpl extends GmsImpl {
 
         // determine who got the most votes
         most_votes=0;
-        for(Enumeration e=votes.keys(); e.hasMoreElements();) {
-            tmp=(Address)e.nextElement();
-            count=((Integer)votes.get(tmp)).intValue();
+        for(Map.Entry<Address,Integer> entry: votes.entrySet()) {
+            tmp=entry.getKey();
+            count=entry.getValue();
             if(count > most_votes) {
                 winner=tmp;
                 // fixed July 15 2003 (patch submitted by Darren Hobbs, patch-id=771418)
