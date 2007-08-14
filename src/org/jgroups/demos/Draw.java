@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.46 2007/08/14 07:18:18 belaban Exp $
+// $Id: Draw.java,v 1.47 2007/08/14 08:49:02 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -37,19 +37,23 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     boolean                        no_channel=false;
     boolean                        jmx;
     private boolean                use_state=false;
+    private boolean                use_blocking=false;
     private long                   state_timeout=5000;
 
 
-    public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout) throws Exception {
+    public Draw(String props, boolean no_channel, boolean jmx, boolean use_state, long state_timeout,
+                boolean use_blocking) throws Exception {
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
+        this.use_blocking=use_blocking;
         this.state_timeout=state_timeout;
         if(no_channel)
             return;
 
         channel=new JChannel(props);
-        // channel.setOpt(Channel.BLOCK, Boolean.TRUE);
+        if(use_blocking)
+            channel.setOpt(Channel.BLOCK, Boolean.TRUE);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.setReceiver(this);
         channel.addChannelListener(this);
@@ -89,6 +93,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
        boolean          no_channel=false;
        boolean          jmx=false;
        boolean          use_state=false;
+       boolean          use_blocking=false;
        String           group_name=null;
        long             state_timeout=5000;
 
@@ -117,6 +122,10 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                 use_state=true;
                 continue;
             }
+            if("-use_blocking".equals(args[i])) {
+                use_blocking=true;
+                continue;
+            }
             if("-timeout".equals(args[i])) {
                 state_timeout=Long.parseLong(args[++i]);
                 continue;
@@ -127,7 +136,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         }
 
         try {
-            draw=new Draw(props, no_channel, jmx, use_state, state_timeout);
+            draw=new Draw(props, no_channel, jmx, use_state, state_timeout, use_blocking);
             if(group_name != null)
                 draw.setGroupName(group_name);
             draw.go();
@@ -141,7 +150,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     static void help() {
         System.out.println("\nDraw [-help] [-no_channel] [-props <protocol stack definition>]" +
-                           " [-groupname <name>] [-state] [-timeout <state timeout>]");
+                           " [-groupname <name>] [-state] [-use_blocking] [-timeout <state timeout>]");
         System.out.println("-no_channel: doesn't use JGroups at all, any drawing will be relected on the " +
                            "whiteboard directly");
         System.out.println("-props: argument can be an old-style protocol stack specification, or it can be " +
