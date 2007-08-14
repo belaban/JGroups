@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.43 2007/07/04 06:05:13 belaban Exp $
+// $Id: TUNNEL.java,v 1.44 2007/08/14 08:16:30 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -140,26 +140,27 @@ public class TUNNEL extends TP {
     	stopReconnecting();
         stub.disconnect();
     }
-    
-    public Object handleDownEvent(Event evt) {
-		Object retEvent = super.handleDownEvent(evt);
-		switch(evt.getType()){
-		case Event.CONNECT:
-			try{
-				stub.connect(channel_name); 			
-			}catch(Exception e){
-				if(log.isErrorEnabled())
-					log.error("failed connecting to GossipRouter at " + router_host + ":"
-							+ router_port);			
-			}		
-			break;
 
-		case Event.DISCONNECT:			
-			teardownTunnel();				
-			break;
-		}
-		return retEvent;
-	}
+    public Object handleDownEvent(Event evt) {
+        Object retEvent=super.handleDownEvent(evt);
+        switch(evt.getType()) {
+            case Event.CONNECT:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+                try {
+                    stub.connect(channel_name);
+                }
+                catch(Exception e) {
+                    if(log.isErrorEnabled())
+                        log.error("failed connecting to GossipRouter at " + router_host + ":" + router_port);
+                }
+                break;
+
+            case Event.DISCONNECT:
+                teardownTunnel();
+                break;
+        }
+        return retEvent;
+    }
     
     private void startReconnecting() {
         reconnectorLock.lock();
