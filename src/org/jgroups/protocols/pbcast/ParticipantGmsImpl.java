@@ -1,4 +1,3 @@
-// $Id: ParticipantGmsImpl.java,v 1.25 2007/04/04 05:23:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -12,9 +11,13 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 
 
+/**
+ * @author Bela Ban
+ * @version $Id: ParticipantGmsImpl.java,v 1.26 2007/08/14 07:42:02 belaban Exp $
+ */
 public class ParticipantGmsImpl extends GmsImpl {
-    private final Vector     suspected_mbrs=new Vector(11);
-    private final Promise    leave_promise=new Promise();
+    private final Vector<Address> suspected_mbrs=new Vector<Address>(11);
+    private final Promise         leave_promise=new Promise();
 
 
     public ParticipantGmsImpl(GMS g) {
@@ -29,6 +32,10 @@ public class ParticipantGmsImpl extends GmsImpl {
     }
 
     public void join(Address mbr) {
+        wrongMethod("join");
+    }
+    
+    public void joinWithStateTransfer(Address mbr) {
         wrongMethod("join");
     }
 
@@ -88,10 +95,9 @@ public class ParticipantGmsImpl extends GmsImpl {
 
 
     public void suspect(Address mbr) {
-        Collection emptyVector=new LinkedHashSet(0);
-        Collection suspected=new LinkedHashSet(1);
-        suspected.add(mbr);
-        handleMembershipChange(emptyVector, emptyVector, suspected);
+        Collection<Request> suspected=new LinkedHashSet<Request>(1);
+        suspected.add(new Request(Request.SUSPECT,mbr,true,null));
+        handleMembershipChange(suspected);
     }
 
 
@@ -102,12 +108,17 @@ public class ParticipantGmsImpl extends GmsImpl {
     }
 
 
-    public void handleMembershipChange(Collection newMembers, Collection leavingMembers, Collection suspectedMembers) {
-        if(suspectedMembers == null || suspectedMembers.isEmpty())
+    public void handleMembershipChange(Collection<Request> requests) {
+        Collection<Address> suspectedMembers=new LinkedHashSet<Address>(requests.size());
+        for(Request req: requests) {
+            if(req.type == Request.SUSPECT)
+                suspectedMembers.add(req.mbr);
+        }
+        
+        if(suspectedMembers.isEmpty())
             return;
 
-        for(Iterator i=suspectedMembers.iterator(); i.hasNext();) {
-            Address mbr=(Address)i.next();
+        for(Address mbr: suspectedMembers) {
             if(!suspected_mbrs.contains(mbr))
                 suspected_mbrs.addElement(mbr);
         }
@@ -121,9 +132,8 @@ public class ParticipantGmsImpl extends GmsImpl {
 
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
-            for(Iterator i=suspectedMembers.iterator(); i.hasNext();) {
-                Address mbr=(Address)i.next();
-                gms.getViewHandler().add(new GMS.Request(GMS.Request.SUSPECT, mbr, true, null));
+            for(Address mbr: suspectedMembers) {
+                gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true, null));
                 gms.ack_collector.suspect(mbr);
             }
         }
@@ -162,7 +172,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             suspected_mbrs.removeAllElements();
             gms.becomeCoordinator();
             // gms.getImpl().suspect(mbr);
-            gms.getViewHandler().add(new GMS.Request(GMS.Request.SUSPECT, mbr, true, null));
+            gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true, null));
             gms.ack_collector.suspect(mbr);
         }
     }*/

@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import org.jgroups.protocols.pbcast.GmsImpl.Request;
 
 
 /**
@@ -20,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.109 2007/07/30 12:42:09 belaban Exp $
+ * @version $Id: GMS.java,v 1.110 2007/08/14 07:45:40 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -635,6 +636,9 @@ public class GMS extends Protocol {
                     case GmsHeader.JOIN_REQ:
                         view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null));
                         break;
+                    case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
+                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null));
+                        break;    
                     case GmsHeader.JOIN_RSP:
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
@@ -753,10 +757,9 @@ public class GMS extends Protocol {
 
 
     public Object down(Event evt) {
-        switch(evt.getType()) {
-
-            case Event.CONNECT:
-                Object arg=null;
+        Object arg=null;
+        switch(evt.getType()) {            
+            case Event.CONNECT:               
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -767,6 +770,18 @@ public class GMS extends Protocol {
                     arg=e;
                 }
                 return arg;  // don't pass down: was already passed down
+                
+            case Event.CONNECT_WITH_STATE_TRANSFER:                
+                down_prot.down(evt);
+                if(local_addr == null)
+                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
+                try {
+                    impl.joinWithStateTransfer(local_addr);
+                }
+                catch(Throwable e) {
+                    arg=e;
+                }
+                return arg;  // don't pass down: was already passed down    
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
@@ -946,6 +961,7 @@ public class GMS extends Protocol {
         public static final byte INSTALL_MERGE_VIEW=8;
         public static final byte CANCEL_MERGE=9;
         public static final byte VIEW_ACK=10;
+        public static final byte JOIN_REQ_WITH_STATE_TRANSFER = 11;
 
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
@@ -1130,59 +1146,7 @@ public class GMS extends Protocol {
 
 
 
-    public static class Request {
-        static final int JOIN    = 1;
-        static final int LEAVE   = 2;
-        static final int SUSPECT = 3;
-        static final int MERGE   = 4;
-        static final int VIEW    = 5;
 
-
-        int     type=-1;
-        Address mbr;
-        boolean suspected;
-        Vector  coordinators;
-        View    view;
-        Digest  digest;
-        List    target_members;
-
-        Request(int type) {
-            this.type=type;
-        }
-
-        Request(int type, Address mbr, boolean suspected, Vector coordinators) {
-            this.type=type;
-            this.mbr=mbr;
-            this.suspected=suspected;
-            this.coordinators=coordinators;
-        }
-
-        public int getType() {
-            return type;
-        }
-
-        public String toString() {
-            switch(type) {
-                case JOIN:    return "JOIN(" + mbr + ")";
-                case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
-                case SUSPECT: return "SUSPECT(" + mbr + ")";
-                case MERGE:   return "MERGE(" + coordinators + ")";
-                case VIEW:    return "VIEW (" + view.getVid() + ")";
-            }
-            return "<invalid (type=" + type + ")";
-        }
-
-        /**
-         * Specifies whether this request can be processed with other request simultaneously
-         */
-        public boolean canBeProcessedTogether(Request other) {
-            if(other == null)
-                return false;
-            int other_type=other.getType();
-            return (type == JOIN || type == LEAVE || type == SUSPECT) &&
-                    (other_type == JOIN || other_type == LEAVE || other_type == SUSPECT);
-        }
-    }
 
 
 
@@ -1190,7 +1154,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.109 2007/07/30 12:42:09 belaban Exp $
+     * @version $Id: GMS.java,v 1.110 2007/08/14 07:45:40 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1356,37 +1320,18 @@ public class GMS extends Protocol {
             return sb.toString();
         }
 
-        private void process(List requests) {
+        private void process(List<Request> requests) {
             if(requests.isEmpty())
                 return;
             if(log.isTraceEnabled())
                 log.trace("processing " + requests);
-            Request firstReq=(Request)requests.get(0);
+            Request firstReq=requests.get(0);
             switch(firstReq.type) {
                 case Request.JOIN:
+                case Request.JOIN_WITH_STATE_TRANSFER:
                 case Request.LEAVE:
-                case Request.SUSPECT:
-                    Collection<Address> newMembers=new LinkedHashSet<Address>(requests.size());
-                    Collection<Address> suspectedMembers=new LinkedHashSet<Address>(requests.size());
-                    Collection<Address> oldMembers=new LinkedHashSet<Address>(requests.size());
-                    for(Iterator i=requests.iterator(); i.hasNext();) {
-                        Request req=(Request)i.next();
-                        switch(req.type) {
-                            case Request.JOIN:
-                                newMembers.add(req.mbr);
-                                break;
-                            case Request.LEAVE:
-                                if(req.suspected)
-                                    suspectedMembers.add(req.mbr);
-                                else
-                                    oldMembers.add(req.mbr);
-                                break;
-                            case Request.SUSPECT:
-                                suspectedMembers.add(req.mbr);
-                                break;
-                        }
-                    }
-                    impl.handleMembershipChange(newMembers, oldMembers, suspectedMembers);
+                case Request.SUSPECT:                   
+                    impl.handleMembershipChange(requests);
                     break;
                 case Request.MERGE:
                     if(requests.size() > 1)
