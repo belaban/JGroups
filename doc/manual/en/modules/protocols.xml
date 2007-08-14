@@ -481,7 +481,7 @@
                             <entry>
                                 Value in milliseconds. If greater than 0, exponential backoff for retransmission is
                                 enabled. The value is then the initial value, and we'll double it every time we ask
-                                for retransmission, until a max value of 5000ms.
+                                for retransmission, until a max value of 15000ms.
                                 <para>
                                     If the value is greater than 0, exponential backoff is enabled and retransmit_timeout
                                     will be ignored.
