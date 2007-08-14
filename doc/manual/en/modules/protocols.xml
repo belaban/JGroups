@@ -567,37 +567,35 @@
                         </row>
 
                         <row>
-                            <entry></entry>
+                            <entry>discard_delivered_msgs</entry>
                             <entry>
+                                If set to true, messages received from other members are <emphasis>not</emphasis>
+                                buffered until stability purges them, but instead discarded immediately. This means that
+                                retransmission requests can only be satisfied by the original sender (and
+                                xmit_from_random_member won't work). However, since we don't have to wait for stability
+                                to kick in and purge messages seen by everyone, we conserve memory.
+                                <para>
+                                    Example: <code>discard_delivered_msgs="true"</code>
+                                </para>
                             </entry>
                         </row>
 
                         <row>
-                            <entry></entry>
+                            <entry>max_xmit_buf_size</entry>
                             <entry>
+                                Number of entries to keep in the retransmission tables. Since messages are buffered
+                                in the retransmission tables, we have to wait for a given message M to be delivered
+                                until all messages preceeding M have been delivered as well. Using max_xmit_buf_size
+                                makes the retransmission tables <emphasis>bounded</emphasis>, and older messages
+                                will get discarded if they haven't been received when max_xmit_buf_size elements are
+                                exceeded.
+                                <para>
+                                    Note that setting this property to true will cause <emphasis>message loss</emphasis>
+                                    in the case where a message is lost and not retransmitted because the retransmission
+                                    buffer is full !
+                                </para>
                             </entry>
                         </row>
-                        <row>
-                            <entry></entry>
-                            <entry>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry></entry>
-                            <entry>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry></entry>
-                            <entry>
-                            </entry>
-                        </row>
-                        <row>
-                            <entry></entry>
-                            <entry>
-                            </entry>
-                        </row>
-
                     </tbody>
                 </tgroup>
             </table>
