@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.141 2007/08/14 07:18:00 belaban Exp $
+ * @version $Id: JChannel.java,v 1.142 2007/08/14 14:03:32 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -380,13 +380,26 @@ public class JChannel extends Channel {
 
 
     /**
-     * This method will implement http://jira.jboss.com/jira/browse/JGRP-236, a combined join and state transfer.
-     * @param cluster_name
-     * @param target
-     * @param state_id
-     * @param timeout
-     * @return
-     * @throws ChannelException
+     * Connects this channel to a group and gets a state from a specified state provider.
+     * <p>
+     *
+     * This method essentially invokes <code>connect<code> and <code>getState<code> methods successively. 
+     * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and 
+     * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succesion. 
+     *   
+     * If the channel is already connected, an error message will be printed to the error log.
+     * If the channel is closed a ChannelClosed exception will be thrown.
+     * 
+     *                                       
+     * @param cluster_name  the cluster name to connect to. Cannot be null.
+     * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
+     * @param state_id the substate id for partial state transfer. If null entire state will be transferred. 
+     * @param timeout the timeout for state transfer. 
+     * @return true if both connect and state transfer succeeded, false otherwise.
+     * @exception ChannelException The protocol stack cannot be started
+     * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
+     *                                   A new channel has to be created first.
+     * 
      */
     public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
         startStack(cluster_name);
@@ -395,8 +408,6 @@ public class JChannel extends Channel {
         boolean joinSuccessful=false;
         // only connect if we are not a unicast channel
         if(cluster_name != null) {
-            if(flush_supported)
-                flush_unblock_promise.reset();
             
             Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
             Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
@@ -405,20 +416,7 @@ public class JChannel extends Channel {
             if(joinSuccessful) {
                 connected=true;
                 notifyChannelConnected(this);
-                stateTransferSuccessful=getState(target, state_id, timeout, false);
-                boolean singletonMember=my_view != null && my_view.size() == 1;
-                boolean shouldWaitForUnblock=flush_supported && receive_blocks
-                        && !singletonMember
-                        && !flush_unblock_promise.hasResult();
-                if(shouldWaitForUnblock) {
-                    try {
-                        flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-                    }
-                    catch(TimeoutException te) {
-                        if(log.isWarnEnabled())
-                            log.warn(local_addr + " waiting on UNBLOCK after connect timed out");
-                    }
-                }
+                stateTransferSuccessful=getState(target, state_id, timeout, false);               
             }
             else {
                 throw new ChannelException("connect() failed", (Throwable)res);
