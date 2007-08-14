@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.45 2007/06/19 10:27:39 belaban Exp $
+// $Id: Draw.java,v 1.46 2007/08/14 07:18:18 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -159,7 +159,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
 
     public void go() throws Exception {
-        if(!no_channel) {
+        if(!no_channel && !use_state) {
             channel.connect(groupname);
             if(jmx) {
                 MBeanServer server=Util.getMBeanServer();
@@ -194,7 +194,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         mainFrame.setBounds(new Rectangle(250, 250));
 
         if(!no_channel && use_state) {
-            channel.getState(null, state_timeout);
+            channel.connect(groupname,null,null, state_timeout);
         }
         mainFrame.setVisible(true);
     }
