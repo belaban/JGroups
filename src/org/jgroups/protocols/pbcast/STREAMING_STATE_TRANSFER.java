@@ -281,7 +281,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
             }else{
                 boolean successfulFlush = false;
-                if(flushProtocolInStack){
+                if(flushProtocolInStack && info.useFlushIfPresent){
                     Map atts = new HashMap();
                     atts.put("timeout", new Long(4000));
                     successfulFlush = (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
@@ -290,7 +290,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     if(log.isTraceEnabled())
                         log.trace("Successful flush at " + local_addr);
                 }else{
-                    if(flushProtocolInStack && log.isWarnEnabled()){
+                    if(flushProtocolInStack && info.useFlushIfPresent && log.isWarnEnabled()){
                         log.warn("Could not get successful flush from " + local_addr);
                     }
                 }
