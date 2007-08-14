@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.47 2007/08/14 08:49:02 belaban Exp $
+// $Id: Draw.java,v 1.48 2007/08/14 08:54:53 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -37,7 +37,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     boolean                        no_channel=false;
     boolean                        jmx;
     private boolean                use_state=false;
-    private boolean                use_blocking=false;
     private long                   state_timeout=5000;
 
 
@@ -46,7 +45,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         this.no_channel=no_channel;
         this.jmx=jmx;
         this.use_state=use_state;
-        this.use_blocking=use_blocking;
         this.state_timeout=state_timeout;
         if(no_channel)
             return;
@@ -327,8 +325,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     }
 
     public void sendClearPanelMsg() {
-        int                  tmp[]=new int[1]; tmp[0]=0;
-        DrawCommand          comm=new DrawCommand(DrawCommand.CLEAR);
+        DrawCommand comm=new DrawCommand(DrawCommand.CLEAR);
 
         try {
             byte[] buf=Util.streamableToByteBuffer(comm);
@@ -485,13 +482,11 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
                 new_state.put(point, col);
             }
 
-            if(new_state != null) {
-                synchronized(state) {
-                    state.clear();
-                    state.putAll(new_state);
-                    System.out.println("read state: " + state.size() + " entries");
-                    createOffscreenImage(true);
-                }
+            synchronized(state) {
+                state.clear();
+                state.putAll(new_state);
+                System.out.println("read state: " + state.size() + " entries");
+                createOffscreenImage(true);
             }
         }
 
@@ -533,7 +528,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             try {
                 byte[] buf=Util.streamableToByteBuffer(comm);
                 channel.send(new Message(null, null, buf));
-                Thread.yield();
+                // Thread.yield();
             }
             catch(Exception ex) {
                 System.err.println(ex);
