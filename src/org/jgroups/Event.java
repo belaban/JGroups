@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.46 2007/07/30 12:50:32 belaban Exp $
+// $Id: Event.java,v 1.47 2007/08/14 07:03:17 belaban Exp $
 
 package org.jgroups;
 
@@ -9,48 +9,49 @@ package org.jgroups;
  * @author Bela Ban
  */
 public class Event {
-    public static final int MSG                       =  1;  // arg = Message
-    public static final int CONNECT                   =  2;  // arg = group address (string)
-    public static final int DISCONNECT                =  4;  // arg = member address (Address)
-    public static final int VIEW_CHANGE               =  6;  // arg = View (or MergeView in case of merge)
-    public static final int SET_LOCAL_ADDRESS         =  8;
-    public static final int SUSPECT                   =  9;  // arg = Address of suspected member
-    public static final int BLOCK                     = 10;  // arg = null (used by FLUSH)
-    public static final int FIND_INITIAL_MBRS         = 12;   
-    public static final int MERGE                     = 14;  // arg = Vector of Objects
-    public static final int TMP_VIEW                  = 15;  // arg = View
-    public static final int BECOME_SERVER             = 16;  // sent when client has joined group
-    public static final int GET_APPLSTATE             = 17;  // get state from appl (arg=StateTransferInfo)
-    public static final int GET_STATE                 = 19;  // arg = StateTransferInfo
-    public static final int GET_STATE_OK              = 20;  // arg = StateTransferInfo
-    public static final int STATE_RECEIVED            = 21;  // arg = StateTransferInfo (with state and state_id)
-    public static final int STABLE                    = 30;  // arg = long[] (stable seqnos for mbrs)
-    public static final int GET_DIGEST                = 39;  //
-    public static final int SET_DIGEST                = 41;  // arg = Digest
-    public static final int EXIT                      = 46;  // received when member was forced out of the group
-    public static final int PERF                      = 47;  // for performance measurements
-    public static final int HEARD_FROM                = 50;  // arg = Vector (list of Addresses)
-    public static final int UNSUSPECT                 = 51;  // arg = Address (of unsuspected member)
-    public static final int MERGE_DIGEST              = 53;  // arg = Digest
-    public static final int CONFIG                    = 56;  // arg = HashMap (config properties)
-    public static final int GET_DIGEST_STABLE         = 57;
-    public static final int SUSPEND_STABLE            = 65;  // arg = Long (max_suspend_time)
-    public static final int RESUME_STABLE             = 66;  // arg = null
-    public static final int ENABLE_UNICASTS_TO        = 67;  // arg = Address (member)
-    public static final int SUSPEND					  = 68;  // arg = HashMap (used by FLUSH)
-    public static final int RESUME					  = 70;  // arg = null (used by FLUSH)
-    public static final int STATE_TRANSFER_INPUTSTREAM= 71;	 // arg=java.io.InputStream subclass
-    public static final int STATE_TRANSFER_OUTPUTSTREAM= 72; // arg=java.io.OutputStream subclass
-    public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED= 73;//arg=null
-    public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED= 74;//arg=null
-    public static final int UNBLOCK                   = 75;  //arg=null (indicate end of flush round)
-    public static final int CLOSE_BARRIER             = 76;  // arg = null
-    public static final int OPEN_BARRIER              = 77;  // arg = null
-    public static final int REBROADCAST				  = 78;  // arg = Digest
-    public static final int SHUTDOWN                  = 79;  // arg = null (shutdown without closing sockets or cleaning up)
+    public static final int MSG                                =  1;  // arg = Message
+    public static final int CONNECT                            =  2;  // arg = clster name (string)
+    public static final int DISCONNECT                         =  4;  // arg = member address (Address)
+    public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
+    public static final int SET_LOCAL_ADDRESS                  =  8;
+    public static final int SUSPECT                            =  9;  // arg = Address of suspected member
+    public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
+    public static final int FIND_INITIAL_MBRS                  = 12;
+    public static final int MERGE                              = 14;  // arg = Vector of Objects
+    public static final int TMP_VIEW                           = 15;  // arg = View
+    public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
+    public static final int GET_APPLSTATE                      = 17;  // get state from appl (arg=StateTransferInfo)
+    public static final int GET_STATE                          = 19;  // arg = StateTransferInfo
+    public static final int GET_STATE_OK                       = 20;  // arg = StateTransferInfo
+    public static final int STATE_RECEIVED                     = 21;  // arg = StateTransferInfo (with state and state_id)
+    public static final int STABLE                             = 30;  // arg = long[] (stable seqnos for mbrs)
+    public static final int GET_DIGEST                         = 39;  //
+    public static final int SET_DIGEST                         = 41;  // arg = Digest
+    public static final int EXIT                               = 46;  // received when member was forced out of the group
+    public static final int PERF                               = 47;  // for performance measurements
+    public static final int HEARD_FROM                         = 50;  // arg = Vector (list of Addresses)
+    public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
+    public static final int MERGE_DIGEST                       = 53;  // arg = Digest
+    public static final int CONFIG                             = 56;  // arg = HashMap (config properties)
+    public static final int GET_DIGEST_STABLE                  = 57;
+    public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
+    public static final int RESUME_STABLE                      = 66;  // arg = null
+    public static final int ENABLE_UNICASTS_TO                 = 67;  // arg = Address (member)
+    public static final int SUSPEND					           = 68;  // arg = HashMap (used by FLUSH)
+    public static final int RESUME					           = 70;  // arg = null (used by FLUSH)
+    public static final int STATE_TRANSFER_INPUTSTREAM         = 71;  // arg=java.io.InputStream subclass
+    public static final int STATE_TRANSFER_OUTPUTSTREAM        = 72;  // arg=java.io.OutputStream subclass
+    public static final int STATE_TRANSFER_INPUTSTREAM_CLOSED  = 73;  //arg=null
+    public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED = 74;  //arg=null
+    public static final int UNBLOCK                            = 75;  //arg=null (indicate end of flush round)
+    public static final int CLOSE_BARRIER                      = 76;  // arg = null
+    public static final int OPEN_BARRIER                       = 77;  // arg = null
+    public static final int REBROADCAST				           = 78;  // arg = Digest
+    public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
+    public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
 
 
-    public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
+    public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
 
     private final int    type;       // type of event
@@ -131,6 +132,7 @@ public class Event {
             case OPEN_BARRIER:           return "OPEN_BARRIER";
             case REBROADCAST:            return "REBROADCAST";
             case SHUTDOWN:               return "SHUTDOWN";
+            case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
