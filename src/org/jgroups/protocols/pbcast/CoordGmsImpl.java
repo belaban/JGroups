@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.71 2007/08/14 07:49:15 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.72 2007/08/14 07:58:51 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -24,21 +24,21 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends GmsImpl {
-    private boolean          merging=false;
-    private final MergeTask  merge_task=new MergeTask();
-    private final Vector     merge_rsps=new Vector(11);
+    private boolean                 merging=false;
+    private final MergeTask         merge_task=new MergeTask();
+    private final Vector<MergeData> merge_rsps=new Vector<MergeData>(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
-    private ViewId           merge_id=null;
+    private ViewId                  merge_id=null;
 
-    private Address          merge_leader=null;
+    private Address                 merge_leader=null;
 
     @GuardedBy("merge_canceller_lock")
-    private Future           merge_canceller_future=null;
+    private Future                  merge_canceller_future=null;
 
-    private final Lock       merge_canceller_lock=new ReentrantLock();
+    private final Lock              merge_canceller_lock=new ReentrantLock();
 
     /** the max time in ms to suspend message garbage collection */
-    private final Long       MAX_SUSPEND_TIMEOUT=new Long(30000);
+    private final Long              MAX_SUSPEND_TIMEOUT=new Long(30000);
 
 
     public CoordGmsImpl(GMS g) {
@@ -417,7 +417,7 @@ public class CoordGmsImpl extends GmsImpl {
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
 
-            Vector tmp_mbrs=new_view != null? new Vector(new_view.getMembers()) : null;
+            Vector<Address> tmp_mbrs=new_view != null? new Vector<Address>(new_view.getMembers()) : null;
             if(gms.flushProtocolInStack) {
                 // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
                 // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
@@ -630,7 +630,7 @@ public class CoordGmsImpl extends GmsImpl {
         Membership new_mbrs=new Membership();
         int num_mbrs;
         Address new_coord;
-        Vector subgroups=new Vector(11);
+        Vector<View> subgroups=new Vector<View>(11);
         // contains a list of Views, each View is a subgroup
 
         for(int i=0; i < merge_rsps.size(); i++) {
@@ -645,7 +645,7 @@ public class CoordGmsImpl extends GmsImpl {
                 }
                 // merge all membership lists into one (prevent duplicates)
                 new_mbrs.add(tmp_view.getMembers());
-                subgroups.addElement(tmp_view.clone());
+                subgroups.addElement((View)tmp_view.clone());
             }
         }
 
