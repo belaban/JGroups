@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.22 2007/07/04 08:31:41 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.23 2007/08/15 17:46:12 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -464,9 +464,8 @@ public class ConcurrentStartupTest extends ChannelTestBase
       }
 
       public void useChannel() throws Exception
-      {
-         channel.connect("test");
-         channel.getState(null, 25000);
+      {         
+         channel.connect("test",null,null, 25000);
          channel.send(null, null, channel.getLocalAddress());
       }
 
@@ -485,6 +484,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
          if (msg.getBuffer() == null)
             return;
          Object obj = msg.getObject();
+         log.info("-- [#" + getName() + " (" + channel.getLocalAddress() + ")]: received " + obj);
          synchronized (this)
          {
             l.add(obj);
