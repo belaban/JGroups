@@ -1,7 +1,5 @@
 package org.jgroups.tests;
 
-import org.jgroups.ReceiverAdapter;
-
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -10,9 +8,9 @@ import java.net.InetAddress;
 /**
  * Class that measure RTT between a client and server using datagram sockets
  * @author Bela Ban
- * @version $Id: RoundTripUdp.java,v 1.2 2006/08/05 19:30:59 belaban Exp $
+ * @version $Id: RoundTripUdp.java,v 1.3 2007/08/15 08:01:15 belaban Exp $
  */
-public class RoundTripUdp extends ReceiverAdapter {
+public class RoundTripUdp {
     DatagramSocket sock;
     InetAddress host;
     int port=7500;
