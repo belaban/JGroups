@@ -94,6 +94,8 @@ public class FLUSH extends Protocol {
 
     @GuardedBy("sharedLock")
     private boolean receivedMoreThanOneView = false;
+    
+    private volatile boolean allowMessagesToPassUp = false;
 
     private long startFlushTime;
 
@@ -158,6 +160,7 @@ public class FLUSH extends Protocol {
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
+        allowMessagesToPassUp = false;
     }
 
     public void stop() {
@@ -329,34 +332,45 @@ public class FLUSH extends Protocol {
             Message msg = (Message) evt.getArg();
             FlushHeader fh = (FlushHeader) msg.getHeader(getName());
             if(fh != null){
-                if(fh.type == FlushHeader.FLUSH_BYPASS){
-                    return up_prot.up(evt);
-                }else if(fh.type == FlushHeader.START_FLUSH){
-                    handleStartFlush(msg, fh);
-                }else if(fh.type == FlushHeader.FLUSH_RECONCILE){
-                    handleFlushReconcile(msg, fh);
-                }else if(fh.type == FlushHeader.FLUSH_RECONCILE_OK){
-                    onFlushReconcileOK(msg);
-                }else if(fh.type == FlushHeader.STOP_FLUSH){
-                    onStopFlush();
-                }else if(fh.type == FlushHeader.ABORT_FLUSH){
-                    // abort current flush
-                    flush_promise.setResult(Boolean.FALSE);
-                }else if(isCurrentFlushMessage(fh)){
-                    if(fh.type == FlushHeader.FLUSH_OK){
-                        onFlushOk(msg.getSrc(), fh.viewID);
-                    }else if(fh.type == FlushHeader.STOP_FLUSH_OK){
-                        onStopFlushOk(msg.getSrc());
-                    }else if(fh.type == FlushHeader.FLUSH_COMPLETED){
-                        onFlushCompleted(msg.getSrc(), fh.digest);
-                    }
-                }else{
-                    if(log.isDebugEnabled())
-                        log.debug(localAddress + " received outdated FLUSH message "
-                                  + fh
-                                  + ",ignoring it.");
+                switch(fh.type){
+                    case FlushHeader.FLUSH_BYPASS:
+                        return up_prot.up(evt);                     
+                    case FlushHeader.START_FLUSH:
+                        handleStartFlush(msg, fh);
+                        break;
+                    case FlushHeader.FLUSH_RECONCILE:
+                        handleFlushReconcile(msg, fh);
+                        break;
+                    case FlushHeader.FLUSH_RECONCILE_OK:
+                        onFlushReconcileOK(msg);
+                        break;
+                    case FlushHeader.STOP_FLUSH:
+                        onStopFlush();
+                        break;
+                    case FlushHeader.ABORT_FLUSH:
+                        flush_promise.setResult(Boolean.FALSE);
+                        break;
+                    case FlushHeader.FLUSH_OK:
+                        if(isCurrentFlushMessage(fh))
+                            onFlushOk(msg.getSrc(), fh.viewID);
+                        break;
+                    case FlushHeader.STOP_FLUSH_OK:
+                        if(isCurrentFlushMessage(fh))
+                            onStopFlushOk(msg.getSrc());
+                        break;
+                    case FlushHeader.FLUSH_COMPLETED:
+                        if(isCurrentFlushMessage(fh))
+                            onFlushCompleted(msg.getSrc(), fh.digest);
+                        break;
                 }
                 return null; // do not pass FLUSH msg up
+            }else{               
+                // http://jira.jboss.com/jira/browse/JGRP-575
+                // for processing of application messages after we join, 
+                // lets wait for STOP_FLUSH_OK to complete
+                // before we start allowing message up.
+                if(!allowMessagesToPassUp)
+                    return null;
             }
             break;
 
@@ -377,7 +391,7 @@ public class FLUSH extends Protocol {
                 if(log.isDebugEnabled())
                     log.debug("At " + localAddress
                               + " unblocking FLUSH.down() and sending UNBLOCK up");
-
+                allowMessagesToPassUp = true;
                 up_prot.up(new Event(Event.UNBLOCK));
                 return null;
             }
@@ -746,6 +760,7 @@ public class FLUSH extends Protocol {
                 flushMembers.clear();
                 suspected.clear();
                 flushCoordinator = null;
+                allowMessagesToPassUp = true;
             }
 
             if(log.isDebugEnabled())
