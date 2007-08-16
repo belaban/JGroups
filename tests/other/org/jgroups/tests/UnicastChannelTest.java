@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.6 2007/08/14 15:33:36 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.7 2007/08/16 08:47:01 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -9,6 +9,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
@@ -111,12 +112,7 @@ public class UnicastChannelTest {
         ch=new JChannel(props);
         System.setProperty("jgroups.bind_addr", host);
         if(port > 0) {
-            // ugly hack
-            TP transport=(TP)ch.getProtocolStack().findProtocol("UDP");
-            if(transport == null)
-                transport=(TP)ch.getProtocolStack().findProtocol("TCP");
-            if(transport == null)
-                transport=(TP)ch.getProtocolStack().findProtocol("TCP_NIO");
+            Protocol transport=ch.getProtocolStack().getTransport();
             if(transport != null) {
                 Properties tmp=new Properties();
                 tmp.setProperty("bind_port", String.valueOf(port));
