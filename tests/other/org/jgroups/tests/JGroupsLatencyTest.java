@@ -3,11 +3,15 @@ package org.jgroups.tests;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+
+import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.4 2007/05/04 15:50:26 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.5 2007/08/16 08:45:40 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
@@ -32,6 +36,7 @@ public class JGroupsLatencyTest {
 
         if(sender) {
             ch=new JChannel(props);
+            disableBundling(ch);
             ch.connect("x");
             for(int i=0; i < 10; i++) {
                 ch.send(new Message(null, null, System.currentTimeMillis()));
@@ -41,6 +46,7 @@ public class JGroupsLatencyTest {
         }
         else {
             ch=new JChannel(props);
+            disableBundling(ch);
             ch.setReceiver(new MyReceiver());
             ch.connect("x");
             System.out.println("receiver ready");
@@ -49,6 +55,14 @@ public class JGroupsLatencyTest {
         }
     }
 
+    private static void disableBundling(JChannel ch) {
+        System.out.println("Disabling message bundling (as this would increase latency)");
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol transport=stack.getTransport();
+        Properties props=new Properties();
+        props.setProperty("enable_bundling", "false");
+        transport.setProperties(props);
+    }
 
 
     static class MyReceiver extends ReceiverAdapter {
