@@ -264,16 +264,7 @@ public class FLUSH extends Protocol {
                 blockMessageDuringFlush();
             }
             break;
-        case Event.GET_STATE:            
-            StateTransferInfo info=(StateTransferInfo)evt.getArg();
             
-            //we block regular state transfers but not NOT join and get state transfer
-            boolean blockThisThread = info.useFlushIfPresent;
-            if(blockThisThread)
-                blockMessageDuringFlush();
-            
-            break;
-
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:    
             sendBlockUpToChannel();
