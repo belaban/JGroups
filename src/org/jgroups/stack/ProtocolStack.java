@@ -18,7 +18,7 @@ import java.util.concurrent.ThreadFactory;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.50 2007/08/14 08:15:35 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.51 2007/08/16 08:44:42 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -70,6 +70,12 @@ public class ProtocolStack extends Protocol implements Transport {
             p=p.getDownProtocol();
         }
         return v;
+    }
+
+    /** Returns the bottom most protocol */
+    public Protocol getTransport() {
+        Vector<Protocol> prots=getProtocols();
+        return !prots.isEmpty()? prots.lastElement() : null;
     }
 
     /**
