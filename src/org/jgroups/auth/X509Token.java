@@ -61,7 +61,7 @@ public class X509Token extends AuthToken {
 
     public void setValue(Properties properties) {
         if(log.isDebugEnabled()){
-            log.debug("setting values on X509Token1_5 object");
+            log.debug("setting values on X509Token object");
         }
 
         if(properties.containsKey(TOKEN_ATTR)){
@@ -138,19 +138,19 @@ public class X509Token extends AuthToken {
         if(getCertificate()){
             this.valueSet = true;
             if(log.isDebugEnabled()){
-                log.debug("X509Token1_5 created correctly");
+                log.debug("X509Token created correctly");
             }
         }
     }
 
     public String getName() {
-        return "org.jgroups.auth.X509Token1_5";
+        return "org.jgroups.auth.X509Token";
     }
 
     public boolean authenticate(AuthToken token, Message msg) {
         if (!this.valueSet) {
             if(log.isFatalEnabled()){
-                log.fatal("X509Token1_5 not setup correctly - check token attrs");
+                log.fatal("X509Token1 not setup correctly - check token attrs");
             }
             return false;
         }
@@ -160,7 +160,7 @@ public class X509Token extends AuthToken {
             X509Token serverToken = (X509Token)token;
             if(!serverToken.valueSet){
                 if(log.isFatalEnabled()){
-                    log.fatal("X509Token1_5 - recieved token not valid");
+                    log.fatal("X509Token - recieved token not valid");
                 }
                 return false;
             }
@@ -191,14 +191,14 @@ public class X509Token extends AuthToken {
 
     public void writeTo(DataOutputStream out) throws IOException {
         if(log.isDebugEnabled()){
-            log.debug("X509Token1_5 writeTo()");
+            log.debug("X509Token writeTo()");
         }
         Util.writeByteBuffer(this.encryptedToken, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         if(log.isDebugEnabled()){
-            log.debug("X509Token1_5 readFrom()");
+            log.debug("X509Token readFrom()");
         }
         this.encryptedToken = Util.readByteBuffer(in);
         this.valueSet = true;
