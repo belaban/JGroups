@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.142 2007/08/14 14:03:32 vlada Exp $
+ * @version $Id: JChannel.java,v 1.143 2007/08/16 19:14:29 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -874,7 +874,13 @@ public class JChannel extends Channel {
      * @throws ChannelNotConnectedException
      * @throws ChannelClosedException
      */
-    protected boolean getState(Address target, String state_id, long timeout,boolean useFlushIfPresent) throws ChannelNotConnectedException, ChannelClosedException {
+    public boolean getState(Address target, String state_id, long timeout,boolean useFlushIfPresent) throws ChannelNotConnectedException, ChannelClosedException {
+        checkClosedOrNotConnected();
+        if(!state_transfer_supported) {
+            throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
+                    + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
+        }
+        
         if(target == null)
             target=determineCoordinator();
         if(target != null && local_addr != null && target.equals(local_addr)) {
@@ -883,11 +889,24 @@ public class JChannel extends Channel {
             return false;
         }
 
-        StateTransferInfo info=new StateTransferInfo(target, state_id, timeout,useFlushIfPresent);
-        boolean rc=_getState(new Event(Event.GET_STATE, info), info);
-        if(rc == false)
+        
+        StateTransferInfo info=new StateTransferInfo(target, state_id, timeout);
+        boolean initiateFlush = flush_supported && useFlushIfPresent;
+        
+        if(initiateFlush)
+            startFlush(4000, false);
+
+        state_promise.reset();
+        down(new Event(Event.GET_STATE, info));
+        Boolean b =(Boolean)state_promise.getResult(info.timeout);
+        
+        if(flush_supported)
+            stopFlush();
+        
+        boolean state_transfer_successfull = b != null && b.booleanValue();
+        if(!state_transfer_successfull)
             down(new Event(Event.RESUME_STABLE));
-        return rc;
+        return state_transfer_successfull;
     }
 
 
@@ -1464,45 +1483,6 @@ public class JChannel extends Channel {
         }
     }
 
-
-    /**
-     * Receives the state from the group and modifies the JChannel.state object<br>
-     * This method initializes the local state variable to null, and then sends the state
-     * event down the stack. It waits for a GET_STATE_OK event to bounce back
-     * @param evt the get state event, has to be of type Event.GET_STATE
-     * @param info Information about the state transfer, e.g. target member and timeout
-     * @return true of the state was received, false if the operation timed out
-     */
-    private boolean _getState(Event evt, StateTransferInfo info) throws ChannelNotConnectedException, ChannelClosedException {
-        checkClosedOrNotConnected();
-        if(!state_transfer_supported) {
-            throw new IllegalStateException("fetching state will fail as state transfer is not supported. "
-                    + "Add one of the STATE_TRANSFER protocols to your protocol configuration");
-        }
-
-        if(flush_supported)
-            flush_unblock_promise.reset();
-
-        state_promise.reset();
-        down(evt);
-        Boolean state_transfer_successfull=(Boolean)state_promise.getResult(info.timeout);
-
-        //if FLUSH is used do not return from getState() until UNBLOCK event is received
-        boolean shouldWaitForUnblock=flush_supported && receive_blocks;
-        if(shouldWaitForUnblock) {
-            try {
-                flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-            }
-            catch(TimeoutException te) {
-                if(log.isWarnEnabled())
-                    log.warn(local_addr + " waiting on UNBLOCK after getState timed out");
-            }
-        }
-
-        return state_transfer_successfull != null && state_transfer_successfull.booleanValue();
-    }
-
-
     /**
      * Disconnects and closes the channel.
      * This method does the following things
@@ -1615,7 +1595,7 @@ public class JChannel extends Channel {
         boolean shouldWaitForUnblock = receive_blocks;        
         if(shouldWaitForUnblock){
            try{              
-              flush_unblock_promise.getResultWithTimeout(5000);
+              flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
            }
            catch (TimeoutException te){              
            }

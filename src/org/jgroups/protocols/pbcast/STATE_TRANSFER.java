@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.72 2007/08/14 08:19:06 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.73 2007/08/16 19:14:28 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -118,10 +118,7 @@ public class STATE_TRANSFER extends Protocol {
                 handleStateReq(hdr);
                 break;
             case StateHeader.STATE_RSP:
-                handleStateRsp(hdr, msg.getBuffer());
-                if(flushProtocolInStack) {
-                	up_prot.up(new Event(Event.RESUME));
-            	}
+                handleStateRsp(hdr, msg.getBuffer());               
                 break;
             default:
                 if(log.isErrorEnabled()) log.error("type " + hdr.type + " not known in StateHeader");
@@ -179,21 +176,7 @@ public class STATE_TRANSFER extends Protocol {
                     if(log.isDebugEnabled()) log.debug("GET_STATE: first member (no state)");
                     up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
                 }
-                else {
-                    boolean successfulFlush=false;
-                    if(flushProtocolInStack && info.useFlushIfPresent) {
-                        Map atts=new HashMap();
-                        atts.put("timeout", new Long(4000));
-                        successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND, atts));
-                    }
-                    if(successfulFlush) {
-                        if(log.isTraceEnabled())
-                            log.trace("Successful flush at " + local_addr);
-                    }
-                    else {
-                        if(flushProtocolInStack && info.useFlushIfPresent && log.isWarnEnabled())
-                            log.warn("Could not get successful flush from " + local_addr);
-                    }
+                else {                    
                     Message state_req=new Message(target, null, null);
                     state_req.putHeader(name, new StateHeader(StateHeader.STATE_REQ, local_addr, state_id++, null, info.state_id));
                     if(log.isDebugEnabled()) log.debug("GET_STATE: asking " + target + " for state");

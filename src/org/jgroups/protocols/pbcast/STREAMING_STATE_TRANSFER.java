@@ -279,21 +279,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 if(log.isDebugEnabled())
                     log.debug("GET_STATE: first member (no state)");
                 up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
-            }else{
-                boolean successfulFlush = false;
-                if(flushProtocolInStack && info.useFlushIfPresent){
-                    Map atts = new HashMap();
-                    atts.put("timeout", new Long(4000));
-                    successfulFlush = (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
-                }
-                if(successfulFlush){
-                    if(log.isTraceEnabled())
-                        log.trace("Successful flush at " + local_addr);
-                }else{
-                    if(flushProtocolInStack && info.useFlushIfPresent && log.isWarnEnabled()){
-                        log.warn("Could not get successful flush from " + local_addr);
-                    }
-                }
+            }else{               
                 Message state_req = new Message(target, null, null);
                 state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ,
                                                           local_addr,
@@ -309,11 +295,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
             return null; // don't pass down any further !
 
-        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-            if(flushProtocolInStack){
-                up_prot.up(new Event(Event.RESUME));
-            }
-
+        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:           
             if(log.isDebugEnabled())
                 log.debug("STATE_TRANSFER_INPUTSTREAM_CLOSED received,passing down a RESUME_STABLE event");
 

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.63 2007/07/13 06:31:59 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.64 2007/08/16 19:14:28 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -202,12 +202,14 @@ public class Multiplexer implements UpHandler {
      * @param keys
      */
     private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException, ChannelNotConnectedException {
-        boolean rc, all_rcs=true;       
+        boolean rc, all_rcs=true;
+        channel.startFlush(4000, false);
         for(String stateId: keys) {          
-            rc=channel.getState(target, stateId, timeout);
+            rc=channel.getState(target, stateId, timeout,false);
             if(!rc)
                 all_rcs=false;
         }
+        channel.stopFlush();
         return all_rcs;
     }
 
