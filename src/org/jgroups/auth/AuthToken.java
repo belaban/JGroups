@@ -8,7 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import java.io.Serializable;
 import java.util.Properties;
 /**
- * Abstract AuthToken class used by implementations of AUTH, e.g. SimpleToken, X509Token1_5
+ * Abstract AuthToken class used by implementations of AUTH, e.g. SimpleToken, X509Token
  * @author Chris Mills
  */
 public abstract class AuthToken implements Serializable, Streamable{
