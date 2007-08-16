@@ -119,21 +119,21 @@ public class AUTH extends Protocol{
                         if(log.isWarnEnabled()){
                             log.warn("AUTH failed to validate AuthHeader token");
                         }
-                        down_prot.down(createFailureEvent(msg.getSrc(), "Authentication failed"));
+                        sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Authentication failed"));
                     }
                 }else{
                     //Invalid AUTH Header - need to send failure message
                     if(log.isWarnEnabled()){
                         log.warn("AUTH failed to get valid AuthHeader from Message");
                     }
-                    down_prot.down(createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
+                    sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
                 }
             }else{
                 if(log.isDebugEnabled()){
                     log.debug("No AUTH Header Found");
                 }
                 //should be a failure
-                down_prot.down(createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
+                sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
             }
         }else{
             //if debug
@@ -143,6 +143,15 @@ public class AUTH extends Protocol{
             return up_prot.up(evt);
         }
         return null;
+    }
+
+    private void sendRejectionMessage(Address dest, Event join_rsp) {
+        if(dest == null) {
+            log.error("destination is null, cannot send JOIN rejection message to null destination");
+            return;
+        }
+        down_prot.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
+        down_prot.down(join_rsp);
     }
 
     /**
