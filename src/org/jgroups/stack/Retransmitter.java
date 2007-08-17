@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.21 2007/08/10 12:32:16 belaban Exp $
+// $Id: Retransmitter.java,v 1.22 2007/08/17 15:10:44 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
  *
  * @author John Giorgiadis
  * @author Bela Ban
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 public class Retransmitter {
 
@@ -112,8 +112,9 @@ public class Retransmitter {
      * respective entry, cancel the entry from the retransmission
      * scheduler and remove it from the pending entries
      */
-    public void remove(long seqno) {
+    public int remove(long seqno) {
         Entry e;
+        int num_retransmits=-1;
 
         synchronized(msgs) {
             for(ListIterator<Entry> it=msgs.listIterator(); it.hasNext();) {
@@ -124,9 +125,12 @@ public class Retransmitter {
                     e.cancel();
                     it.remove();
                 }
+                num_retransmits=e.getNumRetransmits();
                 break;
             }
         }
+
+        return num_retransmits;
     }
 
     /**
@@ -226,9 +230,14 @@ public class Retransmitter {
     private static abstract class Task implements TimeScheduler.Task {
         private final Interval intervals;
         private Future         future;
+        protected int          num_retransmits=0;
 
         protected Task(Interval intervals) {
             this.intervals=intervals;
+        }
+
+        public int getNumRetransmits() {
+            return num_retransmits;
         }
 
         public long nextInterval() {
@@ -338,6 +347,7 @@ public class Retransmitter {
                 bounds=(long[])it.next();
                 try {
                     cmd.retransmit(bounds[0], bounds[1], sender);
+                    num_retransmits++;
                 }
                 catch(Throwable t) {
                     log.error("failure asking " + cmd + " for retransmission", t);
@@ -391,7 +401,7 @@ public class Retransmitter {
         try {
             sender=new org.jgroups.stack.IpAddress("localhost", 5555);
             xmitter=new Retransmitter(sender, new MyXmitter());
-            xmitter.setRetransmitTimeouts(new StaticInterval(new long[]{1000, 2000, 4000, 8000}));
+            xmitter.setRetransmitTimeouts(new StaticInterval(1000, 2000, 4000, 8000));
 
             xmitter.add(1, 10);
             System.out.println("retransmitter: " + xmitter);
