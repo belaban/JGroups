@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.157 2007/08/17 15:17:23 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.158 2007/08/17 15:42:53 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -294,7 +294,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             gc_lag=Integer.parseInt(str);
             if(gc_lag < 0) {
-                log.error("NAKACK.setProperties(): gc_lag cannot be negative, setting it to 0");
+                log.error("gc_lag cannot be negative, setting it to 0");
             }
             props.remove("gc_lag");
         }
@@ -315,7 +315,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             exponential_backoff=Long.parseLong(str);
             props.remove("exponential_backoff");
-            if(log.isWarnEnabled())
+            if(exponential_backoff > 0 && log.isWarnEnabled())
                 log.warn("note that \"exponential_backoff\" is an experimental feature and may be removed at any time");
         }
 
@@ -323,7 +323,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             use_stats_for_retransmission=Boolean.valueOf(str);
             props.remove("use_stats_for_retransmission");
-            if(log.isWarnEnabled())
+            if(use_stats_for_retransmission && log.isWarnEnabled())
                 log.warn("note that \"use_stats_for_retransmission\" is an experimental feature and may be removed at any time");
         }
 
@@ -501,7 +501,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             TreeMap<Long,XmitTimeStat> map=new TreeMap<Long,XmitTimeStat>(xmit_time_stats);
             StringBuilder sb;
             XmitTimeStat stat;
-            out.write("time  gaps-detected  xmit-reqs-sent  xmit-reqs-received  xmit-rsps-sent  xmit-rsps-received  missing-msgs-received\n\n");
+            out.write("time (secs)  gaps-detected  xmit-reqs-sent  xmit-reqs-received  xmit-rsps-sent  xmit-rsps-received  missing-msgs-received\n\n");
             for(Map.Entry<Long,XmitTimeStat> entry: map.entrySet()) {
                 sb=new StringBuilder();
                 stat=entry.getValue();
