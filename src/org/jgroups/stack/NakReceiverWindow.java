@@ -45,12 +45,14 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.49 2007/08/10 12:32:17 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.50 2007/08/17 15:18:31 belaban Exp $
  */
 public class NakReceiverWindow {
 
     public interface Listener {
         void missingMessageReceived(long seqno, Address original_sender);
+
+        void messageGapDetected(long from, long to, Address src);
     }
 
     /** dummy for null values: ConcurrentHashMap doesn't allow null values */
@@ -232,10 +234,10 @@ public class NakReceiverWindow {
                 if(val == NULL_MSG) {
                     // only set message if not yet received (bela July 23 2003)
                     xmit_table.put(seqno, msg);
-                    retransmitter.remove(seqno);
+                    int num_xmits=retransmitter.remove(seqno);
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
-                    if(listener != null) {
+                    if(listener != null && num_xmits > 0) {
                         try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
                     }
                     return true;
@@ -246,6 +248,10 @@ public class NakReceiverWindow {
 
             // Case #4: we received a seqno higher than expected: add NULL_MSG values for missing messages, add to Retransmitter
             if(seqno > next_to_add) {
+                if(listener != null) {
+                    try {listener.messageGapDetected(next_to_add, seqno, msg.getSrc());} catch(Throwable t) {}
+                }
+
                 for(long i=next_to_add; i < seqno; i++) { // add all msgs (missing or not) into table
                     xmit_table.put(i, NULL_MSG);
                 }
