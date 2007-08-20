@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.158 2007/08/17 15:42:53 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.159 2007/08/20 08:33:08 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -850,11 +850,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         Message msg, tmp;
         long size=0, marker=first_seqno, len;
 
-//        if(last_seqno - first_seqno < 50) {
-//            handleXmitReqUnbatched(xmit_requester, first_seqno, last_seqno, original_sender);
-//            return;
-//        }
-
         if(log.isTraceEnabled()) {
             StringBuilder sb=new StringBuilder();
             sb.append(local_addr).append(": received xmit request from ").append(xmit_requester).append(" for ");
@@ -1037,7 +1032,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             buf=Util.msgListToByteBuffer(xmit_list);
             Message msg=new Message(dest, null, buf.getBuf(), buf.getOffset(), buf.getLength());
-            // changed Bela Jan 4 2007: we should use OOB for retransmitted messages, otherwise we tax the OOB thread pool
+            // changed Bela Jan 4 2007: we should not use OOB for retransmitted messages, otherwise we tax the OOB thread pool
             // too much
             // msg.setFlag(Message.OOB);
             msg.putHeader(name, new NakAckHeader(NakAckHeader.XMIT_RSP, first_seqno, last_seqno));
