@@ -48,7 +48,7 @@ public class HammerListener implements ChannelListener, MembershipListener {
                 "PING(timeout=2000;num_initial_members=3):" +
                 "MERGE2(min_interval=5000;max_interval=10000):" + "FD:" +
                 "VERIFY_SUSPECT(timeout=1500):" + "pbcast.STABLE(desired_avg_gossip=10000):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1000,1500,2000,3000;max_xmit_size=8192):" +
+                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1000,1500,2000,3000):" +
                 "UNICAST(timeout=1000,1500,2000,3000):" +
                 "FLOW_CONTROL(window_size=1000;fwd_mrgn=200;rttweight=0.125;reduction=0.75;expansion=1.25):"+
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +

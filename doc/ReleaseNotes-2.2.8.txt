@@ -2,7 +2,7 @@
 Release Notes JGroups 2.2.8
 ===========================
 
-Version: $Id: ReleaseNotes-2.2.8.txt,v 1.1 2005/04/26 13:45:09 belaban Exp $
+Version: $Id: ReleaseNotes-2.2.8.txt,v 1.2 2007/08/20 11:15:39 belaban Exp $
 Author: Bela Ban
 
 
@@ -52,7 +52,7 @@ MPING
            num_initial_members="2"
            num_ping_requests="1"/>
     <FD timeout="2000" max_tries="3"/>
-    <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800" max_xmit_size="60000"/>
+    <pbcast.NAKACK gc_lag="50" retransmit_timeout="600,1200,2400,4800" />
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="20000"
                    down_thread="false" max_bytes="0" up_thread="false"/>
     <pbcast.GMS print_local_addr="true" join_timeout="5000" join_retry_timeout="2000" shun="true"/>

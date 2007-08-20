@@ -35,7 +35,7 @@ TCPGOSSIP(initial_hosts=localhost[5556];gossip_refresh_rate=10000;num_initial_me
 MERGE2(min_interval=5000;max_interval=10000):\
 FD_SOCK:\
 VERIFY_SUSPECT(timeout=1500):\
-pbcast.NAKACK(max_xmit_size=8096;gc_lag=50;retransmit_timeout=600,1200,2400,4800):\
+pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):\
 UNICAST(timeout=600,1200,2400,4800):\
 pbcast.STABLE(desired_avg_gossip=20000):\
 FRAG(frag_size=8096;down_thread=false;up_thread=false):\

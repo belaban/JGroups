@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.32 2007/07/04 11:57:58 belaban Exp $
+  Version: $Id: stacks.xml,v 1.33 2007/08/20 11:15:36 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -48,7 +48,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5" shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -116,7 +116,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5" shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -180,7 +180,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5"   shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -243,7 +243,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5"   shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -295,7 +295,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5" shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -348,7 +348,7 @@
             <FD_SOCK/>
             <FD timeout="10000" max_tries="5"   shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
@@ -377,7 +377,7 @@
                       min_interval="5000"/>            
             <FD timeout="2000" max_tries="3" shun="true"/>
             <VERIFY_SUSPECT timeout="1500"  />
-            <pbcast.NAKACK max_xmit_size="60000"
+            <pbcast.NAKACK
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>

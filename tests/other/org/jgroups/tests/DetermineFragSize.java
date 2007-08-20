@@ -6,11 +6,10 @@ import java.net.DatagramSocket;
 import java.net.InetAddress;
 
 /**
- * Determine the fragmentation size of a system. Can be used offline, then set properties
- * FRAG.frag_size and NAKACK.max_xmit_size
+ * Determine the fragmentation size of a system
  * @author Bela Ban Dec 11
  * @author 2003
- * @version $Id: DetermineFragSize.java,v 1.4 2005/05/30 16:15:11 belaban Exp $
+ * @version $Id: DetermineFragSize.java,v 1.5 2007/08/20 11:15:35 belaban Exp $
  */
 public class DetermineFragSize {
 

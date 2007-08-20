@@ -28,7 +28,7 @@ public class DistributedHashDeadLock {
                 "MERGE2:" +
                 "FD:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(max_xmit_size=16000;gc_lag=1500;retransmit_timeout=600,1200,2400,4800):" +
+                "pbcast.NAKACK(gc_lag=1500;retransmit_timeout=600,1200,2400,4800):" +
                 "UNICAST(timeout=2000):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +

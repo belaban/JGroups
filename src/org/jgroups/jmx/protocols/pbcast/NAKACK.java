@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.12 2007/08/10 13:01:38 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.13 2007/08/20 11:15:38 belaban Exp $
  */
 public class NAKACK extends Protocol implements NAKACKMBean {
     org.jgroups.protocols.pbcast.NAKACK p;
@@ -62,12 +62,20 @@ public class NAKACK extends Protocol implements NAKACKMBean {
         p.setMaxXmitBufSize(max_xmit_buf_size);
     }
 
+    /**
+     *
+     * @return
+     * @deprecated removed in 2.6
+     */
     public long getMaxXmitSize() {
-        return p.getMaxXmitSize();
+        return -1;
     }
 
+    /**
+     * @param max_xmit_size
+     * @deprecated removed in 2.6
+     */
     public void setMaxXmitSize(long max_xmit_size) {
-        p.setMaxXmitSize(max_xmit_size);
     }
 
     public long getXmitRequestsReceived() {

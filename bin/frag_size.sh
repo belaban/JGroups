@@ -1,7 +1,6 @@
 #!/bin/sh
 
 # Determines the fragmentation size of your system
-# Set FRAG.frag_size and pbcast.NAKACK.max_xmit_size to the value
 
 BIN=`dirname $0`
 
