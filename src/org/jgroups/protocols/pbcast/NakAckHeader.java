@@ -1,4 +1,3 @@
-// $Id: NakAckHeader.java,v 1.20 2007/05/01 10:55:15 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -13,6 +12,10 @@ import org.jgroups.util.Util;
 import java.io.*;
 
 
+/**
+ * @author Bela Ban
+ * @version $Id: NakAckHeader.java,v 1.21 2007/08/20 10:46:53 belaban Exp $
+ */
 public class NakAckHeader extends Header implements Streamable {
     public static final byte MSG=1;       // regular msg
     public static final byte XMIT_REQ=2;  // retransmit request
@@ -23,6 +26,7 @@ public class NakAckHeader extends Header implements Streamable {
     long  seqno=-1;        // seqno of regular message (MSG)
     Range range=null;      // range of msgs to be retransmitted (XMIT_REQ) or retransmitted (XMIT_RSP)
     Address sender;        // the original sender of the message (for XMIT_REQ)
+    private static final long serialVersionUID=-4305600151593420827L;
 
 
     public NakAckHeader() {
@@ -81,16 +85,14 @@ public class NakAckHeader extends Header implements Streamable {
 
     public void writeTo(DataOutputStream out) throws IOException {
         out.writeByte(type);
-        if(type != XMIT_RSP)
-            out.writeLong(seqno);
+        out.writeLong(seqno);
         Util.writeStreamable(range, out);
         Util.writeAddress(sender, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         type=in.readByte();
-        if(type != XMIT_RSP)
-            seqno=in.readLong();
+        seqno=in.readLong();
         range=(Range)Util.readStreamable(Range.class, in);
         sender=Util.readAddress(in);
     }
@@ -98,10 +100,7 @@ public class NakAckHeader extends Header implements Streamable {
     public int size() {
         // type (1 byte) + seqno (8 bytes)
         int retval=Global.BYTE_SIZE;
-
-        if(type != XMIT_RSP) // we don't send the seqno if this is an XMIT_RSP
-            retval+=Global.LONG_SIZE;
-
+        retval+=Global.LONG_SIZE;
         retval+=Global.BYTE_SIZE; // presence for range
         if(range != null)
             retval+=2 * Global.LONG_SIZE; // 2 times 8 bytes for seqno
@@ -133,16 +132,17 @@ public class NakAckHeader extends Header implements Streamable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         ret.append("[").append(type2Str(type));
         switch(type) {
             case MSG:           // seqno and sender
                 ret.append(", seqno=").append(seqno);
                 break;
             case XMIT_REQ:  // range and sender
-            case XMIT_RSP:  // range and sender
                 if(range != null)
-                    ret.append(", range=").append(range);
+                    ret.append(", range=" + range);
+                break;
+            case XMIT_RSP:  // seqno and sender
                 break;
         }
 
