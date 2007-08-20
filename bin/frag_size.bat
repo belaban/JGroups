@@ -1,7 +1,6 @@
 @echo off
 
 REM Determines the fragmentation size of your system
-REM Set FRAG.frag_size and pbcast.NAKACK.max_xmit_size to the value
 
 set CLASSPATH=..\classes
 

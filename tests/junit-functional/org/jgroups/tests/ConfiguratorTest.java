@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.2 2007/08/20 11:15:39 belaban Exp $
  */
 public class ConfiguratorTest extends TestCase {
     ProtocolStack stack;
@@ -107,7 +107,7 @@ public class ConfiguratorTest extends TestCase {
                 "VERIFY_SUSPECT(timeout=1500):" +
                 "BARRIER:" +
                 "pbcast.NAKACK(gc_lag=0;use_mcast_xmit=false;retransmit_timeout=300,600,1200,2400,4800;" +
-                "discard_delivered_msgs=true;max_xmit_size=60000):" +
+                "discard_delivered_msgs=true):" +
                 "UNICAST(loopback=false;timeout=300,600,1200,2400,3600):" +
                 "pbcast.STABLE(desired_avg_gossip=50000;max_bytes=1000000;stability_delay=1000):" +
                 "VIEW_SYNC(avg_send_interval=60000):" +

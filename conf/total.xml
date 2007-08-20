@@ -1,7 +1,7 @@
 
 <!--
 Example of a protocol stack based on udp, but with total order (sequencer-based)
-Version: $Id: total.xml,v 1.5 2006/12/08 08:15:23 belaban Exp $
+Version: $Id: total.xml,v 1.6 2007/08/20 11:15:36 belaban Exp $
 -->
 <config>
     <UDP bind_addr="192.168.5.1"
@@ -26,7 +26,7 @@ Version: $Id: total.xml,v 1.5 2006/12/08 08:15:23 belaban Exp $
               min_interval="20000"/ -->
     <FD_SOCK  />
     <!--VERIFY_SUSPECT timeout="1500" /-->
-    <pbcast.NAKACK max_xmit_size="60000"
+    <pbcast.NAKACK
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="100,200,300,600,1200,2400,4800"
                    discard_delivered_msgs="true"/>

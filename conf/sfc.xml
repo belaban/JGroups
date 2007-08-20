@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.7 2007/06/13 17:33:36 vlada Exp $
+  version: $Id: sfc.xml,v 1.8 2007/08/20 11:15:36 belaban Exp $
 -->
 
 <config>
@@ -51,7 +51,7 @@
     <FD timeout="10000" max_tries="5"   shun="true" />
     <VERIFY_SUSPECT timeout="1500" />
     <BARRIER />
-    <pbcast.NAKACK max_xmit_size="60000"
+    <pbcast.NAKACK
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="true" />

@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.20 2006/12/28 09:05:49 belaban Exp $
+// $Id: SpeedTest.java,v 1.21 2007/08/20 11:15:35 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -28,7 +28,7 @@ import java.net.MulticastSocket;
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
  * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
- * @version $Id: SpeedTest.java,v 1.20 2006/12/28 09:05:49 belaban Exp $
+ * @version $Id: SpeedTest.java,v 1.21 2007/08/20 11:15:35 belaban Exp $
  */
 public class SpeedTest {
     static long start=0, stop=0;
@@ -59,7 +59,7 @@ public class SpeedTest {
                 "MERGE2(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(max_xmit_size=8192;gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
+                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
                 "UNICAST(timeout=1200):" +
                 "pbcast.STABLE(desired_avg_gossip=10000):" +
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +

@@ -633,7 +633,7 @@
                   &lt;FD timeout="10000" max_tries="5"   shun="true"/&gt;
                   &lt;VERIFY_SUSPECT timeout="1500"  /&gt;
                   &lt;BARRIER /&gt;
-                  &lt;pbcast.NAKACK max_xmit_size="60000"
+                  &lt;pbcast.NAKACK
                                  use_mcast_xmit="false" gc_lag="0"
                                  retransmit_timeout="300,600,1200,2400,4800"
                                  discard_delivered_msgs="true"/&gt;

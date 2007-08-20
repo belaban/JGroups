@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.8 2005/08/18 09:45:25 belaban Exp $
+// $Id: UnicastTest.java,v 1.9 2007/08/20 11:15:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -296,7 +296,7 @@ public class UnicastTest implements Runnable {
                 "MERGE2(min_interval=5000;max_interval=10000):" +
                 "FD_SOCK:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800;max_xmit_size=8192):" +
+                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
                 "UNICAST(timeout=2000,4000,6000;window_size=100;min_threshold=10;use_gms=false):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
