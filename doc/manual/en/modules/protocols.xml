@@ -550,6 +550,19 @@
                                     Example: <code>use_mcast_xmit="true"</code>
                                 </para>
                             </entry>
+                            <entry>use_mcast_xmit_req</entry>
+                            <entry>
+                                Similar to use_mcast_xmit, but for requests: if enabled, we'll send a retransmit reuest
+                                via a multicast.
+                                <note>
+                                    Setting this option to true only makes sense for an IP multicast capable transport
+                                    (e.g. UDP), where we send the retransmit requests one time. Otherwise, e.g. if
+                                    we use TCP, we send the message N-1 times, one time for each node !
+                                </note>
+                                <para>
+                                    Example: <code>use_mcast_xmit_req="true"</code>
+                                </para>
+                            </entry>
                         </row>
 
                         <row>
