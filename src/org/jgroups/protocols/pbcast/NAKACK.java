@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.160 2007/08/20 11:15:10 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.161 2007/08/20 11:25:09 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -328,16 +328,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             exponential_backoff=Long.parseLong(str);
             props.remove("exponential_backoff");
-            if(exponential_backoff > 0 && log.isWarnEnabled())
-                log.warn("note that \"exponential_backoff\" is an experimental feature and may be removed at any time");
         }
 
         str=props.getProperty("use_stats_for_retransmission");
         if(str != null) {
             use_stats_for_retransmission=Boolean.valueOf(str);
             props.remove("use_stats_for_retransmission");
-            if(use_stats_for_retransmission && log.isWarnEnabled())
-                log.warn("note that \"use_stats_for_retransmission\" is an experimental feature and may be removed at any time");
         }
 
         str=props.getProperty("discard_delivered_msgs");
