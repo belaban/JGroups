@@ -516,26 +516,6 @@
                         </row>
 
                         <row>
-                            <entry>max_xmit_size</entry>
-                            <entry>
-                                The maximum size (in bytes) for bundled retransmissions. When a node gets retransmission
-                                requests for multiple messages, it would actually bundle all retransmitted messages into
-                                larger messages, up to max_xmit_size bytes.
-                                <para>
-                                    Note that this property might get removed in a future version, as we can do the same
-                                    with message bundling at the transport level.
-                                </para>
-                                <para>
-                                    Note that max_xmit_size should be smaller than the max bundling size in the transport
-                                    (if enabled).
-                                </para>
-                                <para>
-                                    Example: <code>max_xmit_size="60000"</code>
-                                </para>
-                            </entry>
-                        </row>
-
-                        <row>
                             <entry>use_mcast_xmit</entry>
                             <entry>
                                 When we get a retransmission request from P for a message M, then we send the retransmitted
