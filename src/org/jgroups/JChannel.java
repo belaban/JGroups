@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.143 2007/08/16 19:14:29 vlada Exp $
+ * @version $Id: JChannel.java,v 1.144 2007/08/20 19:49:33 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -416,7 +416,13 @@ public class JChannel extends Channel {
             if(joinSuccessful) {
                 connected=true;
                 notifyChannelConnected(this);
-                stateTransferSuccessful=getState(target, state_id, timeout, false);               
+                try{
+                    stateTransferSuccessful=getState(target, state_id, timeout, false);
+                }
+                finally{
+                    if(flush_supported)
+                        stopFlush();
+                }
             }
             else {
                 throw new ChannelException("connect() failed", (Throwable)res);
@@ -900,7 +906,7 @@ public class JChannel extends Channel {
         down(new Event(Event.GET_STATE, info));
         Boolean b =(Boolean)state_promise.getResult(info.timeout);
         
-        if(flush_supported)
+        if(initiateFlush)
             stopFlush();
         
         boolean state_transfer_successfull = b != null && b.booleanValue();
