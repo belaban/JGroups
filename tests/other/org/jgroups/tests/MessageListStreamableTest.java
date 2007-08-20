@@ -1,10 +1,10 @@
-// $Id: MessageListStreamableTest.java,v 1.2 2005/04/13 13:02:39 belaban Exp $
+// $Id: MessageListStreamableTest.java,v 1.3 2007/08/20 09:40:12 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.2 2005/04/13 13:02:39 belaban Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.3 2007/08/20 09:40:12 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -18,6 +18,7 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
+import java.util.List;
 
 
 public class MessageListStreamableTest {
@@ -46,7 +47,7 @@ public class MessageListStreamableTest {
         }
 
         Buffer buf;
-        LinkedList list=new LinkedList();
+        List<Message> list=new LinkedList<Message>();
         ClassConfigurator.getInstance(true);
         long start=System.currentTimeMillis();
         long stop;
@@ -63,7 +64,7 @@ public class MessageListStreamableTest {
         System.out.println("Marshalling a message list of " + list.size() + " elements took " + (stop - start) + "ms.");
 
         start=System.currentTimeMillis();
-        LinkedList list2=Util.byteBufferToMessageList(buf.getBuf(), buf.getOffset(), buf.getLength());
+        List<Message> list2=Util.byteBufferToMessageList(buf.getBuf(), buf.getOffset(), buf.getLength());
         stop=System.currentTimeMillis();
         System.out.println("Unmarshalling a message list of " + list2.size() + " elements took " + (stop - start) + "ms.");
     }
