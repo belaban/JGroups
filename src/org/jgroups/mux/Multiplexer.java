@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.64 2007/08/16 19:14:28 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.65 2007/08/20 19:49:33 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -197,20 +197,33 @@ public class Multiplexer implements UpHandler {
         }
     }
 
-    /** Fetches the app states for all service IDs in keys.
-     * The keys are a duplicate list, so it cannot be modified by the caller of this method
+    /**
+     * Fetches the app states for all service IDs in keys. The keys are a
+     * duplicate list, so it cannot be modified by the caller of this method
+     * 
      * @param keys
      */
-    private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException, ChannelNotConnectedException {
-        boolean rc, all_rcs=true;
-        channel.startFlush(4000, false);
-        for(String stateId: keys) {          
-            rc=channel.getState(target, stateId, timeout,false);
-            if(!rc)
-                all_rcs=false;
+    private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException,
+                                                                                      ChannelNotConnectedException {
+        boolean rc, all_tranfers_ok = false;
+        boolean flushStarted = channel.startFlush(4000, false);
+        if(flushStarted){
+            try{
+                for(String stateId:keys){
+                    rc = channel.getState(target, stateId, timeout, false);
+                    if(!rc)
+                        throw new Exception("Failed transfer for state id " + stateId
+                                            + ", state provider was "
+                                            + target);
+                }
+                all_tranfers_ok = true;
+            }catch(Exception e){
+                log.warn("Failed multiple state transfer under one flush phase ", e);
+            }finally{
+                channel.stopFlush();
+            }
         }
-        channel.stopFlush();
-        return all_rcs;
+        return flushStarted && all_tranfers_ok;
     }
 
 
