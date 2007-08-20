@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.3 2007/08/08 10:34:43 belaban Exp $
+// $Id: UtilTest.java,v 1.4 2007/08/20 09:22:54 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,13 +8,14 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.util.Properties;
+import java.util.Vector;
 
 
 public class UtilTest extends TestCase {
@@ -223,6 +224,23 @@ public class UtilTest extends TestCase {
     }
 
 
+    public void testMessageToByteBuffer() throws Exception {
+        _testMessage(new Message());
+        _testMessage(new Message(null, null, "hello world"));
+        _testMessage(new Message(null, new IpAddress("localhost", 5000), null));
+        _testMessage(new Message(null, new IpAddress("localhost", 5000), null));
+        _testMessage(new Message(null, new IpAddress("localhost", 5000), "bela"));
+    }
+
+    private static void _testMessage(Message msg) throws Exception {
+        Buffer buf=Util.messageToByteBuffer(msg);
+        Message msg2=Util.byteBufferToMessage(buf.getBuf(), buf.getOffset(), buf.getLength());
+        assertEquals(msg.getSrc(), msg2.getSrc());
+        assertEquals(msg.getDest(), msg2.getDest());
+        assertEquals(msg.getLength(), msg2.getLength());
+    }
+
+
     public void testObjectToByteArrayWithLargeString() throws Exception {
         marshalString(Short.MAX_VALUE );
     }
@@ -246,7 +264,7 @@ public class UtilTest extends TestCase {
     }
 
 
-    private void marshalString(int size) throws Exception {
+    private static void marshalString(int size) throws Exception {
         byte[] tmp=new byte[size];
         String str=new String(tmp, 0, tmp.length);
         byte[] retval=Util.objectToByteBuffer(str);
@@ -257,7 +275,7 @@ public class UtilTest extends TestCase {
 
 
 
-    void marshal(Object obj) throws Exception {
+    static void marshal(Object obj) throws Exception {
         byte[] buf=Util.objectToByteBuffer(obj);
         assertNotNull(buf);
         assertTrue(buf.length > 0);
@@ -348,7 +366,7 @@ public class UtilTest extends TestCase {
         assertEquals(s2, s4);
     }
 
-    public void writeAddress() throws IOException, IllegalAccessException, InstantiationException {
+    public static void writeAddress() throws IOException, IllegalAccessException, InstantiationException {
         IpAddress a1=new IpAddress("localhost", 1234);
         IpAddress a2=new IpAddress("127.0.0.1", 4444);
         IpAddress a3=new IpAddress("thishostdoesnexist", 6666);
@@ -371,7 +389,7 @@ public class UtilTest extends TestCase {
         assertEquals(a4, Util.readAddress(dis));
     }
 
-    public void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
+    public static void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
         IpAddress a1=null;
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -490,12 +508,12 @@ public class UtilTest extends TestCase {
 
         val="my name is ${unknown.var:Bela Ban}";
         replacement=Util.substituteVariable(val);
-        assertTrue(replacement.indexOf("Bela Ban") >= 0);
+        assertTrue(replacement.contains("Bela Ban"));
         assertEquals(-1, replacement.indexOf("${"));
 
         val="my name is ${unknown.var}";
         replacement=Util.substituteVariable(val);
-        assertTrue(replacement.indexOf("${") >= 0);
+        assertTrue(replacement.contains("${"));
 
         val="here is an invalid ${argument because it doesn't contains a closing bracket";
         try {
