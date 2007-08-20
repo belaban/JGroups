@@ -28,7 +28,7 @@ import java.lang.management.ThreadInfo;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.130 2007/08/08 08:52:26 belaban Exp $
+ * @version $Id: Util.java,v 1.131 2007/08/20 09:02:22 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -767,21 +767,47 @@ public class Util {
     }
 
 
+    public static Buffer messageToByteBuffer(Message msg) throws IOException {
+        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
+        DataOutputStream out=new DataOutputStream(output);
+
+        out.writeBoolean(msg != null);
+        if(msg != null)
+            msg.writeTo(out);
+        out.flush();
+        Buffer retval=new Buffer(output.getRawBuffer(), 0, output.size());
+        out.close();
+        output.close();
+        return retval;
+    }
+
+    public static Message byteBufferToMessage(byte[] buffer, int offset, int length) throws Exception {
+        ByteArrayInputStream input=new ByteArrayInputStream(buffer, offset, length);
+        DataInputStream in=new DataInputStream(input);
+
+        if(!in.readBoolean())
+            return null;
+
+        Message msg=new Message(false); // don't create headers, readFrom() will do this
+        msg.readFrom(in);
+        return msg;
+    }
+
+
+
     /**
        * Marshalls a list of messages.
        * @param xmit_list LinkedList<Message>
        * @return Buffer
        * @throws IOException
        */
-    public static Buffer msgListToByteBuffer(LinkedList xmit_list) throws IOException {
+    public static Buffer msgListToByteBuffer(List<Message> xmit_list) throws IOException {
         ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(output);
-        Message msg;
         Buffer retval=null;
 
         out.writeInt(xmit_list.size());
-        for(Iterator it=xmit_list.iterator(); it.hasNext();) {
-            msg=(Message)it.next();
+        for(Message msg: xmit_list) {
             msg.writeTo(out);
         }
         out.flush();
@@ -791,8 +817,8 @@ public class Util {
         return retval;
     }
 
-    public static LinkedList byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
-        LinkedList retval=null;
+    public static List<Message> byteBufferToMessageList(byte[] buffer, int offset, int length) throws Exception {
+        List<Message>  retval=null;
         ByteArrayInputStream input=new ByteArrayInputStream(buffer, offset, length);
         DataInputStream in=new DataInputStream(input);
         int size=in.readInt();
@@ -801,7 +827,7 @@ public class Util {
             return null;
 
         Message msg;
-        retval=new LinkedList();
+        retval=new LinkedList<Message>();
         for(int i=0; i < size; i++) {
             msg=new Message(false); // don't create headers, readFrom() will do this
             msg.readFrom(in);
