@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.7 2007/08/16 08:47:01 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.8 2007/08/20 07:21:49 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -80,7 +80,7 @@ public class UnicastChannelTest {
 
         addr=new IpAddress(host, port);
         ch.down(new Event(Event.ENABLE_UNICASTS_TO, addr));
-        reader= new BufferedReader(new InputStreamReader(System.in));
+        reader=new BufferedReader(new InputStreamReader(System.in));
 
         while(true) {
             System.out.print("> ");
