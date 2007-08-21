@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.151 2007/08/14 15:30:30 belaban Exp $
+ * @version $Id: TP.java,v 1.152 2007/08/21 08:56:49 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -596,20 +596,18 @@ public abstract class TP extends Protocol {
      */
     public boolean setProperties(Properties props) {
         super.setProperties(props);
+        String str;
 
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                                    ignore_systemprops, null);
-
-        if(str != null) {
-            try {
-                bind_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("bind_addr");
+        try {
+            bind_addr=Util.getBindAddress(props);
+        }
+        catch(UnknownHostException unknown) {
+            log.fatal("failed getting bind_addr", unknown);
+            return false;
+        }
+        catch(SocketException ex) {
+            log.fatal("failed getting bind_addr", ex);
+            return false;
         }
 
         str=props.getProperty("use_local_host");

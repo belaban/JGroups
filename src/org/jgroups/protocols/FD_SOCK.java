@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.66 2007/08/14 08:09:50 belaban Exp $
+// $Id: FD_SOCK.java,v 1.67 2007/08/21 09:01:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,10 +8,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
 import java.io.*;
-import java.net.InetAddress;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.UnknownHostException;
+import java.net.*;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.Future;
@@ -142,18 +139,16 @@ public class FD_SOCK extends Protocol implements Runnable {
             props.remove("srv_sock_bind_addr");
         }
 
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                             ignore_systemprops, null);
-        if(str != null) {
-            try {
-                bind_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                log.error("(bind_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("bind_addr");
+        try {
+            bind_addr=Util.getBindAddress(props);
+        }
+        catch(UnknownHostException unknown) {
+            log.fatal("failed getting bind_addr", unknown);
+            return false;
+        }
+        catch(SocketException ex) {
+            log.fatal("failed getting bind_addr", ex);
+            return false;
         }
 
         if(!props.isEmpty()) {
