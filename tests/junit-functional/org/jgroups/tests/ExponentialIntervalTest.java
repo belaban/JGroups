@@ -8,7 +8,7 @@ import org.jgroups.stack.ExponentialInterval;
 
 /**
  * @author Bela Ban
- * @version $Id: ExponentialIntervalTest.java,v 1.1 2007/08/14 07:52:22 belaban Exp $
+ * @version $Id: ExponentialIntervalTest.java,v 1.2 2007/08/21 07:18:12 belaban Exp $
  */
 public class ExponentialIntervalTest extends TestCase {
     ExponentialInterval interval;
@@ -54,11 +54,11 @@ public class ExponentialIntervalTest extends TestCase {
         System.out.println("interval=" + interval);
         assertEquals(4000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(5000, interval.next());
+        assertEquals(8000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(5000, interval.next());
+        assertEquals(15000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(5000, interval.next());
+        assertEquals(15000, interval.next());
         System.out.println("interval=" + interval);
 
     }
