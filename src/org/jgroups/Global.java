@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.22 2007/04/16 14:22:59 vlada Exp $
+ * @version $Id: Global.java,v 1.23 2007/08/21 08:56:26 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -24,6 +24,7 @@ public class Global {
 
     public static final String BIND_ADDR="jgroups.bind_addr";
     public static final String BIND_ADDR_OLD="bind.address";
+    public static final String BIND_INTERFACE="jgroups.bind_interface";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY="jgroups.ignore.bind_addr";
     public static final String IGNORE_BIND_ADDRESS_PROPERTY_OLD="ignore.bind.address";
     public static final String MARSHALLING_COMPAT="jgroups.marshalling.compatible";
