@@ -13,22 +13,21 @@ import org.jgroups.stack.IpAddress;
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
 import java.io.*;
+import java.lang.management.ManagementFactory;
+import java.lang.management.ThreadInfo;
+import java.lang.management.ThreadMXBean;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritableByteChannel;
+import java.security.MessageDigest;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.List;
-import java.security.MessageDigest;
-import java.lang.management.ThreadMXBean;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
 
 
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.131 2007/08/20 09:02:22 belaban Exp $
+ * @version $Id: Util.java,v 1.132 2007/08/21 08:52:39 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -2010,6 +2009,67 @@ public class Util {
             }
         }
         return sock; // will never be reached, but the stupid compiler didn't figure it out...
+    }
+
+
+    /**
+     * Returns the address of the interface to use defined by bind_addr and bind_interface
+     * @param props
+     * @return
+     * @throws UnknownHostException
+     * @throws SocketException
+     */
+    public static InetAddress getBindAddress(Properties props) throws UnknownHostException, SocketException {
+        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
+        String bind_addr=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
+                                    ignore_systemprops, null);
+        String bind_interface=Util.getProperty(new String[]{Global.BIND_INTERFACE, null}, props, "bind_interface",
+                                               ignore_systemprops, null);
+        InetAddress retval=null, bind_addr_host=null;
+
+        if(bind_addr != null) {
+            try {
+                bind_addr_host=InetAddress.getByName(bind_addr);
+            }
+            catch(UnknownHostException e) {
+            }
+        }
+
+        if(bind_interface != null) {
+            NetworkInterface intf=NetworkInterface.getByName(bind_interface);
+            if(intf != null) {
+                for(Enumeration<InetAddress> addresses=intf.getInetAddresses(); addresses.hasMoreElements();) {
+                    InetAddress addr=addresses.nextElement();
+                    if(bind_addr == null) {
+                        retval=addr;
+                        break;
+                    }
+                    else {
+                        if(bind_addr_host != null) {
+                            if(bind_addr_host.equals(addr)) {
+                                retval=addr;
+                                break;
+                            }
+                        }
+                        else if(addr.getHostAddress().trim().equalsIgnoreCase(bind_addr)) {
+                            retval=addr;
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                throw new UnknownHostException("network interface " + bind_interface + " not found");
+            }
+        }
+
+        if(retval == null) {
+            retval=bind_addr != null? InetAddress.getByName(bind_addr) : InetAddress.getLocalHost();
+        }
+
+        props.remove("bind_addr");
+        props.remove("bind_interface");
+        return retval;
     }
 
 
