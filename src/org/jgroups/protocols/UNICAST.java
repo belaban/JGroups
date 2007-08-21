@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.89 2007/08/10 12:32:16 belaban Exp $
+// $Id: UNICAST.java,v 1.90 2007/08/21 11:35:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -422,6 +422,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     log.trace("removing " + member + " from previous_members as result of ENABLE_UNICAST_TO event, " +
                             "previous_members=" + previous_members);
                 break;
+
+            case Event.DISABLE_UNICASTS_TO:
+                member=(Address)evt.getArg();
+                removeConnection(member);
+                enabled_members.remove(member);
+                previous_members.remove(member);
+                break;
         }
 
         return down_prot.down(evt);          // Pass on to the layer below us
@@ -614,6 +621,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         long    seqno=0;
 
         static final int serialized_size=Global.BYTE_SIZE + Global.LONG_SIZE;
+        private static final long serialVersionUID=-5590873777959784299L;
 
 
         public UnicastHeader() {} // used for externalization
