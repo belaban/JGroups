@@ -19,7 +19,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.27 2007/07/02 11:16:09 belaban Exp $
+ * @version $Id: MPING.java,v 1.28 2007/08/21 08:59:50 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -112,18 +112,18 @@ public class MPING extends PING implements Runnable {
 
 
     public boolean setProperties(Properties props) {
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                                    ignore_systemprops, null);
-        if(str != null) {
-            try {
-                bind_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("bind_addr");
+        String str;
+
+        try {
+            bind_addr=Util.getBindAddress(props);
+        }
+        catch(UnknownHostException unknown) {
+            log.fatal("failed getting bind_addr", unknown);
+            return false;
+        }
+        catch(SocketException ex) {
+            log.fatal("failed getting bind_addr", ex);
+            return false;
         }
 
         str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, "230.5.6.7");
