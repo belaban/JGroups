@@ -145,6 +145,7 @@ public class AUTH extends Protocol{
         return null;
     }
 
+
     private void sendRejectionMessage(Address dest, Event join_rsp) {
         if(dest == null) {
             log.error("destination is null, cannot send JOIN rejection message to null destination");
@@ -152,6 +153,7 @@ public class AUTH extends Protocol{
         }
         down_prot.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
         down_prot.down(join_rsp);
+        down_prot.down(new Event(Event.DISABLE_UNICASTS_TO, dest));
     }
 
     /**
