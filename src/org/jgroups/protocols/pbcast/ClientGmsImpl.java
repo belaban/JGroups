@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.50 2007/08/14 08:07:33 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.51 2007/08/21 11:08:25 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.50 $
+ * @version $Revision: 1.51 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise join_promise=new Promise();
@@ -151,9 +151,7 @@ public class ClientGmsImpl extends GmsImpl {
                     if(tmp_digest == null || tmp_view == null) {
                         if(log.isErrorEnabled())
                             log.error("JoinRsp has a null view or digest: view=" + tmp_view
-                                    + ", digest="
-                                    + tmp_digest
-                                    + ", skipping it");
+                                    + ", digest=" + tmp_digest + ", skipping it");
                     }
                     else {
                         tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
@@ -201,9 +199,9 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
     private List<PingRsp> findInitialMembers() {
-        List<PingRsp> responses = (List<PingRsp>) gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
-        for(Iterator<PingRsp> iter = responses.iterator();iter.hasNext();){
-            PingRsp response = iter.next();
+        List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
+        for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
+            PingRsp response=iter.next();
             if(response.own_addr != null && response.own_addr.equals(gms.local_addr))
                 iter.remove();
         }
