@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.145 2007/08/14 15:19:12 belaban Exp $
+ * @version $Id: UDP.java,v 1.146 2007/08/21 08:41:37 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -561,7 +561,10 @@ public class UDP extends TP implements Runnable {
             try {
                 tmp=new DatagramSocket(localPort, bind_addr); // first time localPort is 0
             }
-            catch(SocketException bindException) {
+            catch(BindException bind_ex) {
+                throw bind_ex;
+            }
+            catch(SocketException socket_ex) {
                 // Vladimir May 30th 2007
                 // special handling for Linux 2.6 kernel which sometimes throws BindException while we probe for a random port
                 localPort++;
@@ -604,6 +607,9 @@ public class UDP extends TP implements Runnable {
             try {
                 tmp=new DatagramSocket(rcv_port, bind_addr);
                 break;
+            }
+            catch(BindException bind_ex) {
+                throw bind_ex;
             }
             catch(SocketException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
