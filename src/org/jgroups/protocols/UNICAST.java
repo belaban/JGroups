@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.89 2007/08/10 12:32:16 belaban Exp $
+// $Id: UNICAST.java,v 1.86.2.1 2007/08/21 11:54:10 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ import org.jgroups.*;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
@@ -37,7 +36,7 @@ import java.util.*;
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
     private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
-    private long[]                timeouts={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
+    private long[]                timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     private Address               local_addr=null;
     private TimeScheduler         timer=null;                    // used for retransmissions (passed to AckSenderWindow)
 
@@ -50,9 +49,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private boolean          loopback=false;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
-    private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
+    private final BoundedList previous_members=new BoundedList(50);
     /** Contains all members that were enabled for unicasts by Event.ENABLE_UNICAST_TO */
-    private final BoundedList<Address> enabled_members=new BoundedList<Address>(100);
+    private final BoundedList enabled_members=new BoundedList(100);
 
     private final static String name="UNICAST";
     private static final long DEFAULT_FIRST_SEQNO=1;
@@ -174,7 +173,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(str != null) {
         tmp=Util.parseCommaDelimitedLongs(str);
         if(tmp != null && tmp.length > 0)
-        timeouts=tmp;
+        timeout=tmp;
             props.remove("timeout");
         }
 
@@ -270,8 +269,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         switch (evt.getType()) {
 
             case Event.MSG: // Add UnicastHeader, add to AckSenderWindow and pass down
-                Message msg=(Message)evt.getArg();
-                Address dst=msg.getDest();
+                Message msg=(Message) evt.getArg();
+                Address  dst=msg.getDest();
 
                 /* only handle unicast messages */
                 if (dst == null || dst.isMulticastAddress()) {
@@ -313,6 +312,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
+                Message tmp;
                 synchronized(entry) { // threads will only sync if they access the same entry
                     long seqno=-2;
 
@@ -320,13 +320,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
                         if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the protocol stack's timer
+                            entry.sent_msgs=new AckSenderWindow(this, timeout, timer, this.local_addr); // use the protocol stack's timer
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled())
                             log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                                     append(seqno));
-                        entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                        tmp=msg;
+                        entry.sent_msgs.add(seqno, tmp);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
                     }
                     catch(Throwable t) {
@@ -345,7 +346,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
                 // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
                 try {
-                    down_prot.down(evt);
+                    down_prot.down(new Event(Event.MSG, tmp));
                     num_msgs_sent++;
                     num_bytes_sent+=msg.getLength();
                 }
@@ -382,9 +383,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
                 // code by Matthias Weber May 23 2006
-                for(Address mbr: previous_members) {
+                for(Enumeration e=previous_members.elements(); e.hasMoreElements();) {
+                    Address mbr=(Address)e.nextElement();
                     if(members.contains(mbr)) {
-                        if(previous_members.remove(mbr)) {
+                        if(previous_members.removeElement(mbr) != null) {
                             if(log.isTraceEnabled())
                                 log.trace("removed " + mbr + " from previous_members as result of VIEW_CHANGE event, " +
                                         "previous_members=" + previous_members);
@@ -394,13 +396,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // remove all members from enabled_members
                 synchronized(members) {
                     for(Address mbr: members) {
-                        enabled_members.remove(mbr);
+                        enabled_members.removeElement(mbr);
                     }
                 }
 
                 synchronized(previous_members) {
-                    for(Address mbr: previous_members) {
-                        enabled_members.remove(mbr);
+                    for(Enumeration e=previous_members.elements(); e.hasMoreElements();) {
+                        Address mbr=(Address)e.nextElement();
+                        enabled_members.removeElement(mbr);
                     }
                 }
 
@@ -417,10 +420,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 Address member=(Address)evt.getArg();
                 if(!enabled_members.contains(member))
                     enabled_members.add(member);
-                boolean removed=previous_members.remove(member);
-                if(removed && log.isTraceEnabled())
+                Object obj=previous_members.removeElement(member);
+                if(obj != null && log.isTraceEnabled())
                     log.trace("removing " + member + " from previous_members as result of ENABLE_UNICAST_TO event, " +
                             "previous_members=" + previous_members);
+                break;
+
+            case Event.DISABLE_UNICASTS_TO:
+                member=(Address)evt.getArg();
+                removeConnection(member);
+                enabled_members.removeElement(member);
+                previous_members.removeElement(member);
                 break;
         }
 
@@ -518,7 +528,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
             if(log.isTraceEnabled())
                 log.trace("removed " + sender + " from previous_members as we received a message from it");
-            previous_members.remove(sender);
+            previous_members.removeElement(sender);
         }
 
         Entry    entry;
@@ -614,6 +624,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         long    seqno=0;
 
         static final int serialized_size=Global.BYTE_SIZE + Global.LONG_SIZE;
+        private static final long serialVersionUID=-5590873777959784299L;
 
 
         public UnicastHeader() {} // used for externalization
