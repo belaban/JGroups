@@ -3,8 +3,6 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.persistence.CannotPersistException;
-import org.jgroups.persistence.CannotRemoveException;
 import org.jgroups.persistence.PersistenceFactory;
 import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
@@ -32,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.8 2007/08/22 10:07:13 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.9 2007/08/22 10:31:17 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -169,19 +167,19 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
 
     public ReplicatedHashMap(Channel channel, long state_timeout) {
-        this(channel, false, state_timeout);
+        this(channel, false);
     }
 
 
-    public ReplicatedHashMap(Channel channel, boolean persistent, long state_timeout) {
+    public ReplicatedHashMap(Channel channel, boolean persistent) {
         this.cluster_name=channel.getClusterName();
         this.channel=channel;
         this.persistent=persistent;
-        init(state_timeout);
+        init();
     }
 
 
-    protected final void init(long state_timeout) {
+    protected final void init() {
         disp=new RpcDispatcher(channel, this, this, this);
         disp.setMethodLookup(new MethodLookup() {
             public Method findMethod(short id) {
@@ -502,13 +500,9 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             try {
                 persistence_mgr.save(key, value);
             }
-            catch(CannotPersistException cannot_persist_ex) {
-                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
-                        value + ", exception=" + cannot_persist_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
-                        value + ", exception=" + Util.printStackTrace(t));
+                if(log.isErrorEnabled())
+                    log.error("failed persisting " + key + " + " + value, t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -522,13 +516,9 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             try {
                 persistence_mgr.save(key, value);
             }
-            catch(CannotPersistException cannot_persist_ex) {
-                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
-                        value + ", exception=" + cannot_persist_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
-                        value + ", exception=" + Util.printStackTrace(t));
+                if(log.isErrorEnabled())
+                    log.error("failed persisting " + key + " + " + value, t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -555,19 +545,18 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             super.put(entry.getKey(), entry.getValue());
         }
 
-        if(persistent) {
+        if(persistent && !map.isEmpty()) {
             try {
                 persistence_mgr.saveAll(map);
             }
-            catch(CannotPersistException persist_ex) {
-                if(log.isErrorEnabled()) log.error("failed persisting contents: " + persist_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed persisting contents: " + t);
+                if(log.isErrorEnabled()) log.error("failed persisting contents", t);
             }
         }
-        for(int i=0; i < notifs.size(); i++)
-            notifs.elementAt(i).contentsSet(map);
+        if(!map.isEmpty()) {
+            for(int i=0; i < notifs.size(); i++)
+                notifs.elementAt(i).contentsSet(map);
+        }
     }
 
 
@@ -577,11 +566,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             try {
                 persistence_mgr.clear();
             }
-            catch(CannotRemoveException cannot_remove_ex) {
-                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + cannot_remove_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed clearing contents", t);
             }
         }
         for(int i=0; i < notifs.size(); i++)
@@ -595,11 +581,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             try {
                 persistence_mgr.remove((Serializable)key);
             }
-            catch(CannotRemoveException cannot_remove_ex) {
-                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + cannot_remove_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed removing " + key, t);
             }
         }
         if(retval != null) {
@@ -618,11 +601,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             try {
                 persistence_mgr.remove((Serializable)key);
             }
-            catch(CannotRemoveException cannot_remove_ex) {
-                if(log.isErrorEnabled()) log.error("failed removing contents, exception=" + cannot_remove_ex);
-            }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed removing contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed removing " + key, t);
             }
         }
         if(removed) {
@@ -639,7 +619,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 persistence_mgr.save(key, newValue);
             }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed saving contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed saving " + key + ", " + newValue, t);
             }
         }
         if(replaced) {
@@ -656,7 +636,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 persistence_mgr.save(key, value);
             }
             catch(Throwable t) {
-                if(log.isErrorEnabled()) log.error("failed saving contents, exception=" + t);
+                if(log.isErrorEnabled()) log.error("failed saving " + key + ", " + value, t);
             }
         }
         for(Notification notif: notifs)
