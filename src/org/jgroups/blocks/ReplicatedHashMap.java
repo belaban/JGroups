@@ -11,8 +11,9 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
 import java.lang.reflect.Method;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -31,9 +32,9 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.7 2007/08/22 08:52:23 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.8 2007/08/22 10:07:13 belaban Exp $
  */
-public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
+public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
 
 
@@ -49,15 +50,29 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         void contentsCleared();
     }
 
+    private static final short PUT               = 1;
+    private static final short PUT_IF_ABSENT     = 2;
+    private static final short PUT_ALL           = 3;
+    private static final short REMOVE            = 4;
+    private static final short REMOVE_IF_EQUALS  = 5;
+    private static final short REPLACE_IF_EXISTS = 6;
+    private static final short REPLACE_IF_EQUALS = 7;
+    private static final short CLEAR             = 8;
+
+
     protected static Map<Short, Method> methods;
 
     static {
         try {
-            methods=new HashMap<Short,Method>(10);
-            methods.put(new Short((short)1), ReplicatedHashMap.class.getMethod("_put", Serializable.class, Serializable.class));
-            methods.put(new Short((short)2), ReplicatedHashMap.class.getMethod("_putAll", Map.class));
-            methods.put(new Short((short)3), ReplicatedHashMap.class.getMethod("_remove", Object.class));
-            methods.put(new Short((short)4), ReplicatedHashMap.class.getMethod("_clear"));
+            methods=new HashMap<Short,Method>(8);
+            methods.put(PUT, ReplicatedHashMap.class.getMethod("_put", Serializable.class, Serializable.class));
+            methods.put(PUT_IF_ABSENT, ReplicatedHashMap.class.getMethod("_putIfAbsent", Serializable.class, Serializable.class));
+            methods.put(PUT_ALL, ReplicatedHashMap.class.getMethod("_putAll", Map.class));
+            methods.put(REMOVE, ReplicatedHashMap.class.getMethod("_remove", Object.class));
+            methods.put(REMOVE_IF_EQUALS, ReplicatedHashMap.class.getMethod("_remove", Object.class, Object.class));
+            methods.put(REPLACE_IF_EXISTS, ReplicatedHashMap.class.getMethod("_replace", Serializable.class, Serializable.class));
+            methods.put(REPLACE_IF_EQUALS, ReplicatedHashMap.class.getMethod("_replace", Serializable.class, Serializable.class, Serializable.class));
+            methods.put(CLEAR, ReplicatedHashMap.class.getMethod("_clear"));
         }
         catch(NoSuchMethodException e) {
             throw new RuntimeException(e);
@@ -329,7 +344,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
         if(send_message == true) {
             try {
-                MethodCall call=new MethodCall((short)1, new Object[]{key, value});
+                MethodCall call=new MethodCall(PUT, new Object[]{key, value});
                 disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
@@ -337,11 +352,28 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             }
         }
         else {
-            _put(key, value);
+            return _put(key, value);
         }
         return prev_val;
     }
 
+    public V putIfAbsent(K key, V value) {
+        V prev_val=get(key);
+
+        if(send_message == true) {
+            try {
+                MethodCall call=new MethodCall(PUT_IF_ABSENT, new Object[]{key, value});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
+            }
+            catch(Exception e) {
+                throw new RuntimeException("putIfAbsent(" + key + ", " + value + ") failed", e);
+            }
+        }
+        else {
+            return _putIfAbsent(key, value);
+        }
+        return prev_val;
+    }
 
     /**
      * Copies all of the mappings from the specified Map to this hashmap.
@@ -351,7 +383,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     public void putAll(Map<? extends K, ? extends V> m) {
         if(send_message == true) {
             try {
-                MethodCall call=new MethodCall((short)2, new Object[]{m});
+                MethodCall call=new MethodCall(PUT_ALL, new Object[]{m});
                 disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Throwable t) {
@@ -371,7 +403,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         //if true, propagate action to the group
         if(send_message == true) {
             try {
-                MethodCall call=new MethodCall((short)4, null);
+                MethodCall call=new MethodCall(CLEAR, null);
                 disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
@@ -391,11 +423,9 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     public V remove(Object key) {
         V retval=get(key);
 
-        //Changes done by <aos>
-        //if true, propagate action to the group
         if(send_message == true) {
             try {
-                MethodCall call=new MethodCall((short)3, new Object[]{key});
+                MethodCall call=new MethodCall(REMOVE, new Object[]{key});
                 disp.callRemoteMethods(null, call, update_mode, timeout);
             }
             catch(Exception e) {
@@ -403,18 +433,91 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             }
         }
         else {
-            _remove(key);
-            //don't have to do retval = super.remove(..) as is done at the beginning
+            return _remove(key);
         }
         return retval;
     }
 
+    public boolean remove(Object key, Object value) {
+        Object val=get(key);
+        boolean removed=val != null && value != null && val.equals(value);
 
+        if(send_message == true) {
+            try {
+                MethodCall call=new MethodCall(REMOVE_IF_EQUALS, new Object[]{key, value});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
+            }
+            catch(Exception e) {
+                throw new RuntimeException("remove(" + key + ", " + value + ") failed", e);
+            }
+        }
+        else {
+            return _remove(key, value);
+        }
+        return removed;
+    }
+
+    public boolean replace(K key, V oldValue, V newValue) {
+        Object val=get(key);
+        boolean replaced=val != null && oldValue != null && val.equals(oldValue);
+
+        if(send_message == true) {
+            try {
+                MethodCall call=new MethodCall(REPLACE_IF_EQUALS, new Object[]{key, oldValue, newValue});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
+            }
+            catch(Exception e) {
+                throw new RuntimeException("replace(" + key + ", " + oldValue + ", " + newValue + ") failed", e);
+            }
+        }
+        else {
+            return _replace(key, oldValue,newValue);
+        }
+        return replaced;
+    }
+
+    public V replace(K key, V value) {
+        V retval=get(key);
+
+        if(send_message == true) {
+            try {
+                MethodCall call=new MethodCall(REPLACE_IF_EXISTS, new Object[]{key, value});
+                disp.callRemoteMethods(null, call, update_mode, timeout);
+            }
+            catch(Exception e) {
+                throw new RuntimeException("replace(" + key + ", " + value + ") failed", e);
+            }
+        }
+        else {
+            return _replace(key, value);
+        }
+        return retval;
+    }
 
     /*------------------------ Callbacks -----------------------*/
 
     public V _put(K key, V value) {
         V retval=super.put(key, value);
+        if(persistent) {
+            try {
+                persistence_mgr.save(key, value);
+            }
+            catch(CannotPersistException cannot_persist_ex) {
+                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
+                        value + ", exception=" + cannot_persist_ex);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled()) log.error("failed persisting " + key + " + " +
+                        value + ", exception=" + Util.printStackTrace(t));
+            }
+        }
+        for(int i=0; i < notifs.size(); i++)
+            notifs.elementAt(i).entrySet(key, value);
+        return retval;
+    }
+
+    public V _putIfAbsent(K key, V value) {
+        V retval=super.putIfAbsent(key, value);
         if(persistent) {
             try {
                 persistence_mgr.save(key, value);
@@ -488,7 +591,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
     public V _remove(Object key) {
         V retval=super.remove(key);
-        if(persistent) {
+        if(persistent && retval != null) {
             try {
                 persistence_mgr.remove((Serializable)key);
             }
@@ -499,9 +602,65 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 if(log.isErrorEnabled()) log.error("failed clearing contents, exception=" + t);
             }
         }
-        for(Notification notif: notifs)
-            notif.entryRemoved((K)key);
+        if(retval != null) {
+            for(Notification notif: notifs)
+                notif.entryRemoved((K)key);
+        }
 
+        return retval;
+    }
+
+
+
+    public boolean _remove(Object key, Object value) {
+        boolean removed=super.remove(key, value);
+        if(persistent && removed) {
+            try {
+                persistence_mgr.remove((Serializable)key);
+            }
+            catch(CannotRemoveException cannot_remove_ex) {
+                if(log.isErrorEnabled()) log.error("failed removing contents, exception=" + cannot_remove_ex);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled()) log.error("failed removing contents, exception=" + t);
+            }
+        }
+        if(removed) {
+            for(Notification notif: notifs)
+                notif.entryRemoved((K)key);
+        }
+        return removed;
+    }
+
+    public boolean _replace(K key, V oldValue, V newValue) {
+        boolean replaced=super.replace(key, oldValue, newValue);
+        if(persistent && replaced) {
+            try {
+                persistence_mgr.save(key, newValue);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled()) log.error("failed saving contents, exception=" + t);
+            }
+        }
+        if(replaced) {
+            for(Notification notif: notifs)
+                notif.entrySet(key, newValue);
+        }
+        return replaced;
+    }
+
+    public V _replace(K key, V value) {
+        V retval=super.replace(key, value);
+        if(persistent) {
+            try {
+                persistence_mgr.save(key, value);
+            }
+            catch(Throwable t) {
+                if(log.isErrorEnabled()) log.error("failed saving contents, exception=" + t);
+            }
+        }
+        for(Notification notif: notifs)
+            notif.entrySet(key, value);
         return retval;
     }
 
@@ -742,6 +901,30 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             }
         }
 
+        public V putIfAbsent(K key, V value) {
+            synchronized(mutex) {
+                return map.putIfAbsent(key, value);
+            }
+        }
+
+        public boolean remove(Object key, Object value) {
+            synchronized(mutex) {
+                return map.remove(key, value);
+            }
+        }
+
+        public boolean replace(K key, V oldValue, V newValue) {
+            synchronized(mutex) {
+                return map.replace(key, oldValue, newValue);
+            }
+        }
+
+        public V replace(K key, V value) {
+            synchronized(mutex) {
+                return map.replace(key, value);
+            }
+        }
+
         private Set<K> keySet=null;
         private Set<Map.Entry<K,V>> entrySet=null;
         private Collection<V> values=null;
@@ -790,14 +973,38 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         }
 
         public void _clear() {
-             synchronized(mutex) {
+            synchronized(mutex) {
                 map._clear();
             }
         }
 
         public V _remove(Object key) {
-             synchronized(mutex) {
-                 return map._remove(key);
+            synchronized(mutex) {
+                return map._remove(key);
+            }
+        }
+
+        public V _putIfAbsent(K key, V value) {
+            synchronized(mutex) {
+                return map._putIfAbsent(key, value);
+            }
+        }
+
+        public boolean _remove(Object key, Object value) {
+            synchronized(mutex) {
+                return map._remove(key, value);
+            }
+        }
+
+        public boolean _replace(K key, V oldValue, V newValue) {
+            synchronized(mutex) {
+                return map._replace(key, oldValue, newValue);
+            }
+        }
+
+        public V _replace(K key, V value) {
+            synchronized(mutex) {
+                return map._replace(key, value);
             }
         }
 
@@ -818,6 +1025,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 return map.equals(obj);
             }
         }
+
 
     }
 
