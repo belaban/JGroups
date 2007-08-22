@@ -11,9 +11,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 import java.lang.reflect.Method;
 
 
@@ -33,11 +31,10 @@ import java.lang.reflect.Method;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.6 2007/07/23 09:30:07 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.7 2007/08/22 08:52:23 belaban Exp $
  */
-public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedReceiver {
-
-
+public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends HashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
+    private static final long serialVersionUID=-5317720987340048547L;
 
 
     public interface Notification<K extends Serializable,V extends Serializable> {
@@ -674,5 +671,155 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
     public void unblock() {
     }
+
+
+    /**
+     * Creates a synchronized facade for a ReplicatedMap. All methods which change state are invoked through a monitor.
+     * This is similar to {@Collections.synchronizedMap()}, but also includes the replication methods (starting
+     * with an underscore).
+     * @param map
+     * @return
+     */
+    public static <K extends Serializable,V extends Serializable> ReplicatedMap<K,V> synchronizedMap(ReplicatedMap<K,V> map) {
+        return new SynchronizedReplicatedMap<K,V>(map);
+    }
+
+    private static class SynchronizedReplicatedMap<K extends Serializable,V extends Serializable> implements ReplicatedMap<K,V> {
+        private final ReplicatedMap<K,V> map;
+        private final Object mutex;
+
+        
+        private SynchronizedReplicatedMap(ReplicatedMap<K, V> map) {
+            this.map=map;
+            this.mutex=this;
+        }
+
+        public int size() {
+            synchronized(mutex) {
+               return map.size();
+            }
+        }
+
+        public boolean isEmpty() {
+            synchronized(mutex) {
+                return map.isEmpty();
+            }
+        }
+
+        public boolean containsKey(Object key) {
+            synchronized(mutex) {
+                return map.containsKey(key);
+            }
+        }
+
+        public boolean containsValue(Object value) {
+            synchronized(mutex) {
+                return map.containsValue(value);
+            }
+        }
+
+        public V get(Object key) {
+            synchronized(mutex) {
+                return map.get(key);
+            }
+        }
+
+        public V put(K key, V value) {
+            synchronized(mutex) {
+                return map.put(key, value);
+            }
+        }
+
+        public void putAll(Map<? extends K, ? extends V> m) {
+            synchronized(mutex) {
+                map.putAll(m);
+            }
+        }
+
+        public void clear() {
+            synchronized(mutex) {
+                map.clear();
+            }
+        }
+
+        private Set<K> keySet=null;
+        private Set<Map.Entry<K,V>> entrySet=null;
+        private Collection<V> values=null;
+
+
+        public Set<K> keySet() {
+            synchronized(mutex) {
+                if (keySet == null)
+                    keySet=Collections.synchronizedSet(map.keySet());
+                return keySet;
+            }
+        }
+
+        public Collection<V> values() {
+            synchronized(mutex) {
+                if (values == null)
+                    values=Collections.synchronizedCollection(map.values());
+                return values;
+            }
+        }
+
+        public Set<Entry<K, V>> entrySet() {
+            synchronized(mutex) {
+                if (entrySet == null)
+                    entrySet=Collections.synchronizedSet(map.entrySet());
+                return entrySet;
+            }
+        }
+
+        public V remove(Object key) {
+            synchronized(mutex) {
+                return map.remove(key);
+            }
+        }
+
+        public V _put(K key, V value) {
+            synchronized(mutex) {
+                return map._put(key, value);
+            }
+        }
+
+        public void _putAll(Map<? extends K, ? extends V> map) {
+            synchronized(mutex) {
+                this.map._putAll(map);
+            }
+        }
+
+        public void _clear() {
+             synchronized(mutex) {
+                map._clear();
+            }
+        }
+
+        public V _remove(Object key) {
+             synchronized(mutex) {
+                 return map._remove(key);
+            }
+        }
+
+        public String toString() {
+            synchronized(mutex) {
+                return map.toString();
+            }
+        }
+
+        public int hashCode() {
+            synchronized(mutex) {
+                return map.hashCode();
+            }
+        }
+
+        public boolean equals(Object obj) {
+            synchronized(mutex) {
+                return map.equals(obj);
+            }
+        }
+
+    }
+
 
 }
