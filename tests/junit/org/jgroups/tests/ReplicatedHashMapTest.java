@@ -9,7 +9,7 @@ import java.util.Map;
 /**
  * Test methods for ReplicatedHashMap
  * @author Bela Ban
- * @version $Id: ReplicatedHashMapTest.java,v 1.2 2007/07/04 14:32:25 belaban Exp $
+ * @version $Id: ReplicatedHashMapTest.java,v 1.3 2007/08/22 11:23:28 belaban Exp $
  **/
 public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map1;
@@ -22,13 +22,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     protected void setUp() throws Exception {
         super.setUp();
         Channel c1=createChannel("A");
-        this.map1=new ReplicatedHashMap<String,String>(c1, false, 5000);
+        this.map1=new ReplicatedHashMap<String,String>(c1, false);
         map1.setBlockingUpdates(true);
         c1.connect("demo");
         this.map1.start(5000);
 
         Channel c2=createChannel("A");
-        this.map2=new ReplicatedHashMap<String,String>(c2, false, 5000);
+        this.map2=new ReplicatedHashMap<String,String>(c2, false);
         map2.setBlockingUpdates(true);
         c2.connect("demo");
         this.map2.start(5000);
@@ -102,6 +102,18 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertNotNull(this.map2.get("key2"));
     }
 
+
+    public void testPutIfAbsent() {
+        String retval=map1.putIfAbsent("name", "Bela");
+        assertNull(retval);
+        retval=map1.putIfAbsent("name", "Michelle");
+        assertNotNull(retval);
+        assertEquals("Bela", retval);
+        assertEquals("Bela", map1.get("name"));
+        assertEquals("Bela", map2.get("name"));
+    }
+
+
     public void testRemove() {
         assertNull(this.map1.get("key1"));
         assertNull(this.map2.get("key1"));
@@ -121,6 +133,49 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         this.map2.remove("key2");
         assertNull(this.map1.get("key2"));
         assertNull(this.map2.get("key2"));
+    }
+
+    public void testRemove2() {
+        map1.put("name", "Bela");
+        map1.put("id", "322649");
+        System.out.println("map1: " + map1);
+        boolean removed=map1.remove("id", "322000");
+        assertFalse(removed);
+        assertTrue(map1.containsKey("id"));
+        removed=map1.remove("id", "322649");
+        System.out.println("map1: " + map1);
+        assertTrue(removed);
+        assertFalse(map1.containsKey("id"));
+        assertEquals(1, map2.size());
+    }
+
+    public void testReplace() {
+        map1.put("name", "Bela");
+        map1.put("id", "322649");
+        System.out.println("map1: " + map1);
+        String val=map1.replace("id2", "322000");
+        assertEquals(2, map1.size());
+        assertNull(map1.get("id2"));
+        System.out.println("map1: " + map1);
+        assertNull(val);
+        val=map1.replace("id", "322000");
+        System.out.println("map1: " + map1);
+        assertNotNull(val);
+        assertEquals("322649", val);
+        assertEquals("322000", map1.get("id"));
+        assertEquals("322000", map2.get("id"));
+    }
+
+    public void testReplace2() {
+        map1.put("name", "Bela");
+        map1.put("id", "322649");
+        System.out.println("map1: " + map1);
+        boolean replaced=map1.replace("id", "322000", "1");
+        assertFalse(replaced);
+        assertEquals("322649", map1.get("id"));
+        replaced=map1.replace("id", "322649", "1");
+        assertTrue(replaced);
+        assertEquals("1", map1.get("id"));
     }
 
     public void testPutAll() {
