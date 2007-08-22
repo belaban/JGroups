@@ -15,22 +15,22 @@ import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
- * Provides the abstraction of a java.util.HashMap that is replicated across a cluster.
+ * Subclass of a {@link java.util.concurrent.ConcurrentHashMap} with replication of the contents across a cluster.
  * Any change to the hashmap (clear(), put(), remove() etc) will transparently be
  * propagated to all replicas in the group. All read-only methods will always access the local replica.<p>
- * Both keys and values added to the hashmap <em>must be serializable</em>, the reason
+ * Keys and values added to the hashmap <em>must be serializable</em>, the reason
  * being that they will be sent across the network to all replicas of the group. Having said
  * this, it is now for example possible to add RMI remote objects to the hashtable as they
  * are derived from <code>java.rmi.server.RemoteObject</code> which in turn is serializable.
  * This allows to lookup shared distributed objects by their name and invoke methods on them,
- * regardless of one's onw location. A <code>DistributedHashMap</code> thus allows to
+ * regardless of one's onw location. A <code>ReplicatedHashMap</code> thus allows to
  * implement a distributed naming service in just a couple of lines.<p>
  * An instance of this class will contact an existing member of the group to fetch its
- * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.<p>
+ * initial state.<p>
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.9 2007/08/22 10:31:17 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.10 2007/08/22 11:23:11 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -141,8 +141,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
      * @param properties    Protocol stack properties. This will override the properties of the factory. If
      *                      null, then the factory properties will be used
      * @param persistent    Whether the contents should be persisted
-     * @param state_timeout Max number of milliseconds to wait until state is
-     *                      retrieved
+     * @param state_timeout Max number of milliseconds to wait until the state is retrieved
      */
     public ReplicatedHashMap(String clustername, ChannelFactory factory, String properties,
                              boolean persistent, long state_timeout)
@@ -166,7 +165,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
 
-    public ReplicatedHashMap(Channel channel, long state_timeout) {
+    public ReplicatedHashMap(Channel channel) {
         this(channel, false);
     }
 
@@ -224,7 +223,6 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
      * Fetches the state
      * @param state_timeout
      * @throws org.jgroups.ChannelClosedException
-     *
      * @throws org.jgroups.ChannelNotConnectedException
      *
      */
@@ -329,13 +327,17 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
 
-
-
     /**
-     * Maps the specified key to the specified value in the hashtable. Neither of both parameters can be null
-     * @param key   - the hashtable key
-     * @param value - the value
-     * @return the previous value of the specified key in this hashtable, or null if it did not have one
+     * Maps the specified key to the specified value in this table.
+     * Neither the key nor the value can be null.
+     * <p/>
+     * <p> The value can be retrieved by calling the <tt>get</tt> method
+     * with a key that is equal to the original key.
+     * @param key   key with which the specified value is to be associated
+     * @param value value to be associated with the specified key
+     * @return the previous value associated with <tt>key</tt>, or
+     *         <tt>null</tt> if there was no mapping for <tt>key</tt>
+     * @throws NullPointerException if the specified key or value is null
      */
     public V put(K key, V value) {
         V prev_val=get(key);
@@ -355,6 +357,14 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         return prev_val;
     }
 
+
+
+    /**
+     * {@inheritDoc}
+     * @return the previous value associated with the specified key,
+     *         or <tt>null</tt> if there was no mapping for the key
+     * @throws NullPointerException if the specified key or value is null
+     */
     public V putIfAbsent(K key, V value) {
         V prev_val=get(key);
 
@@ -373,10 +383,12 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         return prev_val;
     }
 
+
     /**
-     * Copies all of the mappings from the specified Map to this hashmap.
-     * These mappings will replace any mappings that this hashmap had for any of the keys currently in the specified Map.
-     * @param m - Mappings to be stored in this map
+     * Copies all of the mappings from the specified map to this one.
+     * These mappings replace any mappings that this map had for any of the
+     * keys currently in the specified map.
+     * @param m mappings to be stored in this map
      */
     public void putAll(Map<? extends K, ? extends V> m) {
         if(send_message == true) {
@@ -394,7 +406,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
     /**
-     * Clears this hashtable so that it contains no keys
+     * Removes all of the mappings from this map.
      */
     public void clear() {
         //Changes done by <aos>
@@ -414,9 +426,12 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
     /**
-     * Removes the key (and its corresponding value) from the hashmap.
-     * @param key - the key to be removed.
-     * @return the value to which the key had been mapped in this hashtable, or null if the key did not have a mapping.
+     * Removes the key (and its corresponding value) from this map.
+     * This method does nothing if the key is not in the map.
+     * @param key the key that needs to be removed
+     * @return the previous value associated with <tt>key</tt>, or
+     *         <tt>null</tt> if there was no mapping for <tt>key</tt>
+     * @throws NullPointerException if the specified key is null
      */
     public V remove(Object key) {
         V retval=get(key);
@@ -436,6 +451,10 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         return retval;
     }
 
+    /**
+     * {@inheritDoc}
+     * @throws NullPointerException if the specified key is null
+     */
     public boolean remove(Object key, Object value) {
         Object val=get(key);
         boolean removed=val != null && value != null && val.equals(value);
@@ -455,6 +474,11 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         return removed;
     }
 
+
+    /**
+     * {@inheritDoc}
+     * @throws NullPointerException if any of the arguments are null
+     */
     public boolean replace(K key, V oldValue, V newValue) {
         Object val=get(key);
         boolean replaced=val != null && oldValue != null && val.equals(oldValue);
@@ -474,6 +498,12 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         return replaced;
     }
 
+    /**
+     * {@inheritDoc}
+     * @return the previous value associated with the specified key,
+     *         or <tt>null</tt> if there was no mapping for the key
+     * @throws NullPointerException if the specified key or value is null
+     */
     public V replace(K key, V value) {
         V retval=get(key);
 
@@ -505,8 +535,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                     log.error("failed persisting " + key + " + " + value, t);
             }
         }
-        for(int i=0; i < notifs.size(); i++)
-            notifs.elementAt(i).entrySet(key, value);
+        for(Notification notif: notifs)
+            notif.entrySet(key, value);
         return retval;
     }
 
@@ -521,8 +551,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                     log.error("failed persisting " + key + " + " + value, t);
             }
         }
-        for(int i=0; i < notifs.size(); i++)
-            notifs.elementAt(i).entrySet(key, value);
+        for(Notification notif: notifs)
+            notif.entrySet(key, value);
         return retval;
     }
 
@@ -554,8 +584,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             }
         }
         if(!map.isEmpty()) {
-            for(int i=0; i < notifs.size(); i++)
-                notifs.elementAt(i).contentsSet(map);
+            for(Notification notif: notifs)
+                notif.contentsSet(map);
         }
     }
 
