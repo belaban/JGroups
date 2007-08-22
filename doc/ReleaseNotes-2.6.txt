@@ -1,0 +1,45 @@
+
+Release Notes JGroups 2.6
+=========================
+
+Version: $Id: ReleaseNotes-2.6.txt,v 1.1 2007/08/22 11:31:51 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6 is still API-backwards compatible with previous versions (down to 2.2.5).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+
+Improved ReplicatedHashMap
+--------------------------
+[http://jira.jboss.com/jira/browse/JGRP-581]
+
+ReplicatedHashMap was converted to use generics, and java.util.concurrent.ConcurrentHashMap. It therefore supports 4 new
+methods putIfAbsent(), remove() and the two replace() methods.
+Developers can choose whether to use asynchronous or synchronous replication, and also pick the timeout for synchronous
+calls.
+This class supersedes ReplicatedHashtable and DistributedHashtable, which will be removed in version 3.0.
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+Performance
+-----------
+Links to performance tuning: http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTuning
+
+
+
+Bug fixes
+---------
+The list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+
+Dec 2007
+
+
