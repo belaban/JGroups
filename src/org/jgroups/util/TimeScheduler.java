@@ -40,7 +40,7 @@ import java.util.Date;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.14.2.2 2007/04/27 09:11:18 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.14.2.3 2007/08/24 13:11:05 belaban Exp $
  */
 public class TimeScheduler extends Timer {
     /**
@@ -122,33 +122,57 @@ public class TimeScheduler extends Timer {
 
 
     public void schedule(TimerTask task, long delay) {
-        super.schedule(task, delay);
-        size++;
+        try {
+            super.schedule(task, delay);
+            size++;
+        }
+        catch(Exception e) {
+        }
     }
 
     public void schedule(TimerTask task, long delay, long period) {
-        super.schedule(task, delay, period);
-        size++;
+        try {
+            super.schedule(task, delay, period);
+            size++;
+        }
+        catch(Exception e) {
+        }
     }
 
     public void schedule(TimerTask task, Date firstTime, long period) {
-        super.schedule(task, firstTime, period);
-        size++;
+        try {
+            super.schedule(task, firstTime, period);
+            size++;
+        }
+        catch(Exception e) {
+        }
     }
 
     public void schedule(TimerTask task, Date time) {
-        super.schedule(task, time);
-        size++;
+        try {
+            super.schedule(task, time);
+            size++;
+        }
+        catch(Exception e) {
+        }
     }
 
     public void scheduleAtFixedRate(TimerTask task, long delay, long period) {
-        super.scheduleAtFixedRate(task, delay, period);
-        size++;
+        try {
+            super.scheduleAtFixedRate(task, delay, period);
+             size++;
+        }
+        catch(Exception e) {
+        }
     }
 
     public void scheduleAtFixedRate(TimerTask task, Date firstTime, long period) {
-        super.scheduleAtFixedRate(task, firstTime, period);
-        size++;
+        try {
+            super.scheduleAtFixedRate(task, firstTime, period);
+            size++;
+        }
+        catch(Exception e) {
+        }
     }
 
 
