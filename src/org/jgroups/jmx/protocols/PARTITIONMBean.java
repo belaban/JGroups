@@ -7,9 +7,9 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PARTITIONMBean.java,v 1.1 2007/08/27 10:28:36 belaban Exp $
+ * @version $Id: PARTITIONMBean.java,v 1.2 2007/08/27 10:46:45 belaban Exp $
  */
-public interface PARTITIONMBean extends PINGMBean {
+public interface PARTITIONMBean extends ProtocolMBean {
     boolean isPartitionOn();
     void startPartition();
     void stopPartition();
