@@ -13,7 +13,7 @@ import org.jgroups.stack.Protocol;
  * methods startPartition() or stopPartition() directly. This can also be done via JMX.<p/>
  * A partition simply discards all messages, but let's other events pass.
  * @author Bela Ban
- * @version $Id: PARTITION.java,v 1.2 2007/08/27 10:46:46 belaban Exp $
+ * @version $Id: PARTITION.java,v 1.3 2007/08/27 11:05:32 belaban Exp $
  */
 public class PARTITION extends Protocol {
     protected boolean partition_on=false;
@@ -33,6 +33,20 @@ public class PARTITION extends Protocol {
 
     public void stopPartition() {
         partition_on=false;
+    }
+
+
+    public Object down(Event evt) {
+        switch(evt.getType()) {
+            case Event.START_PARTITION:
+                startPartition();
+                return null;
+            case Event.STOP_PARTITION:
+                stopPartition();
+                return null;
+            default:
+                return down_prot.down(evt);
+        }
     }
 
     public Object up(Event evt) {

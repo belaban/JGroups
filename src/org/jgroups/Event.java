@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.49 2007/08/27 08:09:21 belaban Exp $
+// $Id: Event.java,v 1.50 2007/08/27 11:05:33 belaban Exp $
 
 package org.jgroups;
 
@@ -50,7 +50,8 @@ public class Event {
     public static final int SHUTDOWN                           = 79;  // arg = null (shutdown without closing sockets or cleaning up)
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
-
+    public static final int START_PARTITION                    = 82;  // arg = null;
+    public static final int STOP_PARTITION                     = 83;  // arg = null;
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -135,6 +136,8 @@ public class Event {
             case SHUTDOWN:               return "SHUTDOWN";
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
+            case START_PARTITION:        return "START_PARTITION";
+            case STOP_PARTITION:         return "STOP_PARTITION";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
