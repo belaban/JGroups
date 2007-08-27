@@ -1348,11 +1348,11 @@
                 channel=new JChannel(); // use default properties (has to include pbcast.STATE_TRANSFER protocol)
                 channel.setReceiver(new MyReceiver());
                 channel.connect("TestChannel");
-                boolean rc=channel.getState(null, "MySpecificSessionID", 5000);
+                boolean rc=channel.getState(null, "MyID", 5000);
             </screen>
 
       <para>The example shows that the Channel.getState() method specifies the
-      ID of the substate, in this case "MySpecificSessionID". The
+      ID of the substate, in this case "MyID". The
       <methodname>getState(String substate_id)</methodname> method checks
       whether the substate ID is not null, and returns the substate pertaining
       to the ID, or the entire state if the substate_id is null. The same goes

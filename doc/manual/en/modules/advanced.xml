@@ -1227,9 +1227,10 @@
             re-connects, the AUTO_RECONNECT option has to be set on the Channel:
             <screen>
                 channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-            </screen><para/>
+            </screen>
 
-            To enable shunning, set FD.shun and GMS.shun to true.<para/>
+            
+            <para>To enable shunning, set FD.shun and GMS.shun to true.</para>
 
             Let's look at a more detailed example. Say member D is overloaded, and doesn't respond to are-you-alive
             messages (done by the failure detection (FD) protocol). It is therefore suspected and excluded. The new
@@ -1333,8 +1334,129 @@
             The primary partition approach is simple: on merging, one subgroup is designated as the
             <emphasis>primary partition</emphasis> and all others as non-primary partitions. The members in the primary
             partition don't do anything, whereas the members in the non-primary partitions need to drop their state and
-            re-acquire fresh state from a member of the primary partition.
+            re-initialize their state from fresh state obtained from a member of the primary partition.
         </para>
+        <para>
+            The code to find the primary partition needs to be deterministic, so that all members pick the <emphasis>
+            same</emphasis> primary partition. This could be for example the first view in the MergeView, or we could
+            sort all members of the new MergeView and pick the subgroup which contained the new coordinator (the one
+            from the consolidated MergeView). Another possible solution could be to pick the largest subgroup, and, if
+            there is a tie, sort the tied views lexicographically (all Addresses have a compareTo() method) and pick the
+            subgroup with the lowest ranked member.
+        </para>
+        <para>
+            Here's code which picks as primary partition the first view in the MergeView, then re-acquires the state from
+            the <emphasis>new</emphasis> coordinator of the combined view:
+            <screen>
+                public static void main(String[] args) throws Exception {
+                       final JChannel ch=new JChannel("/home/bela/udp.xml");
+                       ch.setReceiver(new ExtendedReceiverAdapter() {
+                           public void viewAccepted(View new_view) {
+                               handleView(ch, new_view);
+                           }
+                       });
+                       ch.connect("x");
+                       while(ch.isConnected())
+                           Util.sleep(5000);
+                   }
+
+                private static void handleView(JChannel ch, View new_view) {
+                    if(new_view instanceof MergeView) {
+                        ViewHandler handler=new ViewHandler(ch, (MergeView)new_view);
+                        handler.start(); // requires separate thread as we don't want to block JGroups
+                    }
+                }
+
+                private static class ViewHandler extends Thread {
+                    JChannel ch;
+                    MergeView view;
+
+                    private ViewHandler(JChannel ch, MergeView view) {
+                        this.ch=ch;
+                        this.view=view;
+                    }
+
+                    public void run() {
+                        Vector&lt;View&gt; subgroups=view.getSubgroups();
+                        View tmp_view=subgroups.firstElement(); // picks the first
+                        Address local_addr=ch.getLocalAddress();
+                        if(!tmp_view.getMembers().contains(local_addr)) {
+                            System.out.println("I (" + local_addr + ") am not member of the new primary partition (" + tmp_view +
+                                    "), will re-acquire the state");
+                            try {
+                                ch.getState(null, 30000);
+                            }
+                            catch(Exception ex) {
+                            }
+                        }
+                        else {
+                            System.out.println("I (" + local_addr + ") am member of the new primary partition (" + tmp_view +
+                                    "), will do nothing");
+                        }
+                    }
+                }
+            </screen>
+        </para>
+        <para>
+            The handleView() method is called from viewAccepted(), which is called whenever there is a new view. It spawns
+            a new thread which gets the subgroups from the MergeView, and picks the first subgroup to be the primary
+            partition. Then, if it was a member of the primary partition, it does nothing, and if not, it reaqcuires
+            the state from the coordinator of the primary partition (A).
+        </para>
+        <para>
+            The downside to the primary partition approach is that work (= state changes) on the non-primary partition
+            is discarded on merging. However, that's only problematic if the data was purely in-memory data, and not
+            backed by persistent storage. If the latter's the case, use state merging discussed above.
+        </para>
+        <para>
+            It would be simpler to shut down the non-primary partition as soon as the network partition is detected, but
+            that a non trivial problem, as we don't know whether {D,E} simply crashed, or whether they're still alive,
+            but were partitioned away by the crash of a switch. This is called a <emphasis>split brain syndrome</emphasis>,
+            and means that none of the members has enough information to determine whether it is in the primary or
+            non-primary partition, by simply exchanging messages.
+        </para>
+
+        <section>
+            <title>The Split Brain syndrome and primary partitions</title>
+            <para>
+                In certain situations, we can avoid having multiple subgroups where every subgroup is able to make
+                progress, and on merging having to discard state of the non-primary partitions.
+            </para>
+            <para>
+                If we have a fixed membership, e.g. the cluster always consists of 5 nodes, then we can run code on
+                a view reception that determines the primary partition. This code
+                <itemizedlist>
+                    <listitem>assumes that the primary partition has to have at least 3 nodes</listitem>
+                    <listitem>any cluster which has less than 3 nodes doesn't accept modfications. This could be done for
+                        shared state for example, by simply making the {D,E} partition read-only. Clients can access the
+                        {D,E} partition and read state, but not modify it.
+                    </listitem>
+                    <listitem>
+                        As an alternative, clusters without at least 3 members could shut down, so in this case D and
+                        E would leave the cluster.
+                    </listitem>
+                </itemizedlist>
+            </para>
+            <para>
+                The algorithm is shown in pseudo code below:
+                <screen>
+                    On initialization:
+                        - Mark the node as read-only
+                    
+                    On view change V:
+                        - If V has >= N members:
+                            - If not read-write: get state from coordinator and switch to read-write
+                        - Else: switch to read-only
+                </screen>
+            </para>
+            <para>
+                Of course, the above mechanism requires that at least 3 nodes are up at any given time, so upgrades have
+                to be done in a staggered way, taking only one node down at a time. In the worst case, however, this
+                mechanism leaves the cluster read-only and notifies a system admin, who can fix the issue. This is still
+                better than shutting the entire cluster down. 
+            </para>
+        </section>
+
     </section>
 
 

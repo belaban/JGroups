@@ -182,11 +182,19 @@
                                 router that had crashed came back), it will be excluded
                                 (shunned) and then has to rejoin. JGroups allows to configure
                                 itself such that shunning leads to automatic rejoins and state
-                                transfer (default in JBoss). , e.g.
-                                <code>shun="true"</code>. Automatic rejoins can be enabled by setting channel option
-                                AUTO_RECONNECT to true: channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE). Same
+                                transfer (default in JBoss), e.g.
+                                <code>shun="true"</code>.
+                                <para>Automatic rejoins can be enabled by setting channel option
+                                AUTO_RECONNECT to true:
+                                    <screen>
+                                    channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE).
+                                    </screen>
+                                Same
                                 for automatically fetching the state after automatic reconnection:
+                                    <screen>
                                 channel.setOpt(Channel.AUTO_GETSTATE, Boolean.TRUE).
+                                    </screen>
+                                </para>
                             </entry>
                         </row>
                     </tbody>
