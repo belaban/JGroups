@@ -1250,6 +1250,47 @@
         </section>
     </section>
 
+    <section>
+        <title>Handling network partitions</title>
+
+        <para>
+            Network partitions can be caused by switch, router or network interface crashes, among other things. If we
+            have a cluster {A,B,C,D,E} spread across 2 subnets {A,B,C} and {D,E} and the switch to which D and E are
+            connected crashes, then we end up with a network partition, with subclusters {A,B,C} and {D,E}.
+        </para>
+        <para>
+            A, B and C can ping each other, but not D or E, and vice versa. We now have 2 coordinators, A and D. Both
+            subclusters operate independently, for example, if we maintain a shared state, subcluster {A,B,C} replicate
+            changes to A, B and C.
+        </para>
+        <para>
+            This means, that if during the partition, some clients access {A,B,C}, and others {D,E}, then we end up
+            with different states in both subclusters. When a partition heals, the merge protocol (e.g. MERGE2) will
+            notify A and D that there were 2 subclusters and merge them back into {A,B,C,D,E}, with A being the new
+            coordinator and D ceasing to be coordinator.
+        </para>
+        <para>
+            The question is what happens with the 2 diverged substates ?
+        </para>
+        <para>
+            There are 2 solutions to merging substates: first we can attempt to create a new state from the 2 substates,
+            and secondly we can shut down all members of the <emphasis>non primary partition</emphasis>, such that they
+            have to re-join and possibly reacquire the state from a member in the primary partition.
+        </para>
+
+        <section>
+            <title>Merging substates</title>
+            <para>
+
+            </para>
+        </section>
+
+        <section>
+            <title>The primary partition approach</title>
+        </section>
+
+    </section>
+
 
     <section>
         <title>Flushing: making sure every node in the cluster received a message</title>
