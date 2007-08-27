@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.2 2007/07/06 19:24:22 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.3 2007/08/27 08:09:17 belaban Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {	
 
@@ -363,7 +363,7 @@ public class ReconciliationTest extends ChannelTestBase {
 
 			// send timeout up and down the stack, so other protocols can use
 			// the same value too
-			Map<Object, Object> map = new HashMap<Object, Object>();
+			Map<String, Object> map = new HashMap<String, Object>();
 			map.put("flush_timeout", new Long(0));
 			flush.getUpProtocol().up(new Event(Event.CONFIG, map));
 			flush.getDownProtocol().down(new Event(Event.CONFIG, map));

@@ -15,7 +15,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.44 2007/06/29 11:02:36 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.45 2007/08/27 08:09:18 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -662,7 +662,7 @@ public class MultiplexerTest extends ChannelTestBase {
     public void testAdditionalData() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        Map m=new HashMap(1);
+        Map<String,Object> m=new HashMap<String,Object>(1);
         m.put("additional_data", additional_data);
         ch1.down(new Event(Event.CONFIG, m));
         ch1.connect("bla");
@@ -692,7 +692,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertNull(tmp);
 
         ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
-        Map m=new HashMap(1);
+        Map<String,Object> m=new HashMap<String,Object>(1);
         m.put("additional_data", additional_data);
         ch2.down(new Event(Event.CONFIG, m));
         ch2.connect("foo");

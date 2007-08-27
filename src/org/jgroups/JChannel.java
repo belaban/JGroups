@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.144 2007/08/20 19:49:33 vlada Exp $
+ * @version $Id: JChannel.java,v 1.145 2007/08/27 08:09:21 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1012,7 +1012,7 @@ public class JChannel extends Channel {
             break;
 
         case Event.CONFIG:
-            HashMap config=(HashMap)evt.getArg();
+            Map<String,Object> config=(Map<String,Object>)evt.getArg();
             if(config != null) {
                 if(config.containsKey("state_transfer")) {
                     state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
@@ -1272,7 +1272,7 @@ public class JChannel extends Channel {
         switch(evt.getType()) {
             case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
                 try {
-                    Map m=(Map)evt.getArg();
+                    Map<String,Object> m=(Map<String,Object>)evt.getArg();
                     if(m != null && m.containsKey("additional_data")) {
                         additional_data=(byte[])m.get("additional_data");
                         if(local_addr instanceof IpAddress)
@@ -1298,7 +1298,7 @@ public class JChannel extends Channel {
         switch(evt.getType()) {
             case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
                 try {
-                    Map m=(Map)evt.getArg();
+                    Map<String,Object> m=(Map<String,Object>)evt.getArg();
                     if(m != null && m.containsKey("additional_data")) {
                         additional_data=(byte[])m.get("additional_data");
                         if(local_addr instanceof IpAddress)
@@ -1672,7 +1672,7 @@ public class JChannel extends Channel {
                     try {
                         if(additional_data != null) {
                             // send previously set additional_data down the stack - other protocols (e.g. TP) use it
-                            Map m=new HashMap(11);
+                            Map<String,Object> m=new HashMap<String,Object>(11);
                             m.put("additional_data", additional_data);
                             down(new Event(Event.CONFIG, m));
                         }

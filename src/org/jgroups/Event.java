@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.48 2007/08/21 11:34:29 belaban Exp $
+// $Id: Event.java,v 1.49 2007/08/27 08:09:21 belaban Exp $
 
 package org.jgroups;
 
@@ -32,7 +32,7 @@ public class Event {
     public static final int HEARD_FROM                         = 50;  // arg = Vector (list of Addresses)
     public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
     public static final int MERGE_DIGEST                       = 53;  // arg = Digest
-    public static final int CONFIG                             = 56;  // arg = HashMap (config properties)
+    public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
     public static final int GET_DIGEST_STABLE                  = 57;
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null

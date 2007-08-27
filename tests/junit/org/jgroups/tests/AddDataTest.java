@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.9 2007/03/06 09:07:27 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.10 2007/08/27 08:09:17 belaban Exp $
  */
 public class AddDataTest extends TestCase {
     JChannel ch1, ch2;
@@ -94,7 +94,7 @@ public class AddDataTest extends TestCase {
             for(int i=1; i <= 5; i++) {
                 System.out.println("-- attempt # " + i + "/10");
                 JChannel c=new JChannel(properties);
-                Map m=new HashMap();
+                Map<String,Object> m=new HashMap<String,Object>();
                 m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
                 c.down(new Event(Event.CONFIG, m));
                 c.connect("bla");
@@ -131,7 +131,7 @@ public class AddDataTest extends TestCase {
 
 
     private void _testWithProps(String props, boolean mcast) throws Exception {
-        Map m=new HashMap();
+        Map<String,Object> m=new HashMap<String,Object>();
         m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
         byte[] buf=new byte[1000];
 

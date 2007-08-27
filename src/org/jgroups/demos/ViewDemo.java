@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.11 2006/03/27 08:34:24 belaban Exp $
+// $Id: ViewDemo.java,v 1.12 2007/08/27 08:09:22 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -8,6 +8,7 @@ import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Util;
 
 import java.util.HashMap;
+import java.util.Map;
 
 
 /**
@@ -46,7 +47,7 @@ public class ViewDemo implements MembershipListener {
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
 
         if(use_additional_data) {
-            HashMap m=new HashMap();
+            Map<String,Object> m=new HashMap<String,Object>();
             m.put("additional_data", "bela".getBytes());
             channel.down(new Event(Event.CONFIG, m));
         }

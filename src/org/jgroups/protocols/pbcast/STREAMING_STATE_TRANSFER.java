@@ -186,7 +186,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     public void init() throws Exception {}
 
     public void start() throws Exception {
-        HashMap map = new HashMap();
+        Map<String,Object> map = new HashMap<String,Object>();
         map.put("state_transfer", Boolean.TRUE);
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));
@@ -239,7 +239,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             break;
 
         case Event.CONFIG:
-            Map config = (Map) evt.getArg();
+            Map<String,Object> config = (Map<String,Object>) evt.getArg();
             if(bind_addr == null && (config != null && config.containsKey("bind_addr"))){
                 bind_addr = (InetAddress) config.get("bind_addr");
                 if(log.isDebugEnabled())
@@ -302,7 +302,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             down_prot.down(new Event(Event.RESUME_STABLE));
             return null;
         case Event.CONFIG:
-            Map config = (Map) evt.getArg();
+            Map<String,Object> config = (Map<String,Object>) evt.getArg();
             if(config != null && config.containsKey("flush_supported")){
                 flushProtocolInStack = true;
             }
