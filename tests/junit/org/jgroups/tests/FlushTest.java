@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.52 2007/07/05 19:47:41 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.53 2007/08/27 08:09:17 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase {
 	private JChannel c1, c2;
@@ -550,7 +550,7 @@ public class FlushTest extends ChannelTestBase {
 
 			// send timeout up and down the stack, so other protocols can use
 			// the same value too
-			Map<Object, Object> map = new HashMap<Object, Object>();
+			Map<String, Object> map = new HashMap<String, Object>();
 			map.put("flush_timeout", new Long(0));
 			flush.getUpProtocol().up(new Event(Event.CONFIG, map));
 			flush.getDownProtocol().down(new Event(Event.CONFIG, map));

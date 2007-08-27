@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.37 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: FRAG.java,v 1.38 2007/08/27 08:09:19 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -131,7 +131,7 @@ public class FRAG extends Protocol {
         case Event.CONFIG:
             Object ret=down_prot.down(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((HashMap)evt.getArg());
+            handleConfigEvent((Map<String,Object>)evt.getArg());
             return ret;
         }
 
@@ -160,7 +160,7 @@ public class FRAG extends Protocol {
         case Event.CONFIG:
             Object ret=up_prot.up(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((HashMap)evt.getArg());
+            handleConfigEvent((Map<String,Object>)evt.getArg());
             return ret;
         }
 
@@ -279,7 +279,7 @@ public class FRAG extends Protocol {
     }
 
 
-    void handleConfigEvent(HashMap map) {
+    void handleConfigEvent(Map<String,Object> map) {
         if(map == null) return;
         if(map.containsKey("frag_size")) {
             frag_size=((Integer)map.get("frag_size")).intValue();

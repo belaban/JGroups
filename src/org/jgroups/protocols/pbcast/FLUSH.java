@@ -148,7 +148,7 @@ public class FLUSH extends Protocol {
     }
 
     public void start() throws Exception {
-        Map<String, Boolean> map = new HashMap<String, Boolean>();
+        Map<String, Object> map = new HashMap<String, Object>();
         map.put("flush_supported", Boolean.TRUE);
         up_prot.up(new Event(Event.CONFIG, map));
         down_prot.down(new Event(Event.CONFIG, map));

@@ -20,7 +20,7 @@ import java.util.Properties;
  * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
  * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.9 2007/08/27 08:09:19 belaban Exp $
  */
 public class FD_ICMP extends FD {
 
@@ -100,7 +100,7 @@ public class FD_ICMP extends FD {
         switch(evt.getType()) {
             case Event.CONFIG:
                 if(bind_addr == null) {
-                    Map config=(Map)evt.getArg();
+                    Map<String,Object> config=(Map<String,Object>)evt.getArg();
                     bind_addr=(InetAddress)config.get("bind_addr");
                 }
                 break;

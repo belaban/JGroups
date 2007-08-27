@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.67 2007/08/21 09:01:07 belaban Exp $
+// $Id: FD_SOCK.java,v 1.68 2007/08/27 08:09:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -284,7 +284,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.CONFIG:
                 if(bind_addr == null) {
-                    Map config=(Map)evt.getArg();
+                    Map<String,Object> config=(Map<String,Object>)evt.getArg();
                     bind_addr=(InetAddress)config.get("bind_addr");
                 }
                 break;

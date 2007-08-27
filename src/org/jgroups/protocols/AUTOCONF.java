@@ -1,4 +1,4 @@
-// $Id: AUTOCONF.java,v 1.19 2007/04/27 07:59:19 belaban Exp $
+// $Id: AUTOCONF.java,v 1.20 2007/08/27 08:09:19 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -10,6 +10,7 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 
 
@@ -27,7 +28,7 @@ import java.util.Properties;
  * @author Bela Ban
  */
 public class AUTOCONF extends Protocol {
-    final HashMap config=new HashMap();
+    final Map<String,Object> config=new HashMap<String,Object>();
     static int num_iterations=10; // to find optimal frag_size
 
     /** Number of bytes to subtract from computed fragmentation size, due to (a) headers and
@@ -161,7 +162,7 @@ public class AUTOCONF extends Protocol {
     }
 
 
-    void senseMaxSendBufferSize(HashMap map) {
+    void senseMaxSendBufferSize(Map<String,Object> map) {
         DatagramSocket sock;
         int max_size=4096, retval=max_size;
 
@@ -188,7 +189,7 @@ public class AUTOCONF extends Protocol {
 
 
 
-    void senseMaxReceiveBufferSize(HashMap map) {
+    void senseMaxReceiveBufferSize(Map<String,Object> map) {
         DatagramSocket sock;
         int max_size=4096, retval=max_size;
 

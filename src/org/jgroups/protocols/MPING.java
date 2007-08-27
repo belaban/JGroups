@@ -19,7 +19,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.28 2007/08/21 08:59:50 belaban Exp $
+ * @version $Id: MPING.java,v 1.29 2007/08/27 08:09:19 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -210,7 +210,7 @@ public class MPING extends PING implements Runnable {
     public Object up(Event evt) {
         if(evt.getType() == Event.CONFIG) {
             if(bind_addr == null) {
-                Map config=(Map)evt.getArg();
+                Map<String,Object> config=(Map<String,Object>)evt.getArg();
                 bind_addr=(InetAddress)config.get("bind_addr");
             }
             return up_prot.up(evt);

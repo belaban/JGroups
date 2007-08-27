@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.73 2007/08/16 19:14:28 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.74 2007/08/27 08:09:21 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -35,7 +35,7 @@ public class STATE_TRANSFER extends Protocol {
     boolean        waiting_for_state_response=false;
 
     Digest         digest=null;
-    final HashMap  map=new HashMap(); // to store configuration information
+    final Map<String,Object>  map=new HashMap<String,Object>(); // to store configuration information
     long           start, stop; // to measure state transfer time
     int            num_state_reqs=0;
     long           num_bytes_sent=0;
@@ -139,7 +139,7 @@ public class STATE_TRANSFER extends Protocol {
             break;
             
         case Event.CONFIG :
-            Map config = (Map) evt.getArg();                            
+            Map<String,Object> config = (Map<String,Object>) evt.getArg();
             if(config != null && config.containsKey("state_transfer")){
 				log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
 			}
@@ -193,7 +193,7 @@ public class STATE_TRANSFER extends Protocol {
                 return null;                 // don't pass down any further !         
                 
             case Event.CONFIG :
-                Map config = (Map) evt.getArg();                
+                Map<String,Object> config = (Map<String,Object>) evt.getArg();                
                 if(config != null && config.containsKey("flush_supported")){
                     flushProtocolInStack = true;                                       
                 }
