@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.145 2007/08/27 08:09:21 belaban Exp $
+ * @version $Id: JChannel.java,v 1.146 2007/08/27 08:36:06 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -136,10 +136,11 @@ public class JChannel extends Channel {
     /** True if a flush protocol is available, false otherwise */
     private volatile boolean flush_supported=false; // set by CONFIG event from FLUSH protocol
 
-    /** Used to maintain additional data across channel disconnects/reconnects. This is a kludge and will be remove
-     * as soon as JGroups supports logical addresses
+    /** Provides storage for arbitrary objects. Protocols can send up CONFIG events, and all key-value pairs of
+     * a CONFIG event will be added to additional_data. On reconnect, a CONFIG event will be sent down by the channel,
+     * containing all key-value pairs of additional_data
      */
-    private byte[] additional_data=null;
+    protected final Map<String,Object> additional_data=new HashMap<String,Object>();
 
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -1270,13 +1271,16 @@ public class JChannel extends Channel {
         if(evt == null) return;
 
         switch(evt.getType()) {
-            case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
+            case Event.CONFIG:
                 try {
                     Map<String,Object> m=(Map<String,Object>)evt.getArg();
-                    if(m != null && m.containsKey("additional_data")) {
-                        additional_data=(byte[])m.get("additional_data");
-                        if(local_addr instanceof IpAddress)
-                            ((IpAddress)local_addr).setAdditionalData(additional_data);
+                    if(m != null) {
+                        additional_data.putAll(m);
+                        if(m.containsKey("additional_data")) {
+                            byte[] tmp=(byte[])m.get("additional_data");
+                            if(local_addr instanceof IpAddress)
+                                ((IpAddress)local_addr).setAdditionalData(tmp);
+                        }
                     }
                 }
                 catch(Throwable t) {
@@ -1296,13 +1300,16 @@ public class JChannel extends Channel {
         if(evt == null) return null;
 
         switch(evt.getType()) {
-            case Event.CONFIG: // handle setting of additional data (kludge, will be removed soon)
+            case Event.CONFIG:
                 try {
                     Map<String,Object> m=(Map<String,Object>)evt.getArg();
-                    if(m != null && m.containsKey("additional_data")) {
-                        additional_data=(byte[])m.get("additional_data");
-                        if(local_addr instanceof IpAddress)
-                            ((IpAddress)local_addr).setAdditionalData(additional_data);
+                    if(m != null) {
+                        additional_data.putAll(m);
+                        if(m.containsKey("additional_data")) {
+                            byte[] tmp=(byte[])m.get("additional_data");
+                            if(local_addr instanceof IpAddress)
+                                ((IpAddress)local_addr).setAdditionalData(tmp);
+                        }
                     }
                 }
                 catch(Throwable t) {
@@ -1672,8 +1679,7 @@ public class JChannel extends Channel {
                     try {
                         if(additional_data != null) {
                             // send previously set additional_data down the stack - other protocols (e.g. TP) use it
-                            Map<String,Object> m=new HashMap<String,Object>(11);
-                            m.put("additional_data", additional_data);
+                            Map<String,Object> m=new HashMap<String,Object>(additional_data);
                             down(new Event(Event.CONFIG, m));
                         }
                         connect(old_cluster_name);
