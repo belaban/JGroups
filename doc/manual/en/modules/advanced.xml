@@ -1277,18 +1277,64 @@
             and secondly we can shut down all members of the <emphasis>non primary partition</emphasis>, such that they
             have to re-join and possibly reacquire the state from a member in the primary partition.
         </para>
+        <para>
+            In both cases, the application has to handle a MergeView (subclass of View), as shown in the code below:
+            <screen>
+                public void viewAccepted(View view) {
+                    if(view instanceof MergeView) {
+                        MergeView tmp=(MergeView)view;
+                        Vector&lt;View&gt; subgroups=tmp.getSubgroups();
+                        // merge state or determine primary partition
+                        // run this in a separate thread !
+                    }
+                }
+            </screen>
+        </para>
+        <para>
+            It is essential that the merge view handling code run on a separate thread if it needs more than a few
+            milliseconds, or else it would block the calling thread.
+        </para>
+        <para>
+            The MergeView contains a list of views, each view represents a subgroups and has the list of members which
+            formed this group.
+        </para>
 
         <section>
             <title>Merging substates</title>
             <para>
-
+                The application has to merge the substates from the various subgroups ({A,B,C} and {D,E}) back into one
+                single state for {A,B,C,D,E}. This task <emphasis>has</emphasis> to be done by the application because
+                JGroups knows nothing about the application state, other than it is a byte buffer.
+            </para>
+            <para>
+                If the in-memory state is backed by a database, then the solution is easy: simply discard the in-memory
+                state and fetch it (eagerly or lazily) from the DB again. This of course assumes that the members of
+                the 2 subgroups were able to write their changes to the DB. However, this is often not the case, as
+                connectivity to the DB might have been severed by the network partition.
+            </para>
+            <para>
+                Another solution could involve tagging the state with time stamps. On merging, we could compare the
+                time stamps for the substates and let the substate with the more recent time stamps win.
+            </para>
+            <para>
+                Yet another solution could increase a counter for a state each time the state has been modified. The state
+                with the highest counter wins.
+            </para>
+            <para>
+                Again, the merging of state can only be done by the application. Whatever algorithm is picked to merge
+                state, it has to be deterministic.
             </para>
         </section>
 
         <section>
             <title>The primary partition approach</title>
         </section>
-
+        <para>
+            The primary partition approach is simple: on merging, one subgroup is designated as the
+            <emphasis>primary partition</emphasis> and all others as non-primary partitions. The members in the primary
+            partition don't do anything, whereas the members in the non-primary partitions need to drop their state and
+            re-acquire fresh state from a member of the primary partition.
+        </para>
     </section>
 
 
