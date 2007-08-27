@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.132 2007/08/21 08:52:39 belaban Exp $
+ * @version $Id: Util.java,v 1.133 2007/08/27 14:19:10 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1487,6 +1487,13 @@ public class Util {
         int size=list.size();
         int index=(int)((Math.random() * size * 10) % size);
         return list.get(index);
+    }
+
+    public static Object pickRandomElement(Object[] array) {
+        if(array == null) return null;
+        int size=array.length;
+        int index=(int)((Math.random() * size * 10) % size);
+        return array[index];
     }
 
 
