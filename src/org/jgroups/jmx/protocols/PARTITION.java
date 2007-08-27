@@ -1,10 +1,12 @@
 package org.jgroups.jmx.protocols;
 
+import org.jgroups.jmx.Protocol;
+
 /**
  * @author Bela Ban
- * @version $Id: PARTITION.java,v 1.1 2007/08/27 10:28:48 belaban Exp $
+ * @version $Id: PARTITION.java,v 1.2 2007/08/27 10:46:45 belaban Exp $
  */
-public class PARTITION extends PING implements PARTITIONMBean {
+public class PARTITION extends Protocol implements PARTITIONMBean {
     org.jgroups.protocols.PARTITION partiton;
 
     public PARTITION() {
