@@ -12,7 +12,7 @@ import java.util.Vector;
 /**
  * Simple test fo primary partitions
  * @author Bela Ban
- * @version $Id: PrimaryPartitionTest.java,v 1.1 2007/08/27 11:05:34 belaban Exp $
+ * @version $Id: PrimaryPartitionTest.java,v 1.2 2007/08/27 12:35:14 belaban Exp $
  */
 public class PrimaryPartitionTest {
 
@@ -54,13 +54,16 @@ public class PrimaryPartitionTest {
             Address local_addr=ch.getLocalAddress();
             if(!tmp_view.getMembers().contains(local_addr)) {
                 System.out.println("I (" + local_addr + ") am not member of the new primary partition (" + tmp_view +
-                        "), will leave the cluster");
-                ch.disconnect();
-                ch.close();
+                        "), will re-acquire the state");
+                try {
+                    ch.getState(null, 30000);
+                }
+                catch(Exception ex) {
+                }
             }
             else {
                 System.out.println("I (" + local_addr + ") am member of the new primary partition (" + tmp_view +
-                        "), will remain in the cluster");
+                        "), will do nothing");
             }
         }
 
