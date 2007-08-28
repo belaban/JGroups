@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.133 2007/08/27 14:19:10 belaban Exp $
+ * @version $Id: Util.java,v 1.134 2007/08/28 08:46:11 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1793,12 +1793,12 @@ public class Util {
     }
 
     /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
-    public static java.util.List parseCommaDelimitedStrings(String l) {
+    public static List<String> parseCommaDelimitedStrings(String l) {
         return parseStringList(l, ",");
     }
 
 
-    public static List parseStringList(String l, String separator) {
+    public static List<String> parseStringList(String l, String separator) {
          List tmp=new LinkedList();
          StringTokenizer tok=new StringTokenizer(l, separator);
          String t;
