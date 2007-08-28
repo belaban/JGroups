@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.134 2007/08/28 08:46:11 belaban Exp $
+ * @version $Id: Util.java,v 1.135 2007/08/28 12:42:41 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -1799,7 +1799,7 @@ public class Util {
 
 
     public static List<String> parseStringList(String l, String separator) {
-         List tmp=new LinkedList();
+         List<String> tmp=new LinkedList<String>();
          StringTokenizer tok=new StringTokenizer(l, separator);
          String t;
 
