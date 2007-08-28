@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.40 2007/05/17 21:49:54 belaban Exp $
+// $Id: IpAddress.java,v 1.41 2007/08/28 12:42:18 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
 
@@ -79,6 +80,12 @@ public class IpAddress implements Address {
         this.port=port;
         if(set_default_host)
             setAddressToLocalHost();
+    }
+
+
+    public IpAddress(InetSocketAddress sock_addr) {
+        port=sock_addr.getPort();
+        ip_addr=sock_addr.getAddress();
     }
 
 
