@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.147 2007/08/22 10:30:07 belaban Exp $
+ * @version $Id: UDP.java,v 1.148 2007/08/28 13:07:21 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -287,7 +287,7 @@ public class UDP extends TP implements Runnable {
             _send(mcast_addr.getIpAddress(), mcast_addr.getPort(), true, data, offset, length);
         }
         else {
-            ArrayList<Address> mbrs=new ArrayList<Address>(members);
+            List<Address> mbrs=new ArrayList<Address>(members);
             for(Address mbr: mbrs) {
                 _send(((IpAddress)mbr).getIpAddress(), ((IpAddress)mbr).getPort(), false, data, offset, length);
             }
@@ -465,7 +465,7 @@ public class UDP extends TP implements Runnable {
             }
 
             if(receive_on_all_interfaces || (receive_interfaces != null && !receive_interfaces.isEmpty())) {
-                List interfaces;
+                List<NetworkInterface> interfaces;
                 if(receive_interfaces != null)
                     interfaces=receive_interfaces;
                 else
@@ -480,16 +480,14 @@ public class UDP extends TP implements Runnable {
 
             // 3b. Create mcast sender socket
             if(send_on_all_interfaces || (send_interfaces != null && !send_interfaces.isEmpty())) {
-                List interfaces;
-                NetworkInterface intf;
+                List<NetworkInterface> interfaces;
                 if(send_interfaces != null)
                     interfaces=send_interfaces;
                 else
                     interfaces=Util.getAllAvailableInterfaces();
                 mcast_send_sockets=new MulticastSocket[interfaces.size()];
                 int index=0;
-                for(Iterator it=interfaces.iterator(); it.hasNext();) {
-                    intf=(NetworkInterface)it.next();
+                for(NetworkInterface intf: interfaces) {
                     mcast_send_sockets[index]=new MulticastSocket();
                     mcast_send_sockets[index].setNetworkInterface(intf);
                     mcast_send_sockets[index].setTimeToLive(ip_ttl);
@@ -536,7 +534,7 @@ public class UDP extends TP implements Runnable {
      * @param mcastAddr
      * @throws IOException
      */
-    private void bindToInterfaces(List interfaces, MulticastSocket s, InetAddress mcastAddr) throws IOException {
+    private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcastAddr) throws IOException {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
         for(Iterator it=interfaces.iterator(); it.hasNext();) {
             NetworkInterface i=(NetworkInterface)it.next();
@@ -829,7 +827,7 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    protected void handleConfigEvent(HashMap map) {
+    protected void handleConfigEvent(Map<String,Object> map) {
         boolean set_buffers=false;
         super.handleConfigEvent(map);
         if(map == null) return;

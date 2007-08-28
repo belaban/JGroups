@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.135 2007/08/28 12:42:41 belaban Exp $
+ * @version $Id: Util.java,v 1.136 2007/08/28 13:07:22 belaban Exp $
  */
 public class Util {
     private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
@@ -2212,7 +2212,7 @@ public class Util {
     }
 
     public static List<NetworkInterface> getAllAvailableInterfaces() throws SocketException {
-        List retval=new ArrayList(10);
+        List<NetworkInterface> retval=new ArrayList<NetworkInterface>(10);
         NetworkInterface intf;
         for(Enumeration en=NetworkInterface.getNetworkInterfaces(); en.hasMoreElements();) {
             intf=(NetworkInterface)en.nextElement();
