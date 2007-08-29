@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.88 2007/08/20 07:21:37 belaban Exp $
+ * @version $Id: FC.java,v 1.89 2007/08/29 07:37:29 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -71,7 +71,6 @@ public class FC extends Protocol {
      * be received before continuing sending
      */
     private long max_credits=500000;
-    private Long max_credits_constant=max_credits;
 
     /**
      * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
@@ -145,7 +144,7 @@ public class FC extends Protocol {
     private int num_credit_responses_sent=0, num_credit_responses_received=0;
     private long total_time_blocking=0;
 
-    private final BoundedList last_blockings=new BoundedList(50);
+    private final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
 
     private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
     private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
@@ -169,7 +168,6 @@ public class FC extends Protocol {
 
     public void setMaxCredits(long max_credits) {
         this.max_credits=max_credits;
-        max_credits_constant=this.max_credits;
     }
 
     public double getMinThreshold() {
@@ -267,7 +265,7 @@ public class FC extends Protocol {
                 log.trace("unblocking the sender and replenishing all members, creditors are " + creditors);
 
             for(Map.Entry<Address, Long> entry: sent.entrySet()) {
-                entry.setValue(max_credits_constant);
+                entry.setValue(max_credits);
             }
 
             lowest_credit=computeLowestCredit(sent);
@@ -324,7 +322,6 @@ public class FC extends Protocol {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
-        max_credits_constant=max_credits;
         return true;
     }
 
@@ -479,7 +476,7 @@ public class FC extends Protocol {
                     if(log.isTraceEnabled())
                         log.trace("total time blocked: " + block_time + " ms");
                     total_time_blocking+=block_time;
-                    last_blockings.add(new Long(block_time));
+                    last_blockings.add(block_time);
                 }
             }
 
@@ -623,7 +620,7 @@ public class FC extends Protocol {
                 return 0;
             long credit_response=max_credits - remaining_cred;
             if(credit_response >= min_credits) {
-                map.put(sender, max_credits_constant);
+                map.put(sender, max_credits);
                 return credit_response; // this will trigger sending of new credits as we have received more than min_credits bytes from src
             }
         }
@@ -653,7 +650,7 @@ public class FC extends Protocol {
             if(credit_response > 0) {
                 if(log.isTraceEnabled())
                     log.trace("received credit request from " + sender + ": sending " + credit_response + " credits");
-                map.put(sender, max_credits_constant);
+                map.put(sender, max_credits);
                 pending_requesters.remove(sender);
             }
             else {
@@ -664,7 +661,7 @@ public class FC extends Protocol {
                     long credits_left=Math.max(0, left_credits.longValue());
                     credit_response=max_credits - credits_left;
                     // credit_response = max_credits;
-                    map.put(sender, max_credits_constant);
+                    map.put(sender, max_credits);
                     pending_requesters.remove(sender);
                     if(log.isWarnEnabled())
                         log.warn("Received two credit requests from " + sender +
@@ -727,9 +724,9 @@ public class FC extends Protocol {
             for(int i=0; i < mbrs.size(); i++) {
                 addr=(Address)mbrs.elementAt(i);
                 if(!received.containsKey(addr))
-                    received.put(addr, max_credits_constant);
+                    received.put(addr, max_credits);
                 if(!sent.containsKey(addr))
-                    sent.put(addr, max_credits_constant);
+                    sent.put(addr, max_credits);
             }
             // remove members that left
             for(Iterator it=received.keySet().iterator(); it.hasNext();) {
@@ -777,6 +774,7 @@ public class FC extends Protocol {
         public static final byte CREDIT_REQUEST=2; // the sender of the message is the requester
 
         byte type=REPLENISH;
+        private static final long serialVersionUID=8226510881574318828L;
 
         public FcHeader() {
 
