@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.18 2007/05/01 10:55:10 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.19 2007/08/30 10:18:03 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
@@ -282,6 +282,7 @@ public class FD_SIMPLE extends Protocol {
 
 
         byte type=ARE_YOU_ALIVE;
+        private static final long serialVersionUID=4021056597004641352L;
 
         public FdHeader() {
         } // used for externalization
@@ -329,7 +330,7 @@ public class FD_SIMPLE extends Protocol {
 
 
     class HeartbeatTask implements Runnable {
-        final Promise promise=new Promise();
+        final Promise<Address> promise=new Promise<Address>();
         Address dest=null;
 
 

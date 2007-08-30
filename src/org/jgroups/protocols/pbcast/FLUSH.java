@@ -105,7 +105,7 @@ public class FLUSH extends Protocol {
 
     private double averageFlushDuration;
 
-    private final Promise flush_promise = new Promise();
+    private final Promise<Boolean> flush_promise = new Promise<Boolean>();
 
     @GuardedBy("sharedLock")
     private final FlushPhase flushPhase = new FlushPhase();
@@ -214,7 +214,7 @@ public class FLUSH extends Protocol {
 
             onSuspend((View) atts.get("view"));
             try{
-                Boolean r = (Boolean) flush_promise.getResultWithTimeout(flush_timeout);
+                Boolean r = flush_promise.getResultWithTimeout(flush_timeout);
                 successfulFlush = r.booleanValue();
             }catch(TimeoutException e){
                 if(log.isTraceEnabled())
@@ -236,7 +236,7 @@ public class FLUSH extends Protocol {
                           + numberOfAttempts);
 
             Util.sleep(backOffSleepTime * 1000);
-            Boolean succeededWhileWeSlept = (Boolean) flush_promise.getResult(1);
+            Boolean succeededWhileWeSlept = flush_promise.getResult(1);
             boolean shouldRetry = !(succeededWhileWeSlept != null && succeededWhileWeSlept.booleanValue());
             if(shouldRetry)
                 successfulFlush = startFlush(evt, --numberOfAttempts, true);
@@ -941,6 +941,7 @@ public class FLUSH extends Protocol {
         Collection<Address> flushParticipants;
 
         Digest digest = null;
+        private static final long serialVersionUID=-6248843990215637687L;
 
         public FlushHeader(){
             this(START_FLUSH, 0);

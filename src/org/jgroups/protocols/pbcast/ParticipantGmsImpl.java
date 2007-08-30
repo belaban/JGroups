@@ -13,11 +13,11 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.26 2007/08/14 07:42:02 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.27 2007/08/30 10:17:50 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
-    private final Vector<Address> suspected_mbrs=new Vector<Address>(11);
-    private final Promise         leave_promise=new Promise();
+    private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
+    private final Promise<Boolean>  leave_promise=new Promise<Boolean>();
 
 
     public ParticipantGmsImpl(GMS g) {
@@ -47,7 +47,7 @@ public class ParticipantGmsImpl extends GmsImpl {
     public void leave(Address mbr) {
         Address coord;
         int max_tries=3;
-        Object result;
+        Boolean result;
 
         leave_promise.reset();
 
@@ -90,7 +90,7 @@ public class ParticipantGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("leave_promise is null");
             return;
         }
-        leave_promise.setResult(Boolean.TRUE);  // unblocks thread waiting in leave()
+        leave_promise.setResult(true);  // unblocks thread waiting in leave()
     }
 
 
