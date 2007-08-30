@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.71 2007/08/30 10:22:51 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.72 2007/08/30 10:41:40 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
@@ -154,6 +154,15 @@ public class FD_SOCK extends Protocol implements Runnable {
             return false;
         }
         return true;
+    }
+
+
+    public String printCache() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,IpAddress> entry: cache.entrySet()) {
+            sb.append(entry.getKey()).append(" has server socket at ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
     }
 
 
@@ -1021,7 +1030,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "ServerSocket acceptor thread");
+                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ServerSocket acceptor thread");
                 acceptor.setDaemon(true);
                 acceptor.start();
             }
@@ -1081,7 +1090,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         final List<ClientConnectionHandler> clients=new ArrayList<ClientConnectionHandler>();
 
         ClientConnectionHandler(Socket client_sock, List<ClientConnectionHandler> clients) {
-            setName("ClientConnectionHandler");
+            setName("FD_SOCK ClientConnectionHandler");
             setDaemon(true);
             this.client_sock=client_sock;
             this.clients.addAll(clients);

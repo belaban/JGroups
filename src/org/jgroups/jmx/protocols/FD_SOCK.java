@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: FD_SOCK.java,v 1.1 2005/06/13 13:06:02 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.2 2007/08/30 10:41:41 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements FD_SOCKMBean {
     org.jgroups.protocols.FD_SOCK p;
@@ -45,5 +45,9 @@ public class FD_SOCK extends Protocol implements FD_SOCKMBean {
 
     public String printSuspectHistory() {
         return p.printSuspectHistory();
+    }
+
+    public String printCache() {
+        return p.printCache();
     }
 }
