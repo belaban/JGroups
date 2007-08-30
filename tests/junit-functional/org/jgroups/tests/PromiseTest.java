@@ -1,4 +1,4 @@
-// $Id: PromiseTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: PromiseTest.java,v 1.2 2007/08/30 10:06:34 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -36,7 +36,7 @@ public class PromiseTest extends TestCase {
         Object result;
         new ResultSetter(p, 500).start();
         result=p.getResult(0);
-        assertEquals(result, Boolean.TRUE);
+        assertEquals(Boolean.TRUE, result);
     }
 
     public void testGetResultNoTimeout_ResultAlreadySet() {
@@ -44,7 +44,7 @@ public class PromiseTest extends TestCase {
         new ResultSetter(p, 1).start();
         Util.sleep(100);
         result=p.getResult(0);
-        assertEquals(result, Boolean.TRUE);
+        assertEquals(Boolean.TRUE, result);
     }
 
     public void testGetResultWithTimeout() {
@@ -53,7 +53,7 @@ public class PromiseTest extends TestCase {
             fail("this should throw a TimeoutException");
         }
         catch(TimeoutException e) {
-            assertTrue(e != null);
+            assertNotNull(e);
         }
     }
 

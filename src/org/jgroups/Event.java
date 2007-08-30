@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.50 2007/08/27 11:05:33 belaban Exp $
+// $Id: Event.java,v 1.51 2007/08/30 10:07:13 belaban Exp $
 
 package org.jgroups;
 
@@ -13,7 +13,7 @@ public class Event {
     public static final int CONNECT                            =  2;  // arg = clster name (string)
     public static final int DISCONNECT                         =  4;  // arg = member address (Address)
     public static final int VIEW_CHANGE                        =  6;  // arg = View (or MergeView in case of merge)
-    public static final int SET_LOCAL_ADDRESS                  =  8;
+    public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
     public static final int FIND_INITIAL_MBRS                  = 12;
