@@ -1,4 +1,3 @@
-// $Id: FD_SOCK.java,v 1.69 2007/08/30 09:08:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -32,6 +31,7 @@ import java.util.concurrent.RejectedExecutionException;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
+ * @version $Id: FD_SOCK.java,v 1.70 2007/08/30 09:13:53 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
@@ -1015,7 +1015,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     private class ServerSocketHandler implements Runnable {
         Thread acceptor=null;
         /** List<ClientConnectionHandler> */
-        final List<ClientConnectionHandler> clients=new ArrayList<ClientConnectionHandler>();
+        final List<ClientConnectionHandler> clients=new LinkedList<ClientConnectionHandler>();
 
 
         String getName() {
@@ -1049,8 +1049,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 }
             }
             synchronized(clients) {
-                for(Iterator it=clients.iterator(); it.hasNext();) {
-                    ClientConnectionHandler handler=(ClientConnectionHandler)it.next();
+                for(ClientConnectionHandler handler: clients) {
                     handler.stopThread(graceful);
                 }
                 clients.clear();
