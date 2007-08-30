@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.51 2007/08/21 11:08:25 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.52 2007/08/30 10:16:56 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,10 +21,10 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.51 $
+ * @version $Revision: 1.52 $
  */
 public class ClientGmsImpl extends GmsImpl {   
-    private final Promise join_promise=new Promise();
+    private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
 
 
     public ClientGmsImpl(GMS g) {
@@ -133,7 +133,7 @@ public class ClientGmsImpl extends GmsImpl {
                 if(log.isDebugEnabled())
                     log.debug("sending handleJoin(" + mbr + ") to " + coord);
                 sendJoinMessage(coord, mbr, joinWithStateTransfer);
-                rsp=(JoinRsp)join_promise.getResult(gms.join_timeout);
+                rsp=join_promise.getResult(gms.join_timeout);
 
                 if(rsp == null) {
                     if(log.isWarnEnabled())

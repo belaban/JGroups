@@ -9,10 +9,7 @@ import org.jgroups.util.*;
 import java.io.*;
 import java.net.*;
 import java.util.*;
-import java.util.List;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.*;
 
 
 /**
@@ -31,7 +28,7 @@ import java.util.concurrent.RejectedExecutionException;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.70 2007/08/30 09:13:53 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.71 2007/08/30 10:22:51 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
@@ -41,7 +38,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     final Vector<Address> members=new Vector<Address>(11);            // list of group members (updated on VIEW_CHANGE)
     boolean             srv_sock_sent=false;               // has own socket been broadcast yet ?
     final Vector<Address>  pingable_mbrs=new Vector<Address>(11);      // mbrs from which we select ping_dest. may be subset of 'members'
-    final Promise       get_cache_promise=new Promise();   // used for rendezvous on GET_CACHE and GET_CACHE_RSP
+    final Promise<Map>  get_cache_promise=new Promise<Map>();   // used for rendezvous on GET_CACHE and GET_CACHE_RSP
     boolean             got_cache_from_coord=false;        // was cache already fetched ?
     Address             local_addr=null;                   // our own address
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
@@ -58,12 +55,13 @@ public class FD_SOCK extends Protocol implements Runnable {
     Thread              pinger_thread=null;                // listens on ping_sock, suspects member if socket is closed
     final Object        pinger_mutex=new Object();
 
-    final Hashtable<Address,IpAddress> cache=new Hashtable<Address,IpAddress>(11);  // keys=Addresses, vals=IpAddresses (socket:port)
+    /** Cache of member addresses and their ServerSocket addresses */
+    final ConcurrentMap<Address,IpAddress> cache=new ConcurrentHashMap<Address,IpAddress>(11);
 
     /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
      * picks a random port */
     int                 start_port=0;
-    final Promise       ping_addr_promise=new Promise();   // to fetch the ping_addr for ping_dest
+    final Promise<IpAddress> ping_addr_promise=new Promise<IpAddress>();   // to fetch the ping_addr for ping_dest
     final Object        sock_mutex=new Object();           // for access to ping_sock, ping_input
     TimeScheduler       timer=null;
     private final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
@@ -237,8 +235,9 @@ public class FD_SOCK extends Protocol implements Runnable {
                 }
 
                 // 2. If I don't have it, maybe it is in the cache
-                if(cache.containsKey(hdr.mbr))
-                    sendIHaveSockMessage(msg.getSrc(), hdr.mbr, cache.get(hdr.mbr));  // ucast msg
+                IpAddress addr=cache.get(hdr.mbr);
+                if(addr != null)
+                    sendIHaveSockMessage(msg.getSrc(), hdr.mbr, addr);  // ucast msg
                 break;
 
 
@@ -265,7 +264,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     return null;
                 }
                 hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
-                hdr.cachedAddrs=(Hashtable<Address,IpAddress>)cache.clone();
+                hdr.cachedAddrs=new HashMap<Address,IpAddress>(cache);
                 msg=new Message(hdr.mbr, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
@@ -372,12 +371,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     }
 
                     // 3. Remove all entries in 'cache' which are not in the new membership
-                    Address mbr;
-                    for(Enumeration e=cache.keys(); e.hasMoreElements();) {
-                        mbr=(Address) e.nextElement();
-                        if(!members.contains(mbr))
-                            cache.remove(mbr);
-                    }
+                    cache.keySet().retainAll(members);
 
                     if(members.size() > 1) {
                         synchronized(pinger_mutex) {
@@ -655,7 +649,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         int attempts=num_tries;
         Message msg;
         FdHeader hdr;
-        Hashtable<Address,IpAddress> result;
+        Map<Address,IpAddress> result;
 
         get_cache_promise.reset();
         while(attempts > 0) {
@@ -670,7 +664,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
                 down_prot.down(new Event(Event.MSG, msg));
-                result=(Hashtable<Address,IpAddress>) get_cache_promise.getResult(get_cache_timeout);
+                result=(Map<Address,IpAddress>) get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
                     cache.putAll(result); // replace all entries (there should be none !) in cache with the new values
                     if(log.isTraceEnabled()) log.trace("got cache from " + coord + ": cache is " + cache);
@@ -774,7 +768,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         ping_addr_req.putHeader(name, hdr);
         down_prot.down(new Event(Event.MSG, ping_addr_req));
         if(!running) return null;
-        ret=(IpAddress)ping_addr_promise.getResult(3000);
+        ret=ping_addr_promise.getResult(3000);
         if(ret != null) {
             return ret;
         }
@@ -787,7 +781,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
         down_prot.down(new Event(Event.MSG, ping_addr_req));
-        ret=(IpAddress) ping_addr_promise.getResult(3000);
+        ret=ping_addr_promise.getResult(3000);
         return ret;
     }
 
@@ -841,8 +835,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         byte      type=SUSPECT;
         Address   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
         IpAddress sock_addr;          // set on I_HAVE_SOCK
-
-        // Hashtable<Address,IpAddress>
         Map<Address,IpAddress>  cachedAddrs=null;   // set on GET_CACHE_RSP
         Set<Address>            mbrs=null;          // set on SUSPECT (list of suspected members)
         private static final long serialVersionUID=-7025890133989522764L;
@@ -865,7 +857,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.mbrs=mbrs;
         }
 
-        public FdHeader(byte type, Hashtable<Address,IpAddress> cachedAddrs) {
+        public FdHeader(byte type, Map<Address,IpAddress> cachedAddrs) {
             this.type=type;
             this.cachedAddrs=cachedAddrs;
         }
@@ -916,7 +908,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             type=in.readByte();
             mbr=(Address) in.readObject();
             sock_addr=(IpAddress) in.readObject();
-            cachedAddrs=(Hashtable<Address,IpAddress>) in.readObject();
+            cachedAddrs=(Map<Address,IpAddress>) in.readObject();
             mbrs=(Set<Address>)in.readObject();
         }
 
@@ -926,16 +918,14 @@ public class FD_SOCK extends Protocol implements Runnable {
             retval+=Util.size(sock_addr);
 
             retval+=Global.INT_SIZE; // cachedAddrs size
-            Map.Entry entry;
             Address key;
             IpAddress val;
             if(cachedAddrs != null) {
-                for(Iterator it=cachedAddrs.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
-                    if((key=(Address)entry.getKey()) != null)
+                for(Map.Entry<Address,IpAddress> entry: cachedAddrs.entrySet()) {
+                    if((key=entry.getKey()) != null)
                         retval+=Util.size(key);
                     retval+=Global.BYTE_SIZE; // presence for val
-                    if((val=(IpAddress)entry.getValue()) != null)
+                    if((val=entry.getValue()) != null)
                         retval+=val.size();
                 }
             }
@@ -958,10 +948,9 @@ public class FD_SOCK extends Protocol implements Runnable {
             size=cachedAddrs != null? cachedAddrs.size() : 0;
             out.writeInt(size);
             if(size > 0) {
-                for(Iterator it=cachedAddrs.entrySet().iterator(); it.hasNext();) {
-                    Map.Entry entry=(Map.Entry)it.next();
-                    Address key=(Address)entry.getKey();
-                    IpAddress val=(IpAddress)entry.getValue();
+                for(Map.Entry<Address,IpAddress> entry: cachedAddrs.entrySet()) {
+                    Address key=entry.getKey();
+                    IpAddress val=entry.getValue();
                     Util.writeAddress(key, out);
                     Util.writeStreamable(val, out);
                 }
@@ -969,8 +958,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             size=mbrs != null? mbrs.size() : 0;
             out.writeInt(size);
             if(size > 0) {
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    Address address=(Address)it.next();
+                for(Address address: mbrs) {
                     Util.writeAddress(address, out);
                 }
             }
@@ -984,7 +972,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             size=in.readInt();
             if(size > 0) {
                 if(cachedAddrs == null)
-                    cachedAddrs=new Hashtable();
+                    cachedAddrs=new HashMap<Address,IpAddress>(size);
                 for(int i=0; i < size; i++) {
                     Address key=Util.readAddress(in);
                     IpAddress val=(IpAddress)Util.readStreamable(IpAddress.class, in);

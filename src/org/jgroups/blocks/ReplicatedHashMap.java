@@ -30,7 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.10 2007/08/22 11:23:11 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.11 2007/08/30 10:17:48 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -91,7 +91,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
      */
     private transient boolean send_message=false;
 
-    protected final transient Promise state_promise=new Promise();
+    protected final transient Promise<Boolean> state_promise=new Promise<Boolean>();
 
     /**
      * Whether updates across the cluster should be asynchronous (default) or synchronous)
@@ -244,7 +244,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         rc=channel.getState(null, state_timeout);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully, waiting for setState()");
-            Boolean result=(Boolean)state_promise.getResult(state_timeout);
+            Boolean result=state_promise.getResult(state_timeout);
             if(result == null) {
                 if(log.isErrorEnabled()) log.error("setState() never got called");
             }

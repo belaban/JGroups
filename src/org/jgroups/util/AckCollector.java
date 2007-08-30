@@ -1,33 +1,31 @@
 package org.jgroups.util;
 
+import org.jgroups.Address;
 import org.jgroups.TimeoutException;
 import org.jgroups.View;
 import org.jgroups.ViewId;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
-import java.util.Vector;
+import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.11 2006/10/30 11:19:20 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.12 2007/08/30 10:22:08 belaban Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
-    private final java.util.List missing_acks;
-    private final Set            received_acks=new HashSet();
-    private final Promise        all_acks_received=new Promise();
-    private ViewId               proposed_view;
-    private final Set            suspected_mbrs=new HashSet();
+    private final List<Object>     missing_acks;
+    private final Set<Object>      received_acks=new HashSet<Object>();
+    private final Promise<Boolean> all_acks_received=new Promise<Boolean>();
+    private ViewId                 proposed_view;
+    private final Set<Address>     suspected_mbrs=new HashSet<Address>();
 
 
     public AckCollector() {
-        missing_acks=new ArrayList();
+        missing_acks=new ArrayList<Object>();
     }
 
-    public AckCollector(ViewId v, java.util.List l) {
-        missing_acks=new ArrayList(l);
+    public AckCollector(ViewId v, List<Object> l) {
+        missing_acks=new ArrayList<Object>(l);
         proposed_view=v;
     }
 
@@ -70,19 +68,19 @@ public class AckCollector {
         synchronized(this) {
             missing_acks.remove(member);
             received_acks.add(member);
-            if(missing_acks.size() == 0)
+            if(missing_acks.isEmpty())
                 all_acks_received.setResult(Boolean.TRUE);
         }
     }
 
-    public void suspect(Object member) {
+    public void suspect(Address member) {
         synchronized(this) {
             ack(member);
             suspected_mbrs.add(member);
         }
     }
 
-    public void unsuspect(Object member) {
+    public void unsuspect(Address member) {
         synchronized(this) {
             suspected_mbrs.remove(member);
         }
@@ -95,14 +93,14 @@ public class AckCollector {
     }
 
     public boolean waitForAllAcks() {
-        if(missing_acks.size() == 0)
+        if(missing_acks.isEmpty())
             return true;
         Object result=all_acks_received.getResult();
         return result != null && result instanceof Boolean && ((Boolean)result).booleanValue();
     }
 
     public boolean waitForAllAcks(long timeout) throws TimeoutException {
-        if(missing_acks.size() == 0)
+        if(missing_acks.isEmpty())
             return true;
         Object result=all_acks_received.getResultWithTimeout(timeout);
         return result != null && result instanceof Boolean && ((Boolean)result).booleanValue();

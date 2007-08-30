@@ -1,4 +1,4 @@
-// $Id: ConnectTest.java,v 1.9 2006/11/22 19:33:07 vlada Exp $
+// $Id: ConnectTest.java,v 1.10 2007/08/30 10:22:07 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -146,9 +146,9 @@ public class ConnectTest extends ChannelTestBase {
 
     private static class PromisedMessageListener implements MessageListener {
 
-        private Promise promise;
+        private Promise<Message> promise;
 
-        public PromisedMessageListener(Promise promise) {
+        public PromisedMessageListener(Promise<Message> promise) {
             this.promise=promise;
         }
 
