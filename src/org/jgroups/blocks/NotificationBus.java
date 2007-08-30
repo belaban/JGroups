@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.15 2007/05/09 22:57:51 belaban Exp $
+// $Id: NotificationBus.java,v 1.16 2007/08/30 10:07:37 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -30,7 +30,7 @@ public class NotificationBus implements Receiver {
     Address local_addr=null;
     Consumer consumer=null; // only a single consumer allowed
     String bus_name="notification_bus";
-    final Promise get_cache_promise=new Promise();
+    final Promise<Serializable> get_cache_promise=new Promise<Serializable>();
     final Object cache_mutex=new Object();
 
     protected final Log log=LogFactory.getLog(getClass());
@@ -221,7 +221,7 @@ public class NotificationBus implements Receiver {
             }
 
             start=System.currentTimeMillis();
-            cache=(Serializable) get_cache_promise.getResult(timeout);
+            cache=get_cache_promise.getResult(timeout);
             stop=System.currentTimeMillis();
             if(cache != null) {
                 if(log.isInfoEnabled()) log.info("got cache from " +

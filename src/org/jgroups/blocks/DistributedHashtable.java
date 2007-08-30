@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.32 2007/07/04 14:30:58 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.33 2007/08/30 10:06:01 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -32,11 +32,11 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.32 2007/07/04 14:30:58 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.33 2007/08/30 10:06:01 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
-
+    private static final long serialVersionUID=7910133360803785134L;
 
 
     public interface Notification {
@@ -64,7 +64,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
      * messages when there are no member in the group */
 	private transient boolean            send_message = false;
 
-    protected final transient Promise          state_promise=new Promise();
+    protected final transient Promise<Boolean>    state_promise=new Promise<Boolean>();
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -198,7 +198,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
         rc=channel.getState(null, state_timeout);
         if(rc) {
             if(log.isInfoEnabled()) log.info("state was retrieved successfully, waiting for setState()");
-            Boolean result=(Boolean)state_promise.getResult(state_timeout);
+            Boolean result=state_promise.getResult(state_timeout);
             if(result == null) {
                 if(log.isErrorEnabled()) log.error("setState() never got called");
             }

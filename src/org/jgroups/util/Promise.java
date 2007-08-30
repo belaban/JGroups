@@ -1,4 +1,3 @@
-// $Id: Promise.java,v 1.11 2007/03/19 18:42:56 belaban Exp $
 
 package org.jgroups.util;
 
@@ -10,10 +9,11 @@ import org.jgroups.TimeoutException;
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.
  * @author Bela Ban
+ * @version $Id: Promise.java,v 1.12 2007/08/30 10:05:29 belaban Exp $
  */
-public class Promise {
-    Object result=null;
-    boolean hasResult=false;
+public class Promise<T> {
+    T result=null;
+    volatile boolean hasResult=false;
 
 
     /**
@@ -22,7 +22,7 @@ public class Promise {
      * @return An object
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
-    public Object getResultWithTimeout(long timeout) throws TimeoutException {
+    public T getResultWithTimeout(long timeout) throws TimeoutException {
         synchronized(this) {
             try {
                 return _getResultWithTimeout(timeout);
@@ -41,8 +41,8 @@ public class Promise {
      * @return An object
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
-    private Object _getResultWithTimeout(long timeout) throws TimeoutException {
-        Object  ret=null;
+    private T _getResultWithTimeout(long timeout) throws TimeoutException {
+        T       ret=null;
         long    time_to_wait=timeout, start;
         boolean timeout_occurred=false;
 
@@ -72,7 +72,7 @@ public class Promise {
             return ret;
     }
 
-    public Object getResult() {
+    public T getResult() {
         try {
             return getResultWithTimeout(0);
         }
@@ -86,7 +86,7 @@ public class Promise {
      * @param timeout
      * @return Object
      */
-    public Object getResult(long timeout) {
+    public T getResult(long timeout) {
         try {
             return getResultWithTimeout(timeout);
         }
@@ -120,7 +120,7 @@ public class Promise {
      * Sets the result and notifies any threads
      * waiting for it
      */
-    public void setResult(Object obj) {
+    public void setResult(T obj) {
         synchronized(this) {
             result=obj;
             hasResult=true;
@@ -142,7 +142,7 @@ public class Promise {
 
 
     public String toString() {
-        return "hasResult=" + hasResult + ",result=" + result;
+        return "hasResult=" + Boolean.valueOf(hasResult) + ",result=" + result;
     }
 
 

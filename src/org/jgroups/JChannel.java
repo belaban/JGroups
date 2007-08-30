@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.146 2007/08/27 08:36:06 belaban Exp $
+ * @version $Id: JChannel.java,v 1.147 2007/08/30 10:06:45 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -100,13 +100,13 @@ public class JChannel extends Channel {
     protected CloserThread closer=null;
 
     /** To wait until a local address has been assigned */
-    private final Promise local_addr_promise=new Promise();
+    private final Promise<Address> local_addr_promise=new Promise<Address>();
 
-    private final Promise state_promise=new Promise();
+    private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
     private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger();
 
-    private final Promise flush_unblock_promise=new Promise();
+    private final Promise<Boolean> flush_unblock_promise=new Promise<Boolean>();
 
     /** wait until we have a non-null local_addr */
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
@@ -905,7 +905,7 @@ public class JChannel extends Channel {
 
         state_promise.reset();
         down(new Event(Event.GET_STATE, info));
-        Boolean b =(Boolean)state_promise.getResult(info.timeout);
+        Boolean b=state_promise.getResult(info.timeout);
         
         if(initiateFlush)
             stopFlush();
@@ -1094,7 +1094,7 @@ public class JChannel extends Channel {
             break;
 
         case Event.SET_LOCAL_ADDRESS:
-            local_addr_promise.setResult(evt.getArg());
+            local_addr_promise.setResult((Address)evt.getArg());
             break;
 
         case Event.EXIT:
@@ -1411,7 +1411,7 @@ public class JChannel extends Channel {
         LOCAL_ADDR_TIMEOUT=Long.parseLong(tmp);
 
         /* Wait LOCAL_ADDR_TIMEOUT milliseconds for local_addr to have a non-null value (set by SET_LOCAL_ADDRESS) */
-        local_addr=(Address)local_addr_promise.getResult(LOCAL_ADDR_TIMEOUT);
+        local_addr=local_addr_promise.getResult(LOCAL_ADDR_TIMEOUT);
         if(local_addr == null) {
             log.fatal("local_addr is null; cannot connect");
             throw new ChannelException("local_addr is null");
