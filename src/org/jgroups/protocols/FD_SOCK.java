@@ -28,7 +28,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.72 2007/08/30 10:41:40 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.73 2007/08/30 11:15:37 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
@@ -38,7 +38,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     final Vector<Address> members=new Vector<Address>(11);            // list of group members (updated on VIEW_CHANGE)
     boolean             srv_sock_sent=false;               // has own socket been broadcast yet ?
     final Vector<Address>  pingable_mbrs=new Vector<Address>(11);      // mbrs from which we select ping_dest. may be subset of 'members'
-    final Promise<Map>  get_cache_promise=new Promise<Map>();   // used for rendezvous on GET_CACHE and GET_CACHE_RSP
+    /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
+    final Promise<Map<Address,IpAddress>>  get_cache_promise=new Promise<Map<Address,IpAddress>>();
     boolean             got_cache_from_coord=false;        // was cache already fetched ?
     Address             local_addr=null;                   // our own address
     ServerSocket        srv_sock=null;                     // server socket to which another member connects to monitor me
@@ -673,7 +674,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
                 down_prot.down(new Event(Event.MSG, msg));
-                result=(Map<Address,IpAddress>) get_cache_promise.getResult(get_cache_timeout);
+                result=(Map<Address,IpAddress>)get_cache_promise.getResult(get_cache_timeout);
                 if(result != null) {
                     cache.putAll(result); // replace all entries (there should be none !) in cache with the new values
                     if(log.isTraceEnabled()) log.trace("got cache from " + coord + ": cache is " + cache);
@@ -917,7 +918,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             type=in.readByte();
             mbr=(Address) in.readObject();
             sock_addr=(IpAddress) in.readObject();
-            cachedAddrs=(Map<Address,IpAddress>) in.readObject();
+            cachedAddrs=(Map<Address,IpAddress>)in.readObject();
             mbrs=(Set<Address>)in.readObject();
         }
 
@@ -1113,7 +1114,7 @@ public class FD_SOCK extends Protocol implements Runnable {
             }
         }
 
-        void closeClientSocket() {
+        private void closeClientSocket() {
             synchronized(mutex) {
                 Util.close(client_sock);
                 client_sock=null;
@@ -1212,19 +1213,14 @@ public class FD_SOCK extends Protocol implements Runnable {
         /**
          * Removes all elements from suspected_mbrs that are <em>not</em> in the new membership
          */
-        public void adjustSuspectedMembers(Vector new_mbrship) {
+        public void adjustSuspectedMembers(Vector<Address> new_mbrship) {
             Address suspected_mbr;
 
             if(new_mbrship == null || new_mbrship.isEmpty()) return;
             synchronized(suspected_mbrs) {
-                for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
-                    suspected_mbr=(Address) it.next();
-                    if(!new_mbrship.contains(suspected_mbr)) {
-                        it.remove();
-                        if(log.isDebugEnabled())
-                            log.debug("removed " + suspected_mbr + " (size=" + suspected_mbrs.size() + ')');
-                    }
-                }
+                boolean modified=suspected_mbrs.retainAll(new_mbrship);
+                if(log.isTraceEnabled() && modified)
+                    log.trace("adjusted suspected_mbrs: " + suspected_mbrs);
                 if(suspected_mbrs.isEmpty())
                     stopTask();
             }
