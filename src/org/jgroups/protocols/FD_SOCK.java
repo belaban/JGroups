@@ -1,4 +1,4 @@
-// $Id: FD_SOCK.java,v 1.68 2007/08/27 08:09:19 belaban Exp $
+// $Id: FD_SOCK.java,v 1.69 2007/08/30 09:08:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -576,7 +576,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * Oct 29 2001 (bela): completely removed Thread.interrupt(), but used socket close on all OSs. This makes this
      * code portable and we don't have to check for OSs.<p/>
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
-     * @see InterruptTest to determine whether Thread.interrupt() works for InputStream.read().
+     * @see {@link org.jgroups.tests.InterruptTest} to determine whether Thread.interrupt() works for InputStream.read().
      */
     void interruptPingerThread() {
         if(pinger_thread != null && pinger_thread.isAlive()) {
@@ -845,6 +845,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         // Hashtable<Address,IpAddress>
         Map<Address,IpAddress>  cachedAddrs=null;   // set on GET_CACHE_RSP
         Set<Address>            mbrs=null;          // set on SUSPECT (list of suspected members)
+        private static final long serialVersionUID=-7025890133989522764L;
 
 
         public FdHeader() {
