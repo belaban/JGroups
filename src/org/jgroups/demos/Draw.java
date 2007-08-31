@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.49 2007/08/31 07:08:57 belaban Exp $
+// $Id: Draw.java,v 1.50 2007/08/31 08:17:59 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -235,7 +235,8 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     public void receive(Message msg) {
         byte[] buf=msg.getRawBuffer();
         if(buf == null) {
-            System.err.println("received null buffer from " + msg.getSrc() + ", headers: " + msg.printHeaders());
+            System.err.println("[" + channel.getLocalAddress() + "] received null buffer from " + msg.getSrc() +
+                    ", headers: " + msg.printHeaders());
             return;
         }
 
