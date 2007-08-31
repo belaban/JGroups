@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.48 2007/08/14 08:54:53 belaban Exp $
+// $Id: Draw.java,v 1.49 2007/08/31 07:08:57 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -195,7 +195,6 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
         mainFrame.setBackground(background_color);
         clear_button.setForeground(Color.blue);
         leave_button.setForeground(Color.blue);
-        setTitle();
         mainFrame.pack();
         mainFrame.setLocation(15, 25);
         mainFrame.setBounds(new Rectangle(250, 250));
@@ -204,6 +203,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             channel.connect(groupname,null,null, state_timeout);
         }
         mainFrame.setVisible(true);
+        setTitle();
     }
 
 
