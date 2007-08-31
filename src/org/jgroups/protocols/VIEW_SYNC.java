@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
@@ -21,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.21 2007/05/01 10:55:10 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.21.2.1 2007/08/31 09:17:21 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address              local_addr=null;
@@ -194,7 +195,7 @@ public class VIEW_SYNC extends Protocol {
             Message view_change=new Message(local_addr, local_addr, null);
             org.jgroups.protocols.pbcast.GMS.GmsHeader hdr;
             hdr=new org.jgroups.protocols.pbcast.GMS.GmsHeader(org.jgroups.protocols.pbcast.GMS.GmsHeader.VIEW, v);
-            view_change.putHeader(name, hdr);
+            view_change.putHeader(GMS.name, hdr);
             up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
         }
