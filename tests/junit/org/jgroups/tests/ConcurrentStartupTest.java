@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.23 2007/08/15 17:46:12 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.24 2007/08/31 16:00:41 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -178,7 +178,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
       }
    }
    
-   public void testConcurrentLargeStateTranfer()
+   public void testConcurrentLargeStateTransfer()
    {
       concurrentStateTranferHelper(true,false);
    }
