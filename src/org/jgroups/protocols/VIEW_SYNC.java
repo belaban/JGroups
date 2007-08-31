@@ -22,13 +22,13 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.23 2007/08/31 09:07:08 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.24 2007/08/31 11:53:23 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
-    Address              local_addr=null;
-    final Vector         mbrs=new Vector();
-    View                 my_view=null;
-    ViewId               my_vid=null;
+    Address               local_addr=null;
+    final Vector<Address> mbrs=new Vector<Address>();
+    View                  my_view=null;
+    ViewId                my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
     long                 avg_send_interval=60000;
@@ -202,7 +202,7 @@ public class VIEW_SYNC extends Protocol {
     }
 
     private void handleViewChange(View view) {
-        Vector tmp=view.getMembers();
+        Vector<Address> tmp=view.getMembers();
         if(tmp != null) {
             mbrs.clear();
             mbrs.addAll(tmp);
