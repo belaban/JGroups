@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.52 2007/08/30 10:16:56 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.53 2007/09/03 06:39:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.52 $
+ * @version $Revision: 1.53 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -176,9 +176,6 @@ public class ClientGmsImpl extends GmsImpl {
                         if(!gms.members.contains(coord))
                             gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
                         gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
-
-                        gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
-                        gms.getDownProtocol().down(new Event(Event.BECOME_SERVER));
                         return;
                     }
                 }
