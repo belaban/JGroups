@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.25 2007/09/03 07:54:48 belaban Exp $
+// $Id: GmsImpl.java,v 1.26 2007/09/03 15:43:48 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -12,8 +12,7 @@ import java.util.List;
 
 
 public abstract class GmsImpl {
-    protected GMS   gms=null;
-    // protected final Log   log=LogFactory.getLog(getClass());
+    protected GMS         gms=null;
     protected final Log   log;
     final boolean         trace;
     final boolean         warn;
@@ -42,7 +41,7 @@ public abstract class GmsImpl {
     public abstract void      suspect(Address mbr);
     public abstract void      unsuspect(Address mbr);
 
-    public void               merge(Vector other_coords)                           {} // only processed by coord
+    public void               merge(Vector<Address> other_coords)                  {} // only processed by coord
     public void               handleMergeRequest(Address sender, ViewId merge_id)  {} // only processed by coords
     public void               handleMergeResponse(MergeData data, ViewId merge_id) {} // only processed by coords
     public void               handleMergeView(MergeData data, ViewId merge_id)     {} // only processed by coords
