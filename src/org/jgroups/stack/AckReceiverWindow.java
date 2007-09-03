@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.22 2007/08/10 12:32:16 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.23 2007/09/03 06:28:07 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Message;
 
 import java.util.HashMap;
+import java.util.Map;
 import java.util.TreeSet;
 
 
@@ -23,9 +24,9 @@ import java.util.TreeSet;
  * @author Bela Ban
  */
 public class AckReceiverWindow {
-    long              next_to_remove=0;
-    final HashMap     msgs=new HashMap();  // keys: seqnos (Long), values: Messages
-    static final Log  log=LogFactory.getLog(AckReceiverWindow.class);
+    long                    next_to_remove=0;
+    final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
+    static final Log        log=LogFactory.getLog(AckReceiverWindow.class);
 
 
     public AckReceiverWindow(long initial_seqno) {
@@ -45,9 +46,8 @@ public class AckReceiverWindow {
                     log.trace("discarded msg with seqno=" + seqno + " (next msg to receive is " + next_to_remove + ')');
                 return false;
             }
-            Long seq=new Long(seqno);
-            if(!msgs.containsKey(seq)) {
-                msgs.put(seq, msg);
+            if(!msgs.containsKey(seqno)) {
+                msgs.put(seqno, msg);
                 return true;
             }
             else {
@@ -68,8 +68,7 @@ public class AckReceiverWindow {
         Message retval;
 
         synchronized(msgs) {
-            Long key=new Long(next_to_remove);
-            retval=(Message)msgs.remove(key);
+            retval=msgs.remove(next_to_remove);
             if(retval != null) {
                 if(log.isTraceEnabled())
                     log.trace("removed seqno=" + next_to_remove);
