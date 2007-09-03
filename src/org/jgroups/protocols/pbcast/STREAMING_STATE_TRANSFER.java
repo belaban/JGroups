@@ -226,9 +226,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
             break;
 
-        case Event.BECOME_SERVER:
-            break;
-
         case Event.SET_LOCAL_ADDRESS:
             local_addr = (Address) evt.getArg();
             break;
