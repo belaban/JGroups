@@ -1,17 +1,14 @@
-// $Id: CoordGmsImpl.java,v 1.73 2007/09/03 07:54:48 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.74 2007/09/03 15:47:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
-import org.jgroups.annotations.GuardedBy;
 
-import java.util.Collection;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Vector;
+import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -134,7 +131,7 @@ public class CoordGmsImpl extends GmsImpl {
      * See description of protocol in DESIGN.
      * @param other_coords A list of coordinators (including myself) found by MERGE protocol
      */
-    public void merge(Vector other_coords) {
+    public void merge(Vector<Address> other_coords) {
         Membership tmp;
 
         if(merging) {
@@ -277,7 +274,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isErrorEnabled()) log.error("merge_ids don't match (or are null); merge view discarded");
             return;
         }
-        java.util.List my_members=gms.view != null? gms.view.getMembers() : null;
+        List<Address> my_members=gms.view != null? gms.view.getMembers() : null;
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
@@ -489,7 +486,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     /* ------------------------------------------ Private methods ----------------------------------------- */
 
-    void startMergeTask(Vector coords) {
+    void startMergeTask(Vector<Address> coords) {
         synchronized(merge_task) {
             merge_task.start(coords);
         }
@@ -501,10 +498,10 @@ public class CoordGmsImpl extends GmsImpl {
         }
     }
 
-    private void sendJoinResponses(JoinRsp rsp, Collection c) {
-        if(c != null && rsp != null) {
-            for(Iterator it=c.iterator(); it.hasNext();) {
-                sendJoinResponse(rsp, (Address)it.next());
+    private void sendJoinResponses(JoinRsp rsp, Collection<Address> joiners) {
+        if(joiners != null && rsp != null) {
+            for(Address joiner: joiners) {
+                sendJoinResponse(rsp, joiner);
             }
         }
     }

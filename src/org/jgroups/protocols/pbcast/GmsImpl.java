@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.26 2007/09/03 15:43:48 belaban Exp $
+// $Id: GmsImpl.java,v 1.27 2007/09/03 15:47:17 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -101,19 +101,19 @@ public abstract class GmsImpl {
         static final int JOIN_WITH_STATE_TRANSFER    = 6;
 
 
-        int     type=-1;
-        Address mbr;
-        boolean suspected;
-        Vector  coordinators;
-        View    view;
-        Digest  digest;
-        List target_members;
+        int              type=-1;
+        Address          mbr;
+        boolean          suspected;
+        Vector<Address>  coordinators;
+        View             view;
+        Digest           digest;
+        List<Address>    target_members;
 
         Request(int type) {
             this.type=type;
         }
 
-        Request(int type, Address mbr, boolean suspected, Vector coordinators) {
+        Request(int type, Address mbr, boolean suspected, Vector<Address> coordinators) {
             this.type=type;
             this.mbr=mbr;
             this.suspected=suspected;
