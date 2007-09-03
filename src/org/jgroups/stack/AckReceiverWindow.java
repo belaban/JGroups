@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.23 2007/09/03 06:28:07 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.24 2007/09/03 06:30:40 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -92,7 +92,7 @@ public class AckReceiverWindow {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")");
-        TreeSet s=new TreeSet(msgs.keySet());
+        TreeSet<Long> s=new TreeSet<Long>(msgs.keySet());
         if(!s.isEmpty()) {
             sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
             sb.append(": ").append(s);
@@ -104,7 +104,7 @@ public class AckReceiverWindow {
     public String printDetails() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")").
-                append(", msgs=" ).append(new TreeSet(msgs.keySet()));
+                append(", msgs=" ).append(new TreeSet<Long>(msgs.keySet()));
         return sb.toString();
     }
 
