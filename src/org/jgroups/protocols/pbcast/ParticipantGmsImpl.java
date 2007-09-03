@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.27 2007/08/30 10:17:50 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.28 2007/09/03 07:54:48 belaban Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -194,16 +194,17 @@ public class ParticipantGmsImpl extends GmsImpl {
      */
     boolean wouldIBeCoordinator() {
         Address new_coord;
-        Vector mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
+        Vector<Address> mbrs=gms.members.getMembers(); // getMembers() returns a *copy* of the membership vector
         mbrs.removeAll(suspected_mbrs);
         if(mbrs.size() < 1) return false;
-        new_coord=(Address)mbrs.elementAt(0);
+        new_coord=mbrs.firstElement();
         return gms.local_addr.equals(new_coord);
     }
 
 
     void sendLeaveMessage(Address coord, Address mbr) {
         Message msg=new Message(coord, null, null);
+        msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_REQ, mbr);
 
         msg.putHeader(gms.getName(), hdr);

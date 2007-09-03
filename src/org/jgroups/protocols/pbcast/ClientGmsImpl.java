@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.53 2007/09/03 06:39:45 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.54 2007/09/03 07:54:48 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.53 $
+ * @version $Revision: 1.54 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -272,6 +272,7 @@ public class ClientGmsImpl extends GmsImpl {
         GMS.GmsHeader hdr;
 
         msg=new Message(coord, null, null);
+        msg.setFlag(Message.OOB);
         if(joinWithTransfer)
             hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER, mbr);
         else
@@ -334,7 +335,7 @@ public class ClientGmsImpl extends GmsImpl {
     void becomeSingletonMember(Address mbr) {
         Digest initial_digest;
         ViewId view_id;
-        Vector mbrs=new Vector(1);
+        Vector<Address> mbrs=new Vector<Address>(1);
 
         // set the initial digest (since I'm the first member)
         initial_digest=new Digest(gms.local_addr, 0, 0); // initial seqno mcast by me will be 1 (highest seen +1)

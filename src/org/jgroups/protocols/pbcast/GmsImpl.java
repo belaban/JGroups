@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.24 2007/08/14 07:41:19 belaban Exp $
+// $Id: GmsImpl.java,v 1.25 2007/09/03 07:54:48 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -62,6 +62,7 @@ public abstract class GmsImpl {
 
     protected void sendMergeRejectedResponse(Address sender, ViewId merge_id) {
         Message msg=new Message(sender, null, null);
+        msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_rejected=true;
         hdr.merge_id=merge_id;

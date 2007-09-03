@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.72 2007/08/14 07:58:51 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.73 2007/09/03 07:54:48 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -512,6 +512,7 @@ public class CoordGmsImpl extends GmsImpl {
 
     private void sendJoinResponse(JoinRsp rsp, Address dest) {
         Message m=new Message(dest, null, null);
+        m.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
         m.putHeader(gms.getName(), hdr);
         if(!gms.members.contains(dest))
@@ -522,6 +523,7 @@ public class CoordGmsImpl extends GmsImpl {
     private void sendLeaveResponses(Collection c) {
         for(Iterator i=c.iterator(); i.hasNext();) {
             Message msg=new Message((Address)i.next(), null, null); // send an ack to the leaving member
+            msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
             msg.putHeader(gms.getName(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
@@ -568,6 +570,7 @@ public class CoordGmsImpl extends GmsImpl {
                 gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
                 msg=new Message(coord, null, null);
+                // msg.setFlag(Message.OOB);
                 hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=merge_id;
@@ -741,6 +744,7 @@ public class CoordGmsImpl extends GmsImpl {
      */
     private void sendMergeResponse(Address sender, View view, Digest digest) {
         Message msg=new Message(sender, null, null);
+        // msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_id=merge_id;
         hdr.view=view;
@@ -764,6 +768,7 @@ public class CoordGmsImpl extends GmsImpl {
         for(int i=0; i < coords.size(); i++) {
             coord=(Address)coords.elementAt(i);
             msg=new Message(coord, null, null);
+            // msg.setFlag(Message.OOB);
             hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
