@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.75 2007/09/03 06:04:29 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.76 2007/09/03 06:11:14 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=3000;            // msecs to wait for the socket cache from the coordinator
@@ -205,7 +205,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         case Event.MSG:
             Message msg=(Message) evt.getArg();
-            FdHeader hdr=(FdHeader) msg.getHeader(name);
+            FdHeader hdr=(FdHeader)msg.getHeader(name);
             if(hdr == null)
                 break;  // message did not originate from FD_SOCK layer, just pass up
 
@@ -271,14 +271,10 @@ public class FD_SOCK extends Protocol implements Runnable {
 
                 // Return the cache to the sender of this message
             case FdHeader.GET_CACHE:
-                if(hdr.mbr == null) {
-                    if(log.isErrorEnabled()) log.error("(GET_CACHE): hdr.mbr == null");
-                    return null;
-                }
-                Address from=hdr.mbr; // guaranteed to be non-null
+                Address sender=msg.getSrc(); // guaranteed to be non-null
                 hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
                 hdr.cachedAddrs=new HashMap<Address,IpAddress>(cache);
-                msg=new Message(from, null, null);
+                msg=new Message(sender, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
                 down_prot.down(new Event(Event.MSG, msg));
@@ -667,7 +663,6 @@ public class FD_SOCK extends Protocol implements Runnable {
                     return;
                 }
                 hdr=new FdHeader(FdHeader.GET_CACHE);
-                hdr.mbr=local_addr;
                 msg=new Message(coord, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
@@ -830,11 +825,11 @@ public class FD_SOCK extends Protocol implements Runnable {
         public static final byte GET_CACHE_RSP=14; // sent by coordinator to joining member in response to GET_CACHE
 
 
-        byte      type=SUSPECT;
-        Address   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
-        IpAddress sock_addr;          // set on I_HAVE_SOCK
-        Map<Address,IpAddress>  cachedAddrs=null;   // set on GET_CACHE_RSP
-        Set<Address>            mbrs=null;          // set on SUSPECT (list of suspected members)
+        byte                      type=SUSPECT;
+        Address                   mbr=null;           // set on WHO_HAS_SOCK (requested mbr), I_HAVE_SOCK
+        IpAddress                 sock_addr;          // set on I_HAVE_SOCK
+        Map<Address,IpAddress>    cachedAddrs=null;   // set on GET_CACHE_RSP
+        Set<Address>              mbrs=null;          // set on SUSPECT (list of suspected members)
         private static final long serialVersionUID=-7025890133989522764L;
 
 
@@ -904,8 +899,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type=in.readByte();
-            mbr=(Address) in.readObject();
-            sock_addr=(IpAddress) in.readObject();
+            mbr=(Address)in.readObject();
+            sock_addr=(IpAddress)in.readObject();
             cachedAddrs=(Map<Address,IpAddress>)in.readObject();
             mbrs=(Set<Address>)in.readObject();
         }
