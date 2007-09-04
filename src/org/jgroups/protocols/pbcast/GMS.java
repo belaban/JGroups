@@ -13,7 +13,6 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import org.jgroups.protocols.pbcast.GmsImpl.Request;
 
 
 /**
@@ -21,7 +20,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.110 2007/08/14 07:45:40 belaban Exp $
+ * @version $Id: GMS.java,v 1.107.2.1 2007/09/04 15:29:31 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -65,24 +64,19 @@ public class GMS extends Protocol {
     protected int             num_prev_mbrs=50;
 
     /** Keeps track of old members (up to num_prev_mbrs) */
-    BoundedList<Address>      prev_members=null;
+    BoundedList               prev_members=null;
 
-    /** If we receive a JOIN request from P and P is already in the current membership, then we send back a JOIN
-     * response with an error message when this property is set to true (Channel.connect() will fail). Otherwise,
-     * we return the current view */
-    boolean                   reject_join_from_existing_member=true;
-
-    int                       num_views=0;
+    int num_views=0;
 
     /** Stores the last 20 views */
-    BoundedList<View>         prev_views=new BoundedList<View>(20);
+    BoundedList               prev_views=new BoundedList(20);
 
 
     /** Class to process JOIN, LEAVE and MERGE requests */
-    private final ViewHandler view_handler=new ViewHandler();
+    private final ViewHandler  view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
-    final AckCollector        ack_collector=new AckCollector();
+    final AckCollector ack_collector=new AckCollector();
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
     long                      view_ack_collection_timeout=2000;
@@ -120,8 +114,8 @@ public class GMS extends Protocol {
     public String printPreviousMembers() {
         StringBuilder sb=new StringBuilder();
         if(prev_members != null) {
-            for(Address addr: prev_members) {
-                sb.append(addr).append("\n");
+            for(Enumeration en=prev_members.elements(); en.hasMoreElements();) {
+                sb.append(en.nextElement()).append("\n");
             }
         }
         return sb.toString();
@@ -148,8 +142,8 @@ public class GMS extends Protocol {
 
     public String printPreviousViews() {
         StringBuilder sb=new StringBuilder();
-        for(View view: prev_views) {
-            sb.append(view).append("\n");
+        for(Enumeration en=prev_views.elements(); en.hasMoreElements();) {
+            sb.append(en.nextElement()).append("\n");
         }
         return sb.toString();
     }
@@ -163,7 +157,7 @@ public class GMS extends Protocol {
     public void resetStats() {
         super.resetStats();
         num_views=0;
-        prev_views.clear();
+        prev_views.removeAll();
     }
 
 
@@ -194,7 +188,7 @@ public class GMS extends Protocol {
 
 
     public void init() throws Exception {
-        prev_members=new BoundedList<Address>(num_prev_mbrs);
+        prev_members=new BoundedList(num_prev_mbrs);
         timer=stack != null? stack.timer : null;
         if(timer == null)
             throw new Exception("GMS.init(): timer is null");
@@ -210,7 +204,7 @@ public class GMS extends Protocol {
         view_handler.stop(true);
         if(impl != null) impl.stop();
         if(prev_members != null)
-            prev_members.clear();
+            prev_members.removeAll();
     }
 
 
@@ -508,8 +502,9 @@ public class GMS extends Protocol {
             // Send VIEW_CHANGE event up and down the stack:
             Event view_event=new Event(Event.VIEW_CHANGE, new_view.clone());
             // changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
-            up_prot.up(view_event);
+            // changed this back (bela Sept 4 2007): http://jira.jboss.com/jira/browse/JGRP-564
             down_prot.down(view_event); // needed e.g. by failure detector or UDP
+            up_prot.up(view_event);
 
 
             coord=determineCoordinator();
@@ -573,7 +568,7 @@ public class GMS extends Protocol {
     }
 
 
-    public static View makeView(Vector<Address> mbrs, ViewId vid) {
+    public View makeView(Vector<Address> mbrs, ViewId vid) {
         Address coord=null;
         long id=0;
 
@@ -636,9 +631,6 @@ public class GMS extends Protocol {
                     case GmsHeader.JOIN_REQ:
                         view_handler.add(new Request(Request.JOIN, hdr.mbr, false, null));
                         break;
-                    case GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                        view_handler.add(new Request(Request.JOIN_WITH_STATE_TRANSFER, hdr.mbr, false, null));
-                        break;    
                     case GmsHeader.JOIN_RSP:
                         impl.handleJoinResponse(hdr.join_rsp);
                         break;
@@ -757,9 +749,10 @@ public class GMS extends Protocol {
 
 
     public Object down(Event evt) {
-        Object arg=null;
-        switch(evt.getType()) {            
-            case Event.CONNECT:               
+        switch(evt.getType()) {
+
+            case Event.CONNECT:
+                Object arg=null;
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -770,18 +763,6 @@ public class GMS extends Protocol {
                     arg=e;
                 }
                 return arg;  // don't pass down: was already passed down
-                
-            case Event.CONNECT_WITH_STATE_TRANSFER:                
-                down_prot.down(evt);
-                if(local_addr == null)
-                    if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
-                try {
-                    impl.joinWithStateTransfer(local_addr);
-                }
-                catch(Throwable e) {
-                    arg=e;
-                }
-                return arg;  // don't pass down: was already passed down    
 
             case Event.DISCONNECT:
                 impl.leave((Address)evt.getArg());
@@ -887,14 +868,8 @@ public class GMS extends Protocol {
             num_prev_mbrs=Integer.parseInt(str);
             props.remove("num_prev_mbrs");
         }
-
-        str=props.getProperty("reject_join_from_existing_member");
-        if(str != null) {
-            reject_join_from_existing_member=Boolean.parseBoolean(str);
-            props.remove("reject_join_from_existing_member");
-        }
         
-        str=props.getProperty("use_flush");
+        str=props.getProperty("use_flush");   
         if(str != null) {
             log.warn("use_flush has been deprecated and its value will be ignored");
             props.remove("use_flush");
@@ -961,7 +936,6 @@ public class GMS extends Protocol {
         public static final byte INSTALL_MERGE_VIEW=8;
         public static final byte CANCEL_MERGE=9;
         public static final byte VIEW_ACK=10;
-        public static final byte JOIN_REQ_WITH_STATE_TRANSFER = 11;
 
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
@@ -1146,7 +1120,59 @@ public class GMS extends Protocol {
 
 
 
+    public static class Request {
+        static final int JOIN    = 1;
+        static final int LEAVE   = 2;
+        static final int SUSPECT = 3;
+        static final int MERGE   = 4;
+        static final int VIEW    = 5;
 
+
+        int     type=-1;
+        Address mbr;
+        boolean suspected;
+        Vector  coordinators;
+        View    view;
+        Digest  digest;
+        List    target_members;
+
+        Request(int type) {
+            this.type=type;
+        }
+
+        Request(int type, Address mbr, boolean suspected, Vector coordinators) {
+            this.type=type;
+            this.mbr=mbr;
+            this.suspected=suspected;
+            this.coordinators=coordinators;
+        }
+
+        public int getType() {
+            return type;
+        }
+
+        public String toString() {
+            switch(type) {
+                case JOIN:    return "JOIN(" + mbr + ")";
+                case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
+                case SUSPECT: return "SUSPECT(" + mbr + ")";
+                case MERGE:   return "MERGE(" + coordinators + ")";
+                case VIEW:    return "VIEW (" + view.getVid() + ")";
+            }
+            return "<invalid (type=" + type + ")";
+        }
+
+        /**
+         * Specifies whether this request can be processed with other request simultaneously
+         */
+        public boolean canBeProcessedTogether(Request other) {
+            if(other == null)
+                return false;
+            int other_type=other.getType();
+            return (type == JOIN || type == LEAVE || type == SUSPECT) &&
+                    (other_type == JOIN || other_type == LEAVE || other_type == SUSPECT);
+        }
+    }
 
 
 
@@ -1154,7 +1180,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.110 2007/08/14 07:45:40 belaban Exp $
+     * @version $Id: GMS.java,v 1.107.2.1 2007/09/04 15:29:31 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1163,7 +1189,7 @@ public class GMS extends Protocol {
         final static long                  INTERVAL=5000;
         private static final long          MAX_COMPLETION_TIME=10000;
         /** Maintains a list of the last 20 requests */
-        private final BoundedList<String>  history=new BoundedList<String>(20);
+        private final BoundedList          history=new BoundedList(20);
 
         /** Map<Object,Future>. Keeps track of Resumer tasks which have not fired yet */
         private final Map<Object, Future>  resume_tasks=new HashMap<Object,Future>();
@@ -1314,24 +1340,43 @@ public class GMS extends Protocol {
 
         public String dumpHistory() {
             StringBuilder sb=new StringBuilder();
-            for(String line: history) {
-                sb.append(line + "\n");
+            for(Enumeration en=history.elements(); en.hasMoreElements();) {
+                sb.append(en.nextElement() + "\n");
             }
             return sb.toString();
         }
 
-        private void process(List<Request> requests) {
+        private void process(List requests) {
             if(requests.isEmpty())
                 return;
             if(log.isTraceEnabled())
                 log.trace("processing " + requests);
-            Request firstReq=requests.get(0);
+            Request firstReq=(Request)requests.get(0);
             switch(firstReq.type) {
                 case Request.JOIN:
-                case Request.JOIN_WITH_STATE_TRANSFER:
                 case Request.LEAVE:
-                case Request.SUSPECT:                   
-                    impl.handleMembershipChange(requests);
+                case Request.SUSPECT:
+                    Collection<Address> newMembers=new LinkedHashSet<Address>(requests.size());
+                    Collection<Address> suspectedMembers=new LinkedHashSet<Address>(requests.size());
+                    Collection<Address> oldMembers=new LinkedHashSet<Address>(requests.size());
+                    for(Iterator i=requests.iterator(); i.hasNext();) {
+                        Request req=(Request)i.next();
+                        switch(req.type) {
+                            case Request.JOIN:
+                                newMembers.add(req.mbr);
+                                break;
+                            case Request.LEAVE:
+                                if(req.suspected)
+                                    suspectedMembers.add(req.mbr);
+                                else
+                                    oldMembers.add(req.mbr);
+                                break;
+                            case Request.SUSPECT:
+                                suspectedMembers.add(req.mbr);
+                                break;
+                        }
+                    }
+                    impl.handleMembershipChange(newMembers, oldMembers, suspectedMembers);
                     break;
                 case Request.MERGE:
                     if(requests.size() > 1)
