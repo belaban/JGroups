@@ -42,6 +42,7 @@ public abstract class BasicTCP extends TP {
     int                    recv_buf_size=150000;
     int                    send_buf_size=150000;
     int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+    int                    peer_addr_read_timeout=1000; // max time to block on reading of peer address
     boolean                tcp_nodelay=false;
     int                    linger=-1; // SO_LINGER (number of ms, -1 disables it)
 
@@ -101,6 +102,12 @@ public abstract class BasicTCP extends TP {
         if(str != null) {
             sock_conn_timeout=Integer.parseInt(str);
             props.remove("sock_conn_timeout");
+        }
+
+        str=props.getProperty("peer_addr_read_timeout");
+        if(str != null) {
+            peer_addr_read_timeout=Integer.parseInt(str);
+            props.remove("peer_addr_read_timeout");
         }
 
         str=props.getProperty("recv_buf_size");
