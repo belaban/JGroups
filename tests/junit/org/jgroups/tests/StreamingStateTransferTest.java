@@ -10,6 +10,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
@@ -94,7 +95,7 @@ public class StreamingStateTransferTest extends ChannelTestBase
       try
       {
 
-         takeAllPermits(semaphore, channelCount);
+         semaphore.acquire(channelCount);
          boolean crashed = false;
          // Create activation threads that will block on the semaphore        
          for (int i = 0; i < channelCount; i++)
@@ -135,8 +136,12 @@ public class StreamingStateTransferTest extends ChannelTestBase
          
 
          //Reacquire the semaphore tickets; when we have them all
-         // we know the threads are done         
-         acquireSemaphore(semaphore, 60000, channelCount);          
+         // we know the threads are done        
+         boolean acquired = semaphore.tryAcquire(channelCount, 60, TimeUnit.SECONDS);
+         if(!acquired){
+             log.warn("Most likely a bug, analyse the stack below:");
+             log.warn(Util.dumpThreads());
+         }      
          
          int getStateInvokedCount = 0;
          int setStateInvokedCount = 0;

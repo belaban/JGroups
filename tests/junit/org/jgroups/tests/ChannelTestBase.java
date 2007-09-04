@@ -809,42 +809,7 @@ public class ChannelTestBase extends TestCase
 
       return true;
    }
-
-   public static void takeAllPermits(Semaphore semaphore, int count)
-   {
-      for (int i = 0; i < count; i++)
-      {
-         try
-         {
-            semaphore.acquire();
-         }
-         catch (InterruptedException e)
-         {
-            //not interested
-            e.printStackTrace();
-         }
-      }
-   }
-
-   public static void acquireSemaphore(Semaphore semaphore, long timeout, int count) throws Exception
-   {
-      for (int i = 0; i < count; i++)
-      {
-         boolean acquired = false;
-         try
-         {
-            acquired = semaphore.tryAcquire(timeout, TimeUnit.MILLISECONDS);
-         }
-         catch (InterruptedException e)
-         {
-            //not interested but print it
-            e.printStackTrace();
-         }
-         if (!acquired)
-            throw new Exception("Failed to acquire semaphore");
-      }
-   }
-
+   
    public static void sleepRandom(int maxTime)
    {
       Util.sleep(RANDOM.nextInt(maxTime));

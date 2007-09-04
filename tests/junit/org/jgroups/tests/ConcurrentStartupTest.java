@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
@@ -24,7 +25,7 @@ import org.jgroups.util.Util;
 /**
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.24 2007/08/31 16:00:41 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.25 2007/09/04 18:32:58 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase
 {
@@ -86,7 +87,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
       {
          // Create a semaphore and take all its permits
          Semaphore semaphore = new Semaphore(count);
-         takeAllPermits(semaphore, count);
+         semaphore.acquire(count);         
 
          // Create activation threads that will block on the semaphore        
          for (int i = 0; i < count; i++)
@@ -132,14 +133,18 @@ public class ConcurrentStartupTest extends ChannelTestBase
          }
 
          // Sleep to ensure the threads get all the semaphore tickets
-         Util.sleep(1000);
+         Util.sleep(2000);
 
          // Reacquire the semaphore tickets; when we have them all
-         // we know the threads are done         
-         acquireSemaphore(semaphore, 60000, count);
+         // we know the threads are done        
+         boolean acquired = semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
+         if(!acquired){
+             log.warn("Most likely a bug, analyse the stack below:");
+             log.warn(Util.dumpThreads());
+         }
          
          //Sleep to ensure async message arrive
-         Util.sleep(6000);
+         Util.sleep(3000);
 
          //do test verification
          List[] lists = new List[count];
@@ -169,12 +174,11 @@ public class ConcurrentStartupTest extends ChannelTestBase
          log.warn("Exception encountered during test",ex);
       }
       finally
-      {    
-         for (int i = 0; i < count; i++)
-         {
-            Util.sleep(500);
-            channels[i].cleanup();
-         }        
+      {         
+         for(ConcurrentStartupChannel channel:channels){
+             channel.cleanup();
+             Util.sleep(2000); //remove before 2.6 GA
+         }
       }
    }
    
@@ -216,12 +220,12 @@ public class ConcurrentStartupTest extends ChannelTestBase
       ConcurrentStateTransfer[] channels = new ConcurrentStateTransfer[count];
       
       //Create a semaphore and take all its tickets
-      Semaphore semaphore = new Semaphore(count);
-      takeAllPermits(semaphore, count);
+      Semaphore semaphore = new Semaphore(count);      
       
       try
       {                  
 
+         semaphore.acquire(count);
          // Create activation threads that will block on the semaphore        
          for (int i = 0; i < count; i++)
          {
@@ -272,7 +276,11 @@ public class ConcurrentStartupTest extends ChannelTestBase
 
          //Reacquire the semaphore tickets; when we have them all
          //we know the threads are done         
-         acquireSemaphore(semaphore, 60000, count);
+         boolean acquired = semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
+         if(!acquired){
+             log.warn("Most likely a bug, analyse the stack below:");
+             log.warn(Util.dumpThreads());
+         }
 
          //Sleep to ensure async message arrive
          Util.sleep(6000);
@@ -305,11 +313,10 @@ public class ConcurrentStartupTest extends ChannelTestBase
       }
       finally
       {      
-         for (int i = 0; i < count; i++)
-         {
-            Util.sleep(500);
-            channels[i].cleanup();
-         }         
+          for(ConcurrentStateTransfer channel:channels){
+              channel.cleanup();     
+              Util.sleep(2000); //remove before 2.6 GA
+          }
       }
    }
    
@@ -377,8 +384,8 @@ public class ConcurrentStartupTest extends ChannelTestBase
       
       public void setState(byte[] state)
       {
-         super.setState(state);
          Util.sleep(5000);
+         super.setState(state);         
       }
 
       public byte[] getState()
@@ -389,14 +396,14 @@ public class ConcurrentStartupTest extends ChannelTestBase
 
       public void getState(OutputStream ostream)
       {
-         super.getState(ostream); 
-         Util.sleep(5000);
+         Util.sleep(5000); 
+         super.getState(ostream);          
       }
 
       public void setState(InputStream istream)
       {
-         super.setState(istream);
-         Util.sleep(5000);
+         Util.sleep(5000); 
+         super.setState(istream);         
       }
    }
    
@@ -414,8 +421,8 @@ public class ConcurrentStartupTest extends ChannelTestBase
       
       public void setState(byte[] state)
       {
-         super.setState(state);
-         Util.sleep(5000);
+         Util.sleep(5000); 
+         super.setState(state);         
       }
 
       public byte[] getState()
@@ -426,14 +433,14 @@ public class ConcurrentStartupTest extends ChannelTestBase
 
       public void getState(OutputStream ostream)
       {
-         super.getState(ostream); 
-         Util.sleep(5000);
+         Util.sleep(5000); 
+         super.getState(ostream);          
       }
 
       public void setState(InputStream istream)
       {
-         super.setState(istream);
-         Util.sleep(5000);
+         Util.sleep(5000); 
+         super.setState(istream);         
       }
    }
    
@@ -446,12 +453,7 @@ public class ConcurrentStartupTest extends ChannelTestBase
 
       int modCount = 1;
 
-      final Map mods = new TreeMap();     
-      
-      public ConcurrentStartupChannel(String name,Semaphore semaphore) throws Exception
-      {
-         super(name,semaphore,true);
-      }
+      final Map mods = new TreeMap();        
       
       public ConcurrentStartupChannel(String name,JChannelFactory f,Semaphore semaphore) throws Exception
       {
