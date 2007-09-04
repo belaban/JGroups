@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.27 2007/09/03 15:47:17 belaban Exp $
+// $Id: GmsImpl.java,v 1.28 2007/09/04 18:39:06 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -127,6 +127,7 @@ public abstract class GmsImpl {
         public String toString() {
             switch(type) {
                 case JOIN:    return "JOIN(" + mbr + ")";
+                case JOIN_WITH_STATE_TRANSFER:    return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
                 case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
                 case SUSPECT: return "SUSPECT(" + mbr + ")";
                 case MERGE:   return "MERGE(" + coordinators + ")";
