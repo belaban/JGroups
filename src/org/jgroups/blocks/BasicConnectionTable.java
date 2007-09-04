@@ -38,6 +38,7 @@ public abstract class BasicConnectionTable {
     long                  reaper_interval=60000;       // reap unused conns once a minute
     long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     int                   sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
+    int                   peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
     ThreadGroup           thread_group=null;
     protected final Log   log= LogFactory.getLog(getClass());
     final byte[]          cookie={'b', 'e', 'l', 'a'};
@@ -102,7 +103,15 @@ public abstract class BasicConnectionTable {
        this.sock_conn_timeout=sock_conn_timeout;
    }
 
-   public int getNumConnections() {
+    public int getPeerAddressReadTimeout() {
+        return peer_addr_read_timeout;
+    }
+
+    public void setPeerAddressReadTimeout(int peer_addr_read_timeout) {
+        this.peer_addr_read_timeout=peer_addr_read_timeout;
+    }
+
+    public int getNumConnections() {
        return conns.size();
    }
 
@@ -497,29 +506,38 @@ public abstract class BasicConnectionTable {
            short       version;
            InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
 
-           if(in != null) {
-               initCookie(input_cookie);
+           int timeout=client_sock.getSoTimeout();
+           client_sock.setSoTimeout(peer_addr_read_timeout);
 
-               // read the cookie first
-               in.read(input_cookie, 0, input_cookie.length);
-               if(!matchCookie(input_cookie))
-                   throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
-                                             client_peer_addr + " does not match own cookie; terminating connection");
-               // then read the version
-               version=in.readShort();
+           try {
 
-               if(Version.isBinaryCompatible(version) == false) {
-                   if(log.isWarnEnabled())
-                       log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
-                              append(" has different version (").append(Version.print(version)).append(") from ours (").
-                                append(Version.printVersion()).append("). This may cause problems"));
+               if(in != null) {
+                   initCookie(input_cookie);
+
+                   // read the cookie first
+                   in.read(input_cookie, 0, input_cookie.length);
+                   if(!matchCookie(input_cookie))
+                       throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " +
+                               client_peer_addr + " does not match own cookie; terminating connection");
+                   // then read the version
+                   version=in.readShort();
+
+                   if(Version.isBinaryCompatible(version) == false) {
+                       if(log.isWarnEnabled())
+                           log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
+                                   append(" has different version (").append(Version.print(version)).append(") from ours (").
+                                   append(Version.printVersion()).append("). This may cause problems"));
+                   }
+                   client_peer_addr=new IpAddress();
+                   client_peer_addr.readFrom(in);
+
+                   updateLastAccessed();
                }
-               client_peer_addr=new IpAddress();
-               client_peer_addr.readFrom(in);
-
-               updateLastAccessed();
+               return client_peer_addr;
            }
-           return client_peer_addr;
+           finally {
+               client_sock.setSoTimeout(timeout);
+           }
        }
 
 
