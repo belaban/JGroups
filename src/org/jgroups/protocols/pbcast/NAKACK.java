@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.162 2007/09/05 07:50:41 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.163 2007/09/05 08:13:07 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1603,11 +1603,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public static final class LossRate {
         private final  Set<Long> received=new HashSet<Long>();
         private final  Set<Long> missing=new HashSet<Long>();
-        private double loss_rate=0.0;
+        private double smoothed_loss_rate=0.0;
 
         public synchronized void addReceived(long seqno) {
             received.add(seqno);
             missing.remove(seqno);
+            setSmoothedLossRate();
         }
 
         public synchronized void addReceived(Long ... seqnos) {
@@ -1616,6 +1617,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 received.add(seqno);
                 missing.remove(seqno);
             }
+            setSmoothedLossRate();
         }
 
         public synchronized void addMissing(long from, long to) {
@@ -1623,9 +1625,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 if(!received.contains(i))
                     missing.add(i);
             }
+            setSmoothedLossRate();
         }
 
-        public synchronized double getLossRate() {
+        public synchronized double computeLossRate() {
             int num_missing=missing.size();
             if(num_missing == 0)
                 return 0.0;
@@ -1634,16 +1637,31 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return num_missing / (double)total;
         }
 
+        public synchronized double getSmoothedLossRate() {
+            return smoothed_loss_rate;
+        }
+
         public synchronized String toString() {
             StringBuilder sb=new StringBuilder();
             int num_missing=missing.size();
             int num_received=received.size();
             int total=num_missing + num_received;
             sb.append("total=").append(total).append(" (received=").append(received.size()).append(", missing=")
-                    .append(missing.size()).append(", loss rate=").append(getLossRate()).append(")");
+                    .append(missing.size()).append(", loss rate=").append(computeLossRate())
+                    .append(", smoothed loss rate=").append(smoothed_loss_rate).append(")");
             return sb.toString();
         }
 
+        /** Set the new smoothed_loss_rate value to 70% of the new value and 30% of the old value */
+        private void setSmoothedLossRate() {
+            double new_loss_rate=computeLossRate();
+            if(smoothed_loss_rate == 0) {
+                smoothed_loss_rate=new_loss_rate;
+            }
+            else {
+                smoothed_loss_rate=smoothed_loss_rate * .3 + new_loss_rate * .7;
+            }
+        }
     }
 
     private static class XmitTimeStat {
