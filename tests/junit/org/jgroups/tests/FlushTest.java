@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.54 2007/09/04 18:29:37 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.55 2007/09/05 17:59:55 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -319,7 +319,8 @@ public class FlushTest extends ChannelTestBase {
             fail("Exception encountered during test execution: " + ex);
         }finally{
             for(FlushTestReceiver app:channels){
-                app.cleanup();                
+                app.cleanup();
+                Util.sleep(2000);
             }
         }
     }
