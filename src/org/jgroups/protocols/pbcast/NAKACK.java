@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.161 2007/08/20 11:25:09 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.162 2007/09/05 07:50:41 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -134,6 +134,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private static final double WEIGHT=0.9;
 
     private static final double INITIAL_SMOOTHED_AVG=30.0;
+
+
+    private final ConcurrentMap<Address,LossRate> loss_rates=new ConcurrentHashMap<Address,LossRate>();
+
+
 
     /**
      * Maintains retransmission related data across a time. Only used if enable_xmit_time_stats is set to true.
@@ -734,7 +739,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Finds the corresponding NakReceiverWindow and adds the message to it (according to seqno). Then removes as many
      * messages as possible from the NRW and passes them up the stack. Discards messages from non-members.
      */
-    private void handleMessage(Message msg, NakAckHeader hdr) {
+    private void  handleMessage(Message msg, NakAckHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
@@ -1594,6 +1599,52 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
     }
 
+
+    public static final class LossRate {
+        private final  Set<Long> received=new HashSet<Long>();
+        private final  Set<Long> missing=new HashSet<Long>();
+        private double loss_rate=0.0;
+
+        public synchronized void addReceived(long seqno) {
+            received.add(seqno);
+            missing.remove(seqno);
+        }
+
+        public synchronized void addReceived(Long ... seqnos) {
+            for(int i=0; i < seqnos.length; i++) {
+                Long seqno=seqnos[i];
+                received.add(seqno);
+                missing.remove(seqno);
+            }
+        }
+
+        public synchronized void addMissing(long from, long to) {
+            for(long i=from; i <= to; i++) {
+                if(!received.contains(i))
+                    missing.add(i);
+            }
+        }
+
+        public synchronized double getLossRate() {
+            int num_missing=missing.size();
+            if(num_missing == 0)
+                return 0.0;
+            int num_received=received.size();
+            int total=num_missing + num_received;
+            return num_missing / (double)total;
+        }
+
+        public synchronized String toString() {
+            StringBuilder sb=new StringBuilder();
+            int num_missing=missing.size();
+            int num_received=received.size();
+            int total=num_missing + num_received;
+            sb.append("total=").append(total).append(" (received=").append(received.size()).append(", missing=")
+                    .append(missing.size()).append(", loss rate=").append(getLossRate()).append(")");
+            return sb.toString();
+        }
+
+    }
 
     private static class XmitTimeStat {
         final AtomicInteger gaps_detected=new AtomicInteger(0);
