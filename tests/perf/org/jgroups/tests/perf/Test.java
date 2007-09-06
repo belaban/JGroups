@@ -742,6 +742,11 @@ public class Test implements Receiver {
         int num_threads=0;
 
         for(int i=0; i < args.length; i++) {
+            if("-bind_addr".equals(args[i])) {
+                String bind_addr=args[++i];
+                System.setProperty("jgroups.bind_addr", bind_addr);
+                continue;
+            }
             if("-sender".equals(args[i])) {
                 config.put("sender", "true");
                 sender=true;
@@ -842,7 +847,7 @@ public class Test implements Receiver {
     static void help() {
         System.out.println("Test [-help] ([-sender] | [-receiver]) " +
                 "[-config <config file>] [-num_threads <number of threads for sending messages>]" +
-                "[-props <stack config>] [-verbose] [-jmx] " +
+                "[-props <stack config>] [-verbose] [-jmx] [-bind_addr <bind address>" +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
                 "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)]");
     }
