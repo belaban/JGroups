@@ -45,7 +45,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.50 2007/08/17 15:18:31 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.51 2007/09/06 16:52:54 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -105,6 +105,9 @@ public class NakReceiverWindow {
 
     /** The highest stable() seqno received */
     long highest_stability_seqno=0;
+
+    /** The loss rate (70% of the new value and 30% of the old value) */
+    private double smoothed_loss_rate=0.0;
 
 
     /**
@@ -188,6 +191,35 @@ public class NakReceiverWindow {
         return retransmitter!= null? retransmitter.size() : 0;
     }
 
+    /**
+     * Returns the loss rate, which is defined as the number of pending retransmission requests / the total number of
+     * messages in xmit_table
+     * @return The loss rate
+     */
+    public double getLossRate() {
+        int total_msgs=size();
+        int pending_xmits=getPendingXmits();
+        if(pending_xmits == 0 || total_msgs == 0)
+            return 0.0;
+
+        return pending_xmits / (double)total_msgs;
+    }
+
+    public double getSmoothedLossRate() {
+        return smoothed_loss_rate;
+    }
+
+    /** Set the new smoothed_loss_rate value to 70% of the new value and 30% of the old value */
+    private void setSmoothedLossRate() {
+        double new_loss_rate=getLossRate();
+        if(smoothed_loss_rate == 0) {
+            smoothed_loss_rate=new_loss_rate;
+        }
+        else {
+            smoothed_loss_rate=smoothed_loss_rate * .3 + new_loss_rate * .7;
+        }
+    }
+
 
     /**
      * Adds a message according to its seqno (sequence number).
@@ -262,6 +294,7 @@ public class NakReceiverWindow {
         }
         finally {
             highest_received=Math.max(highest_received, seqno);
+            // setSmoothedLossRate();
             lock.writeLock().unlock();
         }
         return retval;
@@ -311,6 +344,7 @@ public class NakReceiverWindow {
             return retval;
         }
         finally {
+            // setSmoothedLossRate();
             lock.writeLock().unlock();
         }
     }
@@ -494,6 +528,17 @@ public class NakReceiverWindow {
                     append(", highest stability=").append(highest_stability_seqno).append(')');
         }
         sb.append(']');
+        return sb.toString();
+    }
+
+    public String printLossRate() {
+        StringBuilder sb=new StringBuilder();
+        int num_missing=getPendingXmits();
+        int num_received=size();
+        int total=num_missing + num_received;
+        sb.append("total=").append(total).append(" (received=").append(num_received).append(", missing=")
+                .append(num_missing).append("), loss rate=").append(getLossRate())
+                .append(", smoothed loss rate=").append(smoothed_loss_rate);
         return sb.toString();
     }
 

@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.163 2007/09/05 08:13:07 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.164 2007/09/06 16:52:55 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -136,7 +136,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private static final double INITIAL_SMOOTHED_AVG=30.0;
 
 
-    private final ConcurrentMap<Address,LossRate> loss_rates=new ConcurrentHashMap<Address,LossRate>();
+    // private final ConcurrentMap<Address,LossRate> loss_rates=new ConcurrentHashMap<Address,LossRate>();
 
 
 
@@ -474,6 +474,40 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    public String printLossRates() {
+        StringBuilder sb=new StringBuilder();
+        NakReceiverWindow win;
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            win=entry.getValue();
+            sb.append(entry.getKey()).append(": ").append(win.printLossRate()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    public double getAverageLossRate() {
+        double retval=0.0;
+        int count=0;
+        if(xmit_table.isEmpty())
+            return 0.0;
+        for(NakReceiverWindow win: xmit_table.values()) {
+            retval+=win.getLossRate();
+            count++;
+        }
+        return retval / (double)count;
+    }
+
+    public double getAverageSmoothedLossRate() {
+            double retval=0.0;
+            int count=0;
+            if(xmit_table.isEmpty())
+                return 0.0;
+            for(NakReceiverWindow win: xmit_table.values()) {
+                retval+=win.getSmoothedLossRate();
+                count++;
+            }
+            return retval / (double)count;
+        }
+
 
     public Vector<Integer> providedUpServices() {
         Vector<Integer> retval=new Vector<Integer>(5);
@@ -571,7 +605,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 received.keySet().retainAll(tmp);
                 view=tmp_view;
                 xmit_stats.keySet().retainAll(tmp);
-
                 // in_progress.keySet().retainAll(mbrs); // remove elements which are not in the membership
                 break;
 
@@ -761,6 +794,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || win.add(hdr.seqno, msg);
+
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
         if(msg.isFlagSet(Message.OOB) && added) {
@@ -1600,69 +1634,69 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    public static final class LossRate {
-        private final  Set<Long> received=new HashSet<Long>();
-        private final  Set<Long> missing=new HashSet<Long>();
-        private double smoothed_loss_rate=0.0;
-
-        public synchronized void addReceived(long seqno) {
-            received.add(seqno);
-            missing.remove(seqno);
-            setSmoothedLossRate();
-        }
-
-        public synchronized void addReceived(Long ... seqnos) {
-            for(int i=0; i < seqnos.length; i++) {
-                Long seqno=seqnos[i];
-                received.add(seqno);
-                missing.remove(seqno);
-            }
-            setSmoothedLossRate();
-        }
-
-        public synchronized void addMissing(long from, long to) {
-            for(long i=from; i <= to; i++) {
-                if(!received.contains(i))
-                    missing.add(i);
-            }
-            setSmoothedLossRate();
-        }
-
-        public synchronized double computeLossRate() {
-            int num_missing=missing.size();
-            if(num_missing == 0)
-                return 0.0;
-            int num_received=received.size();
-            int total=num_missing + num_received;
-            return num_missing / (double)total;
-        }
-
-        public synchronized double getSmoothedLossRate() {
-            return smoothed_loss_rate;
-        }
-
-        public synchronized String toString() {
-            StringBuilder sb=new StringBuilder();
-            int num_missing=missing.size();
-            int num_received=received.size();
-            int total=num_missing + num_received;
-            sb.append("total=").append(total).append(" (received=").append(received.size()).append(", missing=")
-                    .append(missing.size()).append(", loss rate=").append(computeLossRate())
-                    .append(", smoothed loss rate=").append(smoothed_loss_rate).append(")");
-            return sb.toString();
-        }
-
-        /** Set the new smoothed_loss_rate value to 70% of the new value and 30% of the old value */
-        private void setSmoothedLossRate() {
-            double new_loss_rate=computeLossRate();
-            if(smoothed_loss_rate == 0) {
-                smoothed_loss_rate=new_loss_rate;
-            }
-            else {
-                smoothed_loss_rate=smoothed_loss_rate * .3 + new_loss_rate * .7;
-            }
-        }
-    }
+//    public static final class LossRate {
+//        private final  Set<Long> received=new HashSet<Long>();
+//        private final  Set<Long> missing=new HashSet<Long>();
+//        private double smoothed_loss_rate=0.0;
+//
+//        public synchronized void addReceived(long seqno) {
+//            received.add(seqno);
+//            missing.remove(seqno);
+//            setSmoothedLossRate();
+//        }
+//
+//        public synchronized void addReceived(Long ... seqnos) {
+//            for(int i=0; i < seqnos.length; i++) {
+//                Long seqno=seqnos[i];
+//                received.add(seqno);
+//                missing.remove(seqno);
+//            }
+//            setSmoothedLossRate();
+//        }
+//
+//        public synchronized void addMissing(long from, long to) {
+//            for(long i=from; i <= to; i++) {
+//                if(!received.contains(i))
+//                    missing.add(i);
+//            }
+//            setSmoothedLossRate();
+//        }
+//
+//        public synchronized double computeLossRate() {
+//            int num_missing=missing.size();
+//            if(num_missing == 0)
+//                return 0.0;
+//            int num_received=received.size();
+//            int total=num_missing + num_received;
+//            return num_missing / (double)total;
+//        }
+//
+//        public synchronized double getSmoothedLossRate() {
+//            return smoothed_loss_rate;
+//        }
+//
+//        public synchronized String toString() {
+//            StringBuilder sb=new StringBuilder();
+//            int num_missing=missing.size();
+//            int num_received=received.size();
+//            int total=num_missing + num_received;
+//            sb.append("total=").append(total).append(" (received=").append(received.size()).append(", missing=")
+//                    .append(missing.size()).append(", loss rate=").append(computeLossRate())
+//                    .append(", smoothed loss rate=").append(smoothed_loss_rate).append(")");
+//            return sb.toString();
+//        }
+//
+//        /** Set the new smoothed_loss_rate value to 70% of the new value and 30% of the old value */
+//        private void setSmoothedLossRate() {
+//            double new_loss_rate=computeLossRate();
+//            if(smoothed_loss_rate == 0) {
+//                smoothed_loss_rate=new_loss_rate;
+//            }
+//            else {
+//                smoothed_loss_rate=smoothed_loss_rate * .3 + new_loss_rate * .7;
+//            }
+//        }
+//    }
 
     private static class XmitTimeStat {
         final AtomicInteger gaps_detected=new AtomicInteger(0);
