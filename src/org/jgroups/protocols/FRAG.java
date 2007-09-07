@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.38 2007/08/27 08:09:19 belaban Exp $
+ * @version $Id: FRAG.java,v 1.39 2007/09/07 11:42:44 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -76,6 +76,14 @@ public class FRAG extends Protocol {
             return false;
         }
         return true;
+    }
+
+    public void init() throws Exception {
+        super.init();
+        Map<String,Object> info=new HashMap<String,Object>(1);
+        info.put("frag_size", frag_size);
+        up_prot.up(new Event(Event.INFO, info));
+        down_prot.down(new Event(Event.INFO, info));
     }
 
     public void resetStats() {

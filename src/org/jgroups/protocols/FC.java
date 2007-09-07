@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.89 2007/08/29 07:37:29 belaban Exp $
+ * @version $Id: FC.java,v 1.90 2007/09/07 11:42:44 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -95,6 +95,9 @@ public class FC extends Protocol {
      * Whether FC is still running, this is set to false when the protocol terminates (on stop())
      */
     private boolean running=true;
+
+
+    private boolean frag_size_received=false;
 
     /**
      * Determines whether or not to block on down(). Set when not enough credit is available to send a message
@@ -327,6 +330,11 @@ public class FC extends Protocol {
 
     public void start() throws Exception {
         super.start();
+        if(!frag_size_received) {
+            log.warn("No fragmentation protocol was found. When flow control (e.g. FC or SFC) is used, we recommend " +
+                    "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
+        }
+
         sent_lock.lock();
         try {
             running=true;
@@ -355,6 +363,9 @@ public class FC extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 return handleDownMessage(evt);
+            case Event.INFO:
+                handleInfo((Map<String,Object>)evt.getArg());
+                return null;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block
     }
@@ -407,10 +418,30 @@ public class FC extends Protocol {
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
+
+            case Event.INFO:
+                Map<String,Object> map=(Map<String,Object>)evt.getArg();
+                handleInfo(map);
+                break;
         }
         return up_prot.up(evt);
     }
 
+
+    private void handleInfo(Map<String,Object> info) {
+        if(info != null) {
+            Integer frag_size=(Integer)info.get("frag_size");
+            if(frag_size != null) {
+                if(frag_size > max_credits) {
+                    log.warn("The fragmentation size of the fragmentation protocol is " + frag_size +
+                            ", which is greater than the max credits. While this is not incorrect, " +
+                            "it may lead to long blockings. Frag size should be less than max_credits " +
+                            "(http://jira.jboss.com/jira/browse/JGRP-590)");
+                }
+                frag_size_received=true;
+            }
+        }
+    }
 
     private Object handleDownMessage(Event evt) {
         Message msg=(Message)evt.getArg();
