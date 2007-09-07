@@ -21,7 +21,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.18 2007/07/27 11:00:53 belaban Exp $
+ * @version $Id: SFC.java,v 1.19 2007/09/07 11:42:44 belaban Exp $
  */
 public class SFC extends Protocol {
     static final String name="SFC";
@@ -67,6 +67,8 @@ public class SFC extends Protocol {
     private final List<Address> members=new LinkedList<Address>();
 
     private boolean running=true;
+
+    private boolean frag_size_received=false;
 
     @GuardedBy("lock") long start, stop;
 
@@ -275,6 +277,11 @@ public class SFC extends Protocol {
             case Event.SUSPECT:
                 handleSuspect((Address)evt.getArg());
                 break;
+
+            case Event.INFO:
+                Map<String,Object> map=(Map<String,Object>)evt.getArg();
+                handleInfo(map);
+                break;
         }
 
         return down_prot.down(evt);
@@ -322,6 +329,10 @@ public class SFC extends Protocol {
             case Event.SUSPECT:
                 handleSuspect((Address)evt.getArg());
                 break;
+            case Event.INFO:
+                Map<String,Object> map=(Map<String,Object>)evt.getArg();
+                handleInfo(map);
+                break;
         }
         return up_prot.up(evt);
     }
@@ -331,6 +342,10 @@ public class SFC extends Protocol {
 
     public void start() throws Exception {
         super.start();
+        if(!frag_size_received) {
+            log.warn("No fragmentation protocol was found. When flow control (e.g. FC or SFC) is used, we recommend " +
+                    "a fragmentation protocol, due to http://jira.jboss.com/jira/browse/JGRP-590");
+        }
         running=true;
     }
 
@@ -347,6 +362,21 @@ public class SFC extends Protocol {
         }
     }
 
+
+    private void handleInfo(Map<String,Object> map) {
+        if(map != null) {
+            Integer frag_size=(Integer)map.get("frag_size");
+            if(frag_size != null) {
+                if(frag_size > max_credits) {
+                    log.warn("The fragmentation size of the fragmentation protocol is " + frag_size +
+                            ", which is greater than the max credits. While this is not incorrect, " +
+                            "it may lead to long blockings. Frag size should be less than max_credits " +
+                            "(http://jira.jboss.com/jira/browse/JGRP-590)");
+                }
+                frag_size_received=true;
+            }
+        }
+    }
 
     private void handleMessage(Message msg, Address sender) {
         int len=msg.getLength(); // we don't care about headers, this is faster than size()

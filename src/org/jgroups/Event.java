@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.51 2007/08/30 10:07:13 belaban Exp $
+// $Id: Event.java,v 1.52 2007/09/07 11:42:45 belaban Exp $
 
 package org.jgroups;
 
@@ -52,6 +52,7 @@ public class Event {
     public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
     public static final int START_PARTITION                    = 82;  // arg = null;
     public static final int STOP_PARTITION                     = 83;  // arg = null;
+    public static final int INFO                               = 84;  // arg = Map<String,Object>
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -138,6 +139,7 @@ public class Event {
             case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
             case START_PARTITION:        return "START_PARTITION";
             case STOP_PARTITION:         return "STOP_PARTITION";
+            case INFO:                   return "INFO";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
