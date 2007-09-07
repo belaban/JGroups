@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.77 2007/09/03 06:14:48 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.78 2007/09/07 10:45:45 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -350,34 +350,38 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case Event.VIEW_CHANGE:
                 View v=(View) evt.getArg();
-                Vector<Address> new_mbrs=v.getMembers();
-                down_prot.down(evt);
+                final Vector<Address> new_mbrs=v.getMembers();
 
-                synchronized(this) {
-                    cache.keySet().retainAll(members); // remove all entries in 'cache' which are not in the new membership
-                    members.removeAllElements();
-                    members.addAll(new_mbrs);
-                    bcast_task.adjustSuspectedMembers(members);
-                    pingable_mbrs.removeAllElements();
-                    pingable_mbrs.addAll(members);
-                    if(log.isDebugEnabled()) log.debug("VIEW_CHANGE received: " + members);
+                Runnable reshuffleSockets=new Runnable() {
+                    public void run() {
+                        synchronized(FD_SOCK.this) {
+                            members.removeAllElements();
+                            members.addAll(new_mbrs);
+                            cache.keySet().retainAll(members); // remove all entries in 'cache' which are not in the new membership
+                            bcast_task.adjustSuspectedMembers(members);
+                            pingable_mbrs.removeAllElements();
+                            pingable_mbrs.addAll(members);
+                            if(log.isDebugEnabled()) log.debug("VIEW_CHANGE received: " + members);
 
-                    if(members.size() > 1) {
-                        if(pinger_thread != null && pinger_thread.isAlive()) {
-                            Address tmp_ping_dest=determinePingDest();
-                            if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
-                                interruptPingerThread(); // allows the thread to use the new socket
+                            if(members.size() > 1) {
+                                if(pinger_thread != null && pinger_thread.isAlive()) {
+                                    Address tmp_ping_dest=determinePingDest();
+                                    if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
+                                        interruptPingerThread(); // allows the thread to use the new socket
+                                    }
+                                }
+                                else
+                                    startPingerThread(); // only starts if not yet running
+                            }
+                            else {
+                                ping_dest=null;
+                                stopPingerThread();
                             }
                         }
-                        else
-                            startPingerThread(); // only starts if not yet running
                     }
-                    else {
-                        ping_dest=null;
-                        stopPingerThread();
-                    }
-                }
-                return null; // we already passed down the event above
+                };
+                timer.submit(reshuffleSockets);
+                break;
 
             default:
                 return down_prot.down(evt);
