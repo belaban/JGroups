@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.53 2007/07/06 07:24:00 belaban Exp $
+// $Id: ConnectionTable.java,v 1.54 2007/09/07 13:06:46 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -299,6 +299,13 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
 
                conn.init(); // starts handler thread on this socket
            }
+           catch(SocketTimeoutException timeout_ex) {
+               if(log.isWarnEnabled()) log.warn("timed out waiting for peer address, closing connection " + conn + ": " + timeout_ex);
+               if(conn != null)
+                   conn.destroy();
+               if(srv_sock == null)
+                   break;  // socket was closed, therefore stop
+           }
            catch(SocketException sock_ex) {
                if(log.isWarnEnabled()) log.warn("exception is " + sock_ex);
                if(conn != null)
@@ -330,7 +337,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    ret=new ServerSocket(start_port);
                else {
 
-                   ret=new ServerSocket(start_port, backlog, bind_addr);
+                   ret=new ServerSocket(start_port, backlog, null);
                }
            }
            catch(BindException bind_ex) {
