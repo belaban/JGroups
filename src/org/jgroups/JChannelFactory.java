@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.40 2007/06/25 07:06:11 belaban Exp $
+// $Id: JChannelFactory.java,v 1.41 2007/09/14 22:44:51 vlada Exp $
 
 package org.jgroups;
 
@@ -334,53 +334,101 @@ public class JChannelFactory implements ChannelFactory {
 
     public void connect(MuxChannel ch) throws ChannelException {
         Entry entry;
-        synchronized(channels) {
-            entry=channels.get(ch.getStackName());
+        synchronized(channels){
+            entry = channels.get(ch.getStackName());
         }
-        if(entry != null) {
-            synchronized(entry) {
-                if(entry.channel == null)
+        if(entry != null){
+            synchronized(entry){
+                if(entry.channel == null || entry.multiplexer == null)
                     throw new ChannelException("channel has to be created before it can be connected");
 
-                if(entry.multiplexer != null)
-                    entry.multiplexer.addServiceIfNotPresent(ch.getId(), ch);
-                
-                if(!entry.channel.isConnected()) {
+                entry.multiplexer.addServiceIfNotPresent(ch.getId(), ch);
+
+                if(!entry.channel.isConnected()){
                     entry.channel.connect(ch.getStackName());
-                    if(entry.multiplexer != null) {
-                        try {
-                            entry.multiplexer.fetchServiceInformation();
-                        }
-                        catch(Exception e) {
-                            if(log.isErrorEnabled())
-                                log.error("failed fetching service state", e);
-                        }
+                    try{
+                        entry.multiplexer.fetchServiceInformation();
+                    }catch(Exception e){
+                        if(log.isErrorEnabled())
+                            log.error("failed fetching service state", e);
                     }
                 }
-                if(entry.multiplexer != null) {
-                    try {
-                        Address addr=entry.channel.getLocalAddress();                   
-                        if(entry.channel.flushSupported()){
-                           boolean successfulFlush = entry.channel.startFlush(3000, false);
-                           if(!successfulFlush && log.isWarnEnabled()){
-                              log.warn("Flush failed at " + ch.getLocalAddress() + " " + ch.getId());
-                           }
+                try{
+                    Address addr = entry.channel.getLocalAddress();
+                    if(entry.channel.flushSupported()){
+                        boolean successfulFlush = entry.channel.startFlush(3000, false);
+                        if(!successfulFlush && log.isWarnEnabled()){
+                            log.warn("Flush failed at " + ch.getLocalAddress() + " " + ch.getId());
                         }
-                        entry.multiplexer.sendServiceUpMessage(ch.getId(), addr,true);
                     }
-                    catch(Exception e) {
-                        if(log.isErrorEnabled())
-                            log.error("failed sending SERVICE_UP message", e);
-                    }
-                    finally{              
-                       if(entry.channel.flushSupported())
-                          entry.channel.stopFlush();
-                    }
-                }                
+                    entry.multiplexer.sendServiceUpMessage(ch.getId(), addr, true);
+                }catch(Exception e){
+                    if(log.isErrorEnabled())
+                        log.error("failed sending SERVICE_UP message", e);
+                }finally{
+                    if(entry.channel.flushSupported())
+                        entry.channel.stopFlush();
+                }
             }
             ch.setClosed(false);
             ch.setConnected(true);
         }
+    }
+    
+    public void connect(MuxChannel ch, Address target, String state_id, long timeout) throws ChannelException {
+        boolean stateTransferOk = false;
+        Entry entry;
+        synchronized(channels){
+            entry = channels.get(ch.getStackName());
+        }
+        if(entry != null){
+            synchronized(entry){
+                if(entry.channel == null || entry.multiplexer == null)
+                    throw new ChannelException("channel has to be created before it can be connected");
+
+                entry.multiplexer.addServiceIfNotPresent(ch.getId(), ch);
+
+                if(!entry.channel.isConnected()){
+                    entry.channel.connect(ch.getStackName());
+                    try{
+                        entry.multiplexer.fetchServiceInformation();
+                    }catch(Exception e){
+                        if(log.isErrorEnabled())
+                            log.error("failed fetching service state", e);
+                    }
+                }
+                try{
+                    Address addr = entry.channel.getLocalAddress();
+                    if(entry.channel.flushSupported()){
+                        boolean successfulFlush = entry.channel.startFlush(3000, false);
+                        if(!successfulFlush && log.isWarnEnabled()){
+                            log.warn("Flush failed at " + ch.getLocalAddress() + " " + ch.getId());
+                        }
+                    }
+                    
+                    try{
+                        entry.multiplexer.sendServiceUpMessage(ch.getId(), addr, true);
+                    }catch(Exception e){
+                        if(log.isWarnEnabled()){
+                            log.warn("Failed sending SERVICE_UP message for " + ch);
+                        }
+                    }         
+                    View serviceView = entry.multiplexer.getServiceView(ch.getId());
+                    boolean fetchState = serviceView != null && serviceView.size() > 1;
+                    if(fetchState){
+                        stateTransferOk = ch.getState(target, state_id, timeout,false);
+                        if(!stateTransferOk){
+                            throw new StateTransferException("Could not retrieve state " + state_id + " from " + target);
+                        }
+                    }
+                }finally{
+                    if(entry.channel.flushSupported())
+                        entry.channel.stopFlush();
+                }
+            }
+            ch.setClosed(false);
+            ch.setConnected(true);
+        }            
     }
 
 
