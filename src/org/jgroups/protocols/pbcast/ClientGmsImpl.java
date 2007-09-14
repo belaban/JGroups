@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.54 2007/09/03 07:54:48 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.55 2007/09/14 08:22:33 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.54 $
+ * @version $Revision: 1.55 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -114,16 +114,14 @@ public class ClientGmsImpl extends GmsImpl {
                 Address new_coord=clients.iterator().next();
                 if(new_coord.equals(mbr)) {
                     if(log.isTraceEnabled())
-                        log.trace("I (" + mbr
-                                + ") am the first of the clients, will become coordinator");
+                        log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
                     becomeSingletonMember(mbr);
                     return;
                 }
                 else {
                     if(log.isTraceEnabled())
                         log.trace("I (" + mbr
-                                + ") am not the first of the clients, "
-                                + "waiting for another client to become coordinator");
+                                + ") am not the first of the clients, waiting for another client to become coordinator");
                     Util.sleep(500);
                 }
                 continue;
@@ -154,6 +152,10 @@ public class ClientGmsImpl extends GmsImpl {
                                     + ", digest=" + tmp_digest + ", skipping it");
                     }
                     else {
+                        if(!tmp_digest.contains(gms.local_addr)) {
+                            throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
+                                    gms.local_addr + "): join response: " + rsp);
+                        }
                         tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
                         tmp_digest.seal();
                         gms.setDigest(tmp_digest);
