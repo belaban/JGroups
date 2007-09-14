@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: IpAddressTest.java,v 1.2 2007/09/14 11:05:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -42,7 +42,7 @@ public class IpAddressTest extends TestCase {
     public void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
-            fail("should throw an UnknownHostException");
+            fail("should throw an UnknownHostException for " + tmp);
         }
         catch(UnknownHostException e1) {
         }
@@ -141,7 +141,7 @@ public class IpAddressTest extends TestCase {
     }
 
 
-    private void _testCompareTime(IpAddress one, IpAddress two, int num) {
+    private static void _testCompareTime(IpAddress one, IpAddress two, int num) {
         int rc=-99;
         long start=System.currentTimeMillis(), stop;
         for(int x=0; x < num; x++) {
@@ -240,8 +240,8 @@ public class IpAddressTest extends TestCase {
 
         assertEquals(a, a2);
         assertEquals(b, b2);
-        
-        assertTrue(a2.getAdditionalData() == null);
+
+        assertNull(a2.getAdditionalData());
         assertEquals("Bela Ban", new String(b2.getAdditionalData()));
     }
 
