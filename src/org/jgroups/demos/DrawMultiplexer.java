@@ -5,7 +5,7 @@ import org.jgroups.JChannelFactory;
 
 /**
  * @author Bela Ban
- * @version $Id: DrawMultiplexer.java,v 1.7 2007/03/02 14:18:56 belaban Exp $
+ * @version $Id: DrawMultiplexer.java,v 1.8 2007/09/14 22:44:50 vlada Exp $
  */
 public class DrawMultiplexer {
     JChannelFactory factory;
@@ -41,12 +41,10 @@ public class DrawMultiplexer {
 
         final Channel ch1, ch2;
         ch1=factory.createMultiplexerChannel(stack_name, "id-1");
-        Draw draw1=new Draw(ch1, state, 5000);
-        ch1.connect("bela");
+        Draw draw1=new Draw(ch1, state, 5000);        
 
         ch2=factory.createMultiplexerChannel(stack_name, "id-2");
-        Draw draw2=new Draw(ch2, state, 5000);
-        ch2.connect("ban");
+        Draw draw2=new Draw(ch2, state, 5000);        
 
         draw1.go();
         draw2.go();

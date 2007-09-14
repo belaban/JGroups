@@ -1,7 +1,6 @@
 package org.jgroups.mux;
 
 import org.jgroups.*;
-import org.jgroups.util.Util;
 import org.jgroups.stack.ProtocolStack;
 
 import java.io.Serializable;
@@ -12,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.34 2007/06/26 17:38:26 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.35 2007/09/14 22:44:51 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -136,10 +135,19 @@ public class MuxChannel extends JChannel {
         factory.connect(this);
         notifyChannelConnected(this);
     }
+ 
+    public synchronized void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
+        /*make sure the channel is not closed*/
+        checkClosed();
 
-
-    public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
-        throw new UnsupportedOperationException("not yet implemented");
+        /*if we already are connected, then ignore this*/
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            return;
+        }
+        
+        factory.connect(this,target,state_id,timeout);
+        notifyChannelConnected(this);                       
     }
 
     public synchronized void disconnect() {
@@ -229,6 +237,10 @@ public class MuxChannel extends JChannel {
     }
 
     public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+        return getState(target,state_id,timeout,true);
+    }
+    
+    public boolean getState(Address target, String state_id, long timeout,boolean useFlushIfPresent) throws ChannelNotConnectedException, ChannelClosedException {
         String my_id=id;
 
         if(state_id != null)
@@ -249,7 +261,7 @@ public class MuxChannel extends JChannel {
             target=null;
 
         if(!mux.stateTransferListenersPresent())
-            return ch.getState(target, my_id, timeout);
+            return ch.getState(target, my_id, timeout, useFlushIfPresent);
         else {
             return mux.getState(target, my_id, timeout);
         }

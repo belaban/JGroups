@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.147 2007/08/30 10:06:45 belaban Exp $
+ * @version $Id: JChannel.java,v 1.148 2007/09/14 22:44:51 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -381,10 +381,12 @@ public class JChannel extends Channel {
 
 
     /**
-     * Connects this channel to a group and gets a state from a specified state provider.
+     * Connects this channel to a group and gets a state from a specified state
+     * provider.
      * <p>
-     *
-     * This method essentially invokes <code>connect<code> and <code>getState<code> methods successively. 
+     * 
+     * This method essentially invokes
+     * <code>connect<code> and <code>getState<code> methods successively. 
      * If FLUSH protocol is in channel's stack definition only one flush is executed for both connecting and 
      * fetching state rather than two flushes if we invoke <code>connect<code> and <code>getState<code> in succesion. 
      *   
@@ -395,49 +397,75 @@ public class JChannel extends Channel {
      * @param cluster_name  the cluster name to connect to. Cannot be null.
      * @param target the state provider. If null state will be fetched from coordinator, unless this channel is coordinator.
      * @param state_id the substate id for partial state transfer. If null entire state will be transferred. 
-     * @param timeout the timeout for state transfer. 
-     * @return true if both connect and state transfer succeeded, false otherwise.
+     * @param timeout the timeout for state transfer.      
+     * 
      * @exception ChannelException The protocol stack cannot be started
+     * @exception ChannelException Connecting to cluster was not successful 
      * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      *                                   A new channel has to be created first.
-     * 
+     * @exception StateTransferException State transfer was not successful
+     *
      */
-    public synchronized boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
+    public synchronized void connect(String cluster_name,
+                                     Address target,
+                                     String state_id,
+                                     long timeout) throws ChannelException {
+
         startStack(cluster_name);
 
-        boolean stateTransferSuccessful=false;
-        boolean joinSuccessful=false;
+        boolean stateTransferOk = false;
+        boolean joinSuccessful = false;
         // only connect if we are not a unicast channel
-        if(cluster_name != null) {
-            
-            Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-            Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
-            joinSuccessful=!(res != null && res instanceof Exception);
+        if(cluster_name != null){
 
-            if(joinSuccessful) {
-                connected=true;
+            try{
+
+                Event connect_event = new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
+                Object res = downcall(connect_event); // waits forever until
+                // connected (or channel is
+                // closed)
+                joinSuccessful = !(res != null && res instanceof Exception);
+                if(!joinSuccessful){
+                    throw new ChannelException("connect() failed", (Throwable) res);
+                }
+
+                connected = true;
                 notifyChannelConnected(this);
-                try{
-                    stateTransferSuccessful=getState(target, state_id, timeout, false);
+                boolean canFetchState = getView() != null && getView().size() > 1;
+
+                // if I am not the only member in cluster then
+                if(canFetchState){
+                    try{
+                        // fetch state from target
+                        stateTransferOk = getState(target, state_id, timeout, false);
+                        if(!stateTransferOk){
+                            throw new StateTransferException(getLocalAddress() + " could not fetch state "
+                                                             + state_id
+                                                             + " from "
+                                                             + target);
+                        }
+                    }catch(Exception e){
+                        throw new StateTransferException(getLocalAddress() + " could not fetch state "
+                                                                 + state_id
+                                                                 + " from "
+                                                                 + target,e);
+                    }
                 }
-                finally{
-                    if(flush_supported)
-                        stopFlush();
-                }
-            }
-            else {
-                throw new ChannelException("connect() failed", (Throwable)res);
+
+            }finally{
+                if(flush_supported)
+                    stopFlush();
             }
         }
-        return joinSuccessful && stateTransferSuccessful;
-    }
+    }          
 
 
 
 
 
     /**
-     * Disconnects the channel if it is connected. If the channel is closed, this operation is ignored<BR>
+     * Disconnects the channel if it is connected. If the channel is closed,
+     * this operation is ignored<BR>
      * Otherwise the following actions happen in the listed order<BR>
      * <ol>
      * <li> The JChannel sends a DISCONNECT event down the protocol stack<BR>

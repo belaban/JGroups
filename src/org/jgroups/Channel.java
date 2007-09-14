@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.31 2007/04/02 07:10:16 belaban Exp $
+// $Id: Channel.java,v 1.32 2007/09/14 22:44:51 vlada Exp $
 
 package org.jgroups;
 
@@ -80,15 +80,23 @@ public abstract class Channel implements Transport {
 
     /**
      * Connects the channel to a group <em>and</em> fetches the state
+     * 
      * @param cluster_name
+     *            The name of the cluster to connect to.
      * @param target
-     * @param state_id The ID of a substate. If the full state is to be fetched, set this to null
+     *            The address of the member from which the state is to be
+     *            retrieved. If it is null, the state is retrieved from coordinator is contacted.
+     * @param state_id
+     *            The ID of a substate. If the full state is to be fetched, set
+     *            this parameter to null
      * @param timeout
-     * @return True if the state could be fetched, otherwise false. If true is returned, the state setting method (e.g.
-     * setState() will be called.
-     * @throws ChannelException
+     *            Milliseconds to wait for the state response (0 = wait indefinitely).
+     * 
+     * @throws ChannelException thrown if connecting to cluster was not successful 
+     * @throws StateTransferException thrown if state transfer was not successful
+     * 
      */
-    abstract public boolean connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;
+    abstract public void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;
 
 
     /** Disconnects the channel from the current group (if connected), leaving the group.
