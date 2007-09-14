@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.106.2.1 2006/12/04 22:47:16 vlada Exp $
+ * @version $Id: JChannel.java,v 1.106.2.2 2007/09/14 07:47:38 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -785,8 +785,8 @@ public class JChannel extends Channel {
                 break;
 
             case GET_STATE_EVENTS:
-                if(log.isWarnEnabled())
-                    log.warn("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
+                if(log.isTraceEnabled())
+                    log.trace("option GET_STATE_EVENTS has been deprecated (it is always true now); this option is ignored");
                 break;
 
             case LOCAL:
