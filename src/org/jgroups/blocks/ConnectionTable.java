@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.55 2007/09/07 13:08:42 belaban Exp $
+// $Id: ConnectionTable.java,v 1.56 2007/09/15 11:37:03 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -185,7 +185,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
         //Roland Kurmann 4/7/2003, put in thread_group
         acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
-        acceptor.setDaemon(true);
+        // acceptor.setDaemon(true);
         acceptor.start();
 
         // start the connection reaper - will periodically remove unused connections

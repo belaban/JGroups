@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.148 2007/08/28 13:07:21 belaban Exp $
+ * @version $Id: UDP.java,v 1.149 2007/09/15 11:37:37 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -766,7 +766,7 @@ public class UDP extends TP implements Runnable {
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
                 if(thread_naming_pattern != null)
                     thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);    
-                mcast_receiver.setDaemon(true);
+                // mcast_receiver.setDaemon(true);
                 mcast_receiver.start();
                 if(log.isDebugEnabled())
                 log.debug("created multicast receiver thread " + mcast_receiver);
@@ -869,7 +869,7 @@ public class UDP extends TP implements Runnable {
         public void start() {
             if(thread == null) {
                 thread=new Thread(Util.getGlobalThreadGroup(), this, UCAST_RECEIVER_THREAD_NAME);
-                thread.setDaemon(true);
+                // thread.setDaemon(true);
                 running=true;
                 thread.start();
             }
