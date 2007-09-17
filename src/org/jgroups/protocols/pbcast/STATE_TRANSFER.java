@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.75 2007/09/03 06:36:12 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.76 2007/09/17 07:03:35 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -34,7 +34,6 @@ public class STATE_TRANSFER extends Protocol {
     /** set to true while waiting for a STATE_RSP */
     boolean        waiting_for_state_response=false;
 
-    Digest         digest=null;
     final Map<String,Object>  map=new HashMap<String,Object>(); // to store configuration information
     long           start, stop; // to measure state transfer time
     int            num_state_reqs=0;
@@ -223,7 +222,7 @@ public class STATE_TRANSFER extends Protocol {
 		return !flushProtocolInStack;
 	}
 
-    private void requestApplicationStates(Address requester, boolean open_barrier) {
+    private void requestApplicationStates(Address requester, Digest digest, boolean open_barrier) {
         Set appl_ids=new HashSet(state_requesters.keySet());
         String id;
 
@@ -237,12 +236,12 @@ public class STATE_TRANSFER extends Protocol {
         if(open_barrier)
             down_prot.down(new Event(Event.OPEN_BARRIER));
         for(StateTransferInfo rsp: responses) {
-            sendApplicationStateResponse(rsp);
+            sendApplicationStateResponse(rsp, digest);
         }
     }
 
 
-    private void sendApplicationStateResponse(StateTransferInfo rsp) {
+    private void sendApplicationStateResponse(StateTransferInfo rsp, Digest digest) {
         byte[]          state=rsp.state;
         String          id=rsp.state_id;
         List<Message>   responses=null;
@@ -280,8 +279,10 @@ public class STATE_TRANSFER extends Protocol {
 
         if(responses != null && !responses.isEmpty()) {
             for(Message state_rsp: responses) {
-                if(log.isTraceEnabled())
-                    log.trace("sending state for ID=" + id + " to " + state_rsp.getDest() + " (" + state.length + " bytes)");
+                if(log.isTraceEnabled()) {
+                    int length=state != null? state.length : 0;
+                    log.trace("sending state for ID=" + id + " to " + state_rsp.getDest() + " (" + length + " bytes)");
+                }
                 down_prot.down(new Event(Event.MSG, state_rsp));
 
                 // This has to be done in a separate thread, so we don't block on FC
@@ -363,17 +364,17 @@ public class STATE_TRANSFER extends Protocol {
             requesters.add(sender);
 
             if(!isDigestNeeded()) { // state transfer is in progress, digest was already requested
-                requestApplicationStates(sender, false);
+                requestApplicationStates(sender, null, false);
             }
             else if(empty) {
                 if(!flushProtocolInStack) {
                     down_prot.down(new Event(Event.CLOSE_BARRIER));
                 }
-                digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
+                Digest digest=(Digest)down_prot.down(new Event(Event.GET_DIGEST));
                 if(log.isDebugEnabled())
                     log.debug("digest is " + digest + ", getting application state");
                 try {
-                    requestApplicationStates(sender, !flushProtocolInStack);
+                    requestApplicationStates(sender, digest, !flushProtocolInStack);
                 }
                 catch(Throwable t) {
                     if(log.isErrorEnabled())
@@ -441,6 +442,7 @@ public class STATE_TRANSFER extends Protocol {
         Address sender;             // sender of state STATE_REQ or STATE_RSP
         Digest  my_digest=null;     // digest of sender (if type is STATE_RSP)
         String  state_id=null;      // for partial state transfer
+        private static final long serialVersionUID=4457830093491204405L;
 
 
         public StateHeader() {  // for externalization
