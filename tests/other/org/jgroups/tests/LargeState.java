@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.28 2007/01/10 09:31:10 belaban Exp $
+// $Id: LargeState.java,v 1.29 2007/09/17 07:03:03 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -118,7 +118,7 @@ public class LargeState extends ExtendedReceiverAdapter {
         stop=System.currentTimeMillis();
         if(state != null) {
             this.state=state;
-            System.out.println("<-- Received state, size =" + state.length + " (took " + (stop-start) + "ms)");
+            System.out.println("<-- Received state, size=" + state.length + " (took " + (stop-start) + "ms)");
         }
         state_promise.setResult(Boolean.TRUE);
     }
