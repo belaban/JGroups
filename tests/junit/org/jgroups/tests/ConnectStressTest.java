@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.18 2007/07/02 15:57:17 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.19 2007/09/17 06:31:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.BrokenBarrierException;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.18 2007/07/02 15:57:17 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.19 2007/09/17 06:31:20 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier start_connecting=null;
@@ -25,7 +25,7 @@ public class ConnectStressTest extends TestCase {
     static CyclicBarrier  received_all_views=null;
     static CyclicBarrier  start_disconnecting=null;
     static CyclicBarrier  disconnected=null;
-    static final int      NUM=30;
+    static final int      NUM=20;
     static final MyThread[] threads=new MyThread[NUM];
     static JChannel       channel=null;
     static String         groupname="ConcurrentTestDemo";
