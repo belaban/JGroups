@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.145 2007/08/14 15:19:12 belaban Exp $
+ * @version $Id: UDP.java,v 1.144.2.1 2007/09/17 07:41:03 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -52,7 +52,7 @@ public class UDP extends TP implements Runnable {
     /**
      * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
      */
-    private static volatile BoundedList<Integer> last_ports_used=null;
+    private static volatile BoundedList last_ports_used=null;
 
     /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
      * If bind_port is > 0, then this option will be ignored */
@@ -572,7 +572,7 @@ public class UDP extends TP implements Runnable {
                 break;
             localPort=tmp.getLocalPort();
             if(last_ports_used == null)
-                last_ports_used=new BoundedList<Integer>(num_last_ports);
+                last_ports_used=new BoundedList(num_last_ports);
             if(last_ports_used.contains(new Integer(localPort))) {
                 if(log.isDebugEnabled())
                     log.debug("local port " + localPort + " already seen in this session; will try to get other port");
@@ -768,7 +768,7 @@ public class UDP extends TP implements Runnable {
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
                 if(thread_naming_pattern != null)
                     thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);    
-                mcast_receiver.setDaemon(true);
+                // mcast_receiver.setDaemon(true);
                 mcast_receiver.start();
                 if(log.isDebugEnabled())
                 log.debug("created multicast receiver thread " + mcast_receiver);
@@ -871,7 +871,7 @@ public class UDP extends TP implements Runnable {
         public void start() {
             if(thread == null) {
                 thread=new Thread(Util.getGlobalThreadGroup(), this, UCAST_RECEIVER_THREAD_NAME);
-                thread.setDaemon(true);
+                // thread.setDaemon(true);
                 running=true;
                 thread.start();
             }

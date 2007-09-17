@@ -390,7 +390,7 @@ public abstract class BasicConnectionTable {
            if(receiverThread == null || !receiverThread.isAlive()) {
                // Roland Kurmann 4/7/2003, put in thread_group
                receiverThread=new Thread(thread_group, this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");
-               receiverThread.setDaemon(true);
+               // receiverThread.setDaemon(true);
                receiverThread.start();
                if(log.isTraceEnabled())
                    log.trace("receiver started: " + receiverThread);
