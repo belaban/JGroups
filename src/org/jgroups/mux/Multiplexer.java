@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.66 2007/08/30 10:17:49 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.67 2007/09/17 07:47:02 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -318,7 +318,6 @@ public class Multiplexer implements UpHandler {
 
                 MuxChannel mux_ch=services.get(hdr.id);
                 if(mux_ch == null) {
-                    log.warn("service " + hdr.id + " not currently running, discarding message " + msg);
                     return null;
                 }
                 return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
