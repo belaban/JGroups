@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.67 2007/09/17 07:47:02 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.68 2007/09/18 14:56:49 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -333,20 +333,7 @@ public class Multiplexer implements UpHandler {
                     if(log.isTraceEnabled())
                         log.trace("received a MergeView: " + temp_merge_view + ", adjusting the service view");                    
                     try {                        
-                        Thread merge_handler=new Thread() {
-                            public void run() {
-                                try {
-                                    handleMergeView(temp_merge_view);
-                                }
-                                catch(Exception e) {
-                                    if(log.isErrorEnabled())
-                                        log.error("problems handling merge view", e);
-                                }
-                            }
-                        };
-                        merge_handler.setName("merge handler view_change");
-                        merge_handler.setDaemon(false);
-                        merge_handler.start();
+                        handleMergeView(temp_merge_view);                        
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
@@ -592,6 +579,7 @@ public class Multiplexer implements UpHandler {
         ServiceInfo si=new ServiceInfo(type, service, host, payload);
         MuxHeader hdr=new MuxHeader(si);
         Message service_msg=new Message();
+        service_msg.setFlag(Message.OOB);
         service_msg.putHeader(NAME, hdr);
         if(bypassFlush && flush_present)
            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
@@ -813,7 +801,8 @@ public class Multiplexer implements UpHandler {
         int num_members=view.size(); // include myself
         Map<Address, Set<String>> copy=null;
 
-        sendServiceState();
+        byte[] data=Util.objectToByteBuffer(new HashSet<String>(services.keySet()));
+        sendServiceMessage(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data);
 
         synchronized(service_responses) {
             start=System.currentTimeMillis();
