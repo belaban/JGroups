@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.165 2007/09/17 07:28:11 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.166 2007/09/18 13:45:18 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -596,7 +596,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                adjustReceivers(true);
+                adjustReceivers();
                 is_server=true;  // check vids from now on
 
                 Set<Address> tmp=new LinkedHashSet<Address>(members);
@@ -1083,21 +1083,19 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * entries from xmit_table that are not in <code>members</code>. This method is not called concurrently
      * multiple times
      */
-    private void adjustReceivers(boolean remove) {
+    private void adjustReceivers() {
         NakReceiverWindow win;
 
-        if(remove) {
-            // 1. Remove all senders in xmit_table that are not members anymore
-            for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
-                Address sender=it.next();
-                if(!members.contains(sender)) {
-                    win=xmit_table.get(sender);
-                    win.reset();
-                    if(log.isDebugEnabled()) {
-                        log.debug("removing " + sender + " from xmit_table (not member anymore)");
-                    }
-                    it.remove();
+        // 1. Remove all senders in xmit_table that are not members anymore
+        for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
+            Address sender=it.next();
+            if(!members.contains(sender)) {
+                win=xmit_table.get(sender);
+                win.reset();
+                if(log.isDebugEnabled()) {
+                    log.debug("removing " + sender + " from xmit_table (not member anymore)");
                 }
+                it.remove();
             }
         }
 
