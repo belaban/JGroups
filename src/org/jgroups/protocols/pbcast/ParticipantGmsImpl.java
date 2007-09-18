@@ -13,7 +13,7 @@ import java.util.LinkedHashSet;
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.28 2007/09/03 07:54:48 belaban Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.29 2007/09/18 20:05:21 vlada Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -85,11 +85,7 @@ public class ParticipantGmsImpl extends GmsImpl {
         }
     }
 
-    public void handleLeaveResponse() {
-        if(leave_promise == null) {
-            if(log.isErrorEnabled()) log.error("leave_promise is null");
-            return;
-        }
+    public void handleLeaveResponse() {       
         leave_promise.setResult(true);  // unblocks thread waiting in leave()
     }
 
