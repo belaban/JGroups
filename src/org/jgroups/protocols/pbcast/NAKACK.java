@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.166 2007/09/18 13:45:18 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.167 2007/09/18 14:46:14 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1186,6 +1186,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             win=createNakReceiverWindow(sender, initial_seqno, val.getLow());
             xmit_table.put(sender, win);
         }
+        if(!xmit_table.containsKey(local_addr)) {
+            if(log.isWarnEnabled()) {
+                log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
+            }
+        }
     }
 
 
@@ -1202,17 +1207,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        Map.Entry entry;
         Address sender;
         Digest.Entry val;
         NakReceiverWindow win;
         long highest_delivered_seqno, low_seqno;
 
-        for(Iterator it=digest.getSenders().entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            sender=(Address)entry.getKey();
-            val=(Digest.Entry)entry.getValue();
-
+        for(Map.Entry<Address, Digest.Entry> entry: digest.getSenders().entrySet()) {
+            sender=entry.getKey();
+            val=entry.getValue();
             if(sender == null || val == null) {
                 if(log.isWarnEnabled()) {
                     log.warn("sender or value is null");
@@ -1229,6 +1231,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
             else {
                 // don't touch existing entries as merges should be between non-overlapping memberships !
+            }
+        }
+        if(!xmit_table.containsKey(local_addr)) {
+            if(log.isWarnEnabled()) {
+                log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
             }
         }
     }
