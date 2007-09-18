@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.118 2007/09/04 15:00:47 belaban Exp $
+ * @version $Id: GMS.java,v 1.119 2007/09/18 20:28:35 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -611,18 +611,13 @@ public class GMS extends Protocol {
     	return (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
     }
 
-    void stopFlush(View view) {
-
-        //since we did not call startFlush on
-        //empty view do not call RESUME either
-        if(view != null && view.getMembers().isEmpty())
-           return;
-
-		if (log.isDebugEnabled()) {
-			log.debug("sending RESUME event");
-		}
-		up_prot.up(new Event(Event.RESUME));
-	}
+    void stopFlush() {
+       
+        if(log.isDebugEnabled()){
+            log.debug("sending RESUME event");
+        }
+        up_prot.up(new Event(Event.RESUME));
+    }
 
 
     public Object up(Event evt) {
@@ -679,7 +674,21 @@ public class GMS extends Protocol {
                         return null; // don't pass further up
 
                     case GmsHeader.MERGE_REQ:
-                        down_prot.down(new Event(Event.SUSPEND_STABLE, 20000));
+                        down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
+                        
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+                        if(flushProtocolInStack) {
+                           View v=new View(view_id.copy(), members.getMembers());
+                           boolean successfulFlush = startFlush(v,5000);
+                           if (successfulFlush){
+                               if(log.isTraceEnabled())
+                                  log.trace("Successful flush for merge from" + getLocalAddress());
+                           }
+                           else {
+                               if(log.isWarnEnabled())
+                                  log.warn("Flush for merge from " + getLocalAddress() + " failed");
+                           }                         
+                        }                                                                                                                   
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
@@ -695,6 +704,10 @@ public class GMS extends Protocol {
                         break;
 
                     case GmsHeader.CANCEL_MERGE:
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+                        if(flushProtocolInStack){                            
+                            stopFlush();
+                        }
                         impl.handleMergeCancelled(hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
@@ -1157,7 +1170,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.118 2007/09/04 15:00:47 belaban Exp $
+     * @version $Id: GMS.java,v 1.119 2007/09/18 20:28:35 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1344,23 +1357,14 @@ public class GMS extends Protocol {
                 case Request.VIEW:
                     if(requests.size() > 1)
                         log.error("more than one VIEW request to process, ignoring the others");
-                    try {
-                        if(flushProtocolInStack) {
-                           boolean successfulFlush = startFlush(firstReq.view,4000);
-                           if (successfulFlush){
-                               if(log.isTraceEnabled())
-                                  log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
-                           }
-                           else {
-                               if(log.isWarnEnabled())
-                                  log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
-                           }                         
-                        }
+                    
+                    try {                       
                         castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);
                     }
                     finally {
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
                         if(flushProtocolInStack)
-                            stopFlush(firstReq.view);
+                            stopFlush();
                     }
                     break;
                 default:

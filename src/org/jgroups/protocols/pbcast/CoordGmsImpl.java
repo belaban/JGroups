@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.74 2007/09/03 15:47:17 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.75 2007/09/18 20:28:35 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -447,7 +447,7 @@ public class CoordGmsImpl extends GmsImpl {
             if(joining_mbrs)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
             if(gms.flushProtocolInStack && !joinAndStateTransferInitiated)
-                gms.stopFlush(new_view);
+                gms.stopFlush();
             if(leaving) {
                 gms.initState(); // in case connect() is called again
             }
@@ -517,14 +517,15 @@ public class CoordGmsImpl extends GmsImpl {
         gms.getDownProtocol().down(new Event(Event.MSG, m));
     }
 
-    private void sendLeaveResponses(Collection c) {
-        for(Iterator i=c.iterator(); i.hasNext();) {
-            Message msg=new Message((Address)i.next(), null, null); // send an ack to the leaving member
+    private void sendLeaveResponses(Collection<Address> leaving_members) {
+        for(Address address:leaving_members){
+            Message msg=new Message(address, null, null); // send an ack to the leaving member
             msg.setFlag(Message.OOB);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.LEAVE_RSP);
             msg.putHeader(gms.getName(), hdr);
-            gms.getDownProtocol().down(new Event(Event.MSG, msg));
-        }
+            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO,address));
+            gms.getDownProtocol().down(new Event(Event.MSG, msg));              
+        }       
     }
 
 
