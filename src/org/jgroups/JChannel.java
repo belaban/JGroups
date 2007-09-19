@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.149 2007/09/15 12:03:38 belaban Exp $
+ * @version $Id: JChannel.java,v 1.150 2007/09/19 08:33:16 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1697,23 +1697,26 @@ public class JChannel extends Channel {
                     try {
                         if(log.isDebugEnabled()) log.debug("reconnecting to group " + old_cluster_name);
                         open();
-                    }
-                    catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
-                        return;
-                    }
-                    try {
                         if(additional_data != null) {
                             // send previously set additional_data down the stack - other protocols (e.g. TP) use it
                             Map<String,Object> m=new HashMap<String,Object>(additional_data);
                             down(new Event(Event.CONFIG, m));
                         }
-                        connect(old_cluster_name);
-                        notifyChannelReconnected(local_addr);
                     }
                     catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("failure reconnecting to channel: " + ex);
+                        if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
                         return;
+                    }
+
+                    while(!connected) {
+                        try {
+                            connect(old_cluster_name);
+                            notifyChannelReconnected(local_addr);
+                        }
+                        catch(Exception ex) {
+                            if(log.isErrorEnabled()) log.error("failure reconnecting to channel, retrying", ex);
+                            Util.sleep(1000); // sleep 1 sec between reconnect attempts
+                        }
                     }
                 }
 
