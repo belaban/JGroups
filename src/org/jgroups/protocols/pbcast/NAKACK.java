@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.167 2007/09/18 14:46:14 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.168 2007/09/19 15:56:55 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -512,7 +512,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public Vector<Integer> providedUpServices() {
         Vector<Integer> retval=new Vector<Integer>(5);
         retval.addElement(new Integer(Event.GET_DIGEST));
-        retval.addElement(new Integer(Event.GET_DIGEST_STABLE));
         retval.addElement(new Integer(Event.SET_DIGEST));
         retval.addElement(new Integer(Event.MERGE_DIGEST));
         return retval;
@@ -572,9 +571,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             case Event.GET_DIGEST:
                 return getDigest();
 
-            case Event.GET_DIGEST_STABLE:
-                return getDigestHighestDeliveredMsgs();
-
             case Event.SET_DIGEST:
                 setDigest((Digest)evt.getArg());
                 return null;
@@ -596,7 +592,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 mbrs=tmp_view.getMembers();
                 members.clear();
                 members.addAll(mbrs);
-                adjustReceivers();
+                adjustReceivers(members);
                 is_server=true;  // check vids from now on
 
                 Set<Address> tmp=new LinkedHashSet<Address>(members);
@@ -1083,13 +1079,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * entries from xmit_table that are not in <code>members</code>. This method is not called concurrently
      * multiple times
      */
-    private void adjustReceivers() {
+    private void adjustReceivers(List<Address> new_members) {
         NakReceiverWindow win;
 
         // 1. Remove all senders in xmit_table that are not members anymore
         for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
             Address sender=it.next();
-            if(!members.contains(sender)) {
+            if(!new_members.contains(sender)) {
                 win=xmit_table.get(sender);
                 win.reset();
                 if(log.isDebugEnabled()) {
@@ -1100,7 +1096,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         // 2. Add newly joined members to xmit_table (starting seqno=0)
-        for(Address sender: members) {
+        for(Address sender: new_members) {
             if(!xmit_table.containsKey(sender)) {
                 win=createNakReceiverWindow(sender, INITIAL_SEQNO, 0);
                 xmit_table.put(sender, win);
@@ -1110,7 +1106,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /**
-     * Returns a message digest: for each member P the highest seqno received from P is added to the digest.
+     * Returns a message digest: for each member P the lowest, highest delivered and highest received seqno is added
      */
     private Digest getDigest() {
         Digest.Entry entry;
@@ -1129,29 +1125,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return new Digest(map);
     }
 
-
-    /**
-     * Returns a message digest: for each member P the highest seqno received from P <em>without a gap</em> is added to
-     * the digest. E.g. if the seqnos received from P are [+3 +4 +5 -6 +7 +8], then 5 will be returned. Also, the
-     * highest seqno <em>seen</em> is added. The max of all highest seqnos seen will be used (in STABLE) to determine
-     * whether the last seqno from a sender was received (see "Last Message Dropped" topic in DESIGN).
-     */
-    private Digest getDigestHighestDeliveredMsgs() {
-        Digest.Entry entry;
-
-        Map<Address,Digest.Entry> map=new HashMap<Address,Digest.Entry>(members.size());
-        for(Address sender: members) {
-            entry=getEntry(sender);
-            if(entry == null) {
-                if(log.isErrorEnabled()) {
-                    log.error("range is null");
-                }
-                continue;
-            }
-            map.put(sender, entry);
-        }
-        return new Digest(map);
-    }
 
 
     /**
