@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.3 2007/09/19 10:14:48 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.4 2007/09/19 12:40:53 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -86,7 +86,7 @@ public class ConnectionTableTest extends TestCase {
         Util.sleep(100);
 
         int num_conns;
-        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        System.out.println("ct1: " + ct1 + "ct2: " + ct2);
         num_conns=ct1.getNumConnections();
         assertEquals(0, num_conns);
         num_conns=ct2.getNumConnections();

@@ -426,6 +426,8 @@ public abstract class BasicConnectionTable {
            if(tmp != null) {
                Util.interruptAndWaitToDie(tmp);
            }
+
+           conn_creations.decrementAndGet();
        }
 
 
