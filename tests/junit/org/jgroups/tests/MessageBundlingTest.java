@@ -12,7 +12,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.5 2007/05/04 11:47:59 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.6 2007/09/19 18:13:12 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -68,7 +68,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
-        assertTrue("latency (" + diff + "ms) should be less than " + LATENCY + " ms", diff < LATENCY);
+        assertTrue("latency (" + diff + "ms) should be less than " + LATENCY + " ms", diff <= LATENCY);
     }
 
 
@@ -87,7 +87,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
         assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
-                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
+                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff >= LATENCY && diff <= LATENCY * 2);
     }
 
 
@@ -109,7 +109,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
         assertTrue("latency (" + diff + "ms) should be more than the bundling timeout (" + LATENCY +
-                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff > LATENCY && diff < LATENCY * 2);
+                "ms), but less than 2 times the LATENCY (" + LATENCY *2 + ")", diff >= LATENCY && diff <= LATENCY * 2);
     }
 
 
