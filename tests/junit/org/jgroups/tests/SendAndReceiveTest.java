@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.5 2007/08/20 11:15:39 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.6 2007/09/19 20:20:33 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -28,7 +28,7 @@ public class SendAndReceiveTest extends TestCase {
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400,4800):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
+            "FRAG(frag_size=8096):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=true)";
 
@@ -42,7 +42,7 @@ public class SendAndReceiveTest extends TestCase {
                 "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
                 "UNICAST(timeout=600,1200,2400,4800):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
+                "FRAG(frag_size=8096):" +
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
                 "shun=false;print_local_addr=true)";
 
@@ -54,7 +54,7 @@ public class SendAndReceiveTest extends TestCase {
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400,4800):" +
              "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
+            "FRAG(frag_size=8096):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=true)";
 

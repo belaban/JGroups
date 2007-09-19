@@ -1,4 +1,4 @@
-// $Id: DistributedQueueTest.java,v 1.9 2006/08/13 09:05:10 mimbert Exp $
+// $Id: DistributedQueueTest.java,v 1.10 2007/09/19 20:20:34 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -41,7 +41,7 @@ public class DistributedQueueTest extends TestCase
                 "FD_SOCK:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
                 "UNICAST(timeout=600,1200,2000,2500):" +
-                "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
+                "FRAG(frag_size=8096):" +
                 "TOTAL_TOKEN(unblock_sending=10;block_sending=50):" +
                 "pbcast.GMS(print_local_addr=true;join_timeout=3000;join_retry_timeout=2000;shun=true):" +
                 "STATE_TRANSFER:" +
