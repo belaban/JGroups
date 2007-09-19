@@ -1,10 +1,11 @@
-// $Id: TCP.java,v 1.40 2007/09/04 12:25:42 belaban Exp $
+// $Id: TCP.java,v 1.41 2007/09/19 07:50:44 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
 import org.jgroups.blocks.ConnectionTable;
+import org.jgroups.blocks.BasicConnectionTable;
 import org.jgroups.stack.IpAddress;
 
 import java.net.InetAddress;
@@ -23,7 +24,7 @@ import java.util.Properties;
  * registers with the connection table to receive all incoming messages.
  * @author Bela Ban
  */
-public class TCP extends BasicTCP implements ConnectionTable.Receiver {
+public class TCP extends BasicTCP implements ConnectionTable.Receiver, BasicConnectionTable.ConnectionListener {
     private ConnectionTable ct=null;
 
 
@@ -43,7 +44,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
     /** Setup the Protocol instance acording to the configuration string */
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             log.error("the following properties are not recognized: " + props);
             return false;
         }
@@ -60,6 +61,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
 
     public void start() throws Exception {
         ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
+        ct.addConnectionListener(this);
         ct.setUseSendQueues(use_send_queues);
         ct.setSendQueueSize(send_queue_size);
         // ct.addConnectionListener(this);
@@ -115,6 +117,12 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver {
    }
 
 
+    public void connectionOpened(Address peer_addr) {
+    }
 
-
+    public void connectionClosed(Address peer_addr) {
+        if(log.isTraceEnabled())
+            log.trace("removing connection to " + peer_addr + " from connection table as peer closed connection");
+        ct.remove(peer_addr);
+    }
 }
