@@ -16,6 +16,7 @@ import java.net.SocketException;
 import java.util.*;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -56,6 +57,8 @@ public abstract class BasicConnectionTable {
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
     boolean             running=false;
+    /** Total number of Connections created for this connection table */
+    static AtomicInteger conn_creations=new AtomicInteger(0);
 
     final static long   MAX_JOIN_TIMEOUT=Global.THREAD_SHUTDOWN_WAIT_TIME;
 
@@ -64,44 +67,44 @@ public abstract class BasicConnectionTable {
         receiver=r;
     }
 
-   public void addConnectionListener(ConnectionListener l) {
-       if(l != null && !conn_listeners.contains(l))
-           conn_listeners.addElement(l);
-   }
+    public void addConnectionListener(ConnectionListener l) {
+        if(l != null && !conn_listeners.contains(l))
+            conn_listeners.addElement(l);
+    }
 
-   public void removeConnectionListener(ConnectionListener l) {
-       if(l != null) conn_listeners.removeElement(l);
-   }
+    public void removeConnectionListener(ConnectionListener l) {
+        if(l != null) conn_listeners.removeElement(l);
+    }
 
-   public Address getLocalAddress() {
-       if(local_addr == null)
-           local_addr=bind_addr != null ? new IpAddress(bind_addr, srv_port) : null;
-       return local_addr;
-   }
+    public Address getLocalAddress() {
+        if(local_addr == null)
+            local_addr=bind_addr != null ? new IpAddress(bind_addr, srv_port) : null;
+        return local_addr;
+    }
 
-   public int getSendBufferSize() {
-       return send_buf_size;
-   }
+    public int getSendBufferSize() {
+        return send_buf_size;
+    }
 
-   public void setSendBufferSize(int send_buf_size) {
-       this.send_buf_size=send_buf_size;
-   }
+    public void setSendBufferSize(int send_buf_size) {
+        this.send_buf_size=send_buf_size;
+    }
 
-   public int getReceiveBufferSize() {
-       return recv_buf_size;
-   }
+    public int getReceiveBufferSize() {
+        return recv_buf_size;
+    }
 
-   public void setReceiveBufferSize(int recv_buf_size) {
-       this.recv_buf_size=recv_buf_size;
-   }
+    public void setReceiveBufferSize(int recv_buf_size) {
+        this.recv_buf_size=recv_buf_size;
+    }
 
-   public int getSocketConnectionTimeout() {
-       return sock_conn_timeout;
-   }
+    public int getSocketConnectionTimeout() {
+        return sock_conn_timeout;
+    }
 
-   public void setSocketConnectionTimeout(int sock_conn_timeout) {
-       this.sock_conn_timeout=sock_conn_timeout;
-   }
+    public void setSocketConnectionTimeout(int sock_conn_timeout) {
+        this.sock_conn_timeout=sock_conn_timeout;
+    }
 
     public int getPeerAddressReadTimeout() {
         return peer_addr_read_timeout;
@@ -112,8 +115,12 @@ public abstract class BasicConnectionTable {
     }
 
     public int getNumConnections() {
-       return conns.size();
-   }
+        return conns.size();
+    }
+
+    public static int getNumberOfConnectionCreations() {
+        return conn_creations.intValue();
+    }
 
     public boolean getTcpNodelay() {
         return tcp_nodelay;
@@ -133,7 +140,7 @@ public abstract class BasicConnectionTable {
 
     public boolean getUseSendQueues() {return use_send_queues;}
 
-   public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
+    public void setUseSendQueues(boolean flag) {this.use_send_queues=flag;}
 
     public int getSendQueueSize() {
         return send_queue_size;
@@ -144,18 +151,18 @@ public abstract class BasicConnectionTable {
     }
 
     public void start() throws Exception {
-       running=true;
-   }
+        running=true;
+    }
 
-   public void stop() {
-       running=false;
-   }
+    public void stop() {
+        running=false;
+    }
 
-   /**
-    Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
-    */
-   public void remove(Address addr) {
-       Connection conn;
+    /**
+     Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
+     */
+    public void remove(Address addr) {
+        Connection conn;
 
        synchronized(conns) {
            conn=conns.remove(addr);
@@ -372,6 +379,7 @@ public abstract class BasicConnectionTable {
                in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
                if(sender != null)
                    sender.start();
+               conn_creations.incrementAndGet();
            }
            catch(Exception ex) {
                if(log.isErrorEnabled()) log.error("exception is " + ex);
