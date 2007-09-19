@@ -18,9 +18,9 @@ import org.jgroups.util.Util;
 /**
  * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225).
  * Note that on Mac OS, FRAG2.frag_size and max_bundling_size in the transport should be less than 16'000 due to
- * http://jira.jboss.com/jira/browse/JGRP-561
+ * http://jira.jboss.com/jira/browse/JGRP-560
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.5 2007/09/19 08:41:05 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.6 2007/09/19 08:41:26 belaban Exp $
  */
 public class LargeStateTransferTest extends TestCase {
     JChannel provider, requester;
