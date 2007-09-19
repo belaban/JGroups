@@ -1,6 +1,6 @@
 
 
-// Version: $Id: ConcurrentConnectionEstablishment.txt,v 1.1 2007/09/19 11:19:32 belaban Exp $
+// Version: $Id: ConcurrentConnectionEstablishment.txt,v 1.2 2007/09/19 12:41:37 belaban Exp $
 // Author: Bela Ban
 
 
@@ -33,12 +33,11 @@ Let's assume our own address is A
 On connect to B:
 ----------------
 
-- Add entry B:null into the connection table (CT)
 - connect(B)
 - If connect(B) fails: close connection to B
 - Else:
     - Lock CT
-    - If value for B is null: replace value with newly established connection
+    - If B not in CT: add key/value with newly established connection
     - Else:
         - If B's address > A's address --> remove the existing entry for B (closing the connection !) and add
           the newly created connection for B to the CT
@@ -51,7 +50,7 @@ On connection accept from B:
 ----------------------------
 
 - Lock CT
-- If there is no key for B, or the associated value is null, we create a connection for B and add it to the CT
+- If there is no key for B, we create a connection for B and add it to the CT
   - Else:
       - If B's address > A's address --> remove the existing entry for B (closing the connection !) and add
         the newly created connection for B to the CT
