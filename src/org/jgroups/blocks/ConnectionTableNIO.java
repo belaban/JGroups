@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.32 2007/07/06 08:07:05 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.33 2007/09/19 07:39:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -378,7 +378,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
            reaper.stop();
 
       // Stop the main selector
-      m_acceptSelector.wakeup();
+      if(m_acceptSelector != null)
+          m_acceptSelector.wakeup();
 
       // Stop selector threads
       for (int i = 0; i < m_readHandlers.length; i++)
