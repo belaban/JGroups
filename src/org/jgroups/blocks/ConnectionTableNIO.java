@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.34 2007/09/19 07:43:27 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.35 2007/09/19 12:24:30 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -226,11 +226,6 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          conn = (Connection) conns.get(dest);
          if (conn == null)
          {
-//Thread.dumpStack();
-//System.out.println("getconnection failed to find " + ((IpAddress)dest).toString() + " conns size= "+conns.size());
-// for(Iterator iter = conns.keySet().iterator(); iter.hasNext(); ) {
-//     System.out.println("keyset key=" + iter.next());
-// }
             InetSocketAddress destAddress = new InetSocketAddress(((IpAddress) dest).getIpAddress(),
                ((IpAddress) dest).getPort());
             sock_ch = SocketChannel.open(destAddress);
@@ -506,31 +501,33 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
                    conn=new Connection(client_sock_ch, null);
                    try {
-                       conn.peer_addr=conn.readPeerAddress(client_sock_ch.socket());
+                       Address peer_addr=conn.readPeerAddress(client_sock_ch.socket());
+                       conn.peer_addr=peer_addr;
                        synchronized(conns) {
-                           if(conns.containsKey(conn.getPeerAddress())) {
-                               if(log.isTraceEnabled())
-                                   log.trace(conn.peer_addr + " is already there, will reuse connection");
-                               continue;
-
-//
-//                               if(conn.getPeerAddress().equals(getLocalAddress())) {
-//                                   if(log.isTraceEnabled())
-//                                       log.trace(conn.getPeerAddress() + " is myself, not put it in table twice, but still read from it");
-//                               }
-//                               else {
-//                                   if(log.isWarnEnabled())
-//                                       log.warn(conn.getPeerAddress() + " is already there, will terminate connection");
-//                                   // keep existing connection, close this new one
-//                                   conn.destroy();
-//                                   continue;
-//                               }
+                           Connection tmp=(Connection)conns.get(peer_addr);
+                           if(tmp != null) {
+                               if(peer_addr.compareTo(local_addr) > 0) {
+                                   if(log.isTraceEnabled())
+                                       log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
+                                               local_addr + "), replacing our existing connection");
+                                   // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
+                                   addConnection(peer_addr,  conn);
+                                   tmp.destroy();
+                                   notifyConnectionOpened(peer_addr);
+                               }
+                               else {
+                                   if(log.isTraceEnabled())
+                                       log.trace("peer's address (" + peer_addr + ") is smaller than our local address (" +
+                                               local_addr + "), rejecting peer connection request");
+                                   conn.destroy();
+                                   continue;
+                               }
                            }
                            else {
-                               addConnection(conn.getPeerAddress(), conn);
+                               addConnection(peer_addr, conn);
                            }
                        }
-                       notifyConnectionOpened(conn.getPeerAddress());
+                       notifyConnectionOpened(peer_addr);
                        client_sock_ch.configureBlocking(false);
                    }
                    catch(IOException e) {
