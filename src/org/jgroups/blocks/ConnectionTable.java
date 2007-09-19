@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.57 2007/09/19 10:15:16 belaban Exp $
+// $Id: ConnectionTable.java,v 1.58 2007/09/19 12:41:28 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -284,11 +284,24 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                conn.setPeerAddress(peer_addr);
 
                synchronized(conns) {
-                   if(conns.containsKey(peer_addr)) {
-                       if(log.isTraceEnabled())
-                           log.trace(peer_addr + " is already there, will reuse connection");
-                       //conn.destroy();
-                       //continue; // return; // we cannot terminate the thread (bela Sept 2 2004)
+                   Connection tmp=conns.get(peer_addr);
+                   if(tmp != null) {
+                       if(peer_addr.compareTo(local_addr) > 0) {
+                           if(log.isTraceEnabled())
+                               log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
+                                       local_addr + "), replacing our existing connection");
+                           // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
+                           addConnection(peer_addr,  conn);
+                           tmp.destroy();
+                           notifyConnectionOpened(peer_addr);
+                       }
+                       else {
+                           if(log.isTraceEnabled())
+                               log.trace("peer's address (" + peer_addr + ") is smaller than our local address (" +
+                                       local_addr + "), rejecting peer connection request");
+                           conn.destroy();
+                           continue;
+                       }
                    }
                    else {
                        // conns.put(peer_addr, conn);
