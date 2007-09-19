@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.52 2007/09/07 11:42:45 belaban Exp $
+// $Id: Event.java,v 1.53 2007/09/19 15:55:42 belaban Exp $
 
 package org.jgroups;
 
@@ -33,7 +33,6 @@ public class Event {
     public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
     public static final int MERGE_DIGEST                       = 53;  // arg = Digest
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
-    public static final int GET_DIGEST_STABLE                  = 57;
     public static final int SUSPEND_STABLE                     = 65;  // arg = Long (max_suspend_time)
     public static final int RESUME_STABLE                      = 66;  // arg = null
     public static final int ENABLE_UNICASTS_TO                 = 67;  // arg = Address (member)
@@ -120,7 +119,6 @@ public class Event {
             case UNSUSPECT:              return "UNSUSPECT";
             case MERGE_DIGEST:           return "MERGE_DIGEST";
             case CONFIG:                 return "CONFIG";
-            case GET_DIGEST_STABLE:      return "GET_DIGEST_STABLE";
             case SUSPEND_STABLE:         return "SUSPEND_STABLE";
             case RESUME_STABLE:          return "RESUME_STABLE";
             case ENABLE_UNICASTS_TO:     return "ENABLE_UNICASTS_TO";
@@ -147,7 +145,6 @@ public class Event {
 
     public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
-    public static final Event GET_DIGEST_STABLE_EVT = new Event(Event.GET_DIGEST_STABLE);
 
     public String toString() {
         StringBuilder ret=new StringBuilder(64);
