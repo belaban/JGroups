@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.33 2007/09/19 07:39:59 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.34 2007/09/19 07:43:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -382,29 +382,35 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
           m_acceptSelector.wakeup();
 
       // Stop selector threads
-      for (int i = 0; i < m_readHandlers.length; i++)
-      {
-         try
-         {
-            m_readHandlers[i].add(new Shutdown());
-         } catch (InterruptedException e)
-         {
-            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
-         }
-      }
-      for (int i = 0; i < m_writeHandlers.length; i++)
-      {
-         try
-         {
-            m_writeHandlers[i].queue.put(new Shutdown());
-            m_writeHandlers[i].selector.wakeup();
-         } catch (InterruptedException e)
-         {
-            log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
-         }
-      }
+       if(m_readHandlers != null)
+       {
+           for (int i = 0; i < m_readHandlers.length; i++)
+           {
+               try
+               {
+                   m_readHandlers[i].add(new Shutdown());
+               } catch (InterruptedException e)
+               {
+                   log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
+               }
+           }
+       }
+       if(m_writeHandlers != null)
+       {
+           for (int i = 0; i < m_writeHandlers.length; i++)
+           {
+               try
+               {
+                   m_writeHandlers[i].queue.put(new Shutdown());
+                   m_writeHandlers[i].selector.wakeup();
+               } catch (InterruptedException e)
+               {
+                   log.error("Thread ("+Thread.currentThread().getName() +") was interrupted, failed to shutdown selector", e);
+               }
+           }
+       }
 
-      // Stop the callback thread pool
+       // Stop the callback thread pool
       if(m_requestProcessors instanceof ThreadPoolExecutor)
          ((ThreadPoolExecutor)m_requestProcessors).shutdownNow();
 
