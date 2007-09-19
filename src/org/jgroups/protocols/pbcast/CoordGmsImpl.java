@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.75 2007/09/18 20:28:35 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.76 2007/09/19 15:10:27 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -391,34 +391,9 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);
-        try {
-            // we cannot garbage collect during joining a new member *if* we're the only member
-            // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
-            // in the digest returned to the client, so the client will *not* be able to ask for retransmission
-            // of those messages if he misses them
-            if(joining_mbrs) {
-                gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
-                Digest tmp=gms.getDigest(); // get existing digest
-                MutableDigest join_digest=null;
-                if(tmp == null)
-                    log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
-                else {
-                    // create a new digest, which contains the new member
-                    join_digest=new MutableDigest(tmp.size() + new_mbrs.size());
-                    join_digest.add(tmp); // add the existing digest to the new one
-                    for(Iterator i=new_mbrs.iterator(); i.hasNext();)
-                        join_digest.add((Address)i.next(), 0, 0); // ... and add the new members. their first seqno will be 1
-                }
-                join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
-            }
-
-            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
-
-            Vector<Address> tmp_mbrs=new_view != null? new Vector<Address>(new_view.getMembers()) : null;
-            if(gms.flushProtocolInStack) {
-                // First we flush current members. Then we send a view to all joining member and we wait for their ACKs
-                // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
-                // (below in finally clause) and members are allowed to send messages again                                      
+                
+        try {            
+            if(gms.flushProtocolInStack) {                                                
                 boolean successfulFlush=gms.startFlush(new_view, 4000);
                 if(successfulFlush) {
                     if(log.isTraceEnabled())
@@ -428,6 +403,37 @@ public class CoordGmsImpl extends GmsImpl {
                     if(log.isWarnEnabled())
                         log.warn("GMS flush by coordinator at " + gms.getLocalAddress() + " failed");
                 }
+            }
+            
+            // we cannot garbage collect during joining a new member *if* we're the only member
+            // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
+            // in the digest returned to the client, so the client will *not* be able to ask for retransmission
+            // of those messages if he misses them
+            if(joining_mbrs) {
+                gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
+                Digest tmp=gms.getDigest(); // get existing digest
+                MutableDigest join_digest=null;
+                if(tmp == null){
+                    log.error("received null digest from GET_DIGEST: will cause JOIN to fail");
+                }
+                else {
+                    // create a new digest, which contains the new member
+                    join_digest=new MutableDigest(tmp.size() + new_mbrs.size());
+                    join_digest.add(tmp); // add the existing digest to the new one
+                    for(Address member:new_mbrs)
+                        join_digest.add(member, 0, 0); // ... and add the new members. their first seqno will be 1
+                }
+                join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
+            }
+
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
+
+            Vector<Address> tmp_mbrs=new_view != null? new Vector<Address>(new_view.getMembers()) : null;
+            if(gms.flushProtocolInStack) {
+                // We already flushed current members. Send a view to all joining member and we wait for their ACKs
+                // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
+                // (below in finally clause) and members are allowed to send messages again                                      
+               
                 sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
                 gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
             }
