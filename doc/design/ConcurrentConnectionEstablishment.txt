@@ -1,0 +1,59 @@
+
+
+// Version: $Id: ConcurrentConnectionEstablishment.txt,v 1.1 2007/09/19 11:19:32 belaban Exp $
+// Author: Bela Ban
+
+
+
+Concurrent initial connection establishment in ConnectionTable
+==============================================================
+
+[JIRA: http://jira.jboss.com/jira/browse/JGRP-549]
+
+If we have members A and B, and they don't yet have connections to each other, and start sending messages to each other
+at the exact same time, then we run into the following scenario:
+- A attempts to connect to B (new Socket())
+- B attempts to connect to A
+- A accepts B's connection and adds an entry for B into its table
+- B adds an entry for A into its table
+- B gets the accept() from A, but doesn't add the new Connection into its table because there is already a Connection.
+  This leads to a spurious Connection object, which will only be closed and garbage collected once A or B leaves the cluster
+- We used to close Connections which were already in the table, but this lead to ping-pong effects where concurrent
+  initial senders always closed each others connections
+- Even worse: a new Socket() always creates a new Connection object and places it into the table, *regardless* of
+  whether a Connection for a given destination already exists or not !
+
+
+SOLUTION:
+
+We need to have a deterministic algorithm to pick a 'winner' for concurrent connections.
+
+Let's assume our own address is A
+
+On connect to B:
+----------------
+
+- Add entry B:null into the connection table (CT)
+- connect(B)
+- If connect(B) fails: close connection to B
+- Else:
+    - Lock CT
+    - If value for B is null: replace value with newly established connection
+    - Else:
+        - If B's address > A's address --> remove the existing entry for B (closing the connection !) and add
+          the newly created connection for B to the CT
+        - Else close the connection which resulted from connect to B
+    - Unlock CT
+
+
+
+On connection accept from B:
+----------------------------
+
+- Lock CT
+- If there is no key for B, or the associated value is null, we create a connection for B and add it to the CT
+  - Else:
+      - If B's address > A's address --> remove the existing entry for B (closing the connection !) and add
+        the newly created connection for B to the CT
+      - Else close the connection which resulted from accept(B)
+- Unlock CT
