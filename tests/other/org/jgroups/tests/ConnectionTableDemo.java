@@ -1,4 +1,4 @@
-// $Id: ConnectionTableDemo.java,v 1.1 2006/09/14 08:11:41 belaban Exp $
+// $Id: ConnectionTableDemo.java,v 1.2 2007/09/19 07:45:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -117,13 +117,13 @@ public class ConnectionTableDemo implements ConnectionTable.Receiver, Connection
             }
         }
         catch(Exception ex) {
-            System.err.println("ConnectionTableTest.main(): " + ex);
+            System.err.println("ConnectionTableDemo.main(): " + ex);
         }
     }
 
 
     static void help() {
-        System.out.println("ConnectionTableTest [-help] [-local_port <port>] [-remote_host <host>] " +
+        System.out.println("ConnectionTableDemo [-help] [-local_port <port>] [-remote_host <host>] " +
                            "[-remote_port <port>] [-reaper_interval <interval (msecs)>] " +
                            "[-conn_expire_time <time (msecs)>]");
     }
