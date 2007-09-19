@@ -15,7 +15,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.3 2006/12/31 14:53:38 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.4 2007/09/19 20:20:33 vlada Exp $
  */
 public class DisconnectStressTest extends TestCase {
     static CyclicBarrier all_disconnected=null;
@@ -35,10 +35,10 @@ public class DisconnectStressTest extends TestCase {
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
             "UNICAST(timeout=300,600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=5000):" +
-            "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
+            "FRAG(frag_size=4096):" +
             "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
             "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
-            "digest_timeout=0;merge_timeout=30000;handle_concurrent_startup=true)";
+            "merge_timeout=30000;handle_concurrent_startup=true)";
 
 
 

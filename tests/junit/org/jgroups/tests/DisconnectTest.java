@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.11 2006/10/23 16:16:20 belaban Exp $
+// $Id: DisconnectTest.java,v 1.12 2007/09/19 20:20:33 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -50,13 +50,11 @@ public class DisconnectTest extends TestCase {
                 "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
                 "PING(gossip_host=127.0.0.1;gossip_port=" + gossipPort + "):" +
                 "FD:" +
-                "VERIFY_SUSPECT(timeout=1500;down_thread=false;up_thread=false):" +
-                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000;" +
-                "down_thread=true;up_thread=true):" +
-                "pbcast.STABLE(desired_avg_gossip=20000;down_thread=false;" +
-                "up_thread=false):" +
+                "VERIFY_SUSPECT(timeout=1500):" +
+                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000):" +                
+                "pbcast.STABLE(desired_avg_gossip=20000):" +                
                 "pbcast.GMS(join_timeout=50000;join_retry_timeout=2000;shun=false;" +
-                "print_local_addr=true;down_thread=true;up_thread=true)";
+                "print_local_addr=true)";
     }
 
     /**
