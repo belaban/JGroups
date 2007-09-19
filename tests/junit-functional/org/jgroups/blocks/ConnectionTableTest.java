@@ -1,5 +1,6 @@
 package org.jgroups.blocks;
 
+import static org.jgroups.blocks.BasicConnectionTable.getNumberOfConnectionCreations;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -9,14 +10,13 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.*;
 
 
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2 2007/08/08 10:34:24 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.3 2007/09/19 10:14:48 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -61,6 +61,77 @@ public class ConnectionTableTest extends TestCase {
             ct1=null;
         }
         super.tearDown();
+    }
+
+    /**
+     * A connects to B and B connects to A at the same time. This test makes sure we only have <em>one</em> connection,
+     * not two, e.g. a spurious connection. Tests http://jira.jboss.com/jira/browse/JGRP-549
+     */
+    public void testConcurrentConnect() throws Exception {
+        Sender sender1, sender2;
+        CyclicBarrier barrier=new CyclicBarrier(3);
+
+        ct1=new ConnectionTable(loopback_addr, PORT1);
+        ct2=new ConnectionTable(loopback_addr, PORT2);
+        BasicConnectionTable.Receiver dummy=new BasicConnectionTable.Receiver() {
+            public void receive(Address sender, byte[] data, int offset, int length) {}
+        };
+        ct1.setReceiver(dummy);
+        ct2.setReceiver(dummy);
+
+        sender1=new Sender((ConnectionTable)ct1, barrier, addr2, 0);
+        sender2=new Sender((ConnectionTable)ct2, barrier, addr1, 0);
+
+        sender1.start(); sender2.start();
+        Util.sleep(100);
+
+        int num_conns;
+        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assertEquals(0, num_conns);
+        num_conns=ct2.getNumConnections();
+        assertEquals(0, num_conns);
+
+        barrier.await(10000, TimeUnit.MILLISECONDS);
+        sender1.join();
+        sender2.join();
+
+        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assertEquals(1, num_conns);
+        num_conns=ct2.getNumConnections();
+        assertEquals(1, num_conns);
+
+
+        int num_creations=BasicConnectionTable.getNumberOfConnectionCreations();
+        System.out.println("Number of connection creations=" + num_creations);
+        assertEquals("2 connections should have been created only, but we have " + num_creations, 2, num_creations);
+    }
+
+
+    private static class Sender extends Thread {
+        final ConnectionTable conn_table;
+        final CyclicBarrier   barrier;
+        final Address         dest;
+        final long            sleep_time;
+
+        public Sender(ConnectionTable conn_table, CyclicBarrier barrier, Address dest, long sleep_time) {
+            this.conn_table=conn_table;
+            this.barrier=barrier;
+            this.dest=dest;
+            this.sleep_time=sleep_time;
+        }
+
+        public void run() {
+            try {
+                barrier.await(10000, TimeUnit.MILLISECONDS);
+                if(sleep_time > 0)
+                    Util.sleep(sleep_time);
+                conn_table.send(dest, data, 0, data.length);
+            }
+            catch(Exception e) {
+            }
+        }
     }
 
 
