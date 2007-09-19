@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.84 2007/06/17 05:16:35 belaban Exp $
+ * @version $Id: STABLE.java,v 1.85 2007/09/19 15:55:56 belaban Exp $
  */
 public class STABLE extends Protocol {
     private Address               local_addr=null;
@@ -127,7 +127,7 @@ public class STABLE extends Protocol {
 
     public Vector<Integer> requiredDownServices() {
         Vector<Integer> retval=new Vector<Integer>();
-        retval.addElement(Event.GET_DIGEST_STABLE);  // NAKACK layer
+        retval.addElement(Event.GET_DIGEST);  // NAKACK layer
         return retval;
     }
 
@@ -682,7 +682,7 @@ public class STABLE extends Protocol {
 
 
     private Digest getDigest() {
-        return (Digest)down_prot.down(Event.GET_DIGEST_STABLE_EVT);
+        return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
 
