@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.9 2007/07/12 18:45:08 vlada Exp $
+// $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.9 2007/07/12 18:45:08 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -164,7 +164,7 @@ public class ChannelTest extends ChannelTestBase {
         Channel ch2=createChannel();
         ConnectedChecker tmp=new ConnectedChecker(ch2);
         ch2.setReceiver(tmp);
-        ch2.connect("bla");
+        ch2.connect(GROUP);
 
         assertFalse(tmp.isConnected());
         ch2.close();
