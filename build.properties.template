@@ -1,0 +1,7 @@
+# add your own properties in here
+
+# the network interface (NIC) which will be used by the unit tests, change this to
+# the one you want to use. Note that 'localhost' usually resolved to 127.0.0.1,
+# which may not work on Linux unless you have a multicast route set up for loopback
+jgroups.bind_addr=localhost
+jgroups.tcpping.initial_hosts=localhost[7800]
