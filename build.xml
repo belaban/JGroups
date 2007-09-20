@@ -1,14 +1,14 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.117 2007/09/17 18:20:09 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.118 2007/09/20 07:47:35 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
 
-
-    <property file="build.properties"/>
+    <property name="build.properties.file" value="build.properties"/>
+    <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
     <property name="src.dir" value="${root.dir}/src"/>
     <property name="tests.dir" value="${root.dir}/tests/other"/>
@@ -26,7 +26,6 @@
     <property name="conf.dir" value="${root.dir}/conf"/>
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
-    <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="180000"/>
     <property name="version" value="2.6.0-beta-1"/>
@@ -342,7 +341,7 @@
 
 
 
-    <target name="unittests-xml" depends="compile, makeKeystore">
+    <target name="unittests-xml" depends="compile, makeKeystore, copy-build-properties">
         <delete dir="${tmp.dir}/tests-results"/>
         <mkdir dir="${tmp.dir}/tests-results"/>
         <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes">
@@ -444,7 +443,7 @@
 		 Target wrapping macro definition for test running. All test targets 
 		 use this target. 
 	-->
-    <target name="runtests" depends="compile">
+    <target name="runtests" depends="compile, copy-build-properties">
         <testrunner set="${testset}">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
@@ -460,7 +459,7 @@
     </target>
 
 
-    <target name="runtests-functional" depends="compile">
+    <target name="runtests-functional" depends="compile, copy-build-properties">
         <testrunner-functional set="all.tests">Tests running with parameters:
             channel.conf=${channel.conf}
             channel.conf.flush=${channel.conf.flush}
@@ -730,6 +729,9 @@
         </antcall>
     </target>
 
+    <target name="copy-build-properties">
+        <copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
+    </target>
 
     <target name="findxalan">
         <available property="xalan.available" classname="org.apache.xalan.Version"/>
