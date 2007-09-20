@@ -47,7 +47,7 @@ public class AUTH extends Protocol{
             }
         }
 
-        if(props.size() > 0) {
+        if(!props.isEmpty()) {
             //this should never happen as everything is read in to the AuthToken instance
             if(log.isErrorEnabled()){
                 log.error("AUTH.setProperties(): the following properties are not recognized: " + props);
@@ -95,53 +95,66 @@ public class AUTH extends Protocol{
      * the stack using <code>passUp()</code>.
      */
     public void up(Event evt) {
-        GMS.GmsHeader hdr = isJoinMessage(evt);
-        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)){
-            if(log.isDebugEnabled()){
+        GMS.GmsHeader hdr=isJoinMessage(evt);
+        if((hdr != null) && (hdr.getType() == GMS.GmsHeader.JOIN_REQ)) {
+            if(log.isDebugEnabled()) {
                 log.debug("AUTH got up event");
             }
             //we found a join message - now try and get the AUTH Header
-            Message msg = (Message)evt.getArg();
-
-            if((msg.getHeader(AUTH.NAME) != null) && (msg.getHeader(AUTH.NAME) instanceof AuthHeader)){
-                AuthHeader authHeader = (AuthHeader)msg.getHeader(AUTH.NAME);
-
-                if(authHeader != null){
+            Message msg=(Message)evt.getArg();
+            if((msg.getHeader(AUTH.NAME) != null) && (msg.getHeader(AUTH.NAME) instanceof AuthHeader)) {
+                AuthHeader authHeader=(AuthHeader)msg.getHeader(AUTH.NAME);
+                if(authHeader != null) {
                     //Now we have the AUTH Header we need to validate it
-                    if(this.serverSideToken.authenticate(authHeader.getToken(), msg)){
+                    if(this.serverSideToken.authenticate(authHeader.getToken(), msg)) {
                         //valid token
-                        if(log.isDebugEnabled()){
+                        if(log.isDebugEnabled()) {
                             log.debug("AUTH passing up event");
                         }
                         passUp(evt);
-                    }else{
+                    }
+                    else {
                         //invalid token
-                        if(log.isWarnEnabled()){
+                        if(log.isWarnEnabled()) {
                             log.warn("AUTH failed to validate AuthHeader token");
                         }
-                        passDown(createFailureEvent(msg.getSrc(), "Authentication failed"));
+                        sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Authentication failed"));
                     }
-                }else{
+                }
+                else {
                     //Invalid AUTH Header - need to send failure message
-                    if(log.isWarnEnabled()){
+                    if(log.isWarnEnabled()) {
                         log.warn("AUTH failed to get valid AuthHeader from Message");
                     }
-                    passDown(createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
+                    sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Failed to find valid AuthHeader in Message"));
                 }
-            }else{
-                if(log.isDebugEnabled()){
+            }
+            else {
+                if(log.isDebugEnabled()) {
                     log.debug("No AUTH Header Found");
                 }
                 //should be a failure
-                passDown(createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
+                sendRejectionMessage(msg.getSrc(), createFailureEvent(msg.getSrc(), "Failed to find an AuthHeader in Message"));
             }
-        }else{
+        }
+        else {
             //if debug
-            if(log.isDebugEnabled()){
+            if(log.isDebugEnabled()) {
                 log.debug("Message not a JOIN_REQ - ignoring it");
             }
             passUp(evt);
         }
+    }
+
+
+    private void sendRejectionMessage(Address dest, Event join_rsp) {
+        if(dest == null) {
+            log.error("destination is null, cannot send JOIN rejection message to null destination");
+            return;
+        }
+        down_prot.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
+        down_prot.down(join_rsp);
+        down_prot.down(new Event(Event.DISABLE_UNICASTS_TO, dest));
     }
 
     /**
