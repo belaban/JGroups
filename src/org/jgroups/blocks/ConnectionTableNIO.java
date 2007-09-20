@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.35 2007/09/19 12:24:30 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.36 2007/09/20 06:53:47 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -607,14 +607,14 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
          catch (BindException bind_ex)
          {
             if (start_port == end_port)
-               throw (BindException) ((new BindException("No available port to bind to")).initCause(bind_ex));
+               throw (BindException) ((new BindException("No available port to bind to (start_port=" + start_port + ")")).initCause(bind_ex));
             start_port++;
             continue;
          }
          catch (SocketException bind_ex)
          {
             if (start_port == end_port)
-               throw (BindException) ((new BindException("No available port to bind to")).initCause(bind_ex));
+               throw (BindException) ((new BindException("No available port to bind to  (start_port=" + start_port + ")")).initCause(bind_ex));
             start_port++;
             continue;
          }
