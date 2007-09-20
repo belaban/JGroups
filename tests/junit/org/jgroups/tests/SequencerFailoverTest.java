@@ -6,10 +6,10 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
 
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -18,7 +18,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.4 2007/03/06 17:43:01 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.5 2007/09/20 04:38:40 belaban Exp $
  */
 public class SequencerFailoverTest extends TestCase {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
@@ -31,7 +31,7 @@ public class SequencerFailoverTest extends TestCase {
             "enable_bundling=true;use_incoming_packet_handler=true;loopback=true):" +
             "PING(timeout=2000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD(timeout=2000;max_tries=2):" +
+            "FD(timeout=1000;max_tries=2):" +
             "VERIFY_SUSPECT(timeout=1500):" +
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400):" +
@@ -71,10 +71,19 @@ public class SequencerFailoverTest extends TestCase {
     }
 
     public void testBroadcastSequence() throws Exception {
+        MyReceiver r2=new MyReceiver(), r3=new MyReceiver();
+        ch2.setReceiver(r2); ch3.setReceiver(r3);
+
+        View v2=ch2.getView(), v3=ch3.getView();
+        System.out.println("ch2's view: " + v2 + "\nch3's view: " + v3);
+        assertEquals(v2, v3);
+
         new Thread() {
             public void run() {
-                Util.sleepRandom(100);
+                Util.sleep(3000);
+                System.out.println("** killing ch1");
                 ch1.shutdown(); ch1=null;
+                System.out.println("** ch1 killed");
             }
         }.start();
 
@@ -84,43 +93,60 @@ public class SequencerFailoverTest extends TestCase {
             System.out.print("-- messages sent: " + i + "/" + NUM_MSGS + "\r");
         }
         System.out.println("");
-        View view=ch2.getView();
-        System.out.println("ch2's view is " + view);
-        assertEquals(2, view.getMembers().size());
-        for(int i=10000; i > 0; i-=1000) {
+        v2=ch2.getView();
+        v3=ch3.getView();
+        System.out.println("ch2's view: " + v2 + "\nch3's view: " + v3);
+        assertEquals(v2, v3);
+
+        assertEquals(2, v2.size());
+        int s2, s3;
+        for(int i=15000; i > 0; i-=1000) {
+            s2=r2.size(); s3=r3.size();
+            if(s2 >= NUM_MSGS && s3 >= NUM_MSGS) {
+                System.out.print("ch2: " + s2 + " msgs, ch3: " + s3 + " msgs\r");
+                break;
+            }
             Util.sleep(1000);
-            System.out.print("sleeping for " + (i/1000) + " seconds\r");
+            System.out.print("sleeping for " + (i/1000) + " seconds (ch2: " + s2 + " msgs, ch3: " + s3 + " msgs)\r");
         }
         System.out.println("-- verifying messages on ch2 and ch3");
-        System.out.println("ch2 has " + ch2.getNumMessages() + " messages, ch3 has " + ch3.getNumMessages() + " messages");
-        verifyNumberOfMessages(NUM_MSGS, ch2);
-        verifyNumberOfMessages(NUM_MSGS, ch3);
+        verifyNumberOfMessages(NUM_MSGS, r2);
+        verifyNumberOfMessages(NUM_MSGS, r3);
     }
 
-    private void verifyNumberOfMessages(int num_msgs, JChannel ch) throws Exception {
-        List msgs=getMessages(ch);
+    private static void verifyNumberOfMessages(int num_msgs, MyReceiver receiver) throws Exception {
+        List<Integer> msgs=receiver.getList();
         System.out.println("list has " + msgs.size() + " msgs (should have " + NUM_MSGS + ")");
         assertEquals(num_msgs, msgs.size());
-        int tmp, i=1;
-        for(Iterator it=msgs.iterator(); it.hasNext();) {
-            tmp=((Integer)it.next()).intValue();
+        int i=1;
+        for(Integer tmp: msgs) {
             if(tmp != i)
                 throw new Exception("expected " + i + ", but got " + tmp);
             i++;
         }
     }
 
-    private List getMessages(JChannel ch) throws Exception {
-        List retval=new LinkedList();
-        Object obj;
-        while(ch.getNumMessages() > 0) {
-            obj=ch.receive(1000);
-            if(obj instanceof Message) {
-                Message msg=(Message)obj;
-                retval.add(msg.getObject());
-            }
+
+    private static class MyReceiver extends ReceiverAdapter {
+        List<Integer> list=new LinkedList<Integer>();
+
+        public List<Integer> getList() {
+            return list;
         }
-        return retval;
+
+        public int size() {return list.size();}
+
+        public void receive(Message msg) {
+            list.add((Integer)msg.getObject());
+        }
+
+        void clear() {
+            list.clear();
+        }
+
+//        public void viewAccepted(View new_view) {
+//            System.out.println("** view: " + new_view);
+//        }
     }
 
 
