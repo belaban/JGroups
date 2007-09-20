@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.4 2007/09/19 12:40:53 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.5 2007/09/20 06:54:01 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
