@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.58 2007/09/19 12:41:28 belaban Exp $
+// $Id: ConnectionTable.java,v 1.59 2007/09/20 06:53:24 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,9 +6,8 @@ import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.IOException;
 import java.net.*;
-import java.util.*;
 
 
 /**
@@ -199,39 +198,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
     protected void init() throws Exception {
     }
 
-    /** Closes all open sockets, the server socket and all threads waiting for incoming messages */
-    public void stop() {
-        super.stop();
-
-        // 1. Stop the reaper
-        if(reaper != null)
-            reaper.stop();
-
-        // 2. close the server socket (this also stops the acceptor thread)
-        if(srv_sock != null) {
-            try {
-                ServerSocket tmp=srv_sock;
-                srv_sock=null;
-                tmp.close();
-                if(acceptor != null)
-                	Util.interruptAndWaitToDie(acceptor);
-            }
-            catch(Exception e) {
-            }
-        }
-
-        // 3. then close the connections       
-        Collection<Connection> connsCopy=null;
-        synchronized(conns) {
-            connsCopy=new LinkedList<Connection>(conns.values());
-            conns.clear();
-        }        
-        for(Connection conn:connsCopy) {                
-            conn.destroy();
-        }
-        connsCopy.clear();        
-        local_addr=null;
-    }
+   
 
 
    /**
