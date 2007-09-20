@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.24.2.1 2006/12/04 22:47:16 vlada Exp $
+// $Id: Event.java,v 1.24.2.2 2007/09/20 16:24:26 belaban Exp $
 
 package org.jgroups;
 
@@ -83,6 +83,7 @@ public class Event {
     public static final int STATE_TRANSFER_OUTPUTSTREAM_CLOSED= 74;//arg=null
     public static final int UNBLOCK                   =75;  //arg=null (indicate end of flush round)
     public static final int SUSPEND_FAILED            =76;  // arg = null
+    public static final int DISABLE_UNICASTS_TO       = 81;  // arg = Address (member)
 
 
     public static final int USER_DEFINED=1000;// arg = <user def., e.g. evt type + data>
@@ -195,6 +196,7 @@ public class Event {
             case STATE_TRANSFER_OUTPUTSTREAM_CLOSED: return "STATE_TRANSFER_OUTPUTSTREAM_CLOSED";
             case UNBLOCK:                return "UNBLOCK";
             case SUSPEND_FAILED:         return "SUSPEND_FAILED";
+            case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
 
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
