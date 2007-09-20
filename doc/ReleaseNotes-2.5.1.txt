@@ -1,0 +1,34 @@
+
+Release Notes JGroups 2.5.1
+===========================
+
+Version: $Id: ReleaseNotes-2.5.1.txt,v 1.1 2007/09/20 08:13:53 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.5.1 is a patch release for 2.5 GA. It contains no new functionality, but only bug fixes.
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+Bug fixes
+---------
+
+AUTH: bug in 2.5 which caused AUTH to fail on second and subsequent JOIN attempts *if* the first
+attempt was rejected by AUTH.
+[http://jira.jboss.com/jira/browse/JGRP-577]
+
+VIEW_SYNC: there was a regression in 2.5, which causes VIEW_SYNC messages to get dropped.
+Note that this bug didn't occur in 2.4.x.
+[http://jira.jboss.com/jira/browse/JGRP-586]
+
+X.509 token not marshalled correctly. This affects ENCRYPT.
+[http://jira.jboss.com/jira/browse/JGRP-576]
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland, Sept 2007
