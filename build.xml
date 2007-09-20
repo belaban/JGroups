@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.116 2007/08/03 02:13:50 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.112.2.1 2007/09/20 11:33:52 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -29,7 +29,7 @@
     <property name="build.compiler.emacs" value="true"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="180000"/>
-    <property name="version" value="2.6.0-pre-alpha"/>
+    <property name="version" value="2.5.1"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
@@ -261,25 +261,24 @@
         </javadoc>
     </target>
 
-    <target name="all" depends="compile"/>
 
     <target name="docs" description="Build all html and pdf docs" depends="check-docbook-support">
         <echo message="Building docs from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="all.doc"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="all.doc"/>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
+             target="all.doc"/>
     </target>
 
 
     <target name="manual" description="Build the html doc" depends="check-docbook-support">
         <echo message="Building HTML doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="html"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="html"/>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
+             target="html"/>
     </target>
 
     <target name="pdf" description="Build the PDF doc" depends="check-docbook-support">
         <echo message="Building PDF doc from docbook ..."/>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="pdf"/>
-        <ant dir="${root.dir}/doc/tutorial" antfile="build.xml" target="pdf"/>
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml"
+             target="pdf"/>
     </target>
 
 
@@ -349,7 +348,7 @@
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
-            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+            <jvmarg value="-Dlog4j.configuration=file:c:\log4j.properties"/>
             <classpath refid="jg.classpath"/>
             <formatter type="xml" usefile="true"/>
             <batchtest todir="${tmp.dir}/tests-results">
