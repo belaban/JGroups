@@ -2,13 +2,21 @@
 Release Notes JGroups 2.6
 =========================
 
-Version: $Id: ReleaseNotes-2.6.txt,v 1.1 2007/08/22 11:31:51 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.txt,v 1.2 2007/09/20 08:26:57 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6 is still API-backwards compatible with previous versions (down to 2.2.5).
 
 Below is a summary (with links to the detailed description) of the major new features.
 
+
+Join and state transfer
+-----------------------
+[http://jira.jboss.com/jira/browse/JGRP-236]
+
+We added another connect() method in JChannel, which combines joining a cluster and fetching the state from the
+coordinator into one method. This is especially useful when we have FLUSH in the stack; thus we only have to use 1 rather
+than 2 (1 for JOIN, 1 for state transfer) flush phases.
 
 
 Improved ReplicatedHashMap
@@ -19,7 +27,45 @@ ReplicatedHashMap was converted to use generics, and java.util.concurrent.Concur
 methods putIfAbsent(), remove() and the two replace() methods.
 Developers can choose whether to use asynchronous or synchronous replication, and also pick the timeout for synchronous
 calls.
-This class supersedes ReplicatedHashtable and DistributedHashtable, which will be removed in version 3.0.
+This class supercedes ReplicatedHashtable and DistributedHashtable, which will be removed in version 3.0.
+
+
+Reincarnation issue
+-------------------
+[http://jira.jboss.com/jira/browse/JGRP-130]
+
+Using the GMS.reject_join_from_existing_member (default=false) property, we can reject a JOIN request from a reincarnated
+member X who crashed, but has not yet been removed (e.g. due to a high timeout in FD). The member would have to retry,
+and would only succeed when (the old) X has been excluded from the cluster.
+For shunned members who use AUTO_RECONNECT, we loop until this is true [http://jira.jboss.com/jira/browse/JGRP-584].
+
+
+New transport property 'bind_interface'
+---------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-579]
+
+This can be used when multipler network interfaces have the *same* IP address, to define the interface to get used, e.g
+bind_addr="192.168.2.5" bind_interface="eth1". Useful e.g. with IP Bonding on Linux.
+
+
+Unicast bundling can be disabled at the transport level
+-------------------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-429]
+
+When dealing with latency sensitive applications, we may want to disable message bundling for *responses* (but not for
+requests, as requests might carry large payloads). This can be done via the enable_unicast_bundling (default=true)
+property.
+
+
+RpcDispatcher can now filter responses as they arrive
+------------------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-518]
+
+There's a new callRemoteMethods() method taking an RspFilter, which is called whenever a response has been received,
+allowing a request to return based on a condition (e.g. the first non null return value) before all responses
+have been received.
+
+
 
 
 Manual
@@ -35,11 +81,23 @@ Links to performance tuning: http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTuning
 
 Bug fixes
 ---------
-The list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+AUTH: bug in 2.5 which caused AUTH to fail on second and subsequent JOIN attempts *if* the first
+attempt was rejected by AUTH.
+[http://jira.jboss.com/jira/browse/JGRP-577]
+
+VIEW_SYNC: there was a regression in 2.5, which causes VIEW_SYNC messages to get dropped.
+Note that this bug didn't occur in 2.4.x.
+[http://jira.jboss.com/jira/browse/JGRP-586]
+
+X.509 token not marshalled correctly. This affects ENCRYPT.
+[http://jira.jboss.com/jira/browse/JGRP-576]
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
 
 Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 
-Dec 2007
+Sept 2007
 
 
