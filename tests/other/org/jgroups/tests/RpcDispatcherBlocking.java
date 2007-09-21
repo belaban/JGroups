@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherBlocking.java,v 1.8 2005/05/30 16:15:12 belaban Exp $
+// $Id: RpcDispatcherBlocking.java,v 1.9 2007/09/21 08:46:58 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -70,17 +70,18 @@ public class RpcDispatcherBlocking implements MembershipListener {
         RspList rsps;
 
         channel=new JChannel(); // default props
-	disp=new RpcDispatcher(channel, null, this, this);
-	channel.connect("rpc-test");
+        channel.setOpt(Channel.AUTO_RECONNECT, true);
+        disp=new RpcDispatcher(channel, null, this, this);
+        channel.connect("rpc-test");
         
         while(true) {
             System.out.println("[x]: exit [s]: send sync group RPC");
             System.out.flush();
             c=System.in.read();
             switch(c) {
-            case 'x':
-                channel.close();
-                disp.stop();
+                case 'x':
+                    channel.close();
+                    disp.stop();
                 return;
             case 's':
                 rsps=sendGroupRpc();
