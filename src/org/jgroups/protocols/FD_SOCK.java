@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.78 2007/09/07 10:45:45 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.79 2007/09/21 13:17:56 vlada Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -79,6 +79,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     private boolean             keep_alive=true;
 
     private volatile boolean    running=false;
+    private ThreadNamingPattern thread_naming_pattern;
 
 
     public String getName() {
@@ -202,6 +203,13 @@ public class FD_SOCK extends Protocol implements Runnable {
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address) evt.getArg();
             break;
+                    
+        case Event.INFO:
+            Map<String, Object> info = (Map<String, Object>) evt.getArg();
+            if(info.containsKey("thread_naming_pattern")){
+                thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
+            }            
+            break;
 
         case Event.MSG:
             Message msg=(Message) evt.getArg();
@@ -318,29 +326,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 startServerSocket();
                 return ret;
 
-            case Event.DISCONNECT:
-                group_name=null;
-                String tmp, prefix=Global.THREAD_PREFIX;
-                int index;
-                tmp=srv_sock_handler != null? srv_sock_handler.getName() : null;
-                if(tmp != null) {
-                    index=tmp.indexOf(prefix);
-                    if(index > -1) {
-                        tmp=tmp.substring(0, index);
-                        srv_sock_handler.setName(tmp);
-                    }
-                }
-                synchronized(this) {
-                    tmp=pinger_thread != null? pinger_thread.getName() : null;
-                    if(tmp != null) {
-                        index=tmp.indexOf(prefix);
-                        if(index > -1) {
-                            tmp=tmp.substring(0, index);
-                            pinger_thread.setName(tmp);
-                        }
-                    }
-                }
-
+            case Event.DISCONNECT:                
                 stopServerSocket(true); // graceful close
                 break;
 
@@ -514,17 +500,10 @@ public class FD_SOCK extends Protocol implements Runnable {
     void startPingerThread() {
         running=true;
         if(pinger_thread == null) {
-            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK Ping thread");
+            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ping");
             pinger_thread.setDaemon(true);
-            pinger_thread.start();
-            if(group_name != null) {
-                String tmp, prefix=Global.THREAD_PREFIX;
-                tmp=pinger_thread.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + group_name + ")";
-                    pinger_thread.setName(tmp);
-                }
-            }
+            thread_naming_pattern.renameThread(pinger_thread);
+            pinger_thread.start();            
         }
     }
 
@@ -590,15 +569,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     void startServerSocket() {
         if(srv_sock_handler != null) {
-            srv_sock_handler.start(); // won't start if already running
-            if(group_name != null) {
-                String tmp, prefix=Global.THREAD_PREFIX;
-                tmp=srv_sock_handler.getName();
-                if(tmp != null && !tmp.contains(prefix)) {
-                    tmp+=prefix + group_name + ")";
-                    srv_sock_handler.setName(tmp);
-                }
-            }
+            srv_sock_handler.start(); // won't start if already running            
         }
     }
 
@@ -1006,20 +977,16 @@ public class FD_SOCK extends Protocol implements Runnable {
         String getName() {
             return acceptor != null? acceptor.getName() : null;
         }
-
-        void setName(String thread_name) {
-            if(acceptor != null)
-                acceptor.setName(thread_name);
-        }
-
+ 
         ServerSocketHandler() {
             start();
         }
 
         final void start() {
             if(acceptor == null) {
-                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ServerSocket acceptor thread");
-                acceptor.setDaemon(true);
+                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ssa");
+                acceptor.setDaemon(true);  
+                thread_naming_pattern.renameThread(acceptor);
                 acceptor.start();
             }
         }
@@ -1055,6 +1022,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
+                    thread_naming_pattern.renameThread(client_conn_handler);
                     synchronized(clients) {
                         clients.add(client_conn_handler);
                     }
@@ -1078,7 +1046,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         final List<ClientConnectionHandler> clients=new ArrayList<ClientConnectionHandler>();
 
         ClientConnectionHandler(Socket client_sock, List<ClientConnectionHandler> clients) {
-            setName("FD_SOCK ClientConnectionHandler");
+            setName("FD_SOCK cch");
             setDaemon(true);
             this.client_sock=client_sock;
             this.clients.addAll(clients);

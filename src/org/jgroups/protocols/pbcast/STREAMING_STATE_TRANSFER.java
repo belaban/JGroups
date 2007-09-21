@@ -6,6 +6,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Streamable;
+import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
 
@@ -14,6 +15,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +119,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private StateProviderThreadSpawner spawner;
 
     private final AtomicLong threadCounter = new AtomicLong(0);
+
+    private ThreadNamingPattern thread_naming_pattern;
 
     public STREAMING_STATE_TRANSFER(){}
 
@@ -245,6 +249,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             if(config != null && config.containsKey("state_transfer")){
                 log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
             }
+            break;       
+        case Event.INFO:
+            Map<String, Object> info = (Map<String, Object>) evt.getArg();
+            if(info.containsKey("thread_naming_pattern")){
+                thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
+            }            
             break;
         }
         return up_prot.up(evt);
@@ -333,7 +343,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         if(spawner == null){
             ServerSocket serverSocket = Util.createServerSocket(bind_addr, bind_port);
             spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-            new Thread(Util.getGlobalThreadGroup(), spawner, "StateProviderThreadSpawner").start();
+            Thread t = new Thread(Util.getGlobalThreadGroup(), spawner, "STREAMING_STATE_TRANSFER ssa");            
+            t.start();
+            thread_naming_pattern.renameThread(t);
         }
 
         List<Message> responses = new LinkedList<Message>();
@@ -387,16 +399,17 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private ThreadPoolExecutor setupThreadPool() {
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(1,
+        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(0,
                                                                max_pool,
                                                                pool_thread_keep_alive,
                                                                TimeUnit.MILLISECONDS,
-                                                               new LinkedBlockingQueue<Runnable>(10));
+                                                               new SynchronousQueue<Runnable>());
         ThreadFactory factory = new ThreadFactory() {
             public Thread newThread(final Runnable command) {
                 Thread thread = new Thread(Util.getGlobalThreadGroup(),
                                            command,
-                                           "STREAMING_STATE_TRANSFER state provider-" + threadCounter.incrementAndGet());
+                                           "STREAMING_STATE_TRANSFER sender" + threadCounter.incrementAndGet());
+                thread_naming_pattern.renameThread(thread);
                 return thread;
             }
         };
@@ -583,9 +596,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
         };
         if(use_reading_thread){
-            new Thread(Util.getGlobalThreadGroup(),
+            Thread t = new Thread(Util.getGlobalThreadGroup(),
                        readingThread,
-                       "STREAMING_STATE_TRANSFER.reader").start();
+                       "STREAMING_STATE_TRANSFER reader");
+            t.start();
+            thread_naming_pattern.renameThread(t);
 
         }else{
             readingThread.run();
