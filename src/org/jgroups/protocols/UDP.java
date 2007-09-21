@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.150 2007/09/21 12:42:33 belaban Exp $
+ * @version $Id: UDP.java,v 1.151 2007/09/21 12:49:49 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -350,8 +350,10 @@ public class UDP extends TP implements Runnable {
     }
 
 
-
-
+    public void init() throws Exception {
+        super.init();
+        last_ports_used=new BoundedList<Integer>(num_last_ports);
+    }
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
@@ -524,15 +526,10 @@ public class UDP extends TP implements Runnable {
      */
     private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcastAddr) throws IOException {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
-        for(Iterator it=interfaces.iterator(); it.hasNext();) {
-            NetworkInterface i=(NetworkInterface)it.next();
-            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-                InetAddress addr=(InetAddress)en2.nextElement();
-                s.joinGroup(tmp_mcast_addr, i);
-                if(log.isTraceEnabled())
-                    log.trace("joined " + tmp_mcast_addr + " on " + i.getName() + " (" + addr + ")");
-                break;
-            }
+        for(NetworkInterface intf: interfaces) {
+            s.joinGroup(tmp_mcast_addr, intf);
+            if(log.isTraceEnabled())
+                log.trace("joined " + tmp_mcast_addr + " on " + intf.getName());
         }
     }
 
@@ -557,8 +554,6 @@ public class UDP extends TP implements Runnable {
             if(num_last_ports <= 0)
                 break;
             localPort=tmp.getLocalPort();
-            if(last_ports_used == null)
-                last_ports_used=new BoundedList<Integer>(num_last_ports);
             if(last_ports_used.contains(new Integer(localPort))) {
                 if(log.isDebugEnabled())
                     log.debug("local port " + localPort + " already seen in this session; will try to get other port");
