@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.13 2007/09/07 11:04:47 belaban Exp $
+// $Id: ViewDemo.java,v 1.14 2007/09/21 07:15:05 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -70,6 +70,10 @@ public class ViewDemo extends ReceiverAdapter {
                 use_additional_data=Boolean.valueOf(args[++i]).booleanValue();
                 continue;
             }
+            if("-bind_addr".equals(args[i])) {
+                System.setProperty("jgroups.bind_addr", args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -83,7 +87,7 @@ public class ViewDemo extends ReceiverAdapter {
     }
 
     static void help() {
-        System.out.println("ViewDemo [-props <properties>] [-help] [-use_additional_data <flag>]");
+        System.out.println("ViewDemo [-props <properties>] [-help] [-use_additional_data <flag>] [-bind_addr <address>]");
     }
 
 }
