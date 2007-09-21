@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.52 2007/09/21 13:17:56 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.53 2007/09/21 16:10:45 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -34,10 +34,7 @@ public class ProtocolStack extends Protocol implements Transport {
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
 
-    private static final String     TIMER_NAME="Timer";
-    
-    private final AtomicInteger     thread_counter = new AtomicInteger();
-    
+    private static final String     TIMER_NAME="Timer"; 
     protected ThreadNamingPattern   thread_naming_pattern = null;
 
 
@@ -360,7 +357,7 @@ public class ProtocolStack extends Protocol implements Transport {
         ThreadFactory factory=new ThreadFactory() {
 
             public Thread newThread(Runnable command) {
-                Thread thread=new Thread(timer_thread_group, command, TIMER_NAME + thread_counter.incrementAndGet());
+                Thread thread=new Thread(timer_thread_group, command, TIMER_NAME);
                 thread.setDaemon(true);    
                 if(thread_naming_pattern != null)
                     thread_naming_pattern.renameThread(thread);
