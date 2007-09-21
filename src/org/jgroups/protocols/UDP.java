@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.151 2007/09/21 12:49:49 belaban Exp $
+ * @version $Id: UDP.java,v 1.152 2007/09/21 13:17:56 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -90,7 +90,7 @@ public class UDP extends TP implements Runnable {
     /** The multicast receiver thread */
     Thread          mcast_receiver=null;
 
-    private final static String MCAST_RECEIVER_THREAD_NAME = "UDP mcast receiver";
+    private final static String MCAST_RECEIVER_THREAD_NAME = "UDP mcast";
 
     /** The unicast receiver thread */
     UcastReceiver   ucast_receiver=null;
@@ -792,12 +792,11 @@ public class UDP extends TP implements Runnable {
 
     protected void setThreadNames() {
         super.setThreadNames();
-        
-        if(thread_naming_pattern != null) {
-        	thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
-        	if(ucast_receiver != null)
-        		thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
-        }        
+
+        thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
+        if(ucast_receiver != null)
+            thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME,
+                                               ucast_receiver.getThread());
     }
 
     protected void unsetThreadNames() {
@@ -840,7 +839,7 @@ public class UDP extends TP implements Runnable {
 
     public class UcastReceiver implements Runnable {
     	
-    	public static final String UCAST_RECEIVER_THREAD_NAME = "UDP ucast receiver";
+    	public static final String UCAST_RECEIVER_THREAD_NAME = "UDP ucast";
         boolean running=true;
         Thread thread=null;
 
