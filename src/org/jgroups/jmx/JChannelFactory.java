@@ -2,14 +2,17 @@ package org.jgroups.jmx;
 
 import org.jgroups.Channel;
 
+import javax.management.MBeanRegistration;
+import javax.management.ObjectName;
 import javax.management.MBeanServer;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.5 2007/05/09 23:50:19 belaban Exp $
+ * @version $Id: JChannelFactory.java,v 1.6 2007/09/21 15:59:37 belaban Exp $
  */
-public class JChannelFactory implements JChannelFactoryMBean {
+public class JChannelFactory implements JChannelFactoryMBean, MBeanRegistration {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
+    private MBeanServer server=null;
 
 
     public JChannelFactory(org.jgroups.JChannelFactory factory) {
@@ -63,6 +66,7 @@ public class JChannelFactory implements JChannelFactoryMBean {
     public void create() throws Exception {
         if(factory == null)
             factory=new org.jgroups.JChannelFactory();
+        factory.setServer(server);
         factory.create();
     }
 
@@ -85,5 +89,21 @@ public class JChannelFactory implements JChannelFactoryMBean {
 
     public String dumpChannels() {
         return factory.dumpChannels();
+    }
+
+    public ObjectName preRegister(MBeanServer server, ObjectName name) throws Exception {
+        this.server=server;
+        if(factory != null)
+            factory.setServer(server);
+        return ObjectName.getInstance(getDomain());
+    }
+
+    public void postRegister(Boolean registrationDone) {
+    }
+
+    public void preDeregister() throws Exception {
+    }
+
+    public void postDeregister() {
     }
 }
