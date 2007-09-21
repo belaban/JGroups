@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.79 2007/09/21 13:17:56 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.80 2007/09/21 16:01:11 vlada Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -500,7 +500,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     void startPingerThread() {
         running=true;
         if(pinger_thread == null) {
-            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ping");
+            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK pinger");
             pinger_thread.setDaemon(true);
             thread_naming_pattern.renameThread(pinger_thread);
             pinger_thread.start();            
@@ -984,7 +984,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK ssa");
+                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK server socket acceptor");
                 acceptor.setDaemon(true);  
                 thread_naming_pattern.renameThread(acceptor);
                 acceptor.start();
@@ -1046,7 +1046,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         final List<ClientConnectionHandler> clients=new ArrayList<ClientConnectionHandler>();
 
         ClientConnectionHandler(Socket client_sock, List<ClientConnectionHandler> clients) {
-            setName("FD_SOCK cch");
+            setName("FD_SOCK client connection handler");
             setDaemon(true);
             this.client_sock=client_sock;
             this.clients.addAll(clients);
