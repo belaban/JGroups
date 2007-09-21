@@ -118,8 +118,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      */
     private StateProviderThreadSpawner spawner;
 
-    private final AtomicLong threadCounter = new AtomicLong(0);
-
     private ThreadNamingPattern thread_naming_pattern;
 
     public STREAMING_STATE_TRANSFER(){}
@@ -343,7 +341,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         if(spawner == null){
             ServerSocket serverSocket = Util.createServerSocket(bind_addr, bind_port);
             spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-            Thread t = new Thread(Util.getGlobalThreadGroup(), spawner, "STREAMING_STATE_TRANSFER ssa");            
+            Thread t = new Thread(Util.getGlobalThreadGroup(), spawner, "STREAMING_STATE_TRANSFER server socket acceptor");            
             t.start();
             thread_naming_pattern.renameThread(t);
         }
@@ -408,7 +406,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             public Thread newThread(final Runnable command) {
                 Thread thread = new Thread(Util.getGlobalThreadGroup(),
                                            command,
-                                           "STREAMING_STATE_TRANSFER sender" + threadCounter.incrementAndGet());
+                                           "STREAMING_STATE_TRANSFER sender");
                 thread_naming_pattern.renameThread(thread);
                 return thread;
             }
