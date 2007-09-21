@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.149 2007/09/15 11:37:37 belaban Exp $
+ * @version $Id: UDP.java,v 1.150 2007/09/21 12:42:33 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -443,7 +443,7 @@ public class UDP extends TP implements Runnable {
         if(sock == null)
             throw new Exception("UDP.createSocket(): sock is null");
 
-        local_addr=new IpAddress(sock.getLocalAddress(), sock.getLocalPort());
+        local_addr=createLocalAddress();
         if(additional_data != null)
             ((IpAddress)local_addr).setAdditionalData(additional_data);
 
@@ -509,22 +509,10 @@ public class UDP extends TP implements Runnable {
     }
 
 
-//    private void bindToAllInterfaces(MulticastSocket s, InetAddress mcastAddr) throws IOException {
-//        SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
-//        Enumeration en=NetworkInterface.getNetworkInterfaces();
-//        while(en.hasMoreElements()) {
-//            NetworkInterface i=(NetworkInterface)en.nextElement();
-//            for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
-//                InetAddress addr=(InetAddress)en2.nextElement();
-//                // if(addr.isLoopbackAddress())
-//                // continue;
-//                s.joinGroup(tmp_mcast_addr, i);
-//                if(log.isTraceEnabled())
-//                    log.trace("joined " + tmp_mcast_addr + " on interface " + i.getName() + " (" + addr + ")");
-//                break;
-//            }
-//        }
-//    }
+    protected Address createLocalAddress() {
+        return new IpAddress(sock.getLocalAddress(), sock.getLocalPort());
+    }
+
 
 
     /**
