@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.43 2007/09/21 15:58:02 belaban Exp $
+// $Id: JChannelFactory.java,v 1.44 2007/09/24 11:00:17 belaban Exp $
 
 package org.jgroups;
 
@@ -263,6 +263,11 @@ public class JChannelFactory implements ChannelFactory {
      */
     public Channel createChannel() throws ChannelException {
         return new JChannel(configurator);
+    }
+
+    public Channel createChannel(String stack_name) throws Exception {
+        String props=stack_name != null? getConfig(stack_name) : null;
+        return new JChannel(props);
     }
 
     public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
