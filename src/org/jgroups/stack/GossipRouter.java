@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.25 2007/05/09 23:50:26 belaban Exp $
+// $Id: GossipRouter.java,v 1.25.2.1 2007/09/25 08:39:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -433,7 +433,6 @@ public class GossipRouter {
                     case GossipRouter.CONNECT:
                         output=new DataOutputStream(sock.getOutputStream());
                         peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
-                        output=new DataOutputStream(sock.getOutputStream());
                         logical_addr=req.getAddress();
                         String group_name=req.getGroup();
 
