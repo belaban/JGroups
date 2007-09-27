@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.150 2007/09/19 08:33:16 belaban Exp $
+ * @version $Id: JChannel.java,v 1.151 2007/09/27 16:19:52 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -927,7 +927,7 @@ public class JChannel extends Channel {
         boolean initiateFlush = flush_supported && useFlushIfPresent;
         
         if(initiateFlush)
-            startFlush(4000, false);
+            startFlush(false);
 
         state_promise.reset();
         down(new Event(Event.GET_STATE, info));
@@ -1607,14 +1607,11 @@ public class JChannel extends Channel {
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
-    public boolean startFlush(long timeout, boolean automatic_resume) {
+    public boolean startFlush(boolean automatic_resume) {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
-        }
-        boolean successfulFlush = false;
-        Map atts = new HashMap();    	
-    	atts.put("timeout",new Long(timeout));    	
-        successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND,atts));
+        }           	  
+        boolean successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND));
         
         if(automatic_resume)
             stopFlush();

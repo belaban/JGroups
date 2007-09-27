@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.76 2007/09/19 15:10:27 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.77 2007/09/27 16:19:52 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -388,6 +388,8 @@ public class CoordGmsImpl extends GmsImpl {
 
         JoinRsp join_rsp=null;
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
+        gms.up(new Event(Event.PREPARE_VIEW,new_view));
+        
         if(log.isDebugEnabled())
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);

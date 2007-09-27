@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.3 2007/08/27 08:09:17 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.4 2007/09/27 16:19:51 vlada Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {	
 
@@ -118,7 +118,7 @@ public class ReconciliationTest extends ChannelTestBase {
 		FlushTrigger t = new FlushTrigger() {
 			public void triggerFlush() {
 				JChannel channel = channels.get(0);
-				boolean rc = channel.startFlush(0, false);			
+				boolean rc = channel.startFlush(false);			
 				log.info("manual flush success="+rc);
 				channel.stopFlush();						
 			};
@@ -345,7 +345,7 @@ public class ReconciliationTest extends ChannelTestBase {
 
 	private static void flush(Channel channel, long timeout) {
 		if(channel.flushSupported()){
-			boolean success = channel.startFlush(timeout, true);
+			boolean success = channel.startFlush(true);
 			System.out.println("startFlush(): " + success);
 			assertTrue(success);
 		}else

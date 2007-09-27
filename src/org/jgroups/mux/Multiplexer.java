@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.69 2007/09/24 10:42:05 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.70 2007/09/27 16:19:50 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -51,10 +51,7 @@ public class Multiplexer implements UpHandler {
     private final Map<String,Boolean> state_transfer_listeners=new HashMap<String,Boolean>();
 
     /** Map<String,List<Address>>. A map of services as keys and lists of hosts as values */
-    private final Map<String,List<Address>> service_state=new HashMap<String,List<Address>>();
-
-    /** Used to wait on service state information */
-    private final Promise<byte[]> service_state_promise=new Promise<byte[]>();
+    private final Map<String,List<Address>> service_state=new HashMap<String,List<Address>>();   
 
     /** Map<Address, Set<String>>. Keys are senders, values are a set of services hosted by that sender.
      * Used to collect responses to LIST_SERVICES_REQ */
@@ -206,7 +203,7 @@ public class Multiplexer implements UpHandler {
     private boolean fetchServiceStates(Address target, Set<String> keys, long timeout) throws ChannelClosedException,
                                                                                       ChannelNotConnectedException {
         boolean rc, all_tranfers_ok = false;
-        boolean flushStarted = channel.startFlush(4000, false);
+        boolean flushStarted = channel.startFlush(false);
         if(flushStarted){
             try{
                 for(String stateId:keys){
@@ -225,54 +222,7 @@ public class Multiplexer implements UpHandler {
         }
         return flushStarted && all_tranfers_ok;
     }
-
-
-    /**
-     * Fetches the map of services and hosts from the coordinator (Multiplexer). No-op if we are the coordinator
-     */
-    public void fetchServiceInformation() throws Exception {
-        while(true) {
-            Address coord=getCoordinator(), local_address=channel != null? channel.getLocalAddress() : null;
-            boolean is_coord=coord != null && local_address != null && local_address.equals(coord);
-            if(is_coord) {
-                if(log.isTraceEnabled())
-                    log.trace("I'm coordinator, will not fetch service state information");
-                break;
-            }
-
-            ServiceInfo si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, null);
-            MuxHeader hdr=new MuxHeader(si);
-            Message state_req=new Message(coord, null, null);
-            state_req.putHeader(NAME, hdr);
-            service_state_promise.reset();
-            channel.send(state_req);
-
-            try {
-                byte[] state=service_state_promise.getResultWithTimeout(2000);
-                if(state != null) {
-                	Map<String,List<Address>> new_state=(Map<String,List<Address>>)Util.objectFromByteBuffer(state);
-                    synchronized(service_state) {
-                        service_state.clear();
-                        service_state.putAll(new_state);
-                    }
-                    if(log.isTraceEnabled())
-                        log.trace("service state was set successfully (" + service_state.size() + " entries)");
-                }
-                else {
-                    if(log.isWarnEnabled())
-                        log.warn("received service state was null");
-                }
-                break;
-            }
-            catch(TimeoutException e) {
-                if(log.isTraceEnabled())
-                    log.trace("timed out waiting for service state from " + coord + ", retrying");
-            }
-        }
-    }
-
-
-
+    
     public void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
         sendServiceMessage(ServiceInfo.SERVICE_UP, service, host,bypassFlush, null);
         if(local_addr != null && host != null && local_addr.equals(host))
@@ -344,10 +294,32 @@ public class Multiplexer implements UpHandler {
                     synchronized(service_responses) {
                         service_responses.clear();
                     }
+                    HashMap<String,List<Address>> payload = (HashMap<String, List<Address>>) view.getPayload("service_state");                                      
+                    if(payload != null){
+                        synchronized(service_state){                           
+                            service_state.putAll(payload);
+                        }
+                    }
+                    
                 }
                 if(!left_members.isEmpty())
                     adjustServiceViews(left_members);
                 break;
+                
+            case Event.PREPARE_VIEW:
+                View prepare_view=(View)evt.getArg();                  
+                old_members=view != null? view.getMembers() : new Vector<Address>();                
+                
+                Vector <Address> added_members =  new Vector<Address>(prepare_view.getMembers());
+                added_members.removeAll(old_members);
+                
+                if(!added_members.isEmpty()){                    
+                    synchronized(service_state){
+                        prepare_view.addPayload("service_state", service_state);    
+                    }                    
+                }
+                break;
+                
 
             case Event.SUSPECT:
                 Address suspected_mbr=(Address)evt.getArg();
@@ -511,14 +483,7 @@ public class Multiplexer implements UpHandler {
 
     private boolean isFlushPresent() {
         return channel.getProtocolStack().findProtocol("FLUSH") != null;
-    }
-
-
-    private void sendServiceState() throws Exception {       
-        byte[] data=Util.objectToByteBuffer(new HashSet<String>(services.keySet()));
-        sendServiceMessage(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data);
-    }
-
+    }   
 
     private Address getLocalAddress() {
         if(local_addr != null)
@@ -526,20 +491,7 @@ public class Multiplexer implements UpHandler {
         if(channel != null)
             local_addr=channel.getLocalAddress();
         return local_addr;
-    }
-
-    private Address getCoordinator() {
-        if(channel != null) {
-            View v=channel.getView();
-            if(v != null) {
-                Vector members=v.getMembers();
-                if(members != null && !members.isEmpty()) {
-                    return (Address)members.firstElement();
-                }
-            }
-        }
-        return null;
-    }
+    } 
 
     /**
     * Returns an Address of a state provider for a given service_id.
@@ -554,13 +506,13 @@ public class Multiplexer implements UpHandler {
     */
     public Address getStateProvider(Address preferredTarget, String service_id) {
         Address result = null;      
-        List hosts=service_state.get(service_id);
+        List<Address> hosts=service_state.get(service_id);
         if(hosts != null && !hosts.isEmpty()){
            if(hosts.contains(preferredTarget)){
               result = preferredTarget;
            }
            else{
-              result = (Address)hosts.get(0);
+              result = hosts.get(0);
            }          
         }
         return result;       
@@ -661,21 +613,7 @@ public class Multiplexer implements UpHandler {
     }
 
     private void handleServiceStateRequest(ServiceInfo info, Address sender) throws Exception {
-        switch(info.type) {
-            case ServiceInfo.STATE_REQ:
-                byte[] state;
-                synchronized(service_state) {
-                    state=Util.objectToByteBuffer(service_state);
-                }
-                ServiceInfo si=new ServiceInfo(ServiceInfo.STATE_RSP, null, null, state);
-                MuxHeader hdr=new MuxHeader(si);
-                Message state_rsp=new Message(sender);
-                state_rsp.putHeader(NAME, hdr);
-                channel.send(state_rsp);
-                break;
-            case ServiceInfo.STATE_RSP:
-                service_state_promise.setResult(info.state);
-                break;
+        switch(info.type) {                    
             case ServiceInfo.SERVICE_UP:
                 handleServiceUp(info.service, info.host, true);
                 break;
@@ -774,7 +712,7 @@ public class Multiplexer implements UpHandler {
             hosts_copy=new ArrayList<Address>(hosts); // make a copy so we don't modify hosts in generateServiceView()
         }
 
-        if(added) {
+        if(added) {           
             View service_view=generateServiceView(hosts_copy);
             if(service_view != null) {
                 MuxChannel ch=services.get(service);
@@ -876,47 +814,44 @@ public class Multiplexer implements UpHandler {
         }
     }
 
-    private void adjustServiceViews(Vector left_members) {
-        if(left_members != null)
-            for(int i=0; i < left_members.size(); i++) {
-                try {
-                    adjustServiceView((Address)left_members.elementAt(i));
-                }
-                catch(Throwable t) {
-                    if(log.isErrorEnabled())
-                        log.error("failed adjusting service views", t);
-                }
+    private void adjustServiceViews(Vector<Address> left_members) {
+        for(Address member:left_members){
+            try{
+                adjustServiceView(member);
+            }catch(Throwable t){
+                if(log.isErrorEnabled())
+                    log.error("failed adjusting service views", t);
             }
+        }
     }
 
-    private void adjustServiceView(Address host) {                               
+    private void adjustServiceView(Address host) {
 
-        synchronized(service_state) {
-            for(Iterator<Map.Entry<String,List<Address>>> it=service_state.entrySet().iterator(); it.hasNext();) {
+        synchronized(service_state){
+            for(Iterator<Map.Entry<String, List<Address>>> it = service_state.entrySet().iterator();it.hasNext();){
                 Map.Entry<String, List<Address>> entry = it.next();
-                String service=entry.getKey();
+                String service = entry.getKey();
                 List<Address> hosts = entry.getValue();
                 if(hosts == null)
-                    continue;                     
+                    continue;
 
-                if(hosts.remove(host)) {
-                	// make a copy so we don't modify hosts in generateServiceView()
-                    View service_view=generateServiceView(new ArrayList<Address>(hosts));
-                    if(service_view != null) {
-                        MuxChannel ch=services.get(service);
-                        if(ch != null) {
-                            Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                            // ch.up(view_evt);
-                            if(ch.isConnected())
-                            	passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
-                        }
-                        else {
-                            if(log.isTraceEnabled())
-                                log.trace("service " + service + " not found, cannot dispatch service view " + service_view);
-                        }
+                if(hosts.remove(host)){
+                    // make a copy so we don't modify hosts in
+                    // generateServiceView()
+                    View service_view = generateServiceView(new ArrayList<Address>(hosts));
+                    MuxChannel ch = services.get(service);
+                    if(ch != null){
+                        Event view_evt = new Event(Event.VIEW_CHANGE, service_view);    
+                        if(ch.isConnected())
+                            passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
+                    }else{
+                        if(log.isTraceEnabled())
+                            log.trace("service " + service
+                                      + " not found, cannot dispatch service view "
+                                      + service_view);
                     }
                 }
-                Address local_address=getLocalAddress();
+                Address local_address = getLocalAddress();
                 if(local_address != null && host != null && host.equals(local_address))
                     unregister(service);
             }
@@ -925,10 +860,15 @@ public class Multiplexer implements UpHandler {
 
 
     /**
-     * Create a copy of view which contains only members which are present in hosts. Call viewAccepted() on the MuxChannel
-     * which corresponds with service. If no members are removed or added from/to view, this is a no-op.
-     * @param hosts List<Address>
-     * @return the servicd view (a modified copy of the real view), or null if the view was not modified
+     * Create a copy of view which contains only members which are present in
+     * hosts. Call viewAccepted() on the MuxChannel which corresponds with
+     * service. If no members are removed or added from/to view, this is a
+     * no-op.
+     * 
+     * @param hosts
+     *                List<Address>
+     * @return the servicd view (a modified copy of the real view), or null if
+     *         the view was not modified
      */
     private View generateServiceView(List hosts) {
         if(view == null) {

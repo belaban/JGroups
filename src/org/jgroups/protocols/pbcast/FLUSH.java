@@ -3,7 +3,6 @@ package org.jgroups.protocols.pbcast;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Streamable;
@@ -86,6 +85,12 @@ public class FLUSH extends Protocol {
      * <code>isBlockingFlushDown</code>
      */
     private long timeout = 8000;
+    
+    /**
+     * Default timeout for a group member to wait for <code>Channel#startFlush</code> to return
+     * 
+     */
+    private long start_flush_timeout = 6000;
 
     private boolean enable_reconciliation = true;
 
@@ -131,6 +136,7 @@ public class FLUSH extends Protocol {
         super.setProperties(props);
 
         timeout = Util.parseLong(props, "timeout", timeout);
+        start_flush_timeout = Util.parseLong(props, "start_flush_timeout", start_flush_timeout);
         enable_reconciliation = Util.parseBoolean(props,
                                                   "enable_reconciliation",
                                                   enable_reconciliation);
@@ -189,18 +195,16 @@ public class FLUSH extends Protocol {
         return numberOfFlushes;
     }
 
-    public boolean startFlush(long timeout) {
-        Map atts = new HashMap();
-        atts.put("timeout", new Long(timeout));
-        return startFlush(new Event(Event.SUSPEND, atts), 3, false);
+    public boolean startFlush() {        
+        return startFlush(new Event(Event.SUSPEND), 3, false);
     }
-
+    
     private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
         boolean successfulFlush = false;
         if(!flushPhase.isFlushInProgress() || isRetry){
             flush_promise.reset();
-            Map atts = (Map) evt.getArg();
-            long flush_timeout= ((Long) atts.get("timeout")).longValue();
+            Map<String, Object> atts = (Map) evt.getArg();
+            View v = atts!=null?(View) atts.get("view"):null;            
             if(log.isDebugEnabled()){
                 if(isRetry)
                     log.debug("Retrying FLUSH at " + localAddress
@@ -212,15 +216,15 @@ public class FLUSH extends Protocol {
                     log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
             }
 
-            onSuspend((View) atts.get("view"));
+            onSuspend(v);
             try{
-                Boolean r = flush_promise.getResultWithTimeout(flush_timeout);
+                Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
             }catch(TimeoutException e){
                 if(log.isTraceEnabled())
                     log.trace("At " + localAddress
                               + " timed out waiting for flush responses after "
-                              + flush_timeout
+                              + start_flush_timeout
                             + " msec");
             }
         }
@@ -344,11 +348,7 @@ public class FLUSH extends Protocol {
                     case FlushHeader.FLUSH_OK:
                         if(isCurrentFlushMessage(fh))
                             onFlushOk(msg.getSrc(), fh.viewID);
-                        break;
-                    case FlushHeader.STOP_FLUSH_OK:
-                        if(isCurrentFlushMessage(fh))
-                            onStopFlushOk(msg.getSrc());
-                        break;
+                        break;                    
                     case FlushHeader.FLUSH_COMPLETED:
                         if(isCurrentFlushMessage(fh))
                             onFlushCompleted(msg.getSrc(), fh.digest);
@@ -358,7 +358,7 @@ public class FLUSH extends Protocol {
             }else{               
                 // http://jira.jboss.com/jira/browse/JGRP-575
                 // for processing of application messages after we join, 
-                // lets wait for STOP_FLUSH_OK to complete
+                // lets wait for STOP_FLUSH to complete
                 // before we start allowing message up.
                 if(!allowMessagesToPassUp)
                     return null;
@@ -510,14 +510,6 @@ public class FLUSH extends Protocol {
                 }
                 onStartFlush(msg.getSrc(), fh);
             }
-        }else if(oldPhase == FlushPhase.SECOND_PHASE){
-            Address flushRequester = msg.getSrc();
-            rejectFlush(fh.viewID, flushRequester);
-            if(log.isDebugEnabled()){
-                log.debug("Rejecting flush in second phase at " + localAddress
-                          + " to flush requester "
-                          + flushRequester);
-            }
         }
     }
 
@@ -591,8 +583,7 @@ public class FLUSH extends Protocol {
         return isThisOurFirstView;
     }
 
-    private void onStopFlush() {
-        flushPhase.transitionToSecondPhase();
+    private void onStopFlush() {        
         if(stats){
             long stopFlushTime = System.currentTimeMillis();
             totalTimeInFlush += (stopFlushTime - startFlushTime);
@@ -600,29 +591,33 @@ public class FLUSH extends Protocol {
                 averageFlushDuration = totalTimeInFlush / (double) numberOfFlushes;
             }
         }
-
-        /*
-         * April 25, 2007
-         * 
-         * Accomodating current NAKACK (1.127)
-         * 
-         * ack this STOP_FLUSH only if we are surviving member otherwise we get
-         * runtime exception from NAKACK
-         * 
-         * TODO: revisit if still needed post NAKACK 1.127
-         * 
-         */
-        boolean amISurvivingMember = false;
+        
+        boolean amISurvivingMember = false;               
         synchronized(sharedLock){
+            flushPhase.transitionToStart();
             amISurvivingMember = currentView.containsMember(localAddress);
+            flushCompletedMap.clear();
+            flushOkSet.clear();
+            stopFlushOkSet.clear();
+            flushMembers.clear();
+            suspected.clear();
+            flushCoordinator = null;
+            allowMessagesToPassUp = true;
         }
+
+        if(log.isDebugEnabled())
+            log.debug("At " + localAddress
+                      + " received STOP_FLUSH, unblocking FLUSH.down() and sending UNBLOCK up");
+
+        synchronized(blockMutex){
+            isBlockingFlushDown = false;
+            blockMutex.notifyAll();
+        }
+        
         if(amISurvivingMember){
-            Message msg = new Message(null, localAddress, null);
-            msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH_OK, currentViewId()));
-            down_prot.down(new Event(Event.MSG, msg));
-            if(log.isDebugEnabled())
-                log.debug("Received STOP_FLUSH and sent STOP_FLUSH_OK from " + localAddress);
+            up_prot.up(new Event(Event.UNBLOCK));
         }
+
     }
 
     private void onSuspend(View view) {
@@ -655,6 +650,7 @@ public class FLUSH extends Protocol {
     private void onResume() {
         long viewID = currentViewId();
         Message msg = new Message(null, localAddress, null);
+        msg.setFlag(Message.OOB);
         msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
         down_prot.down(new Event(Event.MSG, msg));
         if(log.isDebugEnabled())
@@ -720,48 +716,6 @@ public class FLUSH extends Protocol {
                           + flushCoordinator);
             down_prot.down(new Event(Event.MSG, m));
 
-        }
-    }
-
-    private void onStopFlushOk(Address address) {
-
-        boolean stopFlushOkCompleted = false;
-        synchronized(sharedLock){
-            stopFlushOkSet.add(address);
-            TreeSet<Address> membersCopy = new TreeSet<Address>(currentView.getMembers());
-            membersCopy.removeAll(suspected);
-            stopFlushOkCompleted = stopFlushOkSet.containsAll(membersCopy);
-
-            if(log.isDebugEnabled())
-                log.debug("At " + localAddress
-                          + " STOP_FLUSH_OK from "
-                          + address
-                          + ",completed "
-                          + stopFlushOkCompleted
-                          + ",  stopFlushOkSet "
-                          + stopFlushOkSet);
-        }
-
-        if(stopFlushOkCompleted){
-            synchronized(sharedLock){
-                flushPhase.transitionToStart();
-                flushCompletedMap.clear();
-                flushOkSet.clear();
-                stopFlushOkSet.clear();
-                flushMembers.clear();
-                suspected.clear();
-                flushCoordinator = null;
-                allowMessagesToPassUp = true;
-            }
-
-            if(log.isDebugEnabled())
-                log.debug("At " + localAddress + " unblocking FLUSH.down() and sending UNBLOCK up");
-
-            synchronized(blockMutex){
-                isBlockingFlushDown = false;
-                blockMutex.notifyAll();
-            }
-            up_prot.up(new Event(Event.UNBLOCK));
         }
     }
 
@@ -879,9 +833,7 @@ public class FLUSH extends Protocol {
 
         public static final byte START_PHASE = 0;
 
-        public static final byte FIRST_PHASE = 1;
-
-        public static final byte SECOND_PHASE = 2;
+        public static final byte FIRST_PHASE = 1;       
 
         FlushPhase(){}
 
@@ -902,12 +854,6 @@ public class FLUSH extends Protocol {
             }
         }
 
-        public void transitionToSecondPhase() {
-            synchronized(sharedLock){
-                phase = SECOND_PHASE;
-            }
-        }
-
         public boolean isFlushInProgress() {
             synchronized(sharedLock){
                 return phase != START_PHASE;
@@ -922,9 +868,7 @@ public class FLUSH extends Protocol {
 
         public static final byte STOP_FLUSH = 2;
 
-        public static final byte FLUSH_COMPLETED = 3;
-
-        public static final byte STOP_FLUSH_OK = 4;
+        public static final byte FLUSH_COMPLETED = 3;       
 
         public static final byte ABORT_FLUSH = 5;
 
@@ -975,9 +919,7 @@ public class FLUSH extends Protocol {
             case FLUSH_OK:
                 return "FLUSH[type=FLUSH_OK,viewId=" + viewID + "]";
             case STOP_FLUSH:
-                return "FLUSH[type=STOP_FLUSH,viewId=" + viewID + "]";
-            case STOP_FLUSH_OK:
-                return "FLUSH[type=STOP_FLUSH_OK,viewId=" + viewID + "]";
+                return "FLUSH[type=STOP_FLUSH,viewId=" + viewID + "]";          
             case ABORT_FLUSH:
                 return "FLUSH[type=ABORT_FLUSH,viewId=" + viewID + "]";
             case FLUSH_COMPLETED:
