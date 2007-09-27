@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.151 2007/09/27 16:19:52 vlada Exp $
+ * @version $Id: JChannel.java,v 1.152 2007/09/27 16:24:09 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1603,7 +1603,7 @@ public class JChannel extends Channel {
      * In case of flush collisions, random sleep time backoff algorithm is employed and
      * flush is reattempted for numberOfAttempts. Therefore this method is guaranteed 
      * to return after timeout x numberOfAttempts miliseconds.
-     * @param timeout
+     * 
      * @param automatic_resume Call {@link #stopFlush()} after the flush
      * @return true if FLUSH completed within the timeout
      */
@@ -1617,6 +1617,22 @@ public class JChannel extends Channel {
             stopFlush();
 
         return successfulFlush;              
+    }
+    
+    /**
+     * Will perform a flush of the system, ie. all pending messages are flushed out of the 
+     * system and all members ack their reception. After this call returns, no member will
+     * be sending any messages until {@link #stopFlush()} is called.
+     * <p>
+     * In case of flush collisions, random sleep time backoff algorithm is employed and
+     * flush is reattempted for numberOfAttempts. Therefore this method is guaranteed 
+     * to return after timeout x numberOfAttempts miliseconds.
+     * @param timeout
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     */
+    public boolean startFlush(long timeout, boolean automatic_resume) {        
+        return startFlush(automatic_resume);       
     }
 
     public void stopFlush() {
