@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.6 2007/09/19 20:20:33 vlada Exp $
+// $Id: SendAndReceiveTest.java,v 1.7 2007/09/27 10:17:49 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -46,7 +46,7 @@ public class SendAndReceiveTest extends TestCase {
                 "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
                 "shun=false;print_local_addr=true)";
 
-    String props3="LOOPBACK:" +
+    String props3="SHARED_LOOPBACK:" +
             "PING(timeout=2000;num_initial_members=3):" +
             "MERGE2(min_interval=5000;max_interval=10000):" +
             "FD_SOCK:" +
