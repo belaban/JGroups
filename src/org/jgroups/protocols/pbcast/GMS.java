@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.119 2007/09/18 20:28:35 vlada Exp $
+ * @version $Id: GMS.java,v 1.120 2007/09/27 16:19:52 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -506,7 +506,7 @@ public class GMS extends Protocol {
             }
 
             // Send VIEW_CHANGE event up and down the stack:
-            Event view_event=new Event(Event.VIEW_CHANGE, new_view.clone());
+            Event view_event=new Event(Event.VIEW_CHANGE, new_view);
             // changed order of passing view up and down (http://jira.jboss.com/jira/browse/JGRP-347)
             // changed it back (bela Sept 4 2007): http://jira.jboss.com/jira/browse/JGRP-564
             down_prot.down(view_event); // needed e.g. by failure detector or UDP
@@ -606,8 +606,7 @@ public class GMS extends Protocol {
 
     boolean startFlush(View new_view, long timeout){       
     	Map<String,Object> atts = new HashMap<String,Object>();
-    	atts.put("view", new_view);
-    	atts.put("timeout",new Long(timeout));
+    	atts.put("view", new_view);    	
     	return (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
     }
 
@@ -1170,7 +1169,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.119 2007/09/18 20:28:35 vlada Exp $
+     * @version $Id: GMS.java,v 1.120 2007/09/27 16:19:52 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

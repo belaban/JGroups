@@ -13,7 +13,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.46 2007/09/18 14:55:26 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.47 2007/09/27 16:19:51 vlada Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -220,12 +220,13 @@ public class MultiplexerTest extends ChannelTestBase {
         assertEquals("view is " + v, 2, v.size());
         v=ch1.getView();
         assertNotNull(v);
+        System.out.println("checking view " + v);
         assertEquals(2, v.size());
 
         // System.out.println("****** [c1] PUT(name, Bela) *******");
         c1.put("name", "Bela");
         if(ch1.flushSupported()) {
-            boolean success=ch1.startFlush(5000, true);
+            boolean success=ch1.startFlush(true);
             System.out.println("startFlush(): " + success);
             assertTrue(success);
         }
@@ -245,7 +246,7 @@ public class MultiplexerTest extends ChannelTestBase {
         c1_repl.put("hobbies", "biking");
         c1_repl.put("bike", "Centurion");
          if(ch1.flushSupported()) {
-             boolean success=ch1.startFlush(5000, true);
+             boolean success=ch1.startFlush(true);
              System.out.println("startFlush(): " + success);
              assertTrue(success);
          }
@@ -300,7 +301,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
     private static void flush(Channel channel, long timeout) {
         if(channel.flushSupported()) {
-            boolean success=channel.startFlush(timeout, true);
+            boolean success=channel.startFlush(true);
             System.out.println("startFlush(): " + success);
             assertTrue(success);
         }

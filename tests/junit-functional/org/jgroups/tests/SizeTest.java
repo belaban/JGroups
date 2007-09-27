@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $$
+// $Id: SizeTest.java,v 1.2 2007/09/27 16:19:51 vlada Exp $$
 
 package org.jgroups.tests;
 
@@ -462,22 +462,7 @@ public class SizeTest extends TestCase {
 
     public void testServiceInfo() throws Exception {
         ServiceInfo si=new ServiceInfo();
-        _testSize(si);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, null);
-        _testSize(si);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", null, null);
-        _testSize(si);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, new IpAddress(3333), null);
-        _testSize(si);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, new byte[]{'b', 'e', 'l', 'a'});
-        _testSize(si);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", new IpAddress(3333), new byte[]{'b', 'e', 'l', 'a'});
-        _testSize(si);
+        _testSize(si);     
     }
 
 
@@ -490,21 +475,7 @@ public class SizeTest extends TestCase {
 
         ServiceInfo si=new ServiceInfo();
         hdr=new MuxHeader(si);
-        _testSize(hdr);
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, null);
-        _testSize(new MuxHeader(si));
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", null, null);
-        _testSize(new MuxHeader(si));
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, new IpAddress(3333), null);
-        _testSize(new MuxHeader(si));
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, null, null, new byte[]{'b', 'e', 'l', 'a'});
-        _testSize(new MuxHeader(si));
-
-        si=new ServiceInfo(ServiceInfo.STATE_REQ, "bla", new IpAddress(3333), new byte[]{'b', 'e', 'l', 'a'});
+        _testSize(hdr);       
         _testSize(new MuxHeader(si));
     }
 

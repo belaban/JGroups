@@ -7,14 +7,14 @@ import org.jgroups.jmx.ProtocolMBean;
  * @version $Id$
  */
 public interface FLUSHMBean extends ProtocolMBean {
-	
-	public double getAverageFlushDuration();
-	
-	public long getTotalTimeInFlush();
-	
-	public int getNumberOfFlushes();
-	
-    boolean startFlush(long timeout);
 
-    void stopFlush(); 
+    public double getAverageFlushDuration();
+
+    public long getTotalTimeInFlush();
+
+    public int getNumberOfFlushes();
+
+    boolean startFlush();
+
+    void stopFlush();
 }
