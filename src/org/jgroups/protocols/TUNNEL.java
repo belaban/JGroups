@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.44 2007/08/14 08:16:30 belaban Exp $
+// $Id: TUNNEL.java,v 1.45 2007/09/27 10:21:47 vlada Exp $
 
 
 package org.jgroups.protocols;
@@ -60,6 +60,7 @@ public class TUNNEL extends TP {
     }
     
     public void init() throws Exception {
+        super.init();
         if(stack != null && stack.timer != null)
             timer=stack.timer;
         else
