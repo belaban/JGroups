@@ -3,11 +3,9 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.FIFOMessageQueue;
-import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -20,7 +18,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.70 2007/09/27 16:19:50 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.71 2007/09/28 10:40:23 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -43,9 +41,9 @@ public class Multiplexer implements UpHandler {
 
 
     /** Cluster view */
-    View view=null;
+    private volatile View view=null;
 
-    Address local_addr=null;
+    private volatile Address local_addr=null;
 
     /** Map<String,Boolean>. Map of service IDs and booleans that determine whether getState() has already been called */
     private final Map<String,Boolean> state_transfer_listeners=new HashMap<String,Boolean>();
@@ -108,7 +106,7 @@ public class Multiplexer implements UpHandler {
      * @return The service view
      */
     public View getServiceView(String service_id) {
-        List hosts=service_state.get(service_id);
+        List<Address> hosts=service_state.get(service_id);
         if(hosts == null) return null;
         return generateServiceView(hosts);
     }
@@ -146,7 +144,7 @@ public class Multiplexer implements UpHandler {
             }
         }
 
-        Collection values=state_transfer_listeners.values();
+        Collection<Boolean> values=state_transfer_listeners.values();
         boolean all_true=Util.all(values, Boolean.TRUE);
         if(!all_true)
             return true; // pseudo
@@ -273,7 +271,7 @@ public class Multiplexer implements UpHandler {
                 return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
 
             case Event.VIEW_CHANGE:
-                Vector old_members=view != null? view.getMembers() : null;
+                Vector<Address> old_members=view != null? view.getMembers() : null;
                 view=(View)evt.getArg();
                 Vector<Address> new_members=view != null? view.getMembers() : null;
                 Vector<Address> left_members=Util.determineLeftMembers(old_members, new_members);
@@ -664,20 +662,18 @@ public class Multiplexer implements UpHandler {
             hosts_copy=new ArrayList<Address>(hosts); // make a copy so we don't modify hosts in generateServiceView()
         }
 
-        if(removed) {
-            View service_view=generateServiceView(hosts_copy);
-            if(service_view != null) {
-                MuxChannel ch=services.get(service);
-                if(ch != null) {
-                    Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                    // ch.up(view_evt);
-                    if(ch.isConnected())
-                    	passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
-                }
-                else {
-                    if(log.isTraceEnabled())
-                        log.trace("service " + service + " not found, cannot dispatch service view " + service_view);
-                }
+        if(removed){
+            View service_view = generateServiceView(hosts_copy);
+            MuxChannel ch = services.get(service);
+            if(ch != null){
+                Event view_evt = new Event(Event.VIEW_CHANGE, service_view);               
+                if(ch.isConnected())
+                    passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
+            }else{
+                if(log.isTraceEnabled())
+                    log.trace("service " + service
+                              + " not found, cannot dispatch service view "
+                              + service_view);
             }
         }
 
@@ -690,9 +686,6 @@ public class Multiplexer implements UpHandler {
     private void handleServiceUp(String service, Address host, boolean received) {
         List<Address>    hosts, hosts_copy;
         boolean added=false;
-
-
-
 
         // discard if we sent this message
         if(received && host != null && local_addr != null && local_addr.equals(host)) {
@@ -712,26 +705,27 @@ public class Multiplexer implements UpHandler {
             hosts_copy=new ArrayList<Address>(hosts); // make a copy so we don't modify hosts in generateServiceView()
         }
 
-        if(added) {           
-            View service_view=generateServiceView(hosts_copy);
-            if(service_view != null) {
-                MuxChannel ch=services.get(service);
-                if(ch != null) {
-                    Event view_evt=new Event(Event.VIEW_CHANGE, service_view);
-                    // ch.up(view_evt);
-                    passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
-                }
-                else {
-                    if(log.isTraceEnabled())
-                        log.trace("service " + service + " not found, cannot dispatch service view " + service_view);                }
+        if(added){
+            View service_view = generateServiceView(hosts_copy);
+            MuxChannel ch = services.get(service);
+            if(ch != null){
+                Event view_evt = new Event(Event.VIEW_CHANGE, service_view);
+                passToMuxChannel(ch, view_evt, fifo_queue, null, service, false);
+            }else{
+                if(log.isTraceEnabled())
+                    log.trace("service " + service
+                              + " not found, cannot dispatch service view "
+                              + service_view);
             }
-        }
+        }        
     }
 
 
     /**
-     * Fetches the service states from everyone else in the cluster. Once all states have been received and inserted into
-     * service_state, compute a service view (a copy of MergeView) for each service and pass it up
+     * Fetches the service states from everyone else in the cluster. Once all
+     * states have been received and inserted into service_state, compute a
+     * service view (a copy of MergeView) for each service and pass it up
+     * 
      * @param view
      */
     private void handleMergeView(MergeView view) throws Exception {
@@ -765,10 +759,10 @@ public class Multiplexer implements UpHandler {
         service_responses.clear();       
     }
 
-    private static int numResponses(Map m) {
+    private static int numResponses(Map<Address, Set<String>> m) {
         int num=0;
-        Collection values=m.values();
-        for(Iterator it=values.iterator(); it.hasNext();) {
+        Collection<Set<String>> values=m.values();
+        for(Iterator<Set<String>> it=values.iterator(); it.hasNext();) {
             if(it.next() != null)
                 num++;
         }
@@ -870,7 +864,7 @@ public class Multiplexer implements UpHandler {
      * @return the servicd view (a modified copy of the real view), or null if
      *         the view was not modified
      */
-    private View generateServiceView(List hosts) {
+    private View generateServiceView(List<Address> hosts) {
         if(view == null) {
             Vector<Address> tmp=new Vector<Address>();
             tmp.add(local_addr);
