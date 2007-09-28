@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.45 2007/09/27 16:19:52 vlada Exp $
+// $Id: JChannelFactory.java,v 1.46 2007/09/28 11:38:13 vlada Exp $
 
 package org.jgroups;
 
@@ -37,7 +37,7 @@ public class JChannelFactory implements ChannelFactory {
 
     /** Map<String,String>. Hashmap which maps stack names to JGroups configurations. Keys are stack names, values are
      * plain JGroups stack configs. This is (re-)populated whenever a setMultiplexerConfig() method is called */
-    private final Map<String,String> stacks=new HashMap<String,String>();
+    private final Map<String,String> stacks= Collections.synchronizedMap(new HashMap<String,String>());
 
     /** Map<String,Entry>, maintains mapping between stack names (e.g. "udp") and Entries, which contain a JChannel and
      * a Multiplexer */
@@ -292,9 +292,8 @@ public class JChannelFactory implements ChannelFactory {
             if(ch == null){
                 String props = getConfig(stack_name);
                 ch = new JChannel(props);
-                entry.channel = ch;
-                if(expose_channels && server != null)
-                    registerChannel(ch, stack_name);
+                entry.channel = ch;                
+                registerChannel(ch, stack_name);
             }
             mux = entry.multiplexer;
             if(mux == null){
@@ -329,15 +328,19 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     private void registerChannel(JChannel ch, String stack_name) throws Exception {
-        JmxConfigurator.registerChannel(ch, server, domain, stack_name, expose_protocols);
+        if(expose_channels && server != null)
+            JmxConfigurator.registerChannel(ch, server, domain, stack_name, expose_protocols);
     }
 
-
-
-
-    /** Unregisters everything under stack_name (including stack_name) */
-    private void unregister(String name) throws Exception {
-        JmxConfigurator.unregister(server, name);
+    
+    private void unregister(String name) {
+        if(expose_channels && server != null){
+            try{
+                JmxConfigurator.unregister(server, name);
+            }catch(Exception e){
+                log.error("failed unregistering " + name, e);
+            }
+        }
     }
 
 
@@ -489,14 +492,7 @@ public class JChannelFactory implements ChannelFactory {
             if(all_closed) {
                 channels.remove(stack_name);
             }
-            if(expose_channels && server != null) {
-                try {
-                    unregister(domain + ":*,cluster=" + stack_name);
-                }
-                catch(Exception e) {
-                    log.error("failed unregistering channel " + stack_name, e);
-                }
-            }
+            unregister(domain + ":*,cluster=" + stack_name);            
         }
     }
 
@@ -526,23 +522,16 @@ public class JChannelFactory implements ChannelFactory {
                     }finally{
                         if(entry.channel.flushSupported())
                             entry.channel.stopFlush();
-                    }
-                    all_closed = mux.shutdown(); // closes JChannel
-                    // if all
-                    // MuxChannels are
-                    // in closed state
+                    }                   
+                    // closes JChannel if all
+                    // MuxChannels are in closed state
+                    all_closed = mux.shutdown();
                 }
             }
             if(all_closed){
                 channels.remove(stack_name);
             }
-            if(expose_channels && server != null){
-                try{
-                    unregister(domain + ":*,cluster=" + stack_name);
-                }catch(Exception e){
-                    log.error("failed unregistering channel " + stack_name, e);
-                }
-            }
+            unregister(domain + ":*,cluster=" + stack_name);            
         }
     }
 
@@ -590,23 +579,13 @@ public class JChannelFactory implements ChannelFactory {
             if(e.channel != null)
                 e.channel.close();
         }
-        if(expose_channels && server != null){
-            try{
-                unregister(domain + ":*");
-            }catch(Throwable e){
-                log.error("failed unregistering domain " + domain, e);
-            }
-        }
+        unregister(domain + ":*");        
         channels.clear();
     }
 
 
     public String dumpConfiguration() {
-        if(stacks != null) {
-            return stacks.keySet().toString();
-        }
-        else
-            return null;
+        return stacks.keySet().toString();
     }
 
     public String dumpChannels() {       
@@ -684,7 +663,7 @@ public class JChannelFactory implements ChannelFactory {
                 // fixes http://jira.jboss.com/jira/browse/JGRP-290
                 ConfiguratorFactory.substituteVariables(conf); // replace vars with system props
                 String val=conf.getProtocolStackString();
-                this.stacks.put(st_name, val);
+                stacks.put(st_name, val);
             }
         }
     }
