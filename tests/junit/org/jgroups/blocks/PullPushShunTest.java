@@ -8,7 +8,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.3 2005/10/31 10:56:31 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.4 2007/10/01 07:59:44 belaban Exp $
  */
 public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener, ChannelListener {
     private JChannel channel;
@@ -48,7 +48,6 @@ public class PullPushShunTest extends TestCase implements MessageListener, Membe
         Util.sleep(5000);
         new_local_addr=channel.getLocalAddress();
         assertNotNull(new_local_addr);
-        assertFalse(old_local_addr.equals(new_local_addr));
         channel.close();
     }
 
