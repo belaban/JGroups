@@ -27,10 +27,9 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.136 2007/08/28 13:07:22 belaban Exp $
+ * @version $Id: Util.java,v 1.137 2007/10/01 07:16:18 belaban Exp $
  */
 public class Util {
-    private static final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
     private static  NumberFormat f;
 
@@ -245,83 +244,81 @@ public class Util {
             return oldObjectToByteBuffer(obj);
 
         byte[] result=null;
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
-        synchronized(out_stream) {
-            out_stream.reset();
-            if(obj == null) {
-                out_stream.write(TYPE_NULL);
-                out_stream.flush();
-                return out_stream.toByteArray();
-            }
-
-            OutputStream out=null;
-            Byte type;
-            try {
-                if(obj instanceof Streamable) {  // use Streamable if we can
-                    out_stream.write(TYPE_STREAMABLE);
-                    out=new DataOutputStream(out_stream);
-                    writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
-                }
-                else if((type=(Byte)PRIMITIVE_TYPES.get(obj.getClass())) != null) {
-                    out_stream.write(type.byteValue());
-                    out=new DataOutputStream(out_stream);
-                    switch(type.byteValue()) {
-                        case TYPE_BOOLEAN:
-                            ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
-                            break;
-                        case TYPE_BYTE:
-                            ((DataOutputStream)out).writeByte(((Byte)obj).byteValue());
-                            break;
-                        case TYPE_CHAR:
-                            ((DataOutputStream)out).writeChar(((Character)obj).charValue());
-                            break;
-                        case TYPE_DOUBLE:
-                            ((DataOutputStream)out).writeDouble(((Double)obj).doubleValue());
-                            break;
-                        case TYPE_FLOAT:
-                            ((DataOutputStream)out).writeFloat(((Float)obj).floatValue());
-                            break;
-                        case TYPE_INT:
-                            ((DataOutputStream)out).writeInt(((Integer)obj).intValue());
-                            break;
-                        case TYPE_LONG:
-                            ((DataOutputStream)out).writeLong(((Long)obj).longValue());
-                            break;
-                        case TYPE_SHORT:
-                            ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
-                            break;
-                        case TYPE_STRING:
-                            String str=(String)obj;
-                            if(str.length() > Short.MAX_VALUE) {
-                                ((DataOutputStream)out).writeBoolean(true);
-                                ObjectOutputStream oos=new ObjectOutputStream(out);
-                                try {
-                                    oos.writeObject(str);
-                                }
-                                finally {
-                                    oos.close();
-                                }
-                            }
-                            else {
-                                ((DataOutputStream)out).writeBoolean(false);
-                                ((DataOutputStream)out).writeUTF(str);
-                            }
-                            break;
-                        default:
-                            throw new IllegalArgumentException("type " + type + " is invalid");
-                    }
-                }
-                else { // will throw an exception if object is not serializable
-                    out_stream.write(TYPE_SERIALIZABLE);
-                    out=new ObjectOutputStream(out_stream);
-                    ((ObjectOutputStream)out).writeObject(obj);
-                }
-            }
-            finally {
-                Util.close(out);
-            }
-            result=out_stream.toByteArray();
+        if(obj == null) {
+            out_stream.write(TYPE_NULL);
+            out_stream.flush();
+            return out_stream.toByteArray();
         }
+
+        OutputStream out=null;
+        Byte type;
+        try {
+            if(obj instanceof Streamable) {  // use Streamable if we can
+                out_stream.write(TYPE_STREAMABLE);
+                out=new DataOutputStream(out_stream);
+                writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
+            }
+            else if((type=(Byte)PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+                out_stream.write(type.byteValue());
+                out=new DataOutputStream(out_stream);
+                switch(type.byteValue()) {
+                    case TYPE_BOOLEAN:
+                        ((DataOutputStream)out).writeBoolean(((Boolean)obj).booleanValue());
+                        break;
+                    case TYPE_BYTE:
+                        ((DataOutputStream)out).writeByte(((Byte)obj).byteValue());
+                        break;
+                    case TYPE_CHAR:
+                        ((DataOutputStream)out).writeChar(((Character)obj).charValue());
+                        break;
+                    case TYPE_DOUBLE:
+                        ((DataOutputStream)out).writeDouble(((Double)obj).doubleValue());
+                        break;
+                    case TYPE_FLOAT:
+                        ((DataOutputStream)out).writeFloat(((Float)obj).floatValue());
+                        break;
+                    case TYPE_INT:
+                        ((DataOutputStream)out).writeInt(((Integer)obj).intValue());
+                        break;
+                    case TYPE_LONG:
+                        ((DataOutputStream)out).writeLong(((Long)obj).longValue());
+                        break;
+                    case TYPE_SHORT:
+                        ((DataOutputStream)out).writeShort(((Short)obj).shortValue());
+                        break;
+                    case TYPE_STRING:
+                        String str=(String)obj;
+                        if(str.length() > Short.MAX_VALUE) {
+                            ((DataOutputStream)out).writeBoolean(true);
+                            ObjectOutputStream oos=new ObjectOutputStream(out);
+                            try {
+                                oos.writeObject(str);
+                            }
+                            finally {
+                                oos.close();
+                            }
+                        }
+                        else {
+                            ((DataOutputStream)out).writeBoolean(false);
+                            ((DataOutputStream)out).writeUTF(str);
+                        }
+                        break;
+                    default:
+                        throw new IllegalArgumentException("type " + type + " is invalid");
+                }
+            }
+            else { // will throw an exception if object is not serializable
+                out_stream.write(TYPE_SERIALIZABLE);
+                out=new ObjectOutputStream(out_stream);
+                ((ObjectOutputStream)out).writeObject(obj);
+            }
+        }
+        finally {
+            Util.close(out);
+        }
+        result=out_stream.toByteArray();
         return result;
     }
 
@@ -373,20 +370,18 @@ public class Util {
      */
     public static byte[] oldObjectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
-        synchronized(out_stream) {
-            out_stream.reset();
-            if(obj instanceof Streamable) {  // use Streamable if we can
-                DataOutputStream out=new DataOutputStream(out_stream);
-                writeGenericStreamable((Streamable)obj, out);
-                out.close();
-            }
-            else {
-                ObjectOutputStream out=new ObjectOutputStream(out_stream);
-                out.writeObject(obj);
-                out.close();
-            }
-            result=out_stream.toByteArray();
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        if(obj instanceof Streamable) {  // use Streamable if we can
+            DataOutputStream out=new DataOutputStream(out_stream);
+            writeGenericStreamable((Streamable)obj, out);
+            out.close();
         }
+        else {
+            ObjectOutputStream out=new ObjectOutputStream(out_stream);
+            out.writeObject(obj);
+            out.close();
+        }
+        result=out_stream.toByteArray();
         return result;
     }
 
@@ -417,26 +412,22 @@ public class Util {
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
-        synchronized(out_stream) {
-            out_stream.reset();
-            DataOutputStream out=new DataOutputStream(out_stream);
-            obj.writeTo(out);
-            result=out_stream.toByteArray();
-            out.close();
-        }
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        DataOutputStream out=new DataOutputStream(out_stream);
+        obj.writeTo(out);
+        result=out_stream.toByteArray();
+        out.close();
         return result;
     }
 
 
     public static byte[] collectionToByteBuffer(Collection c) throws Exception {
         byte[] result=null;
-        synchronized(out_stream) {
-            out_stream.reset();
-            DataOutputStream out=new DataOutputStream(out_stream);
-            Util.writeAddresses(c, out);
-            result=out_stream.toByteArray();
-            out.close();
-        }
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        DataOutputStream out=new DataOutputStream(out_stream);
+        Util.writeAddresses(c, out);
+        result=out_stream.toByteArray();
+        out.close();
         return result;
     }
 
