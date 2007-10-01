@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.34 2007/09/27 16:24:09 vlada Exp $
+// $Id: Channel.java,v 1.35 2007/10/01 11:48:59 vlada Exp $
 
 package org.jgroups;
 
@@ -468,6 +468,8 @@ public abstract class Channel implements Transport {
 
     /** Returns a given substate (state_id of null means return entire state) */
     public abstract void returnState(byte[] state, String state_id);
+    
+    public abstract Map<String,Object> getInfo();
 
 
     public static String option2String(int option) {
