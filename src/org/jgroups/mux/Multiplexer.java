@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.FIFOMessageQueue;
+import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.Util;
 
 import java.util.*;
@@ -18,7 +19,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.71 2007/09/28 10:40:23 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.72 2007/10/01 11:49:07 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
@@ -156,18 +157,20 @@ public class Multiplexer implements UpHandler {
         return rc;
     }
 
-    protected static ThreadPoolExecutor createThreadPool() {
+    protected ThreadPoolExecutor createThreadPool() {
         int min_threads=1, max_threads=4;
         long keep_alive=30000;
 
-        ThreadFactory factory=new ThreadFactory() {
-            AtomicInteger num = new AtomicInteger(1);
-
+        ThreadFactory factory=new ThreadFactory() {           
             ThreadGroup mux_threads=new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads");
 
+            Map<String,Object> m = channel.getInfo(); 
+            ThreadNamingPattern pattern = (ThreadNamingPattern) m.get("thread_naming_pattern");
             public Thread newThread(Runnable command) {
-                Thread ret=new Thread(mux_threads, command, "Multiplexer-" + num.incrementAndGet());
-                ret.setDaemon(true);
+                Thread ret=new Thread(mux_threads, command, "Multiplexer");
+                if(pattern != null){
+                   pattern.renameThread(ret);
+                }                
                 return ret;
             }
         };

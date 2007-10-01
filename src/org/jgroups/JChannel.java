@@ -22,6 +22,8 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Exchanger;
 
 /**
@@ -71,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.152 2007/09/27 16:24:09 vlada Exp $
+ * @version $Id: JChannel.java,v 1.153 2007/10/01 11:49:01 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -141,6 +143,8 @@ public class JChannel extends Channel {
      * containing all key-value pairs of additional_data
      */
     protected final Map<String,Object> additional_data=new HashMap<String,Object>();
+    
+    protected final ConcurrentMap<String,Object> info=new ConcurrentHashMap<String,Object>();
 
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -1049,6 +1053,11 @@ public class JChannel extends Channel {
                 }
             }
             break;
+            
+        case Event.INFO:
+           Map<String, Object> m = (Map<String, Object>) evt.getArg();
+           info.putAll(m);            
+           break;    
 
         case Event.GET_STATE_OK:
             StateTransferInfo info=(StateTransferInfo)evt.getArg();
@@ -1652,6 +1661,11 @@ public class JChannel extends Channel {
            catch (TimeoutException te){              
            }
         }
+    }
+    
+    @Override
+    public Map<String, Object> getInfo(){
+       return new HashMap<String, Object>(info);
     }
 
     Address determineCoordinator() {
