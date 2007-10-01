@@ -18,7 +18,7 @@ import java.util.Properties;
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.13 2007/09/17 13:21:06 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.14 2007/10/01 07:56:42 belaban Exp $
  */
 public class DiscardTest extends TestCase {
     JChannel ch1, ch2;
@@ -52,8 +52,6 @@ public class DiscardTest extends TestCase {
     public void _testLosslessReception(String props, boolean discard) throws Exception {
         Address ch1_addr, ch2_addr;
         long start, stop;
-
-        System.setProperty("jgroups.bind_addr", "127.0.0.1");
 
         ch1=new JChannel(props);
         ch1.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "ch1"));
