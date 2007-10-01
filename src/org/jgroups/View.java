@@ -20,7 +20,7 @@ import java.util.Vector;
  * crashes or leaves the group.
  * The views are sent between members using the VIEW_CHANGE event
  * @author Bela Ban
- * @version $Id: View.java,v 1.17 2007/09/27 16:19:52 vlada Exp $
+ * @version $Id: View.java,v 1.18 2007/10/01 07:24:41 belaban Exp $
  */
 public class View implements Externalizable, Cloneable, Streamable {
     /* A view is uniquely identified by its ViewID
@@ -38,7 +38,8 @@ public class View implements Externalizable, Cloneable, Streamable {
      */
     protected Vector<Address> members=null;
     
-    protected Map<String, Object> payload = null; 
+    protected Map<String, Object> payload=null;
+    private static final long serialVersionUID=7027860705519930293L;
 
 
     /**
@@ -174,20 +175,25 @@ public class View implements Externalizable, Cloneable, Streamable {
         }
         return ret.toString();
     }
-    
-    public void addPayload(String key,Object value){
-        if(payload==null){
-            payload = new HashMap<String, Object>(7);           
+
+    /**
+     * Adds a key and value to the view. Since the payloads will be shipped around *with* the view, so the keys and
+     * values need to be serializable. Note that the total serialized size of <em>all</em> keys and values cannot
+     * exceed 65000 bytes !
+     * @param key
+     * @param value
+     */
+    public void addPayload(String key, Object value) {
+        if(payload == null) {
+            payload=new HashMap<String, Object>(7);
         }
         payload.put(key, value);
     }
-    
-    public Object getPayload(String key){
-        Object result = null;
-        if(payload != null){            
-            result = payload.get(key);                       
-        }        
-        return result;
+
+    public Object getPayload(String key) {
+        if(payload != null)
+            return payload.get(key);
+        return null;
     }
 
 
@@ -201,25 +207,24 @@ public class View implements Externalizable, Cloneable, Streamable {
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeObject(vid);
         out.writeObject(members);
-        if(payload != null && !payload.isEmpty()){
-            out.writeInt(1);
+        if(payload != null && !payload.isEmpty()) {
+            out.writeBoolean(true);
             out.writeObject(payload);
-        }else{
-            out.writeInt(0);
+        }
+        else {
+            out.writeBoolean(false);
         }
     }
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         vid=(ViewId)in.readObject();
-        members=(Vector<Address>)in.readObject();        
-        if(in.readInt()==1){
-            payload = (Map<String, Object>) in.readObject();
+        members=(Vector<Address>)in.readObject();
+        if(in.readBoolean()) {
+            payload=(Map<String, Object>)in.readObject();
         }
     }
 
-
-    
 
     public void writeTo(DataOutputStream out) throws IOException {
         // vid
@@ -232,22 +237,22 @@ public class View implements Externalizable, Cloneable, Streamable {
 
         // members:
         Util.writeAddresses(members, out);
-        
-        if(payload != null && !payload.isEmpty()){            
-            try{
-                byte buffer [] = Util.objectToByteBuffer(payload);
-                out.writeInt(buffer.length);
-                out.write(buffer,0,buffer.length);
-            }catch(Exception e){
-               throw new IOException("Could not write View payload");
+
+        if(payload != null && !payload.isEmpty()) {
+            try {
+                byte buffer[]=Util.objectToByteBuffer(payload);
+                out.writeShort(buffer.length);
+                out.write(buffer, 0, buffer.length);
+            }
+            catch(Exception e) {
+                throw new IOException("could not write View payload");
             }
         }
-        else{
-            out.writeInt(0);
+        else {
+            out.writeShort(0);
         }
     }
 
-    
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         boolean b;
@@ -260,15 +265,16 @@ public class View implements Externalizable, Cloneable, Streamable {
 
         // members:
         members=(Vector<Address>)Util.readAddresses(in, Vector.class);
-        
-        int payloadLength = in.readInt();
-        if(payloadLength > 0){
-            byte [] buffer = new byte[payloadLength]; 
+
+        short payloadLength=in.readShort();
+        if(payloadLength > 0) {
+            byte[] buffer=new byte[payloadLength];
             in.read(buffer);
-            try{
-                payload = (Map<String, Object>) Util.objectFromByteBuffer(buffer);                
-            }catch(Exception e){
-                throw new IOException("Could not read View payload "+buffer.length);
+            try {
+                payload=(Map<String, Object>)Util.objectFromByteBuffer(buffer);
+            }
+            catch(Exception e) {
+                throw new IOException("Could not read View payload " + buffer.length);
             }
         }
     }
@@ -278,10 +284,10 @@ public class View implements Externalizable, Cloneable, Streamable {
         if(vid != null)
             retval+=vid.serializedSize();
         retval+=Util.size(members);
-        
-        retval += Global.INT_SIZE; //resence for payload
-        if(payload != null){
-            retval += Util.sizeOf(payload);
+
+        retval+=Global.SHORT_SIZE; // presence for payload
+        if(payload != null) {
+            retval+=Util.sizeOf(payload);
         }
         return retval;
     }
