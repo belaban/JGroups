@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.2 2007/09/27 16:19:51 vlada Exp $$
+// $Id: SizeTest.java,v 1.3 2007/10/01 07:09:18 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -198,6 +198,23 @@ public class SizeTest extends TestCase {
         ViewId vid=new ViewId(new IpAddress(1111), 322649);
         Vector mbrs=new Vector();
         v=new View(vid, mbrs);
+        _testSize(v);
+        mbrs.add(new IpAddress(3333));
+        _testSize(v);
+        mbrs.add(new IpAddress(1111));
+        _testSize(v);
+    }
+
+    public void testViewPayload() throws Exception {
+        View v=new View();
+        v.addPayload("name", "Bela Ban");
+        _testSize(v);
+
+        ViewId vid=new ViewId(new IpAddress(1111), 322649);
+        Vector mbrs=new Vector();
+        v=new View(vid, mbrs);
+        v.addPayload("id", 322649);
+        v.addPayload("name", "Michelle");
         _testSize(v);
         mbrs.add(new IpAddress(3333));
         _testSize(v);
@@ -449,14 +466,14 @@ public class SizeTest extends TestCase {
         hdr.readFrom(in);
         System.out.println("call stack is " + hdr.callStack);
 
-        Address tmp=(Address)hdr.callStack.pop();
+        Address tmp=hdr.callStack.pop();
         assertEquals(tmp, new IpAddress(3333));
-        tmp=(Address)hdr.callStack.pop();
+        tmp=hdr.callStack.pop();
         assertEquals(tmp, new IpAddress(2222));
         assertEquals(322649, hdr.id);
         assertTrue(hdr.rsp_expected);
         assertEquals("bla", hdr.corrName);
-        assertEquals(hdr.type, RequestCorrelator.Header.RSP);
+        assertEquals(RequestCorrelator.Header.RSP, hdr.type);
     }
 
 
@@ -480,7 +497,7 @@ public class SizeTest extends TestCase {
     }
 
 
-    private void _testSize(Header hdr) throws Exception {
+    private static void _testSize(Header hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
@@ -488,7 +505,7 @@ public class SizeTest extends TestCase {
     }
 
 
-    private void _testSize(VIEW_SYNC.ViewSyncHeader hdr) throws Exception {
+    private static void _testSize(VIEW_SYNC.ViewSyncHeader hdr) throws Exception {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
@@ -505,7 +522,7 @@ public class SizeTest extends TestCase {
     }
 
 
-     private void _testSize(Address addr) throws Exception {
+     private static void _testSize(Address addr) throws Exception {
         long size=addr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(addr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
@@ -513,35 +530,35 @@ public class SizeTest extends TestCase {
     }
 
 
-    private void _testSize(ViewId vid) throws Exception {
+    private static void _testSize(ViewId vid) throws Exception {
         long size=vid.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(vid);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
     }
 
-    private void _testSize(View v) throws Exception {
+    private static void _testSize(View v) throws Exception {
         long size=v.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(v);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
     }
 
-    private void _testSize(Collection coll) throws Exception {
+    private static void _testSize(Collection coll) throws Exception {
         long size=Util.size(coll);
         byte[] serialized_form=Util.collectionToByteBuffer(coll);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
     }
 
-    private void _testSize(JoinRsp rsp) throws Exception {
+    private static void _testSize(JoinRsp rsp) throws Exception {
         long size=rsp.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(rsp);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
         assertEquals(serialized_form.length, size);
     }
 
-    private void _testSize(ServiceInfo si) throws Exception {
+    private static void _testSize(ServiceInfo si) throws Exception {
         long size=si.size();
         byte[] serialized_form=Util.streamableToByteBuffer(si);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
@@ -549,7 +566,7 @@ public class SizeTest extends TestCase {
     }
 
 
-    private void _testSize(MuxHeader hdr) throws Exception {
+    private static void _testSize(MuxHeader hdr) throws Exception {
          long size=hdr.size();
          byte[] serialized_form=Util.streamableToByteBuffer(hdr);
          System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
