@@ -1,10 +1,10 @@
 
 <!--
 Total order protocol stack using the SEQUENCER protocol
-Version: $Id: sequencer.xml,v 1.6 2007/08/20 11:15:36 belaban Exp $
+Version: $Id: sequencer.xml,v 1.7 2007/10/02 12:01:02 belaban Exp $
 -->
 <config>
-    <UDP bind_addr="192.168.5.1"
+    <UDP
          mcast_port="45566" 
          mcast_addr="228.10.10.10"
          tos="16"
@@ -17,7 +17,6 @@ Version: $Id: sequencer.xml,v 1.6 2007/08/20 11:15:36 belaban Exp $
          max_bundle_size="64000"
          max_bundle_timeout="30"
          use_incoming_packet_handler="true" 
-         use_outgoing_packet_handler="false" 
          ip_ttl="2" 
          enable_bundling="true"/>
     <PING timeout="2000"
@@ -26,20 +25,22 @@ Version: $Id: sequencer.xml,v 1.6 2007/08/20 11:15:36 belaban Exp $
               min_interval="5000"/>
     <FD_SOCK/>
     <FD timeout="10000" max_tries="5"   shun="true"/>
-    <!--VERIFY_SUSPECT timeout="1500" /-->
+    <VERIFY_SUSPECT timeout="1500" />
+    <BARRIER />
     <pbcast.NAKACK
                    use_mcast_xmit="false" gc_lag="0"
-                   retransmit_timeout="100,200,300,600,1200,2400,4800"
+                   retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="true"/>
     <UNICAST timeout="300,600,1200,2400,3600"/>
-    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000" 
+    <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
     <VIEW_SYNC avg_send_interval="60000"   />
-    <pbcast.GMS print_local_addr="true" join_timeout="3000" 
-                join_retry_timeout="2000" shun="true" handle_concurrent_startup="true" />
+    <pbcast.GMS print_local_addr="true" join_timeout="3000"
+                join_retry_timeout="2000" shun="false"
+                view_bundling="true"/>
     <SEQUENCER/>
     <FC max_credits="2000000"
            min_threshold="0.10"/>
-    <!-- FRAG2 frag_size="60000" -->
-    <!-- pbcast.STATE_TRANSFER  /-->
+    <FRAG2 frag_size="60000"/>
+    <pbcast.STATE_TRANSFER  />
 </config>
