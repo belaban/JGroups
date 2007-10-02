@@ -673,7 +673,7 @@ public class FLUSH extends Protocol {
             amIParticipant = flushMembers.contains(localAddress);
         }
         if(amIParticipant){
-            Message msg = new Message(flushStarter);
+            Message msg = new Message(null);
             msg.putHeader(getName(), new FlushHeader(FlushHeader.FLUSH_OK, fh.viewID));
             down_prot.down(new Event(Event.MSG, msg));
             if(log.isDebugEnabled())
