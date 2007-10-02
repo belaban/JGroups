@@ -18,7 +18,7 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.5 2007/09/20 04:38:40 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.6 2007/10/02 12:01:27 belaban Exp $
  */
 public class SequencerFailoverTest extends TestCase {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
@@ -26,19 +26,7 @@ public class SequencerFailoverTest extends TestCase {
     static final int NUM_MSGS=50;
 
 
-    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
-            "enable_bundling=true;use_incoming_packet_handler=true;loopback=true):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD(timeout=1000;max_tries=2):" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=true;print_local_addr=true;view_ack_collection_timeout=2000):" +
-            "SEQUENCER";
+    String props="sequencer.xml";
 
 
 
