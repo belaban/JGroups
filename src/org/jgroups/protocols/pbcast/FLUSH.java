@@ -649,8 +649,9 @@ public class FLUSH extends Protocol {
 
     private void onResume() {
         long viewID = currentViewId();
-        Message msg = new Message(null, localAddress, null);
-        msg.setFlag(Message.OOB);
+        Message msg = new Message(null, localAddress, null);    
+        //Cannot be OOB since START_FLUSH is not OOB
+        //we have to FIFO order two subsequent flushes       
         msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
         down_prot.down(new Event(Event.MSG, msg));
         if(log.isDebugEnabled())
@@ -685,10 +686,14 @@ public class FLUSH extends Protocol {
 
         boolean flushOkCompleted = false;
         boolean amIParticipant = false;
+        Message m = null;
         synchronized(sharedLock){
             amIParticipant = flushMembers.contains(address);
             flushOkSet.add(address);
             flushOkCompleted = flushOkSet.containsAll(flushMembers);
+            if(flushOkCompleted){
+                m = new Message(flushCoordinator);
+            }
             if(log.isDebugEnabled())
                 log.debug("At " + localAddress
                           + " FLUSH_OK from "
@@ -706,7 +711,6 @@ public class FLUSH extends Protocol {
             Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
             FlushHeader fh = new FlushHeader(FlushHeader.FLUSH_COMPLETED, viewID);
             fh.addDigest(digest);
-            Message m = new Message(flushCoordinator);
             m.putHeader(getName(), fh);
             if(log.isDebugEnabled())
                 log.debug(localAddress + " is blocking FLUSH.down(). Sending FLUSH_COMPLETED message to "
