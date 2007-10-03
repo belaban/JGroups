@@ -18,18 +18,18 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.73 2007/10/02 13:20:22 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.74 2007/10/03 10:31:57 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
+	
+    private static final Log log=LogFactory.getLog(Multiplexer.class);
+    private static final String SEPARATOR="::";
+    private static final short SEPARATOR_LEN=(short)SEPARATOR.length();
+    private static final String NAME="MUX";    
+    
     /** Map<String,MuxChannel>. Maintains the mapping between service IDs and their associated MuxChannels */
     private final ConcurrentMap<String,MuxChannel> services=new ConcurrentHashMap<String,MuxChannel>();
     private final JChannel channel;
-    static final Log log=LogFactory.getLog(Multiplexer.class);
-    static final String SEPARATOR="::";
-    static final short SEPARATOR_LEN=(short)SEPARATOR.length();
-    static final String NAME="MUX";    
-    
-    private boolean blocked=false;
 
     /** Thread pool to concurrently process messages sent to different services */
     private final ExecutorService thread_pool;
@@ -54,7 +54,10 @@ public class Multiplexer implements UpHandler {
 
     private long SERVICES_RSP_TIMEOUT=10000;  
 
-    public Multiplexer(JChannel channel) {
+    public Multiplexer(JChannel channel) {       
+    	if(channel == null || !channel.isOpen())
+    		throw new IllegalArgumentException("Channel " + channel + " cannot be used for Multiplexer");
+       
         this.channel=channel;
         this.channel.setUpHandler(this);
         this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves                
@@ -74,11 +77,11 @@ public class Multiplexer implements UpHandler {
      * @return The set of service IDs
      */
     public Set getApplicationIds() {
-        return services != null? Collections.unmodifiableSet(services.keySet()) : null;
+        return getServiceIds();
     }
 
     public Set<String> getServiceIds() {
-        return services != null? Collections.unmodifiableSet(services.keySet()) : null;
+        return Collections.unmodifiableSet(services.keySet());
     }
 
 
@@ -102,7 +105,7 @@ public class Multiplexer implements UpHandler {
     }
 
     public boolean stateTransferListenersPresent() {
-        return state_transfer_listeners != null && !state_transfer_listeners.isEmpty();
+        return !state_transfer_listeners.isEmpty();
     }
     
     public synchronized void registerForStateTransfer(String appl_id, String substate_id) {
@@ -340,17 +343,12 @@ public class Multiplexer implements UpHandler {
                 passToAllMuxChannels(evt);
                 break;
 
-            case Event.BLOCK:
-                blocked=true;
-                if(!services.isEmpty()) {
-                    passToAllMuxChannels(evt, true, true); // do block and bypass the thread pool
-                }
+            case Event.BLOCK:               
+                passToAllMuxChannels(evt, true, true); // do block and bypass the thread pool               
                 waitUntilThreadPoolHasNoRunningTasks(1000);
                 return null;
 
-            case Event.UNBLOCK: // process queued-up MergeViews
-                if(blocked)
-                    blocked=false;
+            case Event.UNBLOCK: // process queued-up MergeViews                
                 passToAllMuxChannels(evt);
                 break;
 
@@ -365,7 +363,7 @@ public class Multiplexer implements UpHandler {
         int num_threads=0;
         long end_time=System.currentTimeMillis() + timeout;
 
-        while(fifo_queue != null && (num_threads=fifo_queue.size()) > 0 && System.currentTimeMillis() < end_time) {
+        while((num_threads=fifo_queue.size()) > 0 && System.currentTimeMillis() < end_time) {
             Util.sleep(100);
         }
         return num_threads;
