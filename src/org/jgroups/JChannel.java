@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.153 2007/10/01 11:49:01 vlada Exp $
+ * @version $Id: JChannel.java,v 1.154 2007/10/03 13:30:54 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -419,6 +419,7 @@ public class JChannel extends Channel {
 
         boolean stateTransferOk=false;
         boolean joinSuccessful=false;
+        boolean canFetchState=false;
         // only connect if we are not a unicast channel
         if(cluster_name != null) {
 
@@ -434,7 +435,7 @@ public class JChannel extends Channel {
 
                 connected=true;
                 notifyChannelConnected(this);
-                boolean canFetchState=getView() != null && getView().size() > 1;
+                canFetchState=getView() != null && getView().size() > 1;
 
                 // if I am not the only member in cluster then
                 if(canFetchState) {
@@ -458,7 +459,7 @@ public class JChannel extends Channel {
 
             }
             finally {
-                if(flush_supported)
+                if(flush_supported && canFetchState)
                     stopFlush();
             }
         }
