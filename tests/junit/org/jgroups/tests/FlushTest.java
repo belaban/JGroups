@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.55 2007/09/05 17:59:55 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.56 2007/10/03 13:29:41 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -86,7 +86,7 @@ public class FlushTest extends ChannelTestBase {
         FlushTestReceiver receivers[] = new FlushTestReceiver[] { new FlushTestReceiver("c1",
                                                                                         s,
                                                                                         0,
-                                                                                        false) };
+                                                                                        FlushTestReceiver.CONNECT_ONLY) };
         receivers[0].start();
         s.release(1);
 
@@ -159,10 +159,10 @@ public class FlushTest extends ChannelTestBase {
         if(isMuxChannelUsed()){
             int muxFactoryCount = 2;
             names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, false, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, muxFactoryCount);
         }else{
             names = createApplicationNames(4);
-            _testChannels(names, false, 4);
+            _testChannels(names, FlushTestReceiver.CONNECT_ONLY, 4);
         }
     }
 
@@ -178,7 +178,7 @@ public class FlushTest extends ChannelTestBase {
         int muxFactoryCount = 1;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(4, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, false, new ChannelAssertable(1));
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(1));
         }
     }
 
@@ -195,7 +195,7 @@ public class FlushTest extends ChannelTestBase {
         int muxFactoryCount = 2;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(2, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, false, new ChannelAssertable(2));
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(2));
         }
     }
 
@@ -211,10 +211,29 @@ public class FlushTest extends ChannelTestBase {
         if(isMuxChannelUsed()){
             int muxFactoryCount = 2;
             names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, true, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, muxFactoryCount);
         }else{
             names = createApplicationNames(4);
-            _testChannels(names, true, 4);
+            _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 4);
+        }
+    }
+    
+    /**
+     * Tests emition of block/unblock/set|get state events for both mux and bare
+     * channel depending on mux.on parameter. In mux mode there will be only one
+     * mux channel for each "real" channel created and the number of real
+     * channels created is getMuxFactoryCount().
+     * 
+     */
+    public void testBlockingWithConnectAndStateTransfer() {
+        String[] names = null;
+        if(isMuxChannelUsed()){
+            int muxFactoryCount = 2;
+            names = createMuxApplicationNames(1, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_GET_STATE, muxFactoryCount);
+        }else{
+            names = createApplicationNames(4);
+            _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE, 4);
         }
     }
 
@@ -229,13 +248,13 @@ public class FlushTest extends ChannelTestBase {
         String[] names = null;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(2, 2);
-            _testChannels(names, 2, true, 2);
+            _testChannels(names, 2, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 2);
         }
     }
 
     private void _testChannels(String names[],
                                int muxFactoryCount,
-                               boolean useTransfer,
+                               int connectType,
                                Assertable a) {
         int count = names.length;
 
@@ -253,18 +272,16 @@ public class FlushTest extends ChannelTestBase {
                     channel = new FlushTestReceiver(names[i],
                                                     muxFactory[i % muxFactoryCount],
                                                     semaphore,
-                                                    useTransfer);
+                                                    connectType);
                 }else{
-                    channel = new FlushTestReceiver(names[i], semaphore, 0, useTransfer);
+                    channel = new FlushTestReceiver(names[i], semaphore, 0, connectType);
                 }
                 channels.add(channel);
 
                 // Release one ticket at a time to allow the thread to start
                 // working
                 channel.start();
-                if(!useTransfer){
-                    semaphore.release(1);
-                }
+                semaphore.release(1);			
                 Util.sleep(1000);
             }
 
@@ -276,7 +293,7 @@ public class FlushTest extends ChannelTestBase {
 
             // if state transfer is used release all at once
             // clear all channels of view events
-            if(useTransfer){
+            if(connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE){
                 for(FlushTestReceiver app:channels){
                     app.clear();
                 }
@@ -307,13 +324,14 @@ public class FlushTest extends ChannelTestBase {
 
             // verify block/unblock/view/get|set state sequence
 
-            for(FlushTestReceiver receiver:channels){
-                if(useTransfer){
-                    checkEventStateTransferSequence(receiver);
-                }else{
-                    checkEventSequence(receiver, isMuxChannelUsed());
-                }
-            }
+            for (FlushTestReceiver receiver : channels) {
+				if (connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE
+						|| connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
+					checkEventStateTransferSequence(receiver);
+				} else {
+					checkEventSequence(receiver, isMuxChannelUsed());
+				}
+			}
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail("Exception encountered during test execution: " + ex);
@@ -325,12 +343,12 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    public void _testChannels(String names[], boolean useTransfer, int viewSize) {
-        _testChannels(names, getMuxFactoryCount(), useTransfer, new ChannelAssertable(viewSize));
+    public void _testChannels(String names[], int connectMethod, int viewSize) {
+        _testChannels(names, getMuxFactoryCount(), connectMethod, new ChannelAssertable(viewSize));
     }
 
-    public void _testChannels(String names[], int muxFactoryCount, boolean useTransfer, int viewSize) {
-        _testChannels(names, muxFactoryCount, useTransfer, new ChannelAssertable(viewSize));
+    public void _testChannels(String names[], int muxFactoryCount, int connectMethod, int viewSize) {
+        _testChannels(names, muxFactoryCount, connectMethod, new ChannelAssertable(viewSize));
     }
 
     private class ChannelCloseAssertable implements Assertable {
@@ -518,8 +536,8 @@ public class FlushTest extends ChannelTestBase {
                     assertTrue("After state should be Unblock " + eventString,
                                events.get(i + 1) instanceof UnblockEvent);
                 }
-                assertTrue("Before state should be Block " + eventString,
-                           events.get(i - 1) instanceof BlockEvent);
+                assertTrue("Before state should be Block or View " + eventString,
+                           events.get(i - 1) instanceof BlockEvent || events.get(i - 1) instanceof View);
             }
 
             if(event instanceof UnblockEvent){
@@ -564,30 +582,47 @@ public class FlushTest extends ChannelTestBase {
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
         List<Object> events;
-
-        boolean shouldFetchState;
+        
+        private int connectMethod;
+        
+        public static final int CONNECT_ONLY = 1;
+        
+        public static final int CONNECT_AND_SEPARATE_GET_STATE = 2;
+        
+        public static final int CONNECT_AND_GET_STATE = 3;      
 
         int msgCount = 0;
 
         protected FlushTestReceiver(String name,
                                     Semaphore semaphore,
                                     int msgCount,
-                                    boolean shouldFetchState) throws Exception{
+                                    int connectMethod) throws Exception{
             super(name, semaphore);
-            this.shouldFetchState = shouldFetchState;
+            this.connectMethod = connectMethod;
             this.msgCount = msgCount;
             events = Collections.synchronizedList(new LinkedList<Object>());
-            channel.connect("test");
+            if(connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
+            	channel.connect("test");
+            
+            if(connectMethod == CONNECT_AND_GET_STATE){
+                channel.connect("test",null,null, 25000);
+            }
         }
 
         protected FlushTestReceiver(String name,
                                     JChannelFactory factory,
                                     Semaphore semaphore,
-                                    boolean shouldFetchState) throws Exception{
+                                    int connectMethod) throws Exception{
             super(name, factory, semaphore);
-            this.shouldFetchState = shouldFetchState;
+            this.connectMethod = connectMethod;
             events = Collections.synchronizedList(new LinkedList<Object>());
-            channel.connect("test");
+            if (connectMethod == CONNECT_ONLY
+					|| connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
+				channel.connect("test");
+
+			if (connectMethod == CONNECT_AND_GET_STATE) {
+				channel.connect("test", null, null, 25000);
+			}
         }
 
         public void clear() {
@@ -643,8 +678,8 @@ public class FlushTest extends ChannelTestBase {
             }
         }
 
-        protected void useChannel() throws Exception {
-            if(shouldFetchState){
+        protected void useChannel() throws Exception {            
+            if(connectMethod == CONNECT_AND_SEPARATE_GET_STATE){
                 channel.getState(null, 25000);
             }
             if(msgCount > 0){
