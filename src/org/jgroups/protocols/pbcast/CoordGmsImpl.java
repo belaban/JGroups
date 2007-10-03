@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.78 2007/09/28 10:34:12 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.79 2007/10/03 09:18:20 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -397,7 +397,7 @@ public class CoordGmsImpl extends GmsImpl {
                 
         try {            
             if(gms.flushProtocolInStack) {                                                
-                boolean successfulFlush=gms.startFlush(new_view, 4000);
+                boolean successfulFlush=gms.startFlush(new_view);
                 if(successfulFlush) {
                     if(log.isTraceEnabled())
                         log.trace("Successful GMS flush by coordinator at " + gms.getLocalAddress());
