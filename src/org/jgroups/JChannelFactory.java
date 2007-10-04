@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.47 2007/10/04 08:51:26 vlada Exp $
+// $Id: JChannelFactory.java,v 1.48 2007/10/04 13:37:38 vlada Exp $
 
 package org.jgroups;
 
@@ -52,7 +52,7 @@ public class JChannelFactory implements ChannelFactory {
      * Map<String,Multiplexer>, maintains mapping between stack names (e.g. "udp") and Multiplexer(es)
      * 
      */    
-    private final ConcurrentMap<String,Future<Multiplexer>> channels = new ConcurrentHashMap<String,Future<Multiplexer>>();
+    private final Map<String,Multiplexer> channels = Collections.synchronizedMap(new HashMap<String,Multiplexer>());
 
     private String config=null;
 
@@ -293,46 +293,31 @@ public class JChannelFactory implements ChannelFactory {
                                             String substate_id) throws Exception {
         if(stack_name == null || id == null)
             throw new IllegalArgumentException("stack name and service ID have to be non null");
-
-        Channel c = null;
-        Multiplexer mux = null;        
-        Future<Multiplexer> f = channels.get(stack_name);
-        if (f == null) {
-            Callable<Multiplexer> eval = new Callable<Multiplexer>() {
-                public Multiplexer call() throws Exception {
-                    JChannel ch = new JChannel(getConfig(stack_name));
-                    registerChannel(ch, stack_name);
-                    return new Multiplexer(ch);
-                }
-            };
-            FutureTask<Multiplexer> ft = new FutureTask<Multiplexer>(eval);
-            f = channels.putIfAbsent(stack_name, ft);
-            if (f == null) {
-                f = ft;
-                ft.run();
+        
+        Multiplexer mux = null;
+        synchronized (channels) {
+            if (!channels.containsKey(stack_name)) {
+                JChannel ch = new JChannel(getConfig(stack_name));
+                registerChannel(ch, stack_name);
+                mux = new Multiplexer(ch);
+                channels.put(stack_name, mux);
+            } else {
+                mux = channels.get(stack_name);
             }
         }
-        try {
-            mux = f.get();
-            c = mux.createMuxChannel(this, id, stack_name); 
-        } catch (CancellationException e) {
-            //should never happen
-            channels.remove(stack_name, f);
-        } catch (ExecutionException e) {
-            //could happen during construction of a channel or multiplexer          
-            throw e;
-        }
-        return c;
+        return mux.createMuxChannel(this, id, stack_name);         
     }
     
     /**
-    * Returns true if this factory has already registered MuxChannel with 
-    * given stack_name and an id, false otherwise.
-    *     
-    * @param stack_name name of the stack used
-    * @param id service id
-    * @return true if such MuxChannel exists, false otherwise
-    */
+     * Returns true if this factory has already registered MuxChannel with given
+     * stack_name and an id, false otherwise.
+     * 
+     * @param stack_name
+     *            name of the stack used
+     * @param id
+     *            service id
+     * @return true if such MuxChannel exists, false otherwise
+     */
    public boolean hasMuxChannel(String stack_name, String id) {
 		Multiplexer entry = getMultiplexer(stack_name);
 		if (entry != null) {
@@ -533,14 +518,15 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     public void destroy() {        
-        for(Map.Entry<String,Future<Multiplexer>> entry: channels.entrySet()){
-            String stack = entry.getKey();
-            Multiplexer m = getMultiplexer(stack);
-            if(m != null){
-                m.closeAll();
-                m.close();
-            }           
-        }
+        synchronized (channels) {
+            for(Map.Entry<String,Multiplexer> entry: channels.entrySet()){                
+                Multiplexer m = entry.getValue();
+                if(m != null){
+                    m.closeAll();
+                    m.close();
+                }           
+            }    
+        }        
         unregister(domain + ":*");        
         channels.clear();
     }
@@ -550,29 +536,19 @@ public class JChannelFactory implements ChannelFactory {
         return stacks.keySet().toString();
     }
 
-    public String dumpChannels() {       
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<String,Future<Multiplexer>> entry: channels.entrySet()){
-        	String stack = entry.getKey();
-        	Multiplexer m = getMultiplexer(stack);
-            sb.append(entry.getKey()).append(": ").append(m.getServiceIds()).append("\n");
-        }        
+    public String dumpChannels() {
+        StringBuilder sb = new StringBuilder();
+        synchronized (channels) {
+            for (Map.Entry<String, Multiplexer> entry : channels.entrySet()) {                
+                Multiplexer m = entry.getValue();
+                sb.append(entry.getKey()).append(": ").append(m.getServiceIds()).append("\n");
+            }
+        }
         return sb.toString();
     }
     
-    private Multiplexer getMultiplexer(String stackName){
-        Multiplexer m = null;
-        Future<Multiplexer> fm = channels.get(stackName);
-        if(fm != null){
-            try {
-                m = fm.get();
-            } catch (InterruptedException e) {                
-                e.printStackTrace();
-            } catch (ExecutionException e) {                
-                e.printStackTrace();
-            }
-        }
-        return m;
+    private Multiplexer getMultiplexer(String stackName){        
+        return channels.get(stackName);       
     }
     
     private void registerChannel(JChannel ch, String stack_name) throws Exception {
