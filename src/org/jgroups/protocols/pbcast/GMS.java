@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.122 2007/10/03 09:18:19 vlada Exp $
+ * @version $Id: GMS.java,v 1.123 2007/10/04 13:41:46 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -604,10 +604,8 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view){       
-    	Map<String,Object> atts = new HashMap<String,Object>();
-    	atts.put("view", new_view);    	
-    	return (Boolean) up_prot.up(new Event(Event.SUSPEND, atts));
+    boolean startFlush(View new_view){           	  
+    	return (Boolean) up_prot.up(new Event(Event.SUSPEND, new_view));
     }
 
     void stopFlush() {
@@ -1169,7 +1167,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.122 2007/10/03 09:18:19 vlada Exp $
+     * @version $Id: GMS.java,v 1.123 2007/10/04 13:41:46 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
