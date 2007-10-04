@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.154 2007/10/03 13:30:54 vlada Exp $
+ * @version $Id: JChannel.java,v 1.155 2007/10/04 07:43:49 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -106,7 +106,7 @@ public class JChannel extends Channel {
 
     private final Promise<Boolean> state_promise=new Promise<Boolean>();
 
-    private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger();
+    private final Exchanger<StateTransferInfo> applstate_exchanger=new Exchanger<StateTransferInfo>();
 
     private final Promise<Boolean> flush_unblock_promise=new Promise<Boolean>();
 
@@ -928,15 +928,15 @@ public class JChannel extends Channel {
         }
 
         
-        StateTransferInfo info=new StateTransferInfo(target, state_id, timeout);
+        StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);
         boolean initiateFlush = flush_supported && useFlushIfPresent;
         
         if(initiateFlush)
             startFlush(false);
 
         state_promise.reset();
-        down(new Event(Event.GET_STATE, info));
-        Boolean b=state_promise.getResult(info.timeout);
+        down(new Event(Event.GET_STATE, state_info));
+        Boolean b=state_promise.getResult(state_info.timeout);
         
         if(initiateFlush)
             stopFlush();
@@ -973,8 +973,8 @@ public class JChannel extends Channel {
      */
     public void returnState(byte[] state) {
         try {
-            StateTransferInfo info=new StateTransferInfo(null, null, 0L, state);
-            applstate_exchanger.exchange(info);
+            StateTransferInfo state_info=new StateTransferInfo(null, null, 0L, state);
+            applstate_exchanger.exchange(state_info);
         }
         catch(InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -988,8 +988,8 @@ public class JChannel extends Channel {
      */
     public void returnState(byte[] state, String state_id) {
         try {
-            StateTransferInfo info=new StateTransferInfo(null, state_id, 0L, state);
-            applstate_exchanger.exchange(info);
+            StateTransferInfo state_info=new StateTransferInfo(null, state_id, 0L, state);
+            applstate_exchanger.exchange(state_info);
         }
         catch(InterruptedException e) {
             Thread.currentThread().interrupt();
@@ -1061,8 +1061,8 @@ public class JChannel extends Channel {
            break;    
 
         case Event.GET_STATE_OK:
-            StateTransferInfo info=(StateTransferInfo)evt.getArg();
-            byte[] state=info.state;
+            StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
+            byte[] state=state_info.state;
 
             state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
             if(up_handler != null) {
@@ -1070,7 +1070,7 @@ public class JChannel extends Channel {
             }
 
             if(state != null) {
-                String state_id=info.state_id;
+                String state_id=state_info.state_id;
                 if(receiver != null) {
                     try {
                         if(receiver instanceof ExtendedReceiver && state_id!=null)
@@ -1084,7 +1084,7 @@ public class JChannel extends Channel {
                     }
                 }
                 else {
-                    try {mq.add(new Event(Event.STATE_RECEIVED, info));} catch(Exception e) {}
+                    try {mq.add(new Event(Event.STATE_RECEIVED, state_info));} catch(Exception e) {}
                 }
             }
             break;
@@ -1191,9 +1191,9 @@ public class JChannel extends Channel {
                 break;
             case Event.GET_APPLSTATE:
                 if(receiver != null) {
-                    StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                    StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
                     byte[] tmp_state=null;
-                    String state_id=info.state_id;
+                    String state_id=state_info.state_id;
                     try {
                         if(receiver instanceof ExtendedReceiver && state_id!=null) {
                             tmp_state=((ExtendedReceiver)receiver).getState(state_id);
