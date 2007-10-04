@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.74 2007/10/03 10:31:57 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.75 2007/10/04 08:51:25 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -473,12 +473,47 @@ public class Multiplexer implements UpHandler {
         return all_closed;
     }
 
-    private Address getLocalAddress() {       
-        if(channel != null)
-            return channel.getLocalAddress();
-        
-        return null;
+    public Address getLocalAddress() {       
+    	return channel.getLocalAddress();             
     } 
+    
+    public boolean flushSupported(){
+    	return channel.flushSupported();
+    }
+    
+    public boolean startFlush(boolean automatic_resume){
+    	return channel.startFlush(automatic_resume);
+    }
+    
+    public void stopFlush(){
+    	channel.stopFlush();
+    }
+    
+    public boolean isConnected(){
+    	return channel.isConnected();
+    }
+    
+    public void connect(String cluster_name) throws ChannelException{
+    	channel.connect(cluster_name);
+    }
+    
+    /**
+    Re-opens a closed channel. Throws an exception if the channel is already open. After this method
+    returns, connect() may be called to join a group. The address of this member will be different from
+    the previous incarnation.
+    */
+    public void open() throws ChannelException {
+    	channel.open();
+    }
+
+
+   /**
+    Determines whether the channel is open; 
+    i.e., the protocol stack has been created (may not be connected though).
+    */
+    public boolean isOpen(){
+    	return channel.isOpen();
+    }
 
     /**
     * Returns an Address of a state provider for a given service_id.

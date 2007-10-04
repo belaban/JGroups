@@ -11,7 +11,7 @@ import java.util.Map;
  * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
  * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
  * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.35 2007/09/14 22:44:51 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.36 2007/10/04 08:51:25 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -151,6 +151,9 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void disconnect() {
+        if(!connected)
+            return;
+        
         try {
             closed=false;
             setConnected(false);
@@ -172,6 +175,9 @@ public class MuxChannel extends JChannel {
     }
 
     public synchronized void close() {
+        if(closed)
+            return;
+        
         try {
             closed=true;
             setConnected(false);
