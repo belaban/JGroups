@@ -107,10 +107,9 @@ public class FLUSH extends Protocol {
 
     private double averageFlushDuration;
 
-    private final Promise<Boolean> flush_promise = new Promise<Boolean>();
-
-    @GuardedBy("sharedLock")
-    private final FlushPhase flushPhase = new FlushPhase();
+    private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
+    
+    private volatile boolean flushInProgress = false;
 
     @GuardedBy("sharedLock")
     private final List<Address> reconcileOks = new ArrayList<Address>();
@@ -196,7 +195,7 @@ public class FLUSH extends Protocol {
     
     private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
         boolean successfulFlush = false;
-        if(!flushPhase.isFlushInProgress() || isRetry){
+        if(!flushInProgress || isRetry){
             flush_promise.reset();                     
             if(log.isDebugEnabled()){
                 if(isRetry)
@@ -457,12 +456,12 @@ public class FLUSH extends Protocol {
         down_prot.down(new Event(Event.MSG, reconcileOk));
     }
 
-    private void handleStartFlush(Message msg, FlushHeader fh) {
-        byte oldPhase = flushPhase.transitionToFirstPhase();
-        if(oldPhase == FlushPhase.START_PHASE){
+    private void handleStartFlush(Message msg, FlushHeader fh) {       
+        if(!flushInProgress){
+            flushInProgress = true;
             sendBlockUpToChannel();
             onStartFlush(msg.getSrc(), fh);
-        }else if(oldPhase == FlushPhase.FIRST_PHASE){
+        }else{
             Address flushRequester = msg.getSrc();
             Address coordinator = null;
             synchronized(sharedLock){
@@ -581,8 +580,7 @@ public class FLUSH extends Protocol {
         }
         
         boolean amISurvivingMember = false;               
-        synchronized(sharedLock){
-            flushPhase.transitionToStart();
+        synchronized(sharedLock){            
             amISurvivingMember = currentView.containsMember(localAddress);
             flushCompletedMap.clear();          
             stopFlushOkSet.clear();
@@ -604,7 +602,7 @@ public class FLUSH extends Protocol {
         if(amISurvivingMember){
             up_prot.up(new Event(Event.UNBLOCK));
         }
-
+        flushInProgress = false;       
     }
 
     private void onSuspend(View view) {
@@ -645,13 +643,10 @@ public class FLUSH extends Protocol {
             log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
     }
 
-    private void onStartFlush(Address flushStarter, FlushHeader fh) {
-        
-        
+    private void onStartFlush(Address flushStarter, FlushHeader fh) {             
         synchronized(blockMutex){
             isBlockingFlushDown = true;
-        }
-        
+        }       
         if(stats){
             startFlushTime = System.currentTimeMillis();
             numberOfFlushes += 1;
@@ -788,40 +783,7 @@ public class FLUSH extends Protocol {
                 log.debug(localAddress + " sent FLUSH_COMPLETED message to " + flushCoordinator);
         }
     }
-
-    private class FlushPhase {
-        private byte phase = 0;
-
-        public static final byte START_PHASE = 0;
-
-        public static final byte FIRST_PHASE = 1;       
-
-        FlushPhase(){}
-
-        public byte transitionToFirstPhase() {
-            byte oldPhase = -1;
-            synchronized(sharedLock){
-                oldPhase = phase;
-                if(oldPhase == START_PHASE){
-                    phase = FIRST_PHASE;
-                }
-            }
-            return oldPhase;
-        }
-
-        public void transitionToStart() {
-            synchronized(sharedLock){
-                phase = START_PHASE;
-            }
-        }
-
-        public boolean isFlushInProgress() {
-            synchronized(sharedLock){
-                return phase != START_PHASE;
-            }
-        }
-    }
-
+    
     public static class FlushHeader extends Header implements Streamable {
         public static final byte START_FLUSH = 0;
 
