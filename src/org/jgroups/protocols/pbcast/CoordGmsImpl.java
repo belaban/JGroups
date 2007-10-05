@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.79 2007/10/03 09:18:20 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.80 2007/10/05 08:02:18 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class CoordGmsImpl extends GmsImpl {
-    private boolean                 merging=false;
+    private volatile boolean        merging=false;
     private final MergeTask         merge_task=new MergeTask();
     private final Vector<MergeData> merge_rsps=new Vector<MergeData>(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
