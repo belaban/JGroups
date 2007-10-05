@@ -2,18 +2,23 @@ package org.jgroups.blocks;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import org.jgroups.Channel;
 import org.jgroups.Address;
-import org.jgroups.util.RspList;
+import org.jgroups.JChannel;
+import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+
+import java.util.Map;
+import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.3 2007/07/30 07:05:41 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.4 2007/10/05 07:18:18 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
-    Channel c1, c2, c3;
+    JChannel c1, c2, c3;
 
     protected void setUp() throws Exception {
         super.setUp();
@@ -66,13 +71,56 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
 
+    public void testLargeReturnValue() {
+        setProps(c1); setProps(c2); setProps(c3);
+        _testLargeValue(10000);
+        _testLargeValue(20000);
+        _testLargeValue(40000);
+        _testLargeValue(80000);
+        _testLargeValue(100000);
+        _testLargeValue(200000);
+    }
+
+
+    private static void setProps(JChannel ch) {
+        Properties props1=new Properties(), props2=new Properties();
+        props1.setProperty("frag_size", "12000");
+        props2.setProperty("max_bundle_size", "14000");
+        Protocol prot=ch.getProtocolStack().findProtocol("FRAG2");
+        if(prot == null)
+            prot=ch.getProtocolStack().findProtocol("FRAG");
+        if(prot != null)
+            prot.setProperties(props1);
+        prot=ch.getProtocolStack().getTransport();
+        if(prot != null)
+            prot.setProperties(props2);
+    }
+
+    void _testLargeValue(int size) {
+        System.out.println("testing with " + size + " bytes");
+        RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, 20000);
+        System.out.println("rsps:\n" + rsps);
+        assertEquals(3, rsps.size());
+        for(Map.Entry<Address,Rsp> entry: rsps.entrySet()) {
+            byte[] val=(byte[])entry.getValue().getValue();
+            assertNotNull(val);
+            assertEquals(size, val.length);
+        }
+    }
+
     private static class ServerObject {
         int i;
         public ServerObject(int i) {
             this.i=i;
         }
         public int foo() {return i;}
+
+
+        public static byte[] largeReturnValue(int size) {
+            return new byte[size];
+        }
     }
+
 
     public static Test suite() {
         return new TestSuite(RpcDispatcherTest.class);
