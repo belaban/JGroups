@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.35 2007/10/01 11:48:59 vlada Exp $
+// $Id: Channel.java,v 1.36 2007/10/16 16:24:38 belaban Exp $
 
 package org.jgroups;
 
@@ -116,7 +116,7 @@ public abstract class Channel implements Transport {
 
 
     /** Shuts down the channel without disconnecting if connected, stops all the threads */
-    abstract protected void shutdown();
+    abstract public void shutdown();
 
 
     /**
