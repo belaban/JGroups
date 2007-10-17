@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.107.2.1 2007/09/04 15:29:31 belaban Exp $
+ * @version $Id: GMS.java,v 1.107.2.2 2007/10/17 16:32:18 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -65,6 +65,11 @@ public class GMS extends Protocol {
 
     /** Keeps track of old members (up to num_prev_mbrs) */
     BoundedList               prev_members=null;
+
+    /** If we receive a JOIN request from P and P is already in the current membership, then we send back a JOIN
+     * response with an error message when this property is set to true (Channel.connect() will fail). Otherwise,
+     * we return the current view */
+    boolean                   reject_join_from_existing_member=true;
 
     int num_views=0;
 
@@ -868,8 +873,14 @@ public class GMS extends Protocol {
             num_prev_mbrs=Integer.parseInt(str);
             props.remove("num_prev_mbrs");
         }
-        
-        str=props.getProperty("use_flush");   
+
+        str=props.getProperty("reject_join_from_existing_member");
+        if(str != null) {
+            reject_join_from_existing_member=Boolean.parseBoolean(str);
+            props.remove("reject_join_from_existing_member");
+        }
+
+        str=props.getProperty("use_flush");
         if(str != null) {
             log.warn("use_flush has been deprecated and its value will be ignored");
             props.remove("use_flush");
@@ -1180,7 +1191,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.107.2.1 2007/09/04 15:29:31 belaban Exp $
+     * @version $Id: GMS.java,v 1.107.2.2 2007/10/17 16:32:18 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
