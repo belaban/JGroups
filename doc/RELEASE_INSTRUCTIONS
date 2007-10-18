@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.9 2007/03/09 20:31:11 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.10 2007/10/18 20:30:27 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -7,6 +7,7 @@
 - Run all unit tests
 - Run the manual tests in doc/tests/ManualTests.txt
 - Run the performance tests to see whether performance is about the same
+- Update the ReleaseNotes-xxx.txt for the given release
 - Set version in:
   Version.java, manifest.mf and build.xml
 - Create a CVS tag: JGroups_x_y_z
