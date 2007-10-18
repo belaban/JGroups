@@ -4,16 +4,18 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.2 2007/10/18 20:14:59 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.3 2007/10/18 20:43:12 belaban Exp $
 
+Prerequisites:
+- A flush is always started and stopped by the *same* member, both for joins and state transfer
 
 
 Structures:
 - FlushState
   - flush_active: whether we are currently running a flush
-  - flush_leader: member which started the flush
-  - flush_count: incremented on START-FLUSH, decremented on STOP-FLUSH. Usually, this is 1 when flush
-                 is started and 0 when flush is terminated
+  - flush_leaders: set of members which started the flush (no duplicates)
+  // - flush_count: incremented on START-FLUSH, decremented on STOP-FLUSH. Usually, this is 1 when flush
+  //             is started and 0 when flush is terminated
   - start_flush_set: list of members from whom we expect a START-FLUSH-OK message
   - digests: digests from all members, received with START-FLUSH-OK message
   - stop_flush_set: list of members to whom we send a STOP-FLUSH message
@@ -23,10 +25,11 @@ Structures:
 
 On SUSPEND event:
 - If FlushState.flush_active:
-    - Increment flush_count
+    - Add flush leader to flush_leaders (if not yet present)
 -Else
     - Set FlushState.flush_active to true
-    - Set flush_leader, flush_count, start_flush_set and stop_flush_set
+    - Add flush leader to flush_leaders (if not yet present)
+    - Set start_flush_set and stop_flush_set
 - Multicast START-FLUSH
 - Block until start_flush_set is empty (block on start_flush_set)
 - Look at FlushState.digests:
@@ -35,10 +38,10 @@ On SUSPEND event:
 
 On START-FLUSH(sender=P):
 - If FlushState.flush_active:
-    - Increment flush_count
+    - Add flush leader to flush_leaders (if not yet present)
 -Else
     - Set FlushState.flush_active to true
-    - Set flush_leader and flush_count
+    - Add flush leader to flush_leaders (if not yet present)
 - Call block()
 - Make down_mutex block multicast messages from now on
 - Return START-FLUSH-OK with my digest to P
@@ -50,19 +53,30 @@ On START-FLUSH-OK(sender=P,digest D):
 - Notify FlushPhase.start_flush_set if empty
 
 On RESUME event:
-- Multicast STOP-FLUSH event
+- Multicast STOP-FLUSH event (asynchronously, don't wait for results)
 
 
-On STOP-FLUSH:
+On STOP-FLUSH(sender=P):
+- Remove P from flush_leaders
+- If flush_leaders is empty:
+    - Unblock down_mutex
 
 
-On SUSPECT(P):
+On SUSPECT(S):
+- Remove S from start_flush_set and stop_flush_set
+- If start_flush_set is now empty --> notify thread blocking on it
+- Remove S from FlushState.flush_leaders
+- If FlushState.flush_leaders is empty: (flush leader S crashed during flush !)
+    - Unblock down_mutex
 
-(special case: P is flush leader !)
 
 On view change V:
+- Remove all members that are not part of V from start_flush_set and stop_flush_set
+- If start_flush_set is now empty --> notify thread blocking on it
+- Remove all members from FlushState.flush_leaders which are not part of V
+- If FlushState.flush_leaders is empty: (flush leader crashed during flush !)
+    - Unblock down_mutex
 
-(special case: V does not contain flush leader !)
 
 
 Reconciliation phase:
