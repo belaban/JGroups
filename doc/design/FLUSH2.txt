@@ -1,0 +1,66 @@
+
+
+FLUSH2 design
+=============
+
+Author: Bela Ban
+Version: $Id: FLUSH2.txt,v 1.1 2007/10/18 20:13:15 belaban Exp $
+
+
+
+Structures:
+- FlushState
+  - flush_active: whether we are currently running a flush
+  - flush_leader: member which started the flush
+  - flush_count: incremented on START-FLUSH, decremented on STOP-FLUSH. Usually, this is 1 when flush
+                 is started and 0 when flush is terminated
+  - start_flush_set: list of members from whom we expect a START-FLUSH-OK message
+  - digests: digests from all members, received with START-FLUSH-OK message
+  - stop_flush_set: list of members to whom we send a STOP-FLUSH message
+  - down_mutex: for blocking of multicast down calls, unicasts are passed
+
+
+
+On SUSPEND event:
+- If FlushState.flush_active:
+    - Increment flush_count
+-Else
+    - Set FlushState.flush_active to true
+    - Set flush_leader, flush_count, start_flush_set and stop_flush_set
+- Multicast START-FLUSH
+- Block until start_flush_set is empty (block on start_flush_set)
+- Look at FlushState.digests:
+    - If all digests are the same --> return
+    - Else --> run reconciliation phase
+
+On START-FLUSH:
+- If FlushState.flush_active:
+    - Increment flush_count
+-Else
+    - Set FlushState.flush_active to true
+    - Set flush_leader and flush_count
+- Return START-FLUSH-OK with my digest to sender of START-FLUSH
+
+
+On START-FLUSH-OK(sender=P,digest D):
+- Add digest D to FlushState.digests
+- Remove P from FlushPhase.start_flush_set
+- Notify FlushPhase.start_flush_set if empty
+
+On RESUME event:
+- Multicast STOP-FLUSH event
+
+
+On STOP-FLUSH:
+
+
+On SUSPECT(P):
+
+(special case: P is flush leader !)
+
+On view change V:
+
+(special case: V does not contain flush leader !)
+
+
+Reconciliation phase:
