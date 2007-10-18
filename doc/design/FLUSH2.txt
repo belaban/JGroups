@@ -4,7 +4,7 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.1 2007/10/18 20:13:15 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.2 2007/10/18 20:14:59 belaban Exp $
 
 
 
@@ -33,13 +33,15 @@ On SUSPEND event:
     - If all digests are the same --> return
     - Else --> run reconciliation phase
 
-On START-FLUSH:
+On START-FLUSH(sender=P):
 - If FlushState.flush_active:
     - Increment flush_count
 -Else
     - Set FlushState.flush_active to true
     - Set flush_leader and flush_count
-- Return START-FLUSH-OK with my digest to sender of START-FLUSH
+- Call block()
+- Make down_mutex block multicast messages from now on
+- Return START-FLUSH-OK with my digest to P
 
 
 On START-FLUSH-OK(sender=P,digest D):
