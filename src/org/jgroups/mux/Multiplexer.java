@@ -20,7 +20,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.76 2007/10/22 18:06:34 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.77 2007/10/22 18:23:24 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -583,11 +583,10 @@ public class Multiplexer implements UpHandler {
             int size=service_ack_collector.size();
             
             long start, stop, service_ack_collection_timeout;
-            service_ack_collection_timeout = 1000;
+            service_ack_collection_timeout = 2000;
             start = System.currentTimeMillis();
             try {
-                service_ack_collector
-                        .waitForAllAcks(service_ack_collection_timeout);
+                service_ack_collector.waitForAllAcks(service_ack_collection_timeout);
                 stop = System.currentTimeMillis();
                 if (log.isTraceEnabled())
                     log.trace("received all service ACKs (" + size + ")  in "
