@@ -3,8 +3,10 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.AckCollector;
 import org.jgroups.util.FIFOMessageQueue;
 import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.Util;
@@ -18,7 +20,7 @@ import java.util.concurrent.*;
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
  * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.75 2007/10/04 08:51:25 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.76 2007/10/22 18:06:34 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -37,6 +39,9 @@ public class Multiplexer implements UpHandler {
     /** To make sure messages sent to different services are processed concurrently (using the thread pool above), but
      * messages to the same service are processed FIFO */
     private final FIFOMessageQueue<String,Runnable> fifo_queue=new FIFOMessageQueue<String,Runnable>();
+    
+    /** To collect VIEW_ACKs from all members */
+    private final AckCollector service_ack_collector=new AckCollector();
 
 
     /** Cluster view */
@@ -70,6 +75,10 @@ public class Multiplexer implements UpHandler {
         else{
             thread_pool=null;
         }
+    }
+    
+    public JChannel getChannel(){
+        return channel;
     }
 
     /**
@@ -219,14 +228,14 @@ public class Multiplexer implements UpHandler {
     public void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
         //we have to make this service message non OOB since we have
         //to FIFO order service messages and BLOCK/UNBLOCK messages        
-        sendServiceMessage(ServiceInfo.SERVICE_UP, service, host,bypassFlush, null,false);        
+        sendServiceMessage(true,ServiceInfo.SERVICE_UP, service, host,bypassFlush, null,false);        
     }
 
 
     public void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
        //we have to make this service message non OOB since we have
        //to FIFO order service messages and BLOCK/UNBLOCK messages        
-       sendServiceMessage(ServiceInfo.SERVICE_DOWN, service, host,bypassFlush, null,false);       
+       sendServiceMessage(true,ServiceInfo.SERVICE_DOWN, service, host,bypassFlush, null,false);       
     }
 
 
@@ -248,22 +257,25 @@ public class Multiplexer implements UpHandler {
                 }
 
                 Address sender=msg.getSrc();
-                if(hdr.info != null) { // it is a service state request - not a default multiplex request
+                boolean isServiceMessage = hdr.info != null;
+                if(isServiceMessage) {
                     try {
-                        handleServiceStateRequest(hdr.info, sender);
+                        handleServiceMessage(hdr.info, sender);
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
                             log.error("failure in handling service state request", e);
-                    }
-                    break;
-                }
-
-                MuxChannel mux_ch=services.get(hdr.id);
-                if(mux_ch == null) {
+                    }                    
                     return null;
-                }
-                return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
+                }                
+                else {
+                  //regular message between MuxChannel(s)
+                    MuxChannel mux_ch=services.get(hdr.id);
+                    if(mux_ch == null) {
+                        return null;
+                    }
+                    return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !                                                          
+                }                
 
             case Event.VIEW_CHANGE:
                 Vector<Address> old_members=view != null? view.getMembers() : null;
@@ -295,6 +307,7 @@ public class Multiplexer implements UpHandler {
                     }
                     
                 }
+                service_ack_collector.handleView(view);
                 for(Address member:left_members){
                    try{
                        adjustServiceView(member);
@@ -323,6 +336,7 @@ public class Multiplexer implements UpHandler {
             case Event.SUSPECT:
                 Address suspected_mbr=(Address)evt.getArg();
 
+                service_ack_collector.suspect(suspected_mbr);
                 synchronized(service_responses) {
                     service_responses.put(suspected_mbr, null);
                     service_responses.notifyAll();
@@ -370,11 +384,13 @@ public class Multiplexer implements UpHandler {
     }
 
 
-    public Channel createMuxChannel(JChannelFactory f, String id, String stack_name) throws Exception {
-        MuxChannel ch;
-        if(services.containsKey(id))
-            throw new Exception("service ID \"" + id + "\" is already registered, cannot register duplicate ID");
-        ch=new MuxChannel(f, channel, id, stack_name, this);
+    public Channel createMuxChannel(String id, String stack_name) throws Exception {        
+        if (services.containsKey(id)) {
+            throw new Exception("service ID \"" + id
+                    + "\" is already registered at channel" + getLocalAddress()
+                    + ", cannot register service with duplicate ID at the same channel");
+        }
+        MuxChannel ch=new MuxChannel(id, stack_name, this);
         services.put(id, ch);
         return ch;
     }
@@ -540,7 +556,7 @@ public class Multiplexer implements UpHandler {
         return result;       
     }
 
-    private void sendServiceMessage(byte type, String service, Address host,boolean bypassFlush, byte[] payload, boolean oob) throws Exception {
+    private void sendServiceMessage(boolean synchronous, byte type, String service, Address host,boolean bypassFlush, byte[] payload, boolean oob) throws Exception {
         if(host == null)
             host=getLocalAddress();
         if(host == null) {
@@ -561,6 +577,31 @@ public class Multiplexer implements UpHandler {
            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
         
         channel.send(service_msg);
+        
+        if (synchronous) {
+            service_ack_collector.reset(null, service_state.get(service));
+            int size=service_ack_collector.size();
+            
+            long start, stop, service_ack_collection_timeout;
+            service_ack_collection_timeout = 1000;
+            start = System.currentTimeMillis();
+            try {
+                service_ack_collector
+                        .waitForAllAcks(service_ack_collection_timeout);
+                stop = System.currentTimeMillis();
+                if (log.isTraceEnabled())
+                    log.trace("received all service ACKs (" + size + ")  in "
+                            + (stop - start) + "ms");
+            } catch (TimeoutException e) {
+                log.warn("failed to collect all service ACKs (" + size
+                        + ") for " + service_msg + " after "
+                        + service_ack_collection_timeout
+                        + "ms, missing ACKs from "
+                        + service_ack_collector.printMissing() + " (received="
+                        + service_ack_collector.printReceived()
+                        + "), local_addr=" + getLocalAddress());
+            }
+        }
     }
 
 
@@ -639,22 +680,40 @@ public class Multiplexer implements UpHandler {
         }
     }
 
-    private void handleServiceStateRequest(ServiceInfo info, Address sender) throws Exception {
+    private void handleServiceMessage(ServiceInfo info, Address sender) throws Exception {
         switch(info.type) {                    
             case ServiceInfo.SERVICE_UP:
                 handleServiceUp(info.service, info.host, true);
+                ackServiceMessage(info, sender);
                 break;
             case ServiceInfo.SERVICE_DOWN:
-                handleServiceDown(info.service, info.host, true);
+                handleServiceDown(info.service, info.host, true);                
+                ackServiceMessage(info, sender);
                 break;
             case ServiceInfo.LIST_SERVICES_RSP:
                 handleServicesRsp(sender, info.state);
                 break;
+            case ServiceInfo.ACK:
+                service_ack_collector.ack(sender);
+                break;    
             default:
                 if(log.isErrorEnabled())
                     log.error("service request type " + info.type + " not known");
                 break;
-        }
+        }                                     
+    }
+
+    private void ackServiceMessage(ServiceInfo info, Address sender)
+            throws ChannelNotConnectedException, ChannelClosedException {
+        
+        Message ack=new Message(sender, null, null);
+        ack.setFlag(Message.OOB);
+        
+        ServiceInfo si=new ServiceInfo(ServiceInfo.ACK, info.service, info.host,null);
+        MuxHeader hdr=new MuxHeader(si);
+        ack.putHeader(NAME, hdr);
+        
+        channel.send(ack);
     }
 
     private void handleServicesRsp(Address sender, byte[] state) throws Exception {       
@@ -762,7 +821,7 @@ public class Multiplexer implements UpHandler {
         
         //we have to make this message OOB since we are running on a thread 
         //propelling a regular synchronous message call to install a new view 
-        sendServiceMessage(ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data,true);
+        sendServiceMessage(false,ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data,true);
 
         synchronized(service_responses) {
             start=System.currentTimeMillis();

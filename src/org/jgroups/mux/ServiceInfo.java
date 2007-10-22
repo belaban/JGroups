@@ -10,12 +10,13 @@ import java.io.*;
 /**
  * Class used for service state communication between Multiplexers
  * @author Bela Ban
- * @version $Id: ServiceInfo.java,v 1.5 2007/09/27 16:19:50 vlada Exp $
+ * @version $Id: ServiceInfo.java,v 1.6 2007/10/22 18:06:34 vlada Exp $
  */
 public class ServiceInfo implements Externalizable, Streamable {       
     public static final byte SERVICE_UP        = 3;
     public static final byte SERVICE_DOWN      = 4;
     public static final byte LIST_SERVICES_RSP = 5; // list of services available on a given node (available in 'state')
+    public static final byte ACK               = 6;
 
     byte    type=0;
     String  service=null;

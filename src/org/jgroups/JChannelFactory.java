@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.48 2007/10/04 13:37:38 vlada Exp $
+// $Id: JChannelFactory.java,v 1.49 2007/10/22 18:06:34 vlada Exp $
 
 package org.jgroups;
 
@@ -22,13 +22,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.*;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.FutureTask;
 
 /**
  * JChannelFactory creates pure Java implementations of the <code>Channel</code>
@@ -294,6 +287,9 @@ public class JChannelFactory implements ChannelFactory {
         if(stack_name == null || id == null)
             throw new IllegalArgumentException("stack name and service ID have to be non null");
         
+        if(stack_name.length()==0 || id.length() == 0)
+            throw new IllegalArgumentException("stack name and service ID have to non empty strings");
+               
         Multiplexer mux = null;
         synchronized (channels) {
             if (!channels.containsKey(stack_name)) {
@@ -305,7 +301,12 @@ public class JChannelFactory implements ChannelFactory {
                 mux = channels.get(stack_name);
             }
         }
-        return mux.createMuxChannel(this, id, stack_name);         
+        if(register_for_state_transfer)
+            mux.registerForStateTransfer(id, substate_id);
+        
+        Channel c = mux.createMuxChannel(id, stack_name);
+        c.addChannelListener(new MuxFactoryChannelListener());
+        return c;
     }
     
     /**
@@ -319,184 +320,14 @@ public class JChannelFactory implements ChannelFactory {
      * @return true if such MuxChannel exists, false otherwise
      */
    public boolean hasMuxChannel(String stack_name, String id) {
-		Multiplexer entry = getMultiplexer(stack_name);
+		Multiplexer entry = channels.get(stack_name);
 		if (entry != null) {
 			Set<String> services = entry.getServiceIds();
 			return (services != null && services.contains(id));
 		}
 		return false;
 	}
-
-    public void connect(MuxChannel ch) throws ChannelException {
-        Multiplexer m = getMultiplexer(ch.getStackName());
-        if (m != null) {
-            m.addServiceIfNotPresent(ch.getId(), ch);
-            if (!m.isConnected()) {
-                m.connect(ch.getStackName());
-            }
-            try {                
-                if (m.flushSupported()) {
-                    boolean successfulFlush = m.startFlush(false);
-                    if (!successfulFlush && log.isWarnEnabled()) {
-                        log.warn("Flush failed at " + ch.getLocalAddress()+ ":" + ch.getId());
-                    }
-                }
-                m.sendServiceUpMessage(ch.getId(), m.getLocalAddress(), true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_UP message", e);
-            } finally {
-                if (m.flushSupported())
-                    m.stopFlush();
-            }
-            ch.setClosed(false);
-            ch.setConnected(true);
-        }
-    }
-    
-    public void connect(MuxChannel ch, Address target, String state_id, long timeout) throws ChannelException {
-        boolean stateTransferOk = false;
-        Multiplexer m = getMultiplexer(ch.getStackName());
-        if (m != null) {
-            m.addServiceIfNotPresent(ch.getId(), ch);
-            if (!m.isConnected()) {
-                m.connect(ch.getStackName());
-            }
-            try {               
-                if (m.flushSupported()) {
-                    boolean successfulFlush = m.startFlush(false);
-                    if (!successfulFlush && log.isWarnEnabled()) {
-                        log.warn("Flush failed at " + ch.getLocalAddress()+ ":" + ch.getId());
-                    }
-                }
-                try {
-                    m.sendServiceUpMessage(ch.getId(), m.getLocalAddress(), true);
-                } catch (Exception e) {
-                    if (log.isErrorEnabled()) {
-                        log.error("Failed sending SERVICE_UP message for " + ch);
-                    }
-                }
-                View serviceView = m.getServiceView(ch.getId());
-                boolean fetchState = serviceView != null && serviceView.size() > 1;
-                if (fetchState) {
-                    stateTransferOk = ch.getState(target, state_id, timeout,false);
-                    if (!stateTransferOk) {
-                        throw new StateTransferException("Could not retrieve state " 
-                                + state_id + " from " + target);
-                    }
-                }
-            } finally {
-                if (m.flushSupported())
-                    m.stopFlush();
-            }
-            ch.setClosed(false);
-            ch.setConnected(true);
-        }
-    }
-
-
-    public void disconnect(MuxChannel ch) {
-        Multiplexer m = getMultiplexer(ch.getStackName());
-        if (m != null) {            
-            try {
-                if (m.flushSupported()) {
-                    boolean successfulFlush = m.startFlush(false);
-                    if (!successfulFlush && log.isWarnEnabled()) {
-                        log.warn("Flush failed at " + ch.getLocalAddress()
-                                + ch.getId());
-                    }
-                }
-                m.sendServiceDownMessage(ch.getId(), m.getLocalAddress(), true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_DOWN message", e);
-            } finally {
-                if (m.flushSupported())
-                    m.stopFlush();
-            }
-            // disconnects JChannel if all MuxChannels are
-            // in disconnected state
-            m.disconnect();             
-        }
-    }            
-
-
-    public void close(MuxChannel ch) {
-        String stack_name = ch.getStackName();
-        boolean all_closed = false;
-        Multiplexer m = getMultiplexer(ch.getStackName());
-
-        if (m != null) {
-            try {
-                if (m.flushSupported()) {
-                    boolean successfulFlush = m.startFlush(false);
-                    if (!successfulFlush && log.isWarnEnabled()) {
-                        log.warn("Flush failed at " + ch.getLocalAddress() + ":" + ch.getId());
-                    }
-                }
-                m.sendServiceDownMessage(ch.getId(), m.getLocalAddress(), true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_DOWN message", e);
-            } finally {
-                if (m.flushSupported())
-                    m.stopFlush();
-            }
-            all_closed = m.close(); 
-            // closes JChannel if all MuxChannels
-            // are in closed state
-        }
-        if (all_closed) {
-            channels.remove(stack_name);
-        }
-        unregister(domain + ":*,cluster=" + stack_name);
-    }    
-
-
-
-    public void shutdown(MuxChannel ch) {
-        Multiplexer m = getMultiplexer(ch.getStackName());
-        String stack_name = ch.getStackName();
-        boolean all_closed = false;
-
-        if (m != null) {           
-            try {
-                if (m.flushSupported()) {
-                    boolean successfulFlush = m.startFlush(false);
-                    if (!successfulFlush && log.isWarnEnabled()) {
-                        log.warn("Flush failed at " + ch.getLocalAddress() + ":" + ch.getId());
-                    }
-                }
-                m.sendServiceDownMessage(ch.getId(), m.getLocalAddress(), true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_DOWN message", e);
-            } finally {
-                if (m.flushSupported())
-                    m.stopFlush();
-            }
-            // closes JChannel if all
-            // MuxChannels are in closed state
-            all_closed = m.shutdown();
-        }
-        if (all_closed) {
-            channels.remove(stack_name);
-        }
-        unregister(domain + ":*,cluster=" + stack_name);
-    }
-
-    public void open(MuxChannel ch) throws ChannelException {
-		Multiplexer m = getMultiplexer(ch.getStackName());
-		if (m != null) {
-			if (!m.isOpen())
-				m.open();
-		}
-		ch.setClosed(false);
-		ch.setConnected(false); // needs to be connected next
-	}
-
-
-
+   
     public void create() throws Exception{
         if(expose_channels) {
             if(server == null)
@@ -545,10 +376,6 @@ public class JChannelFactory implements ChannelFactory {
             }
         }
         return sb.toString();
-    }
-    
-    private Multiplexer getMultiplexer(String stackName){        
-        return channels.get(stackName);       
     }
     
     private void registerChannel(JChannel ch, String stack_name) throws Exception {
@@ -648,5 +475,20 @@ public class JChannelFactory implements ChannelFactory {
         if(cfg == null)
             throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
         return cfg;
+    }
+    
+    private class MuxFactoryChannelListener extends ChannelListenerAdapter{
+
+        public void channelClosed(Channel channel) {
+            MuxChannel mch = (MuxChannel)channel;
+            Multiplexer multiplexer = mch.getMultiplexer();
+            boolean all_closed = multiplexer.close();
+            if(all_closed){
+                if (all_closed) {
+                    channels.remove(mch.getStackName());
+                }
+                unregister(domain + ":*,cluster=" + mch.getStackName());
+            }
+        }            
     }
 }
