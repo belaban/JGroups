@@ -252,12 +252,19 @@ public class FLUSH extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()){
         case Event.MSG:
-            Message msg = (Message) evt.getArg();
-            FlushHeader fh = (FlushHeader) msg.getHeader(getName());
-            if(fh != null && fh.type == FlushHeader.FLUSH_BYPASS){
+            Message msg = (Message) evt.getArg();                            
+            if(msg.getDest() == null){
+                //mcasts
+                FlushHeader fh = (FlushHeader) msg.getHeader(getName());
+                if(fh != null && fh.type == FlushHeader.FLUSH_BYPASS){
+                    return down_prot.down(evt);
+                }
+                else{                   
+                    blockMessageDuringFlush();  
+                }                                     
+            }else{   
+                //unicasts are irrelevant in virtual synchrony, let them through
                 return down_prot.down(evt);
-            }else{
-                blockMessageDuringFlush();
             }
             break;
             
