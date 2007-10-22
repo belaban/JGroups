@@ -9,14 +9,13 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.12 2007/08/30 10:22:08 belaban Exp $
+ * @version $Id: AckCollector.java,v 1.13 2007/10/22 17:54:39 vlada Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
     private final List<Object>     missing_acks;
     private final Set<Object>      received_acks=new HashSet<Object>();
     private final Promise<Boolean> all_acks_received=new Promise<Boolean>();
-    private ViewId                 proposed_view;
     private final Set<Address>     suspected_mbrs=new HashSet<Address>();
 
 
@@ -25,8 +24,7 @@ public class AckCollector {
     }
 
     public AckCollector(ViewId v, List<Object> l) {
-        missing_acks=new ArrayList<Object>(l);
-        proposed_view=v;
+        missing_acks=new ArrayList<Object>(l);      
     }
 
     public String printMissing() {
@@ -39,20 +37,15 @@ public class AckCollector {
         synchronized(this) {
             return received_acks.toString();
         }
-    }
+    }    
 
-    public ViewId getViewId() {
-        return proposed_view;
-    }
-
-    public void reset(ViewId v, java.util.List l) {
+    public void reset(ViewId v, List<Address> members) {
         synchronized(this) {
-            suspected_mbrs.clear();
-            proposed_view=v;
+            suspected_mbrs.clear();           
             missing_acks.clear();
             received_acks.clear();
-            if(l != null)
-                missing_acks.addAll(l);
+            if(members != null)
+                missing_acks.addAll(members);
             missing_acks.removeAll(suspected_mbrs);
             all_acks_received.reset();
         }
@@ -88,7 +81,7 @@ public class AckCollector {
 
     public void handleView(View v) {
         if(v == null) return;
-        Vector mbrs=v.getMembers();
+        Vector<Address> mbrs=v.getMembers();
         suspected_mbrs.retainAll(mbrs);
     }
 
