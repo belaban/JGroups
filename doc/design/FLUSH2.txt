@@ -4,7 +4,7 @@ FLUSH2 design
 =============
 
 Author: Bela Ban
-Version: $Id: FLUSH2.txt,v 1.4 2007/10/21 20:56:41 belaban Exp $
+Version: $Id: FLUSH2.txt,v 1.5 2007/10/22 19:46:52 belaban Exp $
 
 Prerequisites:
 - A flush is always started and stopped by the *same* member, both for joins and state transfer
@@ -18,13 +18,14 @@ Structures:
   - start_flush_set: list of members from whom we expect a START-FLUSH-OK message
   - digests: digests from all members, received with START-FLUSH-OK message
   - stop_flush_set: list of members to whom we send a STOP-FLUSH message
-  - down_mutex: for blocking of multicast down calls, unicasts are passed
+  - down_mutex: for blocking of multicast down calls, unicasts are passed at all times
 
 
 
 On SUSPEND event:
 - If FlushState.flush_active:
     - Add flush leader to flush_leaders (if not yet present)
+    - If already present: terminate (don't send START-FLUSH message)
 -Else
     - Set FlushState.flush_active to true
     - Add flush leader to flush_leaders (if not yet present)
