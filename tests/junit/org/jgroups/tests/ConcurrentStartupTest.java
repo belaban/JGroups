@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.26 2007/09/05 15:55:02 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.27 2007/10/23 14:11:43 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -154,6 +154,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
+            fail(ex.getLocalizedMessage());
         }finally{
             for(ConcurrentStartupChannel channel:channels){
                 channel.cleanup();
@@ -271,6 +272,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
+            fail(ex.getLocalizedMessage());
         }finally{
             for(ConcurrentStateTransfer channel:channels){
                 channel.cleanup();
