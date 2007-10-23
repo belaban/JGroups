@@ -19,8 +19,8 @@ import java.util.concurrent.*;
  * JChannel (there can only be 1 Multiplexer per JChannel). When up() is called with a message, the header of the
  * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
  * and MuxChannel.up() is called with the message.
- * @author Bela Ban
- * @version $Id: Multiplexer.java,v 1.77 2007/10/22 18:23:24 vlada Exp $
+ * @author Bela Ban, Vladimir Blagojevic
+ * @version $Id: Multiplexer.java,v 1.78 2007/10/23 15:10:28 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -40,7 +40,7 @@ public class Multiplexer implements UpHandler {
      * messages to the same service are processed FIFO */
     private final FIFOMessageQueue<String,Runnable> fifo_queue=new FIFOMessageQueue<String,Runnable>();
     
-    /** To collect VIEW_ACKs from all members */
+    /** To collect service acks from Multiplexers */
     private final AckCollector service_ack_collector=new AckCollector();
 
 
@@ -57,7 +57,7 @@ public class Multiplexer implements UpHandler {
      * Used to collect responses to LIST_SERVICES_REQ */
     private final Map<Address, Set<String>> service_responses=new HashMap<Address, Set<String>>();
 
-    private long SERVICES_RSP_TIMEOUT=10000;  
+    private long service_response_timeout=10000;  
 
     public Multiplexer(JChannel channel) {       
     	if(channel == null || !channel.isOpen())
@@ -95,11 +95,11 @@ public class Multiplexer implements UpHandler {
 
 
     public long getServicesResponseTimeout() {
-        return SERVICES_RSP_TIMEOUT;
+        return service_response_timeout;
     }
 
     public void setServicesResponseTimeout(long services_rsp_timeout) {
-        this.SERVICES_RSP_TIMEOUT=services_rsp_timeout;
+        this.service_response_timeout=services_rsp_timeout;
     }
 
     /** Returns a copy of the current view <em>minus</em> the nodes on which service service_id is <em>not</em> running
@@ -572,6 +572,7 @@ public class Multiplexer implements UpHandler {
         
         if(oob)
            service_msg.setFlag(Message.OOB);
+        
         service_msg.putHeader(NAME, hdr);
         if(bypassFlush && channel.flushSupported())
            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
@@ -580,17 +581,14 @@ public class Multiplexer implements UpHandler {
         
         if (synchronous) {
             service_ack_collector.reset(null, service_state.get(service));
-            int size=service_ack_collector.size();
-            
-            long start, stop, service_ack_collection_timeout;
-            service_ack_collection_timeout = 2000;
-            start = System.currentTimeMillis();
+            int size=service_ack_collector.size();                       
+            long service_ack_collection_timeout = 2000;
+            long start = System.currentTimeMillis();
             try {
-                service_ack_collector.waitForAllAcks(service_ack_collection_timeout);
-                stop = System.currentTimeMillis();
+                service_ack_collector.waitForAllAcks(service_ack_collection_timeout);                
                 if (log.isTraceEnabled())
                     log.trace("received all service ACKs (" + size + ")  in "
-                            + (stop - start) + "ms");
+                            + (System.currentTimeMillis() - start) + "ms");
             } catch (TimeoutException e) {
                 log.warn("failed to collect all service ACKs (" + size
                         + ") for " + service_msg + " after "
@@ -712,7 +710,8 @@ public class Multiplexer implements UpHandler {
         MuxHeader hdr=new MuxHeader(si);
         ack.putHeader(NAME, hdr);
         
-        channel.send(ack);
+        if(channel.isConnected())
+            channel.send(ack);
     }
 
     private void handleServicesRsp(Address sender, byte[] state) throws Exception {       
@@ -812,7 +811,7 @@ public class Multiplexer implements UpHandler {
      * @param view
      */
     private void handleMergeView(MergeView view) throws Exception {
-        long time_to_wait=SERVICES_RSP_TIMEOUT, start;
+        long time_to_wait=service_response_timeout, start;
         int num_members=view.size(); // include myself
         Map<Address, Set<String>> copy=null;
 
@@ -888,8 +887,7 @@ public class Multiplexer implements UpHandler {
             List<Address> hosts=service_state.get(service);           
             Vector<Address> membersCopy = new Vector<Address>(view.getMembers());
             membersCopy.retainAll(hosts);
-            MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());            
-            // ch.up(evt);
+            MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());               
             passToMuxChannel(ch, new Event(Event.VIEW_CHANGE, v), fifo_queue, null, service, false);
         }
     }
