@@ -342,6 +342,9 @@ public class FLUSH extends Protocol {
                         onStopFlush();
                         break;
                     case FlushHeader.ABORT_FLUSH:
+                        synchronized(sharedLock){
+                            flushCompletedMap.clear();
+                        }
                         flush_promise.setResult(Boolean.FALSE);
                         break;                               
                     case FlushHeader.FLUSH_COMPLETED:
@@ -486,10 +489,8 @@ public class FLUSH extends Protocol {
                               + coordinator
                               + " and switching flush coordinator to "
                               + flushRequester);
-                }
-                synchronized(sharedLock){
-                    flushCoordinator = flushRequester;
-                }
+                }              
+                onStartFlush(flushRequester, fh);
             }else if(flushRequester.compareTo(coordinator) > 0){
                 rejectFlush(fh.viewID, flushRequester);
                 if(log.isDebugEnabled()){
@@ -499,6 +500,7 @@ public class FLUSH extends Protocol {
                               + " coordinator is "
                               + coordinator);
                 }
+                onStartFlush(coordinator, fh);
             }else if(flushRequester.equals(coordinator)){
                 if(log.isDebugEnabled()){
                     log.debug("Accepting flush at " + localAddress + ", proceeding with flush");
