@@ -15,12 +15,28 @@ import java.util.*;
 import java.util.concurrent.*;
 
 /**
- * Used for dispatching incoming messages. The Multiplexer implements UpHandler and registers with the associated
- * JChannel (there can only be 1 Multiplexer per JChannel). When up() is called with a message, the header of the
- * message is removed and the MuxChannel corresponding to the header's service ID is retrieved from the map,
- * and MuxChannel.up() is called with the message.
+ * The multiplexer allows multiple channel interfaces to be associated with one
+ * underlying instance of JChannel.
+ * 
+ * <p>
+ * The multiplexer is essentially a building block residing on top of a JChannel
+ * providing multiplexing functionality to N instances of MuxChannel. Since
+ * MuxChannel extends the JGroups JChannel class, user applications are
+ * completely unaware of this change in the underlying plumbing.
+ * 
+ * <p>
+ * Each JGroups application sharing a channel through a multiplexer has to
+ * create a MuxChannel with a unique application id. The multiplexer keeps track
+ * of all registered applications and tags messages belonging to a specific
+ * application with that id for sent messages. When receiving a message from a
+ * remote peer, the multiplexer will dispatch a message to the appropriate
+ * MuxChannel depending on the id attached to the message.
+ * 
+ * 
  * @author Bela Ban, Vladimir Blagojevic
- * @version $Id: Multiplexer.java,v 1.78 2007/10/23 15:10:28 vlada Exp $
+ * @see MuxChannel
+ * @see Channel
+ * @version $Id: Multiplexer.java,v 1.79 2007/10/23 15:42:39 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	

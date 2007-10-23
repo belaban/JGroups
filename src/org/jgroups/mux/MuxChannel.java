@@ -7,25 +7,51 @@ import java.io.Serializable;
 import java.util.Map;
 
 /**
- * Multiplexer channel. This is returned as result of calling
- * {@link org.jgroups.ChannelFactory#createMultiplexerChannel(String,String,boolean,String)}. Maintains the multiplexer
- * ID, which is used to add a header to each message, so that the message can be demultiplexed at the receiver
- * @author Bela Ban
- * @version $Id: MuxChannel.java,v 1.37 2007/10/22 18:06:34 vlada Exp $
+ * Multiplexer channel is a lightweight version of a regular channel where
+ * multiple MuxChannel(s) share the same underlying regular channel.
+ * 
+ * <p>
+ * MuxChannel has to be created with a unique application id. The multiplexer
+ * keeps track of all registered applications and tags messages belonging to a
+ * specific application with that id for sent messages. When receiving a message
+ * from a remote peer, the multiplexer will dispatch a message to the
+ * appropriate MuxChannel depending on the id attached to the message.
+ * 
+ * <p>
+ * MuxChannel is created using {@link ChannelFactory#createMultiplexerChannel(String, String)}.
+ * 
+ * @author Bela Ban, Vladimir Blagojevic
+ * @see ChannelFactory#createMultiplexerChannel(String, String)
+ * @see JChannelFactory#createMultiplexerChannel(String, String)
+ * @see Multiplexer
+ * @since 2.4
+ * @version $Id: MuxChannel.java,v 1.38 2007/10/23 15:42:39 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
-    /** The service ID */
+    /*
+     * Header identifier
+     */
+    private static final String name = "MUX";
+
+    /*
+     * MuxChannel service ID
+     */
     private final String id;
-    
-    /** The name of the JGroups stack, e.g. as defined in stacks.xml */
+
+    /*
+     * The name of the JGroups stack, e.g. as defined in stacks.xml
+     */
     private final String stack_name;
 
-    /** will be added to each message sent */
+    /*
+     * Header added to each message sent from this MuxChannel
+     */
     private final MuxHeader hdr;
 
-    private static final String name="MUX";
-    
+    /*
+     * Underlying Multiplexer  
+     */
     private final Multiplexer mux;
 
 
