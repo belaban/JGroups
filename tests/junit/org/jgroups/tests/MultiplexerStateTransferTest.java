@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.1 2007/09/18 14:55:26 vlada Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.2 2007/10/24 15:16:35 vlada Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -73,12 +73,26 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
     
     public void testStateTransfer() throws Exception {
+        regularStateTransfer(false); 
+    }
+    
+    public void testConnectAndStateTransfer() throws Exception {
+        regularStateTransfer(true); 
+    }
+    
+    private void regularStateTransfer(boolean joinAndFetch) throws Exception {
         ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
+        if(joinAndFetch){
+            ch1.connect("bla", null, null, 5000);
+        }
+        else{
+            ch1.connect("bla");
+        }
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        c1_repl=new Cache(ch1_repl, "cache-1-repl");
 
         c1.put("name", "Bela");
         c1.put("id", new Long(322649));
@@ -86,10 +100,14 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         c1.put("bike", "Centurion");
 
 
-        ch1_repl.connect("bla");
-        c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        boolean rc=ch1_repl.getState(null, 5000);
-        System.out.println("state transfer: " + rc);
+        if(joinAndFetch){
+            ch1_repl.connect("bla", null, null,5000);
+        }
+        else{
+            ch1_repl.connect("bla");           
+            boolean rc=ch1_repl.getState(null, 5000);
+            System.out.println("state transfer: " + rc);
+        }
         Util.sleep(500);
 
         System.out.println("c1_repl: " + c1_repl);
@@ -105,16 +123,33 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assertEquals("Centurion", c1_repl.get("bike"));
     }
 
-
     public void testStateTransferWithTwoApplications() throws Exception {
+        stateTransferWithTwoApplications(false);
+    }
+    
+    public void testConnectAndStateTransferWithTwoApplications() throws Exception {
+        stateTransferWithTwoApplications(true);
+    }
+
+    private void stateTransferWithTwoApplications(boolean joinAndFetch) throws Exception {
         ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
+        
+        if(joinAndFetch){
+            ch1.connect("bla", null, null, 5000);
+        }else{
+            ch1.connect("bla");
+        }
+        
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
-        ch2.connect("bla");
         c2=new Cache(ch2, "cache-2");
+        if(joinAndFetch){
+            ch2.connect("bla", null, null, 5000);
+        }else{
+            ch2.connect("bla");
+        }
         assertEquals("cache has to be empty initially", 0, c2.size());
 
         ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
@@ -125,16 +160,24 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         c1.put("name", "cache-1");
         c2.put("name", "cache-2");
 
-        ch1_repl.connect("bla");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        boolean rc=ch1_repl.getState(null, 5000);
-        System.out.println("state transfer: " + rc);
+        if(joinAndFetch){
+            ch1_repl.connect("bla", null, null, 5000);
+        }else{
+            ch1_repl.connect("bla");
+            boolean rc=ch1_repl.getState(null, 5000);
+            System.out.println("state transfer: " + rc);
+        }        
 
-        ch2_repl.connect("bla");
         c2_repl=new Cache(ch2_repl, "cache-2-repl");
-        rc=ch2_repl.getState(null, 5000);
-        System.out.println("state transfer: " + rc);
-        Util.sleep(500);
+        
+        if(joinAndFetch){
+            ch2_repl.connect("bla", null, null, 5000);
+        }else{
+            ch2_repl.connect("bla");
+            boolean rc=ch2_repl.getState(null, 5000);
+            System.out.println("state transfer: " + rc);
+        }
 
         System.out.println("Caches after state transfers:");
         System.out.println("c1: " + c1);
@@ -397,16 +440,34 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-   
     public void testGetSubstates() throws Exception {
+        getSubstates(false);
+    }
+   
+    public void testConnectAndGetSubstates() throws Exception {
+        getSubstates(true);
+    }
+    
+    private void getSubstates(boolean joinAndFetch) throws Exception {
         ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        ch1.connect("bla");
         c1=new ExtendedCache(ch1, "cache-1");
+        if(joinAndFetch){
+            ch1.connect("bla", null, null, 5000);
+        }else{
+            ch1.connect("bla");
+        }
+               
         assertEquals("cache has to be empty initially", 0, c1.size());
 
         ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
-        ch2.connect("bla");
         c2=new ExtendedCache(ch2, "cache-2");
+        
+        if(joinAndFetch){
+            ch2.connect("bla", null, null, 5000);
+        }else{
+            ch2.connect("bla");
+        }
+        
         assertEquals("cache has to be empty initially", 0, c2.size());
 
         for(int i=0; i < 10; i++) {
@@ -416,15 +477,24 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
         ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
         ch2_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
-        ch1_repl.connect("bla");
         c1_repl=new ExtendedCache(ch1_repl, "cache-1-repl");
-        boolean rc=ch1_repl.getState(null, "odd", 5000);
-        System.out.println("state transfer: " + rc);
+        
+        if (joinAndFetch) {
+            ch1_repl.connect("bla", null, "odd", 5000);
+        } else {
+            ch1_repl.connect("bla");
+            boolean rc = ch1_repl.getState(null, "odd", 5000);
+            System.out.println("state transfer: " + rc);
+        }        
 
-        ch2_repl.connect("bla");
         c2_repl=new ExtendedCache(ch2_repl, "cache-2-repl");
-        rc=ch2_repl.getState(null, "even", 5000);
-        System.out.println("state transfer: " + rc);
+        if (joinAndFetch) {
+            ch2_repl.connect("bla", null, "even", 5000);
+        } else {
+            ch2_repl.connect("bla");
+            boolean rc = ch2_repl.getState(null, "even", 5000);
+            System.out.println("state transfer: " + rc);
+        }               
         Util.sleep(500);
 
         System.out.println("Caches after state transfers:");
