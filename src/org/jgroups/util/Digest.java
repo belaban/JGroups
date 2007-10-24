@@ -25,12 +25,12 @@ import java.util.concurrent.ConcurrentHashMap;
  * lost. Therefore we periodically gossip and include the last message seqno. Members who haven't seen
  * it (e.g. because msg was dropped) will request a retransmission. See DESIGN for details.
  * @author Bela Ban
- * @version $Id: Digest.java,v 1.7 2007/05/29 10:10:48 belaban Exp $
+ * @version $Id: Digest.java,v 1.8 2007/10/24 16:04:39 rachmatowicz Exp $
  */
 public class Digest implements Externalizable, Streamable {
 	
 	public static final Digest EMPTY_DIGEST = new Digest();
-    /** Map<Address, Entry> */
+    /** Map&lt;Address, Entry> */
     protected final Map<Address,Entry> senders;
     
     protected static final Log log=LogFactory.getLog(Digest.class);
