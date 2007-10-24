@@ -192,8 +192,8 @@ public class SequencerOrderTest extends TestCase {
 
 
     public static void main(String[] args) {
-        String[] testCaseName={SequencerOrderTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
+        String[] name={SequencerOrderTest.class.getName()};
+        junit.textui.TestRunner.main(name);
     }
 
 
