@@ -538,6 +538,8 @@
                                     Example: <code>use_mcast_xmit="true"</code>
                                 </para>
                             </entry>
+                        </row>
+                        <row>
                             <entry>use_mcast_xmit_req</entry>
                             <entry>
                                 Similar to use_mcast_xmit, but for requests: if enabled, we'll send a retransmit reuest
