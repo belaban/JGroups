@@ -791,6 +791,31 @@
           <para>This is managed internally however, and an application
           programmer does not need to be concerned about it.</para>
         </footnote> .</para>
+        
+      <para>Clients can also join a cluster group and fetch a cluster state 
+      using <methodname>public void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;</methodname>
+	  method. The best way to conceptualize connect and fetch state connect 
+	  method is to think of it as an invocation of regular connect and getState 
+	  methods executed in succession. However, there are several advantages of 
+	  using connect and fetch state connect method over regular connect. First of 
+	  all, underlying message exchange is heavily optimized, especially if the 
+	  FLUSH protocol is used in the stack. But more importantly, from clients 
+	  perspective, connect and join operations become one atomic operation.          	        
+      </para>  
+      
+      <screen>
+      	public void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException;
+      </screen>
+      
+      <para>
+      Just as in regular connect method cluster name represents a cluster to be joined. 
+      Address parameter indicates a cluster member to fetch state from. Usually null parameter 
+      is passed indicating that state should be fetched from coordinator. If state should 
+      be fetch from particular member other than coordinator provide an address of that member. 
+      State id used for partial state transfer while timeout bounds entire join and fetch 
+      operation.        
+      </para>
+      
     </section>
 
     <section>
