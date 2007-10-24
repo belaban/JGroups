@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.118 2007/09/20 07:47:35 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.119 2007/10/24 20:43:15 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -310,9 +310,14 @@
                 <include name="**/*~"/>
             </fileset>
         </delete>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
+    	<!-- clean the docs directory if docs have been processed -->
+        <antcall target="clean-docs"/>
     </target>
 
+	<target name="clean-docs" if="docbook.support.present">
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
+	</target>
+	
 
     <target name="version"
             depends="compile"
