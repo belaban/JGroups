@@ -67,6 +67,8 @@ public class FLUSH extends Protocol {
     private final Set<Address> suspected;
 
     private final Object sharedLock = new Object();
+    
+    private final Object flushStartLock = new Object();
 
     private final Object blockMutex = new Object();
 
@@ -109,7 +111,8 @@ public class FLUSH extends Protocol {
 
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
     
-    private volatile boolean flushInProgress = false;
+    @GuardedBy("flushStartLock")
+    private boolean flushInProgress = false;
 
     @GuardedBy("sharedLock")
     private final List<Address> reconcileOks = new ArrayList<Address>();
@@ -195,7 +198,12 @@ public class FLUSH extends Protocol {
     
     private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
         boolean successfulFlush = false;
-        if(!flushInProgress || isRetry){
+        boolean initiateFlush = false;
+        synchronized (flushStartLock) {
+            initiateFlush = !flushInProgress  || isRetry;  
+        }      
+        
+        if(initiateFlush){
             flush_promise.reset();                     
             if(log.isDebugEnabled()){
                 if(isRetry)
@@ -330,7 +338,9 @@ public class FLUSH extends Protocol {
                     case FlushHeader.FLUSH_BYPASS:
                         return up_prot.up(evt);                     
                     case FlushHeader.START_FLUSH:
-                        handleStartFlush(msg, fh);
+                        synchronized(flushStartLock){
+                            handleStartFlush(msg, fh);
+                        }
                         break;
                     case FlushHeader.FLUSH_RECONCILE:
                         handleFlushReconcile(msg, fh);
@@ -611,7 +621,11 @@ public class FLUSH extends Protocol {
         if(amISurvivingMember){
             up_prot.up(new Event(Event.UNBLOCK));
         }
-        flushInProgress = false;       
+        
+        synchronized (flushStartLock) {
+            flushInProgress = false;
+        }
+              
     }
 
     private void onSuspend(View view) {
