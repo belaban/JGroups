@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.119 2007/10/24 20:43:15 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.120 2007/10/25 23:25:23 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -739,7 +739,7 @@
     </target>
 
     <target name="findxalan">
-        <available property="xalan.available" classname="org.apache.xalan.Version"/>
+        <available property="xalan.available" classpathref="jg.classpath" classname="org.apache.xalan.Version"/>
         <fail unless="xalan.available"
               message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
     </target>
