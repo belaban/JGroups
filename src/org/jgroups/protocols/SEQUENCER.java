@@ -1,9 +1,9 @@
 
 package org.jgroups.protocols;
 
-import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.SeqnoTable;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.11.2.1 2007/04/27 08:03:52 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.11.2.2 2007/10/25 08:11:51 belaban Exp $
  */
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
@@ -26,7 +26,7 @@ public class SEQUENCER extends Protocol {
     private final Map               forward_table=new TreeMap();
 
     /** Map<Address, seqno>: maintains the highest seqnos seen for a given member */
-    private final ConcurrentHashMap received_table=new ConcurrentHashMap();
+    private final SeqnoTable received_table=new SeqnoTable(0);
 
     private long forwarded_msgs=0;
     private long bcast_msgs=0;
@@ -167,13 +167,7 @@ public class SEQUENCER extends Protocol {
             resendMessagesInForwardTable(); // maybe optimize in the future: broadcast directly if coord
         }
         // remove left members from received_table
-        int size=received_table.size();
-        Set keys=received_table.keySet();
-        keys.retainAll(members);
-        if(keys.size() != size) {
-            if(log.isTraceEnabled())
-                log.trace("adjusted received_table, keys are " + keys);
-        }
+        received_table.retainAll(members);
     }
 
     /**
@@ -236,17 +230,14 @@ public class SEQUENCER extends Protocol {
         }
 
         // if msg was already delivered, discard it
-        Long highest_seqno_seen=(Long)received_table.get(original_sender);
-        if(highest_seqno_seen != null) {
-            if(highest_seqno_seen.longValue() >= msg_seqno) {
-                if(log.isWarnEnabled())
-                log.warn("message seqno (" + original_sender + "::" + msg_seqno + " has already " +
-                        "been received (highest received=" + highest_seqno_seen + "); discarding duplicate message");
-                return;
-            }
+        boolean added=received_table.add(original_sender, msg_seqno);
+        if(!added) {
+            if(log.isWarnEnabled())
+                log.warn("seqno (" + original_sender + "::" + msg_seqno + " has already been received " +
+                        "(highest received=" + received_table.getHighestReceived(original_sender) +
+                        "); discarding duplicate message");
+            return;
         }
-        // update the table with the new seqno
-        received_table.put(original_sender, new Long(msg_seqno));
 
         // pass a copy of the message up the stack
         Message tmp=msg.copy(true);
