@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.12 2007/10/26 14:22:37 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.13 2007/10/26 14:29:17 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -11,8 +11,9 @@
 - Set version in:
   Version.java, manifest.mf and build.xml
 - Create a CVS tag: JGroups_x_y_z
+- Add tag to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
 - Create a distribution: ./build.sh dist, upload to web site
-- Create PDF and HTML documentation: ./build.sh docs, upload to web site
+- Create PDF and HTML documentation: ./build.sh docs, upload to web site (JGroups/bin/upload_manual.sh)
 - Create javadoc: ./build.sh javadoc and upload to web site (may have
   to use JDK 1.4 to create javadoc)
 - Add new release to repository.jboss.com
