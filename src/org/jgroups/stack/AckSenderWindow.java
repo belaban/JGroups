@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.25 2007/08/10 12:32:17 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.26 2007/10/26 09:56:55 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     RetransmitCommand       retransmit_command = null;   // called to request XMIT of msg
     final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap();        // keys: seqnos (Long), values: Messages
-    Interval                interval=new StaticInterval(new long[]{400,800,1200,1600});
+    Interval                interval=new StaticInterval(400,800,1200,1600);
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
 
@@ -92,8 +92,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      * threshold (<code>min_threshold</code>)
      */
     public void add(long seqno, Message msg) {
-        Long tmp=new Long(seqno);
-        msgs.putIfAbsent(tmp, msg);
+        msgs.putIfAbsent(seqno, msg);
         retransmitter.add(seqno, seqno);
     }
 
@@ -185,7 +184,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
 
     public static void main(String[] args) {
-        Interval xmit_timeouts=new StaticInterval(new long[]{1000, 2000, 3000, 4000});
+        Interval xmit_timeouts=new StaticInterval(1000, 2000, 3000, 4000);
         AckSenderWindow win=new AckSenderWindow(new Dummy(), xmit_timeouts);
 
 
