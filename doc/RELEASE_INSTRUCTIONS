@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.11 2007/10/26 14:00:55 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.12 2007/10/26 14:22:37 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -16,6 +16,7 @@
 - Create javadoc: ./build.sh javadoc and upload to web site (may have
   to use JDK 1.4 to create javadoc)
 - Add new release to repository.jboss.com
+- Announcement to the jg-dev and jg-users mailing lists
 
 
 
