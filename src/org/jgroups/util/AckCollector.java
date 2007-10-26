@@ -9,7 +9,7 @@ import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: AckCollector.java,v 1.13 2007/10/22 17:54:39 vlada Exp $
+ * @version $Id: AckCollector.java,v 1.14 2007/10/26 18:24:00 vlada Exp $
  */
 public class AckCollector {
     /** List<Object>: list of members from whom we haven't received an ACK yet */
@@ -44,7 +44,7 @@ public class AckCollector {
             suspected_mbrs.clear();           
             missing_acks.clear();
             received_acks.clear();
-            if(members != null)
+            if(members != null && !members.isEmpty())
                 missing_acks.addAll(members);
             missing_acks.removeAll(suspected_mbrs);
             all_acks_received.reset();
