@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer and concurrent state tranfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.27 2007/10/23 14:11:43 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.28 2007/10/26 15:47:28 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -325,6 +325,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     protected class ConcurrentLargeStateTransfer extends ConcurrentStateTransfer {
+        private static final long TRANSFER_TIME = 5000;
         public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
@@ -334,27 +335,28 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
 
         public void setState(byte[] state) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.setState(state);
         }
 
         public byte[] getState() {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             return super.getState();
         }
 
         public void getState(OutputStream ostream) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.getState(ostream);
         }
 
         public void setState(InputStream istream) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.setState(istream);
         }
     }
 
     protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
+        private static final long TRANSFER_TIME = 5000; 
         public ConcurrentStartupChannelWithLargeState(Semaphore semaphore,
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
@@ -368,22 +370,22 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
 
         public void setState(byte[] state) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.setState(state);
         }
 
         public byte[] getState() {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             return super.getState();
         }
 
         public void getState(OutputStream ostream) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.getState(ostream);
         }
 
         public void setState(InputStream istream) {
-            Util.sleep(5000);
+            Util.sleep(TRANSFER_TIME);
             super.setState(istream);
         }
     }
