@@ -14,11 +14,14 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.4 2007/10/05 07:18:18 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.5 2007/10/26 07:47:31 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;
+
+    final static int[] SIZES={10000, 20000, 40000, 80000, 100000, 200000, 400000, 800000,
+            1000000, 2000000, 5000000, 10000000, 20000000};
 
     protected void setUp() throws Exception {
         super.setUp();
@@ -73,12 +76,25 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
     public void testLargeReturnValue() {
         setProps(c1); setProps(c2); setProps(c3);
-        _testLargeValue(10000);
-        _testLargeValue(20000);
-        _testLargeValue(40000);
-        _testLargeValue(80000);
-        _testLargeValue(100000);
-        _testLargeValue(200000);
+        for(int i=0; i < SIZES.length; i++) {
+            _testLargeValue(SIZES[i]);
+        }
+    }
+
+    public void testLargeReturnValueUnicastCall() throws Throwable {
+        setProps(c1); setProps(c2); setProps(c3);
+        for(int i=0; i < SIZES.length; i++) {
+            _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
+        }
+
+        for(int i=0; i < SIZES.length; i++) {
+            _testLargeValueUnicastCall(c3.getLocalAddress(), SIZES[i]);
+        }
+
+
+        for(int i=0; i < SIZES.length; i++) {
+            _testLargeValueUnicastCall(c2.getLocalAddress(), SIZES[i]);
+        }
     }
 
 
@@ -106,6 +122,16 @@ public class RpcDispatcherTest extends ChannelTestBase {
             assertNotNull(val);
             assertEquals(size, val.length);
         }
+    }
+
+    void _testLargeValueUnicastCall(Address dst, int size) throws Throwable {
+        System.out.println("testing unicast call with " + size + " bytes");
+        assertNotNull(dst);
+        Object retval=disp1.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, 20000);
+        System.out.println("rsp:\n" + retval);
+        byte[] val=(byte[])retval;
+        assertNotNull(val);
+        assertEquals(size, val.length);
     }
 
     private static class ServerObject {
