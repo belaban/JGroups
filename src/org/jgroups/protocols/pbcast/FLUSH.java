@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending
@@ -67,8 +68,6 @@ public class FLUSH extends Protocol {
     private final Set<Address> suspected;
 
     private final Object sharedLock = new Object();
-    
-    private final Object flushStartLock = new Object();
 
     private final Object blockMutex = new Object();
 
@@ -111,8 +110,7 @@ public class FLUSH extends Protocol {
 
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
     
-    @GuardedBy("flushStartLock")
-    private boolean flushInProgress = false;
+    private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
 
     @GuardedBy("sharedLock")
     private final List<Address> reconcileOks = new ArrayList<Address>();
@@ -198,12 +196,7 @@ public class FLUSH extends Protocol {
     
     private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
         boolean successfulFlush = false;
-        boolean initiateFlush = false;
-        synchronized (flushStartLock) {
-            initiateFlush = !flushInProgress  || isRetry;  
-        }      
-        
-        if(initiateFlush){
+        if(!flushInProgress.get() || isRetry){
             flush_promise.reset();                     
             if(log.isDebugEnabled()){
                 if(isRetry)
@@ -241,8 +234,8 @@ public class FLUSH extends Protocol {
 
             Util.sleep(backOffSleepTime * 1000);
             Boolean succeededWhileWeSlept = flush_promise.getResult(1);
-            boolean shouldRetry = !(succeededWhileWeSlept != null && succeededWhileWeSlept.booleanValue());
-            if(shouldRetry)
+            successfulFlush = (succeededWhileWeSlept != null && succeededWhileWeSlept.booleanValue());
+            if(!successfulFlush)
                 successfulFlush = startFlush(evt, --numberOfAttempts, true);
         }
         return successfulFlush;
@@ -338,9 +331,7 @@ public class FLUSH extends Protocol {
                     case FlushHeader.FLUSH_BYPASS:
                         return up_prot.up(evt);                     
                     case FlushHeader.START_FLUSH:
-                        synchronized(flushStartLock){
-                            handleStartFlush(msg, fh);
-                        }
+                        handleStartFlush(msg, fh);
                         break;
                     case FlushHeader.FLUSH_RECONCILE:
                         handleFlushReconcile(msg, fh);
@@ -476,21 +467,25 @@ public class FLUSH extends Protocol {
         down_prot.down(new Event(Event.MSG, reconcileOk));
     }
 
-    private void handleStartFlush(Message msg, FlushHeader fh) {       
-        if(!flushInProgress){
-            flushInProgress = true;
-            sendBlockUpToChannel();
-            onStartFlush(msg.getSrc(), fh);
-        }else{
-            Address flushRequester = msg.getSrc();
-            Address coordinator = null;
-            synchronized(sharedLock){
+    private void handleStartFlush(Message msg, FlushHeader fh) {
+        Address coordinator = null;
+        boolean proceed = false;
+        Address flushRequester = msg.getSrc();
+        synchronized (sharedLock) {
+            proceed = flushInProgress.compareAndSet(false, true);                     
+            if(proceed){
+                flushCoordinator = flushRequester;
+            }else{                              
                 if(flushCoordinator != null)
                     coordinator = flushCoordinator;
                 else
-                    coordinator = flushRequester;
+                    coordinator = flushRequester;       
             }
-
+        }
+        if(proceed){
+            sendBlockUpToChannel();
+            onStartFlush(flushRequester, fh);
+        } else{           
             if(flushRequester.compareTo(coordinator) < 0){
                 rejectFlush(fh.viewID, coordinator);
                 if(log.isDebugEnabled()){
@@ -621,11 +616,7 @@ public class FLUSH extends Protocol {
         if(amISurvivingMember){
             up_prot.up(new Event(Event.UNBLOCK));
         }
-        
-        synchronized (flushStartLock) {
-            flushInProgress = false;
-        }
-              
+        flushInProgress.set(false);       
     }
 
     private void onSuspend(View view) {
