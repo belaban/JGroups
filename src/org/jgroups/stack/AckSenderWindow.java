@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.26 2007/10/26 09:56:55 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.27 2007/10/26 09:58:35 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -140,7 +140,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
                 log.trace(new StringBuilder("retransmitting messages ").append(first_seqno).
                           append(" - ").append(last_seqno).append(" from ").append(sender));
             for(long i = first_seqno; i <= last_seqno; i++) {
-                if((msg=msgs.get(new Long(i))) != null) { // find the message to retransmit
+                if((msg=msgs.get(i)) != null) { // find the message to retransmit
                     retransmit_command.retransmit(i, msg);
                 }
             }
