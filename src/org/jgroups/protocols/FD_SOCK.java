@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.80 2007/09/21 16:01:11 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.81 2007/10/26 18:17:24 vlada Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -280,8 +280,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                 // Return the cache to the sender of this message
             case FdHeader.GET_CACHE:
                 Address sender=msg.getSrc(); // guaranteed to be non-null
-                hdr=new FdHeader(FdHeader.GET_CACHE_RSP);
-                hdr.cachedAddrs=new HashMap<Address,IpAddress>(cache);
+                hdr=new FdHeader(FdHeader.GET_CACHE_RSP,new HashMap<Address,IpAddress>(cache));                
                 msg=new Message(sender, null, null);
                 msg.setFlag(Message.OOB);
                 msg.putHeader(name, hdr);
@@ -290,7 +289,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
             case FdHeader.GET_CACHE_RSP:
                 if(hdr.cachedAddrs == null) {
-                    if(log.isErrorEnabled()) log.error("(GET_CACHE_RSP): cache is null");
+                    if(log.isWarnEnabled()) log.warn("(GET_CACHE_RSP): cache is null");
                     return null;
                 }
                 get_cache_promise.setResult(hdr.cachedAddrs);
@@ -649,7 +648,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     return;
                 }
                 else {
-                    if(log.isErrorEnabled()) log.error("received null cache; retrying");
+                    if(log.isWarnEnabled()) log.warn("received null cache; retrying");
                 }
             }
 
