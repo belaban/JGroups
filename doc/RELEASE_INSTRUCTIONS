@@ -1,26 +1,43 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.14 2007/10/26 14:56:08 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.15 2007/10/29 15:19:21 rachmatowicz Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
 
+Pre-release:
 - Do a cvs update -dP and commit all pending changes
 - Run all unit tests (all-tests-cc target)
 - Run the manual tests in doc/tests/ManualTests.txt
-- Run the performance tests to see whether performance is about the same
+- Run the performance tests to see whether performance is about the same 
+  (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTests) 
+
+
+Release:  
 - Update the ReleaseNotes-xxx.txt for the given release
-- Set version in:
-  Version.java, manifest.mf and build.xml
+- Set version in: Version.java, manifest.mf and build.xml
 - Create a CVS tag: JGroups_x_y_z
-- Add tag to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
-- Create a distribution: ./build.sh dist, upload to web site:
+- Add tag information to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
+- Create a distribution: ./build.sh dist
+  - the distribution files are dist/JGroups-x.y.z-rel.bin.zip, dist/JGroups-x.y.z-rel.src.zip 
+- Upload distribution files to web site:
   - Go to http://sourceforge.net/projects/javagroups/
   - Log in and pick http://sourceforge.net/project/admin/editpackages.php?group_id=6081
   - Add release to JGroups (new version)
-- Create PDF and HTML documentation: ./build.sh docs, upload to web site (JGroups/bin/upload_manual.sh)
-- Create javadoc: ./build.sh javadoc and upload to web site (may have
-  to use JDK 1.4 to create javadoc)
-- Add new release to repository.jboss.com
+  - Release notes are included in dist, change log obtained from JIRA
+- Create PDF and HTML documentation: ./build.sh docs and upload to web site 
+  - these files update the JGroups web page (http://www.jgroups.org/javagroupsnew/docs/index.html), 
+  specifically the links to manual and tutorial documentation  
+  - see JGroups/bin/upload_manual.sh
+- Create javadoc: ./build.sh javadoc and upload to web site 
+  - use process similar to pdf and html
+- Add new release to ant repository http://repository.jboss.org
+  - the jar to release is dist/jgroups-all.jar, renamed to jgroups.jar
+  (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=JBossBuild)
+- Add new release to maven2 repository http://repository.jboss.org/maven2
+  (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=MavenReleaseRepository) 
 - Announcement to the jg-dev and jg-users mailing lists
+  -include release notes and changelog
 
 
+  NOTE: to perform these steps, you will need a SourceForge account and appropriate
+  permissions.
 
