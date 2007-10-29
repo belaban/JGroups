@@ -36,7 +36,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.79 2007/10/23 15:42:39 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.80 2007/10/29 18:50:27 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -361,9 +361,16 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.GET_APPLSTATE:
+                return handleStateRequest(evt,true);
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                return handleStateRequest(evt);
-
+                //Vladimir Oct 29,2007 Multiplexer.java 1.79
+                //STREAMING_STATE_TRANSFER does not require return value.
+                //If there is not return value STATE_TRANSFER_OUTPUTSTREAM event 
+                //can be processed concurrently by Multiplexer along with other messages 
+                //for a specific MuxChannel
+                //@see Multiplexer#passToMuxChannel();
+                handleStateRequest(evt,false);
+                break;
             case Event.GET_STATE_OK:
             case Event.STATE_TRANSFER_INPUTSTREAM:
                 handleStateResponse(evt);
@@ -595,8 +602,15 @@ public class Multiplexer implements UpHandler {
         
         channel.send(service_msg);
         
-        if (synchronous) {
-            service_ack_collector.reset(null, service_state.get(service));
+        if (synchronous) {           
+            //the host that is sending this message should also ack
+            CopyOnWriteArrayList<Address> muxChannels = new CopyOnWriteArrayList<Address>();
+            muxChannels.add(host);           
+            List<Address> list = service_state.get(service);                
+            if(list != null && !list.isEmpty()){
+                muxChannels.addAllAbsent(list);               
+            }  
+            service_ack_collector.reset(null, muxChannels);
             int size=service_ack_collector.size();                       
             long service_ack_collection_timeout = 2000;
             long start = System.currentTimeMillis();
@@ -619,7 +633,7 @@ public class Multiplexer implements UpHandler {
 
 
 
-    private Object handleStateRequest(Event evt) {
+    private Object handleStateRequest(Event evt, boolean hasReturnValue) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         String id=info.state_id;
         String original_id=id;
@@ -642,7 +656,7 @@ public class Multiplexer implements UpHandler {
                   + " does not have service with id " + id);
 
             // state_id will be null, get regular state from the service named state_id
-            StateTransferInfo ret=(StateTransferInfo)passToMuxChannel(mux_ch, evt, fifo_queue, requester, id, true);
+            StateTransferInfo ret=(StateTransferInfo)passToMuxChannel(mux_ch, evt, fifo_queue, requester, id, hasReturnValue);
             if(ret != null)
         	ret.state_id=original_id;
             return ret;
@@ -790,7 +804,7 @@ public class Multiplexer implements UpHandler {
         synchronized(service_state) {
             hosts=service_state.get(service);
             if(hosts == null) {
-                hosts=new ArrayList<Address>();
+                hosts=new CopyOnWriteArrayList<Address>();
                 service_state.put(service,  hosts);
             }
             if(!hosts.contains(host)) {
@@ -885,7 +899,7 @@ public class Multiplexer implements UpHandler {
                 for(String service:service_list) {                    
                     List<Address> my_services=service_state.get(service);
                     if(my_services == null) {
-                        my_services=new ArrayList<Address>();
+                        my_services=new CopyOnWriteArrayList<Address>();
                         service_state.put(service, my_services);
                     }
 
