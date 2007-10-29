@@ -726,8 +726,11 @@ public class ChannelTestBase extends TestCase {
         return true;
     }
 
-    public static void sleepRandom(int maxTime) {
-        Util.sleep(RANDOM.nextInt(maxTime));
+    public static void sleepRandom(int minTime,int maxTime) {
+        int nextInt = RANDOM.nextInt(maxTime);
+        if (nextInt <minTime)
+            nextInt = minTime;
+        Util.sleep(nextInt);
     }
 
 }
