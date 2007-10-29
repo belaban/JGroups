@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.155 2007/10/04 07:43:49 belaban Exp $
+ * @version $Id: JChannel.java,v 1.156 2007/10/29 18:50:47 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1224,7 +1224,12 @@ public class JChannel extends Channel {
                             if(log.isWarnEnabled())
                                 log.warn("failed calling getState() in receiver", t);
                         }
-                        return new StateTransferInfo(null, os, sti.state_id);
+                        //Vladimir Oct 29,2007 JChannel.java 1.156
+                        //STREAMING_STATE_TRANSFER does not require return value.
+                        //If there is not return value STATE_TRANSFER_OUTPUTSTREAM event 
+                        //can be processed concurrently by Multiplexer along with other messages 
+                        //for a specific MuxChannel
+                        //@see Multiplexer#passToMuxChannel();
                     }                    
                 }
                 else if(receiver instanceof Receiver){
