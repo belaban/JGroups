@@ -1,6 +1,7 @@
 package org.jgroups.debug;
 
 import org.jgroups.Address;
+import org.jgroups.ChannelException;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
@@ -15,7 +16,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.10 2007/03/07 16:32:16 belaban Exp $
+ * @version $Id: Simulator.java,v 1.11 2007/10/30 17:53:05 vlada Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -46,7 +47,11 @@ public class Simulator {
         top=protStack[0];
         bottom=this.protStack[this.protStack.length-1];
 
-        prot_stack=new ProtocolStack();
+        try {
+            prot_stack=new ProtocolStack();
+        } catch (ChannelException e) {           
+            e.printStackTrace();
+        }
 
         if(protStack.length > 1) {
             for(int i=0; i < protStack.length; i++) {

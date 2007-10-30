@@ -29,7 +29,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.53 2007/04/27 07:59:24 belaban Exp $
+ * @version $Id: Protocol.java,v 1.54 2007/10/30 17:53:06 vlada Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -98,6 +98,10 @@ public abstract class Protocol {
 
     public Properties getProperties() {
         return props;
+    }
+    
+    public ProtocolStack getProtocolStack(){
+        return stack;
     }
 
 

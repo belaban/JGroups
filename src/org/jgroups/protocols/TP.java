@@ -2,10 +2,10 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.Channel;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
 
@@ -15,9 +15,7 @@ import java.io.DataOutputStream;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.List;
 import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -45,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.156 2007/09/21 16:10:46 vlada Exp $
+ * @version $Id: TP.java,v 1.157 2007/10/30 17:53:07 vlada Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1352,16 +1350,8 @@ public abstract class TP extends Protocol {
                                         BlockingQueue<Runnable> queue, final String thread_group_name, 
                                         final String thread_name) {
                 
-        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
-
-        pool.setThreadFactory(new ThreadFactory() {
-            ThreadGroup unmarshaller_threads=new ThreadGroup(pool_thread_group, thread_group_name);
-            public Thread newThread(Runnable command) {
-                Thread retval=new Thread(unmarshaller_threads, command, thread_name);                
-                thread_naming_pattern.renameThread(retval);
-                return retval;
-            }
-        });
+        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);       
+        pool.setThreadFactory(ProtocolStack.newThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
 
         if(rejection_policy != null) {
             if(rejection_policy.equals("abort"))
@@ -1534,7 +1524,7 @@ public abstract class TP extends Protocol {
 
         void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
+                t=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);                
                 t.setDaemon(true);
                 t.start();
             }
@@ -1583,7 +1573,7 @@ public abstract class TP extends Protocol {
 
         public void start() {
             if(t == null || !t.isAlive()) {
-                t=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
+                t=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);                
                 t.setDaemon(true);
                 t.start();
             }
@@ -1793,7 +1783,7 @@ public abstract class TP extends Protocol {
             bindToInterfaces(interfaces, diag_sock);
 
             if(thread == null || !thread.isAlive()) {
-                thread=new Thread(Util.getGlobalThreadGroup(), this, THREAD_NAME);
+                thread=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);              
                 thread.setDaemon(true);
                 thread.start();
             }

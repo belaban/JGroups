@@ -6,7 +6,6 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Streamable;
-import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
 
@@ -14,7 +13,6 @@ import java.io.*;
 import java.net.*;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -117,8 +115,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      * 
      */
     private StateProviderThreadSpawner spawner;
-
-    private ThreadNamingPattern thread_naming_pattern;
 
     public STREAMING_STATE_TRANSFER(){}
 
@@ -248,12 +244,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
             }
             break;       
-        case Event.INFO:
-            Map<String, Object> info = (Map<String, Object>) evt.getArg();
-            if(info.containsKey("thread_naming_pattern")){
-                thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
-            }            
-            break;
         }
         return up_prot.up(evt);
     }
@@ -341,9 +331,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         if(spawner == null){
             ServerSocket serverSocket = Util.createServerSocket(bind_addr, bind_port);
             spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-            Thread t = new Thread(Util.getGlobalThreadGroup(), spawner, "STREAMING_STATE_TRANSFER server socket acceptor");            
-            t.start();
-            thread_naming_pattern.renameThread(t);
+            Thread t = getProtocolStack().getThreadFactory().newThread(spawner,"STREAMING_STATE_TRANSFER server socket acceptor");               
+            t.start();           
         }
 
         List<Message> responses = new LinkedList<Message>();
@@ -402,13 +391,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                                                                pool_thread_keep_alive,
                                                                TimeUnit.MILLISECONDS,
                                                                new SynchronousQueue<Runnable>());
+        
+        
         ThreadFactory factory = new ThreadFactory() {
             public Thread newThread(final Runnable command) {
-                Thread thread = new Thread(Util.getGlobalThreadGroup(),
-                                           command,
-                                           "STREAMING_STATE_TRANSFER sender");
-                thread_naming_pattern.renameThread(thread);
-                return thread;
+                return getProtocolStack().getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");                                
             }
         };
         threadPool.setThreadFactory(factory);
@@ -594,12 +581,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
         };
         if(use_reading_thread){
-            Thread t = new Thread(Util.getGlobalThreadGroup(),
-                       readingThread,
-                       "STREAMING_STATE_TRANSFER reader");
-            t.start();
-            thread_naming_pattern.renameThread(t);
-
+            Thread t = getProtocolStack().getThreadFactory().newThread(readingThread, "STREAMING_STATE_TRANSFER reader");         
+            t.start();            
         }else{
             readingThread.run();
         }
