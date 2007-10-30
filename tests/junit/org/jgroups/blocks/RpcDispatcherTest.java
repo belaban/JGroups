@@ -14,7 +14,7 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.5 2007/10/26 07:47:31 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.6 2007/10/30 16:12:41 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -87,14 +87,14 @@ public class RpcDispatcherTest extends ChannelTestBase {
             _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
         }
 
-        for(int i=0; i < SIZES.length; i++) {
-            _testLargeValueUnicastCall(c3.getLocalAddress(), SIZES[i]);
-        }
-
-
-        for(int i=0; i < SIZES.length; i++) {
-            _testLargeValueUnicastCall(c2.getLocalAddress(), SIZES[i]);
-        }
+//        for(int i=0; i < SIZES.length; i++) {
+//            _testLargeValueUnicastCall(c3.getLocalAddress(), SIZES[i]);
+//        }
+//
+//
+//        for(int i=0; i < SIZES.length; i++) {
+//            _testLargeValueUnicastCall(c2.getLocalAddress(), SIZES[i]);
+//        }
     }
 
 
