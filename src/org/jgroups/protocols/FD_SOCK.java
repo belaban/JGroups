@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.81 2007/10/26 18:17:24 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.82 2007/10/30 17:53:07 vlada Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -79,7 +79,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     private boolean             keep_alive=true;
 
     private volatile boolean    running=false;
-    private ThreadNamingPattern thread_naming_pattern;
 
 
     public String getName() {
@@ -203,14 +202,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         case Event.SET_LOCAL_ADDRESS:
             local_addr=(Address) evt.getArg();
             break;
-                    
-        case Event.INFO:
-            Map<String, Object> info = (Map<String, Object>) evt.getArg();
-            if(info.containsKey("thread_naming_pattern")){
-                thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
-            }            
-            break;
-
+                           
         case Event.MSG:
             Message msg=(Message) evt.getArg();
             FdHeader hdr=(FdHeader)msg.getHeader(name);
@@ -499,9 +491,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     void startPingerThread() {
         running=true;
         if(pinger_thread == null) {
-            pinger_thread=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK pinger");
-            pinger_thread.setDaemon(true);
-            thread_naming_pattern.renameThread(pinger_thread);
+            pinger_thread=getProtocolStack().getThreadFactory().newThread(this, "FD_SOCK pinger");            
+            pinger_thread.setDaemon(true);            
             pinger_thread.start();            
         }
     }
@@ -983,9 +974,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=new Thread(Util.getGlobalThreadGroup(), this, "FD_SOCK server socket acceptor");
-                acceptor.setDaemon(true);  
-                thread_naming_pattern.renameThread(acceptor);
+                acceptor=getProtocolStack().getThreadFactory().newThread(this, "FD_SOCK server socket acceptor");                
+                acceptor.setDaemon(true);                  
                 acceptor.start();
             }
         }
@@ -1021,7 +1011,6 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
-                    thread_naming_pattern.renameThread(client_conn_handler);
                     synchronized(clients) {
                         clients.add(client_conn_handler);
                     }

@@ -8,8 +8,7 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
+
 
 
 /**
@@ -20,36 +19,50 @@ import java.util.concurrent.atomic.AtomicInteger;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.53 2007/09/21 16:10:45 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.54 2007/10/30 17:53:06 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
-    private Protocol                top_prot=null;
-    private Protocol                bottom_prot=null;
-    private String                  setup_string;
-    private JChannel                channel=null;
-    private boolean                 stopped=true;
-    public final  TimeScheduler     timer;
-    protected ThreadGroup           timer_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Timers");
+    
+    public static final int ABOVE = 1; // used by insertProtocol()
+    public static final int BELOW = 2; // used by insertProtocol()
 
-    public static final int         ABOVE=1; // used by insertProtocol()
-    public static final int         BELOW=2; // used by insertProtocol()
+    protected final PatternedThreadFactory thread_factory;
+    protected final PatternedThreadFactory timer_thread_factory;
+    public final TimeScheduler timer;
+    private Protocol top_prot = null;
+    private Protocol bottom_prot = null;
+    private String setup_string;
+    private JChannel channel = null;
+    private volatile boolean stopped = true;   
 
-    private static final String     TIMER_NAME="Timer"; 
-    protected ThreadNamingPattern   thread_naming_pattern = null;
 
-
-    public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
+    public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {               
+        this(newThreadFactory(Util.getGlobalThreadGroup(),"",false),channel,setup_string);
+    }
+    
+    public ProtocolStack(ThreadFactory factory, JChannel channel, String setup_string) throws ChannelException {
+        
+        this.thread_factory = new PatternedThreadFactory(factory,null);
         this.setup_string=setup_string;
         this.channel=channel;
         ClassConfigurator.getInstance(true); // will create the singleton
-        timer=createTimer();
+
+        this.timer_thread_factory = new PatternedThreadFactory(
+                newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
+                null);
+        
+        timer= new TimeScheduler(timer_thread_factory);
     }
 
 
 
     /** Only used by Simulator; don't use */
-    public ProtocolStack() {
-        timer=createTimer();
+    public ProtocolStack() throws ChannelException {
+        this(null,null,null);
+    }
+    
+    public ThreadFactory getThreadFactory(){
+        return thread_factory;
     }
 
 
@@ -335,7 +348,9 @@ public class ProtocolStack extends Protocol implements Transport {
         case Event.INFO:
             Map<String, Object> info = (Map<String, Object>) evt.getArg();
             if(info.containsKey("thread_naming_pattern")){
-                thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");                
+                ThreadNamingPattern thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
+                thread_factory.setThreadNamingPattern(thread_naming_pattern);
+                timer_thread_factory.setThreadNamingPattern(thread_naming_pattern);
             }
         }
         return channel.up(evt);
@@ -348,22 +363,73 @@ public class ProtocolStack extends Protocol implements Transport {
             return top_prot.down(evt);
         return null;
     }
+    
+    public static ThreadFactory newThreadFactory(ThreadGroup group,String baseName, boolean createDaemons){
+        return new DefaultThreadFactory(group,baseName, createDaemons);
+    }
 
+    public static ThreadFactory newThreadFactory(ThreadNamingPattern pattern,ThreadGroup group,String baseName, boolean createDaemons){
+        return new PatternedThreadFactory(new DefaultThreadFactory(group,baseName, createDaemons),pattern);
+    }
+    
+    static class DefaultThreadFactory implements ThreadFactory{
+        
+        private final ThreadGroup group;
+        private final String baseName;
+        private final boolean createDaemons;   
+        
+        public DefaultThreadFactory(ThreadGroup group,String baseName, boolean createDaemons){
+            this.group = group;
+            this.baseName = baseName;
+            this.createDaemons = createDaemons;               
+        }
+              
+        public Thread newThread(Runnable r, String name) {
+            return newThread(group, r, name);
+        }      
 
+        public Thread newThread(Runnable r) {
+            Thread thread = newThread(group, r, baseName);
+            thread.setDaemon(createDaemons);       
+            return thread;
+        }
+        
+        private Thread newThread(ThreadGroup group, Runnable r, String name) {
+            return new Thread(group, r, name);                    
+        }
+    }
+    
+    static class PatternedThreadFactory implements ThreadFactory{
 
-    /*----------------------- End of Protocol functionality ---------------------------*/
+        private final ThreadFactory f;
+        private ThreadNamingPattern pattern;
+        
+        public PatternedThreadFactory(ThreadFactory factory,
+                ThreadNamingPattern pattern){
+            
+            f = factory;
+            this.pattern = pattern;           
+        }
 
-    private TimeScheduler createTimer() {
-        ThreadFactory factory=new ThreadFactory() {
+        public Thread newThread(Runnable r, String name) {
+            Thread newThread = f.newThread(r, name);
+            if(pattern!=null)
+                pattern.renameThread(newThread);
+                
+            return newThread;
+        }
 
-            public Thread newThread(Runnable command) {
-                Thread thread=new Thread(timer_thread_group, command, TIMER_NAME);
-                thread.setDaemon(true);    
-                if(thread_naming_pattern != null)
-                    thread_naming_pattern.renameThread(thread);
-                return thread;
-            }
-        };
-        return new TimeScheduler(factory);
+        public void setThreadNamingPattern(ThreadNamingPattern pattern) {
+            this.pattern = pattern;           
+        }
+
+        public Thread newThread(Runnable r) {
+            Thread newThread = f.newThread(r);
+            if(pattern!=null)
+                pattern.renameThread(newThread);
+                
+            return newThread;
+        }        
     }
 }
+

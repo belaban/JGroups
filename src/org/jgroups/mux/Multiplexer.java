@@ -3,8 +3,10 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.ThreadFactory;
 import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.FIFOMessageQueue;
@@ -36,7 +38,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.80 2007/10/29 18:50:27 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.81 2007/10/30 17:53:07 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -177,27 +179,17 @@ public class Multiplexer implements UpHandler {
     protected ThreadPoolExecutor createThreadPool() {
         int min_threads=1, max_threads=4;
         long keep_alive=30000;
-
-        ThreadFactory factory=new ThreadFactory() {           
-            ThreadGroup mux_threads=new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads");
-
-            Map<String,Object> m = channel.getInfo(); 
-            ThreadNamingPattern pattern = (ThreadNamingPattern) m.get("thread_naming_pattern");
-            public Thread newThread(Runnable command) {
-                Thread ret=new Thread(mux_threads, command, "Multiplexer");
-                if(pattern != null){
-                   pattern.renameThread(ret);
-                }                
-                return ret;
-            }
-        };
-
+        
+        Map<String,Object> m = channel.getInfo();
+        ThreadNamingPattern pattern = (ThreadNamingPattern) m.get("thread_naming_pattern");
         min_threads=Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
         max_threads=Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
         keep_alive=Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
 
+        ThreadFactory factory = ProtocolStack.newThreadFactory(pattern, new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads"), "Multiplexer", false);
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
-                                      new SynchronousQueue<Runnable>(), factory,
+                                      new SynchronousQueue<Runnable>(), 
+                                      factory,
                                       new ThreadPoolExecutor.CallerRunsPolicy());
     }
 

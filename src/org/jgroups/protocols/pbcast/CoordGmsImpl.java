@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.81 2007/10/30 12:42:12 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.82 2007/10/30 17:53:04 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -813,7 +813,7 @@ public class CoordGmsImpl extends GmsImpl {
         public void start(Vector coords) {
             if(t == null || !t.isAlive()) {
                 this.coords=(Vector)(coords != null? coords.clone() : null);
-                t=new Thread(this, "MergeTask");
+                t=gms.getProtocolStack().getThreadFactory().newThread(this, "MergeTask");               
                 t.setDaemon(true);
                 t.start();
             }
