@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.168 2007/09/19 15:56:55 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.169 2007/10/30 11:40:29 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -159,6 +159,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     // set during processing of a rebroadcast event
     private volatile boolean rebroadcasting=false;
 
+    private final Lock rebroadcast_digest_lock=new ReentrantLock();
+    @GuardedBy("rebroadcast_digest_lock")
     private Digest rebroadcast_digest=null;
 
     private long max_rebroadcast_timeout=2000;
@@ -621,7 +623,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 }
                 finally {
                     rebroadcasting=false;
-                    rebroadcast_digest=null;
+                    rebroadcast_digest_lock.lock();
+                    try {
+                        rebroadcast_digest=null;
+                    }
+                    finally {
+                        rebroadcast_digest_lock.unlock();
+                    }
                 }
                 return null;
         }
@@ -1004,7 +1012,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             if(rebroadcasting) {
                 Digest tmp=getDigest();
-                if(tmp.isGreaterThanOrEqual(rebroadcast_digest)) {
+                boolean cancel_rebroadcasting;
+                rebroadcast_digest_lock.lock();
+                try {
+                    cancel_rebroadcasting=tmp.isGreaterThanOrEqual(rebroadcast_digest);
+                }
+                finally {
+                    rebroadcast_digest_lock.unlock();
+                }
+                if(cancel_rebroadcasting) {
                     cancelRebroadcasting();
                 }
             }
@@ -1031,9 +1047,17 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long sleep=max_rebroadcast_timeout / NUM_REBROADCAST_MSGS;
         long wait_time=max_rebroadcast_timeout, start=System.currentTimeMillis();
 
-        while(rebroadcast_digest != null && wait_time > 0) {
+        while(wait_time > 0) {
+            rebroadcast_digest_lock.lock();
+            try {
+                if(rebroadcast_digest == null)
+                    break;
+                their_digest=rebroadcast_digest.getSenders();
+            }
+            finally {
+                rebroadcast_digest_lock.unlock();
+            }
             my_digest=getDigest();
-            their_digest=rebroadcast_digest.getSenders();
 
             boolean xmitted=false;
             for(Map.Entry<Address,Digest.Entry> entry: their_digest.entrySet()) {
@@ -1058,8 +1082,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             try {
                 try {
                     my_digest=getDigest();
-                    if(!rebroadcasting || my_digest.isGreaterThanOrEqual(rebroadcast_digest)) {
-                        return;
+                    rebroadcast_digest_lock.lock();
+                    try {
+                        if(!rebroadcasting || my_digest.isGreaterThanOrEqual(rebroadcast_digest))
+                            return;
+                    }
+                    finally {
+                        rebroadcast_digest_lock.unlock();
                     }
                     rebroadcast_done.await(sleep, TimeUnit.MILLISECONDS);
                     wait_time-=(System.currentTimeMillis() - start);
