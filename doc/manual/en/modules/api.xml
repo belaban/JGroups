@@ -194,10 +194,10 @@
           <title>ExtendedMembershipListener</title>
 
           <para>The <classname>ExtendedMembershipListener</classname> interface extends
-              <classname>MessageListener</classname>:</para>
+              <classname>MembershipListener</classname>:</para>
 
           <screen>
-              public interface MembershipListener {
+              public interface ExtendedMembershipListener extends MembershipListener {
                   public void unblock();
               }
           </screen>
