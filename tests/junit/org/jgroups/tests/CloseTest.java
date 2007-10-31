@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.13 2007/07/02 08:08:30 belaban Exp $
+// $Id: CloseTest.java,v 1.14 2007/10/31 14:07:34 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -289,6 +289,7 @@ public class CloseTest extends ChannelTestBase {
         assertServiceAndClusterView(c2, 2);
 
         c1.disconnect();
+        Util.sleep(1000);
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
         assertServiceAndClusterView(c2, 1);
