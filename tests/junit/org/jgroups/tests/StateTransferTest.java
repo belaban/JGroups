@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.15 2007/07/11 02:04:36 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.16 2007/10/31 13:53:16 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -53,7 +53,7 @@ public class StateTransferTest extends ChannelTestBase {
 			StateTransferApplication app = apps[i];
 			app.start();						
 			semaphore.release();
-			Util.sleep(500);
+			Util.sleep(2500);
 		}
 
 		// Reacquire the semaphore tickets; when we have them all
