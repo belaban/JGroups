@@ -3,15 +3,11 @@ package org.jgroups.mux;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
-import org.jgroups.ThreadFactory;
 import org.jgroups.TimeoutException;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.AckCollector;
-import org.jgroups.util.FIFOMessageQueue;
-import org.jgroups.util.ThreadNamingPattern;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -38,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.81 2007/10/30 17:53:07 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.82 2007/10/31 09:15:19 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -186,7 +182,7 @@ public class Multiplexer implements UpHandler {
         max_threads=Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
         keep_alive=Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
 
-        ThreadFactory factory = ProtocolStack.newThreadFactory(pattern, new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads"), "Multiplexer", false);
+        org.jgroups.util.ThreadFactory factory = ProtocolStack.newThreadFactory(pattern, new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads"), "Multiplexer", false);
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
                                       new SynchronousQueue<Runnable>(), 
                                       factory,

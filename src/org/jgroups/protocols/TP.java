@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.157 2007/10/30 17:53:07 vlada Exp $
+ * @version $Id: TP.java,v 1.158 2007/10/31 09:15:18 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -527,7 +527,7 @@ public abstract class TP extends Protocol {
             else
                 oob_thread_pool_queue=new SynchronousQueue<Runnable>();
             oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB", "OOB");
+                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             oob_thread_pool=new DirectExecutor();
@@ -541,7 +541,7 @@ public abstract class TP extends Protocol {
             else
                 thread_pool_queue=new SynchronousQueue<Runnable>();
             thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming", "Incoming");
+                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming");
         }
         else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
             thread_pool=new DirectExecutor();
@@ -1347,10 +1347,9 @@ public abstract class TP extends Protocol {
 
 
     protected Executor createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
-                                        BlockingQueue<Runnable> queue, final String thread_group_name, 
-                                        final String thread_name) {
-                
-        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);       
+                                        BlockingQueue<Runnable> queue, final String thread_name) {
+
+        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(ProtocolStack.newThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
 
         if(rejection_policy != null) {
