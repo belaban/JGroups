@@ -20,7 +20,7 @@ import java.util.*;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.55 2007/10/31 09:15:17 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.56 2007/10/31 12:44:54 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -390,13 +390,13 @@ public class ProtocolStack extends Protocol implements Transport {
         }      
 
         public Thread newThread(Runnable r) {
-            Thread thread = newThread(group, r, baseName);
-            thread.setDaemon(createDaemons);       
-            return thread;
+            return newThread(group, r, baseName);                      
         }
         
         private Thread newThread(ThreadGroup group, Runnable r, String name) {
-            return new Thread(group, r, name);                    
+            Thread thread = new Thread(group, r, name);
+            thread.setDaemon(createDaemons);
+            return thread;
         }
     }
     
