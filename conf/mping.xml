@@ -2,7 +2,7 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.6 2007/08/20 11:15:36 belaban Exp $
+Version: $Id: mping.xml,v 1.7 2007/10/31 09:23:56 belaban Exp $
 Author: Bela Ban
  -->
 
@@ -20,6 +20,7 @@ Author: Bela Ban
            num_ping_requests="1"/>
     <MERGE2 max_interval="10000" 
             min_interval="5000"/>
+    <FD_SOCK/>
     <FD timeout="2000" 
         max_tries="3"/>
     <VERIFY_SUSPECT timeout="1500"/>
