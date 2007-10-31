@@ -6,6 +6,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
+import org.jgroups.util.ThreadFactory;
 
 import java.util.*;
 
@@ -19,7 +20,7 @@ import java.util.*;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.54 2007/10/30 17:53:06 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.55 2007/10/31 09:15:17 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
