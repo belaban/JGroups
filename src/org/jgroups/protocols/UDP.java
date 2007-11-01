@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.153 2007/11/01 14:45:35 belaban Exp $
+ * @version $Id: UDP.java,v 1.154 2007/11/01 18:21:32 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -52,11 +52,7 @@ public class UDP extends TP implements Runnable {
     /**
      * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
      */
-    private static volatile BoundedList<Integer> last_ports_used=null;
-
-    /** Maintain a list of local ports opened by DatagramSocket. If this is 0, this option is turned off.
-     * If bind_port is > 0, then this option will be ignored */
-    int             num_last_ports=100;
+    private static final BoundedList<Integer> last_ports_used = new BoundedList<Integer>(100);  
 
     /** IP multicast socket for <em>sending</em> and <em>receiving</em> multicast packets */
     MulticastSocket mcast_sock=null;
@@ -151,9 +147,9 @@ public class UDP extends TP implements Runnable {
         super.setProperties(props);
 
         str=props.getProperty("num_last_ports");
-        if(str != null) {
-            num_last_ports=Integer.parseInt(str);
+        if(str != null) {            
             props.remove("num_last_ports");
+            log.error("num_last_ports has been deprecated, property will be ignored");
         }
 
         str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
@@ -351,9 +347,7 @@ public class UDP extends TP implements Runnable {
 
 
     public void init() throws Exception {
-        super.init();
-        if(last_ports_used == null)
-            last_ports_used=new BoundedList<Integer>(num_last_ports);
+        super.init();       
     }
 
     /**
@@ -550,10 +544,7 @@ public class UDP extends TP implements Runnable {
                 // special handling for Linux 2.6 kernel which sometimes throws BindException while we probe for a random port
                 localPort++;
                 continue;
-            }
-        	
-            if(num_last_ports <= 0)
-                break;
+            }                  
             localPort=tmp.getLocalPort();
             if(last_ports_used.contains(new Integer(localPort))) {
                 if(log.isDebugEnabled())
