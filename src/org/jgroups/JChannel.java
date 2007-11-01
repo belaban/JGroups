@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.156 2007/10/29 18:50:47 vlada Exp $
+ * @version $Id: JChannel.java,v 1.157 2007/11/01 07:39:22 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -604,12 +604,13 @@ public class JChannel extends Channel {
      */
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
+        if(msg == null)
+            throw new NullPointerException("msg is null");
         if(stats) {
             sent_msgs++;
             sent_bytes+=msg.getLength();
         }
-        if(msg == null)
-            throw new NullPointerException("msg is null");
+
         down(new Event(Event.MSG, msg));
     }
 
@@ -736,7 +737,7 @@ public class JChannel extends Channel {
     }
 
     public String getClusterName() {
-        return cluster_name;
+        return closed ? null : !connected ? null : cluster_name;
     }
 
 
