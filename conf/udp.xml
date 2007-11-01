@@ -3,7 +3,7 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.23 2007/08/20 11:15:36 belaban Exp $
+  version: $Id: udp.xml,v 1.24 2007/11/01 17:02:19 belaban Exp $
 -->
 
 <config>
@@ -28,11 +28,11 @@
          use_concurrent_stack="true"
 
          thread_pool.enabled="true"
-         thread_pool.min_threads="1"
-         thread_pool.max_threads="25"
+         thread_pool.min_threads="2"
+         thread_pool.max_threads="8"
          thread_pool.keep_alive_time="5000"
-         thread_pool.queue_enabled="false"
-         thread_pool.queue_max_size="100"
+         thread_pool.queue_enabled="true"
+         thread_pool.queue_max_size="1000"
          thread_pool.rejection_policy="Run"
 
          oob_thread_pool.enabled="true"
@@ -51,19 +51,20 @@
     <FD timeout="10000" max_tries="5"   shun="true"/>
     <VERIFY_SUSPECT timeout="1500"  />
     <BARRIER />
-    <pbcast.NAKACK
-                   use_mcast_xmit="false" gc_lag="0"
-                   retransmit_timeout="300,600,1200,2400,4800"
+    <pbcast.NAKACK use_stats_for_retransmission="false"
+                   exponential_backoff="150"
+                   use_mcast_xmit="true" gc_lag="0"
+                   retransmit_timeout="50,300,600,1200"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200,2400,3600"/>
+    <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
-                   max_bytes="400000"/>
+                   max_bytes="1000000"/>
     <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
                 join_retry_timeout="2000" shun="false"
                 view_bundling="true"/>
-    <FC max_credits="20000000"
-                    min_threshold="0.10"/>
+    <FC max_credits="500000"
+                    min_threshold="0.20"/>
     <FRAG2 frag_size="60000"  />
     <!--pbcast.STREAMING_STATE_TRANSFER /-->
     <pbcast.STATE_TRANSFER  />
