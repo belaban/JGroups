@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.154 2007/11/01 18:21:32 vlada Exp $
+ * @version $Id: UDP.java,v 1.155 2007/11/01 21:41:13 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -52,7 +52,7 @@ public class UDP extends TP implements Runnable {
     /**
      * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
      */
-    private static final BoundedList<Integer> last_ports_used = new BoundedList<Integer>(100);  
+    private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
 
     /** IP multicast socket for <em>sending</em> and <em>receiving</em> multicast packets */
     MulticastSocket mcast_sock=null;
@@ -149,7 +149,7 @@ public class UDP extends TP implements Runnable {
         str=props.getProperty("num_last_ports");
         if(str != null) {            
             props.remove("num_last_ports");
-            log.error("num_last_ports has been deprecated, property will be ignored");
+            log.warn("num_last_ports has been deprecated, property will be ignored");
         }
 
         str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
@@ -546,14 +546,14 @@ public class UDP extends TP implements Runnable {
                 continue;
             }                  
             localPort=tmp.getLocalPort();
-            if(last_ports_used.contains(new Integer(localPort))) {
+            if(last_ports_used.contains(localPort)) {
                 if(log.isDebugEnabled())
                     log.debug("local port " + localPort + " already seen in this session; will try to get other port");
                 try {tmp.close();} catch(Throwable e) {}
                 localPort++;
             }
             else {
-                last_ports_used.add(new Integer(localPort));
+                last_ports_used.add(localPort);
                 break;
             }
         }
