@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.16 2007/10/31 13:53:16 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.17 2007/11/01 14:13:14 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -33,6 +33,15 @@ public class StateTransferTest extends ChannelTestBase {
 	public StateTransferTest(String name){
 		super(name);
 	}
+	
+	public void setUp() throws Exception {
+        super.setUp();        
+        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+    }
+
+    public boolean useBlocking() {
+        return true;
+    }
 
 	public void testStateTransferWhileSending() throws Exception {
 		StateTransferApplication[] apps = new StateTransferApplication[APP_COUNT];
