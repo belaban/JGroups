@@ -8,7 +8,7 @@ import javax.management.MBeanServer;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.6 2007/09/21 15:59:37 belaban Exp $
+ * @version $Id: JChannelFactory.java,v 1.7 2007/11/01 10:49:48 mircea_markus Exp $
  */
 public class JChannelFactory implements JChannelFactoryMBean, MBeanRegistration {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
@@ -95,7 +95,12 @@ public class JChannelFactory implements JChannelFactoryMBean, MBeanRegistration 
         this.server=server;
         if(factory != null)
             factory.setServer(server);
-        return ObjectName.getInstance(getDomain());
+        if (name != null) {//we only create a name if it is empty
+            return name;
+        }
+        //if the objectName is not a pattern then at least one key property MUST exist
+        String objectName = getDomain() + " : service=JChannelFactory";
+        return ObjectName.getInstance(objectName);
     }
 
     public void postRegister(Boolean registrationDone) {
