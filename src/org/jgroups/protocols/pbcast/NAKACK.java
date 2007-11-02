@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.169 2007/10/30 11:40:29 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170 2007/11/02 16:48:10 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -42,6 +42,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private long                seqno=0;                                  // current message sequence number (starts with 1)
     private final Lock          seqno_lock=new ReentrantLock();
     private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
+    private Map<Thread,ReentrantLock> locks;
 
     private static final long INITIAL_SEQNO=0;
 
@@ -524,6 +525,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("timer is null");
+        locks=stack.getLocks();
         started=true;
 
         if(xmit_time_stats != null) {
@@ -824,7 +826,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
             // order in which they were sent by the sender
         Message msg_to_deliver;
-        synchronized(win) {
+        ReentrantLock lock=win.getLock();
+        lock.lock();
+        try {
+            locks.put(Thread.currentThread(), lock);
             while((msg_to_deliver=win.remove()) != null) {
 
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
@@ -837,11 +842,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
         }
-        //}
-        //finally {
-        //  busy.set(false);
-        //}
-        // }
+        finally {
+            locks.remove(Thread.currentThread());
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
     }
 
 

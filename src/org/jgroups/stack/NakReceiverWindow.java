@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -45,7 +46,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.51 2007/09/06 16:52:54 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.52 2007/11/02 16:48:11 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -59,6 +60,8 @@ public class NakReceiverWindow {
     public static final Message NULL_MSG=new Message(false);
 
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
+
+    private final ReentrantLock up_lock=new ReentrantLock();
 
     Address local_addr=null;
 
@@ -165,6 +168,9 @@ public class NakReceiverWindow {
         this(sender, cmd, highest_delivered_seqno, null);
     }
 
+    public ReentrantLock getLock() {
+        return up_lock;
+    }
 
     public void setRetransmitTimeouts(Interval timeouts) {
         retransmitter.setRetransmitTimeouts(timeouts);
