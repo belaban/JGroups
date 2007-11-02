@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.22 2007/08/10 12:32:16 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.21.2.1 2007/11/02 15:41:57 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -9,6 +9,7 @@ import org.jgroups.Message;
 
 import java.util.HashMap;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -26,12 +27,16 @@ public class AckReceiverWindow {
     long              next_to_remove=0;
     final HashMap     msgs=new HashMap();  // keys: seqnos (Long), values: Messages
     static final Log  log=LogFactory.getLog(AckReceiverWindow.class);
+    final ReentrantLock     lock=new ReentrantLock();
 
 
     public AckReceiverWindow(long initial_seqno) {
         this.next_to_remove=initial_seqno;
     }
 
+    public ReentrantLock getLock() {
+        return lock;
+    }
 
     /** Adds a new message. Message cannot be null
      * @return True if the message was added, false if not (e.g. duplicate, message was already present)
@@ -46,7 +51,7 @@ public class AckReceiverWindow {
                 return false;
             }
             Long seq=new Long(seqno);
-            if(!msgs.containsKey(seq)) {
+            if(!msgs.containsKey(seq)) { // todo: replace with atomic action once we have util.concurrent (JDK 5)
                 msgs.put(seq, msg);
                 return true;
             }
@@ -91,10 +96,10 @@ public class AckReceiverWindow {
     }
 
     public String toString() {
-        StringBuilder sb=new StringBuilder();
+        StringBuffer sb=new StringBuffer();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")");
         TreeSet s=new TreeSet(msgs.keySet());
-        if(!s.isEmpty()) {
+        if(s.size() > 0) {
             sb.append(" [").append(s.first()).append(" - ").append(s.last()).append("]");
             sb.append(": ").append(s);
         }
@@ -103,7 +108,7 @@ public class AckReceiverWindow {
 
 
     public String printDetails() {
-        StringBuilder sb=new StringBuilder();
+        StringBuffer sb=new StringBuffer();
         sb.append(msgs.size()).append(" msgs (").append("next=").append(next_to_remove).append(")").
                 append(", msgs=" ).append(new TreeSet(msgs.keySet()));
         return sb.toString();

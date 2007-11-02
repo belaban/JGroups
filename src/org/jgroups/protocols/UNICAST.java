@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.86.2.1 2007/08/21 11:54:10 belaban Exp $
+// $Id: UNICAST.java,v 1.86.2.2 2007/11/02 15:41:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -13,6 +13,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -39,6 +40,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     private long[]                timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     private Address               local_addr=null;
     private TimeScheduler         timer=null;                    // used for retransmissions (passed to AckSenderWindow)
+    private Map<Thread,ReentrantLock> locks;
 
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
@@ -212,6 +214,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("timer is null");
+        locks=stack.getLocks();
         started=true;
     }
 
@@ -567,7 +570,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
-        synchronized(win) { // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
+        ReentrantLock lock=win.getLock();
+        lock.lock(); // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
+        try {
+            locks.put(Thread.currentThread(), lock);
             while((m=win.remove()) != null) {
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
@@ -575,6 +581,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
                 up_prot.up(new Event(Event.MSG, m));
             }
+        }
+        finally {
+            locks.remove(Thread.currentThread());
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
         }
         return true; // msg was successfully received - send an ack back to the sender
     }

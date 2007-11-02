@@ -8,6 +8,8 @@ import org.jgroups.util.Util;
 
 import java.util.*;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -18,7 +20,7 @@ import java.util.concurrent.ThreadFactory;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.50 2007/08/14 08:15:35 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.49.2.1 2007/11/02 15:41:57 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     private Protocol                top_prot=null;
@@ -28,6 +30,10 @@ public class ProtocolStack extends Protocol implements Transport {
     private boolean                 stopped=true;
     public final  TimeScheduler     timer;
     protected ThreadGroup           timer_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Timers");
+
+    /** Locks acquired by protocol below, need to get released on down().
+     * See http://jira.jboss.com/jira/browse/JGRP-535 for details */
+    private final Map<Thread, ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
 
     public static final int         ABOVE=1; // used by insertProtocol()
     public static final int         BELOW=2; // used by insertProtocol()
@@ -49,6 +55,9 @@ public class ProtocolStack extends Protocol implements Transport {
         timer=createTimer();
     }
 
+    public Map<Thread,ReentrantLock> getLocks() {
+        return locks;
+    }
 
     public Channel getChannel() {
         return channel;
@@ -71,6 +80,13 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return v;
     }
+
+    /** Returns the bottom most protocol */
+    public Protocol getTransport() {
+        Vector<Protocol> prots=getProtocols();
+        return !prots.isEmpty()? prots.lastElement() : null;
+    }
+
 
     /**
      *
@@ -330,11 +346,16 @@ public class ProtocolStack extends Protocol implements Transport {
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.CONNECT:
-            case Event.CONNECT_WITH_STATE_TRANSFER:    
             case Event.DISCONNECT:
                 Object retval=top_prot.down(evt);
                 renameTimerThreads(TIMER_NAME);
                 return retval;
+        }
+        ReentrantLock lock=locks.remove(Thread.currentThread());
+        if(lock != null && lock.isHeldByCurrentThread()) {
+            lock.unlock();
+            if(log.isTraceEnabled())
+                log.trace("released lock held by " + Thread.currentThread());
         }
         if(top_prot != null)
             return top_prot.down(evt);
