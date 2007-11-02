@@ -7,7 +7,6 @@ import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
@@ -22,12 +21,11 @@ import org.jgroups.util.Util;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.7 2007/09/19 08:43:56 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.8 2007/11/02 13:04:26 vlada Exp $
  */
-public class LargeStateTransferTest extends TestCase {
+public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
-    Promise p=new Promise();
-    String props="udp.xml";
+    Promise<Integer> p=new Promise<Integer>();    
     long start, stop;
     final static int SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
@@ -37,14 +35,17 @@ public class LargeStateTransferTest extends TestCase {
     public LargeStateTransferTest(String name) {
         super(name);
     }
+       
+    public boolean useBlocking() {
+        return true;
+    }
 
 
     protected void setUp() throws Exception {
-        super.setUp();
-        props = System.getProperty("props",props);   
-        log("Using configuration file " + props);
-        provider=new JChannel(props);
-        requester=new JChannel(props);
+        super.setUp();       
+        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        provider=createChannel("A");
+        requester=createChannel("A");
     }
 
     protected void tearDown() throws Exception {
@@ -135,9 +136,9 @@ public class LargeStateTransferTest extends TestCase {
 
 
     private static class Requester extends ExtendedReceiverAdapter {
-        Promise p;
+        Promise<Integer> p;
 
-        public Requester(Promise p) {
+        public Requester(Promise<Integer> p) {
             this.p=p;
         }
 
