@@ -3,13 +3,14 @@ package org.jgroups.stack;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.ThreadNamingPattern;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
-import org.jgroups.util.ThreadFactory;
 
 import java.util.*;
-
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -20,7 +21,7 @@ import java.util.*;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.56 2007/10/31 12:44:54 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.57 2007/11/02 13:17:38 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -34,7 +35,11 @@ public class ProtocolStack extends Protocol implements Transport {
     private Protocol bottom_prot = null;
     private String setup_string;
     private JChannel channel = null;
-    private volatile boolean stopped = true;   
+    private volatile boolean stopped = true;
+
+    /** Locks acquired by protocol below, need to get released on down().
+     * See http://jira.jboss.com/jira/browse/JGRP-535 for details */
+    private final Map<Thread, ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {               
@@ -66,6 +71,9 @@ public class ProtocolStack extends Protocol implements Transport {
         return thread_factory;
     }
 
+    public Map<Thread,ReentrantLock> getLocks() {
+        return locks;
+    }
 
     public Channel getChannel() {
         return channel;
@@ -346,20 +354,26 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public Object up(Event evt) {
         switch(evt.getType()){
-        case Event.INFO:
-            Map<String, Object> info = (Map<String, Object>) evt.getArg();
-            if(info.containsKey("thread_naming_pattern")){
-                ThreadNamingPattern thread_naming_pattern = (ThreadNamingPattern) info.get("thread_naming_pattern");
-                thread_factory.setThreadNamingPattern(thread_naming_pattern);
-                timer_thread_factory.setThreadNamingPattern(thread_naming_pattern);
-            }
+            case Event.INFO:
+                Map<String, Object> info=(Map<String, Object>)evt.getArg();
+                if(info.containsKey("thread_naming_pattern")) {
+                    ThreadNamingPattern thread_naming_pattern=(ThreadNamingPattern)info.get("thread_naming_pattern");
+                    thread_factory.setThreadNamingPattern(thread_naming_pattern);
+                    timer_thread_factory.setThreadNamingPattern(thread_naming_pattern);
+                }
         }
         return channel.up(evt);
     }
 
 
 
-    public Object down(Event evt) {        
+    public Object down(Event evt) {
+        ReentrantLock lock=locks.remove(Thread.currentThread());
+        if(lock != null && lock.isHeldByCurrentThread()) {
+            lock.unlock();
+            if(log.isTraceEnabled())
+                log.trace("released lock held by " + Thread.currentThread());
+        }
         if(top_prot != null)
             return top_prot.down(evt);
         return null;
