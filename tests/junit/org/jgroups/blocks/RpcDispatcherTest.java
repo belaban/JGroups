@@ -14,7 +14,7 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.6 2007/10/30 16:12:41 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.7 2007/11/02 13:51:11 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -86,15 +86,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
         }
-
-//        for(int i=0; i < SIZES.length; i++) {
-//            _testLargeValueUnicastCall(c3.getLocalAddress(), SIZES[i]);
-//        }
-//
-//
-//        for(int i=0; i < SIZES.length; i++) {
-//            _testLargeValueUnicastCall(c2.getLocalAddress(), SIZES[i]);
-//        }
     }
 
 
@@ -113,23 +104,24 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
     void _testLargeValue(int size) {
-        System.out.println("testing with " + size + " bytes");
+        System.out.println("\ntesting with " + size + " bytes");
         RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, 20000);
-        System.out.println("rsps:\n" + rsps);
+        System.out.println("rsps:");
         assertEquals(3, rsps.size());
         for(Map.Entry<Address,Rsp> entry: rsps.entrySet()) {
             byte[] val=(byte[])entry.getValue().getValue();
+            System.out.println(val.length + " bytes from " + entry.getValue().getSender());
             assertNotNull(val);
             assertEquals(size, val.length);
         }
     }
 
     void _testLargeValueUnicastCall(Address dst, int size) throws Throwable {
-        System.out.println("testing unicast call with " + size + " bytes");
+        System.out.println("\ntesting unicast call with " + size + " bytes");
         assertNotNull(dst);
         Object retval=disp1.callRemoteMethod(dst, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, 20000);
-        System.out.println("rsp:\n" + retval);
         byte[] val=(byte[])retval;
+        System.out.println("rsp: " + val.length + " bytes");
         assertNotNull(val);
         assertEquals(size, val.length);
     }
