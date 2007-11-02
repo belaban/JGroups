@@ -1,4 +1,4 @@
-// $Id: AckReceiverWindow.java,v 1.24 2007/09/03 06:30:40 belaban Exp $
+// $Id: AckReceiverWindow.java,v 1.25 2007/11/02 13:16:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -10,6 +10,7 @@ import org.jgroups.Message;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -27,12 +28,15 @@ public class AckReceiverWindow {
     long                    next_to_remove=0;
     final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
     static final Log        log=LogFactory.getLog(AckReceiverWindow.class);
-
+    final ReentrantLock     lock=new ReentrantLock();
 
     public AckReceiverWindow(long initial_seqno) {
         this.next_to_remove=initial_seqno;
     }
 
+    public ReentrantLock getLock() {
+        return lock;
+    }
 
     /** Adds a new message. Message cannot be null
      * @return True if the message was added, false if not (e.g. duplicate, message was already present)
