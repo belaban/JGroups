@@ -22,10 +22,10 @@ import org.jgroups.View;
 import org.jgroups.util.Util;
 
 /**
- * Tests concurrent startup with state transfer and concurrent state tranfer.
+ * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.30 2007/11/02 13:34:32 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.31 2007/11/03 02:40:08 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -164,124 +164,6 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
     }
 
-    public void testConcurrentLargeStateTransfer() {
-        concurrentStateTranferHelper(true, false);
-    }
-
-    public void testConcurrentSmallStateTranfer() {
-        concurrentStateTranferHelper(false, true);
-    }
-
-    /**
-     * Tests concurrent state transfer. This test should pass at 100% rate when
-     * [1] is solved.
-     * 
-     * [1]http://jira.jboss.com/jira/browse/JGRP-332
-     * 
-     * 
-     */
-    protected void concurrentStateTranferHelper(boolean largeState, boolean useDispatcher) {
-        String[] names = null;
-
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
-
-        int count = names.length;
-        ConcurrentStateTransfer[] channels = new ConcurrentStateTransfer[count];
-
-        // Create a semaphore and take all its tickets
-        Semaphore semaphore = new Semaphore(count);
-
-        try{
-
-            semaphore.acquire(count);
-            // Create activation threads that will block on the semaphore
-            for(int i = 0;i < count;i++){
-                if(largeState){
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentLargeStateTransfer(names[i],
-                                                                       muxFactory[i % getMuxFactoryCount()],
-                                                                       semaphore);
-                    }else{
-                        channels[i] = new ConcurrentLargeStateTransfer(names[i],
-                                                                       semaphore,
-                                                                       useDispatcher);
-                    }
-                }else{
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentStateTransfer(names[i],
-                                                                  muxFactory[i % getMuxFactoryCount()],
-                                                                  semaphore);
-                    }else{
-                        channels[i] = new ConcurrentStateTransfer(names[i],
-                                                                  semaphore,
-                                                                  useDispatcher);
-                    }
-                }
-
-                // Start threads and let them join the channel
-                channels[i].start();
-                Util.sleep(2000);
-            }
-
-            // Make sure everyone is in sync
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
-
-            Util.sleep(2000);
-            // Unleash hell !
-            semaphore.release(count);
-
-            // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
-
-            // Reacquire the semaphore tickets; when we have them all
-            // we know the threads are done
-            boolean acquired = semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
-            if(!acquired){
-                log.warn("Most likely a bug, analyse the stack below:");
-                log.warn(Util.dumpThreads());
-            }
-
-            // Sleep to ensure async message arrive
-            Util.sleep(6000);
-            // do test verification
-            List[] lists = new List[count];
-            for(int i = 0;i < count;i++){
-                lists[i] = channels[i].getList();
-            }
-
-            Map[] mods = new Map[count];
-            for(int i = 0;i < count;i++){
-                mods[i] = channels[i].getModifications();
-            }
-
-            printLists(lists);
-            printModifications(mods);
-
-            int len = lists.length;
-            for(int i = 0;i < lists.length;i++){
-                List l = lists[i];
-                assertEquals("list #" + i + " should have " + len + " elements", len, l.size());
-            }
-        }catch(Exception ex){
-            log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
-        }finally{
-            for(ConcurrentStateTransfer channel:channels){
-                channel.cleanup();
-                Util.sleep(2000); // remove before 2.6 GA
-            }
-        }
-    }
-
     protected int getMod() {
         synchronized(this){
             int retval = mod;
@@ -301,58 +183,6 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         for(int i = 0;i < lists.length;i++){
             List l = lists[i];
             log.info(i + ": " + l);
-        }
-    }
-
-    protected class ConcurrentStateTransfer extends ConcurrentStartupChannel {
-        public ConcurrentStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(name, semaphore, useDispatcher);
-            channel.connect("test");
-        }
-
-        public ConcurrentStateTransfer(String name,JChannelFactory factory,Semaphore semaphore) throws Exception{
-            super(name, factory, semaphore);
-            channel.connect("test");
-        }
-
-        public void useChannel() throws Exception {
-            boolean success = channel.getState(null, 30000);
-            log.info("channel.getState at " + getName()
-                     + getLocalAddress()
-                     + " returned "
-                     + success);
-            channel.send(null, null, channel.getLocalAddress());
-        }
-    }
-
-    protected class ConcurrentLargeStateTransfer extends ConcurrentStateTransfer {
-        private static final long TRANSFER_TIME = 5000;
-        public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(name, semaphore, useDispatcher);
-        }
-
-        public ConcurrentLargeStateTransfer(String name,JChannelFactory factory,Semaphore semaphore) throws Exception{
-            super(name, factory, semaphore);
-        }
-
-        public void setState(byte[] state) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(state);
-        }
-
-        public byte[] getState() {
-            Util.sleep(TRANSFER_TIME);
-            return super.getState();
-        }
-
-        public void getState(OutputStream ostream) {
-            Util.sleep(TRANSFER_TIME);
-            super.getState(ostream);
-        }
-
-        public void setState(InputStream istream) {
-            Util.sleep(TRANSFER_TIME);
-            super.setState(istream);
         }
     }
 
