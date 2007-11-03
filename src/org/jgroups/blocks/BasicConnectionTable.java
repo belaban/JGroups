@@ -335,6 +335,9 @@ public abstract class BasicConnectionTable {
               if(!current_mbrs.contains(oKey)) {    // This connection NOT in the resultant connection set
                   Connection conn=(Connection)entry.getValue();
                   if(null != conn) {    // Destroy this connection
+                      synchronized(conns){
+                          conns.remove(conn.getPeerAddress());
+                      }
                       if(log.isTraceEnabled())
                           log.trace("Destroy this orphaned connection: " + conn);
                       conn.destroy();
