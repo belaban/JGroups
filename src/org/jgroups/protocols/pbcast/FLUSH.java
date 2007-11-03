@@ -214,8 +214,8 @@ public class FLUSH extends Protocol {
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
             }catch(TimeoutException e){
-                if(log.isTraceEnabled())
-                    log.trace("At " + localAddress
+                if(log.isDebugEnabled())
+                    log.debug("At " + localAddress
                               + " timed out waiting for flush responses after "
                               + start_flush_timeout
                             + " msec");
@@ -225,18 +225,15 @@ public class FLUSH extends Protocol {
         if(!successfulFlush && numberOfAttempts > 0){
             long backOffSleepTime = Util.random(5);
             backOffSleepTime = backOffSleepTime < 2 ? backOffSleepTime + 2 : backOffSleepTime;
-            if(log.isTraceEnabled())
-                log.trace("At " + localAddress
+            if(log.isDebugEnabled())
+                log.debug("At " + localAddress
                           + ". Backing off for "
                           + backOffSleepTime
                           + " sec. Attempts left "
                           + numberOfAttempts);
 
-            Util.sleep(backOffSleepTime * 1000);
-            Boolean succeededWhileWeSlept = flush_promise.getResult(1);
-            successfulFlush = (succeededWhileWeSlept != null && succeededWhileWeSlept.booleanValue());
-            if(!successfulFlush)
-                successfulFlush = startFlush(evt, --numberOfAttempts, true);
+            Util.sleep(backOffSleepTime*1000);
+            successfulFlush = startFlush(evt, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -507,10 +504,10 @@ public class FLUSH extends Protocol {
                 }
                 onStartFlush(coordinator, fh);
             }else if(flushRequester.equals(coordinator)){
+                rejectFlush(fh.viewID, flushRequester);
                 if(log.isDebugEnabled()){
-                    log.debug("Accepting flush at " + localAddress + ", proceeding with flush");
-                }
-                onStartFlush(msg.getSrc(), fh);
+                    log.debug("Rejecting flush at " + localAddress + ", previous flush has to finish first");
+                }                
             }
         }
     }
