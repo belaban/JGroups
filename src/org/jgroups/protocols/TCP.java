@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.42 2007/09/19 11:41:47 belaban Exp $
+// $Id: TCP.java,v 1.43 2007/11/05 14:59:59 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -54,7 +54,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
         ct.send(dest, data, offset, length);
     }
 
-    public void retainAll(Collection members) {
+    public void retainAll(Collection<Address> members) {
         ct.retainAll(members);
     }
 

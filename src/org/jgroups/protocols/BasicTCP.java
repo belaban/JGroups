@@ -240,7 +240,7 @@ public abstract class BasicTCP extends TP {
 
     public abstract void send(Address dest, byte[] data, int offset, int length) throws Exception;
 
-    public abstract void retainAll(Collection members);
+    public abstract void retainAll(Collection<Address> members);
 
     /** ConnectionTable.Receiver interface */
     public void receive(Address sender, byte[] data, int offset, int length) {
@@ -252,7 +252,7 @@ public abstract class BasicTCP extends TP {
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.clear();
             View v=(View)evt.getArg();
-            Vector tmp_mbrs=v != null? v.getMembers() : null;
+            Vector<Address> tmp_mbrs=v != null? v.getMembers() : null;
             if(tmp_mbrs != null) {
                 retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
             }
