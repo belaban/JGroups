@@ -52,9 +52,9 @@
                    discard_delivered_msgs="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
-    <pbcast.GMS print_local_addr="true" join_timeout="5000" 
-                join_retry_timeout="5000" shun="false"
-                view_bundling="true" view_ack_collection_timeout="8000"/>
+    <pbcast.GMS print_local_addr="true" join_timeout="7000" 
+                join_retry_timeout="7000" shun="false"
+                view_bundling="true"/>
     <FC max_credits="2000000"
         min_threshold="0.10"/>
     <FRAG2 frag_size="60000"  />
