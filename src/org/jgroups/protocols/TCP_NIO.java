@@ -14,7 +14,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.15 2007/09/04 12:25:49 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.16 2007/11/05 14:59:59 vlada Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -73,7 +73,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
        super.start();
    }
 
-   public void retainAll(Collection members) {
+   public void retainAll(Collection<Address> members) {
       ct.retainAll(members);
    }
 

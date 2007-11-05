@@ -14,6 +14,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -223,7 +224,7 @@ public abstract class BasicConnectionTable {
        StringBuilder ret=new StringBuilder();
        Address key;
        Connection val;
-       Map.Entry entry;
+       Entry<Address,Connection> entry;
        HashMap<Address,Connection> copy;
 
        synchronized(conns) {
@@ -231,10 +232,10 @@ public abstract class BasicConnectionTable {
        }
        ret.append("local_addr=" + local_addr).append("\n");
        ret.append("connections (" + copy.size() + "):\n");
-       for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
-           entry=(Map.Entry)it.next();
-           key=(Address)entry.getKey();
-           val=(Connection)entry.getValue();
+       for(Iterator<Entry<Address,Connection>> it=copy.entrySet().iterator(); it.hasNext();) {
+           entry=it.next();
+           key=entry.getKey();
+           val=entry.getValue();
            ret.append("key: " + key + ": " + val + '\n');
        }
        ret.append('\n');
@@ -305,45 +306,30 @@ public abstract class BasicConnectionTable {
 
    abstract Connection getConnection(Address dest) throws Exception;
 
-   /**
-    * Removes all connections from ConnectionTable which are not in c
-    * @param c
-    */
-   //public void retainAll(Collection c) {
-     //  conns.keySet().retainAll(c);
-   //}
-
-
       /**
        * Removes all connections from ConnectionTable which are not in current_mbrs
        * @param current_mbrs
        */
-      public void retainAll(Collection current_mbrs) {
+      public void retainAll(Collection<Address> current_mbrs) {
           if(current_mbrs == null) return;
           HashMap<Address,Connection> copy;
           synchronized(conns) {
               copy=new HashMap<Address,Connection>(conns);
               conns.keySet().retainAll(current_mbrs);
           }
-
-          // All of the connections that were not retained must be destroyed
-          // so that their resources are cleaned up.
-          Map.Entry entry;
-          for(Iterator it=copy.entrySet().iterator(); it.hasNext();) {
-              entry=(Map.Entry)it.next();
-              Object oKey=entry.getKey();
-              if(!current_mbrs.contains(oKey)) {    // This connection NOT in the resultant connection set
-                  Connection conn=(Connection)entry.getValue();
-                  if(null != conn) {    // Destroy this connection
-                      synchronized(conns){
-                          conns.remove(conn.getPeerAddress());
-                      }
-                      if(log.isTraceEnabled())
-                          log.trace("Destroy this orphaned connection: " + conn);
-                      conn.destroy();
-                  }
+          copy.keySet().removeAll(current_mbrs);
+                    
+          //destroy and remove orphaned connection i.e. connections
+          //to members that are not in current view
+          for(Connection orphanConnection:copy.values()){             
+              synchronized(conns){
+                  conns.remove(orphanConnection.getPeerAddress());
               }
-          }
+              if (log.isTraceEnabled())
+                log.trace("At " + local_addr + " destroying orphan to "
+                        + orphanConnection.getPeerAddress());
+              orphanConnection.destroy();             
+          }     
           copy.clear();
       }
 
@@ -446,6 +432,15 @@ public abstract class BasicConnectionTable {
            }
 
        }
+       
+       /**
+         * Returns true if underlying socket to peer is closed
+         *  
+         * @return
+         */
+        boolean isSocketClosed() {
+            return !(sock != null && sock.isConnected());
+        }
 
 
        void destroy() {
@@ -804,8 +799,8 @@ public abstract class BasicConnectionTable {
        }
 
        public void run() {
-           Connection value;
-           Map.Entry entry;
+           Connection connection;
+           Entry<Address,Connection> entry;
            long curr_time;
 
            if(log.isDebugEnabled()) log.debug("connection reaper thread was started. Number of connections=" +
@@ -818,17 +813,17 @@ public abstract class BasicConnectionTable {
                    break;
                synchronized(conns) {
                    curr_time=System.currentTimeMillis();
-                   for(Iterator it=conns.entrySet().iterator(); it.hasNext();) {
-                       entry=(Map.Entry)it.next();
-                       value=(Connection)entry.getValue();
+                   for(Iterator<Entry<Address,Connection>> it=conns.entrySet().iterator(); it.hasNext();) {
+                       entry=it.next();
+                       connection=entry.getValue();
                        if(log.isTraceEnabled()) log.trace("connection is " +
-                                                        ((curr_time - value.last_access) / 1000) + " seconds old (curr-time=" +
-                                                        curr_time + ", last_access=" + value.last_access + ')');
-                       if(value.last_access + conn_expire_time < curr_time) {
-                           if(log.isTraceEnabled()) log.trace("connection " + value +
+                                                        ((curr_time - connection.last_access) / 1000) + " seconds old (curr-time=" +
+                                                        curr_time + ", last_access=" + connection.last_access + ')');
+                       if(connection.last_access + conn_expire_time < curr_time) {
+                           if(log.isTraceEnabled()) log.trace("connection " + connection +
                                                             " has been idle for too long (conn_expire_time=" + conn_expire_time +
                                                             "), will be removed");
-                           value.destroy();
+                           connection.destroy();
                            it.remove();
                        }
                    }
