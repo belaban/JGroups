@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.6 2007/11/03 02:39:26 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.7 2007/11/05 15:01:39 vlada Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -100,9 +100,7 @@ public class ConnectionTableTest extends TestCase {
         num_conns=ct1.getNumConnections();
         assertEquals(1, num_conns);
         num_conns=ct2.getNumConnections();
-        
-        //ct2 should have zero connections because ct1 already made one from ct1 to ct2
-        assertEquals(0, num_conns);
+        assertEquals(1, num_conns);
 
 
         int num_creations=BasicConnectionTable.getNumberOfConnectionCreations();
