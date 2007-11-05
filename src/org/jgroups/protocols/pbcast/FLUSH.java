@@ -554,7 +554,7 @@ public class FLUSH extends Protocol {
             if(!receivedFirstView){
                 receivedFirstView = true;
             }
-            isThisOurFirstView = receivedFirstView && !receivedMoreThanOneView;
+            isThisOurFirstView = !receivedMoreThanOneView;
             suspected.retainAll(view.getMembers());
             currentView = view;
             boolean coordinatorLeft = flushCoordinator != null && !view.containsMember(flushCoordinator);
