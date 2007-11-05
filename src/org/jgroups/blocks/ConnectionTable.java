@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.60 2007/11/03 02:39:25 vlada Exp $
+// $Id: ConnectionTable.java,v 1.61 2007/11/05 15:01:22 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -252,7 +252,11 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
 
                synchronized(conns) {
                    Connection tmp=conns.get(peer_addr);
-                   if(tmp != null) {
+                   //Vladimir Nov, 5th, 2007
+                   //we might have a connection to peer but is that 
+                   //connection still open? 
+                   boolean connectionOpen  = tmp != null && !tmp.isSocketClosed();
+                   if(connectionOpen) {                       
                        if(peer_addr.compareTo(local_addr) > 0) {
                            if(log.isTraceEnabled())
                                log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
@@ -267,12 +271,10 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                                log.trace("peer's address (" + peer_addr + ") is smaller than our local address (" +
                                        local_addr + "), rejecting peer connection request");
                            conn.destroy();
-                           conns.remove(peer_addr);
                            continue;
-                       }
+                       }                      
                    }
-                   else {
-                       // conns.put(peer_addr, conn);
+                   else {                       
                        addConnection(peer_addr, conn);
                        notifyConnectionOpened(peer_addr);
                    }
