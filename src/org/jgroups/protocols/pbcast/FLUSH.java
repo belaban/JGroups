@@ -299,8 +299,7 @@ public class FLUSH extends Protocol {
                         blockMutex.wait(timeout);
                     stop = System.currentTimeMillis();
                 }catch(InterruptedException e){
-                    Thread.currentThread().interrupt(); // set interrupt flag
-                    // again
+                    Thread.currentThread().interrupt(); // set interrupt flag again
                 }
                 if(isBlockingFlushDown){
                     isBlockingFlushDown = false;
