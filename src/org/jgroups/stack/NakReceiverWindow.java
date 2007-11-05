@@ -8,13 +8,17 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.util.BoundedList;
+import org.jgroups.util.List;
 import org.jgroups.util.TimeScheduler;
 
+import java.util.Enumeration;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -45,18 +49,20 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.49 2007/08/10 12:32:17 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.46.2.1 2007/11/05 08:25:18 belaban Exp $
  */
 public class NakReceiverWindow {
 
     public interface Listener {
-        void missingMessageReceived(long seqno, Address original_sender);
+        void missingMessageReceived(long seqno, Message msg);
     }
 
     /** dummy for null values: ConcurrentHashMap doesn't allow null values */
     public static final Message NULL_MSG=new Message(false);
 
     private final ReadWriteLock lock=new ReentrantReadWriteLock();
+
+    private final ReentrantLock up_lock=new ReentrantLock();
 
     Address local_addr=null;
 
@@ -100,6 +106,11 @@ public class NakReceiverWindow {
     private Listener listener=null;
 
     protected static final Log log=LogFactory.getLog(NakReceiverWindow.class);
+
+    /** Map of seqnos and timestamps, to keep track of xmit stats */
+    final ConcurrentMap<Long,Long> xmit_stats=new ConcurrentHashMap<Long,Long>();
+
+    final BoundedList xmit_times_history=new BoundedList(1000);
 
     /** The highest stable() seqno received */
     long highest_stability_seqno=0;
@@ -160,8 +171,11 @@ public class NakReceiverWindow {
         this(sender, cmd, highest_delivered_seqno, null);
     }
 
+    public ReentrantLock getLock() {
+        return up_lock;
+    }
 
-    public void setRetransmitTimeouts(Interval timeouts) {
+    public void setRetransmitTimeouts(long[] timeouts) {
         retransmitter.setRetransmitTimeouts(timeouts);
     }
 
@@ -184,6 +198,21 @@ public class NakReceiverWindow {
 
     public int getPendingXmits() {
         return retransmitter!= null? retransmitter.size() : 0;
+    }
+
+    public double getAverageXmitTime() {
+        List copy;
+        synchronized(xmit_times_history) {
+            copy=xmit_times_history.copy();
+        }
+
+        int size=copy.size();
+        long total=0L;
+        for(Enumeration en=copy.elements(); en.hasMoreElements();) {
+            Long val=(Long)en.nextElement();
+            total+=val.longValue();
+        }
+        return size > 0? total / size : -1;
     }
 
 
@@ -233,10 +262,19 @@ public class NakReceiverWindow {
                     // only set message if not yet received (bela July 23 2003)
                     xmit_table.put(seqno, msg);
                     retransmitter.remove(seqno);
+
+                    Long timestamp=xmit_stats.remove(seqno);
+                    if(timestamp != null) {
+                        long diff=System.currentTimeMillis() - timestamp;
+                        synchronized(xmit_times_history) {
+                            xmit_times_history.add(diff);
+                        }
+                    }
+
                     if(log.isTraceEnabled())
                         log.trace(new StringBuffer("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
                     if(listener != null) {
-                        try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
+                        try {listener.missingMessageReceived(seqno, msg);} catch(Throwable t) {}
                     }
                     return true;
                 }
@@ -248,6 +286,7 @@ public class NakReceiverWindow {
             if(seqno > next_to_add) {
                 for(long i=next_to_add; i < seqno; i++) { // add all msgs (missing or not) into table
                     xmit_table.put(i, NULL_MSG);
+                    xmit_stats.putIfAbsent(i, System.currentTimeMillis());
                 }
                 xmit_table.put(seqno, msg);
                 retransmitter.add(old_next, seqno -1);     // BUT: add only null messages to xmitter
@@ -492,6 +531,9 @@ public class NakReceiverWindow {
     }
 
     /* ------------------------------- Private Methods -------------------------------------- */
+
+
+
 
 
 

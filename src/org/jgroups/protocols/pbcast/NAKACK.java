@@ -1,15 +1,15 @@
 package org.jgroups.protocols.pbcast;
 
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
-import org.jgroups.stack.*;
+import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.*;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -34,10 +34,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * vsync.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.155 2007/08/14 08:10:08 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.145.2.1 2007/11/05 08:25:17 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
-    private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    private long[]              retransmit_timeout={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     private boolean             is_server=false;
     private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -47,6 +47,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final Lock          seqno_lock=new ReentrantLock();
     private long                max_xmit_size=8192;                       // max size of a retransmit message (otherwise send multiple)
     private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
+    private Map<Thread,ReentrantLock> locks;
 
     private static final long INITIAL_SEQNO=0;
 
@@ -62,14 +63,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      */
     private boolean xmit_from_random_member=false;
 
-
-    /** The first value (in milliseconds) to use in the exponential backoff retransmission mechanism. Only enabled
-     * if the value is > 0
-     */
-    private long exponential_backoff=0;
-
-    /** If enabled, we use statistics gathered from actual retransmission times to compute the new retransmission times */
-    private boolean use_stats_for_retransmission=false;
 
     /**
      * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
@@ -112,27 +105,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private int stats_list_size=20;
 
-    /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size XMIT requests */
-    private BoundedList<MissingMessage> receive_history;
+    /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size XMIT requests */
+    private BoundedList receive_history;
 
-    /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size missing messages received */
-    private BoundedList<XmitRequest> send_history;
-
-        /** Per-sender map of seqnos and timestamps, to keep track of xmit stats */
-    private final ConcurrentMap<Address,ConcurrentMap<Long,Long>> xmit_stats=new ConcurrentHashMap<Address,ConcurrentMap<Long,Long>>();
-
-    private int xmit_history_max_size=50;
-
-    private final ConcurrentMap<Address,BoundedList<Long>> xmit_times_history=new ConcurrentHashMap<Address,BoundedList<Long>>();
-
-    /** Maintains a smoothed average of the retransmission times per sender, these are the actual values that are used for
-     * new retransmission requests */
-    private final Map<Address,Double> smoothed_avg_xmit_times=new HashMap<Address,Double>();
-
-    /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
-    private static final double WEIGHT=0.9;
-
-    private static final double INITIAL_SMOOTHED_AVG=30.0;
+    /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size missing messages received */
+    private BoundedList send_history;
 
     /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
     private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
@@ -151,7 +128,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private static final int NUM_REBROADCAST_MSGS=3;
 
     /** BoundedList<Digest>, keeps the last 10 stability messages */
-    private final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
+    private final BoundedList stability_msgs=new BoundedList(10);
 
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     protected boolean print_stability_history_on_failed_xmit=false;
@@ -196,15 +173,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         sent.clear();
         received.clear();
         if(receive_history !=null)
-            receive_history.clear();
+            receive_history.removeAll();
         if(send_history != null)
-            send_history.clear();
+            send_history.removeAll();
     }
 
     public void init() throws Exception {
         if(stats) {
-            send_history=new BoundedList<XmitRequest>(stats_list_size);
-            receive_history=new BoundedList<MissingMessage>(stats_list_size);
+            send_history=new BoundedList(stats_list_size);
+            receive_history=new BoundedList(stats_list_size);
         }
     }
 
@@ -273,7 +250,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             tmp=Util.parseCommaDelimitedLongs(str);
             props.remove("retransmit_timeout");
             if(tmp != null && tmp.length > 0) {
-                retransmit_timeouts=tmp;
+                retransmit_timeout=tmp;
             }
         }
 
@@ -298,22 +275,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             props.remove("use_mcast_xmit");
         }
 
-        str=props.getProperty("exponential_backoff");
-        if(str != null) {
-            exponential_backoff=Long.parseLong(str);
-            props.remove("exponential_backoff");
-            if(log.isWarnEnabled())
-                log.warn("note that \"exponential_backoff\" is an experimental feature and may be removed at any time");
-        }
-
-        str=props.getProperty("use_stats_for_retransmission");
-        if(str != null) {
-            use_stats_for_retransmission=Boolean.valueOf(str).booleanValue();
-            props.remove("use_stats_for_retransmission");
-            if(log.isWarnEnabled())
-                log.warn("note that \"use_stats_for_retransmission\" is an experimental feature and may be removed at any time");
-        }
-
         str=props.getProperty("discard_delivered_msgs");
         if(str != null) {
             discard_delivered_msgs=Boolean.valueOf(str).booleanValue();
@@ -336,12 +297,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             stats_list_size=Integer.parseInt(str);
             props.remove("stats_list_size");
-        }
-
-        str=props.getProperty("xmit_history_max_size");
-        if(str != null) {
-            xmit_history_max_size=Integer.parseInt(str);
-            props.remove("xmit_history_max_size");
         }
 
         str=props.getProperty("max_rebroadcast_timeout");
@@ -405,12 +360,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         sb.append("\nXMIT_REQS sent:\n");
-        for(XmitRequest tmp: send_history) {
+        XmitRequest tmp;
+        for(Enumeration en=send_history.elements(); en.hasMoreElements();) {
+            tmp=(XmitRequest)en.nextElement();
             sb.append(tmp).append("\n");
         }
 
         sb.append("\nMissing messages received\n");
-        for(MissingMessage missing: receive_history) {
+        MissingMessage missing;
+        for(Enumeration en=receive_history.elements(); en.hasMoreElements();) {
+            missing=(MissingMessage)en.nextElement();
             sb.append(missing).append("\n");
         }
 
@@ -422,14 +381,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public String printStabilityMessages() {
         StringBuilder sb=new StringBuilder();
-        sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
+        sb.append(stability_msgs.toStringWithDelimiter("\n"));
         return sb.toString();
     }
 
     public String printStabilityHistory() {
         StringBuilder sb=new StringBuilder();
         int i=1;
-        for(Digest digest: stability_msgs) {
+        Digest digest;
+        for(Enumeration en=stability_msgs.elements(); en.hasMoreElements();) {
+            digest=(Digest)en.nextElement();
             sb.append(i++).append(": ").append(digest).append("\n");
         }
         return sb.toString();
@@ -452,6 +413,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         timer=stack != null ? stack.timer : null;
         if(timer == null)
             throw new Exception("timer is null");
+        locks=stack.getLocks();
         started=true;
     }
 
@@ -524,7 +486,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 sent.keySet().retainAll(tmp);
                 received.keySet().retainAll(tmp);
                 view=tmp_view;
-                xmit_stats.keySet().retainAll(tmp);
 
                 // in_progress.keySet().retainAll(mbrs); // remove elements which are not in the membership
                 break;
@@ -748,7 +709,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
             // order in which they were sent by the sender
         Message msg_to_deliver;
-        synchronized(win) {
+        ReentrantLock lock=win.getLock();
+        lock.lock();
+        try {
+            locks.put(Thread.currentThread(), lock);
             while((msg_to_deliver=win.remove()) != null) {
 
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
@@ -761,11 +725,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
         }
-        //}
-        //finally {
-        //  busy.set(false);
-        //}
-        // }
+        finally {
+            locks.remove(Thread.currentThread());
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+        }
     }
 
 
@@ -1237,17 +1201,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     private NakReceiverWindow createNakReceiverWindow(Address sender, long initial_seqno, long lowest_seqno) {
         NakReceiverWindow win=new NakReceiverWindow(local_addr, sender, this, initial_seqno, lowest_seqno, timer);
-
-        if(use_stats_for_retransmission) {
-            win.setRetransmitTimeouts(new ActualInterval(sender));
-        }
-        else if(exponential_backoff > 0) {
-            win.setRetransmitTimeouts(new ExponentialInterval(exponential_backoff));
-        }
-        else {
-            win.setRetransmitTimeouts(new StaticInterval(retransmit_timeouts));
-        }
-
+        win.setRetransmitTimeouts(retransmit_timeout);
         win.setDiscardDeliveredMessages(discard_delivered_msgs);
         win.setMaxXmitBufSize(this.max_xmit_buf_size);
         if(stats)
@@ -1446,22 +1400,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(log.isTraceEnabled())
             log.trace(local_addr + ": sending XMIT_REQ ([" + first_seqno + ", " + last_seqno + "]) to " + dest);
         retransmit_msg.putHeader(name, hdr);
-
-        ConcurrentMap<Long,Long> tmp=xmit_stats.get(sender);
-        if(tmp == null) {
-            tmp=new ConcurrentHashMap<Long,Long>();
-            xmit_stats.putIfAbsent(sender, tmp);
-        }
-        for(long seq=first_seqno; seq < last_seqno; seq++) {
-            tmp.putIfAbsent(seq, System.currentTimeMillis());
-        }
-
         down_prot.down(new Event(Event.MSG, retransmit_msg));
         if(stats) {
             xmit_reqs_sent+=last_seqno - first_seqno +1;
             updateStats(sent, dest, 1, 0, 0);
-            XmitRequest req=new XmitRequest(sender, first_seqno, last_seqno, dest);
-            send_history.add(req);
+            for(long i=first_seqno; i <= last_seqno; i++) {
+                XmitRequest req=new XmitRequest(sender, i, dest);
+                send_history.add(req);
+            }
         }
     }
     /* ------------------- End of Interface Retransmitter.RetransmitCommand -------------------- */
@@ -1469,38 +1415,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /* ----------------------- Interface NakReceiverWindow.Listener ---------------------- */
-
-    public void missingMessageReceived(long seqno, Address original_sender) {
-        ConcurrentMap<Long,Long> tmp=xmit_stats.get(original_sender);
-        if(tmp != null) {
-            Long timestamp=tmp.remove(seqno);
-            if(timestamp != null) {
-                long diff=System.currentTimeMillis() - timestamp;
-                BoundedList<Long> list=xmit_times_history.get(original_sender);
-                if(list == null) {
-                    list=new BoundedList<Long>(xmit_history_max_size);
-                    xmit_times_history.putIfAbsent(original_sender, list);
-                }
-                list.add(diff);
-
-                // compute the smoothed average for retransmission times for original_sender
-                synchronized(smoothed_avg_xmit_times) {
-                    Double smoothed_avg=smoothed_avg_xmit_times.get(original_sender);
-                    if(smoothed_avg == null)
-                        smoothed_avg=INITIAL_SMOOTHED_AVG;
-                    // the smoothed avg takes 90% of the previous value, 100% of the new value and averages them
-                    // then, we add 10% to be on the safe side (an xmit value should rather err on the higher than lower side)
-                    smoothed_avg=((smoothed_avg * WEIGHT) + diff) / 2;
-                    smoothed_avg=smoothed_avg * (2 - WEIGHT);
-                    smoothed_avg_xmit_times.put(original_sender, smoothed_avg);
-                }
-            }
-        }
-
+    public void missingMessageReceived(long seqno, Message msg) {
         if(stats) {
             missing_msgs_received++;
-            updateStats(received, original_sender, 0, 0, 1);
-            MissingMessage missing=new MissingMessage(original_sender, seqno);
+            updateStats(received, msg.getSrc(), 0, 0, 1);
+            MissingMessage missing=new MissingMessage(msg.getSrc(), seqno);
             receive_history.add(missing);
         }
     }
@@ -1552,81 +1471,32 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    public String printRetransmissionAvgs() {
-        StringBuilder sb=new StringBuilder();
-
-        for(Map.Entry<Address,BoundedList<Long>> entry: xmit_times_history.entrySet()) {
-            Address sender=entry.getKey();
-            BoundedList<Long> list=entry.getValue();
-            long tmp=0;
-            int i=0;
-            for(Long val: list) {
-                tmp+=val;
-                i++;
-            }
-            double avg=i > 0? tmp / i: -1;
-            sb.append(sender).append(": ").append(avg).append("\n");
-        }
-        return sb.toString();
-    }
-
-    public String printSmoothedRetransmissionAvgs() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,Double> entry: smoothed_avg_xmit_times.entrySet()) {
-            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
-    }
-
     public String printRetransmissionTimes() {
         StringBuilder sb=new StringBuilder();
-
-        for(Map.Entry<Address,BoundedList<Long>> entry: xmit_times_history.entrySet()) {
-            Address sender=entry.getKey();
-            BoundedList<Long> list=entry.getValue();
-            sb.append(sender).append(": ").append(list).append("\n");
+        double total_avg=0.0, tmp;
+        int i=0;
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            tmp=entry.getValue().getAverageXmitTime();
+            total_avg+=tmp;
+            sb.append(entry.getKey()).append(": ").append(tmp).append("\n");
+            i++;
         }
+
+        sb.append("\ntotal: ").append(total_avg / i);
         return sb.toString();
     }
 
     public double getTotalAverageRetransmissionTime() {
-        long total=0;
+        double total_avg=0.0, tmp;
         int i=0;
-
-        for(BoundedList<Long> list: xmit_times_history.values()) {
-            for(Long val: list) {
-                total+=val;
-                i++;
-            }
+        for(Map.Entry<Address,NakReceiverWindow> entry: xmit_table.entrySet()) {
+            tmp=entry.getValue().getAverageXmitTime();
+            total_avg+=tmp;
+            i++;
         }
-        return i > 0? total / i: -1;
+        return total_avg / i;
     }
 
-    public double getTotalAverageSmoothedRetransmissionTime() {
-        double total=0.0;
-        int cnt=0;
-        synchronized(smoothed_avg_xmit_times) {
-            for(Double val: smoothed_avg_xmit_times.values()) {
-                if(val != null) {
-                    total+=val;
-                    cnt++;
-                }
-            }
-        }
-        return cnt > 0? total / cnt : -1;
-    }
-
-    /** Returns the smoothed average retransmission time for a given sender */
-    public double getSmoothedAverageRetransmissionTime(Address sender) {
-        synchronized(smoothed_avg_xmit_times) {
-            Double retval=smoothed_avg_xmit_times.get(sender);
-            if(retval == null) {
-                retval=INITIAL_SMOOTHED_AVG;
-                smoothed_avg_xmit_times.put(sender, retval);
-            }
-            return retval;
-        }
-    }
 
 
     private void handleConfigEvent(HashMap map) {
@@ -1642,22 +1512,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    private class ActualInterval implements Interval {
-        private final Address sender;
-
-        public ActualInterval(Address sender) {
-            this.sender=sender;
-        }
-
-        public long next() {
-            return (long)getSmoothedAverageRetransmissionTime(sender);
-        }
-
-        public Interval copy() {
-            return this;
-        }
-    }
-
     static class StatsEntry {
         long xmit_reqs, xmit_rsps, missing_msgs_rcvd;
 
@@ -1671,20 +1525,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     static class XmitRequest {
         Address original_sender; // original sender of message
-        long low, high, timestamp=System.currentTimeMillis();
+        long    seq, timestamp=System.currentTimeMillis();
         Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
 
-        XmitRequest(Address original_sender, long low, long high, Address xmit_dest) {
+        XmitRequest(Address original_sender, long seqno, Address xmit_dest) {
             this.original_sender=original_sender;
             this.xmit_dest=xmit_dest;
-            this.low=low;
-            this.high=high;
+            this.seq=seqno;
         }
 
         public String toString() {
             StringBuilder sb=new StringBuilder();
-            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #[").append(low);
-            sb.append("-").append(high).append("]");
+            sb.append(new Date(timestamp)).append(": ").append(original_sender).append(" #").append(seq);
             sb.append(" (XMIT_REQ sent to ").append(xmit_dest).append(")");
             return sb.toString();
         }
