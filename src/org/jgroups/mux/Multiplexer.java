@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.82 2007/10/31 09:15:19 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.83 2007/11/05 15:24:57 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -638,10 +638,15 @@ public class Multiplexer implements UpHandler {
             }
 
             MuxChannel mux_ch=services.get(id);
-            if(mux_ch == null)
-                throw new IllegalArgumentException("State provider "
-                  + channel.getLocalAddress()
-                  + " does not have service with id " + id);
+            //JGRP-616
+            if (mux_ch == null) {
+                if (log.isWarnEnabled())
+                    log.warn("State provider " + channel.getLocalAddress()
+                            + " does not have service with id " + id
+                            + ", returning null state");
+
+                return new StateTransferInfo(null, original_id, 0L, null);
+            }
 
             // state_id will be null, get regular state from the service named state_id
             StateTransferInfo ret=(StateTransferInfo)passToMuxChannel(mux_ch, evt, fifo_queue, requester, id, hasReturnValue);
