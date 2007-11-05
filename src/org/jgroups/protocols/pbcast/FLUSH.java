@@ -250,8 +250,9 @@ public class FLUSH extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()){
         case Event.MSG:
-            Message msg = (Message) evt.getArg();                            
-            if(msg.getDest() == null){
+            Message msg = (Message) evt.getArg();
+            Address dest = msg.getDest();
+            if(dest == null || dest.isMulticastAddress()){
                 //mcasts
                 FlushHeader fh = (FlushHeader) msg.getHeader(getName());
                 if(fh != null && fh.type == FlushHeader.FLUSH_BYPASS){
