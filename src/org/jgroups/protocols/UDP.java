@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.155 2007/11/01 21:41:13 belaban Exp $
+ * @version $Id: UDP.java,v 1.156 2007/11/05 16:23:02 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -736,12 +736,9 @@ public class UDP extends TP implements Runnable {
                     mcast_receiver=null; // will be created just below...
             }
 
-            if(mcast_receiver == null) {
-                mcast_receiver=new Thread(Util.getGlobalThreadGroup(), this, MCAST_RECEIVER_THREAD_NAME);
-                mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????
-                if(thread_naming_pattern != null)
-                    thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);    
-                // mcast_receiver.setDaemon(true);
+            if(mcast_receiver == null) {                
+                mcast_receiver=getProtocolStack().getThreadFactory().newThread(this,MCAST_RECEIVER_THREAD_NAME);
+                mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????                
                 mcast_receiver.start();
                 if(log.isDebugEnabled())
                 log.debug("created multicast receiver thread " + mcast_receiver);
@@ -841,8 +838,8 @@ public class UDP extends TP implements Runnable {
         
 
         public void start() {
-            if(thread == null) {
-                thread=new Thread(Util.getGlobalThreadGroup(), this, UCAST_RECEIVER_THREAD_NAME);
+            if(thread == null) {               
+                thread=getProtocolStack().getThreadFactory().newThread(this,UCAST_RECEIVER_THREAD_NAME);
                 // thread.setDaemon(true);
                 running=true;
                 thread.start();
