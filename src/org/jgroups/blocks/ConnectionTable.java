@@ -1,9 +1,10 @@
-// $Id: ConnectionTable.java,v 1.61 2007/11/05 15:01:22 vlada Exp $
+// $Id: ConnectionTable.java,v 1.62 2007/11/06 17:13:50 vlada Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -179,12 +180,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
         if(log.isDebugEnabled()) log.debug("server socket listening on " + local_addr);
-
-        //Roland Kurmann 4/7/2003, build new thread group
-        thread_group = new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTableGroup");
-        //Roland Kurmann 4/7/2003, put in thread_group
-        acceptor=new Thread(thread_group, this, "ConnectionTable.AcceptorThread");
-        // acceptor.setDaemon(true);
+              
+        acceptor=getThreadFactory().newThread(thread_group,this, "ConnectionTable.AcceptorThread");       
         acceptor.start();
 
         // start the connection reaper - will periodically remove unused connections
