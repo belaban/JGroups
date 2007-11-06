@@ -681,7 +681,11 @@ public class ChannelTestBase extends TestCase {
             }
         }
 
-        throw new RuntimeException("timed out before caches had complete views");
+        StringBuffer sb = new StringBuffer();
+        for (MemberRetrievable c : channels) {            
+            sb.append(c.getLocalAddress()+ ",view=" +c.getMembers()+"|");
+        }
+        throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
     }
 
     public static void blockUntilViewsReceived(Collection channels, int count, long timeout) {
