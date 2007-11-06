@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.10 2007/10/31 16:17:46 vlada Exp $
+// $Id: ChannelFactory.java,v 1.11 2007/11/06 13:34:26 vlada Exp $
 
 package org.jgroups;
 
@@ -92,11 +92,13 @@ public interface ChannelFactory {
      *            with each message. Try to pick a short string, because this is
      *            shipped with every message (overhead).
      * @param register_for_state_transfer
-     *            If set to true, after all registered listeners called
-     *            connect() on the returned Channel, the state for all
-     *            registered listeners will be fetched and set in all listeners
+     *            If set to true, after all registered listeners called 
+     *            either {@link Channel#connect(String, Address, String, long)} or 
+     *            {@link Channel#connect(String) and Channel#getState(Address, long)} 
+     *            successively on the returned Channel, the state for all 
+     *            registered listeners will be fetched and set in all listeners.
      * @param substate_id
-     *            The ID of the substate to be retrieved. Set this to null if
+     *            The ID of the sub state to be retrieved. Set this to null if
      *            the entire state should be retrieved. If
      *            register_for_state_transfer is false, substate_id will be
      *            ignored
