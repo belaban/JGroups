@@ -29,7 +29,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.82 2007/10/30 17:53:07 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.83 2007/11/06 17:30:11 vlada Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -1011,10 +1011,13 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
+                    Thread t = getProtocolStack().getThreadFactory().newThread(client_conn_handler, "FD_SOCK client connection handler");
+                    t.setDaemon(true);                    
+                    
                     synchronized(clients) {
                         clients.add(client_conn_handler);
                     }
-                    client_conn_handler.start();
+                    t.start();
                 }
                 catch(IOException io_ex2) {
                     break;
@@ -1027,15 +1030,13 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     /** Handles a client connection; multiple client can connect at the same time */
-    private static class ClientConnectionHandler extends Thread {
+    private static class ClientConnectionHandler implements Runnable {
         Socket                              client_sock=null;
         InputStream                         in;
         final Object                        mutex=new Object();
         final List<ClientConnectionHandler> clients=new ArrayList<ClientConnectionHandler>();
 
-        ClientConnectionHandler(Socket client_sock, List<ClientConnectionHandler> clients) {
-            setName("FD_SOCK client connection handler");
-            setDaemon(true);
+        ClientConnectionHandler(Socket client_sock, List<ClientConnectionHandler> clients) {           
             this.client_sock=client_sock;
             this.clients.addAll(clients);
         }
