@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.*;
@@ -26,6 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
+    private ThreadFactory factory = new ConnectionTableFactory();
     final Map<Address,Connection>  conns=new HashMap<Address,Connection>();         // keys: Addresses (peer address), values: Connection
     Receiver              receiver=null;
     boolean               use_send_queues=false;       // max number of messages in a send queue
@@ -41,7 +43,7 @@ public abstract class BasicConnectionTable {
     long                  conn_expire_time=300000;     // connections can be idle for 5 minutes before they are reaped
     int                   sock_conn_timeout=1000;      // max time in millis to wait for Socket.connect() to return
     int                   peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-    ThreadGroup           thread_group=null;
+    final ThreadGroup     thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "ConnectionTable");
     protected final Log   log= LogFactory.getLog(getClass());
     final byte[]          cookie={'b', 'e', 'l', 'a'};
     boolean               use_reaper=false;            // by default we don't reap idle conns
@@ -137,6 +139,14 @@ public abstract class BasicConnectionTable {
 
     public void setLinger(int linger) {
         this.linger=linger;
+    }
+    
+    public void setThreadFactory(ThreadFactory factory){
+        this.factory = factory;
+    }
+    
+    public ThreadFactory getThreadFactory(){
+        return factory;
     }
 
     public boolean getUseSendQueues() {return use_send_queues;}
@@ -424,8 +434,7 @@ public abstract class BasicConnectionTable {
            is_running=true;
            if(receiverThread == null || !receiverThread.isAlive()) {
                // Roland Kurmann 4/7/2003, put in thread_group
-               receiverThread=new Thread(thread_group, this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");
-               // receiverThread.setDaemon(true);
+               receiverThread=getThreadFactory().newThread(thread_group,this, "ConnectionTable.Connection.Receiver [" + getSockAddress() + "]");               
                receiverThread.start();
                if(log.isTraceEnabled())
                    log.trace("receiver started: " + receiverThread);
@@ -709,7 +718,7 @@ public abstract class BasicConnectionTable {
 
            void start() {
                if(senderThread == null || !senderThread.isAlive()) {
-                   senderThread=new Thread(thread_group, this, "ConnectionTable.Connection.Sender local_addr=" + local_addr + " [" + getSockAddress() + "]");
+                   senderThread=getThreadFactory().newThread(thread_group,this, "ConnectionTable.Connection.Sender local_addr=" + local_addr + " [" + getSockAddress() + "]");                   
                    senderThread.setDaemon(true);
                    is_it_running=true;
                    senderThread.start();
@@ -778,7 +787,7 @@ public abstract class BasicConnectionTable {
                t=null;
            if(t == null) {
                //RKU 7.4.2003, put in threadgroup
-               t=new Thread(thread_group, this, "ConnectionTable.ReaperThread");
+               t=getThreadFactory().newThread(thread_group, this, "ConnectionTable.ReaperThread");              
                t.setDaemon(true); // will allow us to terminate if all remaining threads are daemons
                t.start();
            }
@@ -833,4 +842,19 @@ public abstract class BasicConnectionTable {
            t=null;
        }
    }
+   
+   private static class ConnectionTableFactory implements ThreadFactory {
+
+        public Thread newThread(Runnable r, String name) {
+            return new Thread(r, name);
+        }
+
+        public Thread newThread(ThreadGroup group, Runnable r, String name) {
+            return new Thread(group, r, name);
+        }
+        
+        public Thread newThread(Runnable r) {
+            return new Thread(r);
+        }
+    }
 }

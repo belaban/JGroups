@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.58 2007/11/06 12:25:53 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.59 2007/11/06 17:13:51 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -404,7 +404,7 @@ public class ProtocolStack extends Protocol implements Transport {
             return newThread(group, r, baseName);                      
         }
         
-        private Thread newThread(ThreadGroup group, Runnable r, String name) {
+        public Thread newThread(ThreadGroup group, Runnable r, String name) {
             Thread thread = new Thread(group, r, name);
             thread.setDaemon(createDaemons);
             return thread;
@@ -422,6 +422,10 @@ public class ProtocolStack extends Protocol implements Transport {
             f = factory;
             this.pattern = pattern;           
         }
+        
+        public void setThreadNamingPattern(ThreadNamingPattern pattern) {
+            this.pattern = pattern;           
+        }
 
         public Thread newThread(Runnable r, String name) {
             Thread newThread = f.newThread(r, name);
@@ -431,10 +435,6 @@ public class ProtocolStack extends Protocol implements Transport {
             return newThread;
         }
 
-        public void setThreadNamingPattern(ThreadNamingPattern pattern) {
-            this.pattern = pattern;           
-        }
-
         public Thread newThread(Runnable r) {
             Thread newThread = f.newThread(r);
             if(pattern!=null)
@@ -442,6 +442,14 @@ public class ProtocolStack extends Protocol implements Transport {
                 
             return newThread;
         }        
+        
+        public Thread newThread(ThreadGroup group, Runnable r, String name) {
+            Thread newThread = f.newThread(group, r, name);
+            if(pattern!=null)
+                pattern.renameThread(newThread);
+                
+            return newThread;
+        }              
     }
 }
 
