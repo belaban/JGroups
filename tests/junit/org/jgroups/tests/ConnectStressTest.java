@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.20 2007/11/07 12:12:29 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.21 2007/11/07 21:50:34 rachmatowicz Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.concurrent.BrokenBarrierException;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.20 2007/11/07 12:12:29 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.21 2007/11/07 21:50:34 rachmatowicz Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier start_connecting=null;
@@ -46,7 +46,7 @@ public class ConnectStressTest extends TestCase {
     }
 
 
-    public void testConcurrentJoins() throws Exception {
+    public void testConcurrentJoinsAndLeaves() throws Exception {
         start_connecting=new CyclicBarrier(NUM +1);
         connected=new CyclicBarrier(NUM +1);
         received_all_views=new CyclicBarrier(NUM +1);
@@ -63,7 +63,7 @@ public class ConnectStressTest extends TestCase {
         stop=System.currentTimeMillis();
         log(channel.getLocalAddress() + " connected in " + (stop-start) + " msecs (" +
                     channel.getView().getMembers().size() + " members). VID=" + channel.getView().getVid());
-        assertEquals(1, channel.getView().getMembers().size());
+        assertEquals("view should have size == 1 after initial connect ", 1, channel.getView().getMembers().size());
 
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(i);
@@ -79,10 +79,8 @@ public class ConnectStressTest extends TestCase {
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to connect");
 
-            received_all_views.await();
-            stop=System.currentTimeMillis();
-            System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
-
+            // coordinator attempts to get complete view within 50 (5*10) seconds 
+            // otherwise, exits gracefully
             int num_members=-1;
             for(int i=0; i < 10; i++) {
                 View v=channel.getView();
@@ -91,18 +89,23 @@ public class ConnectStressTest extends TestCase {
                         "), v=" + v);
                 if(num_members == NUM+1)
                     break;
-                Util.sleep(500);
+                Util.sleep(5*1000);
             }
-            assertEquals((NUM+1), num_members);
+            assertEquals("coordinator unable to obtain complete view", (NUM+1), num_members);
+            
+            received_all_views.await();
+            stop=System.currentTimeMillis();
+            System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
         }
         catch(Exception ex) {
             fail(ex.toString());
         }
-    }
-
-    public void testConcurrentLeaves() throws Exception {
+        
+        // test split to avoid dependency and resulting timeout
+        // testConcurrentJoins ended here; testConcurrentLeaves started here
+        
         start_disconnecting.await();
-        long start, stop;
+        // long start, stop;
         start=System.currentTimeMillis();
 
         disconnected.await();
@@ -121,7 +124,7 @@ public class ConnectStressTest extends TestCase {
             }
             Util.sleep(3000);
         }
-        assertEquals(1, num_members);
+        assertEquals("view should have size == 1 after disconnect ", 1, num_members);
         log("closing all channels");
         for(int i=0; i < threads.length; i++) {
             MyThread t=threads[i];
@@ -214,9 +217,10 @@ public class ConnectStressTest extends TestCase {
 
     public static Test suite() {
         TestSuite s=new TestSuite();
+        s.addTest(new ConnectStressTest("testConcurrentJoinsAndLeaves"));
         // we're adding the tests manually, because they need to be run in *this exact order*
-        s.addTest(new ConnectStressTest("testConcurrentJoins"));
-        s.addTest(new ConnectStressTest("testConcurrentLeaves"));
+        // s.addTest(new ConnectStressTest("testConcurrentJoins"));
+        // s.addTest(new ConnectStressTest("testConcurrentLeaves"));
         return s;
     }
 
