@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.56 2007/10/03 13:29:41 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.57 2007/11/07 20:37:40 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -320,25 +320,26 @@ public class FlushTest extends ChannelTestBase {
 
             // let the view propagate and verify related asserts
             Util.sleep(5000);
-            closeAssert.verify(channels);
-
-            // verify block/unblock/view/get|set state sequence
-
-            for (FlushTestReceiver receiver : channels) {
-				if (connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE
-						|| connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
-					checkEventStateTransferSequence(receiver);
-				} else {
-					checkEventSequence(receiver, isMuxChannelUsed());
-				}
-			}
+            closeAssert.verify(channels);                     
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail("Exception encountered during test execution: " + ex);
         }finally{
+            
+            //close all channels and ....
             for(FlushTestReceiver app:channels){
                 app.cleanup();
                 Util.sleep(2000);
+            }
+            
+            // verify block/unblock/view/get|set state sequences for all members
+            for (FlushTestReceiver receiver : channels) {
+                if (connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE
+                        || connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
+                    checkEventStateTransferSequence(receiver);
+                } else {
+                    checkEventSequence(receiver, isMuxChannelUsed());
+                }
             }
         }
     }
@@ -454,14 +455,13 @@ public class FlushTest extends ChannelTestBase {
     }
 
     private void checkEventSequence(FlushTestReceiver receiver, boolean isMuxUsed) {
-        List events = receiver.getEvents();
+        List<Object> events = receiver.getEvents();
         String eventString = "[" + receiver.getName()
                              + "|"
                              + receiver.getLocalAddress()
                              + ",events:"
                              + events;
-        
-        log.info(eventString);
+        log.info(eventString);        
         assertNotNull(events);
         int size = events.size();
         for(int i = 0;i < size;i++){
@@ -470,49 +470,53 @@ public class FlushTest extends ChannelTestBase {
                 if(i + 1 < size){
                     Object ev = events.get(i + 1);
                     if(isMuxUsed){
-                        assertTrue("After Block should be View or Unblock" + eventString,
+                        assertTrue("After Block should be View or Unblock but it is " + ev.getClass() + ",events= " + eventString,
                                    ev instanceof View || ev instanceof UnblockEvent);
                     }else{
-                        assertTrue("After Block should be View " + eventString,
-                                   events.get(i + 1) instanceof View);
+                        assertTrue("After Block should be View but it is " + ev.getClass() + ",events= " + eventString,
+                                   ev instanceof View);
                     }
                 }
-                if(i != 0){
-                    assertTrue("Before Block should be Unblock " + eventString,
-                               events.get(i - 1) instanceof UnblockEvent);
+                if(i > 0){
+                    Object ev = events.get(i - 1);
+                    assertTrue("Before Block should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
                 }
             }
-            if(event instanceof View){
+            else if(event instanceof View){
                 if(i + 1 < size){
-                    assertTrue("After View should be Unblock " + eventString,
-                               events.get(i + 1) instanceof UnblockEvent);
+                    Object ev = events.get(i + 1);
+                    assertTrue("After View should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
                 }
-                assertTrue("Before View should be Block " + eventString,
-                           events.get(i - 1) instanceof BlockEvent);
+                Object ev = events.get(i - 1);
+                assertTrue("Before View should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                           ev instanceof BlockEvent);
             }
-            if(event instanceof UnblockEvent){
+            else if(event instanceof UnblockEvent){
                 if(i + 1 < size){
-                    assertTrue("After UnBlock should be Block " + eventString,
-                               events.get(i + 1) instanceof BlockEvent);
+                    Object ev = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof BlockEvent);
                 }
 
                 Object ev = events.get(i - 1);
                 if(isMuxUsed){
-                    assertTrue("Before UnBlock should be View or Block" + eventString,
+                    assertTrue("Before UnBlock should be View or Block but it is " + ev.getClass() + ",events= " + eventString,
                                ev instanceof View || ev instanceof BlockEvent);
                 }else{
-                    assertTrue("Before UnBlock should be View " + eventString,
-                               events.get(i - 1) instanceof View);
+                    assertTrue("Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof View);
                 }
             }
-        }
-        receiver.clear();
+        }       
     }
 
     private void checkEventStateTransferSequence(FlushTestReceiver receiver) {
-        List events = receiver.getEvents();
+        
+        List<Object> events = receiver.getEvents();
         String eventString = "[" + receiver.getName() + ",events:" + events;
-        log.info(eventString);
+        log.info(eventString);        
         assertNotNull(events);
         int size = events.size();
         for(int i = 0;i < size;i++){
@@ -520,41 +524,43 @@ public class FlushTest extends ChannelTestBase {
             if(event instanceof BlockEvent){
                 if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("After Block should be state|unblock|view" + eventString,
+                    assertTrue("After Block should be state|unblock|view, but it is " + o.getClass() + ",events= "+ eventString,
                                o instanceof SetStateEvent || o instanceof GetStateEvent
                                        || o instanceof UnblockEvent
                                        || o instanceof View);
-                }else if(i != 0){
+                }
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString, 
+                               o instanceof UnblockEvent);
+                }
+            }
+            else if(event instanceof SetStateEvent || event instanceof GetStateEvent){
+                if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("Before Block should be state or Unblock " + eventString,
-                               o instanceof SetStateEvent || o instanceof GetStateEvent
-                                       || o instanceof UnblockEvent);
+                    assertTrue("After state should be Unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent);
                 }
+                Object o = events.get(i - 1);
+                assertTrue("Before state should be Block or View , but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || events.get(i - 1) instanceof View);
             }
-            if(event instanceof SetStateEvent || event instanceof GetStateEvent){
+            else if(event instanceof UnblockEvent){
                 if(i + 1 < size){
-                    assertTrue("After state should be Unblock " + eventString,
-                               events.get(i + 1) instanceof UnblockEvent);
+                    Object o = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof BlockEvent);
                 }
-                assertTrue("Before state should be Block or View " + eventString,
-                           events.get(i - 1) instanceof BlockEvent || events.get(i - 1) instanceof View);
-            }
-
-            if(event instanceof UnblockEvent){
-                if(i + 1 < size){
-                    assertTrue("After UnBlock should be Block " + eventString,
-                               events.get(i + 1) instanceof BlockEvent);
-                }else{
-                    Object o = events.get(size - 2);
-                    assertTrue("Before UnBlock should be block|state|view  " + eventString,
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString,
                                o instanceof SetStateEvent || o instanceof GetStateEvent
                                        || o instanceof BlockEvent
                                        || o instanceof View);
                 }
             }
 
-        }
-        receiver.clear();
+        }        
     }
 
     protected JChannel createChannel() throws ChannelException {
