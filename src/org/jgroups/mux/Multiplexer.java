@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.84 2007/11/07 21:36:51 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85 2007/11/07 21:46:23 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -601,12 +601,11 @@ public class Multiplexer implements UpHandler {
             //initialize collector and ...
             service_ack_collector.reset(null, muxChannels);
             int size=service_ack_collector.size();                       
-            long service_ack_collection_timeout = 2000;
-            long start = System.currentTimeMillis();
+            long service_ack_collection_timeout = 2000;            
             
             //then send a message
             channel.send(service_msg);
-            
+            long start = System.currentTimeMillis();
             try {
                 service_ack_collector.waitForAllAcks(service_ack_collection_timeout);                
                 if (log.isTraceEnabled())
