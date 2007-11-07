@@ -361,16 +361,19 @@ public class FLUSH extends Protocol {
             }
             break;
 
-        case Event.VIEW_CHANGE:
-            // if this is channel's first view and its the only member of the
-            // group then the
-            // goal is to pass BLOCK,VIEW,UNBLOCK to application space on the
-            // same thread as VIEW.
+        case Event.VIEW_CHANGE:                       
+            /*
+             * [JGRP-618] - FLUSH coordinator transfer reorders
+             * block/unblock/view events in applications (TCP stack only)
+             *                          
+             */
+            up_prot.up(evt);
             View newView = (View) evt.getArg();
             boolean firstView = onViewChange(newView);
             boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
-            if(firstView && singletonMember){
-                up_prot.up(evt);
+            // if this is channel's first view and its the only member of the group - no flush was run
+            // but the channel application should still receive BLOCK,VIEW,UNBLOCK 
+            if(firstView && singletonMember){                
                 synchronized(blockMutex){
                     isBlockingFlushDown = false;
                     blockMutex.notifyAll();
@@ -379,16 +382,15 @@ public class FLUSH extends Protocol {
                     log.debug("At " + localAddress
                               + " unblocking FLUSH.down() and sending UNBLOCK up");
                 allowMessagesToPassUp = true;
-                up_prot.up(new Event(Event.UNBLOCK));
-                return null;
+                up_prot.up(new Event(Event.UNBLOCK));                
             }
-            break;
+            return null;            
 
         case Event.TMP_VIEW:
             /*
              * April 25, 2007
              * 
-             * Accomodating current NAKACK (1.127)
+             * Accommodating current NAKACK (1.127)
              * 
              * Updates field currentView of a leaving coordinator. Leaving
              * coordinator, after it sends out the view, does not need to
