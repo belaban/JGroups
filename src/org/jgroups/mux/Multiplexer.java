@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.83 2007/11/05 15:24:57 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.84 2007/11/07 21:36:51 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -586,11 +586,10 @@ public class Multiplexer implements UpHandler {
         
         service_msg.putHeader(NAME, hdr);
         if(bypassFlush && channel.flushSupported())
-           service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));
+           service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));             
         
-        channel.send(service_msg);
-        
-        if (synchronous) {           
+        if (synchronous) {   
+            //for synchronous invocation we need to collect acks
             //the host that is sending this message should also ack
             CopyOnWriteArrayList<Address> muxChannels = new CopyOnWriteArrayList<Address>();
             muxChannels.add(host);           
@@ -598,10 +597,16 @@ public class Multiplexer implements UpHandler {
             if(list != null && !list.isEmpty()){
                 muxChannels.addAllAbsent(list);               
             }  
+            
+            //initialize collector and ...
             service_ack_collector.reset(null, muxChannels);
             int size=service_ack_collector.size();                       
             long service_ack_collection_timeout = 2000;
             long start = System.currentTimeMillis();
+            
+            //then send a message
+            channel.send(service_msg);
+            
             try {
                 service_ack_collector.waitForAllAcks(service_ack_collection_timeout);                
                 if (log.isTraceEnabled())
@@ -616,6 +621,10 @@ public class Multiplexer implements UpHandler {
                         + service_ack_collector.printReceived()
                         + "), local_addr=" + getLocalAddress());
             }
+        } 
+        else{
+            //if asynchronous then fire and forget 
+            channel.send(service_msg);            
         }
     }
 
