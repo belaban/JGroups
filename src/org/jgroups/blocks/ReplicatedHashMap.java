@@ -12,6 +12,7 @@ import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
@@ -30,7 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.11 2007/08/30 10:17:48 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.12 2007/11/07 09:39:25 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -80,7 +81,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     private transient Channel channel;
     protected transient RpcDispatcher disp=null;
     private String cluster_name=null;
-    private final transient Vector<Notification> notifs=new Vector<Notification>();  // to be notified when mbrship changes
+    // to be notified when mbrship changes
+    private final transient Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
     private final Vector<Address> members=new Vector<Address>(); // keeps track of all DHTs
     private transient boolean persistent=false; // whether to use PersistenceManager to save state
     private transient PersistenceManager persistence_mgr=null;
@@ -306,13 +308,13 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
     }
 
     public void addNotifier(Notification n) {
-        if(!notifs.contains(n))
-            notifs.addElement(n);
+        if(n != null)
+            notifs.add(n);
     }
 
     public void removeNotifier(Notification n) {
-        if(notifs.contains(n))
-            notifs.removeElement(n);
+        if(n != null)
+            notifs.remove(n);
     }
 
     public void stop() {
@@ -600,8 +602,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
                 if(log.isErrorEnabled()) log.error("failed clearing contents", t);
             }
         }
-        for(int i=0; i < notifs.size(); i++)
-            notifs.elementAt(i).contentsCleared();
+        for(Notification notif: notifs)
+            notif.contentsCleared();
     }
 
 
@@ -750,7 +752,6 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
     void sendViewChangeNotifications(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
         Vector<Address> joined, left;
-        Notification n;
 
         if((notifs.isEmpty()) || (old_mbrs == null) || (new_mbrs == null) ||
                 (old_mbrs.isEmpty()) || (new_mbrs.isEmpty()))
@@ -771,9 +772,8 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             }
         }
 
-        for(int i=0; i < notifs.size(); i++) {
-            n=notifs.elementAt(i);
-            n.viewChange(view, joined, left);
+        for(Notification notif: notifs) {
+            notif.viewChange(view, joined, left);
         }
     }
 
