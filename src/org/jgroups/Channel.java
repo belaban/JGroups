@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.36 2007/10/16 16:24:38 belaban Exp $
+// $Id: Channel.java,v 1.37 2007/11/07 13:14:41 belaban Exp $
 
 package org.jgroups;
 
@@ -7,6 +7,7 @@ import org.apache.commons.logging.Log;
 
 import java.io.Serializable;
 import java.util.*;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 
 /**
@@ -51,10 +52,9 @@ public abstract class Channel implements Transport {
     public static final int AUTO_GETSTATE=6;
 
 
-    protected UpHandler          up_handler=null;   // when set, <em>all</em> events are passed to it !
-    protected ChannelListener    channel_listener=null;
-    protected Set                channel_listeners=null;
-    protected Receiver           receiver=null;
+    protected UpHandler            up_handler=null;   // when set, <em>all</em> events are passed to it !
+    protected Set<ChannelListener> channel_listeners=null;
+    protected Receiver             receiver=null;
 
 
     protected abstract Log getLog();
@@ -350,12 +350,12 @@ public abstract class Channel implements Transport {
         if(listener == null)
             return;
         if(channel_listeners == null)
-            channel_listeners=new LinkedHashSet();
+            channel_listeners=new CopyOnWriteArraySet<ChannelListener>();
         channel_listeners.add(listener);
     }
 
     public synchronized void removeChannelListener(ChannelListener listener) {
-        if(channel_listeners != null)
+        if(channel_listeners != null && listener != null)
             channel_listeners.remove(listener);
     }
 
@@ -495,8 +495,7 @@ public abstract class Channel implements Transport {
 
     protected void notifyChannelConnected(Channel c) {
         if(channel_listeners == null) return;
-        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
-            ChannelListener channelListener=(ChannelListener)it.next();
+        for(ChannelListener channelListener: channel_listeners) {
             try {
                 channelListener.channelConnected(c);
             }
@@ -508,8 +507,7 @@ public abstract class Channel implements Transport {
 
     protected void notifyChannelDisconnected(Channel c) {
         if(channel_listeners == null) return;
-        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
-            ChannelListener channelListener=(ChannelListener)it.next();
+        for(ChannelListener channelListener: channel_listeners) {
             try {
                 channelListener.channelDisconnected(c);
             }
@@ -521,8 +519,7 @@ public abstract class Channel implements Transport {
 
     protected void notifyChannelClosed(Channel c) {
         if(channel_listeners == null) return;
-        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
-            ChannelListener channelListener=(ChannelListener)it.next();
+        for(ChannelListener channelListener: channel_listeners) {
             try {
                 channelListener.channelClosed(c);
             }
@@ -534,8 +531,7 @@ public abstract class Channel implements Transport {
 
     protected void notifyChannelShunned() {
         if(channel_listeners == null) return;
-        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
-            ChannelListener channelListener=(ChannelListener)it.next();
+        for(ChannelListener channelListener: channel_listeners) {
             try {
                 channelListener.channelShunned();
             }
@@ -547,8 +543,7 @@ public abstract class Channel implements Transport {
 
     protected void notifyChannelReconnected(Address addr) {
         if(channel_listeners == null) return;
-        for(Iterator it=channel_listeners.iterator(); it.hasNext();) {
-            ChannelListener channelListener=(ChannelListener)it.next();
+        for(ChannelListener channelListener: channel_listeners) {
             try {
                 channelListener.channelReconnected(addr);
             }
