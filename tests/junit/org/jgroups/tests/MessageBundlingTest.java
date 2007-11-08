@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -12,12 +13,12 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.6 2007/09/19 18:13:12 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.7 2007/11/08 17:00:04 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
     private MyReceiver r2;
-    private final static long LATENCY=30L;
+    private final static long LATENCY=3000L;
     private final static long SLEEP=5000L;
     private static final boolean BUNDLING=true;
     private static final int MAX_BYTES=20000;
@@ -158,6 +159,12 @@ public class MessageBundlingTest extends ChannelTestBase {
         transport.setEnableBundling(enabled);
         transport.setMaxBundleSize(max_bytes);
         transport.setMaxBundleTimeout(timeout);
+        transport.setEnable_unicast_bundling(false);
+        if(enabled) {
+            GMS gms=(GMS)stack.findProtocol("GMS");
+            gms.setViewAckCollectionTimeout(LATENCY * 2);
+            gms.setJoinTimeout(LATENCY * 2);
+        }
     }
 
     private void closeChannel(Channel c) {
