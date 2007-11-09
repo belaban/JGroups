@@ -1,23 +1,26 @@
-// $Id: ConnectStressTest.java,v 1.21 2007/11/07 21:50:34 rachmatowicz Exp $
+// $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import junit.framework.Test;
+import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import java.util.Vector;
-import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.21 2007/11/07 21:50:34 rachmatowicz Exp $
+ * @version $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
  */
 public class ConnectStressTest extends TestCase {
     static CyclicBarrier start_connecting=null;
@@ -58,6 +61,7 @@ public class ConnectStressTest extends TestCase {
         //  create main channel - will be coordinator for JOIN requests
         channel=new JChannel(props);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
+        changeProperties(channel);
         start=System.currentTimeMillis();
         channel.connect(groupname);
         stop=System.currentTimeMillis();
@@ -159,6 +163,7 @@ public class ConnectStressTest extends TestCase {
 
             try {
                 ch=new JChannel(props);
+                changeProperties(ch);
                 ch.setOpt(Channel.AUTO_RECONNECT, true);
 
                 start_connecting.await();
@@ -214,6 +219,19 @@ public class ConnectStressTest extends TestCase {
 
     }
 
+    private static void changeProperties(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol("GMS");
+        if(gms != null) {
+            gms.setViewBundling(true);
+            gms.setMaxBundlingTime(300);
+        }
+        MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
+        if(merge != null) {
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
+        }
+    }
 
     public static Test suite() {
         TestSuite s=new TestSuite();
