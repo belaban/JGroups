@@ -208,21 +208,7 @@ public class ChannelTestBase extends TestCase {
     }
 
     protected JChannel createChannel(Object id) throws Exception {
-        JChannel c = null;
-        if(isMuxChannelUsed()){
-            for(int i = 0;i < muxFactory.length;i++){
-                if(!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString())){
-                    c = new DefaultMuxChannelTestFactory(muxFactory[i]).createChannel(id);
-                    return c;
-                }
-            }
-
-            throw new Exception("Cannot create mux channel with id " + id
-                                + " since all currently used channels have already registered service with that id");
-        }else{
-            c = new DefaultChannelTestFactory().createChannel(id);
-        }
-        return c;
+       return (JChannel) new DefaultChannelTestFactory().createChannel(id);
     }
 
     protected JChannel createChannel() throws Exception {
@@ -233,57 +219,46 @@ public class ChannelTestBase extends TestCase {
      * Default channel factory used in junit tests
      */
     protected class DefaultChannelTestFactory implements ChannelTestFactory {
-        public JChannel createChannel(Object id) throws Exception {
-            return createChannel(CHANNEL_CONFIG, useBlocking());
-        }
 
-        protected JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
+        protected JChannel createChannel(String configFile, boolean useBlocking)
+                throws Exception {
             HashMap channelOptions = new HashMap();
             channelOptions.put(new Integer(Channel.BLOCK), Boolean.valueOf(useBlocking));
             return createChannel(configFile, channelOptions);
         }
 
-        protected JChannel createChannel(String configFile, Map channelOptions) throws Exception {
+        protected JChannel createChannel(String configFile, Map channelOptions)
+                throws Exception {
             JChannel ch = null;
             log.info("Using configuration file " + configFile);
             ch = new JChannel(configFile);
-            for(Iterator iter = channelOptions.keySet().iterator();iter.hasNext();){
+            for (Iterator iter = channelOptions.keySet().iterator(); iter.hasNext();) {
                 Integer key = (Integer) iter.next();
                 Object value = channelOptions.get(key);
                 ch.setOpt(key.intValue(), value);
             }
             return ch;
         }
-    }
 
-    /**
-     * Default channel factory used in junit tests
-     * 
-     */
-    public class DefaultMuxChannelTestFactory implements ChannelTestFactory {
-        JChannelFactory f = null;
+        public Channel createChannel(Object id) throws Exception {
+            JChannel c = null;
+            if (isMuxChannelUsed()) {
+                for (int i = 0; i < muxFactory.length; i++) {
+                    if (!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString())) {
+                        c = (JChannel) muxFactory[i].createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
+                        if (useBlocking()) {
+                            c.setOpt(Channel.BLOCK, Boolean.TRUE);
+                        }
+                        return c;
+                    }
+                }
 
-        public DefaultMuxChannelTestFactory(JChannelFactory f){
-            this.f = f;
-        }
-
-        public JChannel createChannel(Object id) throws Exception {
-            JChannel c = (JChannel) f.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME,
-                                                               id.toString());
-            if(useBlocking()){
-                c.setOpt(Channel.BLOCK, Boolean.TRUE);
-            }
-            Address address = c.getLocalAddress();
-            String append = "[" + id
-                            + "]"
-                            + " using "
-                            + MUX_CHANNEL_CONFIG
-                            + ",stack "
-                            + MUX_CHANNEL_CONFIG_STACK_NAME;
-            if(address == null){
-                log.info("Created unconnected mux channel " + append);
-            }else{
-                log.info("Created mux channel " + address + append);
+                throw new Exception(
+                        "Cannot create mux channel with id "
+                                + id
+                                + " since all currently used channels have already registered service with that id");
+            } else {
+                c = createChannel(CHANNEL_CONFIG, useBlocking());
             }
             return c;
         }
@@ -316,15 +291,7 @@ public class ChannelTestBase extends TestCase {
 
         public ChannelApplication(String name) throws Exception{
             ChannelTestBase.this.createChannel(name);
-        }
-
-        public ChannelApplication(String name,JChannelFactory f) throws Exception{
-            if(f == null){
-                createChannel(name, new DefaultChannelTestFactory());
-            }else{
-                createChannel(name, new DefaultMuxChannelTestFactory(f));
-            }
-        }
+        }      
 
         /**
          * Creates a unconnected channel and assigns a name to it.
@@ -334,14 +301,10 @@ public class ChannelTestBase extends TestCase {
          * @param factory
          *            factory to create Channel
          * @throws ChannelException
-         */
-        public ChannelApplication(String name,ChannelTestFactory factory) throws Exception{
-            createChannel(name, factory);
-        }
-
-        private void createChannel(String name, ChannelTestFactory factory) throws Exception {
-            this.name = name;
-            channel = factory.createChannel(name);
+         */       
+        public ChannelApplication (String name, ChannelTestFactory factory) throws Exception {
+           this.name = name;
+           channel = factory.createChannel(name);
         }
 
         /**
@@ -418,17 +381,12 @@ public class ChannelTestBase extends TestCase {
         }
     }
 
-    protected abstract class PushChannelApplication extends ChannelApplication implements
-            ExtendedReceiver {
+    protected abstract class PushChannelApplication extends ChannelApplication implements ExtendedReceiver {
         RpcDispatcher dispatcher;
 
         public PushChannelApplication(String name) throws Exception{
-            this(name, new DefaultChannelTestFactory(), false);
-        }
-
-        public PushChannelApplication(String name,JChannelFactory f) throws Exception{
-            this(name, new DefaultMuxChannelTestFactory(f), false);
-        }
+            this(name, false);
+        }        
 
         public PushChannelApplication(String name,boolean useDispatcher) throws Exception{
             this(name, new DefaultChannelTestFactory(), useDispatcher);
@@ -540,22 +498,15 @@ public class ChannelTestBase extends TestCase {
         }
 
         protected PushChannelApplicationWithSemaphore(String name,Semaphore semaphore) throws Exception{
-            super(name);
-            this.semaphore = semaphore;
-        }
-
-        protected PushChannelApplicationWithSemaphore(String name,
-                                                      JChannelFactory f,
-                                                      Semaphore semaphore) throws Exception{
-            this(name, new DefaultMuxChannelTestFactory(f), semaphore, false);
-        }
+            this(name,semaphore,false);
+        }      
 
         protected PushChannelApplicationWithSemaphore(String name,
                                                       Semaphore semaphore,
                                                       boolean useDispatcher) throws Exception{
             this(name, new DefaultChannelTestFactory(), semaphore, useDispatcher);
         }
-
+        
         public void run() {
             boolean acquired = false;
             try{

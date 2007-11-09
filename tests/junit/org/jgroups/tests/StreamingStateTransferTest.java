@@ -87,17 +87,11 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             // Create activation threads that will block on the semaphore
             for(int i = 0;i < channelCount;i++){
                 StreamingStateTransferApplication channel = null;
-                if(isMuxChannelUsed()){
-                    channel = new StreamingStateTransferApplication(channelNames[i],
-                                                                    muxFactory[i % getMuxFactoryCount()],
-                                                                    semaphore,
-                                                                    largeTransfer);
-                }else{
-                    channel = new StreamingStateTransferApplication(channelNames[i],
-                                                                    semaphore,
-                                                                    useDispatcher,
-                                                                    largeTransfer);
-                }
+                
+                channel = new StreamingStateTransferApplication(channelNames[i],                                                                    
+                                                                semaphore,
+                                                                useDispatcher,
+                                                                largeTransfer);                
 
                 // Start threads and let them join the channel
                 channels.add(channel);
@@ -194,12 +188,6 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         }
     }
 
-    protected class StreamingChannelTestFactory extends DefaultChannelTestFactory {
-        public JChannel createChannel(Object id) throws Exception {
-            return createChannel(CHANNEL_CONFIG, true);
-        }
-    }
-
     protected class StreamingStateTransferApplication extends PushChannelApplicationWithSemaphore {
         private final Map stateMap = new HashMap();
 
@@ -219,19 +207,10 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                                                  Semaphore s,
                                                  boolean useDispatcher,
                                                  boolean largeTransfer) throws Exception{
-            super(name, new StreamingChannelTestFactory(), s, useDispatcher);
+            super(name, s, useDispatcher);
             this.largeTransfer = largeTransfer;
             channel.connect("test");
-        }
-
-        public StreamingStateTransferApplication(String name,
-                                                 JChannelFactory factory,
-                                                 Semaphore s,
-                                                 boolean largeTransfer) throws Exception{
-            super(name, factory, s);
-            this.largeTransfer = largeTransfer;
-            channel.connect("test");
-        }
+        }      
 
         public void receive(Message msg) {
             Address sender = msg.getSrc();

@@ -40,7 +40,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.57 2007/11/07 20:37:40 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58 2007/11/09 01:59:40 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -102,7 +102,7 @@ public class FlushTest extends ChannelTestBase {
         receivers[0].cleanup();
         Util.sleep(1000);
 
-        checkEventSequence(receivers[0], false);
+        checkEventSequence(receivers[0], isMuxChannelUsed());
 
     }
 
@@ -267,15 +267,7 @@ public class FlushTest extends ChannelTestBase {
             // Create channels and their threads that will block on the
             // semaphore
             for(int i = 0;i < count;i++){
-                FlushTestReceiver channel = null;
-                if(isMuxChannelUsed()){
-                    channel = new FlushTestReceiver(names[i],
-                                                    muxFactory[i % muxFactoryCount],
-                                                    semaphore,
-                                                    connectType);
-                }else{
-                    channel = new FlushTestReceiver(names[i], semaphore, 0, connectType);
-                }
+                FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore, 0, connectType);                
                 channels.add(channel);
 
                 // Release one ticket at a time to allow the thread to start
@@ -613,23 +605,7 @@ public class FlushTest extends ChannelTestBase {
             if(connectMethod == CONNECT_AND_GET_STATE){
                 channel.connect("test",null,null, 25000);
             }
-        }
-
-        protected FlushTestReceiver(String name,
-                                    JChannelFactory factory,
-                                    Semaphore semaphore,
-                                    int connectMethod) throws Exception{
-            super(name, factory, semaphore);
-            this.connectMethod = connectMethod;
-            events = Collections.synchronizedList(new LinkedList<Object>());
-            if (connectMethod == CONNECT_ONLY
-					|| connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
-				channel.connect("test");
-
-			if (connectMethod == CONNECT_AND_GET_STATE) {
-				channel.connect("test", null, null, 25000);
-			}
-        }
+        }        
 
         public void clear() {
             events.clear();

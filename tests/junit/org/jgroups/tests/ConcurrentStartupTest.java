@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.31 2007/11/03 02:40:08 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32 2007/11/09 01:59:40 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -83,26 +83,13 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             // Create activation threads that will block on the semaphore
             for(int i = 0;i < count;i++){
                 if(largeState){
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentStartupChannelWithLargeState(names[i],
-                                                                                 muxFactory[i % getMuxFactoryCount()],
-                                                                                 semaphore);
-                    }else{
-                        channels[i] = new ConcurrentStartupChannelWithLargeState(semaphore,
-                                                                                 names[i],
-                                                                                 useDispatcher);
-                    }
+                    channels[i] = new ConcurrentStartupChannelWithLargeState(semaphore,
+                                                                             names[i],
+                                                                             useDispatcher);                    
                 }else{
-
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentStartupChannel(names[i],
-                                                                   muxFactory[i % getMuxFactoryCount()],
-                                                                   semaphore);
-                    }else{
-                        channels[i] = new ConcurrentStartupChannel(names[i],
-                                                                   semaphore,
-                                                                   useDispatcher);
-                    }
+                    channels[i] = new ConcurrentStartupChannel(names[i],
+                                                               semaphore,
+                                                               useDispatcher);                    
                 }
 
                 // Release one ticket at a time to allow the thread to start
@@ -193,13 +180,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                                                       boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
-
-        public ConcurrentStartupChannelWithLargeState(String name,
-                                                      JChannelFactory f,
-                                                      Semaphore semaphore) throws Exception{
-            super(name, f, semaphore);
-        }
-
+      
         public void setState(byte[] state) {
             Util.sleep(TRANSFER_TIME);
             super.setState(state);
@@ -228,11 +209,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         int modCount = 1;
 
-        final Map mods = new TreeMap();
-
-        public ConcurrentStartupChannel(String name,JChannelFactory f,Semaphore semaphore) throws Exception{
-            super(name, f, semaphore);
-        }
+        final Map mods = new TreeMap();       
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
