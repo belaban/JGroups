@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.157 2007/11/01 07:39:22 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158 2007/11/09 18:11:05 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -114,8 +114,8 @@ public class JChannel extends Channel {
     private long LOCAL_ADDR_TIMEOUT=30000; //=Long.parseLong(System.getProperty("local_addr.timeout", "30000"));
     /*if the states is fetched automatically, this is the default timeout, 5 secs*/
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
-    /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 10 secs*/
-    private static final long FLUSH_UNBLOCK_TIMEOUT=10000;
+    /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 5 secs*/
+    private static final long FLUSH_UNBLOCK_TIMEOUT=5000;
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
     private boolean receive_blocks=false;
     /*flag to indicate whether to receive local messages
