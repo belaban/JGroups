@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.8 2007/11/08 18:52:59 vlada Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.9 2007/11/09 12:25:17 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -141,7 +141,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         ch2.setReceiver(new SimpleReceiver());
         ch1.send(tmp);
         System.out.println(">>> sent message at " + new Date());
-        Util.sleep(10000);
+        Util.sleep(5000);
     }
 
     private void setLoopback(JChannel ch, boolean b) {
