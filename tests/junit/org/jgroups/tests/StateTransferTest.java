@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.17 2007/11/01 14:13:14 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.18 2007/11/09 01:59:40 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
 	private static final int MSG_SEND_COUNT = 10000;
@@ -52,6 +52,10 @@ public class StateTransferTest extends ChannelTestBase {
 
 		int from = 0, to = MSG_SEND_COUNT;
 		String[] names = createApplicationNames(APP_COUNT);
+		if(isMuxChannelUsed()){
+		    names = createMuxApplicationNames(2, 2);
+		}
+		    
 		for(int i = 0;i < apps.length;i++){
 			apps[i] = new StateTransferApplication(semaphore, names[i], from, to);
 			from += MSG_SEND_COUNT;

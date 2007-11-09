@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.1 2007/10/29 14:56:02 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.2 2007/11/09 01:59:40 vlada Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -80,25 +80,13 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             // Create activation threads that will block on the semaphore
             for(int i = 0;i < count;i++){
                 if(largeState){
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentLargeStateTransfer(names[i],
-                                                                       muxFactory[i % getMuxFactoryCount()],
-                                                                       semaphore);
-                    }else{
-                        channels[i] = new ConcurrentLargeStateTransfer(names[i],
-                                                                       semaphore,
-                                                                       useDispatcher);
-                    }
-                }else{
-                    if(isMuxChannelUsed()){
-                        channels[i] = new ConcurrentStateTransfer(names[i],
-                                                                  muxFactory[i % getMuxFactoryCount()],
-                                                                  semaphore);
-                    }else{
-                        channels[i] = new ConcurrentStateTransfer(names[i],
-                                                                  semaphore,
-                                                                  useDispatcher);
-                    }
+                    channels[i] = new ConcurrentLargeStateTransfer(names[i],
+                                                                   semaphore,
+                                                                   useDispatcher);                                     
+                }else{                   
+                    channels[i] = new ConcurrentStateTransfer(names[i],
+                                                              semaphore,
+                                                              useDispatcher);                   
                 }
 
                 // Start threads and let them join the channel
@@ -193,11 +181,6 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
         public ConcurrentStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
-            channel.connect("test");
-        }
-
-        public ConcurrentStateTransfer(String name,JChannelFactory factory,Semaphore semaphore) throws Exception{
-            super(name, factory, semaphore);
             channel.connect("test");
         }
 
@@ -320,11 +303,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
-
-        public ConcurrentLargeStateTransfer(String name,JChannelFactory factory,Semaphore semaphore) throws Exception{
-            super(name, factory, semaphore);
-        }
-
+        
         public void setState(byte[] state) {
             Util.sleep(TRANSFER_TIME);
             super.setState(state);
