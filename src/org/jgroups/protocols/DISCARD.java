@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.15 2007/07/04 11:12:12 belaban Exp $
+// $Id: DISCARD.java,v 1.16 2007/11/12 11:47:44 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -28,11 +28,12 @@ public class DISCARD extends Protocol {
     final Vector members=new Vector();
     double up=0.0;    // probability of dropping up   msgs
     double down=0.0;  // probability of dropping down msgs
-    boolean excludeItself=false;   //if true don't discard messages sent/received in this stack
+    boolean excludeItself=true;   // if true don't discard messages sent/received in this stack
     Address localAddress;
     int num_down=0, num_up=0;
     
     final Set<Address> ignoredMembers = new HashSet<Address>();
+    boolean discard_all=false;
 
 
     /**
@@ -42,6 +43,14 @@ public class DISCARD extends Protocol {
         return "DISCARD";
     }
 
+
+    public boolean isDiscardAll() {
+        return discard_all;
+    }
+
+    public void setDiscardAll(boolean discard_all) {
+        this.discard_all=discard_all;
+    }
 
     public boolean setProperties(Properties props) {
         String str;
@@ -65,7 +74,6 @@ public class DISCARD extends Protocol {
             props.remove("excludeitself");
         }
 
-
         if(!props.isEmpty()) {
             log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
             return false;
@@ -87,6 +95,8 @@ public class DISCARD extends Protocol {
         if(evt.getType() == Event.SET_LOCAL_ADDRESS)
             localAddress=(Address)evt.getArg();
 
+        if(discard_all)
+            return null;
 
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
@@ -135,6 +145,9 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
+        if(discard_all)
+            return null;
+
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
 
@@ -172,8 +185,9 @@ public class DISCARD extends Protocol {
     public static class DiscardHeader extends Header implements Streamable {
 
 		private final Set<Address> dropMessages;
+        private static final long serialVersionUID=-2149735838082082084L;
 
-		public DiscardHeader() {
+        public DiscardHeader() {
 			this.dropMessages= new HashSet<Address>();
 		}
 
