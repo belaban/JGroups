@@ -4,14 +4,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -21,18 +16,13 @@ import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.BlockEvent;
 import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.Event;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.GetStateEvent;
 import org.jgroups.JChannel;
-import org.jgroups.JChannelFactory;
 import org.jgroups.Message;
 import org.jgroups.SetStateEvent;
 import org.jgroups.UnblockEvent;
 import org.jgroups.View;
-import org.jgroups.mux.MuxChannel;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 /**
@@ -40,7 +30,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58 2007/11/09 01:59:40 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.59 2007/11/12 16:25:02 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -108,8 +98,9 @@ public class FlushTest extends ChannelTestBase {
 
     /**
      * Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335
+     * @throws Exception 
      */
-    public void testJoinFollowedByUnicast() throws ChannelException {
+    public void testJoinFollowedByUnicast() throws Exception {
         c1 = createChannel();
         c1.setReceiver(new SimpleReplier(c1, true));
         c1.connect("test");
@@ -128,8 +119,9 @@ public class FlushTest extends ChannelTestBase {
 
     /**
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
+     * @throws Exception 
      */
-    public void testStateTransferFollowedByUnicast() throws ChannelException {
+    public void testStateTransferFollowedByUnicast() throws Exception {
         c1 = createChannel();
         c1.setReceiver(new SimpleReplier(c1, true));
         c1.connect("test");
@@ -159,10 +151,10 @@ public class FlushTest extends ChannelTestBase {
         if(isMuxChannelUsed()){
             int muxFactoryCount = 2;
             names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
         }else{
             names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_ONLY, 4);
+            _testChannels(names, FlushTestReceiver.CONNECT_ONLY);
         }
     }
 
@@ -178,7 +170,7 @@ public class FlushTest extends ChannelTestBase {
         int muxFactoryCount = 1;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(4, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(1));
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
         }
     }
 
@@ -195,7 +187,7 @@ public class FlushTest extends ChannelTestBase {
         int muxFactoryCount = 2;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(2, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY, new ChannelAssertable(2));
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
         }
     }
 
@@ -211,10 +203,10 @@ public class FlushTest extends ChannelTestBase {
         if(isMuxChannelUsed()){
             int muxFactoryCount = 2;
             names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
         }else{
             names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 4);
+            _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
         }
     }
     
@@ -230,10 +222,10 @@ public class FlushTest extends ChannelTestBase {
         if(isMuxChannelUsed()){
             int muxFactoryCount = 2;
             names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_GET_STATE, muxFactoryCount);
+            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_GET_STATE);
         }else{
             names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE, 4);
+            _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
         }
     }
 
@@ -248,14 +240,15 @@ public class FlushTest extends ChannelTestBase {
         String[] names = null;
         if(isMuxChannelUsed()){
             names = createMuxApplicationNames(2, 2);
-            _testChannels(names, 2, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE, 2);
+            _testChannels(names, 2, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
         }
     }
 
-    private void _testChannels(String names[],
-                               int muxFactoryCount,
-                               int connectType,
-                               Assertable a) {
+    private void _testChannels(String names[], int connectType){
+        _testChannels(names, getMuxFactoryCount(),connectType);
+        
+    }
+    private void _testChannels(String names[],int muxFactoryCount, int connectType) {
         int count = names.length;
 
         ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
@@ -266,8 +259,8 @@ public class FlushTest extends ChannelTestBase {
 
             // Create channels and their threads that will block on the
             // semaphore
-            for(int i = 0;i < count;i++){
-                FlushTestReceiver channel = new FlushTestReceiver(names[i], semaphore, 0, connectType);                
+            for(String channelName:names){
+                FlushTestReceiver channel = new FlushTestReceiver(channelName, semaphore, 0, connectType);                
                 channels.add(channel);
 
                 // Release one ticket at a time to allow the thread to start
@@ -281,38 +274,14 @@ public class FlushTest extends ChannelTestBase {
                 blockUntilViewsReceived(channels, muxFactoryCount, 10000);
             }else{
                 blockUntilViewsReceived(channels, 10000);
-            }
-
-            // if state transfer is used release all at once
-            // clear all channels of view events
-            if(connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE){
-                for(FlushTestReceiver app:channels){
-                    app.clear();
-                }
-                semaphore.release(count);
-            }
-
+            }          
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(1000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
-            semaphore.tryAcquire(count, 60, TimeUnit.SECONDS);
-
-            // do general asserts about channels
-            a.verify(channels);
-
-            // kill random member
-            FlushTestReceiver randomRecv = channels.remove(RANDOM.nextInt(count));
-            log.info("Closing random member " + randomRecv.getName()
-                     + " at "
-                     + randomRecv.getLocalAddress());
-            ChannelCloseAssertable closeAssert = new ChannelCloseAssertable(randomRecv);
-            randomRecv.cleanup();
-
-            // let the view propagate and verify related asserts
-            Util.sleep(5000);
-            closeAssert.verify(channels);                     
+            semaphore.tryAcquire(count, 40, TimeUnit.SECONDS);
+                      
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail("Exception encountered during test execution: " + ex);
@@ -334,117 +303,7 @@ public class FlushTest extends ChannelTestBase {
                 }
             }
         }
-    }
-
-    public void _testChannels(String names[], int connectMethod, int viewSize) {
-        _testChannels(names, getMuxFactoryCount(), connectMethod, new ChannelAssertable(viewSize));
-    }
-
-    public void _testChannels(String names[], int muxFactoryCount, int connectMethod, int viewSize) {
-        _testChannels(names, muxFactoryCount, connectMethod, new ChannelAssertable(viewSize));
-    }
-
-    private class ChannelCloseAssertable implements Assertable {
-        ChannelApplication app;
-
-        View viewBeforeClose;
-
-        Address appAddress;
-
-        String muxId;
-
-        public ChannelCloseAssertable(ChannelApplication app){
-            this.app = app;
-            this.viewBeforeClose = app.getChannel().getView();
-            appAddress = app.getChannel().getLocalAddress();
-            if(app.isUsingMuxChannel()){
-                MuxChannel mch = (MuxChannel) app.getChannel();
-                muxId = mch.getId();
-            }
-        }
-
-        public void verify(Object verifiable) {
-            Collection channels = (Collection) verifiable;
-            Channel ch = app.getChannel();
-            assertFalse("Channel open", ch.isOpen());
-            assertFalse("Chnanel connected", ch.isConnected());
-
-            // if this channel had more than one member then verify that
-            // the other member does not have departed member in its view
-            if(viewBeforeClose.getMembers().size() > 1){
-                for(Iterator iter = channels.iterator();iter.hasNext();){
-                    FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-                    Channel channel = receiver.getChannel();
-                    boolean pairServiceFound = (receiver.isUsingMuxChannel() && muxId.equals(((MuxChannel) channel).getId()));
-                    if(pairServiceFound || !receiver.isUsingMuxChannel()){
-                        assertTrue("Removed from view, address " + appAddress
-                                   + " view is "
-                                   + channel.getView(), !channel.getView()
-                                                                .getMembers()
-                                                                .contains(appAddress));
-                    }
-                }
-            }
-        }
-    }
-
-    private class ChannelAssertable implements Assertable {
-        int expectedViewSize = 0;
-
-        public ChannelAssertable(int expectedViewSize){
-            this.expectedViewSize = expectedViewSize;
-        }
-
-        public void verify(Object verifiable) {
-            Collection channels = (Collection) verifiable;
-            for(Iterator iter = channels.iterator();iter.hasNext();){
-                FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-                Channel ch = receiver.getChannel();
-                assertEquals("Correct view", ch.getView().getMembers().size(), expectedViewSize);
-                assertTrue("Channel open", ch.isOpen());
-                assertTrue("Chnanel connected", ch.isConnected());
-                assertNotNull("Valid address ", ch.getLocalAddress());
-                assertTrue("Address included in view ", ch.getView()
-                                                          .getMembers()
-                                                          .contains(ch.getLocalAddress()));
-                assertNotNull("Valid cluster name ", ch.getClusterName());
-            }
-
-            // verify views for pair services created on top of different "real"
-            // channels
-            if(expectedViewSize > 1 && isMuxChannelUsed()){
-                for(Iterator iter = channels.iterator();iter.hasNext();){
-                    FlushTestReceiver receiver = (FlushTestReceiver) iter.next();
-                    MuxChannel ch = (MuxChannel) receiver.getChannel();
-                    int servicePairs = 1;
-                    for(Iterator it = channels.iterator();it.hasNext();){
-                        FlushTestReceiver receiver2 = (FlushTestReceiver) it.next();
-                        MuxChannel ch2 = (MuxChannel) receiver2.getChannel();
-                        if(ch.getId().equals(ch2.getId()) && !ch.getLocalAddress()
-                                                                .equals(ch2.getLocalAddress())){
-                            assertEquals("Correct view for service pair",
-                                         ch.getView(),
-                                         ch2.getView());
-                            assertTrue("Presence in view", ch.getView()
-                                                             .getMembers()
-                                                             .contains(ch.getLocalAddress()));
-                            assertTrue("Presence in view", ch.getView()
-                                                             .getMembers()
-                                                             .contains(ch2.getLocalAddress()));
-                            assertTrue("Presence in view", ch2.getView()
-                                                              .getMembers()
-                                                              .contains(ch2.getLocalAddress()));
-                            assertTrue("Presence in view", ch2.getView()
-                                                              .getMembers()
-                                                              .contains(ch.getLocalAddress()));
-                            servicePairs++;
-                        }
-                    }
-                    assertEquals("Correct service count", expectedViewSize, servicePairs);
-                }
-            }
-        }
-    }
+    }  
 
     private void checkEventSequence(FlushTestReceiver receiver, boolean isMuxUsed) {
         List<Object> events = receiver.getEvents();
@@ -553,30 +412,7 @@ public class FlushTest extends ChannelTestBase {
             }
 
         }        
-    }
-
-    protected JChannel createChannel() throws ChannelException {
-        JChannel ret = new JChannel(CHANNEL_CONFIG);
-        ret.setOpt(Channel.BLOCK, Boolean.TRUE);
-        Protocol flush = ret.getProtocolStack().findProtocol("FLUSH");
-        if(flush != null){
-            Properties p = new Properties();
-            p.setProperty("timeout", "0");
-            flush.setProperties(p);
-
-            // send timeout up and down the stack, so other protocols can use
-            // the same value too
-            Map<String, Object> map = new HashMap<String, Object>();
-            map.put("flush_timeout", new Long(0));
-            flush.getUpProtocol().up(new Event(Event.CONFIG, map));
-            flush.getDownProtocol().down(new Event(Event.CONFIG, map));
-        }
-        return ret;
-    }
-
-    private interface Assertable {
-        public void verify(Object verifiable);
-    }
+    }   
 
     private class FlushTestReceiver extends PushChannelApplicationWithSemaphore {
         List<Object> events;
