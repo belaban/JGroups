@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.16 2007/11/12 11:47:44 belaban Exp $
+// $Id: DISCARD.java,v 1.17 2007/11/12 13:52:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -10,11 +10,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.ObjectInput;
-import java.io.ObjectOutput;
+import java.io.*;
 import java.util.*;
 
 
@@ -88,6 +84,10 @@ public class DISCARD extends Protocol {
     public void resetIgnoredMembers() {ignoredMembers.clear();}
 
 
+    public void start() throws Exception {
+        super.start();
+    }
+
     public Object up(Event evt) {
         Message msg;
         double r;
@@ -95,12 +95,15 @@ public class DISCARD extends Protocol {
         if(evt.getType() == Event.SET_LOCAL_ADDRESS)
             localAddress=(Address)evt.getArg();
 
-        if(discard_all)
-            return null;
-
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
             Address sender=msg.getSrc();
+
+            if(discard_all && !sender.equals(localAddress)) {
+                // System.out.println("[" + localAddress + "] up(): dropping message " + msg + ", hdrs:\n" + msg.getHeaders());
+                return null;
+            }
+
             DiscardHeader dh = (DiscardHeader) msg.getHeader(getName());
 			if (dh != null) {
 				ignoredMembers.clear();
@@ -145,11 +148,20 @@ public class DISCARD extends Protocol {
         Message msg;
         double r;
 
-        if(discard_all)
-            return null;
-
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
+            Address dest=msg.getDest();
+
+            if(msg.getSrc() == null)
+                msg.setSrc(localAddress);
+
+            if(discard_all) {
+                if(dest == null || dest.isMulticastAddress() || dest.equals(localAddress)) {
+                    //System.out.println("[" + localAddress + "] down(): looping back " + msg + ", hdrs:\n" + msg.getHeaders());
+                    loopback(msg);
+                }
+                return null;
+            }
 
             if(down > 0) {
                 r=Math.random();
@@ -170,13 +182,27 @@ public class DISCARD extends Protocol {
         return down_prot.down(evt);
     }
 
+    private void loopback(Message msg) {
+        final Message rsp=msg.copy(true);
+        if(rsp.getSrc() == null)
+            rsp.setSrc(localAddress);
+
+        // pretty inefficient: creates one thread per message, okay for testing only
+        Thread thread=new Thread(new Runnable() {
+            public void run() {
+                up_prot.up(new Event(Event.MSG, rsp));
+            }
+        });
+        thread.start();
+    }
+
     public void resetStats() {
         super.resetStats();
         num_down=num_up=0;
     }
 
-    public Map dumpStats() {
-        Map m=new HashMap(2);
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> m=new HashMap<String,Object>(2);
         m.put("num_dropped_down", new Integer(num_down));
         m.put("num_dropped_up", new Integer(num_up));
         return m;
@@ -219,7 +245,7 @@ public class DISCARD extends Protocol {
 		}
 
 		public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-			Set tmp = (Set) in.readObject();
+			Set<Address> tmp = (Set<Address>) in.readObject();
 			dropMessages.clear();
 			dropMessages.addAll(tmp);
 		}
