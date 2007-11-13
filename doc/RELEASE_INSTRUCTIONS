@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.16 2007/10/30 07:14:10 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.16.2.1 2007/11/13 07:41:26 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -28,7 +28,7 @@ Release:
   specifically the links to manual and tutorial documentation  
   - see JGroups/bin/upload_manual.sh
 - Create javadoc: ./build.sh javadoc and upload to web site
-  - use process similar to pdf and html
+  - use process similar to pdf and html (script is bin/upload_javadocs.sh)
 - Add new release to ant repository http://repository.jboss.org
   - the jar to release is dist/jgroups-all.jar, renamed to jgroups.jar
   (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=JBossBuild)
