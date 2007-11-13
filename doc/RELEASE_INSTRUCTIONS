@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.17 2007/11/13 07:41:48 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.18 2007/11/13 08:29:20 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -13,7 +13,7 @@ Pre-release:
 
 Release:
 - Update the ReleaseNotes-xxx.txt for the given release
-- Set version in: Version.java, manifest.mf and build.xml
+- Set version in: Version.java, manifest.mf, build.xml and jgroups-pom.xml
 - Create a CVS tag: JGroups_x_y_z
 - Add tag information to wiki: http://wiki.jboss.org/wiki/Wiki.jsp?page=Branches
 - Create a distribution: ./build.sh dist
