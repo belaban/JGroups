@@ -243,6 +243,7 @@ public class ChannelTestBase extends TestCase {
         public Channel createChannel(Object id) throws Exception {
             JChannel c = null;
             if (isMuxChannelUsed()) {
+                log.info("Using configuration file " + MUX_CHANNEL_CONFIG + ", stack is " + MUX_CHANNEL_CONFIG_STACK_NAME);
                 for (int i = 0; i < muxFactory.length; i++) {
                     if (!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString())) {
                         c = (JChannel) muxFactory[i].createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
