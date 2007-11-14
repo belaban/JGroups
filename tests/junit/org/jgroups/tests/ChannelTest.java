@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
+// $Id: ChannelTest.java,v 1.11 2007/11/14 07:58:56 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.11 2007/11/14 07:58:56 belaban Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -299,7 +299,7 @@ public class ChannelTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             connected=channel.isConnected();
-            System.out.println("ConnectedChecker: channel.isConnected()=" + channel.isConnected() + ", view=" + new_view);
+            System.out.println("ConnectedChecker: channel.isConnected()=" + connected + ", view=" + new_view);
         }
     }
 
