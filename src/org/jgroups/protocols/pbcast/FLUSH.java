@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Flush, as it name implies, forces group members to flush their pending
@@ -91,12 +92,8 @@ public class FLUSH extends Protocol {
     private long start_flush_timeout = 6000;
 
     private boolean enable_reconciliation = true;
-
-    @GuardedBy("sharedLock")
-    private boolean receivedFirstView = false;
-
-    @GuardedBy("sharedLock")
-    private boolean receivedMoreThanOneView = false;
+    
+    private final AtomicInteger viewCounter = new AtomicInteger(0);   
     
     private volatile boolean allowMessagesToPassUp = false;
 
@@ -155,10 +152,7 @@ public class FLUSH extends Protocol {
         up_prot.up(new Event(Event.CONFIG, map));
         down_prot.down(new Event(Event.CONFIG, map));
 
-        synchronized(sharedLock){
-            receivedFirstView = false;
-            receivedMoreThanOneView = false;
-        }
+        viewCounter.set(0);       
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
@@ -367,22 +361,17 @@ public class FLUSH extends Protocol {
              * block/unblock/view events in applications (TCP stack only)
              *                          
              */
-            up_prot.up(evt);
+            up_prot.up(evt);            
             View newView = (View) evt.getArg();
-            boolean firstView = onViewChange(newView);
+            boolean coordinatorLeft = onViewChange(newView);
             boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
+            boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
             // if this is channel's first view and its the only member of the group - no flush was run
             // but the channel application should still receive BLOCK,VIEW,UNBLOCK 
-            if(firstView && singletonMember){                
-                synchronized(blockMutex){
-                    isBlockingFlushDown = false;
-                    blockMutex.notifyAll();
-                }
-                if(log.isDebugEnabled())
-                    log.debug("At " + localAddress
-                              + " unblocking FLUSH.down() and sending UNBLOCK up");
-                allowMessagesToPassUp = true;
-                up_prot.up(new Event(Event.UNBLOCK));                
+            
+            //also if coordinator of flush left each member should run stopFlush individually.
+            if((isThisOurFirstView && singletonMember) || coordinatorLeft){                
+                onStopFlush();              
             }
             return null;            
 
@@ -481,9 +470,8 @@ public class FLUSH extends Protocol {
                     coordinator = flushRequester;       
             }
         }
-        if(proceed){
-            sendBlockUpToChannel();
-            onStartFlush(flushRequester, fh);
+        if(proceed){          
+            onStartFlush(false,flushRequester, fh);
         } else{           
             if(flushRequester.compareTo(coordinator) < 0){
                 rejectFlush(fh.viewID, coordinator);
@@ -494,7 +482,7 @@ public class FLUSH extends Protocol {
                               + " and switching flush coordinator to "
                               + flushRequester);
                 }              
-                onStartFlush(flushRequester, fh);
+                onStartFlush(true,flushRequester, fh);
             }else if(flushRequester.compareTo(coordinator) > 0){
                 rejectFlush(fh.viewID, flushRequester);
                 if(log.isDebugEnabled()){
@@ -503,8 +491,7 @@ public class FLUSH extends Protocol {
                               + flushRequester
                               + " coordinator is "
                               + coordinator);
-                }
-                onStartFlush(coordinator, fh);
+                }                
             }else if(flushRequester.equals(coordinator)){
                 rejectFlush(fh.viewID, flushRequester);
                 if(log.isDebugEnabled()){
@@ -546,41 +533,17 @@ public class FLUSH extends Protocol {
         return viewId;
     }
 
-    private boolean onViewChange(View view) {
-        boolean amINewCoordinator = false;
-        boolean isThisOurFirstView = false;
-        synchronized(sharedLock){
-            if(receivedFirstView){
-                receivedMoreThanOneView = true;
-            }
-            if(!receivedFirstView){
-                receivedFirstView = true;
-            }
-            isThisOurFirstView = !receivedMoreThanOneView;
+    private boolean onViewChange(View view) {        
+        boolean coordinatorLeft = false;
+        synchronized(sharedLock){            
             suspected.retainAll(view.getMembers());
             currentView = view;
-            boolean coordinatorLeft = flushCoordinator != null && !view.containsMember(flushCoordinator);
-
-            if(coordinatorLeft){
-                flushCoordinator = view.getMembers().get(0);
-                amINewCoordinator = localAddress.equals(flushCoordinator);
-            }
-        }
-
-        // If coordinator leaves, its STOP FLUSH message will be discarded by
-        // other members at NAKACK layer. Remaining members will be hung,
-        // waiting for STOP_FLUSH message. If I am new coordinator I will complete the
-        // FLUSH and send STOP_FLUSH on flush callers behalf.
-        if(amINewCoordinator){
-            if(log.isDebugEnabled())
-                log.debug("Coordinator left, " + localAddress + " will complete flush");
-            onResume();
-        }
-
+            coordinatorLeft = flushCoordinator != null && !view.containsMember(flushCoordinator);            
+        }      
         if(log.isDebugEnabled())
             log.debug("Installing view at  " + localAddress + " view is " + view);
 
-        return isThisOurFirstView;
+        return coordinatorLeft;
     }
 
     private void onStopFlush() {        
@@ -656,7 +619,7 @@ public class FLUSH extends Protocol {
             log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
     }
 
-    private void onStartFlush(Address flushStarter, FlushHeader fh) {             
+    private void onStartFlush(boolean switchedflushCoordinator, Address flushStarter, FlushHeader fh) {             
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }       
@@ -674,6 +637,16 @@ public class FLUSH extends Protocol {
             flushMembers.removeAll(suspected);
             amIParticipant = flushMembers.contains(localAddress);
         }
+        
+        if(amIParticipant && !switchedflushCoordinator){
+            //ensures that we do not repeat block event
+            //and that we do not send block event to non participants
+            sendBlockUpToChannel();
+        }
+        else{
+            if(log.isDebugEnabled())
+                log.debug("Received START_FLUSH at " + localAddress + " but not sending UNBLOCK up");
+        }
         if(amIParticipant){                      
             
             Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
@@ -685,6 +658,10 @@ public class FLUSH extends Protocol {
             down_prot.down(new Event(Event.MSG, msg));
             if(log.isDebugEnabled())
                 log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+        }
+        else{
+            if(log.isDebugEnabled())
+                log.debug("Received START_FLUSH at " + localAddress + " but I am not participant, not responding");
         }
     }
     

@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85 2007/11/07 21:46:23 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.86 2007/11/15 19:39:48 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -424,9 +424,17 @@ public class Multiplexer implements UpHandler {
             passToMuxChannel(ch, evt, fifo_queue, null, service_name, block, bypass_thread_pool);
         }
     }
+    
+    public void addServiceIfNotPresent(String id, MuxChannel ch) {
+        services.putIfAbsent(id, ch);
+    }
 
-    public MuxChannel remove(String id) {
-        return services.remove(id);
+    protected MuxChannel removeService(String id) {
+        MuxChannel ch = services.remove(id);
+        //http://jira.jboss.com/jira/browse/JGRP-623
+        if (ch != null)
+            ch.up(new Event(Event.UNBLOCK));
+        return ch;      
     }
 
 
@@ -446,11 +454,6 @@ public class Multiplexer implements UpHandler {
             }
             channel.disconnect();
         }
-    }
-
-
-    public void unregister(String appl_id) {
-        services.remove(appl_id);
     }
 
     public boolean close() {
@@ -792,9 +795,10 @@ public class Multiplexer implements UpHandler {
             }
         }
 
-        Address local_address=getLocalAddress();
-        if(local_address != null && host != null && host.equals(local_address))
-            unregister(service);
+        Address local_address = getLocalAddress();
+        boolean isMyService = local_address != null && local_address.equals(host);
+        if (isMyService)
+            removeService(service);        
     }
 
 
@@ -925,6 +929,7 @@ public class Multiplexer implements UpHandler {
 
     private void adjustServiceView(Address host) {
 
+        Address local_address = getLocalAddress();
         synchronized(service_state){
             for(Iterator<Map.Entry<String, List<Address>>> it = service_state.entrySet().iterator();it.hasNext();){
                 Map.Entry<String, List<Address>> entry = it.next();
@@ -947,10 +952,10 @@ public class Multiplexer implements UpHandler {
                                       + " not found, cannot dispatch service view "
                                       + service_view);
                     }
-                }
-                Address local_address = getLocalAddress();
-                if(local_address != null && host != null && host.equals(local_address))
-                    unregister(service);
+                }                
+                boolean isMyService = local_address != null && local_address.equals(host);
+                if (isMyService)
+                    removeService(service);
             }
         }
     }
@@ -1010,10 +1015,6 @@ public class Multiplexer implements UpHandler {
             Thread.currentThread().interrupt();
         }
         return null;
-    }
-
-    public void addServiceIfNotPresent(String id, MuxChannel ch) {
-        services.putIfAbsent(id, ch);
     }
 
 

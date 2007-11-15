@@ -30,7 +30,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.59 2007/11/12 16:25:02 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.60 2007/11/15 19:39:49 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -314,6 +314,9 @@ public class FlushTest extends ChannelTestBase {
                              + events;
         log.info(eventString);        
         assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
         int size = events.size();
         for(int i = 0;i < size;i++){
             Object event = events.get(i);
@@ -369,6 +372,9 @@ public class FlushTest extends ChannelTestBase {
         String eventString = "[" + receiver.getName() + ",events:" + events;
         log.info(eventString);        
         assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
         int size = events.size();
         for(int i = 0;i < size;i++){
             Object event = events.get(i);
