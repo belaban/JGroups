@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38 2007/10/23 15:42:39 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.39 2007/11/15 19:40:45 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -55,7 +55,7 @@ public class MuxChannel extends JChannel {
     private final Multiplexer mux;
 
 
-    public MuxChannel(String id, String stack_name, Multiplexer mux) {
+    MuxChannel(String id, String stack_name, Multiplexer mux) {
         super(false); // don't create protocol stack, queues and threads               
         this.stack_name=stack_name;
         this.id=id;
@@ -149,7 +149,7 @@ public class MuxChannel extends JChannel {
             if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
             return;
         }
-        
+        //add service --> MuxChannel mapping to multiplexer in case we called disconnect on this channel       
         mux.addServiceIfNotPresent(getId(), this);
         if (!mux.isConnected()) {
             mux.connect(getStackName());
@@ -184,7 +184,7 @@ public class MuxChannel extends JChannel {
             if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
             return;
         }
-        
+        //add service --> MuxChannel mapping to multiplexer in case we called disconnect on this channel
         mux.addServiceIfNotPresent(getId(), this);
         if (!mux.isConnected()) {
             mux.connect(getStackName());
