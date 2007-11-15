@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.125 2007/11/15 19:42:57 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.126 2007/11/15 20:19:21 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -502,6 +502,7 @@
     		<param name="channel.conf" value="udp.xml"/>
     		<param name="channel.conf.flush" value="flush-udp.xml"/>
     		<param name="test.verbose" value="false"/>
+    		<param name="testname.ext" value="udp"/>
     		<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -511,6 +512,7 @@
         	<param name="channel.conf" value="tcp.xml"/>
         	<param name="channel.conf.flush" value="flush-tcp.xml"/>
         	<param name="test.verbose" value="false"/>
+        	<param name="testname.ext" value="tcp"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -519,6 +521,7 @@
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="udp"/>
             <param name="test.verbose" value="false"/>
+            <param name="testname.ext" value="mux-udp"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -527,6 +530,7 @@
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="tcp"/>
 			<param name="test.verbose" value="false"/>
+			<param name="testname.ext" value="mux-tcp"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     </target>
