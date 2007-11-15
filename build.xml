@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.124 2007/11/13 08:29:20 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.125 2007/11/15 19:42:57 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -53,7 +53,8 @@
     <!-- patternsets used to define test sets -->
     <patternset id="flush.tests">
         <include name="org/jgroups/tests/FlushTest*"/>
-        <include name="org/jgroups/tests/ConcurrentStartupTest*"/>
+        <include name="org/jgroups/tests/ConcurrentStartup**"/>
+    	<include name="org/jgroups/tests/ConcurrentState**"/>
     </patternset>
 
     <patternset id="mux.tests">
@@ -478,8 +479,58 @@
             formatter.class=${formatter.class}
         </testrunner-functional>
     </target>
-
-
+	
+	
+	
+	
+	
+	<!--
+          Runs flush tests in various channel modes
+                    
+	     -->
+    <target name="all-flush-tests" depends="makeKeystore"
+            description="Runs flush tests in various channel modes">
+    	
+        <get usetimestamp="true"
+             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
+             dest="${lib.dir}/jboss-test.jar"/>
+             	
+    	<antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="false"/>
+            <param name="mux.conf.stack" value="udp"/>
+    		<param name="channel.conf" value="udp.xml"/>
+    		<param name="channel.conf.flush" value="flush-udp.xml"/>
+    		<param name="test.verbose" value="false"/>
+    		<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="false"/>
+        	<param name="channel.conf" value="tcp.xml"/>
+        	<param name="channel.conf.flush" value="flush-tcp.xml"/>
+        	<param name="test.verbose" value="false"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp"/>
+            <param name="test.verbose" value="false"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="tcp"/>
+			<param name="test.verbose" value="false"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    </target>
+	
     <!--
               Runs entire testsuite for nightly Cruise Control builds.
      -->
