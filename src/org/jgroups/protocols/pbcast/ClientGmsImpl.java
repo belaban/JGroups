@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.56 2007/09/18 15:08:32 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.57 2007/11/16 14:35:46 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.56 $
+ * @version $Revision: 1.57 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -65,7 +65,7 @@ public class ClientGmsImpl extends GmsImpl {
      * @param mbr Our own address (assigned through SET_LOCAL_ADDRESS)
      */
     private void join(Address mbr, boolean joinWithStateTransfer) {
-        Address coord;
+        Address coord=null;
         JoinRsp rsp;
         View tmp_view;
         leaving=false;
@@ -73,69 +73,69 @@ public class ClientGmsImpl extends GmsImpl {
         join_promise.reset();
         while(!leaving) {
             List<PingRsp> responses=findInitialMembers();
-            if(log.isDebugEnabled())
-                log.debug("initial_mbrs are " + responses);
-            if(responses.isEmpty()) {
-                if(gms.disable_initial_coord) {
+            if(responses != null) { // null responses means that the discovery was cancelled
+                if(log.isDebugEnabled())
+                    log.debug("initial_mbrs are " + responses);
+                if(responses.isEmpty()) {
+                    if(gms.disable_initial_coord) {
+                        if(log.isTraceEnabled())
+                            log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
+                        continue;
+                    }
+                    if(log.isDebugEnabled())
+                        log.debug("no initial members discovered: creating group as first member");
+                    becomeSingletonMember(mbr);
+                    return;
+                }
+
+                coord=determineCoord(responses);
+                if(coord == null) { // e.g. because we have all clients only
+                    if(gms.handle_concurrent_startup == false) {
+                        if(log.isTraceEnabled())
+                            log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
+                        becomeSingletonMember(mbr);
+                        return;
+                    }
+
                     if(log.isTraceEnabled())
-                        log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
+                        log.trace("could not determine coordinator from responses " + responses);
+
+                    // so the member to become singleton member (and thus coord) is the first of all clients
+                    Set<Address> clients=new TreeSet<Address>(); // sorted
+                    clients.add(mbr); // add myself again (was removed by findInitialMembers())
+                    for(PingRsp response: responses) {
+                        Address client_addr=response.getAddress();
+                        if(client_addr != null)
+                            clients.add(client_addr);
+                    }
+                    if(log.isTraceEnabled())
+                        log.trace("clients to choose new coord from are: " + clients);
+                    Address new_coord=clients.iterator().next();
+                    if(new_coord.equals(mbr)) {
+                        if(log.isTraceEnabled())
+                            log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
+                        becomeSingletonMember(mbr);
+                        return;
+                    }
+                    else {
+                        if(log.isTraceEnabled())
+                            log.trace("I (" + mbr
+                                    + ") am not the first of the clients, waiting for another client to become coordinator");
+                        Util.sleep(500);
+                    }
                     continue;
                 }
-                if(log.isDebugEnabled())
-                    log.debug("no initial members discovered: creating group as first member");
-                becomeSingletonMember(mbr);
-                return;
-            }
 
-            coord=determineCoord(responses);
-            if(coord == null) { // e.g. because we have all clients only
-                if(gms.handle_concurrent_startup == false) {
-                    if(log.isTraceEnabled())
-                        log.trace("handle_concurrent_startup is false; ignoring responses of initial clients");
-                    becomeSingletonMember(mbr);
-                    return;
-                }
-
-                if(log.isTraceEnabled())
-                    log.trace("could not determine coordinator from responses " + responses);
-
-                // so the member to become singleton member (and thus coord) is
-                // the first of all clients
-                Set<Address> clients=new TreeSet<Address>(); // sorted
-                clients.add(mbr); // add myself again (was removed by
-                // findInitialMembers())
-                for(PingRsp response: responses) {
-                    Address client_addr=response.getAddress();
-                    if(client_addr != null)
-                        clients.add(client_addr);
-                }
-                if(log.isTraceEnabled())
-                    log.trace("clients to choose new coord from are: " + clients);
-                Address new_coord=clients.iterator().next();
-                if(new_coord.equals(mbr)) {
-                    if(log.isTraceEnabled())
-                        log.trace("I (" + mbr + ") am the first of the clients, will become coordinator");
-                    becomeSingletonMember(mbr);
-                    return;
-                }
-                else {
-                    if(log.isTraceEnabled())
-                        log.trace("I (" + mbr
-                                + ") am not the first of the clients, waiting for another client to become coordinator");
-                    Util.sleep(500);
-                }
-                continue;
-            }
-
-            try {
                 if(log.isDebugEnabled())
                     log.debug("sending handleJoin(" + mbr + ") to " + coord);
                 sendJoinMessage(coord, mbr, joinWithStateTransfer);
-                rsp=join_promise.getResult(gms.join_timeout);
+            }
 
+            try {
+                rsp=join_promise.getResult(gms.join_timeout);
                 if(rsp == null) {
                     if(log.isWarnEnabled())
-                        log.warn("join(" + mbr + ") sent to " + coord + " timed out, retrying");
+                        log.warn("join(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
                 }
                 else {
                     // 1. check whether JOIN was rejected
@@ -192,17 +192,18 @@ public class ClientGmsImpl extends GmsImpl {
                 if(log.isDebugEnabled())
                     log.debug("exception=" + e + ", retrying");
             }
-
             Util.sleep(gms.join_retry_timeout);
         }
     }
 
     private List<PingRsp> findInitialMembers() {
         List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
-        for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
-            PingRsp response=iter.next();
-            if(response.own_addr != null && response.own_addr.equals(gms.local_addr))
-                iter.remove();
+        if(responses != null) {
+            for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
+                PingRsp response=iter.next();
+                if(response.own_addr != null && response.own_addr.equals(gms.local_addr))
+                    iter.remove();
+            }
         }
         return responses;
     }
@@ -215,6 +216,7 @@ public class ClientGmsImpl extends GmsImpl {
 
     public void handleJoinResponse(JoinRsp join_rsp) {
         join_promise.setResult(join_rsp); // will wake up join() method
+        gms.getDownProtocol().down(new Event(Event.CANCEL_FIND_INITIAL_MBRS));
     }
 
     public void handleLeaveResponse() {
