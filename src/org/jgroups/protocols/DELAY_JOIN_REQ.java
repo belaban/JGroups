@@ -6,12 +6,13 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
+import java.util.Date;
 import java.util.Properties;
 
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.1 2007/11/16 13:40:27 belaban Exp $
+ * @version $Id: DELAY_JOIN_REQ.java,v 1.2 2007/11/16 14:20:46 belaban Exp $
  */
 public class DELAY_JOIN_REQ extends Protocol {
     private long delay=4000;
@@ -38,6 +39,13 @@ public class DELAY_JOIN_REQ extends Protocol {
         return true;
     }
 
+    public long getDelay() {
+        return delay;
+    }
+
+    public void setDelay(long delay) {
+        this.delay=delay;
+    }
 
     public Object up(final Event evt) {
         switch(evt.getType()) {
@@ -48,11 +56,11 @@ public class DELAY_JOIN_REQ extends Protocol {
                     switch(hdr.getType()) {
                         case GMS.GmsHeader.JOIN_REQ:
                         case GMS.GmsHeader.JOIN_REQ_WITH_STATE_TRANSFER:
-                            System.out.println("delaying JOIN-REQ by " + delay + " ms");
+                            System.out.println(new Date() + ": delaying JOIN-REQ by " + delay + " ms");
                             Thread thread=new Thread() {
                                 public void run() {
                                     Util.sleep(delay);
-                                    System.out.println("sending up delayed JOIN-REQ by " + hdr.getMember());
+                                    System.out.println(new Date() + ": sending up delayed JOIN-REQ by " + hdr.getMember());
                                     up_prot.up(evt);
                                 }
                             };
