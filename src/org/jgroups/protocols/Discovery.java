@@ -32,7 +32,7 @@ import java.util.concurrent.locks.Condition;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.33 2007/11/16 11:43:06 belaban Exp $
+ * @version $Id: Discovery.java,v 1.34 2007/11/16 14:35:14 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -199,6 +199,10 @@ public abstract class Discovery extends Protocol {
         }
     }
 
+    private void cancelDiscovery() {
+        myfuture.cancel(true);
+    }
+
 
     public String findInitialMembersAsString() {
     	List<PingRsp> results=findInitialMembers();
@@ -318,6 +322,10 @@ public abstract class Discovery extends Protocol {
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
             return findInitialMembers();
+
+        case Event.CANCEL_FIND_INITIAL_MBRS:
+            cancelDiscovery();
+            return null;
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
@@ -504,7 +512,7 @@ public abstract class Discovery extends Protocol {
         }
 
         private List<PingRsp> _get() {
-            return new LinkedList<PingRsp>(responses);
+            return cancelled? null : new LinkedList<PingRsp>(responses);
         }
     }
 
