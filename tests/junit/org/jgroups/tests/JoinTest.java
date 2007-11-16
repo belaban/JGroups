@@ -1,26 +1,26 @@
 package org.jgroups.tests;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
+import org.jgroups.protocols.DELAY_JOIN_REQ;
+import org.jgroups.protocols.Discovery;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
 
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.9 2007/07/04 08:31:42 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.10 2007/11/16 14:22:08 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
-    Channel c1, c2;
+    JChannel c1, c2;
 
     public JoinTest(String name) {
         super(name);
@@ -101,6 +101,50 @@ public class JoinTest extends ChannelTestBase {
         assertTrue(c2_list.contains("message-1"));
         assertTrue(c1_list.contains("message-2"));
         assertTrue(c2_list.contains("message-2"));
+    }
+
+
+    /**
+     * Tests the case where we send a JOIN-REQ, but get back a JOIN-RSP after GMS.join_timeout, so we've already
+     * started another discovery. Tests whether the discovery process is cancelled correctly.
+     * http://jira.jboss.com/jira/browse/JGRP-621
+     */
+    public void testDelayedJoinResponse() throws Exception {
+        c1.connect("x");
+        final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
+        final long DISCOVERY_TIMEOUT=5000;
+        final long TOLERANCE=1000;
+
+        ProtocolStack stack=c2.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol("GMS");
+        if(gms != null)
+            gms.setJoinTimeout(JOIN_TIMEOUT);
+
+        Discovery discovery=(Discovery)stack.findProtocol("PING");
+        if(discovery == null)
+            discovery=(Discovery)stack.findProtocol("TCPPING");
+        if(discovery == null)
+            discovery=(Discovery)stack.findProtocol("MPING");
+        if(discovery == null)
+            discovery=(Discovery)stack.findProtocol("TCPGOSSIP");
+        if(discovery != null) {
+            discovery.setNumInitialMembers(10);
+            discovery.setTimeout(DISCOVERY_TIMEOUT);
+        }
+
+        stack=c1.getProtocolStack();
+        DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ();
+        delay.setDelay(DELAY_JOIN_REQ);
+        stack.insertProtocol(delay, ProtocolStack.BELOW, "GMS");
+
+        System.out.println(new Date() + ": joining c2");
+        long start=System.currentTimeMillis(), stop;
+        c2.connect("x");
+        stop=System.currentTimeMillis();
+        long join_time=stop-start;
+        long tolerated_join_time=DISCOVERY_TIMEOUT + DELAY_JOIN_REQ + TOLERANCE; // 1 sec more is okay (garbage collection etc)
+        System.out.println(new Date() + ": joining of c2 took " + join_time + " ms (should have taken not more than "+tolerated_join_time +" ms)");
+        assertTrue("join time (" + join_time + ") was > tolerated join time (" + tolerated_join_time + ")", join_time <= tolerated_join_time);
     }
 
 
