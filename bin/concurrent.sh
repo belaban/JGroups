@@ -30,7 +30,7 @@ count=0
 while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
-  java -classpath $CP -Dbind.address=192.168.5.2 org.jgroups.demos.Draw -props c:\\udp.xml &
-  # sleep 1
+  java -classpath $CP -Dbind.address=192.168.0.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
+  sleep 1
   count=$(($count+1))
 done
