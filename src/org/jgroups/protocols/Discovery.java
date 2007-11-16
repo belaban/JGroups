@@ -32,7 +32,7 @@ import java.util.concurrent.locks.Condition;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32 2007/08/14 08:09:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.33 2007/11/16 11:43:06 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -381,7 +381,13 @@ public abstract class Discovery extends Protocol {
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
-                        sendGetMembersRequest();
+                        try {
+                            sendGetMembersRequest();
+                        }
+                        catch(Exception ex) {
+                            if(log.isErrorEnabled())
+                                log.error("failed sending discovery request", ex);
+                        }
                     }
                 }, 0, (long)interval, TimeUnit.MILLISECONDS);
             }
