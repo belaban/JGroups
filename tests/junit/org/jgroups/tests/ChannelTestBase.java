@@ -384,6 +384,7 @@ public class ChannelTestBase extends TestCase {
 
     protected abstract class PushChannelApplication extends ChannelApplication implements ExtendedReceiver {
         RpcDispatcher dispatcher;
+        List<Object> events;
 
         public PushChannelApplication(String name) throws Exception{
             this(name, false);
@@ -395,11 +396,16 @@ public class ChannelTestBase extends TestCase {
 
         public PushChannelApplication(String name,ChannelTestFactory factory,boolean useDispatcher) throws Exception{
             super(name, factory);
+            events = Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher){
                 dispatcher = new RpcDispatcher(channel, this, this, this);
             }else{
                 channel.setReceiver(this);
             }
+        }
+        
+        public List<Object> getEvents(){
+            return events;
         }
 
         public RpcDispatcher getDispatcher() {
@@ -411,39 +417,47 @@ public class ChannelTestBase extends TestCase {
         }
 
         public void block() {
+            events.add(new BlockEvent());
             log.debug("Channel " + getLocalAddress() + "[" + getName() + "] in blocking");
         }
 
         public byte[] getState() {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] ");
+            events.add(new GetStateEvent(null, null));
+            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "] ");
             return null;
         }
 
         public void getState(OutputStream ostream) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "]");
+            events.add(new GetStateEvent(null, null));
+            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "]");
         }
 
         public byte[] getState(String state_id) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + " state id =" + state_id);
+            events.add(new GetStateEvent(null, state_id));
+            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + " state id =" + state_id);
             return null;
         }
 
         public void getState(String state_id, OutputStream ostream) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] state id =" + state_id);
+            events.add(new GetStateEvent(null, state_id));
+            log.debug("Channel getState " + getLocalAddress() + "[" + getName() + "] state id =" + state_id);
         }
 
         public void receive(Message msg) {}
 
         public void setState(byte[] state) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] ");
+            events.add(new SetStateEvent(null, null));
+            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "] ");
         }
 
         public void setState(InputStream istream) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "]");
+            events.add(new SetStateEvent(null, null));
+            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "]");
         }
 
         public void setState(String state_id, byte[] state) {
-            log.debug("Channel " + getLocalAddress()
+            events.add(new SetStateEvent(null, null));
+            log.debug("Channel setState " + getLocalAddress()
                       + "["
                       + getName()
                       + "] state id ="
@@ -453,7 +467,8 @@ public class ChannelTestBase extends TestCase {
         }
 
         public void setState(String state_id, InputStream istream) {
-            log.debug("Channel " + getLocalAddress() + "[" + getName() + "] state id " + state_id);
+            events.add(new SetStateEvent(null, null));
+            log.debug("Channel setState " + getLocalAddress() + "[" + getName() + "] state id " + state_id);
         }
 
         public void suspect(Address suspected_mbr) {
@@ -465,10 +480,12 @@ public class ChannelTestBase extends TestCase {
         }
 
         public void unblock() {
+            events.add(new UnblockEvent());
             log.debug("Channel " + getLocalAddress() + "[" + getName() + "] unblocking");
         }
 
         public void viewAccepted(View new_view) {
+            events.add(new_view);
             log.debug("Channel " + getLocalAddress()
                       + "["
                       + getName()
@@ -528,6 +545,121 @@ public class ChannelTestBase extends TestCase {
             }
         }
     }
+    
+    protected void checkEventSequence(PushChannelApplication receiver, boolean isMuxUsed) {
+        List<Object> events = receiver.getEvents();
+        String eventString = "[" + receiver.getName()
+                             + "|"
+                             + receiver.getLocalAddress()
+                             + ",events:"
+                             + events;
+        log.info(eventString);        
+        assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
+        int size = events.size();
+        for(int i = 0;i < size;i++){
+            Object event = events.get(i);
+            if(event instanceof BlockEvent){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    if(isMuxUsed){
+                        assertTrue("After Block should be View or Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                                   ev instanceof View || ev instanceof UnblockEvent);
+                    }else{
+                        assertTrue("After Block should be View but it is " + ev.getClass() + ",events= " + eventString,
+                                   ev instanceof View);
+                    }
+                }
+                if(i > 0){
+                    Object ev = events.get(i - 1);
+                    assertTrue("Before Block should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
+                }
+            }
+            else if(event instanceof View){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    assertTrue("After View should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
+                }
+                Object ev = events.get(i - 1);
+                assertTrue("Before View should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                           ev instanceof BlockEvent);
+            }
+            else if(event instanceof UnblockEvent){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof BlockEvent);
+                }
+
+                Object ev = events.get(i - 1);
+                if(isMuxUsed){
+                    assertTrue("Before UnBlock should be View or Block but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof View || ev instanceof BlockEvent);
+                }else{
+                    assertTrue("Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof View);
+                }
+            }
+        }       
+    }
+
+    protected void checkEventStateTransferSequence(PushChannelApplication receiver) {
+        
+        List<Object> events = receiver.getEvents();
+        String eventString = "[" + receiver.getName() + ",events:" + events;
+        log.info(eventString);        
+        assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
+        int size = events.size();
+        for(int i = 0;i < size;i++){
+            Object event = events.get(i);
+            if(event instanceof BlockEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After Block should be state|unblock|view, but it is " + o.getClass() + ",events= "+ eventString,
+                               o instanceof SetStateEvent || o instanceof GetStateEvent
+                                       || o instanceof UnblockEvent
+                                       || o instanceof View);
+                }
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString, 
+                               o instanceof UnblockEvent);
+                }
+            }
+            else if(event instanceof SetStateEvent || event instanceof GetStateEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After state should be Unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent);
+                }
+                Object o = events.get(i - 1);
+                assertTrue("Before state should be Block or View , but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || events.get(i - 1) instanceof View);
+            }
+            else if(event instanceof UnblockEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof BlockEvent);
+                }
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof SetStateEvent || o instanceof GetStateEvent
+                                       || o instanceof BlockEvent
+                                       || o instanceof View);
+                }
+            }
+
+        }        
+    }   
 
     protected interface MemberRetrievable {
         public List getMembers();
