@@ -10,6 +10,7 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -89,7 +90,7 @@ public class FLUSH extends Protocol {
      * Default timeout for a group member to wait for <code>Channel#startFlush</code> to return
      * 
      */
-    private long start_flush_timeout = 6000;
+    private long start_flush_timeout = 8000;
 
     private boolean enable_reconciliation = true;
     
@@ -185,23 +186,23 @@ public class FLUSH extends Protocol {
     }
 
     public boolean startFlush() {        
-        return startFlush(new Event(Event.SUSPEND), 3, false);
+        return startFlush(new Event(Event.SUSPEND));
     }
     
-    private boolean startFlush(Event evt, int numberOfAttempts, boolean isRetry) {
+    private boolean startFlush(Event evt){
+        int numberOfAttempts = 2;
+        synchronized (sharedLock) {
+            numberOfAttempts = (currentView != null) ? currentView.size() : numberOfAttempts;
+        }
+        return startFlush(evt, numberOfAttempts);
+    }
+    
+    private boolean startFlush(Event evt, int numberOfAttempts) {
         boolean successfulFlush = false;
-        if(!flushInProgress.get() || isRetry){
-            flush_promise.reset();                     
-            if(log.isDebugEnabled()){
-                if(isRetry)
-                    log.debug("Retrying FLUSH at " + localAddress
-                              + ", "
-                              + evt
-                              + ". Attempts left "
-                              + numberOfAttempts);
-                else
-                    log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
-            }
+        if(!flushInProgress.get()){
+            flush_promise.reset();                                 
+            if(log.isDebugEnabled())
+                log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
 
             onSuspend((View) evt.getArg());
             try{
@@ -216,18 +217,22 @@ public class FLUSH extends Protocol {
             }
         }
 
-        if(!successfulFlush && numberOfAttempts > 0){
-            long backOffSleepTime = Util.random(5);
-            backOffSleepTime = backOffSleepTime < 2 ? backOffSleepTime + 2 : backOffSleepTime;
-            if(log.isDebugEnabled())
-                log.debug("At " + localAddress
-                          + ". Backing off for "
-                          + backOffSleepTime
-                          + " sec. Attempts left "
+        if(!successfulFlush && numberOfAttempts > 0){                  
+            //we sleep for at most start_flush_timeout and
+            //at least until current flush ends 
+            long start_time = System.currentTimeMillis(), backofftime = start_flush_timeout;
+            while (backofftime > 0 && flushInProgress.get()) {
+                Util.sleep(Util.random(5)*1000);
+                backofftime = start_flush_timeout - (System.currentTimeMillis() - start_time);
+            }      
+            if(log.isDebugEnabled()){               
+                log.debug("Retrying FLUSH at " + localAddress
+                          + ", "
+                          + evt
+                          + ". Attempts left "
                           + numberOfAttempts);
-
-            Util.sleep(backOffSleepTime*1000);
-            successfulFlush = startFlush(evt, --numberOfAttempts, true);
+            }
+            successfulFlush = startFlush(evt, --numberOfAttempts);
         }
         return successfulFlush;
     }
@@ -267,7 +272,7 @@ public class FLUSH extends Protocol {
             break;
 
         case Event.SUSPEND:
-            return startFlush(evt, 3, false);
+            return startFlush(evt);
 
         case Event.RESUME:
             onResume();
@@ -405,7 +410,7 @@ public class FLUSH extends Protocol {
             break;
 
         case Event.SUSPEND:
-            return startFlush(evt, 3, false);
+            return startFlush(evt);
 
         case Event.RESUME:
             onResume();
@@ -455,49 +460,45 @@ public class FLUSH extends Protocol {
         down_prot.down(new Event(Event.MSG, reconcileOk));
     }
 
-    private void handleStartFlush(Message msg, FlushHeader fh) {
-        Address coordinator = null;
+    private void handleStartFlush(Message msg, FlushHeader fh) {        
         boolean proceed = false;
         Address flushRequester = msg.getSrc();
+        Address abortFlushCoordinator = null;
+        Address proceedFlushCoordinator = null;        
+        
         synchronized (sharedLock) {
             proceed = flushInProgress.compareAndSet(false, true);                     
             if(proceed){
                 flushCoordinator = flushRequester;
-            }else{                              
-                if(flushCoordinator != null)
-                    coordinator = flushCoordinator;
-                else
-                    coordinator = flushRequester;       
+            }else{                                                                                             
+                if(flushRequester.compareTo(flushCoordinator) < 0){                                                           
+                    abortFlushCoordinator = flushCoordinator;
+                    flushCoordinator = flushRequester;
+                    proceedFlushCoordinator = flushRequester;                    
+                }else if(flushRequester.compareTo(flushCoordinator) > 0){                                        
+                    abortFlushCoordinator = flushRequester;
+                    proceedFlushCoordinator = flushCoordinator;
+                }else{                    
+                    if(log.isDebugEnabled()){
+                        log.debug("Rejecting flush at " + localAddress + ", previous flush has to finish first");
+                    } 
+                    abortFlushCoordinator = flushRequester;
+                    proceedFlushCoordinator = flushCoordinator;
+                }
             }
         }
         if(proceed){          
             onStartFlush(false,flushRequester, fh);
-        } else{           
-            if(flushRequester.compareTo(coordinator) < 0){
-                rejectFlush(fh.viewID, coordinator);
-                if(log.isDebugEnabled()){
-                    log.debug("Rejecting flush at " + localAddress
-                              + " to current flush coordinator "
-                              + coordinator
-                              + " and switching flush coordinator to "
-                              + flushRequester);
-                }              
-                onStartFlush(true,flushRequester, fh);
-            }else if(flushRequester.compareTo(coordinator) > 0){
-                rejectFlush(fh.viewID, flushRequester);
-                if(log.isDebugEnabled()){
-                    log.debug("Rejecting flush at " + localAddress
-                              + " to flush requester "
-                              + flushRequester
-                              + " coordinator is "
-                              + coordinator);
-                }                
-            }else if(flushRequester.equals(coordinator)){
-                rejectFlush(fh.viewID, flushRequester);
-                if(log.isDebugEnabled()){
-                    log.debug("Rejecting flush at " + localAddress + ", previous flush has to finish first");
-                }                
+        } else{  
+            if(log.isDebugEnabled()){
+                log.debug("Rejecting flush at " + localAddress
+                          + " to flush requester "
+                          + abortFlushCoordinator
+                          + " coordinator is "
+                          + proceedFlushCoordinator);
             }
+            rejectFlush(fh.viewID, abortFlushCoordinator);
+            onStartFlush(true,proceedFlushCoordinator, fh);
         }
     }
 
@@ -657,7 +658,7 @@ public class FLUSH extends Protocol {
             msg.putHeader(getName(), fhr);
             down_prot.down(new Event(Event.MSG, msg));
             if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_OK");
+                log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_COMPLETED");
         }
         else{
             if(log.isDebugEnabled())
