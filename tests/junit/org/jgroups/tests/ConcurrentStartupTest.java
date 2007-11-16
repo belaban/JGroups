@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.33 2007/11/12 17:21:30 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.34 2007/11/16 20:39:36 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -141,6 +141,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             for(ConcurrentStartupChannel channel:channels){
                 channel.cleanup();
                 Util.sleep(2000); // remove before 2.6 GA
+            }
+            
+            for(ConcurrentStartupChannel channel:channels){                
+                checkEventStateTransferSequence(channel);
             }
         }
     }

@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.3 2007/11/12 18:09:31 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.4 2007/11/16 20:39:36 vlada Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -140,6 +140,9 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
                 channel.cleanup();
                 Util.sleep(2000); // remove before 2.6 GA
             }
+            for(ConcurrentStateTransfer channel:channels){                
+                checkEventStateTransferSequence(channel);
+            }            
         }
     }
     
