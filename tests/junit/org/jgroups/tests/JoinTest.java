@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.11 2007/11/19 07:49:01 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.12 2007/11/19 15:03:13 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -110,6 +110,14 @@ public class JoinTest extends ChannelTestBase {
      * http://jira.jboss.com/jira/browse/JGRP-621
      */
     public void testDelayedJoinResponse() throws Exception {
+        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=8000, DELAY_JOIN_REQ=4000;
+        final long DISCOVERY_TIMEOUT=5000;
+        final long TOLERANCE=1000;
+
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+    }
+
+    public void testDelayedJoinResponse2() throws Exception {
         final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
@@ -117,13 +125,23 @@ public class JoinTest extends ChannelTestBase {
         _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
-    public void testDelayedJoinResponseWithSmallJoinRetryTimeout() throws Exception {
-        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=3000, DELAY_JOIN_REQ=4000;
+    public void testDelayedJoinResponse3() throws Exception {
+        final long JOIN_TIMEOUT=5000, JOIN_RETRY_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
         _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
+
+
+    public void testDelayedJoinResponse4() throws Exception {
+        final long JOIN_TIMEOUT=1000, JOIN_RETRY_TIMEOUT=500, DELAY_JOIN_REQ=4000;
+        final long DISCOVERY_TIMEOUT=2000;
+        final long TOLERANCE=1000;
+
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+    }
+
 
 
     public void _testDelayedJoinResponse(long discovery_timeout, long join_timeout, long join_retry_timeout,
@@ -169,9 +187,6 @@ public class JoinTest extends ChannelTestBase {
         return new TestSuite(JoinTest.class);
     }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(JoinTest.suite());
-    }
 
 
     private static class MyReceiver extends ReceiverAdapter {
