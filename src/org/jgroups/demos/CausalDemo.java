@@ -1,4 +1,4 @@
-// $Id: CausalDemo.java,v 1.6 2005/05/30 16:14:40 belaban Exp $
+// $Id: CausalDemo.java,v 1.7 2007/11/19 16:11:07 belaban Exp $
 package org.jgroups.demos;
 
 import org.jgroups.*;
@@ -31,18 +31,7 @@ public class CausalDemo implements Runnable
    private int doneCount=0;
    private Log log=LogFactory.getLog(getClass());
 
-   private final String props = "UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-           "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-           "PING(timeout=2000;num_initial_members=5):" +
-           "DISCARD(up=0.05;excludeitself=true):" +
-           "FD_SOCK:" +
-           "VERIFY_SUSPECT(timeout=1500):" +
-           "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800,9600):" +
-           "UNICAST(timeout=5000):" +
-           "pbcast.STABLE(desired_avg_gossip=2000):" +
-           "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-           "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-           "shun=false;print_local_addr=true):CAUSAL";
+   private final String props = "causal.xml";
 
    public CausalDemo(boolean start)
    {

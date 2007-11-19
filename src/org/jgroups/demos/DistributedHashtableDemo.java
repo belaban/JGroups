@@ -1,4 +1,4 @@
-// $Id: DistributedHashtableDemo.java,v 1.8 2007/07/23 08:25:34 belaban Exp $
+// $Id: DistributedHashtableDemo.java,v 1.9 2007/11/19 16:07:54 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -246,32 +246,7 @@ public class DistributedHashtableDemo extends Frame implements WindowListener, A
         String                    arg;
         boolean                   persist=false;
 
-        // test for pbcast
-        /*
-        String props="UDP:" +
-            "PING(num_initial_members=2;timeout=3000):" +
-            "FD:" +
-            // "DISCARD(down=0.1):" +  // this is for discarding of 10% of the up messages !
-            "pbcast.PBCAST(gossip_interval=5000;gc_lag=50):" +
-            "UNICAST:" +
-            "FRAG:" +
-            "pbcast.GMS:" +
-            "pbcast.STATE_TRANSFER";
-        */
-
-        String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-                "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-                "UNICAST(timeout=5000):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
+        String props="udp.xml";
 
         try {
             for(int i=0; i < args.length; i++) {

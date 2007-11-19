@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.12 2007/11/19 15:03:13 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.13 2007/11/19 16:08:27 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -110,41 +110,41 @@ public class JoinTest extends ChannelTestBase {
      * http://jira.jboss.com/jira/browse/JGRP-621
      */
     public void testDelayedJoinResponse() throws Exception {
-        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=8000, DELAY_JOIN_REQ=4000;
+        final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
     public void testDelayedJoinResponse2() throws Exception {
-        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
+        final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
     public void testDelayedJoinResponse3() throws Exception {
-        final long JOIN_TIMEOUT=5000, JOIN_RETRY_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
+        final long JOIN_TIMEOUT=5000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
 
     public void testDelayedJoinResponse4() throws Exception {
-        final long JOIN_TIMEOUT=1000, JOIN_RETRY_TIMEOUT=500, DELAY_JOIN_REQ=4000;
+        final long JOIN_TIMEOUT=1000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=2000;
         final long TOLERANCE=1000;
 
-        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
 
 
-    public void _testDelayedJoinResponse(long discovery_timeout, long join_timeout, long join_retry_timeout,
+    public void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
                                          long delay_join_req, long tolerance) throws Exception {
         c1.connect("x");
 
@@ -152,7 +152,6 @@ public class JoinTest extends ChannelTestBase {
         GMS gms=(GMS)stack.findProtocol("GMS");
         if(gms != null) {
             gms.setJoinTimeout(join_timeout);
-            gms.setJoinRetryTimeout(join_retry_timeout);
         }
 
         Discovery discovery=(Discovery)stack.findProtocol("PING");

@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.8 2005/05/30 16:14:40 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.9 2007/11/19 16:07:54 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -182,17 +182,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 	// props="UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE";
 
 	// test for pbcast
-        props="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0):" +
-                "PING(timeout=5000;num_initial_members=6):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=5;retransmit_timeout=3000):" +
-                "UNICAST(timeout=5000):" +
-                "pbcast.STABLE(desired_avg_gossip=10000):" +
-                "FRAG(down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
+        props="udp.xml";
 
 
 	this.create=create;
