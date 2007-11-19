@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.58 2007/11/19 10:31:26 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.59 2007/11/19 16:07:16 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.58 $
+ * @version $Revision: 1.59 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -66,14 +66,14 @@ public class ClientGmsImpl extends GmsImpl {
      */
     private void join(Address mbr, boolean joinWithStateTransfer) {
         Address coord=null;
-        JoinRsp rsp;
+        JoinRsp rsp=null;
         View tmp_view;
         leaving=false;
 
         join_promise.reset();
         while(!leaving) {
-            List<PingRsp> responses=findInitialMembers();
-            if(responses != null) { // null responses means that the discovery was cancelled
+            if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
+                List<PingRsp> responses=findInitialMembers(join_promise);
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
                 if(responses.isEmpty()) {
@@ -132,7 +132,8 @@ public class ClientGmsImpl extends GmsImpl {
             }
 
             try {
-                rsp=join_promise.getResult(gms.join_timeout);
+                if(rsp == null)
+                    rsp=join_promise.getResult(gms.join_timeout);
                 if(rsp == null) {
                     if(log.isWarnEnabled())
                         log.warn("join(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
@@ -166,7 +167,6 @@ public class ClientGmsImpl extends GmsImpl {
                         if(!installView(tmp_view)) {
                             if(log.isErrorEnabled())
                                 log.error("view installation failed, retrying to join group");
-                            Util.sleep(gms.join_retry_timeout);
                             continue;
                         }
 
@@ -192,12 +192,11 @@ public class ClientGmsImpl extends GmsImpl {
                 if(log.isDebugEnabled())
                     log.debug("exception=" + e + ", retrying");
             }
-            Util.sleep(gms.join_retry_timeout);
         }
     }
 
-    private List<PingRsp> findInitialMembers() {
-        List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS));
+    private List<PingRsp> findInitialMembers(Promise promise) {
+        List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
         if(responses != null) {
             for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
                 PingRsp response=iter.next();
