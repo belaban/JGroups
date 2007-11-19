@@ -26,6 +26,5 @@
         auth_value="chris"/>
     <pbcast.GMS print_local_addr="true"
         join_timeout="3000"
-        join_retry_timeout="2000"
         shun="true"/>
 </config>

@@ -54,8 +54,7 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>   
     <pbcast.GMS print_local_addr="true" join_timeout="5000" leave_timeout="2000"
-                join_retry_timeout="2000" shun="false"
-                view_bundling="true"/>
+                shun="false" view_bundling="true"/>
     <FC max_credits="20000000" min_threshold="0.10"/>
     <FRAG2 frag_size="60000"/>
     <pbcast.STREAMING_STATE_TRANSFER />

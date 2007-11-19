@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.8 2007/08/20 11:15:36 belaban Exp $
+  version: $Id: sfc.xml,v 1.9 2007/11/19 16:02:15 belaban Exp $
 -->
 
 <config>
@@ -60,8 +60,7 @@
                    max_bytes="10000000" />
     <VIEW_SYNC avg_send_interval="60000" />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                join_retry_timeout="2000" shun="false"
-                view_bundling="true" />
+                shun="false" view_bundling="true" />
     <SFC max_credits="10000000"/>
     <FRAG2 frag_size="60000" />
     <!--pbcast.STREAMING_STATE_TRANSFER/-->
