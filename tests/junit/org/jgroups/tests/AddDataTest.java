@@ -10,7 +10,7 @@ import java.util.Map;
 /**
  *
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.10 2007/08/27 08:09:17 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.11 2007/11/19 16:07:53 belaban Exp $
  */
 public class AddDataTest extends TestCase {
     JChannel ch1, ch2;
@@ -22,7 +22,7 @@ public class AddDataTest extends TestCase {
             "PING(timeout=2000;num_initial_members=2):" +
             "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800):" +
             "UNICAST(timeout=600,1200,2400,4800):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=true;print_local_addr=true)";
 
 

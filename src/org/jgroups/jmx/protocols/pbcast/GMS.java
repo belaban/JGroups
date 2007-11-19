@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.3 2005/12/23 14:57:05 belaban Exp $
+ * @version $Id: GMS.java,v 1.4 2007/11/19 16:06:48 belaban Exp $
  */
 public class GMS extends Protocol implements GMSMBean {
     org.jgroups.protocols.pbcast.GMS p;
@@ -54,12 +54,13 @@ public class GMS extends Protocol implements GMSMBean {
         p.setJoinTimeout(t);
     }
 
+    /** @deprecated */
     public long getJoinRetryTimeout() {
-        return p.getJoinRetryTimeout();
+        return -1;
     }
 
+    /** @deprecated */
     public void setJoinRetryTimeout(long t) {
-        p.setJoinRetryTimeout(t);
     }
 
     public boolean isShun() {

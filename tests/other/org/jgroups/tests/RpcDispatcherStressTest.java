@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherStressTest.java,v 1.9 2007/08/20 11:15:35 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.10 2007/11/19 16:08:26 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -150,7 +150,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
                 "UNICAST(timeout=1000,1500,2000,3000):"+
                 "pbcast.STABLE(desired_avg_gossip=10000):"+
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):"+
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=true):"+
+                "pbcast.GMS(join_timeout=5000;shun=false;print_local_addr=true):"+
                 "pbcast.STATE_TRANSFER";
         
         try {

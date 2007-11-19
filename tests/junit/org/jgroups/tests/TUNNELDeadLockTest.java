@@ -1,4 +1,4 @@
-// $Id: TUNNELDeadLockTest.java,v 1.11 2007/04/02 07:08:54 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.12 2007/11/19 16:08:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import org.jgroups.util.Promise;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.11 $
+ * @version $Revision: 1.12 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest extends TestCase {
@@ -74,7 +74,7 @@ public class TUNNELDeadLockTest extends TestCase {
                 "FD_SOCK:" +
                 "pbcast.NAKACK(gc_lag=100;retransmit_timeout=600,1200,2400,4800):" +
                 "pbcast.STABLE(stability_delay=1000;desired_avg_gossip=20000;max_bytes=100000):" +
-                "pbcast.GMS(print_local_addr=true;join_timeout=5000;join_retry_timeout=2000;shun=true):" +
+                "pbcast.GMS(print_local_addr=true;join_timeout=5000;shun=true):" +
                 "SFC(max_credits=100000)";
         return props;
     }

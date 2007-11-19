@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.15 2006/07/31 09:21:58 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.16 2007/11/19 16:08:27 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -55,7 +55,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
             "UNICAST(timeout=5000):" +
             "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=true):" +
             "pbcast.STATE_TRANSFER";
     // "PERF(details=true)";
@@ -1038,7 +1038,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
                 "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
                 "UNICAST(timeout=5000):" +
                 "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "pbcast.GMS(join_timeout=5000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
         // "PERF(details=true)";

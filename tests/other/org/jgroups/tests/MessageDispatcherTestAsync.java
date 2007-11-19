@@ -1,4 +1,4 @@
-// $Id: MessageDispatcherTestAsync.java,v 1.13 2006/12/28 09:05:49 belaban Exp $
+// $Id: MessageDispatcherTestAsync.java,v 1.14 2007/11/19 16:08:26 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -39,7 +39,7 @@ public class MessageDispatcherTestAsync implements RequestHandler {
             "UNICAST(timeout=5000):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=true)";
 
 

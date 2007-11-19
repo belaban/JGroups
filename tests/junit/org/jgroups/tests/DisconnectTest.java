@@ -1,4 +1,4 @@
-// $Id: DisconnectTest.java,v 1.12 2007/09/19 20:20:33 vlada Exp $
+// $Id: DisconnectTest.java,v 1.13 2007/11/19 16:07:53 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,7 +21,7 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  **/
 public class DisconnectTest extends TestCase {
 
@@ -53,7 +53,7 @@ public class DisconnectTest extends TestCase {
                 "VERIFY_SUSPECT(timeout=1500):" +
                 "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000):" +                
                 "pbcast.STABLE(desired_avg_gossip=20000):" +                
-                "pbcast.GMS(join_timeout=50000;join_retry_timeout=2000;shun=false;" +
+                "pbcast.GMS(join_timeout=50000;shun=false;" +
                 "print_local_addr=true)";
     }
 
@@ -71,7 +71,7 @@ public class DisconnectTest extends TestCase {
             String props = getTUNNELProps(routerPort, routerPort);
             channel = new JChannel(props);
             channel.connect("testgroup");
-            assertTrue(channel.getLocalAddress() != null);
+            assertNotNull(channel.getLocalAddress());
             channel.disconnect();
             assertNull(channel.getLocalAddress());
         }
@@ -141,7 +141,7 @@ public class DisconnectTest extends TestCase {
         channel.send(new Message(null, null, "payload"));
 
         Message msg=(Message)msgPromise.getResult(20000);
-        assertTrue(msg != null);
+        assertNotNull(msg);
         assertEquals("payload", msg.getObject());
 
         ppa.stop();
@@ -230,7 +230,7 @@ public class DisconnectTest extends TestCase {
             channel.send(new Message(null, null, "payload"));
 
             Message msg=(Message)msgPromise.getResult(20000);
-            assertTrue(msg != null);
+            assertNotNull(msg);
             assertEquals("payload", msg.getObject());
 
             ppa.stop();
