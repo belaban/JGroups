@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.10 2007/11/16 14:22:08 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.11 2007/11/19 07:49:01 belaban Exp $
  */
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -110,15 +110,32 @@ public class JoinTest extends ChannelTestBase {
      * http://jira.jboss.com/jira/browse/JGRP-621
      */
     public void testDelayedJoinResponse() throws Exception {
-        c1.connect("x");
-        final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
+        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
         final long TOLERANCE=1000;
 
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+    }
+
+    public void testDelayedJoinResponseWithSmallJoinRetryTimeout() throws Exception {
+        final long JOIN_TIMEOUT=2000, JOIN_RETRY_TIMEOUT=3000, DELAY_JOIN_REQ=4000;
+        final long DISCOVERY_TIMEOUT=5000;
+        final long TOLERANCE=1000;
+
+        _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, JOIN_RETRY_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
+    }
+
+
+    public void _testDelayedJoinResponse(long discovery_timeout, long join_timeout, long join_retry_timeout,
+                                         long delay_join_req, long tolerance) throws Exception {
+        c1.connect("x");
+
         ProtocolStack stack=c2.getProtocolStack();
         GMS gms=(GMS)stack.findProtocol("GMS");
-        if(gms != null)
-            gms.setJoinTimeout(JOIN_TIMEOUT);
+        if(gms != null) {
+            gms.setJoinTimeout(join_timeout);
+            gms.setJoinRetryTimeout(join_retry_timeout);
+        }
 
         Discovery discovery=(Discovery)stack.findProtocol("PING");
         if(discovery == null)
@@ -129,12 +146,12 @@ public class JoinTest extends ChannelTestBase {
             discovery=(Discovery)stack.findProtocol("TCPGOSSIP");
         if(discovery != null) {
             discovery.setNumInitialMembers(10);
-            discovery.setTimeout(DISCOVERY_TIMEOUT);
+            discovery.setTimeout(discovery_timeout);
         }
 
         stack=c1.getProtocolStack();
         DELAY_JOIN_REQ delay=new DELAY_JOIN_REQ();
-        delay.setDelay(DELAY_JOIN_REQ);
+        delay.setDelay(delay_join_req);
         stack.insertProtocol(delay, ProtocolStack.BELOW, "GMS");
 
         System.out.println(new Date() + ": joining c2");
@@ -142,7 +159,7 @@ public class JoinTest extends ChannelTestBase {
         c2.connect("x");
         stop=System.currentTimeMillis();
         long join_time=stop-start;
-        long tolerated_join_time=DISCOVERY_TIMEOUT + DELAY_JOIN_REQ + TOLERANCE; // 1 sec more is okay (garbage collection etc)
+        long tolerated_join_time=discovery_timeout + delay_join_req + tolerance; // 1 sec more is okay (garbage collection etc)
         System.out.println(new Date() + ": joining of c2 took " + join_time + " ms (should have taken not more than "+tolerated_join_time +" ms)");
         assertTrue("join time (" + join_time + ") was > tolerated join time (" + tolerated_join_time + ")", join_time <= tolerated_join_time);
     }
