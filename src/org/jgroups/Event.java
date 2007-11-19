@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.55 2007/11/16 14:21:43 belaban Exp $
+// $Id: Event.java,v 1.56 2007/11/19 10:27:37 belaban Exp $
 
 package org.jgroups;
 
@@ -16,7 +16,7 @@ public class Event {
     public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
-    public static final int FIND_INITIAL_MBRS                  = 12;
+    public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise
     public static final int MERGE                              = 14;  // arg = Vector of Objects
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
@@ -53,7 +53,6 @@ public class Event {
     public static final int STOP_PARTITION                     = 83;  // arg = null;
     public static final int INFO                               = 84;  // arg = Map<String,Object>
     public static final int PREPARE_VIEW                       = 86;  // arg = View
-    public static final int CANCEL_FIND_INITIAL_MBRS           = 87;
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
 
@@ -141,13 +140,11 @@ public class Event {
             case STOP_PARTITION:         return "STOP_PARTITION";
             case INFO:                   return "INFO";
             case PREPARE_VIEW:           return "PREPARE_VIEW";
-            case CANCEL_FIND_INITIAL_MBRS: return "CANCEL_FIND_INITIAL_MBRS";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
         }
     }
 
-    public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
 
     public String toString() {
