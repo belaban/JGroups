@@ -32,7 +32,7 @@ import java.util.concurrent.locks.Condition;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.34 2007/11/16 14:35:14 belaban Exp $
+ * @version $Id: Discovery.java,v 1.35 2007/11/19 10:29:19 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -174,13 +174,12 @@ public abstract class Discovery extends Protocol {
     }
 
     /**
-     * Finds the initial membership
-     * @return Vector<PingRsp>
+     * Finds the initial membership: sends a GET_MBRS_REQ to all members, waits 'timeout' ms or
+     * until 'num_initial_members' have been retrieved
+     * @return List<PingRsp>
      */
     public List<PingRsp> findInitialMembers() {
-        // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
         num_discovery_requests++;
-        // return member_finder_task.find();
 
         if(myfuture.isCancelled() || myfuture.isDone()) {
             myfuture.reset();
@@ -197,10 +196,6 @@ public abstract class Discovery extends Protocol {
         finally {
         	sender.stop();
         }
-    }
-
-    private void cancelDiscovery() {
-        myfuture.cancel(true);
     }
 
 
@@ -322,10 +317,6 @@ public abstract class Discovery extends Protocol {
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
             return findInitialMembers();
-
-        case Event.CANCEL_FIND_INITIAL_MBRS:
-            cancelDiscovery();
-            return null;
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:

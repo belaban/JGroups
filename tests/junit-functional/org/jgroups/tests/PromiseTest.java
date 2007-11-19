@@ -1,4 +1,4 @@
-// $Id: PromiseTest.java,v 1.2 2007/08/30 10:06:34 belaban Exp $
+// $Id: PromiseTest.java,v 1.3 2007/11/19 10:32:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -123,9 +123,6 @@ public class PromiseTest extends TestCase {
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={PromiseTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+ 
 
 }

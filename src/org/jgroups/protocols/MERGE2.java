@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.42 2007/07/20 09:00:33 belaban Exp $
+// $Id: MERGE2.java,v 1.43 2007/11/19 10:31:26 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -243,7 +243,7 @@ public class MERGE2 extends Protocol {
          */
         List<PingRsp> findInitialMembers() {
             PingRsp tmp=new PingRsp(local_addr, local_addr, true);
-            List<PingRsp> retval=(List<PingRsp>)down_prot.down(Event.FIND_INITIAL_MBRS_EVT);
+            List<PingRsp> retval=(List<PingRsp>)down_prot.down(new Event(Event.FIND_INITIAL_MBRS));
             if(retval != null && is_coord && local_addr != null && !retval.contains(tmp))
                 retval.add(tmp);
             return retval;
