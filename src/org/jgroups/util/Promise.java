@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.
  * @author Bela Ban
- * @version $Id: Promise.java,v 1.13 2007/11/19 10:57:00 belaban Exp $
+ * @version $Id: Promise.java,v 1.14 2007/11/19 13:55:57 belaban Exp $
  */
 public class Promise<T> {
     private final Lock lock=new ReentrantLock();
@@ -22,6 +22,13 @@ public class Promise<T> {
     private T result=null;
     private boolean hasResult=false;
 
+    public Lock getLock() {
+        return lock;
+    }
+
+    public Condition getCond() {
+        return cond;
+    }
 
     /**
      * Blocks until a result is available, or timeout milliseconds have elapsed
