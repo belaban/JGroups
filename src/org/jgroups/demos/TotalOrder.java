@@ -1,4 +1,4 @@
-// $Id: TotalOrder.java,v 1.13 2006/03/27 08:34:24 belaban Exp $
+// $Id: TotalOrder.java,v 1.14 2007/11/19 16:17:45 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -362,19 +362,7 @@ public class TotalOrder extends Frame {
         String props=null;
         int num=0;
 
-        props="UDP(mcast_addr=239.10.10.10;mcast_port=7500;ip_ttl=8;" +
-                "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-                "UNICAST(timeout=5000):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
+        props="udp.xml";
 
 
         for(int i=0; i < args.length; i++) {

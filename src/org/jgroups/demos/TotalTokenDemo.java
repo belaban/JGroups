@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.10 2005/05/30 16:14:40 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.11 2007/11/19 16:19:00 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.10 $
+ *@version $Revision: 1.11 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -537,18 +537,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
 
         if (props == null)
         {
-            props = "UDP(mcast_addr=224.0.0.35;mcast_port=45566;ip_ttl=32;" +
-                    "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                    "PING(timeout=2000;num_initial_members=5):" +
-                    "FD_SOCK:" +
-                    "VERIFY_SUSPECT(timeout=1500):" +
-                    "UNICAST(timeout=5000):" +
-                    "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-                    "TOTAL_TOKEN(block_sending=50;unblock_sending=10):" +
-                    "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                    "shun=false;print_local_addr=true)";
-
-
+            props = "udp.xml";
         }
 
 
