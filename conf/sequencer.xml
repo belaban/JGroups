@@ -1,7 +1,7 @@
 
 <!--
 Total order protocol stack using the SEQUENCER protocol
-Version: $Id: sequencer.xml,v 1.7 2007/10/02 12:01:02 belaban Exp $
+Version: $Id: sequencer.xml,v 1.8 2007/11/19 16:02:15 belaban Exp $
 -->
 <config>
     <UDP
@@ -36,8 +36,7 @@ Version: $Id: sequencer.xml,v 1.7 2007/10/02 12:01:02 belaban Exp $
                    max_bytes="400000"/>
     <VIEW_SYNC avg_send_interval="60000"   />
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                join_retry_timeout="2000" shun="false"
-                view_bundling="true"/>
+                shun="false" view_bundling="true"/>
     <SEQUENCER/>
     <FC max_credits="2000000"
            min_threshold="0.10"/>
