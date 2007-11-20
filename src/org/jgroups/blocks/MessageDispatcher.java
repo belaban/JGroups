@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74 2007/07/30 07:05:40 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74.2.1 2007/11/20 11:08:29 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -396,6 +396,7 @@ public class MessageDispatcher implements RequestHandler {
         // real_dests=dests != null ? (Vector) dests.clone() : (members != null ? new Vector(members) : null);
         if(dests != null) {
             real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {
@@ -416,7 +417,7 @@ public class MessageDispatcher implements RequestHandler {
             if(local_addr == null) {
                 local_addr=tmp.getLocalAddress();
             }
-            if(local_addr != null && real_dests != null) {
+            if(local_addr != null) {
                 real_dests.removeElement(local_addr);
             }
         }
@@ -425,7 +426,7 @@ public class MessageDispatcher implements RequestHandler {
         if(log.isTraceEnabled())
             log.trace("real_dests=" + real_dests);
 
-        if(real_dests == null || real_dests.isEmpty()) {
+        if(real_dests.isEmpty()) {
             if(log.isTraceEnabled())
                 log.trace("destination list is empty, won't send message");
             return new RspList(); // return empty response list
@@ -478,6 +479,7 @@ public class MessageDispatcher implements RequestHandler {
         //real_dests=dests != null ? (Vector) dests.clone() : (Vector) members.clone();
         if(dests != null) {
             real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {
