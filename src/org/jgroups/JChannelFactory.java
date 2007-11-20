@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.50 2007/11/20 12:38:04 belaban Exp $
+// $Id: JChannelFactory.java,v 1.51 2007/11/20 12:40:32 belaban Exp $
 
 package org.jgroups;
 
@@ -56,7 +56,7 @@ public class JChannelFactory implements ChannelFactory {
 	private MBeanServer server = null;
 
     /** To expose the channels and protocols */
-	private String domain = "jgroups:name=Multiplexer";
+	private String domain = "jgroups";
 
     /** Whether or not to expose channels via JMX */
     private boolean expose_channels=true;
