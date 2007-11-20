@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.54 2007/09/27 16:19:52 vlada Exp $
+// $Id: Event.java,v 1.54.2.1 2007/11/20 08:37:25 belaban Exp $
 
 package org.jgroups;
 
@@ -16,7 +16,7 @@ public class Event {
     public static final int SET_LOCAL_ADDRESS                  =  8;  // arg = Address
     public static final int SUSPECT                            =  9;  // arg = Address of suspected member
     public static final int BLOCK                              = 10;  // arg = null (used by FLUSH)
-    public static final int FIND_INITIAL_MBRS                  = 12;
+    public static final int FIND_INITIAL_MBRS                  = 12;  // arg = JoinPromise (or null (merge2))
     public static final int MERGE                              = 14;  // arg = Vector of Objects
     public static final int TMP_VIEW                           = 15;  // arg = View
     public static final int BECOME_SERVER                      = 16;  // sent when client has joined group
@@ -145,7 +145,6 @@ public class Event {
         }
     }
 
-    public static final Event FIND_INITIAL_MBRS_EVT = new Event(Event.FIND_INITIAL_MBRS);
     public static final Event GET_DIGEST_EVT        = new Event(Event.GET_DIGEST);
 
     public String toString() {

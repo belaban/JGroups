@@ -1,9 +1,8 @@
-
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.Protocol;
+import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
@@ -11,9 +10,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
 
 
 /**
@@ -32,7 +28,7 @@ import java.util.concurrent.locks.Condition;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32 2007/08/14 08:09:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.32.2.1 2007/11/20 08:37:24 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -48,7 +44,7 @@ public abstract class Discovery extends Protocol {
     int                     num_discovery_requests=0;
 
 
-    private final MyFuture  myfuture=new MyFuture(num_initial_members);
+    private final Set<Responses> ping_responses=new HashSet<Responses>();
     private final PingSenderTask sender=new PingSenderTask(timeout, num_ping_requests);
     
 
@@ -174,39 +170,39 @@ public abstract class Discovery extends Protocol {
     }
 
     /**
-     * Finds the initial membership
-     * @return Vector<PingRsp>
+     * Finds the initial membership: sends a GET_MBRS_REQ to all members, waits 'timeout' ms or
+     * until 'num_initial_members' have been retrieved
+     * @return List<PingRsp>
      */
-    public List<PingRsp> findInitialMembers() {
-        // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
+    public List<PingRsp> findInitialMembers(Promise promise) {
         num_discovery_requests++;
-        // return member_finder_task.find();
 
-        if(myfuture.isCancelled() || myfuture.isDone()) {
-            myfuture.reset();
+        final Responses rsps=new Responses(num_initial_members, promise);
+        synchronized(ping_responses) {
+            ping_responses.add(rsps);
         }
+
         sender.start();
-        List<PingRsp> retval=null;
         try {
-            retval=myfuture.get(timeout, TimeUnit.MILLISECONDS);
-            return retval;
+            return rsps.get(timeout);
         }
         catch(Exception e) {
             return null;
         }
         finally {
         	sender.stop();
+            synchronized(ping_responses) {
+                ping_responses.remove(rsps);
+            }
         }
     }
 
 
     public String findInitialMembersAsString() {
-    	List<PingRsp> results=findInitialMembers();
+    	List<PingRsp> results=findInitialMembers(null);
         if(results == null || results.isEmpty()) return "<empty>";
-        PingRsp rsp;
         StringBuilder sb=new StringBuilder();
-        for(Iterator it=results.iterator(); it.hasNext();) {
-            rsp=(PingRsp)it.next();
+        for(PingRsp rsp: results) {
             sb.append(rsp).append("\n");
         }
         return sb.toString();
@@ -275,7 +271,12 @@ public abstract class Discovery extends Protocol {
 
                 if(log.isTraceEnabled())
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
-                myfuture.addResponse(rsp);
+                // myfuture.addResponse(rsp);
+
+                synchronized(ping_responses) {
+                    for(Responses rsps: ping_responses)
+                        rsps.addResponse(rsp);
+                }
                 return null;
 
             default:
@@ -317,7 +318,7 @@ public abstract class Discovery extends Protocol {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
-            return findInitialMembers();
+            return findInitialMembers((Promise)evt.getArg());
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
@@ -381,7 +382,13 @@ public abstract class Discovery extends Protocol {
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
-                        sendGetMembersRequest();
+                        try {
+                            sendGetMembersRequest();
+                        }
+                        catch(Exception ex) {
+                            if(log.isErrorEnabled())
+                                log.error("failed sending discovery request", ex);
+                        }
                     }
                 }, 0, (long)interval, TimeUnit.MILLISECONDS);
             }
@@ -395,112 +402,164 @@ public abstract class Discovery extends Protocol {
         }
     }
 
-    
 
-    private static class MyFuture implements Future<List<PingRsp>> {
-        final int num_expected_rsps;
-        @GuardedBy("lock")
-        final List<PingRsp> responses=new LinkedList<PingRsp>();
-        @GuardedBy("lock")
-        volatile boolean cancelled=false;
-        @GuardedBy("lock")
-        volatile boolean done=false;
-        final Lock lock=new ReentrantLock();
-        Condition all_responses_received=lock.newCondition();
+    private static class Responses {
+        final Promise       promise;
+        final List<PingRsp> ping_rsps=new LinkedList<PingRsp>();
+        final int           num_expected_rsps;
 
-
-        public MyFuture(int num_expected_rsps) {
+        public Responses(int num_expected_rsps, Promise promise) {
             this.num_expected_rsps=num_expected_rsps;
+            this.promise=promise != null? promise : new Promise();
         }
 
-        public boolean cancel(boolean b) {
-            lock.lock();
-            try {
-                boolean retval=!cancelled;
-                cancelled=true;
-                responses.clear();
-                all_responses_received.signalAll();
-                return retval;
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        public boolean isCancelled() {
-            return cancelled;
-        }
-
-        public boolean isDone() {
-            return done;
-        }
-
-        public List<PingRsp> get() throws InterruptedException, ExecutionException {
-            lock.lock();
-            try {
-                while(responses.size() < num_expected_rsps && !cancelled) {
-                    all_responses_received.await();
-                }
-                return _get();
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-        public List<PingRsp> get(long timeout, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
-            long start_time=System.currentTimeMillis(), time_to_wait=timeout;
-
-            lock.lock();
-            try {
-                while(responses.size() < num_expected_rsps && time_to_wait > 0 && !cancelled) {
-                    all_responses_received.await(time_to_wait, TimeUnit.MILLISECONDS);
-                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
-                }
-                if(responses.size() >= num_expected_rsps || time_to_wait <= 0)
-                    done=true;
-                return _get();
-            }
-            finally {
-                lock.unlock();
-            }
-        }
-
-
-        void addResponse(PingRsp rsp) {
+        public void addResponse(PingRsp rsp) {
             if(rsp == null)
                 return;
-            lock.lock();
+            promise.getLock().lock();
             try {
-                if(!responses.contains(rsp)) {
-                    responses.add(rsp);
-                    if(responses.size() >= num_expected_rsps)
-                        done=true;
-                    all_responses_received.signalAll();
+                if(!ping_rsps.contains(rsp)) {
+                    ping_rsps.add(rsp);
+                    if(ping_rsps.size() >= num_expected_rsps)
+                        promise.getCond().signalAll();
                 }
             }
             finally {
-                lock.unlock();
+                promise.getLock().unlock();
             }
         }
 
-        void reset() {
-            lock.lock();
+        public List<PingRsp> get(long timeout) throws InterruptedException, ExecutionException, TimeoutException {
+            long start_time=System.currentTimeMillis(), time_to_wait=timeout;
+
+            promise.getLock().lock();
             try {
-                cancelled=false;
-                done=false;
-                responses.clear();
-                all_responses_received.signalAll();
+                while(ping_rsps.size() < num_expected_rsps && time_to_wait > 0 && !promise.hasResult()) {
+                    promise.getCond().await(time_to_wait, TimeUnit.MILLISECONDS);
+                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
+                }
+                return new LinkedList<PingRsp>(ping_rsps);
             }
             finally {
-                lock.unlock();
+                promise.getLock().unlock();
             }
         }
 
-        private List<PingRsp> _get() {
-            return new LinkedList<PingRsp>(responses);
-        }
     }
+
+
+//    private static class MyFuture implements Future<List<PingRsp>> {
+//        final int num_expected_rsps;
+//        @GuardedBy("lock")
+//        final List<PingRsp> responses=new LinkedList<PingRsp>();
+//        @GuardedBy("lock")
+//        volatile boolean cancelled=false;
+//        @GuardedBy("lock")
+//        volatile boolean done=false;
+//        final Lock lock;
+//        Condition all_responses_received;
+//
+//
+//        public MyFuture(int num_expected_rsps) {
+//            this.num_expected_rsps=num_expected_rsps;
+//            this.lock=new ReentrantLock();
+//            all_responses_received=lock.newCondition();
+//        }
+//
+//        public MyFuture(int num_expected_rsps, Lock lock, Condition cond) {
+//            this.num_expected_rsps=num_expected_rsps;
+//            this.lock=lock;
+//            all_responses_received=cond;
+//        }
+//
+//        public boolean cancel(boolean b) {
+//            lock.lock();
+//            try {
+//                boolean retval=!cancelled;
+//                cancelled=true;
+//                responses.clear();
+//                all_responses_received.signalAll();
+//                return retval;
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        public boolean isCancelled() {
+//            return cancelled;
+//        }
+//
+//        public boolean isDone() {
+//            return done;
+//        }
+//
+//        public List<PingRsp> get() throws InterruptedException, ExecutionException {
+//            lock.lock();
+//            try {
+//                while(responses.size() < num_expected_rsps && !cancelled) {
+//                    all_responses_received.await();
+//                }
+//                return _get();
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        public List<PingRsp> get(long timeout, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
+//            long start_time=System.currentTimeMillis(), time_to_wait=timeout;
+//
+//            lock.lock();
+//            try {
+//                while(responses.size() < num_expected_rsps && time_to_wait > 0 && !cancelled) {
+//                    all_responses_received.await(time_to_wait, TimeUnit.MILLISECONDS);
+//                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
+//                }
+//                if(responses.size() >= num_expected_rsps || time_to_wait <= 0)
+//                    done=true;
+//                return _get();
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//
+//        void addResponse(PingRsp rsp) {
+//            if(rsp == null)
+//                return;
+//            lock.lock();
+//            try {
+//                if(!responses.contains(rsp)) {
+//                    responses.add(rsp);
+//                    if(responses.size() >= num_expected_rsps)
+//                        done=true;
+//                    all_responses_received.signalAll();
+//                }
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        void reset() {
+//            lock.lock();
+//            try {
+//                cancelled=false;
+//                done=false;
+//                responses.clear();
+//                all_responses_received.signalAll();
+//            }
+//            finally {
+//                lock.unlock();
+//            }
+//        }
+//
+//        private List<PingRsp> _get() {
+//            return cancelled? null : new LinkedList<PingRsp>(responses);
+//        }
+//    }
 
 
 }
