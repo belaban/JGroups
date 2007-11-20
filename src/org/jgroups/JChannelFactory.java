@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.49 2007/10/22 18:06:34 vlada Exp $
+// $Id: JChannelFactory.java,v 1.49.2.1 2007/11/20 12:41:49 belaban Exp $
 
 package org.jgroups;
 
@@ -56,7 +56,7 @@ public class JChannelFactory implements ChannelFactory {
 	private MBeanServer server = null;
 
     /** To expose the channels and protocols */
-	private String domain = "jgroups:name=Multiplexer";
+	private String domain = "jgroups";
 
     /** Whether or not to expose channels via JMX */
     private boolean expose_channels=true;
@@ -336,7 +336,7 @@ public class JChannelFactory implements ChannelFactory {
                 throw new Exception("No MBeanServer found; JChannelFactory needs to be run with an MBeanServer present, " +
                         "e.g. inside JBoss or JDK 5, or with ExposeChannel set to false");
             if(domain == null)
-                domain="jgroups:name=Multiplexer";
+                domain="jgroups";
         }
     }
 
