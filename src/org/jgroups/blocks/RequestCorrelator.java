@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.40 2007/10/24 16:04:39 rachmatowicz Exp $
+// $Id: RequestCorrelator.java,v 1.41 2007/11/20 10:59:00 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -576,8 +576,7 @@ public class RequestCorrelator {
      * ID -> <tt>RspCollector</tt>
      */
     private void addEntry(long id, RspCollector coll) {
-        Long id_obj = new Long(id);
-        requests.putIfAbsent(id_obj, coll);
+        requests.putIfAbsent(id, coll);
     }
 
 
