@@ -1,7 +1,11 @@
-
 package org.jgroups.util;
 
 import org.jgroups.TimeoutException;
+
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -9,12 +13,21 @@ import org.jgroups.TimeoutException;
  * for the result at a later time, or immediately and it may block or not. Both the caller and responder have to
  * know the promise.
  * @author Bela Ban
- * @version $Id: Promise.java,v 1.12 2007/08/30 10:05:29 belaban Exp $
+ * @version $Id: Promise.java,v 1.12.2.1 2007/11/20 08:37:24 belaban Exp $
  */
 public class Promise<T> {
-    T result=null;
-    volatile boolean hasResult=false;
+    private final Lock lock=new ReentrantLock();
+    private final Condition cond=lock.newCondition();
+    private T result=null;
+    private boolean hasResult=false;
 
+    public Lock getLock() {
+        return lock;
+    }
+
+    public Condition getCond() {
+        return cond;
+    }
 
     /**
      * Blocks until a result is available, or timeout milliseconds have elapsed
@@ -23,20 +36,19 @@ public class Promise<T> {
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
      */
     public T getResultWithTimeout(long timeout) throws TimeoutException {
-        synchronized(this) {
-            try {
-                return _getResultWithTimeout(timeout);
-            }
-            finally {
-                notifyAll();
-            }
+        lock.lock();
+        try {
+            return _getResultWithTimeout(timeout);
+        }
+        finally {
+            cond.signalAll();
+            lock.unlock();
         }
     }
 
 
     /**
-     * Blocks until a result is available, or timeout milliseconds have elapsed. Needs to be called with
-     * a lock held on 'this'
+     * Blocks until a result is available, or timeout milliseconds have elapsed. Needs to be called with lock held
      * @param timeout
      * @return An object
      * @throws TimeoutException If a timeout occurred (implies that timeout > 0)
@@ -96,12 +108,12 @@ public class Promise<T> {
     }
 
 
-    void doWait() {
-        try {wait();} catch(InterruptedException e) {}
+    private void doWait() {
+        try {cond.await();} catch(InterruptedException e) {}
     }
 
-    void doWait(long timeout) {
-        try {wait(timeout);} catch(InterruptedException e) {}
+    private void doWait(long timeout) {
+        try {cond.await(timeout, TimeUnit.MILLISECONDS);} catch(InterruptedException e) {}
     }
 
 
@@ -111,8 +123,12 @@ public class Promise<T> {
      * Checks whether result is available. Does not block.
      */
     public boolean hasResult() {
-        synchronized(this) {
+        lock.lock();
+        try {
             return hasResult;
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -121,10 +137,14 @@ public class Promise<T> {
      * waiting for it
      */
     public void setResult(T obj) {
-        synchronized(this) {
+        lock.lock();
+        try {
             result=obj;
             hasResult=true;
-            notifyAll();
+            cond.signalAll();
+        }
+        finally {
+            lock.unlock();
         }
     }
 
@@ -133,10 +153,14 @@ public class Promise<T> {
      * Causes all waiting threads to return
      */
     public void reset() {
-        synchronized(this) {
+        lock.lock();
+        try {
             result=null;
             hasResult=false;
-            notifyAll();
+            cond.signalAll();
+        }
+        finally {
+            lock.unlock();
         }
     }
 

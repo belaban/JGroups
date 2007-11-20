@@ -1,4 +1,4 @@
-// $Id: Ping.java,v 1.11 2007/07/20 09:15:28 belaban Exp $
+// $Id: Ping.java,v 1.11.2.1 2007/11/20 08:37:25 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  To connect to any group, it is essential that the groupname given (-group) is the same as the one of the group
  and the properties are the same as the bottom 2 layers of the group properties, e.g. if the group properties are:
  <pre>
- TCP(start_port=7800):TCPPING(initial_hosts=daddy.nms.fnc.fujitsu.com[7800];port_range=2;timeout=5000;num_initial_members=3;up_thread=true;down_thread=true):pbcast.STABLE(desired_avg_gossip=200000;down_thread=false;up_thread=false):pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=false;down_thread=true;up_thread=true)
+ TCP(start_port=7800):TCPPING(initial_hosts=daddy.nms.fnc.fujitsu.com[7800];port_range=2;timeout=5000;num_initial_members=3;up_thread=true;down_thread=true):pbcast.STABLE(desired_avg_gossip=200000;down_thread=false;up_thread=false):pbcast.NAKACK(down_thread=true;up_thread=true;gc_lag=100;retransmit_timeout=3000):pbcast.GMS(join_timeout=5000;shun=false;print_local_addr=false;down_thread=true;up_thread=true)
  </pre>
  ,then the stack properties should be:
  <pre>
@@ -47,7 +47,7 @@ public class Ping implements UpHandler {
 
         try {
             channel.connect(groupname);
-            List<PingRsp> responses = (List<PingRsp>) channel.downcall(Event.FIND_INITIAL_MBRS_EVT);
+            List<PingRsp> responses = (List<PingRsp>) channel.downcall(new Event(Event.FIND_INITIAL_MBRS));
             for(int i=0; i < responses.size(); i++) {
             	PingRsp rsp=responses.get(i);
                 System.out.println("Rsp #" + (i + 1) + ": " + rsp);
