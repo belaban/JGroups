@@ -6,17 +6,16 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Rsp;
-import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
+import java.util.Vector;
 import java.util.Collection;
 import java.util.TreeSet;
-import java.util.Vector;
+import java.util.ArrayList;
 
 
 /**
@@ -37,7 +36,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74 2007/07/30 07:05:40 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.72.2.1 2007/11/20 11:16:10 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -381,12 +380,6 @@ public class MessageDispatcher implements RequestHandler {
      * @return RspList A list of responses. Each response is an <code>Object</code> and associated to its sender.
      */
     public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting) {
-        return castMessage(dests, msg, mode, timeout, use_anycasting, null);
-    }
-
-
-    public RspList castMessage(final Vector dests, Message msg, int mode, long timeout, boolean use_anycasting,
-                               RspFilter filter) {
         GroupRequest _req=null;
         Vector real_dests;
         Channel tmp;
@@ -396,6 +389,7 @@ public class MessageDispatcher implements RequestHandler {
         // real_dests=dests != null ? (Vector) dests.clone() : (members != null ? new Vector(members) : null);
         if(dests != null) {
             real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {
@@ -416,7 +410,7 @@ public class MessageDispatcher implements RequestHandler {
             if(local_addr == null) {
                 local_addr=tmp.getLocalAddress();
             }
-            if(local_addr != null && real_dests != null) {
+            if(local_addr != null) {
                 real_dests.removeElement(local_addr);
             }
         }
@@ -425,7 +419,7 @@ public class MessageDispatcher implements RequestHandler {
         if(log.isTraceEnabled())
             log.trace("real_dests=" + real_dests);
 
-        if(real_dests == null || real_dests.isEmpty()) {
+        if(real_dests.isEmpty()) {
             if(log.isTraceEnabled())
                 log.trace("destination list is empty, won't send message");
             return new RspList(); // return empty response list
@@ -433,7 +427,6 @@ public class MessageDispatcher implements RequestHandler {
 
         _req=new GroupRequest(msg, corr, real_dests, mode, timeout, 0);
         _req.setCaller(this.local_addr);
-        _req.setResponseFilter(filter);
         try {
             _req.execute(use_anycasting);
         }
@@ -478,6 +471,7 @@ public class MessageDispatcher implements RequestHandler {
         //real_dests=dests != null ? (Vector) dests.clone() : (Vector) members.clone();
         if(dests != null) {
             real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {

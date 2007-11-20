@@ -4,17 +4,18 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 
-import java.util.Properties;
-import java.util.Set;
+import java.util.*;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.7.2.2 2007/11/02 15:41:58 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.7.2.3 2007/11/20 11:16:09 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -58,6 +59,32 @@ public class RpcDispatcherTest extends ChannelTestBase {
             _testLargeValue(SIZES[i]);
         }
     }
+
+
+    /**
+     * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
+     */
+    public void testMethodInvocationToNonExistingMembers() {
+        View view=c3.getView();
+        Vector<Address> members=view.getMembers();
+        System.out.println("list is " + members);
+
+        System.out.println("closing c3");
+        c3.close();
+
+        Util.sleep(1000);
+        System.out.println("calling method foo() in " + members + " (view=" + c2.getView() + ")");
+        RspList rsps=disp1.callRemoteMethods(members, "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+        System.out.println("responses:\n" + rsps);
+        Map.Entry entry;
+        for(Iterator<Map.Entry> it=rsps.entrySet().iterator(); it.hasNext();) {
+            entry=it.next();
+            Rsp rsp=(Rsp)entry.getValue();
+            assertTrue("response from " + entry.getKey() + " was not received", rsp.wasReceived());
+            assertFalse(rsp.wasSuspected());
+        }
+    }
+
 
     public void testLargeReturnValueUnicastCall() throws Throwable {
         setProps(c1); setProps(c2); setProps(c3);
