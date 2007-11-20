@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.75 2007/11/20 10:58:36 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.76 2007/11/20 11:07:03 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -479,6 +479,7 @@ public class MessageDispatcher implements RequestHandler {
         //real_dests=dests != null ? (Vector) dests.clone() : (Vector) members.clone();
         if(dests != null) {
             real_dests=(Vector)dests.clone();
+            real_dests.retainAll(this.members);
         }
         else {
             synchronized(members) {
