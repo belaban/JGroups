@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.7 2007/09/27 10:17:49 vlada Exp $
+// $Id: SendAndReceiveTest.java,v 1.7.2.1 2007/11/20 08:53:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -29,7 +29,7 @@ public class SendAndReceiveTest extends TestCase {
             "UNICAST(timeout=600,1200,2400,4800):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=true)";
 
         String props2="UDP(loopback=false;mcast_addr=228.8.8.8;mcast_port=27000;ip_ttl=1;" +
@@ -43,7 +43,7 @@ public class SendAndReceiveTest extends TestCase {
                 "UNICAST(timeout=600,1200,2400,4800):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=8096):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "pbcast.GMS(join_timeout=5000;" +
                 "shun=false;print_local_addr=true)";
 
     String props3="SHARED_LOOPBACK:" +
@@ -55,7 +55,7 @@ public class SendAndReceiveTest extends TestCase {
             "UNICAST(timeout=600,1200,2400,4800):" +
              "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=8096):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=true)";
 
 

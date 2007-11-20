@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.15 2006/07/31 09:21:58 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.15.6.1 2007/11/20 08:53:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -45,20 +45,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
      instance rather than sending a message to all replicas and only then invoking the method.
      Useful for testing */
     boolean remote_calls=true;
-    String props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.STABLE(desired_avg_gossip=20000):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=5000):" +
-            "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=false;print_local_addr=true):" +
-            "pbcast.STATE_TRANSFER";
-    // "PERF(details=true)";
+    String props="udp.xml";
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary
      * messages when there are no member in the group */
@@ -1028,20 +1015,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         HashMap m=new HashMap();
         String props;
 
-        props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-                "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.STABLE(desired_avg_gossip=20000):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-                "UNICAST(timeout=5000):" +
-                "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
-        // "PERF(details=true)";
+        props="udp.xml";
 
         try {
 

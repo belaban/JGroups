@@ -1,4 +1,4 @@
-// $Id: GetStateTest.java,v 1.10 2006/04/23 12:52:54 belaban Exp $
+// $Id: GetStateTest.java,v 1.10.10.1 2007/11/20 08:53:42 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -36,7 +36,7 @@ public class GetStateTest implements Runnable {
             "UNICAST(timeout=5000):" +
             "pbcast.STABLE(desired_avg_gossip=20000):" +
             "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=true):" +
             "pbcast.STATE_TRANSFER";
 

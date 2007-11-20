@@ -1,4 +1,4 @@
-// $Id: Draw2Channels.java,v 1.11 2006/11/17 13:39:18 belaban Exp $
+// $Id: Draw2Channels.java,v 1.11.4.1 2007/11/20 08:53:42 belaban Exp $
 
 
 package org.jgroups.demos;
@@ -77,7 +77,7 @@ public class Draw2Channels implements ActionListener {
                 "UNICAST(timeout=5000):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "pbcast.GMS(join_timeout=5000;" +
                 "shun=false;print_local_addr=true)";
 
 

@@ -1,4 +1,4 @@
-// $Id: RpcDispatcherStressTest.java,v 1.9 2007/08/20 11:15:35 belaban Exp $
+// $Id: RpcDispatcherStressTest.java,v 1.9.2.1 2007/11/20 08:53:42 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -139,19 +139,7 @@ public class RpcDispatcherStressTest implements MembershipListener {
         long    interval=1000;
         boolean discard_local=false;
 
-        props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=32;" +
-                "ucast_recv_buf_size=16000;ucast_send_buf_size=16000;" +
-                "mcast_send_buf_size=32000;mcast_recv_buf_size=64000;loopback=true):"+
-                "PING(timeout=2000;num_initial_members=3):"+
-                "MERGE2(min_interval=5000;max_interval=10000):"+
-                "FD_SOCK:"+
-                "VERIFY_SUSPECT(timeout=1500):"+
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=1000,1500,2000,3000):"+
-                "UNICAST(timeout=1000,1500,2000,3000):"+
-                "pbcast.STABLE(desired_avg_gossip=10000):"+
-                "FRAG(frag_size=8192;down_thread=false;up_thread=false):"+
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=true):"+
-                "pbcast.STATE_TRANSFER";
+        props="udp.xml";
         
         try {
             for(int i=0; i < args.length; i++) {

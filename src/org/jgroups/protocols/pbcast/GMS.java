@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126 2007/11/09 15:22:46 belaban Exp $
+ * @version $Id: GMS.java,v 1.126.2.1 2007/11/20 08:53:45 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -39,7 +39,6 @@ public class GMS extends Protocol {
     ViewId                    view_id=null;
     private long              ltime=0;
     long                      join_timeout=5000;
-    long                      join_retry_timeout=2000;
     long                      leave_timeout=5000;
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
@@ -113,8 +112,10 @@ public class GMS extends Protocol {
     public int getNumMembers() {return members != null? members.size() : 0;}
     public long getJoinTimeout() {return join_timeout;}
     public void setJoinTimeout(long t) {join_timeout=t;}
-    public long getJoinRetryTimeout() {return join_retry_timeout;}
-    public void setJoinRetryTimeout(long t) {join_retry_timeout=t;}
+    /** @deprecated */
+    public long getJoinRetryTimeout() {return -1;}
+    /** @deprecated */
+    public void setJoinRetryTimeout(long t) {}
     public boolean isShun() {return shun;}
     public void setShun(boolean s) {shun=s;}
     public String printPreviousMembers() {
@@ -869,8 +870,9 @@ public class GMS extends Protocol {
 
         str=props.getProperty("join_retry_timeout");     // time to wait between JOINs
         if(str != null) {
-            join_retry_timeout=Long.parseLong(str);
             props.remove("join_retry_timeout");
+            if(log.isWarnEnabled())
+                log.warn("join_retry_timeout has been deprecated and its value will be ignored");
         }
 
         str=props.getProperty("leave_timeout");           // time to wait until coord responds to LEAVE req.
@@ -1191,7 +1193,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126 2007/11/09 15:22:46 belaban Exp $
+     * @version $Id: GMS.java,v 1.126.2.1 2007/11/20 08:53:45 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

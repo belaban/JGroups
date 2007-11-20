@@ -1,4 +1,4 @@
-## $Id: CONFIGURATIONS,v 1.1 2003/09/09 01:24:04 belaban Exp $
+## $Id: CONFIGURATIONS,v 1.1.1.1.26.1 2007/11/20 08:53:44 belaban Exp $
 
 
 	    Frequently used protocol stack specifications
@@ -88,7 +88,7 @@ pbcast.STABLE(desired_avg_gossip=10000):
 pbcast.NAKACK(gc_lag=5;retransmit_timeout=3000;trace=true):
 UNICAST(timeout=5000;min_wait_time=2000):
 FRAG(down_thread=false;up_thread=false):
-pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;shun=false;print_local_addr=true)
+pbcast.GMS(join_timeout=5000;shun=false;print_local_addr=true)
 
 
 Properties:

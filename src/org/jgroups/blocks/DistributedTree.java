@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.17 2007/05/09 22:57:51 belaban Exp $
+// $Id: DistributedTree.java,v 1.17.4.1 2007/11/20 08:53:45 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -32,18 +32,7 @@ public class DistributedTree implements MessageListener, MembershipListener {
     // state has been transferred
     protected boolean rc = false;
     String groupname="DistributedTreeGroup";
-    String channel_properties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=0):" +
-            "PING(timeout=5000;num_initial_members=6):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.STABLE(desired_avg_gossip=10000):" +
-            "pbcast.NAKACK(gc_lag=5;retransmit_timeout=3000;trace=true):" +
-            "UNICAST(timeout=5000):" +
-            "FRAG(down_thread=false;up_thread=false):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-            "shun=false;print_local_addr=true):" +
-            // trace=true is not supported anymore
-            "pbcast.STATE_TRANSFER()";
+    String channel_properties="udp.xml";
     static final long state_timeout=5000;   // wait 5 secs max to obtain state
 
 	/** Determines when the updates have to be sent across the network, avoids sending unnecessary

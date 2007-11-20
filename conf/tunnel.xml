@@ -24,7 +24,7 @@
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="5000"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="3000"
-                join_retry_timeout="2000" shun="false"
+                shun="false"
                 view_bundling="true"
                 view_ack_collection_timeout="5000"/>
     <FC max_credits="2000000"
