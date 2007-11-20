@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-// $Id: SpeedTest_NIO.java,v 1.4 2007/08/20 11:15:35 belaban Exp $
+// $Id: SpeedTest_NIO.java,v 1.4.2.1 2007/11/20 08:53:42 belaban Exp $
 
 
 import org.jgroups.Channel;
@@ -65,7 +65,7 @@ public class SpeedTest_NIO {
                 "pbcast.STABLE(desired_avg_gossip=10000):" +
                 "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
 // "PIGGYBACK(max_size=16000;max_wait_time=500):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "pbcast.GMS(join_timeout=5000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
         // "PERF(details=true)";
@@ -80,7 +80,7 @@ public class SpeedTest_NIO {
                 "UNICAST(timeout=5000):" +
                 "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "FRAG(frag_size=16000;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                "pbcast.GMS(join_timeout=5000;" +
                 "shun=false;print_local_addr=true):" +
                 "pbcast.STATE_TRANSFER";
 

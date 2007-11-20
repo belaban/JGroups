@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.21 2007/08/20 11:15:35 belaban Exp $
+// $Id: SpeedTest.java,v 1.21.2.1 2007/11/20 08:53:42 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -28,7 +28,7 @@ import java.net.MulticastSocket;
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
  * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
- * @version $Id: SpeedTest.java,v 1.21 2007/08/20 11:15:35 belaban Exp $
+ * @version $Id: SpeedTest.java,v 1.21.2.1 2007/11/20 08:53:42 belaban Exp $
  */
 public class SpeedTest {
     static long start=0, stop=0;
@@ -52,21 +52,7 @@ public class SpeedTest {
         String props;
 
 
-        props="UDP(mcast_addr=224.0.0.36;mcast_port=55566;ip_ttl=32;" +
-                "ucast_send_buf_size=32000;ucast_recv_buf_size=64000;" +
-                "mcast_send_buf_size=32000;mcast_recv_buf_size=64000):" +
-                "PING(timeout=2000;num_initial_members=3):" +
-                "MERGE2(min_interval=5000;max_interval=10000):" +
-                "FD_SOCK:" +
-                "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,800,1200,2400,4800):" +
-                "UNICAST(timeout=1200):" +
-                "pbcast.STABLE(desired_avg_gossip=10000):" +
-                "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
-                "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
-                "shun=false;print_local_addr=true):" +
-                "pbcast.STATE_TRANSFER";
-                //  "PERF(details=true)";
+        props="udp.xml";
 
 
 

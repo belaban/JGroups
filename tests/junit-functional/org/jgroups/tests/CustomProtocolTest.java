@@ -8,7 +8,7 @@ import org.jgroups.stack.Protocol;
 /**
  * Tests custom protocol.
  * Author: Lenny Phan
- * Version: $Id: CustomProtocolTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+ * Version: $Id: CustomProtocolTest.java,v 1.1.4.1 2007/11/20 08:53:45 belaban Exp $
  */
 public class CustomProtocolTest extends TestCase {
 
@@ -21,7 +21,7 @@ public class CustomProtocolTest extends TestCase {
             "UNICAST(timeout=600,1200,2400,4800):" +
             "pbcast.STABLE(desired_avg_gossip=10000):" +
             "FRAG:" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=true;print_local_addr=true)";
 
     public void testMyProtocol() throws Exception {

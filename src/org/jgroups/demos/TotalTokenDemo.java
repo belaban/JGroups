@@ -1,4 +1,4 @@
-//$Id: TotalTokenDemo.java,v 1.10 2005/05/30 16:14:40 belaban Exp $
+//$Id: TotalTokenDemo.java,v 1.10.14.1 2007/11/20 08:53:41 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -37,7 +37,7 @@ import java.util.Vector;
  *
  *@author Vladimir Blagojevic vladimir@cs.yorku.ca
  *@author Ivan Bilenjkij  ivan@ibossa.com
- *@version $Revision: 1.10 $
+ *@version $Revision: 1.10.14.1 $
  *
  *@see org.jgroups.protocols.TOTAL_TOKEN
  *
@@ -545,7 +545,7 @@ public class TotalTokenDemo extends JFrame implements Runnable
                     "UNICAST(timeout=5000):" +
                     "FRAG(frag_size=8192;down_thread=false;up_thread=false):" +
                     "TOTAL_TOKEN(block_sending=50;unblock_sending=10):" +
-                    "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+                    "pbcast.GMS(join_timeout=5000;" +
                     "shun=false;print_local_addr=true)";
 
 

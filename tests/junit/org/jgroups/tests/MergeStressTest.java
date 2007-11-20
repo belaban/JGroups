@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.6 2007/03/12 11:03:06 belaban Exp $
+// $Id: MergeStressTest.java,v 1.6.4.1 2007/11/20 08:53:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.CyclicBarrier;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.6 2007/03/12 11:03:06 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.6.4.1 2007/11/20 08:53:43 belaban Exp $
  */
 public class MergeStressTest extends TestCase {
     static CyclicBarrier start_connecting=null;
@@ -39,7 +39,7 @@ public class MergeStressTest extends TestCase {
             "UNICAST(timeout=300,600,1200,2400):" +
             "pbcast.STABLE(desired_avg_gossip=5000):" +
             "FRAG(frag_size=4096):" +
-            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "pbcast.GMS(join_timeout=5000;" +
             "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
             "merge_timeout=30000;handle_concurrent_startup=false)";
 
