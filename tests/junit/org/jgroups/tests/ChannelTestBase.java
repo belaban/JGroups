@@ -633,15 +633,25 @@ public class ChannelTestBase extends TestCase {
                                o instanceof UnblockEvent);
                 }
             }
-            else if(event instanceof SetStateEvent || event instanceof GetStateEvent){
+            else if(event instanceof SetStateEvent){
                 if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("After state should be Unblock , but it is " + o.getClass() + ",events= " + eventString,
+                    assertTrue("After setstate should be unblock , but it is " + o.getClass() + ",events= " + eventString,
                                o instanceof UnblockEvent);
                 }
                 Object o = events.get(i - 1);
-                assertTrue("Before state should be Block or View , but it is " + o.getClass() + ",events= " + eventString,
-                           o instanceof BlockEvent || events.get(i - 1) instanceof View);
+                assertTrue("Before setstate should be block|view, but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || o instanceof View);
+            }
+            else if(event instanceof GetStateEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After getstate should be getstate/unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent || o instanceof GetStateEvent); 
+                }
+                Object o = events.get(i - 1);
+                assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || o instanceof View || o instanceof GetStateEvent);
             }
             else if(event instanceof UnblockEvent){
                 if(i + 1 < size){
