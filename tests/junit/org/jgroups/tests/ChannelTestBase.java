@@ -2,9 +2,6 @@ package org.jgroups.tests;
 
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.lang.management.ManagementFactory;
-import java.lang.management.ThreadInfo;
-import java.lang.management.ThreadMXBean;
 import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -130,7 +127,7 @@ public class ChannelTestBase extends TestCase
          {
             System.out.println(thread_dump);
             System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-            msg = "active threads:\n" + dumpThreads();
+            msg = "active threads:\n" + Util.activeThreads();
          }
          assertEquals(msg, active_threads, current_active_threads);
       }
@@ -858,29 +855,5 @@ public class ChannelTestBase extends TestCase
       }
    }
    
-   /* CAUTION: JDK 5 specific code */
-   private String dumpThreads()
-   {
-      StringBuffer sb = new StringBuffer();
-      ThreadMXBean bean = ManagementFactory.getThreadMXBean();
-      long[] ids = bean.getAllThreadIds();
-      ThreadInfo[] threads = bean.getThreadInfo(ids, 20);
-      for (int i = 0; i < threads.length; i++)
-      {
-         ThreadInfo info = threads[i];
-         if (info == null)
-            continue;
-         sb.append(info.getThreadName()).append(":\n");
-         StackTraceElement[] stack_trace = info.getStackTrace();
-         for (int j = 0; j < stack_trace.length; j++)
-         {
-            StackTraceElement el = stack_trace[j];
-            sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
-            sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
-            sb.append("\n");
-         }
-         sb.append("\n\n");
-      }
-      return sb.toString();
-   }
+
 }

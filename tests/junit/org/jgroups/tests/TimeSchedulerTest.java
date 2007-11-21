@@ -17,7 +17,7 @@ import java.util.HashMap;
  * Test cases for TimeScheduler
  *
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.9.2.1 2007/04/27 06:26:39 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.9.2.2 2007/11/21 14:08:25 belaban Exp $
  */
 public class TimeSchedulerTest extends TestCase {
     TimeScheduler timer=null;
@@ -58,39 +58,7 @@ public class TimeSchedulerTest extends TestCase {
     }
 
 
-    public void testTaskCancellationBeforeTaskHasRun() {
-        StressTask task=new StressTask();
-        timer.add(task);
-        assertEquals(1, timer.size());
-        task.cancel();
-        assertEquals(1, timer.size());
-
-        Util.sleep(200);
-        int num_executions=task.getNum_executions();
-        System.out.println("number of task executions=" + num_executions);
-        assertEquals("task should never have executed as it was cancelled before execution", 0, num_executions);
-
-        timer.purge(); // removes cancelled tasks
-        assertEquals(0, timer.size());
-    }
-
-    public void testTaskCancellationAfterHasRun() {
-        StressTask task=new StressTask();
-        timer.add(task);
-        assertEquals(1, timer.size());
-
-        Util.sleep(200); // wait until task has executed
-        task.cancel();
-        assertEquals(1, timer.size());
-
-        int num_executions=task.getNum_executions();
-        System.out.println("number of task executions=" + num_executions);
-        assertTrue("task should have executed at least 1 time, as it was cancelled after 200ms", num_executions >= 1);
-        Util.sleep(60); // wait until the task is run again and is then cancelled
-        timer.purge(); // removes cancelled tasks
-        assertEquals(0, timer.size());
-    }
-
+ 
 
     public void testImmediateExecution() {
         Promise p=new Promise();

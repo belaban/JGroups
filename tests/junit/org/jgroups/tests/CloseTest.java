@@ -1,29 +1,52 @@
-// $Id: CloseTest.java,v 1.12 2006/11/22 19:33:07 vlada Exp $
+// $Id: CloseTest.java,v 1.11.2.1 2007/11/21 14:08:25 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.util.Vector;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.View;
+import junit.framework.TestCase;
+import org.jgroups.*;
 import org.jgroups.util.Util;
+
+import java.util.Vector;
 
 
 /**
  * Demos the creation of a channel and subsequent connection and closing. Demo application should exit (no
  * more threads running)
  */
-public class CloseTest extends ChannelTestBase {
-    Channel channel, channel1, channel2, c1, c2, c3;  
+public class CloseTest extends TestCase {
+    JChannel channel, channel1, channel2, c1, c2, c3;
+    int active_threads=0;
 
-    public void setUp() throws Exception {
-        super.setUp();                
+    String props="UDP(mcast_addr=228.8.8.3;mcast_port=45577;ip_ttl=32;" +
+            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000;" +
+            "enable_bundling=true;max_bundle_timeout=30;use_incoming_packet_handler=true;loopback=true):" +
+            "PING(timeout=2000;num_initial_members=3):" +
+            "MERGE2(min_interval=5000;max_interval=10000):" +
+            "FD_SOCK:" +
+            "VERIFY_SUSPECT(timeout=1500):" +
+            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
+            "UNICAST(timeout=600,1200,2400):" +
+            "pbcast.STABLE(desired_avg_gossip=20000):" +
+            "FRAG(frag_size=4096;down_thread=false;up_thread=false):" +
+            "pbcast.GMS(join_timeout=5000;join_retry_timeout=2000;" +
+            "shun=true;print_local_addr=true)";
+
+    public CloseTest(String name) {
+        super(name);
+    }
+
+    protected void setUp() throws Exception {
+        super.setUp();
+        String cfg=System.getProperty("config");
+        if(cfg != null)
+            props=cfg;
+        active_threads=Thread.activeCount();
+        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
     }
 
 
-    public void tearDown() throws Exception {        
+    protected void tearDown() throws Exception {
+        super.tearDown();
         closeChannel(channel);
         closeChannel(channel1);
         closeChannel(channel2);
@@ -31,62 +54,59 @@ public class CloseTest extends ChannelTestBase {
         closeChannel(c2);
         closeChannel(c3);
 
-        super.tearDown();
+        int current_active_threads=Thread.activeCount();
+        System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
+        // System.out.println("thread:\n" + dumpThreads());
+        String msg="";
+        if(active_threads != current_active_threads) {
+            msg="active threads:\n" + Util.activeThreads();
+        }
+        assertEquals(msg, active_threads, current_active_threads);
     }
-    
-    protected boolean useBlocking()
-    {
-       return false;
-    }
- 
 
-    private void closeChannel(Channel c) {
+    private void closeChannel(JChannel c) {
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
         }
     }
 
 
-    public void testDoubleClose() throws Exception {
+    public void testDoubleClose() throws ChannelException {
         System.out.println("-- creating channel1 --");
-        channel1=createChannel();
+        channel1=new JChannel(props);
         System.out.println("-- connecting channel1 --");
         channel1.connect("bla");
-        
-        assertTrue("channel open", channel1.isOpen());
-        assertTrue("channel connected", channel1.isConnected()); 
-        
         System.out.println("-- closing channel1 --");
         channel1.close();
         System.out.println("-- closing channel1 (again) --");
         channel1.close();
-        assertFalse("channel not connected", channel1.isConnected());
         System.out.println("-- done, threads are ");
         Util.printThreads();
     }
 
     public void testCreationAndClose() throws Exception {
         System.out.println("-- creating channel1 --");
-        Channel c = null;
-        c = createChannel();
-        c.connect("CloseTest1");
-        assertTrue("channel open", c.isOpen());
-        assertTrue("channel connected", c.isConnected());        
-        c.close();        
-        assertFalse("channel not connected", c.isConnected());
-        c.close();
+        channel1=new JChannel(props);
+        System.out.println("-- connecting channel1 --");
+        channel1.connect("CloseTest1");
+        System.out.println("-- closing channel1 --");
+        channel1.close();
+        System.out.println("-- done, threads are ");
+        Util.printThreads();
     }
-    
+
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         Address  a1, a2;
         Vector members;
-        c1 = createChannel("A");               
+
+        c1=new JChannel(props);
         System.out.println("-- connecting c1");
         c1.connect("X");
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
-        a1=c1.getLocalAddress();       
-        c2 = createChannel("A");   
+        a1=c1.getLocalAddress();
+
+        c2=new JChannel(props);
         System.out.println("-- connecting c2");
         c2.connect("X");
         Util.sleep(500); // time to receive its own view
@@ -119,12 +139,14 @@ public class CloseTest extends ChannelTestBase {
         Vector members;
         Object obj;
         View v;
-        c1=createChannel("A");
+
+        c1=new JChannel(props);
         c1.connect("X");
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1);
         a1=c1.getLocalAddress();
-        c2=createChannel("A");       
+
+        c2=new JChannel(props);
         c2.connect("X");
         Util.sleep(500); // time to receive its own view
         a2=c2.getLocalAddress();
@@ -149,7 +171,7 @@ public class CloseTest extends ChannelTestBase {
         assertEquals(0, c2.getNumMessages());
     }
 
-    private void dumpMessages(String msg, Channel ch) throws Exception {
+    private void dumpMessages(String msg, JChannel ch) throws Exception {
         while(ch.getNumMessages() > 0) {
             Object obj=ch.receive(0);
             if(obj instanceof View)
@@ -157,9 +179,9 @@ public class CloseTest extends ChannelTestBase {
         }
     }
 
-    public void testConnectDisconnectConnectCloseSequence() throws Exception {
+    public void testConnectDisconnectConnectCloseSequence() throws ChannelException {
         System.out.println("-- creating channel --");
-        channel=createChannel();
+        channel=new JChannel(props);
         System.out.println("-- connecting channel to CloseTest1--");
         channel.connect("CloseTest1");
         System.out.println("view is " + channel.getView());
@@ -175,15 +197,15 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    public void testConnectCloseSequenceWith2Members() throws Exception {
+    public void testConnectCloseSequenceWith2Members() throws ChannelException {
         System.out.println("-- creating channel --");
-        channel=createChannel("A");
+        channel=new JChannel(props);
         System.out.println("-- connecting channel --");
         channel.connect("X");
         System.out.println("view is " + channel.getView());
 
         System.out.println("-- creating channel1 --");
-        channel1=createChannel("A");
+        channel1=new JChannel(props);
         System.out.println("-- connecting channel1 --");
         channel1.connect("X");
         System.out.println("view is " + channel1.getView());
@@ -199,7 +221,7 @@ public class CloseTest extends ChannelTestBase {
 
     public void testCreationAndClose2() throws Exception {
         System.out.println("-- creating channel2 --");
-        channel2=createChannel();
+        channel2=new JChannel(props);
         System.out.println("-- connecting channel2 --");
         channel2.connect("CloseTest2");
         System.out.println("-- closing channel --");
@@ -211,7 +233,7 @@ public class CloseTest extends ChannelTestBase {
 
     public void testChannelClosedException() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel();
+        channel=new JChannel(props);
         System.out.println("-- connecting channel --");
         channel.connect("CloseTestLoop");
         System.out.println("-- closing channel --");
@@ -229,7 +251,7 @@ public class CloseTest extends ChannelTestBase {
 
     public void testCreationAndCloseLoop() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel();
+        channel=new JChannel(props);
 
         for(int i=1; i <= 10; i++) {
             System.out.println("-- connecting channel (attempt #" + i + " ) --");
@@ -241,11 +263,27 @@ public class CloseTest extends ChannelTestBase {
             channel.open();
         }
         channel.close();
-    }   
+    }
+
+    public void testShutdown() throws Exception {
+        System.out.println("-- creating channel --");
+        channel=new JChannel(props);
+        System.out.println("-- connecting channel --");
+        channel.connect("bla");
+        System.out.println("-- shutting down channel --");
+        channel.shutdown();
+
+        Thread threads[]=new Thread[Thread.activeCount()];
+        Thread.enumerate(threads);
+        System.out.println("-- active threads:");
+        for(int i=0; i < threads.length; i++)
+            System.out.println(threads[i]);
+        assertTrue(threads.length < 5);
+    }
 
 
      public void testMultipleConnectsAndDisconnects() throws Exception {
-        c1=createChannel("A");
+        c1=new JChannel(props);
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
         c1.connect("bla");
@@ -253,7 +291,7 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(c1.isConnected());
         assertServiceAndClusterView(c1, 1);
 
-        c2=createChannel("A");
+        c2=new JChannel(props);
         assertTrue(c2.isOpen());
         assertFalse(c2.isConnected());
 
@@ -278,7 +316,7 @@ public class CloseTest extends ChannelTestBase {
         assertServiceAndClusterView(c1, 2);
 
         // Now see what happens if we reconnect the first channel
-        c3=createChannel("A");
+        c3=new JChannel(props);
         assertTrue(c3.isOpen());
         assertFalse(c3.isConnected());
         assertServiceAndClusterView(c1, 2);
@@ -309,8 +347,11 @@ public class CloseTest extends ChannelTestBase {
         assertEquals(msg, num, view.size());
     }
 
+
+
     public static void main(String[] args) {
         String[] testCaseName={CloseTest.class.getName()};
         junit.textui.TestRunner.main(testCaseName);
     }
+
 }

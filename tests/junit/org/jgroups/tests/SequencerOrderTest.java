@@ -10,6 +10,7 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Util;
 
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -117,8 +118,8 @@ public class SequencerOrderTest extends TestCase {
     }
 
     private void verifyNumberOfMessages(int num_msgs) throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
+        List l1=r1.getMsgs();
+        List l2=r2.getMsgs();
 
         long end_time=System.currentTimeMillis() + 10000;
         while(System.currentTimeMillis() < end_time) {
@@ -132,13 +133,14 @@ public class SequencerOrderTest extends TestCase {
         assertEquals("list 2 should have " + num_msgs + " elements", num_msgs, l2.size());
     }
 
-    private void verifyMessageOrder(List<Integer> list) throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
+    private void verifyMessageOrder(List list) throws Exception {
+        List l1=r1.getMsgs();
+        List l2=r2.getMsgs();
         System.out.println("l1: " + l1);
         System.out.println("l2: " + l2);
-        int i=1,j=1;
-        for(int count: list) {
+        int i=1,j=1, count;
+        for(Iterator it=list.iterator(); it.hasNext();) {
+            count=((Integer)it.next()).intValue();
             if(count == i)
                 i++;
             else if(count == j)
@@ -150,17 +152,19 @@ public class SequencerOrderTest extends TestCase {
 
 
     private void verifySameOrder() throws Exception {
-        List<Integer> l1=r1.getMsgs();
-        List<Integer> l2=r2.getMsgs();
+        List l1=r1.getMsgs();
+        List l2=r2.getMsgs();
         int[] arr1=new int[l1.size()];
         int[] arr2=new int[l2.size()];
 
-        int index=0;
-        for(int el: l1) {
+        int index=0, el;
+        for(Iterator it=l1.iterator(); it.hasNext();) {
+            el=((Integer)it.next()).intValue();
             arr1[index++]=el;
         }
         index=0;
-        for(int el: l2) { 
+        for(Iterator it=l2.iterator(); it.hasNext();) {
+            el=((Integer)it.next()).intValue();
             arr2[index++]=el;
         }
 
@@ -175,18 +179,18 @@ public class SequencerOrderTest extends TestCase {
 
     private static class MyReceiver extends ReceiverAdapter {
         Address local_addr;
-        List<Integer> msgs=new LinkedList<Integer>();
+        List msgs=new LinkedList();
 
         private MyReceiver(Address local_addr) {
             this.local_addr=local_addr;
         }
 
-        public List<Integer> getMsgs() {
+        public List getMsgs() {
             return msgs;
         }
 
         public void receive(Message msg) {
-            msgs.add((Integer)msg.getObject());
+            msgs.add(msg.getObject());
         }
     }
 

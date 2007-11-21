@@ -2,20 +2,20 @@ package org.jgroups.blocks;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
-import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
-import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.8.2.2 2007/11/20 11:22:36 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.8.2.3 2007/11/21 14:08:26 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -60,7 +60,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     public void testMethodInvocationToNonExistingMembers() {
         View view=c3.getView();
-        Vector<Address> members=view.getMembers();
+        Vector members=view.getMembers();
         System.out.println("list is " + members);
 
         System.out.println("closing c3");
@@ -71,8 +71,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
         RspList rsps=disp1.callRemoteMethods(members, "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("responses:\n" + rsps);
         Map.Entry entry;
-        for(Iterator<Map.Entry> it=rsps.entrySet().iterator(); it.hasNext();) {
-            entry=it.next();
+        for(Iterator it=rsps.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
             Rsp rsp=(Rsp)entry.getValue();
             assertTrue("response from " + entry.getKey() + " was not received", rsp.wasReceived());
             assertFalse(rsp.wasSuspected());
