@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.126 2007/11/15 20:19:21 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.127 2007/11/21 19:53:05 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -27,7 +27,7 @@
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
-    <property name="unittest.timeout.low" value="180000"/>
+    <property name="unittest.timeout.low" value="240000"/>
     <property name="version" value="2.7.0-beta1"/>
 
     <!-- default properties used in all test targets -->
