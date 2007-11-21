@@ -1,21 +1,20 @@
 package org.jgroups.util;
 
+import EDU.oswego.cs.dl.util.concurrent.ConcurrentHashMap;
 import org.jgroups.Address;
 
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * Maintains the highest received and highest delivered seqno per member
  * @author Bela Ban
- * @version $Id: SeqnoTable.java,v 1.1.2.2 2007/10/25 08:11:53 belaban Exp $
+ * @version $Id: SeqnoTable.java,v 1.1.2.3 2007/11/21 14:08:26 belaban Exp $
  */
 public class SeqnoTable {
     private long next_to_receive=0;
-    private final ConcurrentMap<Address,Entry> map=new ConcurrentHashMap<Address,Entry>();
+    private final ConcurrentHashMap map=new ConcurrentHashMap();
 
 
     public SeqnoTable(long next_to_receive) {
@@ -23,20 +22,20 @@ public class SeqnoTable {
     }
 
     public long getHighestReceived(Address member) {
-        Entry entry=map.get(member);
+        Entry entry=(Entry)map.get(member);
         return entry != null? entry.getHighestReceived() : -1;
     }
 
     public long getNextToReceive(Address member) {
-        Entry entry=map.get(member);
+        Entry entry=(Entry)map.get(member);
         return entry != null? entry.getNextToReceive() : -1;
     }
 
     public boolean add(Address member, long seqno) {
-        Entry entry=map.get(member);
+        Entry entry=(Entry)map.get(member);
         if(entry == null) {
             entry=new Entry(next_to_receive);
-            map.putIfAbsent(member, entry);
+            map.put(member, entry);
         }
         // now entry is not null
         return entry.add(seqno);
@@ -46,7 +45,7 @@ public class SeqnoTable {
         map.remove(member);
     }
 
-    public boolean retainAll(Collection<Address> members) {
+    public boolean retainAll(Collection members) {
         return map.keySet().retainAll(members);
     }
 
@@ -62,7 +61,7 @@ public class SeqnoTable {
     private static class Entry {
         long highest_received;
         long next_to_receive;
-        final Set<Long> seqnos=new HashSet<Long>();
+        final Set seqnos=new HashSet();
 
         private Entry(long initial_seqno) {
             this.next_to_receive=this.highest_received=initial_seqno;
@@ -81,7 +80,7 @@ public class SeqnoTable {
                 if(seqno == next_to_receive) {
                     next_to_receive++;
                     while(true) {
-                        if(seqnos.remove(next_to_receive)) {
+                        if(seqnos.remove(new Long(next_to_receive))) {
                             next_to_receive++;
                         }
                         else
@@ -94,7 +93,7 @@ public class SeqnoTable {
                     return false;
 
                 // seqno > next_to_receive
-                seqnos.add(seqno);
+                seqnos.add(new Long(seqno));
                 return true;
             }
             finally {
@@ -103,7 +102,7 @@ public class SeqnoTable {
         }
 
         public String toString() {
-            StringBuilder sb=new StringBuilder();
+            StringBuffer sb=new StringBuffer();
             sb.append(next_to_receive).append(" - ").append(highest_received);
             if(!seqnos.isEmpty())
                 sb.append(" ").append(seqnos);

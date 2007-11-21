@@ -1,12 +1,12 @@
 package org.jgroups.jmx;
 
-import org.jgroups.*;
-import org.w3c.dom.Element;
-import org.w3c.dom.NodeList;
-import org.w3c.dom.NamedNodeMap;
-import org.w3c.dom.Attr;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.*;
+import org.w3c.dom.Attr;
+import org.w3c.dom.Element;
+import org.w3c.dom.NamedNodeMap;
+import org.w3c.dom.NodeList;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -15,7 +15,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.14 2006/08/10 08:05:00 belaban Exp $
+ * @version $Id: JChannel.java,v 1.14.2.1 2007/11/21 14:08:25 belaban Exp $
  */
 public class JChannel implements JChannelMBean {
     /** Ref to the original JGroups channel */
