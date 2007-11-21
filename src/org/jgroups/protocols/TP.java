@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160 2007/11/08 16:58:54 belaban Exp $
+ * @version $Id: TP.java,v 1.161 2007/11/21 11:28:18 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -140,7 +140,7 @@ public abstract class TP extends Protocol {
 
     /** ================================== OOB thread pool ============================== */
     /** The thread pool which handles OOB messages */
-    Executor oob_thread_pool;
+    ExecutorService oob_thread_pool;
     boolean oob_thread_pool_enabled=true;
     int oob_thread_pool_min_threads=2;
     int oob_thread_pool_max_threads=10;
@@ -159,11 +159,20 @@ public abstract class TP extends Protocol {
      * JDK 5's java.util.concurrent package */
     String oob_thread_pool_rejection_policy="Run";
 
+    public ExecutorService getOOBThreadPool() {
+        return oob_thread_pool;
+    }
 
-/** ================================== Regular thread pool ============================== */
+    public void setOOBThreadPool(ExecutorService oob_thread_pool) {
+        if(this.oob_thread_pool != null) {
+            shutdownThreadPool(oob_thread_pool);
+        }
+        this.oob_thread_pool=oob_thread_pool;
+    }
+    /** ================================== Regular thread pool ============================== */
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
-    Executor thread_pool;
+    ExecutorService thread_pool;
     boolean thread_pool_enabled=true;
     int thread_pool_min_threads=2;
     int thread_pool_max_threads=10;
@@ -181,6 +190,17 @@ public abstract class TP extends Protocol {
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
     String thread_pool_rejection_policy="Run";
+
+    public ExecutorService getDefaultThreadPool() {
+        return thread_pool;
+    }
+
+    public void setDefaultThreadPool(ExecutorService thread_pool) {
+        if(this.thread_pool != null)
+            shutdownThreadPool(this.thread_pool);
+        this.thread_pool=thread_pool;
+    } /** =============================== End of regular thread pool ============================= */
+
 
 
     /** If set it will be added to <tt>local_addr</tt>. Used to implement
@@ -590,11 +610,11 @@ public abstract class TP extends Protocol {
         // 3. Stop the thread pools
 
         if(oob_thread_pool instanceof ThreadPoolExecutor) {
-            shutdownThreadPool((ThreadPoolExecutor)oob_thread_pool);
+            shutdownThreadPool(oob_thread_pool);
         }
 
         if(thread_pool instanceof ThreadPoolExecutor) {
-            shutdownThreadPool((ThreadPoolExecutor)thread_pool);
+            shutdownThreadPool(thread_pool);
         }
     }
 
@@ -1355,8 +1375,8 @@ public abstract class TP extends Protocol {
     }
 
 
-    protected Executor createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
-                                        BlockingQueue<Runnable> queue, final String thread_name) {
+    protected ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
+                                               BlockingQueue<Runnable> queue, final String thread_name) {
 
         ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(ProtocolStack.newThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
@@ -1376,7 +1396,7 @@ public abstract class TP extends Protocol {
     }
 
 
-    private static void shutdownThreadPool(ThreadPoolExecutor thread_pool) {
+    private static void shutdownThreadPool(ExecutorService thread_pool) {
         thread_pool.shutdownNow();
         try {
             thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
