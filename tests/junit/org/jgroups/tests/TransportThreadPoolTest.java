@@ -4,7 +4,6 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
 import java.util.LinkedList;
@@ -14,7 +13,7 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.1 2007/11/21 11:26:43 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.2 2007/11/21 11:27:16 belaban Exp $
  */
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
