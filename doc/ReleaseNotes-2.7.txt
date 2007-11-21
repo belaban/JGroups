@@ -1,0 +1,39 @@
+
+Release Notes JGroups 2.7
+=========================
+
+Version: $Id: ReleaseNotes-2.7.txt,v 1.1 2007/11/21 11:05:19 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.5).
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+Thread pools can be replaced in the transport
+---------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-632]
+
+
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+Bug fixes
+---------
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+
+April 2008
+
+
