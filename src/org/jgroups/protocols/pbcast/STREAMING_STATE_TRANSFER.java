@@ -71,13 +71,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private final Vector<Address> members = new Vector<Address>();
 
     /*
-     * key is state id and value is set of state requesters for that state id
-     * has contents only for state provider member
-     */
-    @GuardedBy("state_requesters")
-    private final Map<String, Set<Address>> state_requesters = new HashMap<String, Set<Address>>();
-
-    /*
      * set to true while waiting for a STATE_RSP
      */
     private boolean waiting_for_state_response = false;
@@ -211,10 +204,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     break;
                 case StateHeader.STATE_RSP:
                     handleStateRsp(hdr);
-                    break;
-                case StateHeader.STATE_REMOVE_REQUESTER:
-                    removeFromStateRequesters(hdr.sender, hdr.state_id);
-                    break;
+                    break;                
                 default:
                     if(log.isErrorEnabled())
                         log.error("type " + hdr.type + " not known in StateHeader");
@@ -325,7 +315,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         return !flushProtocolInStack;
     }
 
-    private void respondToStateRequester(boolean open_barrier) {
+    private void respondToStateRequester(String id, Address stateRequester, boolean open_barrier) {
 
         // setup the plumbing if needed
         if(spawner == null){
@@ -334,55 +324,36 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             Thread t = getProtocolStack().getThreadFactory().newThread(spawner,"STREAMING_STATE_TRANSFER server socket acceptor");               
             t.start();           
         }
-
-        List<Message> responses = new LinkedList<Message>();
+        
         Digest digest = null;
-        synchronized(state_requesters){
-            if(state_requesters.isEmpty()){
-                if(log.isWarnEnabled())
-                    log.warn("Should be responding to state requester, but there are no requesters !");
-                if(open_barrier)
-                    down_prot.down(new Event(Event.OPEN_BARRIER));
-                return;
-            }
-
-            if(isDigestNeeded()){
-                if(log.isDebugEnabled())
-                    log.debug("passing down GET_DIGEST");
-                digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
-            }
-
-            for(Map.Entry<String, Set<Address>> entry:state_requesters.entrySet()){
-                String stateId = entry.getKey();
-                Set<Address> requesters = entry.getValue();
-                for(Address requester:requesters){
-                    Message state_rsp = new Message(requester);
-                    StateHeader hdr = new StateHeader(StateHeader.STATE_RSP,
-                                                      local_addr,
-                                                      spawner.getServerSocketAddress(),
-                                                      digest,
-                                                      stateId);
-                    state_rsp.putHeader(NAME, hdr);
-                    responses.add(state_rsp);
-                }
-            }
-        }
-
-        if(open_barrier)
-            down_prot.down(new Event(Event.OPEN_BARRIER));
-
-        for(Message msg:responses){
+        if(isDigestNeeded()){
             if(log.isDebugEnabled())
-                log.debug("Responding to state requester " + msg.getDest()
-                          + " with address "
-                          + spawner.getServerSocketAddress()
-                          + " and digest "
-                          + digest);
-            down_prot.down(new Event(Event.MSG, msg));
-            if(stats){
-                num_state_reqs.incrementAndGet();
-            }
+                log.debug("passing down GET_DIGEST");
+            digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
         }
+        
+        Message state_rsp = new Message(stateRequester);
+        StateHeader hdr = new StateHeader(StateHeader.STATE_RSP,
+                                          local_addr,
+                                          spawner.getServerSocketAddress(),
+                                          digest,
+                                          id);
+        state_rsp.putHeader(NAME, hdr);
+        
+        if(log.isDebugEnabled())
+            log.debug("Responding to state requester " + state_rsp.getDest()
+                      + " with address "
+                      + spawner.getServerSocketAddress()
+                      + " and digest "
+                      + digest);
+        down_prot.down(new Event(Event.MSG, state_rsp));
+        if(stats){
+            num_state_reqs.incrementAndGet();
+        }
+
+       
+        if(open_barrier)
+            down_prot.down(new Event(Event.OPEN_BARRIER));      
     }
 
     private ThreadPoolExecutor setupThreadPool() {
@@ -441,16 +412,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             if(log.isErrorEnabled())
                 log.error("sender is null !");
             return;
-        }
-
-        synchronized(state_requesters){
-            Set<Address> requesters = state_requesters.get(id);
-            if(requesters == null){
-                requesters = new HashSet<Address>();
-            }
-            requesters.add(sender);
-            state_requesters.put(id, requesters);
-        }
+        }        
 
         if(isDigestNeeded()) // FLUSH protocol is not present
         {
@@ -460,7 +422,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             // has been returned
         }
         try{
-            respondToStateRequester(isDigestNeeded());
+            respondToStateRequester(id,sender,isDigestNeeded());
         }catch(Throwable t){
             if(log.isErrorEnabled())
                 log.error("failed fetching state from application", t);
@@ -483,28 +445,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             }
         }
         connectToStateProvider(hdr);
-    }
-
-    void removeFromStateRequesters(Address address, String state_id) {
-        synchronized(state_requesters){
-            Set<Address> requesters = state_requesters.get(state_id);
-            if(requesters != null && !requesters.isEmpty()){
-                boolean removed = requesters.remove(address);
-                if(log.isDebugEnabled()){
-                    log.debug("Attempted to clear " + address
-                              + " from requesters, successful="
-                              + removed);
-                }
-                if(requesters.isEmpty()){
-                    state_requesters.remove(state_id);
-                    if(log.isDebugEnabled()){
-                        log.debug("Cleared all requesters for state " + state_id
-                                  + ",state_requesters="
-                                  + state_requesters);
-                    }
-                }
-            }
-        }
     }
 
     private void connectToStateProvider(StateHeader hdr) {
@@ -532,8 +472,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                           + socket.getLocalPort()
                           + " passing inputstream up...");
 
-            // write out our state_id and address so state provider can clear
-            // this request
+            // write out our state_id and address
             ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(tmp_state_id);
             out.writeObject(local_addr);
@@ -560,16 +499,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     }
 
                 }catch(IOException e){
-                }
-                // since socket did not connect properly we have to
-                // clear our entry in state providers hashmap "manually"
-                Message m = new Message(hdr.sender);
-                StateHeader mhdr = new StateHeader(StateHeader.STATE_REMOVE_REQUESTER,
-                                                   local_addr,
-                                                   tmp_state_id);
-                m.putHeader(NAME, mhdr);
-                down_prot.down(new Event(Event.MSG, m));
-            }
+                }               
+            }            
             passStreamUp(sti);
         }
     }
@@ -701,14 +632,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                               + " and was reset to "
                               + socket.getSendBufferSize()
                               + ", passing outputstream up... ");
-
-                // read out state requesters state_id and address and clear this
-                // request
+                
                 ois = new ObjectInputStream(socket.getInputStream());
                 String state_id = (String) ois.readObject();
-                Address stateRequester = (Address) ois.readObject();
-                removeFromStateRequesters(stateRequester, state_id);
-
+                Address stateRequester = (Address) ois.readObject();               
                 wrapper = new StreamingOutputStreamWrapper(socket);
                 StateTransferInfo sti = new StateTransferInfo(stateRequester, wrapper, state_id);
                 up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
@@ -856,8 +783,6 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
         public static final byte STATE_RSP = 2;
 
-        public static final byte STATE_REMOVE_REQUESTER = 3;
-
         long id = 0; // state transfer ID (to separate multiple state
 
         // transfers at the same time)
@@ -946,9 +871,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             case STATE_REQ:
                 return "STATE_REQ";
             case STATE_RSP:
-                return "STATE_RSP";
-            case STATE_REMOVE_REQUESTER:
-                return "STATE_REMOVE_REQUESTER";
+                return "STATE_RSP";           
             default:
                 return "<unknown>";
             }
