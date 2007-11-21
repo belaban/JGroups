@@ -59,7 +59,7 @@ public abstract class BasicConnectionTable {
     InetAddress		    external_addr=null;
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
-    boolean             running=false;
+    volatile boolean    running=false;
     /** Total number of Connections created for this connection table */
     static AtomicInteger conn_creations=new AtomicInteger(0);
 
@@ -201,11 +201,9 @@ public abstract class BasicConnectionTable {
     /**
      Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
      */
-    public void remove(Address addr) {
-        Connection conn;
-
+    void removeConnection(Address addr,Connection conn) {              
        synchronized(conns) {
-           conn=conns.remove(addr);
+           conns.remove(addr);
        }
 
        if(conn != null) {
@@ -265,7 +263,9 @@ public abstract class BasicConnectionTable {
    }
 
    void addConnection(Address peer, Connection c) {
-       conns.put(peer, c);
+       synchronized (conns) {
+           conns.put(peer, c); 
+       }       
        if(reaper != null && !reaper.isRunning())
            reaper.start();
    }
@@ -310,7 +310,7 @@ public abstract class BasicConnectionTable {
        catch(Throwable ex) {
            if(log.isTraceEnabled())
                log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
-           remove(dest);
+           removeConnection(dest,conn);
        }
    }
 
@@ -331,14 +331,11 @@ public abstract class BasicConnectionTable {
                     
           //destroy and remove orphaned connection i.e. connections
           //to members that are not in current view
-          for(Connection orphanConnection:copy.values()){             
-              synchronized(conns){
-                  conns.remove(orphanConnection.getPeerAddress());
-              }
+          for(Connection orphanConnection:copy.values()){  
               if (log.isTraceEnabled())
-                log.trace("At " + local_addr + " destroying orphan to "
-                        + orphanConnection.getPeerAddress());
-              orphanConnection.destroy();             
+                  log.trace("At " + local_addr + " destroying orphan to "
+                          + orphanConnection.getPeerAddress());   
+              removeConnection(orphanConnection.getPeerAddress(),orphanConnection);                                   
           }     
           copy.clear();
       }
@@ -369,7 +366,7 @@ public abstract class BasicConnectionTable {
        /** Bounded queue of data to be sent to the peer of this connection */
        BlockingQueue<byte[]> send_queue=null;
        Sender                sender=null;
-       boolean               is_running=false;
+       volatile boolean      is_running=false;
 
 
        private String getSockAddress() {
@@ -464,6 +461,7 @@ public abstract class BasicConnectionTable {
            }
 
            conn_creations.decrementAndGet();
+           if(log.isTraceEnabled()) log.trace("destroyed " + this);
        }
 
 
@@ -534,8 +532,8 @@ public abstract class BasicConnectionTable {
                    out.flush();  // may not be very efficient (but safe)
                }
            }
-           catch(Exception ex) {
-               remove(peer_addr);
+           catch(Exception ex) {              
+               removeConnection(peer_addr,this);
                throw ex;
            }
        }
@@ -638,7 +636,7 @@ public abstract class BasicConnectionTable {
            byte[] buf=new byte[256]; // start with 256, increase as we go
            int len=0;
 
-           while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
+           while(is_running) {
                try {
                    if(in == null) {
                        if(log.isErrorEnabled()) log.error("input stream is null !");
@@ -654,14 +652,9 @@ public abstract class BasicConnectionTable {
                catch(OutOfMemoryError mem_ex) {
                    if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
                    break; // continue;
-               }
-               catch(EOFException eof_ex) {  // peer closed connection
-                   if(log.isTraceEnabled()) log.trace("exception is " + eof_ex);
-                   notifyConnectionClosed(peer_addr);
-                   break;
-               }
+               }               
                catch(IOException io_ex) {
-                   if(log.isTraceEnabled()) log.trace("exception is " + io_ex);
+                   if(log.isTraceEnabled()) log.trace("At " + local_addr + " exception is " + io_ex);                   
                    notifyConnectionClosed(peer_addr);
                    break;
                }
@@ -670,10 +663,8 @@ public abstract class BasicConnectionTable {
                }
            }
            if(log.isTraceEnabled())
-               log.trace("ConnectionTable.Connection.Receiver terminated");
-           receiverThread=null;
-           closeSocket();
-           // remove(peer_addr);
+               log.trace("ConnectionTable.Connection.Receiver terminated");          
+           removeConnection(peer_addr,this);
        }
 
 
@@ -682,21 +673,21 @@ public abstract class BasicConnectionTable {
            InetAddress local=null, remote=null;
            String local_str, remote_str;
 
-           if(sock == null)
+           Socket tmp_sock=sock;
+           if(tmp_sock == null)
                ret.append("<null socket>");
            else {
                //since the sock variable gets set to null we want to make
-               //make sure we make it through here without a nullpointer exception
-               Socket tmp_sock=sock;
+               //make sure we make it through here without a nullpointer exception               
                local=tmp_sock.getLocalAddress();
                remote=tmp_sock.getInetAddress();
                local_str=local != null ? Util.shortName(local) : "<null>";
                remote_str=remote != null ? Util.shortName(remote) : "<null>";
                ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
                           " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
-                          ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");
-               tmp_sock=null;
+                          ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");               
            }
+           tmp_sock=null;
 
            return ret.toString();
        }
