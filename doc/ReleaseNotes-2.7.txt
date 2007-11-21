@@ -2,7 +2,7 @@
 Release Notes JGroups 2.7
 =========================
 
-Version: $Id: ReleaseNotes-2.7.txt,v 1.1 2007/11/21 11:05:19 belaban Exp $
+Version: $Id: ReleaseNotes-2.7.txt,v 1.2 2007/11/21 11:50:35 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.7 is still API-backwards compatible with previous versions (down to 2.2.5).
@@ -14,6 +14,10 @@ Thread pools can be replaced in the transport
 ---------------------------------------------
 [http://jira.jboss.com/jira/browse/JGRP-632]
 
+We have 2 thread pools in the concurrent stack: the default and OOB thread pools. These can now be replaced with a custom
+user-written thread pool. The only requirement here is that the custom thread pool implements ExecutorService.
+This allows for tighter integration of JGroups into a system, e.g. for ISVs which already have a thread pool in their
+application, and want JGroups to use it.
 
 
 
