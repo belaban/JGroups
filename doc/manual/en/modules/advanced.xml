@@ -1231,12 +1231,12 @@
                 </screen>
                 First we fetch the ProtocolStack from the channel and get the transport protocol. Note that this could
                 be any subclass of TP, e.g. UDP or TCP. Then we create a new ExecutorService and set it in the transport.
-                The setDefaultThreadPool() method shuts down the default thread pool and waits until all threads have
-                completed processing. Usually, there shouldn't be any work tasks as the recommended way is to set the
-                thread pool before connecting the channel.
+                The setDefaultThreadPool(Executor) method shuts down the default thread pool and waits until all threads
+                have completed processing. Usually, there shouldn't be any work tasks as the recommended way is to
+                set the thread pool before connecting the channel.
             </para>
             <para>
-                The method for setting the OOB thread pool is setOOBThreadPool(ExecutorService).
+                The method for setting the OOB thread pool is setOOBThreadPool(Executor).
             </para>
         </section>
 
