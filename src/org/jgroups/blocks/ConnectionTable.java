@@ -1,11 +1,9 @@
-// $Id: ConnectionTable.java,v 1.62 2007/11/06 17:13:50 vlada Exp $
+// $Id: ConnectionTable.java,v 1.63 2007/11/21 15:04:53 vlada Exp $
 
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.net.*;
@@ -30,15 +28,15 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
     *                 free port will be taken (incrementing srv_port).
     */
    public ConnectionTable(int srv_port) throws Exception {
-       this.srv_port=srv_port;
-       start();
+       this.srv_port=srv_port;       
+       init();
    }
 
 
     public ConnectionTable(InetAddress bind_addr, int srv_port) throws Exception {
         this.srv_port=srv_port;
         this.bind_addr=bind_addr;
-        start();
+        init();
     }
 
 
@@ -55,7 +53,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
         use_reaper=true;
-        start();
+        init();
     }
 
 
@@ -80,8 +78,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         this.bind_addr=bind_addr;
         this.external_addr=external_addr;
         this.srv_port=srv_port;
-        this.max_port=max_port;
-        start();
+        this.max_port=max_port; 
+        init();
     }
 
 
@@ -114,8 +112,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
         this.max_port=max_port;
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
-        use_reaper=true;
-        start();
+        use_reaper=true;   
+        init();
     }
 
 
@@ -168,8 +166,19 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
    }
 
 
-    public final void start() throws Exception {
-        init();
+    public final void start() throws Exception {                       
+        acceptor=getThreadFactory().newThread(thread_group,this, "ConnectionTable.AcceptorThread");       
+        acceptor.start();
+
+        // start the connection reaper - will periodically remove unused connections
+        if(use_reaper && reaper == null) {
+            reaper=new Reaper();
+            reaper.start();
+        }
+        super.start();                     
+    }
+
+    protected void init() throws Exception {        
         srv_sock=createServerSocket(srv_port, max_port);
 
         if (external_addr!=null)
@@ -180,19 +189,6 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
             local_addr=new IpAddress(srv_sock.getLocalPort());
 
         if(log.isDebugEnabled()) log.debug("server socket listening on " + local_addr);
-              
-        acceptor=getThreadFactory().newThread(thread_group,this, "ConnectionTable.AcceptorThread");       
-        acceptor.start();
-
-        // start the connection reaper - will periodically remove unused connections
-        if(use_reaper && reaper == null) {
-            reaper=new Reaper();
-            reaper.start();
-        }
-        super.start();
-    }
-
-    protected void init() throws Exception {
     }
 
    
