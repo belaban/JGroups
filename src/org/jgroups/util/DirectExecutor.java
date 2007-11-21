@@ -6,12 +6,13 @@ import java.util.Collection;
 
 /**
  * @author Bela Ban
- * @version $Id: DirectExecutor.java,v 1.3 2007/11/21 11:27:28 belaban Exp $
+ * @version $Id: DirectExecutor.java,v 1.4 2007/11/21 13:02:00 belaban Exp $
  */
 public class DirectExecutor implements ExecutorService {
     public void execute(Runnable command) {
         command.run();
     }
+
 
     public void shutdown() {
     }
@@ -44,19 +45,19 @@ public class DirectExecutor implements ExecutorService {
         return null;
     }
 
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(Collection<Callable<T>> tasks) throws InterruptedException {
         return null;
     }
 
-    public <T> List<Future<T>> invokeAll(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
+    public <T> List<Future<T>> invokeAll(Collection<Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException {
         return null;
     }
 
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks) throws InterruptedException, ExecutionException {
+    public <T> T invokeAny(Collection<Callable<T>> tasks) throws InterruptedException, ExecutionException {
         return null;
     }
 
-    public <T> T invokeAny(Collection<? extends Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+    public <T> T invokeAny(Collection<Callable<T>> tasks, long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
         return null;
     }
 }
