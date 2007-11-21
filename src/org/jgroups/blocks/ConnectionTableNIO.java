@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.37 2007/11/06 17:13:50 vlada Exp $
+// $Id: ConnectionTableNIO.java,v 1.38 2007/11/21 13:26:02 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,6 @@ import org.apache.commons.logging.Log;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DirectExecutor;
 
 import java.io.IOException;
 import java.net.*;
@@ -332,7 +331,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       // use directExector if max thread pool size is less than or equal to zero.
       if(getProcessorMaxThreads() <= 0) {
-         m_requestProcessors = new DirectExecutor();
+         m_requestProcessors = new Executor() {
+
+             public void execute(Runnable command) {
+                 command.run();
+             }
+         };
       }
       else
       {
