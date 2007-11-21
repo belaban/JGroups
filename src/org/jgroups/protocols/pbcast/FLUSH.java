@@ -10,7 +10,6 @@ import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -109,6 +108,10 @@ public class FLUSH extends Protocol {
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
     
     private final AtomicBoolean flushInProgress = new AtomicBoolean(false);
+    
+    private final AtomicBoolean sentBlock = new AtomicBoolean(false);
+    
+    private final AtomicBoolean sentUnblock = new AtomicBoolean(false);
 
     @GuardedBy("sharedLock")
     private final List<Address> reconcileOks = new ArrayList<Address>();
@@ -267,8 +270,11 @@ public class FLUSH extends Protocol {
             break;
             
         case Event.CONNECT:
-        case Event.CONNECT_WITH_STATE_TRANSFER:    
-            sendBlockUpToChannel();
+        case Event.CONNECT_WITH_STATE_TRANSFER:   
+            if(sentBlock.compareAndSet(false, true)){                
+                sendBlockUpToChannel();
+                sentUnblock.set(false);
+            }
             break;
 
         case Event.SUSPEND:
@@ -488,7 +494,7 @@ public class FLUSH extends Protocol {
             }
         }
         if(proceed){          
-            onStartFlush(false,flushRequester, fh);
+            onStartFlush(flushRequester, fh);
         } else{  
             if(log.isDebugEnabled()){
                 log.debug("Rejecting flush at " + localAddress
@@ -498,7 +504,7 @@ public class FLUSH extends Protocol {
                           + proceedFlushCoordinator);
             }
             rejectFlush(fh.viewID, abortFlushCoordinator);
-            onStartFlush(true,proceedFlushCoordinator, fh);
+            onStartFlush(proceedFlushCoordinator, fh);
         }
     }
 
@@ -575,11 +581,13 @@ public class FLUSH extends Protocol {
             isBlockingFlushDown = false;
             blockMutex.notifyAll();
         }
-        
-        if(amISurvivingMember){
-            up_prot.up(new Event(Event.UNBLOCK));
-        }
-        flushInProgress.set(false);       
+                
+        if(amISurvivingMember && sentUnblock.compareAndSet(false,true)){
+            //ensures that we do not repeat unblock event            
+            up_prot.up(new Event(Event.UNBLOCK));        
+            sentBlock.set(false);
+        }                
+        flushInProgress.set(false);
     }
 
     private void onSuspend(View view) {
@@ -620,7 +628,7 @@ public class FLUSH extends Protocol {
             log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
     }
 
-    private void onStartFlush(boolean switchedflushCoordinator, Address flushStarter, FlushHeader fh) {             
+    private void onStartFlush(Address flushStarter, FlushHeader fh) {             
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }       
@@ -639,10 +647,11 @@ public class FLUSH extends Protocol {
             amIParticipant = flushMembers.contains(localAddress);
         }
         
-        if(amIParticipant && !switchedflushCoordinator){
+        if(amIParticipant && sentBlock.compareAndSet(false, true)){
             //ensures that we do not repeat block event
-            //and that we do not send block event to non participants
+            //and that we do not send block event to non participants            
             sendBlockUpToChannel();
+            sentUnblock.set(false);
         }
         else{
             if(log.isDebugEnabled())
