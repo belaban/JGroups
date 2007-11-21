@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.63 2007/11/21 15:04:53 vlada Exp $
+// $Id: ConnectionTable.java,v 1.64 2007/11/21 19:51:27 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -255,8 +255,8 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                                log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
                                        local_addr + "), replacing our existing connection");
                            // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
-                           addConnection(peer_addr,  conn);
-                           tmp.destroy();
+                           removeConnection(peer_addr, tmp);
+                           addConnection(peer_addr,  conn);                           
                            notifyConnectionOpened(peer_addr);
                        }
                        else {
