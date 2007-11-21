@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.161 2007/11/21 11:28:18 belaban Exp $
+ * @version $Id: TP.java,v 1.162 2007/11/21 14:00:12 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -140,7 +140,7 @@ public abstract class TP extends Protocol {
 
     /** ================================== OOB thread pool ============================== */
     /** The thread pool which handles OOB messages */
-    ExecutorService oob_thread_pool;
+    Executor oob_thread_pool;
     boolean oob_thread_pool_enabled=true;
     int oob_thread_pool_min_threads=2;
     int oob_thread_pool_max_threads=10;
@@ -159,11 +159,11 @@ public abstract class TP extends Protocol {
      * JDK 5's java.util.concurrent package */
     String oob_thread_pool_rejection_policy="Run";
 
-    public ExecutorService getOOBThreadPool() {
+    public Executor getOOBThreadPool() {
         return oob_thread_pool;
     }
 
-    public void setOOBThreadPool(ExecutorService oob_thread_pool) {
+    public void setOOBThreadPool(Executor oob_thread_pool) {
         if(this.oob_thread_pool != null) {
             shutdownThreadPool(oob_thread_pool);
         }
@@ -172,7 +172,7 @@ public abstract class TP extends Protocol {
     /** ================================== Regular thread pool ============================== */
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
-    ExecutorService thread_pool;
+    Executor thread_pool;
     boolean thread_pool_enabled=true;
     int thread_pool_min_threads=2;
     int thread_pool_max_threads=10;
@@ -191,11 +191,11 @@ public abstract class TP extends Protocol {
      * JDK 5's java.util.concurrent package */
     String thread_pool_rejection_policy="Run";
 
-    public ExecutorService getDefaultThreadPool() {
+    public Executor getDefaultThreadPool() {
         return thread_pool;
     }
 
-    public void setDefaultThreadPool(ExecutorService thread_pool) {
+    public void setDefaultThreadPool(Executor thread_pool) {
         if(this.thread_pool != null)
             shutdownThreadPool(this.thread_pool);
         this.thread_pool=thread_pool;
@@ -1396,12 +1396,15 @@ public abstract class TP extends Protocol {
     }
 
 
-    private static void shutdownThreadPool(ExecutorService thread_pool) {
-        thread_pool.shutdownNow();
-        try {
-            thread_pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
-        }
-        catch(InterruptedException e) {
+    private static void shutdownThreadPool(Executor thread_pool) {
+        if(thread_pool instanceof ExecutorService) {
+            ExecutorService service=(ExecutorService)thread_pool;
+            service.shutdownNow();
+            try {
+                service.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
+            }
+            catch(InterruptedException e) {
+            }
         }
     }
 
