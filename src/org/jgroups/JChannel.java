@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158 2007/11/09 18:11:05 vlada Exp $
+ * @version $Id: JChannel.java,v 1.159 2007/11/22 12:25:44 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1400,7 +1400,7 @@ public class JChannel extends Channel {
         props=configurator.getProtocolStackString();
         prot_stack=new ProtocolStack(this, props);
         try {
-            prot_stack.setup(); // Setup protocol stack (create layers, queues between them
+            prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
         }
         catch(Throwable e) {
             throw new ChannelException("unable to setup the protocol stack", e);
