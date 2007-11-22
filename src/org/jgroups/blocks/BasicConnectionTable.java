@@ -59,7 +59,7 @@ public abstract class BasicConnectionTable {
     InetAddress		    external_addr=null;
     int                 max_port=0;                   // maximum port to bind to (if < srv_port, no limit)
     Thread              acceptor=null;               // continuously calls srv_sock.accept()
-    volatile boolean    running=false;
+    boolean             running=false;
     /** Total number of Connections created for this connection table */
     static AtomicInteger conn_creations=new AtomicInteger(0);
 
@@ -201,9 +201,11 @@ public abstract class BasicConnectionTable {
     /**
      Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
      */
-    void removeConnection(Address addr,Connection conn) {              
+    public void removeConnection(Address addr) {
+        Connection conn;
+
        synchronized(conns) {
-           conns.remove(addr);
+           conn=conns.remove(addr);
        }
 
        if(conn != null) {
@@ -310,7 +312,7 @@ public abstract class BasicConnectionTable {
        catch(Throwable ex) {
            if(log.isTraceEnabled())
                log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
-           removeConnection(dest,conn);
+           removeConnection(dest);
        }
    }
 
@@ -329,13 +331,13 @@ public abstract class BasicConnectionTable {
           }
           copy.keySet().removeAll(current_mbrs);
                     
-          //destroy and remove orphaned connection i.e. connections
+          //destroy orphaned connection i.e. connections
           //to members that are not in current view
-          for(Connection orphanConnection:copy.values()){  
+          for(Connection orphanConnection:copy.values()){                         
               if (log.isTraceEnabled())
-                  log.trace("At " + local_addr + " destroying orphan to "
-                          + orphanConnection.getPeerAddress());   
-              removeConnection(orphanConnection.getPeerAddress(),orphanConnection);                                   
+                log.trace("At " + local_addr + " destroying orphan to "
+                        + orphanConnection.getPeerAddress());
+              orphanConnection.destroy();             
           }     
           copy.clear();
       }
@@ -366,7 +368,7 @@ public abstract class BasicConnectionTable {
        /** Bounded queue of data to be sent to the peer of this connection */
        BlockingQueue<byte[]> send_queue=null;
        Sender                sender=null;
-       volatile boolean      is_running=false;
+       boolean               is_running=false;
 
 
        private String getSockAddress() {
@@ -450,6 +452,7 @@ public abstract class BasicConnectionTable {
 
 
        void destroy() {
+       	   if(log.isTraceEnabled()) log.trace("destroyed " + this);
            is_running=false;
            closeSocket(); // should terminate handler as well
            if(sender != null)
@@ -461,7 +464,6 @@ public abstract class BasicConnectionTable {
            }
 
            conn_creations.decrementAndGet();
-           if(log.isTraceEnabled()) log.trace("destroyed " + this);
        }
 
 
@@ -532,8 +534,8 @@ public abstract class BasicConnectionTable {
                    out.flush();  // may not be very efficient (but safe)
                }
            }
-           catch(Exception ex) {              
-               removeConnection(peer_addr,this);
+           catch(Exception ex) {
+               removeConnection(peer_addr);
                throw ex;
            }
        }
@@ -636,7 +638,7 @@ public abstract class BasicConnectionTable {
            byte[] buf=new byte[256]; // start with 256, increase as we go
            int len=0;
 
-           while(is_running) {
+           while(receiverThread != null && receiverThread.equals(Thread.currentThread()) && is_running) {
                try {
                    if(in == null) {
                        if(log.isErrorEnabled()) log.error("input stream is null !");
@@ -654,17 +656,20 @@ public abstract class BasicConnectionTable {
                    break; // continue;
                }               
                catch(IOException io_ex) {
-                   if(log.isTraceEnabled()) log.trace("At " + local_addr + " exception is " + io_ex);                   
+                   //this is very common occurrence, hence log under trace level
+                   if(log.isTraceEnabled()) log.trace("Excption while read blocked for data from peer ", io_ex);
                    notifyConnectionClosed(peer_addr);
                    break;
                }
                catch(Throwable e) {
-                   if(log.isWarnEnabled()) log.warn("exception is " + e);
+                   if(log.isWarnEnabled()) log.warn("Problem encountered while receiving message from peer " + peer_addr, e);
                }
            }
            if(log.isTraceEnabled())
-               log.trace("ConnectionTable.Connection.Receiver terminated");          
-           removeConnection(peer_addr,this);
+               log.trace("ConnectionTable.Connection.Receiver terminated");
+           receiverThread=null;
+           closeSocket();
+           // remove(peer_addr);
        }
 
 

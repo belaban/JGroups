@@ -1,10 +1,10 @@
 package org.jgroups.blocks;
 
-import static org.jgroups.blocks.BasicConnectionTable.getNumberOfConnectionCreations;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -16,7 +16,7 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.7 2007/11/05 15:01:39 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.8 2007/11/22 18:43:31 vlada Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -72,7 +72,9 @@ public class ConnectionTableTest extends TestCase {
         CyclicBarrier barrier=new CyclicBarrier(3);
 
         ct1=new ConnectionTable(loopback_addr, PORT1);
+        ct1.start();
         ct2=new ConnectionTable(loopback_addr, PORT2);
+        ct2.start();
         BasicConnectionTable.Receiver dummy=new BasicConnectionTable.Receiver() {
             public void receive(Address sender, byte[] data, int offset, int length) {}
         };
@@ -90,22 +92,32 @@ public class ConnectionTableTest extends TestCase {
         num_conns=ct1.getNumConnections();
         assertEquals(0, num_conns);
         num_conns=ct2.getNumConnections();
-        assertEquals(0, num_conns);
+        assertEquals(0, num_conns);              
 
         barrier.await(10000, TimeUnit.MILLISECONDS);
         sender1.join();
         sender2.join();
-
+       
+        
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
         assertEquals(1, num_conns);
         num_conns=ct2.getNumConnections();
         assertEquals(1, num_conns);
-
-
-        int num_creations=BasicConnectionTable.getNumberOfConnectionCreations();
-        System.out.println("Number of connection creations=" + num_creations);
-        assertEquals("2 connections should have been created only, but we have " + num_creations, 2, num_creations);
+        
+        Util.sleep(500);
+        
+        System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
+        num_conns=ct1.getNumConnections();
+        assertEquals(1, num_conns);
+        num_conns=ct2.getNumConnections();
+        assertEquals(1, num_conns);         
+        
+        Connection connection = ct1.getConnection(addr2);
+        assertFalse("valid connection to peer",connection.isSocketClosed());
+        connection = ct2.getConnection(addr1);
+        assertFalse("valid connection to peer",connection.isSocketClosed());;      
+               
     }
 
 
@@ -163,21 +175,25 @@ public class ConnectionTableTest extends TestCase {
     public void testStopConnectionTableNoSendQueues() throws Exception {
         ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
         ct1.setUseSendQueues(false);
+        ct1.start();
         ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
         ct2.setUseSendQueues(false);
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableWithSendQueues() throws Exception {
         ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct1.start();
         ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
 
     public void testStopConnectionTableNIONoSendQueues() throws Exception {
         ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
-        ct1.setUseSendQueues(false);
+        ct1.setUseSendQueues(false);       
         ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
         ct2.setUseSendQueues(false);
         ct1.start();
