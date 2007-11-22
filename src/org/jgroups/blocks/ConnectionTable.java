@@ -1,4 +1,4 @@
-// $Id: ConnectionTable.java,v 1.64 2007/11/21 19:51:27 vlada Exp $
+// $Id: ConnectionTable.java,v 1.65 2007/11/22 18:43:09 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -255,7 +255,7 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                                log.trace("peer's address (" + peer_addr + ") is greater than our local address (" +
                                        local_addr + "), replacing our existing connection");
                            // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
-                           removeConnection(peer_addr, tmp);
+                           removeConnection(peer_addr);
                            addConnection(peer_addr,  conn);                           
                            notifyConnectionOpened(peer_addr);
                        }
@@ -283,14 +283,14 @@ public class ConnectionTable extends BasicConnectionTable implements Runnable {
                    break;  // socket was closed, therefore stop
            }
            catch(SocketException sock_ex) {
-               if(log.isWarnEnabled() && srv_sock != null) log.warn("exception is " + sock_ex);
+               if(log.isWarnEnabled() && srv_sock != null) log.warn("Could not read accept connection from peer " + sock_ex);
                if(conn != null)
                    conn.destroy();
                if(srv_sock == null)
                    break;  // socket was closed, therefore stop
            }
            catch(Throwable ex) {
-               if(log.isWarnEnabled()) log.warn("exception is " + ex);
+               if(log.isWarnEnabled()) log.warn("Could not read accept connection from peer " + ex);
                if(srv_sock == null)
                    break;  // socket was closed, therefore stop
            }
