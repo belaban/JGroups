@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156 2007/11/05 16:23:02 vlada Exp $
+ * @version $Id: UDP.java,v 1.157 2007/11/22 08:29:53 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -226,36 +226,30 @@ public class UDP extends TP implements Runnable {
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
 
     public void run() {
-        DatagramPacket  packet;
-        byte            receive_buf[]=new byte[65535];
+        final byte      receive_buf[]=new byte[65535];
         int             offset, len, sender_port;
-        byte[]          data;
         InetAddress     sender_addr;
         Address         sender;
 
-
-        // moved out of loop to avoid excessive object creations (bela March 8 2001)
-        packet=new DatagramPacket(receive_buf, receive_buf.length);
-
+        final DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
+        
         while(mcast_receiver != null && mcast_sock != null) {
             try {
-                packet.setData(receive_buf, 0, receive_buf.length);
                 mcast_sock.receive(packet);
-                sender_addr=packet.getAddress();
-                sender_port=packet.getPort();
-                offset=packet.getOffset();
                 len=packet.getLength();
-                data=packet.getData();
-                sender=new IpAddress(sender_addr, sender_port);
-
                 if(len > receive_buf.length) {
                     if(log.isErrorEnabled())
                         log.error("size of the received packet (" + len + ") is bigger than " +
                                   "allocated buffer (" + receive_buf.length + "): will not be able to handle packet. " +
-                                  "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
+                                  "Use the FRAG2 protocol and make its frag_size lower than " + receive_buf.length);
                 }
 
-                receive(mcast_addr, sender, data, offset, len);
+                sender_addr=packet.getAddress();
+                sender_port=packet.getPort();
+                offset=packet.getOffset();
+                sender=new IpAddress(sender_addr, sender_port);
+
+                receive(mcast_addr, sender, receive_buf, offset, len);
             }
             catch(SocketException sock_ex) {
                  if(log.isTraceEnabled()) log.trace("multicast socket is closed, exception=" + sock_ex);
@@ -266,7 +260,6 @@ public class UDP extends TP implements Runnable {
             catch(Throwable ex) {
                 if(log.isErrorEnabled())
                     log.error("failure in multicast receive()", ex);
-                // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
             }
         }
         if(log.isDebugEnabled()) log.debug("multicast thread terminated");
@@ -868,35 +861,30 @@ public class UDP extends TP implements Runnable {
 
 
         public void run() {
-            DatagramPacket  packet;
-            byte            receive_buf[]=new byte[65535];
-            int             offset, len;
-            byte[]          data;
+            final byte      receive_buf[]=new byte[65535];
+            int             offset, len, sender_port;
             InetAddress     sender_addr;
-            int             sender_port;
             Address         sender;
 
-            // moved out of loop to avoid excessive object creations (bela March 8 2001)
-            packet=new DatagramPacket(receive_buf, receive_buf.length);
+            final DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
 
             while(running && thread != null && sock != null) {
                 try {
-                    packet.setData(receive_buf, 0, receive_buf.length);
                     sock.receive(packet);
-                    sender_addr=packet.getAddress();
-                    sender_port=packet.getPort();
-                    offset=packet.getOffset();
                     len=packet.getLength();
-                    data=packet.getData();
-                    sender=new IpAddress(sender_addr, sender_port);
-                    
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
                             log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
                                       receive_buf.length + "): will not be able to handle packet. " +
-                                      "Use the FRAG protocol and make its frag_size lower than " + receive_buf.length);
+                                      "Use the FRAG2 protocol and make its frag_size lower than " + receive_buf.length);
                     }
-                    receive(local_addr, sender, data, offset, len);
+
+                    sender_addr=packet.getAddress();
+                    sender_port=packet.getPort();
+                    offset=packet.getOffset();
+                    sender=new IpAddress(sender_addr, sender_port);
+
+                    receive(local_addr, sender, receive_buf, offset, len);
                 }
                 catch(SocketException sock_ex) {
                     if(log.isDebugEnabled()) log.debug("unicast receiver socket is closed, exception=" + sock_ex);
@@ -907,7 +895,6 @@ public class UDP extends TP implements Runnable {
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
                         log.error("[" + local_addr + "] failed receiving unicast packet", ex);
-                    // Util.sleep(100); // so we don't get into 100% cpu spinning (should NEVER happen !)
                 }
             }
             if(log.isDebugEnabled()) log.debug("unicast receiver thread terminated");
