@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.159 2007/11/22 12:25:44 belaban Exp $
+ * @version $Id: JChannel.java,v 1.160 2007/11/23 20:57:45 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1089,6 +1089,9 @@ public class JChannel extends Channel {
                 }
             }
             break;
+        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+            state_promise.setResult(Boolean.TRUE);
+            break;     
 
         case Event.STATE_TRANSFER_INPUTSTREAM:
             StateTransferInfo sti=(StateTransferInfo)evt.getArg();
@@ -1328,10 +1331,7 @@ public class JChannel extends Channel {
                 catch(Throwable t) {
                     if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
                 }
-                break;
-            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-                state_promise.setResult(Boolean.TRUE);
-                break;
+                break;            
         }
 
         prot_stack.down(evt);
@@ -1357,10 +1357,7 @@ public class JChannel extends Channel {
                 catch(Throwable t) {
                     if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
                 }
-                break;
-            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-                state_promise.setResult(Boolean.TRUE);
-                break;
+                break;           
         }
 
         return prot_stack.down(evt);

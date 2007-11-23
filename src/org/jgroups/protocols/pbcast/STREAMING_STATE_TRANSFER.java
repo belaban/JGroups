@@ -17,6 +17,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -97,9 +98,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private long pool_thread_keep_alive;
 
-    private int socket_buffer_size = 8 * 1024;
-
-    private boolean use_reading_thread;
+    private int socket_buffer_size = 8 * 1024;   
 
     private volatile boolean flushProtocolInStack = false;
 
@@ -154,6 +153,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             log.warn("flush_timeout has been deprecated and its value will be ignored");
             props.remove("flush_timeout");
         }
+        
+        str = props.getProperty("use_reading_thread");
+        if(str != null){
+            log.warn("use_reading_thread has been deprecated and its value will be ignored");
+            props.remove("use_reading_thread");
+        }
 
         try{
             bind_addr = Util.parseBindAddress(props, "bind_addr");
@@ -164,8 +169,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         bind_port = Util.parseInt(props, "start_port", 0);
         socket_buffer_size = Util.parseInt(props, "socket_buffer_size", 8 * 1024); // 8K
         max_pool = Util.parseInt(props, "max_pool", 5);
-        pool_thread_keep_alive = Util.parseLong(props, "pool_thread_keep_alive", 1000 * 30); // 30sec
-        use_reading_thread = Util.parseBoolean(props, "use_reading_thread", false);
+        pool_thread_keep_alive = Util.parseLong(props, "pool_thread_keep_alive", 1000 * 30); // 30sec      
         if(!props.isEmpty()){
             log.error("the following properties are not recognized: " + props);
 
@@ -479,6 +483,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
             wrapper = new StreamingInputStreamWrapper(socket);
             sti = new StateTransferInfo(hdr.sender, wrapper, tmp_state_id);
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti)); 
         }catch(IOException e){
             if(log.isWarnEnabled()){
                 log.warn("State reader socket thread spawned abnormaly", e);
@@ -487,37 +492,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             // pass null stream up so that JChannel.getState() returns false
             InputStream is = null;
             sti = new StateTransferInfo(hdr.sender, is, tmp_state_id);
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti)); 
         }finally{
             if(!socket.isConnected()){
                 if(log.isWarnEnabled())
-                    log.warn("Could not connect to state provider. Closing socket...");
-                try{
-                    if(wrapper != null){
-                        wrapper.close();
-                    }else{
-                        socket.close();
-                    }
-
-                }catch(IOException e){
-                }               
-            }            
-            passStreamUp(sti);
-        }
-    }
-
-    private void passStreamUp(final StateTransferInfo sti) {
-        Runnable readingThread = new Runnable() {
-            public void run() {
-                up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+                    log.warn("Could not connect to state provider. Closing socket...");                   
             }
-        };
-        if(use_reading_thread){
-            Thread t = getProtocolStack().getThreadFactory().newThread(readingThread, "STREAMING_STATE_TRANSFER reader");         
-            t.start();            
-        }else{
-            readingThread.run();
-        }
-    }
+            Util.close(wrapper);
+            Util.close(socket);
+        }        
+    }  
 
     /*
      * ------------------------ End of Private Methods
@@ -647,36 +631,28 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 // thrown by ois.readObject()
                 // should never happen since String/Address are core classes
             }finally{
-                if(socket != null && !socket.isConnected()){
+               if(!socket.isConnected()){
                     if(log.isWarnEnabled())
-                        log.warn("Accepted request for state transfer but socket " + socket
-                                 + " not connected properly. Closing it...");
-                    try{
-                        if(wrapper != null){
-                            wrapper.close();
-                        }else{
-                            socket.close();
-                        }
-                    }catch(IOException e){
-                    }
-                }
+                        log.warn("Could not receive connection from state receiver. Closing socket...");                   
+               }
+               Util.close(wrapper);
+               Util.close(socket);
             }
         }
     }
 
-    private class StreamingInputStreamWrapper extends InputStream {
+    private class StreamingInputStreamWrapper extends InputStream {       
 
+        private InputStream delegate;  
+        
         private Socket inputStreamOwner;
-
-        private InputStream delegate;
-
-        private Channel channelOwner;
+                      
+        private final AtomicBoolean closed = new AtomicBoolean(false);
 
         public StreamingInputStreamWrapper(Socket inputStreamOwner) throws IOException{
-            super();
+            super();      
             this.inputStreamOwner = inputStreamOwner;
-            this.delegate = new BufferedInputStream(inputStreamOwner.getInputStream());
-            this.channelOwner = stack.getChannel();
+            this.delegate = new BufferedInputStream(inputStreamOwner.getInputStream());            
         }
 
         public int available() throws IOException {
@@ -684,13 +660,15 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
 
         public void close() throws IOException {
-            if(log.isDebugEnabled()){
-                log.debug("State reader " + inputStreamOwner + " is closing the socket ");
+            if (closed.compareAndSet(false, true)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("State reader is closing the socket ");
+                }
+                Util.close(delegate);
+                Util.close(inputStreamOwner);
+                up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
+                down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));                
             }
-            if(channelOwner != null && channelOwner.isConnected()){
-                channelOwner.down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
-            }
-            inputStreamOwner.close();
         }
 
         public synchronized void mark(int readlimit) {
@@ -726,31 +704,29 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         private Socket outputStreamOwner;
 
         private OutputStream delegate;
+        
+        private final AtomicBoolean closed = new AtomicBoolean(false);
 
         private long bytesWrittenCounter = 0;
-
-        private Channel channelOwner;
 
         public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException{
             super();
             this.outputStreamOwner = outputStreamOwner;
-            this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());
-            this.channelOwner = stack.getChannel();
+            this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());           
         }
 
         public void close() throws IOException {
-            if(log.isDebugEnabled()){
-                log.debug("State writer " + outputStreamOwner + " is closing the socket ");
-            }
-            try{
-                if(channelOwner != null && channelOwner.isConnected()){
-                    channelOwner.down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
+            if (closed.compareAndSet(false, true)) {
+                if (log.isDebugEnabled()) {
+                    log.debug("State writer is closing the socket ");
                 }
-                outputStreamOwner.close();
-            }catch(IOException e){
-                throw e;
-            }finally{
-                if(stats){
+
+                Util.close(delegate);
+                Util.close(outputStreamOwner);
+                up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
+                down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));                
+
+                if (stats) {
                     avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
                 }
             }
