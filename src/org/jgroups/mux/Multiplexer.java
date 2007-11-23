@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.86 2007/11/15 19:39:48 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.87 2007/11/23 20:57:44 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -350,18 +350,12 @@ public class Multiplexer implements UpHandler {
 
             case Event.GET_APPLSTATE:
                 return handleStateRequest(evt,true);
-            case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                //Vladimir Oct 29,2007 Multiplexer.java 1.79
-                //STREAMING_STATE_TRANSFER does not require return value.
-                //If there is not return value STATE_TRANSFER_OUTPUTSTREAM event 
-                //can be processed concurrently by Multiplexer along with other messages 
-                //for a specific MuxChannel
-                //@see Multiplexer#passToMuxChannel();
-                handleStateRequest(evt,false);
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:              
+                handleStateRequest(evt,true);
                 break;
             case Event.GET_STATE_OK:
             case Event.STATE_TRANSFER_INPUTSTREAM:
-                handleStateResponse(evt);
+                handleStateResponse(evt,true);                              
                 break;
 
             case Event.SET_LOCAL_ADDRESS:                
@@ -674,7 +668,7 @@ public class Multiplexer implements UpHandler {
 
 
 
-    private void handleStateResponse(Event evt) {
+    private void handleStateResponse(Event evt,boolean block) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         MuxChannel mux_ch;
         Address state_sender=info.target;
@@ -707,7 +701,7 @@ public class Multiplexer implements UpHandler {
             StateTransferInfo tmp_info=info.copy();
             tmp_info.state_id=substate_id;
             Event tmpEvt=new Event(evt.getType(), tmp_info);
-            passToMuxChannel(mux_ch, tmpEvt, fifo_queue, state_sender, appl_id, false);
+            passToMuxChannel(mux_ch, tmpEvt, fifo_queue, state_sender, appl_id, block);
         }
     }
 
