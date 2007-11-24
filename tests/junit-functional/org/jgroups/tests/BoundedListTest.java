@@ -86,9 +86,6 @@ public class BoundedListTest extends TestCase {
         assertEquals(3, list.size());
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={BoundedListTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+
 
 }
