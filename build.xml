@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123 2007/11/05 15:02:12 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.1 2007/11/26 21:16:46 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -27,7 +27,7 @@
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
-    <property name="unittest.timeout.low" value="180000"/>
+    <property name="unittest.timeout.low" value="240000"/>
     <property name="version" value="2.6.0-GA"/>
 
     <!-- default properties used in all test targets -->
@@ -53,6 +53,7 @@
     <!-- patternsets used to define test sets -->
     <patternset id="flush.tests">
         <include name="org/jgroups/tests/FlushTest*"/>
+    	<include name="org/jgroups/tests/ConcurrentStateTransferTest*"/>
         <include name="org/jgroups/tests/ConcurrentStartupTest*"/>
     </patternset>
 
@@ -478,6 +479,59 @@
             formatter.class=${formatter.class}
         </testrunner-functional>
     </target>
+	
+	<!--
+          Runs flush tests in various channel modes
+                    
+	     -->
+    <target name="all-flush-tests" depends="makeKeystore"
+            description="Runs flush tests in various channel modes">
+    	
+        <get usetimestamp="true"
+             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
+             dest="${lib.dir}/jboss-test.jar"/>
+             	
+    	<antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="false"/>
+            <param name="mux.conf.stack" value="udp"/>
+    		<param name="channel.conf" value="udp.xml"/>
+    		<param name="channel.conf.flush" value="flush-udp.xml"/>
+    		<param name="test.verbose" value="false"/>
+    		<param name="testname.ext" value="udp"/>
+    		<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="false"/>
+        	<param name="channel.conf" value="tcp.xml"/>
+        	<param name="channel.conf.flush" value="flush-tcp.xml"/>
+        	<param name="test.verbose" value="false"/>
+        	<param name="testname.ext" value="tcp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="udp"/>
+            <param name="test.verbose" value="false"/>
+            <param name="testname.ext" value="mux-udp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    	
+        <antcall target="runtests">
+            <param name="testset" value="flush.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="tcp"/>
+			<param name="test.verbose" value="false"/>
+			<param name="testname.ext" value="mux-tcp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        </antcall>
+    </target>
+	
+	
 
 
     <!--

@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.44 2007/11/06 17:13:51 vlada Exp $
+// $Id: TCP.java,v 1.44.2.1 2007/11/26 21:16:45 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -73,10 +73,16 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
         local_addr=ct.getLocalAddress();
         if(additional_data != null && local_addr instanceof IpAddress)
             ((IpAddress)local_addr).setAdditionalData(additional_data);
+        
+        //http://jira.jboss.com/jira/browse/JGRP-626
+        //we first start threads in TP
         super.start();
+        //and then we kick off acceptor thread for CT
+        ct.start();
     }
 
     public void stop() {
+        //and for stopping we do vice versa
         ct.stop();
         super.stop();
     }

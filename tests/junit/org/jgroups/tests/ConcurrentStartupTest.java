@@ -11,12 +11,13 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.jgroups.Address;
 import org.jgroups.Channel;
-import org.jgroups.JChannelFactory;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
@@ -25,15 +26,15 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32 2007/11/09 01:59:40 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.1 2007/11/26 21:16:44 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
-    private int mod = 1;
+    private AtomicInteger mod = new AtomicInteger(1);
 
     public void setUp() throws Exception {
         super.setUp();
-        mod = 1;
+        mod.set(1);
         CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
@@ -121,24 +122,17 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             // Sleep to ensure async message arrive
             Util.sleep(3000);
 
-            // do test verification
-            List[] lists = new List[count];
-            for(int i = 0;i < count;i++){
-                lists[i] = channels[i].getList();
+            // do test verification            
+            for (ConcurrentStartupChannel channel : channels) {
+                log.info(channel.getName() +"=" +channel.getList());  
             }
-
-            Map[] mods = new Map[count];
-            for(int i = 0;i < count;i++){
-                mods[i] = channels[i].getModifications();
+            for (ConcurrentStartupChannel channel : channels) {
+                log.info(channel.getName() +"=" +channel.getModifications());  
             }
-
-            printLists(lists);
-            printModifications(mods);
-
-            int len = lists.length;
-            for(int i = 0;i < lists.length;i++){
-                List l = lists[i];
-                assertEquals("list #" + i + " should have " + len + " elements", len, l.size());
+            
+            
+            for (ConcurrentStartupChannel channel : channels) {
+                assertEquals(channel.getName() + " should have " + count + " elements", count, channel.getList().size());
             }
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
@@ -148,30 +142,16 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 channel.cleanup();
                 Util.sleep(2000); // remove before 2.6 GA
             }
+            
+            for(ConcurrentStartupChannel channel:channels){                
+                checkEventStateTransferSequence(channel);
+            }
         }
     }
 
-    protected int getMod() {
-        synchronized(this){
-            int retval = mod;
-            mod++;
-            return retval;
-        }
-    }
-
-    protected void printModifications(Map[] modifications) {
-        for(int i = 0;i < modifications.length;i++){
-            Map modification = modifications[i];
-            log.info("modifications for #" + i + ": " + modification);
-        }
-    }
-
-    protected void printLists(List[] lists) {
-        for(int i = 0;i < lists.length;i++){
-            List l = lists[i];
-            log.info(i + ": " + l);
-        }
-    }
+    protected int getMod() {       
+        return mod.incrementAndGet();
+    }  
 
     protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
         private static final long TRANSFER_TIME = 5000; 
@@ -203,13 +183,9 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
-        final List l = new LinkedList();
+        private final List<Address> l = new LinkedList<Address>();       
 
-        Channel ch;
-
-        int modCount = 1;
-
-        final Map mods = new TreeMap();       
+        private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();       
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
@@ -220,18 +196,18 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             channel.send(null, null, channel.getLocalAddress());
         }
 
-        List getList() {
+        List<Address> getList() {
             return l;
         }
 
-        Map getModifications() {
+        Map<Integer,Object> getModifications() {
             return mods;
         }
 
         public void receive(Message msg) {
             if(msg.getBuffer() == null)
                 return;
-            Object obj = msg.getObject();
+            Address obj = (Address)msg.getObject();
             log.info("-- [#" + getName() + " (" + channel.getLocalAddress() + ")]: received " + obj);
             synchronized(this){
                 l.add(obj);
@@ -251,7 +227,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         public void setState(byte[] state) {
             super.setState(state);
             try{
-                List tmp = (List) Util.objectFromByteBuffer(state);
+                List<Address> tmp = (List) Util.objectFromByteBuffer(state);
                 synchronized(this){
                     l.clear();
                     l.addAll(tmp);
@@ -270,9 +246,9 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public byte[] getState() {
             super.getState();
-            List tmp = null;
+            List<Address> tmp = null;
             synchronized(this){
-                tmp = new LinkedList(l);
+                tmp = new LinkedList<Address>(l);
                 try{
                     return Util.objectToByteBuffer(tmp);
                 }catch(Exception e){
@@ -287,9 +263,9 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             ObjectOutputStream oos = null;
             try{
                 oos = new ObjectOutputStream(ostream);
-                List tmp = null;
+                List<Address> tmp = null;
                 synchronized(this){
-                    tmp = new LinkedList(l);
+                    tmp = new LinkedList<Address>(l);
                 }
                 oos.writeObject(tmp);
                 oos.flush();
@@ -305,7 +281,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             ObjectInputStream ois = null;
             try{
                 ois = new ObjectInputStream(istream);
-                List tmp = (List) ois.readObject();
+                List<Address> tmp = (List) ois.readObject();
                 synchronized(this){
                     l.clear();
                     l.addAll(tmp);

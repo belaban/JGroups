@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85 2007/11/07 21:46:23 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.1 2007/11/26 21:16:44 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -350,18 +350,12 @@ public class Multiplexer implements UpHandler {
 
             case Event.GET_APPLSTATE:
                 return handleStateRequest(evt,true);
-            case Event.STATE_TRANSFER_OUTPUTSTREAM:
-                //Vladimir Oct 29,2007 Multiplexer.java 1.79
-                //STREAMING_STATE_TRANSFER does not require return value.
-                //If there is not return value STATE_TRANSFER_OUTPUTSTREAM event 
-                //can be processed concurrently by Multiplexer along with other messages 
-                //for a specific MuxChannel
-                //@see Multiplexer#passToMuxChannel();
-                handleStateRequest(evt,false);
+            case Event.STATE_TRANSFER_OUTPUTSTREAM:              
+                handleStateRequest(evt,true);
                 break;
             case Event.GET_STATE_OK:
             case Event.STATE_TRANSFER_INPUTSTREAM:
-                handleStateResponse(evt);
+                handleStateResponse(evt,true);                              
                 break;
 
             case Event.SET_LOCAL_ADDRESS:                
@@ -424,9 +418,17 @@ public class Multiplexer implements UpHandler {
             passToMuxChannel(ch, evt, fifo_queue, null, service_name, block, bypass_thread_pool);
         }
     }
+    
+    public void addServiceIfNotPresent(String id, MuxChannel ch) {
+        services.putIfAbsent(id, ch);
+    }
 
-    public MuxChannel remove(String id) {
-        return services.remove(id);
+    protected MuxChannel removeService(String id) {
+        MuxChannel ch = services.remove(id);
+        //http://jira.jboss.com/jira/browse/JGRP-623
+        if (ch != null)
+            ch.up(new Event(Event.UNBLOCK));
+        return ch;      
     }
 
 
@@ -446,11 +448,6 @@ public class Multiplexer implements UpHandler {
             }
             channel.disconnect();
         }
-    }
-
-
-    public void unregister(String appl_id) {
-        services.remove(appl_id);
     }
 
     public boolean close() {
@@ -671,7 +668,7 @@ public class Multiplexer implements UpHandler {
 
 
 
-    private void handleStateResponse(Event evt) {
+    private void handleStateResponse(Event evt,boolean block) {
         StateTransferInfo info=(StateTransferInfo)evt.getArg();
         MuxChannel mux_ch;
         Address state_sender=info.target;
@@ -704,7 +701,7 @@ public class Multiplexer implements UpHandler {
             StateTransferInfo tmp_info=info.copy();
             tmp_info.state_id=substate_id;
             Event tmpEvt=new Event(evt.getType(), tmp_info);
-            passToMuxChannel(mux_ch, tmpEvt, fifo_queue, state_sender, appl_id, false);
+            passToMuxChannel(mux_ch, tmpEvt, fifo_queue, state_sender, appl_id, block);
         }
     }
 
@@ -792,9 +789,10 @@ public class Multiplexer implements UpHandler {
             }
         }
 
-        Address local_address=getLocalAddress();
-        if(local_address != null && host != null && host.equals(local_address))
-            unregister(service);
+        Address local_address = getLocalAddress();
+        boolean isMyService = local_address != null && local_address.equals(host);
+        if (isMyService)
+            removeService(service);        
     }
 
 
@@ -925,6 +923,7 @@ public class Multiplexer implements UpHandler {
 
     private void adjustServiceView(Address host) {
 
+        Address local_address = getLocalAddress();
         synchronized(service_state){
             for(Iterator<Map.Entry<String, List<Address>>> it = service_state.entrySet().iterator();it.hasNext();){
                 Map.Entry<String, List<Address>> entry = it.next();
@@ -947,10 +946,10 @@ public class Multiplexer implements UpHandler {
                                       + " not found, cannot dispatch service view "
                                       + service_view);
                     }
-                }
-                Address local_address = getLocalAddress();
-                if(local_address != null && host != null && host.equals(local_address))
-                    unregister(service);
+                }                
+                boolean isMyService = local_address != null && local_address.equals(host);
+                if (isMyService)
+                    removeService(service);
             }
         }
     }
@@ -1010,10 +1009,6 @@ public class Multiplexer implements UpHandler {
             Thread.currentThread().interrupt();
         }
         return null;
-    }
-
-    public void addServiceIfNotPresent(String id, MuxChannel ch) {
-        services.putIfAbsent(id, ch);
     }
 
 
