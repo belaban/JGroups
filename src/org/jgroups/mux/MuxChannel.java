@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38 2007/10/23 15:42:39 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.1 2007/11/26 21:16:44 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -55,7 +55,7 @@ public class MuxChannel extends JChannel {
     private final Multiplexer mux;
 
 
-    public MuxChannel(String id, String stack_name, Multiplexer mux) {
+    MuxChannel(String id, String stack_name, Multiplexer mux) {
         super(false); // don't create protocol stack, queues and threads               
         this.stack_name=stack_name;
         this.id=id;
@@ -110,34 +110,17 @@ public class MuxChannel extends JChannel {
         return mux != null? mux.getChannel().getProtocolStack() : null;
     }
 
-    public boolean isOpen() {
-        return !closed;
-    }
-
-    public boolean isConnected() {
-        return connected;
-    }
-
     public Map dumpStats() {
         return mux.getChannel().dumpStats();
     }
 
 
-    public void setClosed(boolean f) {
+    protected void setClosed(boolean f) {
         closed=f;
     }
 
-    public void setConnected(boolean f) {
+    protected void setConnected(boolean f) {
         connected=f;
-    }
-
-    public Object getOpt(int option) {
-        return mux.getChannel().getOpt(option);
-    }
-
-    public void setOpt(int option, Object value) {
-        mux.getChannel().setOpt(option, value);
-        super.setOpt(option, value);
     }
 
     public synchronized void connect(String channel_name) throws ChannelException, ChannelClosedException {
@@ -149,7 +132,7 @@ public class MuxChannel extends JChannel {
             if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
             return;
         }
-        
+        //add service --> MuxChannel mapping to multiplexer in case we called disconnect on this channel       
         mux.addServiceIfNotPresent(getId(), this);
         if (!mux.isConnected()) {
             mux.connect(getStackName());
@@ -184,7 +167,7 @@ public class MuxChannel extends JChannel {
             if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
             return;
         }
-        
+        //add service --> MuxChannel mapping to multiplexer in case we called disconnect on this channel
         mux.addServiceIfNotPresent(getId(), this);
         if (!mux.isConnected()) {
             mux.connect(getStackName());
@@ -227,52 +210,30 @@ public class MuxChannel extends JChannel {
             return;
 
         setClosed(false);
-        setConnected(false);
+        setConnected(false);       
+        notifyServiceDown();
         
-        try {                       
-            if (mux.flushSupported()) {
-                boolean successfulFlush = mux.startFlush(false);
-                if (!successfulFlush && log.isWarnEnabled()) {
-                    log.warn("Flush failed at " + mux.getLocalAddress() +":"+ getId());
-                }
-            }
-            try {    
-                mux.sendServiceDownMessage(getId(), mux.getLocalAddress(),true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_DOWN message", e);
-            }            
-        } catch (Throwable t) {
-            log.error("disconnecting channel failed", t);
-        }
-        finally {
-            if (mux.flushSupported())
-                mux.stopFlush();                      
-        }    
         // disconnects JChannel if all MuxChannels are
         // in disconnected state
         mux.disconnect();
         notifyChannelDisconnected(this);
     }
-
-
-
-    public synchronized void open() throws ChannelException {
-        
-        if (!mux.isOpen())
-                mux.open();  
-        
-        setClosed(false);
-        setConnected(false); // needs to be connected next        
-    }
-
+    
     public synchronized void close() {
         if(closed)
             return;
         
-        setClosed(true);
-        setConnected(false);
+        if(isConnected()){
+            notifyServiceDown();
+            setConnected(false);
+        }        
+        setClosed(true);      
         
+        closeMessageQueue(true);
+        notifyChannelClosed(this);
+    }
+
+    protected void notifyServiceDown() {
         try {                        
             if (mux.flushSupported()) {
                 boolean successfulFlush = mux.startFlush(false);
@@ -293,14 +254,24 @@ public class MuxChannel extends JChannel {
         finally {            
             if (mux.flushSupported())
                 mux.stopFlush();                     
-        }            
-        closeMessageQueue(true);
-        notifyChannelClosed(this);
+        }
     }
 
+
+
+
+    public synchronized void open() throws ChannelException {
+        
+        if (!mux.isOpen())
+                mux.open();  
+        
+        setClosed(false);
+        setConnected(false); // needs to be connected next        
+    }
+   
     protected void _close(boolean disconnect, boolean close_mq) {
         super._close(disconnect, close_mq);
-        closed=!mux.isOpen();
+        setClosed(!mux.isOpen());
         setConnected(mux.isConnected());
         notifyChannelClosed(this);
     }

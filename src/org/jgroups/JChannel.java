@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158 2007/11/09 18:11:05 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.1 2007/11/26 21:16:45 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1089,6 +1089,9 @@ public class JChannel extends Channel {
                 }
             }
             break;
+        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+            state_promise.setResult(Boolean.TRUE);
+            break;     
 
         case Event.STATE_TRANSFER_INPUTSTREAM:
             StateTransferInfo sti=(StateTransferInfo)evt.getArg();
@@ -1328,10 +1331,7 @@ public class JChannel extends Channel {
                 catch(Throwable t) {
                     if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
                 }
-                break;
-            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-                state_promise.setResult(Boolean.TRUE);
-                break;
+                break;            
         }
 
         prot_stack.down(evt);
@@ -1357,10 +1357,7 @@ public class JChannel extends Channel {
                 catch(Throwable t) {
                     if(log.isErrorEnabled()) log.error("CONFIG event did not contain a hashmap: " + t);
                 }
-                break;
-            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-                state_promise.setResult(Boolean.TRUE);
-                break;
+                break;           
         }
 
         return prot_stack.down(evt);
@@ -1400,7 +1397,7 @@ public class JChannel extends Channel {
         props=configurator.getProtocolStackString();
         prot_stack=new ProtocolStack(this, props);
         try {
-            prot_stack.setup(); // Setup protocol stack (create layers, queues between them
+            prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
         }
         catch(Throwable e) {
             throw new ChannelException("unable to setup the protocol stack", e);

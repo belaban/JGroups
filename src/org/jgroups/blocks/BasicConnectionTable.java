@@ -201,7 +201,7 @@ public abstract class BasicConnectionTable {
     /**
      Remove <code>addr</code>from connection table. This is typically triggered when a member is suspected.
      */
-    public void remove(Address addr) {
+    public void removeConnection(Address addr) {
         Connection conn;
 
        synchronized(conns) {
@@ -265,7 +265,9 @@ public abstract class BasicConnectionTable {
    }
 
    void addConnection(Address peer, Connection c) {
-       conns.put(peer, c);
+       synchronized (conns) {
+           conns.put(peer, c); 
+       }       
        if(reaper != null && !reaper.isRunning())
            reaper.start();
    }
@@ -310,7 +312,7 @@ public abstract class BasicConnectionTable {
        catch(Throwable ex) {
            if(log.isTraceEnabled())
                log.trace("sending msg to " + dest + " failed (" + ex.getClass().getName() + "); removing from connection table", ex);
-           remove(dest);
+           removeConnection(dest);
        }
    }
 
@@ -329,12 +331,9 @@ public abstract class BasicConnectionTable {
           }
           copy.keySet().removeAll(current_mbrs);
                     
-          //destroy and remove orphaned connection i.e. connections
+          //destroy orphaned connection i.e. connections
           //to members that are not in current view
-          for(Connection orphanConnection:copy.values()){             
-              synchronized(conns){
-                  conns.remove(orphanConnection.getPeerAddress());
-              }
+          for(Connection orphanConnection:copy.values()){                         
               if (log.isTraceEnabled())
                 log.trace("At " + local_addr + " destroying orphan to "
                         + orphanConnection.getPeerAddress());
@@ -453,6 +452,7 @@ public abstract class BasicConnectionTable {
 
 
        void destroy() {
+       	   if(log.isTraceEnabled()) log.trace("destroyed " + this);
            is_running=false;
            closeSocket(); // should terminate handler as well
            if(sender != null)
@@ -535,7 +535,7 @@ public abstract class BasicConnectionTable {
                }
            }
            catch(Exception ex) {
-               remove(peer_addr);
+               removeConnection(peer_addr);
                throw ex;
            }
        }
@@ -654,19 +654,15 @@ public abstract class BasicConnectionTable {
                catch(OutOfMemoryError mem_ex) {
                    if(log.isWarnEnabled()) log.warn("dropped invalid message, closing connection");
                    break; // continue;
-               }
-               catch(EOFException eof_ex) {  // peer closed connection
-                   if(log.isTraceEnabled()) log.trace("exception is " + eof_ex);
-                   notifyConnectionClosed(peer_addr);
-                   break;
-               }
+               }               
                catch(IOException io_ex) {
-                   if(log.isTraceEnabled()) log.trace("exception is " + io_ex);
+                   //this is very common occurrence, hence log under trace level
+                   if(log.isTraceEnabled()) log.trace("Excption while read blocked for data from peer ", io_ex);
                    notifyConnectionClosed(peer_addr);
                    break;
                }
                catch(Throwable e) {
-                   if(log.isWarnEnabled()) log.warn("exception is " + e);
+                   if(log.isWarnEnabled()) log.warn("Problem encountered while receiving message from peer " + peer_addr, e);
                }
            }
            if(log.isTraceEnabled())
@@ -682,21 +678,21 @@ public abstract class BasicConnectionTable {
            InetAddress local=null, remote=null;
            String local_str, remote_str;
 
-           if(sock == null)
+           Socket tmp_sock=sock;
+           if(tmp_sock == null)
                ret.append("<null socket>");
            else {
                //since the sock variable gets set to null we want to make
-               //make sure we make it through here without a nullpointer exception
-               Socket tmp_sock=sock;
+               //make sure we make it through here without a nullpointer exception               
                local=tmp_sock.getLocalAddress();
                remote=tmp_sock.getInetAddress();
                local_str=local != null ? Util.shortName(local) : "<null>";
                remote_str=remote != null ? Util.shortName(remote) : "<null>";
                ret.append('<' + local_str + ':' + tmp_sock.getLocalPort() +
                           " --> " + remote_str + ':' + tmp_sock.getPort() + "> (" +
-                          ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");
-               tmp_sock=null;
+                          ((System.currentTimeMillis() - last_access) / 1000) + " secs old)");               
            }
+           tmp_sock=null;
 
            return ret.toString();
        }
