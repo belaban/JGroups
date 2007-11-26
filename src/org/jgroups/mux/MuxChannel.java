@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.40 2007/11/21 14:54:55 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.41 2007/11/26 13:31:23 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -210,52 +210,30 @@ public class MuxChannel extends JChannel {
             return;
 
         setClosed(false);
-        setConnected(false);
+        setConnected(false);       
+        notifyServiceDown();
         
-        try {                       
-            if (mux.flushSupported()) {
-                boolean successfulFlush = mux.startFlush(false);
-                if (!successfulFlush && log.isWarnEnabled()) {
-                    log.warn("Flush failed at " + mux.getLocalAddress() +":"+ getId());
-                }
-            }
-            try {    
-                mux.sendServiceDownMessage(getId(), mux.getLocalAddress(),true);
-            } catch (Exception e) {
-                if (log.isErrorEnabled())
-                    log.error("failed sending SERVICE_DOWN message", e);
-            }            
-        } catch (Throwable t) {
-            log.error("disconnecting channel failed", t);
-        }
-        finally {
-            if (mux.flushSupported())
-                mux.stopFlush();                      
-        }    
         // disconnects JChannel if all MuxChannels are
         // in disconnected state
         mux.disconnect();
         notifyChannelDisconnected(this);
     }
-
-
-
-    public synchronized void open() throws ChannelException {
-        
-        if (!mux.isOpen())
-                mux.open();  
-        
-        setClosed(false);
-        setConnected(false); // needs to be connected next        
-    }
-
+    
     public synchronized void close() {
         if(closed)
             return;
         
-        setClosed(true);
-        setConnected(false);
+        if(isConnected()){
+            notifyServiceDown();
+            setConnected(false);
+        }        
+        setClosed(true);      
         
+        closeMessageQueue(true);
+        notifyChannelClosed(this);
+    }
+
+    protected void notifyServiceDown() {
         try {                        
             if (mux.flushSupported()) {
                 boolean successfulFlush = mux.startFlush(false);
@@ -276,11 +254,21 @@ public class MuxChannel extends JChannel {
         finally {            
             if (mux.flushSupported())
                 mux.stopFlush();                     
-        }            
-        closeMessageQueue(true);
-        notifyChannelClosed(this);
+        }
     }
 
+
+
+
+    public synchronized void open() throws ChannelException {
+        
+        if (!mux.isOpen())
+                mux.open();  
+        
+        setClosed(false);
+        setConnected(false); // needs to be connected next        
+    }
+   
     protected void _close(boolean disconnect, boolean close_mq) {
         super._close(disconnect, close_mq);
         setClosed(!mux.isOpen());
