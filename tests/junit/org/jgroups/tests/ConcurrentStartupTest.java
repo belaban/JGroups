@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.34 2007/11/16 20:39:36 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.35 2007/11/26 14:27:18 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -183,9 +183,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }
 
     protected class ConcurrentStartupChannel extends PushChannelApplicationWithSemaphore {
-        private final List<Address> l = new LinkedList<Address>();
-
-        Channel ch; 
+        private final List<Address> l = new LinkedList<Address>();       
 
         private final Map<Integer,Object> mods = new TreeMap<Integer,Object>();       
 
