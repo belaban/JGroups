@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.157 2007/11/22 08:29:53 belaban Exp $
+ * @version $Id: UDP.java,v 1.158 2007/11/26 09:56:41 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -339,9 +339,7 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    public void init() throws Exception {
-        super.init();       
-    }
+
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
