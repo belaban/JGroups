@@ -1,4 +1,4 @@
-// $Id: ConnectionTableUnitTest.java,v 1.1.4.1 2007/11/27 07:40:18 belaban Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.1.4.2 2007/11/27 12:45:46 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -22,7 +22,7 @@ public class ConnectionTableUnitTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        ct1=new ConnectionTable(port1);
+        ct1=new ConnectionTable(port1);        
         ct1.setUseSendQueues(false);
         ct1.start();
         log("address of ct1: " + ct1.getLocalAddress());
