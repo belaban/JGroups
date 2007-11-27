@@ -1,4 +1,3 @@
-// $Id: CAUSAL.java,v 1.16 2007/05/09 22:57:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -56,7 +55,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Revision: 1.16 $
+ *  @version $Id: CAUSAL.java,v 1.16.4.1 2007/11/27 16:43:01 belaban Exp $
  *
  **/
 
@@ -134,13 +133,13 @@ public class CAUSAL extends Protocol
             }
             out.writeBoolean(true);
 
-            out.write(t.senderPosition);
+            out.writeInt(t.senderPosition);
             
             int values[]=t.values;
             
             int len=values.length;
-            out.write(len);
-            for(int i=0;i<len;i++) out.write(values[i]);
+            out.writeInt(len);
+            for(int i=0;i<len;i++) out.writeInt(values[i]);
         }
         
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
@@ -463,9 +462,10 @@ public class CAUSAL extends Protocol
             
             if (missingTimes.isEmpty()) {
                 if (active!=null) active.setFinalTimeVector(view, timeVector);                        
-                if (log.isInfoEnabled()) log.info(this+" has all the times");
-            } else {
-                if (log.isDebugEnabled()) log.debug(this+" missing times: "+missingTimes);
+                if (log.isTraceEnabled()) log.trace(this+" has all the times");
+            }
+            else {
+                if (log.isTraceEnabled()) log.trace(this+" missing times: "+missingTimes);
             }
         }
         
@@ -477,9 +477,9 @@ public class CAUSAL extends Protocol
             missingCompletions.remove(new Integer(index));
             
             if (missingCompletions.isEmpty()) {
-                if (log.isInfoEnabled()) log.info(this+" has all the completions");
+                if (log.isTraceEnabled()) log.trace(this+" has all the completions");
             } else {
-                if (log.isDebugEnabled()) log.debug(this+" missing completions: "+missingCompletions);
+                if (log.isTraceEnabled()) log.trace(this+" missing completions: "+missingCompletions);
             }
         }
         
@@ -567,7 +567,9 @@ public class CAUSAL extends Protocol
             int[] otherTimeVector = vector.getValues();
 
             if (otherTimeVector.length!=timeVector.length) {
-                log.warn("isCausallyNext: got message with wrong time vector length: "+otherTimeVector.length+", expected: "+timeVector.length);
+                if(log.isWarnEnabled())
+                    log.warn("isCausallyNext: got message with wrong time vector length: "+otherTimeVector.length+
+                            ", expected: "+timeVector.length);
                 return true;
             }
             
@@ -590,7 +592,9 @@ public class CAUSAL extends Protocol
             int otherTimeVector[]=vector.getValues();
             
             if (otherTimeVector.length!=timeVector.length) {
-                log.warn("max: got message with wrong time vector length: "+otherTimeVector.length+", expected: "+timeVector.length);
+                if(log.isWarnEnabled())
+                    log.warn("max: got message with wrong time vector length: "+otherTimeVector.length+", expected: "+
+                            timeVector.length);
                 return;
             }
             
@@ -610,7 +614,8 @@ public class CAUSAL extends Protocol
                 finalTimeVector[i]=startTimeVector[startIndex]; // update the final time vector.
             }
             
-            if (log.isInfoEnabled()) log.info(this+": final vector time set @ "+timeVectorString());
+            if (log.isTraceEnabled())
+                log.trace(this+": final vector time set @ "+timeVectorString());
         }
         
         public synchronized void clearFinalTimeVector() {
@@ -678,8 +683,8 @@ public class CAUSAL extends Protocol
                         complete=true;
                         newView.setMemberCompleted(localAddress);
 
-                        if(log.isInfoEnabled())
-                            log.info("Set up new active view: " + currentView + " @ " + currentView.timeVectorString());
+                        if(log.isTraceEnabled())
+                            log.trace("Set up new active view: " + currentView + " @ " + currentView.timeVectorString());
                     }
 
                     if(newView.hasMissingCompletions()) {
@@ -691,8 +696,8 @@ public class CAUSAL extends Protocol
                         flush=(LinkedList)downwardWaitingQueue.clone();
                         downwardWaitingQueue.clear();
 
-                        if(log.isInfoEnabled())
-                            log.info("Done synchronizing, enabled view: " + currentView + " @ " + currentView.timeVectorString());
+                        if(log.isTraceEnabled())
+                            log.trace("Done synchronizing, enabled view: " + currentView + " @ " + currentView.timeVectorString());
 
                         break;
                     }
@@ -706,8 +711,8 @@ public class CAUSAL extends Protocol
                 }
 
                 if(update != null) {
-                    log.warn("Sending sync update");
-
+                    if(log.isTraceEnabled())
+                        log.trace("Sending sync update");
                     down_prot.down(new Event(Event.MSG, update));
                 }
 
@@ -729,7 +734,7 @@ public class CAUSAL extends Protocol
             
             if (flush!=null) {
                 int n=flush.size();
-                if (log.isInfoEnabled()) log.info("Flushing "+n+" messages down...");
+                if (log.isDebugEnabled()) log.debug("Flushing "+n+" messages down...");
                 
                 while(!flush.isEmpty()) {
                     Event evt=(Event)flush.removeFirst();
@@ -862,9 +867,9 @@ public class CAUSAL extends Protocol
                 if (isEnabled()) {
                     currentView.increment();
                     tvt=currentView.getTransportedVectorTime();
-                    if (log.isDebugEnabled()) log.debug("Sent 1 down message @ "+currentView.timeVectorString());
+                    if (log.isTraceEnabled()) log.trace("Sent 1 down message @ "+currentView.timeVectorString());
                 } else {
-                    if (log.isDebugEnabled()) log.debug("Enqueued 1 down message...");
+                    if (log.isTraceEnabled()) log.trace("Enqueued 1 down message...");
                     downwardWaitingQueue.add(evt);
                 }
             }
@@ -919,8 +924,8 @@ public class CAUSAL extends Protocol
     {
         View view=(View)evt.getArg();      
         InternalView iView=new InternalView(view.getVid(), view.getMembers(), localAddress);
-
-        log.warn("New view: "+view);
+        if(log.isDebugEnabled())
+            log.debug("New view: "+view);
         
         synchronized(lock) {
             // Disable sending
@@ -935,7 +940,7 @@ public class CAUSAL extends Protocol
                 newView.setMemberLocalTime(localAddress, 0);
             }
             
-            if (log.isWarnEnabled()) log.warn("Starting synchronization thread for "+newView);
+            if (log.isTraceEnabled()) log.trace("Starting synchronization thread for "+newView);
             
             newViewThread=new NewViewThread(newView);
             newViewThread.start();
@@ -973,11 +978,11 @@ public class CAUSAL extends Protocol
             }
             
             if (currentView.isCausallyNext(messageVector)) {
-                if (log.isDebugEnabled()) log.debug("passing up message "+msg+", headers are "+msg.printHeaders()+", local vector is "+currentView.timeVectorString());
+                if (log.isTraceEnabled()) log.trace("passing up message "+msg+", headers are "+msg.printHeaders()+", local vector is "+currentView.timeVectorString());
                 up_prot.up(evt);
                 currentView.max(messageVector);
             } else  {
-                if (log.isDebugEnabled()) log.debug("queuing message "+msg+", headers are "+msg.printHeaders());
+                if (log.isTraceEnabled()) log.trace("queuing message "+msg+", headers are "+msg.printHeaders());
                 messageVector.setAssociatedMessage(msg);
                 addToDelayQueue(messageVector);
             }
@@ -988,7 +993,7 @@ public class CAUSAL extends Protocol
                     currentView.isCausallyNext((queuedVector = (TransportedVectorTime) upwardWaitingQueue.getFirst()))) {
                 upwardWaitingQueue.remove(queuedVector);
                 Message tmp=queuedVector.getAssociatedMessage();
-                if (log.isDebugEnabled()) log.debug("released message "+tmp+", headers are "+tmp.printHeaders());
+                if (log.isTraceEnabled()) log.trace("released message "+tmp+", headers are "+tmp.printHeaders());
                 up_prot.up(new Event(Event.MSG, tmp));
                 currentView.max(queuedVector);
             }
@@ -1004,8 +1009,9 @@ public class CAUSAL extends Protocol
         if (localAddress.equals(src)) return;
         
         MissingIndexesMessage content=(MissingIndexesMessage)object;
-        
-        log.warn("Got sync update from "+src);
+
+        if(log.isTraceEnabled())
+            log.trace("Got sync update from "+src);
         
         synchronized(lock) {
             if (newViewThread==null) {
@@ -1034,7 +1040,7 @@ public class CAUSAL extends Protocol
             
             if (!newViewThread.getCausalView().getViewId().equals(header.newViewId)) return;
         
-            if (log.isDebugEnabled()) log.debug("From "+src+": "+header);
+            if (log.isTraceEnabled()) log.trace("From "+src+": "+header);
 
             // Update the local time and completion status for the source.
             newViewThread.getCausalView().setMemberLocalTime(src, header.localTime);
