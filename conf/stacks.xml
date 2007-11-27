@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.37 2007/11/21 19:54:45 vlada Exp $
+  Version: $Id: stacks.xml,v 1.38 2007/11/27 15:54:31 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -284,7 +284,7 @@
                      processor_minThreads="8"
                      processor_maxThreads="8"
                      processor_queueSize="100"
-                     processor_keepAliveTime="-1"/>
+                     processor_keepAliveTime="9223372036854775807"/>
             <TCPPING timeout="3000"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
                      port_range="1"
@@ -302,8 +302,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
                         shun="false"
-                        view_bundling="true"
-                        view_ack_collection_timeout="5000"/>
+                        view_bundling="true"/>
             <FC max_credits="2000000"
                 min_threshold="0.10"/>
             <FRAG2 frag_size="60000"  />
@@ -338,7 +337,7 @@
                      processor_minThreads="8"
                      processor_maxThreads="8"
                      processor_queueSize="100"
-                     processor_keepAliveTime="-1"/>
+                     processor_keepAliveTime="9223372036854775807"/>
             <TCPPING timeout="3000"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7900],localhost[7901]}"
                      port_range="1"
@@ -356,8 +355,7 @@
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
                         shun="false"
-                        view_bundling="true"
-                        view_ack_collection_timeout="5000"/>
+                        view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER/>
 	        <!-- <pbcast.STATE_TRANSFER/> -->
 	        <pbcast.FLUSH timeout="0"/>
