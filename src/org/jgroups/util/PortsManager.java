@@ -7,7 +7,7 @@ import java.util.*;
  * Maintains a list of ports used on this host, associated with time stamps. The ports are persistet into the
  * temp file system.
  * @author Bela Ban
- * @version $Id: PortsManager.java,v 1.2 2007/11/27 10:54:01 belaban Exp $
+ * @version $Id: PortsManager.java,v 1.3 2007/11/27 13:54:46 belaban Exp $
  */
 public class PortsManager {
     private String filename="jgroups-ports.txt";
@@ -29,6 +29,14 @@ public class PortsManager {
         this.expiry_time=expiry_time;
         this.filename=filename;
         this.temp_dir=temp_dir;
+    }
+
+    public long getExpiryTime() {
+        return expiry_time;
+    }
+
+    public void setExpiryTime(long expiry_time) {
+        this.expiry_time=expiry_time;
     }
 
     /** Loads the file, weeds out expired ports, returns the next available port and saves the new port in the file */
