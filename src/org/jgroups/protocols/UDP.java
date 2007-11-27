@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.158 2007/11/26 09:56:41 belaban Exp $
+ * @version $Id: UDP.java,v 1.159 2007/11/27 15:11:51 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -564,10 +564,13 @@ public class UDP extends TP implements Runnable {
         DatagramSocket tmp=null;
         // 27-6-2003 bgooren, find available port in range (start_port, start_port+port_range)
         int rcv_port=bind_port, max_port=bind_port + port_range;
+        if(pm != null && bind_port > 0) {
+            rcv_port=pm.getNextAvailablePort(rcv_port);
+        }
         while(rcv_port <= max_port) {
             try {
                 tmp=new DatagramSocket(rcv_port, bind_addr);
-                break;
+                return tmp;
             }
             catch(SocketException bind_ex) {	// Cannot listen on this port
                 rcv_port++;
@@ -575,12 +578,11 @@ public class UDP extends TP implements Runnable {
             catch(SecurityException sec_ex) { // Not allowed to listen on this port
                 rcv_port++;
             }
+        }
 
-            // Cannot listen at all, throw an Exception
-            if(rcv_port >= max_port + 1) { // +1 due to the increment above
-                throw new Exception("cannot create a socket on any port in range " +
-                        bind_port + '-' + (bind_port + port_range));
-            }
+        // Cannot listen at all, throw an Exception
+        if(rcv_port >= max_port + 1) { // +1 due to the increment above
+            throw new Exception("failed to open a port in range " + bind_port + '-' + max_port);
         }
         return tmp;
     }
@@ -694,6 +696,10 @@ public class UDP extends TP implements Runnable {
 
     private void closeSocket() {
         if(sock != null) {
+            if(pm != null && bind_port > 0) {
+                int port=local_addr != null? ((IpAddress)local_addr).getPort() : sock.getLocalPort();
+                pm.removePort(port);
+            }
             sock.close();
             sock=null;
             if(log.isDebugEnabled()) log.debug("socket closed");
