@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PortManagerTest.java,v 1.2 2007/11/27 10:55:55 belaban Exp $
+ * @version $Id: PortManagerTest.java,v 1.3 2007/11/27 13:54:30 belaban Exp $
  */
 public class PortManagerTest extends TestCase {
     PortsManager pm;
@@ -70,6 +70,26 @@ public class PortManagerTest extends TestCase {
         port2=pm.getNextAvailablePort(START_PORT);
         System.out.println("port=" + port + ", port2=" + port2);
         assertNotSame(port, port2);
+    }
+
+    public void testRemove() {
+        pm=new PortsManager(10000);
+        int port=pm.getNextAvailablePort(START_PORT);
+        int old_port=port;
+        System.out.println("port = " + port);
+        assertEquals(START_PORT, port);
+        int port2=pm.getNextAvailablePort(START_PORT);
+        System.out.println("port2 = " + port2);
+        assertNotSame(port, port2);
+        pm.removePort(port);
+        port2=pm.getNextAvailablePort(START_PORT);
+        System.out.println("port2 = " + port2);
+        assertEquals(port, port2);
+        pm.removePort(port);
+        pm.removePort(port2);
+        port=pm.getNextAvailablePort(START_PORT);
+        System.out.println("port = " + port);
+        assertEquals(old_port, port);
     }
 
 
