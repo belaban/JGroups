@@ -9,6 +9,7 @@ import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.Protocol;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -27,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137 2007/10/01 07:16:18 belaban Exp $
+ * @version $Id: Util.java,v 1.138 2007/11/27 15:03:24 belaban Exp $
  */
 public class Util {
 
@@ -2285,6 +2286,14 @@ public class Util {
 
         // return first available server
         return (MBeanServer)servers.get(0);
+    }
+
+
+    public static String getProperty(Protocol prot, String prop_name) {
+        if(prot == null)
+            return null;
+        String name=prot.getProperties().getProperty(prop_name);
+        return name == null? name : name.trim();
     }
 
 
