@@ -823,7 +823,9 @@ public class FLUSH extends Protocol {
         public FlushHeader(byte type,long viewID,Collection<Address> flushView){
             this.type = type;
             this.viewID = viewID;
-            this.flushParticipants = flushView;
+            if(flushView != null){
+                this.flushParticipants = new ArrayList<Address>(flushView);
+            }
         }
 
         public void addDigest(Digest digest) {
@@ -873,10 +875,9 @@ public class FLUSH extends Protocol {
             out.writeLong(viewID);
             if(flushParticipants != null && !flushParticipants.isEmpty()){
                 out.writeShort(flushParticipants.size());
-                for(Iterator<Address> iter = flushParticipants.iterator();iter.hasNext();){
-                    Address address = iter.next();
-                    Util.writeAddress(address, out);
-                }
+                for (Address participant : flushParticipants) {
+                    Util.writeAddress(participant, out);    
+                }                       
             }else{
                 out.writeShort(0);
             }
