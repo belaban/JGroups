@@ -9,7 +9,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PortManagerTest.java,v 1.1 2007/11/27 10:53:45 belaban Exp $
+ * @version $Id: PortManagerTest.java,v 1.2 2007/11/27 10:55:55 belaban Exp $
  */
 public class PortManagerTest extends TestCase {
     PortsManager pm;
@@ -19,6 +19,12 @@ public class PortManagerTest extends TestCase {
         super.setUp();
         pm=new PortsManager();
         pm.deleteFile();
+    }
+
+    protected void tearDown() throws Exception {
+        pm=new PortsManager();
+        pm.deleteFile();
+        super.tearDown();
     }
 
     public void testAddition() {
