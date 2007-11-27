@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.35.2.2 2007/11/26 21:16:45 vlada Exp $
+  Version: $Id: stacks.xml,v 1.35.2.3 2007/11/27 15:49:44 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -284,7 +284,7 @@
                      processor_minThreads="8"
                      processor_maxThreads="8"
                      processor_queueSize="100"
-                     processor_keepAliveTime="-1"/>
+                     processor_keepAliveTime="9223372036854775807"/>
             <TCPPING timeout="3000"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7800],localhost[7801]}"
                      port_range="1"
@@ -337,7 +337,7 @@
                      processor_minThreads="8"
                      processor_maxThreads="8"
                      processor_queueSize="100"
-                     processor_keepAliveTime="-1"/>
+                     processor_keepAliveTime="9223372036854775807"/>
             <TCPPING timeout="3000"
                      initial_hosts="${jgroups.tcpping.initial_hosts:localhost[7900],localhost[7901]}"
                      port_range="1"
