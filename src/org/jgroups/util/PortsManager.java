@@ -7,7 +7,7 @@ import java.util.*;
  * Maintains a list of ports used on this host, associated with time stamps. The ports are persistet into the
  * temp file system.
  * @author Bela Ban
- * @version $Id: PortsManager.java,v 1.1 2007/11/27 10:22:53 belaban Exp $
+ * @version $Id: PortsManager.java,v 1.2 2007/11/27 10:54:01 belaban Exp $
  */
 public class PortsManager {
     private String filename="jgroups-ports.txt";
@@ -17,6 +17,9 @@ public class PortsManager {
 
     /** Time after which a port can be removed and re-allocated */
     private long expiry_time=60 * 1000L;
+
+    public PortsManager() {
+    }
 
     public PortsManager(long expiry_time) {
         this.expiry_time=expiry_time;
@@ -82,6 +85,12 @@ public class PortsManager {
         }
     }
 
+    /** Deletes the underlying file. Used for unit testing, not recommended for regular use ! */
+    public void deleteFile() {
+        File file=new File(absolute_name);
+        file.delete();
+    }
+
 
     private Map<Integer,Long> load() throws IOException {
         InputStream in=null;
@@ -92,8 +101,10 @@ public class PortsManager {
             props.load(in);
             for(Iterator<Map.Entry<Object,Object>> it=props.entrySet().iterator(); it.hasNext();) {
                 Map.Entry<Object,Object> entry=it.next();
-                Object key=entry.getKey(), val=entry.getValue();
-                retval.put(Integer.parseInt((String)val), Long.parseLong((String)key));
+                String keystr=(String)entry.getKey(), valstr=(String)entry.getValue();
+                int key=Integer.parseInt(keystr);
+                long val=Long.parseLong(valstr);
+                retval.put(key, val);
             }
             return retval;
         }
@@ -110,8 +121,12 @@ public class PortsManager {
         try {
             out=new FileOutputStream(absolute_name);
             Properties props=new Properties();
-            props.putAll(map);
-            props.store(out, "persistent JGroups ports");
+            for(Map.Entry<Integer,Long> entry: map.entrySet()) {
+                String key=entry.getKey().toString();
+                String val=entry.getValue().toString();
+                props.put(key, val);
+            }
+            props.store(out, "Persistent JGroups ports");
         }
         finally {
             Util.close(out);
