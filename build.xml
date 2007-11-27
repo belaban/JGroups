@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.1 2007/11/26 21:16:46 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.2 2007/11/27 15:49:43 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -677,6 +677,22 @@
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
         </antcall>
     </target>
+	
+    <!--
+          Runs entire testsuite with default tcp-nio confguration specified by tcp-nio.xml.
+          Other valid parameters that can additionally be specified are:
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-tcp-nio" depends="makeKeystore"
+            description="Runs entire testsuite with default tcp confguration specified by tcp.xml">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="channel.conf" value="tcp-nio.xml"/>
+            <param name="channel.conf.flush" value="flush-tcp-nio.xml"/>
+        </antcall>
+    </target>
+	
 
     <!--
           Runs entire testsuite in multiplexer mode with default stacks.xml
@@ -696,6 +712,25 @@
         </antcall>
     </target>
 
+    <!--
+          Runs entire testsuite in multiplexer mode with default stacks.xml
+          multiplexer tcp-nio stack configuration.
+          Other valid parameters that can additionally be specified are:
+          channel.conf
+          channel.conf.flush
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-mux-tcp-nio" depends="makeKeystore"
+            description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
+        <antcall target="runtests">
+            <param name="testset" value="all.tests"/>
+            <param name="mux.on" value="true"/>
+            <param name="mux.conf.stack" value="tcp-nio"/>
+        </antcall>
+    </target>
+	
+	
     <!--
           Runs a single junit test indicated by -Dtest=<testname> parameter.
           Note that indication of full class name is not necessary to invoke
