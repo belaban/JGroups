@@ -1,6 +1,5 @@
 package org.jgroups.blocks;
 
-import static org.jgroups.blocks.BasicConnectionTable.getNumberOfConnectionCreations;
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
@@ -10,13 +9,16 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.7 2007/11/05 15:01:39 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.7.2.1 2007/11/27 07:38:26 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -78,6 +80,8 @@ public class ConnectionTableTest extends TestCase {
         };
         ct1.setReceiver(dummy);
         ct2.setReceiver(dummy);
+        ct1.start();
+        ct2.start();
 
         sender1=new Sender((ConnectionTable)ct1, barrier, addr2, 0);
         sender2=new Sender((ConnectionTable)ct2, barrier, addr1, 0);
@@ -163,14 +167,18 @@ public class ConnectionTableTest extends TestCase {
     public void testStopConnectionTableNoSendQueues() throws Exception {
         ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
         ct1.setUseSendQueues(false);
+        ct1.start();
         ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
         ct2.setUseSendQueues(false);
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableWithSendQueues() throws Exception {
         ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
         ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
+        ct1.start();
+        ct2.start();
         _testStop(ct1, ct2);
     }
 
