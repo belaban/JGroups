@@ -18,7 +18,7 @@ import org.jgroups.util.Util;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest2.java,v 1.1 2007/11/28 20:32:34 vlada Exp $
+ * @version $Id: MergeTest2.java,v 1.2 2007/11/28 20:42:09 vlada Exp $
  */
 public class MergeTest2 extends ChannelTestBase {
 
@@ -82,11 +82,9 @@ public class MergeTest2 extends ChannelTestBase {
             }
 
             // Make sure everyone is in sync
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+            
+            blockUntilViewsReceived(channels, 60000);
+            
 
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(2000);
@@ -117,11 +115,8 @@ public class MergeTest2 extends ChannelTestBase {
             }            
                        
             //Either merge properly or time out...
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+            blockUntilViewsReceived(channels, 60000);
+            
 
             // Re-acquire the semaphore tickets; when we have them all
             // we know the threads are done
