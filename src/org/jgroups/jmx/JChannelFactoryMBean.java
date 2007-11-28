@@ -4,12 +4,12 @@ import org.jgroups.Channel;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactoryMBean.java,v 1.5 2007/11/28 11:33:10 belaban Exp $
+ * @version $Id: JChannelFactoryMBean.java,v 1.4 2007/11/28 11:32:03 belaban Exp $
  */
 public interface JChannelFactoryMBean {
     String getMultiplexerConfig();
     void setMultiplexerConfig(String properties) throws Exception;
-    void setMultiplexerConfig(String properties, boolean replace) throws Exception;
+    void setMultiplexerConfig(String properties, boolean replace);
 
     String getDomain();
     void setDomain(String name);
@@ -20,7 +20,7 @@ public interface JChannelFactoryMBean {
     boolean isExposeProtocols();
     void setExposeProtocols(boolean f);
 
-    String getConfig(String stack_name) throws Exception;
+    String getConfig(String stack_name);
     boolean removeConfig(String stack_name);
     void clearConfigurations();
     
