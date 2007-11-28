@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82 2007/10/30 17:53:04 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.83 2007/11/28 20:45:11 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -566,18 +566,12 @@ public class CoordGmsImpl extends GmsImpl {
             Address coord;
             for(int i=0; i < coords.size(); i++) {
                 coord=(Address)coords.elementAt(i);
-                if(gms.local_addr != null && gms.local_addr.equals(coord)) {
-                    tmp=getMergeResponse(gms.local_addr, merge_id);
-                    if(tmp != null)
-                        merge_rsps.add(tmp);
-                    continue;
-                }
-
+                
                 // this allows UNICAST to remove coord from previous_members in case of a merge
                 gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
                 msg=new Message(coord, null, null);
-                // msg.setFlag(Message.OOB);
+                msg.setFlag(Message.OOB);
                 hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=merge_id;
@@ -885,11 +879,11 @@ public class CoordGmsImpl extends GmsImpl {
                    install the digest and view in all of their subgroup members */
                 sendMergeView(coords, combined_merge_data);
             }
-            catch(Throwable ex) {
+            catch(Throwable ex) {                
                 if(log.isErrorEnabled()) log.error("exception while merging", ex);
-            }
-            finally {
                 sendMergeCancelledMessage(coords, merge_id);
+            }
+            finally {               
                 stopMergeCanceller(); // this is probably not necessary
                 merging=false;
                 merge_leader=null;
