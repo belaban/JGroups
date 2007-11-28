@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: MessageTest.java,v 1.2 2007/11/28 08:56:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -47,9 +47,9 @@ public class MessageTest extends TestCase {
         m1=new Message();
         m1.setFlag(Message.OOB);
         assertTrue(m1.isFlagSet(Message.OOB));
-        assertEquals((m1.getFlags() & Message.OOB), Message.OOB);
+        assertEquals(Message.OOB, (m1.getFlags() & Message.OOB));
         assertFalse(m1.isFlagSet(Message.LOW_PRIO));
-        assertFalse((m1.getFlags() & Message.LOW_PRIO) == Message.LOW_PRIO);
+        assertNotSame((m1.getFlags() & Message.LOW_PRIO), Message.LOW_PRIO);
     }
 
 
@@ -346,7 +346,7 @@ public class MessageTest extends TestCase {
         _testSize(msg);
     }
 
-    private void addHeaders(Message msg) {
+    private static void addHeaders(Message msg) {
         UdpHeader udp_hdr=new UdpHeader("DemoChannel");
         msg.putHeader("UDP", udp_hdr);
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
@@ -358,7 +358,7 @@ public class MessageTest extends TestCase {
     }
 
 
-    private void _testSize(Message msg) throws Exception {
+    private static void _testSize(Message msg) throws Exception {
         long size=msg.size();
         byte[] serialized_form=Util.streamableToByteBuffer(msg);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
