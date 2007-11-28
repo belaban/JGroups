@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.37 2007/11/06 17:13:50 vlada Exp $
+// $Id: ConnectionTableNIO.java,v 1.37.2.1 2007/11/28 10:58:22 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,7 +6,7 @@ import org.apache.commons.logging.Log;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.DirectExecutor;
+import org.jgroups.util.PortsManager;
 
 import java.io.IOException;
 import java.net.*;
@@ -95,23 +95,21 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
     * @param max_port
     * @throws Exception
     */
-   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port
-   )
-      throws Exception
+   public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port)
+           throws Exception
    {
-      setReceiver(r);
-      this.external_addr=external_addr;
-      this.bind_addr=bind_addr;
-      this.srv_port=srv_port;
-      this.max_port=max_port;
-      use_reaper=true;
-      start();
+       setReceiver(r);
+       this.external_addr=external_addr;
+       this.bind_addr=bind_addr;
+       this.srv_port=srv_port;
+       this.max_port=max_port;
+       use_reaper=true;
+       start();
    }
 
 
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
-                              boolean doStart
-    )
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+                              int srv_port, int max_port, boolean doStart)
             throws Exception
     {
         setReceiver(r);
@@ -119,6 +117,22 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
         this.bind_addr=bind_addr;
         this.srv_port=srv_port;
         this.max_port=max_port;
+        use_reaper=true;
+        if(doStart)
+            start();
+    }
+
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+                              int srv_port, int max_port, PortsManager pm,
+                              boolean doStart)
+            throws Exception
+    {
+        setReceiver(r);
+        this.external_addr=external_addr;
+        this.bind_addr=bind_addr;
+        this.srv_port=srv_port;
+        this.max_port=max_port;
+        this.pm=pm;
         use_reaper=true;
         if(doStart)
             start();
@@ -151,7 +165,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
    }
 
 
-    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr, int srv_port, int max_port,
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+                              int srv_port, int max_port,
                               long reaper_interval, long conn_expire_time, boolean doStart
     ) throws Exception
     {
@@ -160,6 +175,24 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
         this.external_addr=external_addr;
         this.srv_port=srv_port;
         this.max_port=max_port;
+        this.reaper_interval=reaper_interval;
+        this.conn_expire_time=conn_expire_time;
+        use_reaper=true;
+        if(doStart)
+            start();
+    }
+
+    public ConnectionTableNIO(Receiver r, InetAddress bind_addr, InetAddress external_addr,
+                              int srv_port, int max_port, PortsManager pm,
+                              long reaper_interval, long conn_expire_time, boolean doStart
+    ) throws Exception
+    {
+        setReceiver(r);
+        this.bind_addr=bind_addr;
+        this.external_addr=external_addr;
+        this.srv_port=srv_port;
+        this.max_port=max_port;
+        this.pm=pm;
         this.reaper_interval=reaper_interval;
         this.conn_expire_time=conn_expire_time;
         use_reaper=true;
@@ -332,7 +365,12 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
 
       // use directExector if max thread pool size is less than or equal to zero.
       if(getProcessorMaxThreads() <= 0) {
-         m_requestProcessors = new DirectExecutor();
+         m_requestProcessors = new Executor() {
+
+             public void execute(Runnable command) {
+                 command.run();
+             }
+         };
       }
       else
       {
@@ -585,6 +623,10 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
       this.m_acceptSelector = Selector.open();
       m_serverSocketChannel = ServerSocketChannel.open();
       m_serverSocketChannel.configureBlocking(false);
+
+       if(start_port > 0 && pm != null)
+           start_port=pm.getNextAvailablePort(start_port);
+
       while (true)
       {
          try

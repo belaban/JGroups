@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.44.2.1 2007/11/26 21:16:45 vlada Exp $
+// $Id: TCP.java,v 1.44.2.2 2007/11/28 10:58:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.PortsManager;
 
 import java.net.InetAddress;
 import java.util.Collection;
@@ -59,7 +60,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
     }
 
     public void start() throws Exception {
-        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port);
+        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port,pm);
         // ct.addConnectionListener(this);
         ct.setUseSendQueues(use_send_queues);
         ct.setSendQueueSize(send_queue_size);
@@ -101,10 +102,11 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
     * ConnectionTable.
     */
    protected ConnectionTable getConnectionTable(long reaperInterval, long connExpireTime, InetAddress bindAddress,
-                                                InetAddress externalAddress, int startPort, int endPort) throws Exception {
+                                                InetAddress externalAddress, int startPort, int endPort,
+                                                PortsManager pm) throws Exception {
        ConnectionTable cTable;
        if(reaperInterval == 0 && connExpireTime == 0) {
-           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort);
+           cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort, pm);
        }
        else {
            if(reaperInterval == 0) {
@@ -116,7 +118,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
                if(log.isWarnEnabled()) log.warn("conn_expire_time was 0, set it to " + connExpireTime);
            }
            cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort,
-                                      reaperInterval, connExpireTime);
+                                      reaperInterval, connExpireTime, pm);
        }       
        cTable.setThreadFactory(getProtocolStack().getThreadFactory());
        return cTable;
