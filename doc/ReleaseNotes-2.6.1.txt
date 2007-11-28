@@ -1,0 +1,55 @@
+
+Release Notes JGroups 2.6.1
+===========================
+
+Version: $Id: ReleaseNotes-2.6.1.txt,v 1.1.2.1 2007/11/28 11:50:56 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.1 is still API-backwards compatible with previous versions (down to 2.2.5).
+JGroups 2.6.1 is *binary backwards compatible* with 2.6.
+
+Below is a summary (with links to the detailed description) of the major new features.
+
+
+Join and state transfer
+-----------------------
+[http://jira.jboss.com/jira/browse/JGRP-236]
+
+We added another connect() method in JChannel, which combines joining a cluster and fetching the state from the
+coordinator into one method. This is especially useful when we have FLUSH in the stack; thus we only have to use 1 rather
+than 2 (1 for JOIN, 1 for state transfer) flush phases.
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+Performance
+-----------
+Links to performance tuning: http://wiki.jboss.org/wiki/Wiki.jsp?page=PerfTuning
+
+
+
+Bug fixes
+---------
+AUTH: bug in 2.5 which caused AUTH to fail on second and subsequent JOIN attempts *if* the first
+attempt was rejected by AUTH.
+[http://jira.jboss.com/jira/browse/JGRP-577]
+
+VIEW_SYNC: there was a regression in 2.5, which causes VIEW_SYNC messages to get dropped.
+Note that this bug didn't occur in 2.4.x.
+[http://jira.jboss.com/jira/browse/JGRP-586]
+
+X.509 token not marshalled correctly. This affects ENCRYPT.
+[http://jira.jboss.com/jira/browse/JGRP-576]
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+
+Nov 2007
+
+
