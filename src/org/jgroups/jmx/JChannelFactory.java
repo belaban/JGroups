@@ -8,7 +8,7 @@ import javax.management.MBeanServer;
 
 /**
  * @author Bela Ban
- * @version $Id: JChannelFactory.java,v 1.7 2007/11/01 10:49:48 mircea_markus Exp $
+ * @version $Id: JChannelFactory.java,v 1.8 2007/11/28 11:29:27 belaban Exp $
  */
 public class JChannelFactory implements JChannelFactoryMBean, MBeanRegistration {
     org.jgroups.JChannelFactory factory=new org.jgroups.JChannelFactory();
@@ -26,8 +26,25 @@ public class JChannelFactory implements JChannelFactoryMBean, MBeanRegistration 
         factory.setMultiplexerConfig(properties);
     }
 
+
+    public void setMultiplexerConfig(String properties, boolean replace) throws Exception {
+        factory.setMultiplexerConfig(properties, replace);
+    }
+
     public String getMultiplexerConfig() {
         return factory.getMultiplexerConfig();
+    }
+
+    public String getConfig(String stack_name) throws Exception {
+        return factory.getConfig(stack_name);
+    }
+
+    public boolean removeConfig(String stack_name) {
+        return factory.removeConfig(stack_name);
+    }
+
+    public void clearConfigurations() {
+        factory.clearConfigurations();
     }
 
     public String getDomain() {

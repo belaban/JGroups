@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.51 2007/11/20 12:40:32 belaban Exp $
+// $Id: JChannelFactory.java,v 1.52 2007/11/28 11:29:35 belaban Exp $
 
 package org.jgroups;
 
@@ -39,7 +39,7 @@ public class JChannelFactory implements ChannelFactory {
 	 * configs. This is (re-)populated whenever a setMultiplexerConfig() method
 	 * is called
 	 */
-	private final Map<String, String> stacks = Collections.synchronizedMap(new HashMap<String, String>());
+	private final Map<String,String> stacks = Collections.synchronizedMap(new HashMap<String, String>());
 
     /** 
      * Map<String,Multiplexer>, maintains mapping between stack names (e.g. "udp") and Multiplexer(es)
@@ -47,7 +47,6 @@ public class JChannelFactory implements ChannelFactory {
      */    
     private final Map<String,Multiplexer> channels = Collections.synchronizedMap(new HashMap<String,Multiplexer>());
 
-    private String config=null;
 
     /**
 	 * The MBeanServer to expose JMX management data with (no management data
@@ -138,11 +137,15 @@ public class JChannelFactory implements ChannelFactory {
 
 
     public void setMultiplexerConfig(Object properties) throws Exception {
+        setMultiplexerConfig(properties, true);
+    }
+
+    public void setMultiplexerConfig(Object properties, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
         if(input == null)
             throw new FileNotFoundException(properties.toString());
         try {
-            parse(input);
+            parse(input, replace);
         }
         catch(Exception ex) {
             throw new Exception("failed parsing " + properties, ex);
@@ -153,11 +156,15 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     public void setMultiplexerConfig(File file) throws Exception {
+        setMultiplexerConfig(file, true);
+    }
+
+    public void setMultiplexerConfig(File file, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(file);
         if(input == null)
             throw new FileNotFoundException(file.toString());
         try {
-            parse(input);
+            parse(input, replace);
         }
         catch(Exception ex) {
             throw new Exception("failed parsing " + file.toString(), ex);
@@ -168,15 +175,23 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     public void setMultiplexerConfig(Element properties) throws Exception {
-        parse(properties);
+        parse(properties, true);
+    }
+
+    public void setMultiplexerConfig(Element properties, boolean replace) throws Exception {
+        parse(properties, replace);
     }
 
     public void setMultiplexerConfig(URL url) throws Exception {
+        setMultiplexerConfig(url, true);
+    }
+
+    public void setMultiplexerConfig(URL url, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(url);
         if(input == null)
             throw new FileNotFoundException(url.toString());
         try {
-            parse(input);
+            parse(input, replace);
         }
         catch(Exception ex) {
             throw new Exception("failed parsing " + url.toString(), ex);
@@ -186,15 +201,16 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
-    public String getMultiplexerConfig() {return config;}
-
     public void setMultiplexerConfig(String properties) throws Exception {
+        setMultiplexerConfig(properties, true);
+    }
+
+    public void setMultiplexerConfig(String properties, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
         if(input == null)
             throw new FileNotFoundException(properties);
         try {
-            parse(input);
-            this.config=properties;
+            parse(input, replace);
         }
         catch(Exception ex) {
             throw new Exception("failed parsing " + properties, ex);
@@ -202,6 +218,38 @@ public class JChannelFactory implements ChannelFactory {
         finally {
             Util.close(input);
         }
+    }
+
+     /**
+     * Returns the stack configuration as a string (to be fed into new JChannel()). Throws an exception
+     * if the stack_name is not found. One of the setMultiplexerConfig() methods had to be called beforehand
+     * @return The protocol stack config as a plain string
+     */
+    public String getConfig(String stack_name) throws Exception {
+        String cfg=stacks.get(stack_name);
+        if(cfg == null)
+            throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
+        return cfg;
+     }
+
+    /**
+     * @return Returns all configurations
+     */
+    public String getMultiplexerConfig() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<String,String> entry: stacks.entrySet()) {
+            sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");
+        }
+        return sb.toString();
+    }
+
+    /** Removes all configurations */
+    public void clearConfigurations() {
+        stacks.clear();
+    }
+
+    public boolean removeConfig(String stack_name) {
+        return stack_name != null && stacks.remove(stack_name) != null;
     }
 
     public MBeanServer getServer() {
@@ -396,7 +444,7 @@ public class JChannelFactory implements ChannelFactory {
 
 
 
-    private void parse(InputStream input) throws Exception {
+    private void parse(InputStream input, boolean replace) throws Exception {
         /**
          * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
          * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
@@ -411,10 +459,10 @@ public class JChannelFactory implements ChannelFactory {
         // but the parser(Element) method checks this so a check is not
         // needed here.
         Element configElement = document.getDocumentElement();
-        parse(configElement);
+        parse(configElement, replace);
     }
 
-    private void parse(Element root) throws Exception {
+    private void parse(Element root, boolean replace) throws Exception {
         /**
          * CAUTION: crappy code ahead ! I (bela) am not an XML expert, so the code below is pretty amateurish...
          * But it seems to work, and it is executed only on startup, so no perf loss on the critical path.
@@ -460,22 +508,27 @@ public class JChannelFactory implements ChannelFactory {
                 // fixes http://jira.jboss.com/jira/browse/JGRP-290
                 ConfiguratorFactory.substituteVariables(conf); // replace vars with system props
                 String val=conf.getProtocolStackString();
-                stacks.put(st_name, val);
+                if(replace) {
+                    stacks.put(st_name, val);
+                    if(log.isTraceEnabled())
+                        log.trace("added config '" + st_name + "'");
+                }
+                else {
+                    if(!stacks.containsKey(st_name)) {
+                        stacks.put(st_name, val);
+                        if(log.isTraceEnabled())
+                            log.trace("added config '" + st_name + "'");
+                    }
+                    else {
+                        if(log.isTraceEnabled())
+                            log.trace("didn't add config '" + st_name + " because one of the same name already existed");
+                    }
+                }
             }
         }
     }
 
-    /**
-     * Returns the stack configuration as a string (to be fed into new JChannel()). Throws an exception
-     * if the stack_name is not found. One of the setMultiplexerConfig() methods had to be called beforehand
-     * @return The protocol stack config as a plain string
-     */
-    private String getConfig(String stack_name) throws Exception {
-        String cfg=stacks.get(stack_name);
-        if(cfg == null)
-            throw new Exception("stack \"" + stack_name + "\" not found in " + stacks.keySet());
-        return cfg;
-    }
+
     
     private class MuxFactoryChannelListener extends ChannelListenerAdapter{
 
@@ -483,10 +536,8 @@ public class JChannelFactory implements ChannelFactory {
             MuxChannel mch = (MuxChannel)channel;
             Multiplexer multiplexer = mch.getMultiplexer();
             boolean all_closed = multiplexer.close();
-            if(all_closed){
-                if (all_closed) {
-                    channels.remove(mch.getStackName());
-                }
+            if(all_closed) {
+                channels.remove(mch.getStackName());
                 unregister(domain + ":*,cluster=" + mch.getStackName());
             }
         }            
