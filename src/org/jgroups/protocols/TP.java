@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160 2007/11/08 16:58:54 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.1 2007/11/28 09:19:59 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -213,6 +213,10 @@ public abstract class TP extends Protocol {
 
     TpHeader header;
     final String name=getName();
+
+    protected PortsManager pm=null;
+    protected String persistent_ports_file=null;
+    protected long pm_expiry_time=30000L;
 
     static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
     static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
@@ -682,6 +686,27 @@ public abstract class TP extends Protocol {
         if(str != null) {
             port_range=Integer.parseInt(str);
             props.remove("port_range");
+        }
+
+        str=props.getProperty("persistent_ports_file");
+        if(str != null) {
+            persistent_ports_file=str;
+            props.remove("persistent_ports_file");
+        }
+
+        str=props.getProperty("ports_expiry_time");
+        if(str != null) {
+            pm_expiry_time=Integer.parseInt(str);
+            if(pm != null)
+                pm.setExpiryTime(pm_expiry_time);
+            props.remove("ports_expiry_time");
+        }
+
+        str=props.getProperty("persistent_ports");
+        if(str != null) {
+            if(Boolean.valueOf(str).booleanValue())
+                pm=new PortsManager(pm_expiry_time, persistent_ports_file);
+            props.remove("persistent_ports");
         }
 
         str=props.getProperty("loopback");
