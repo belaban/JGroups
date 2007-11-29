@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.9 2005/08/08 12:45:43 belaban Exp $
+// $Id: PingRsp.java,v 1.9.10.1 2007/11/29 11:24:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,6 +34,17 @@ public class PingRsp implements Serializable, Streamable {
         return own_addr != null && other.own_addr != null && own_addr.equals(other.own_addr);
     }
 
+    public int hashCode() {
+        int retval=0;
+        if(own_addr != null)
+            retval+=own_addr.hashCode();
+        if(coord_addr != null)
+            retval+=coord_addr.hashCode();
+        if(retval == 0)
+            retval=super.hashCode();
+        return retval;
+    }
+
     public boolean isCoord() {
         if(!is_server)
             return false;
@@ -44,11 +55,14 @@ public class PingRsp implements Serializable, Streamable {
 
     public int size() {
         int retval=Global.BYTE_SIZE *3; // for is_server, plus 2 presence bytes
-        retval+=2 * Global.BYTE_SIZE;   // 1 boolean for each address: IpAddress or other address ?
-        if(own_addr != null)
+        if(own_addr != null) {
+            retval+=Global.BYTE_SIZE; // 1 boolean for: IpAddress or other address ?
             retval+=own_addr.size();
-        if(coord_addr != null)
+        }
+        if(coord_addr != null) {
+            retval+=Global.BYTE_SIZE; // 1 boolean for: IpAddress or other address ?
             retval+=coord_addr.size();
+        }
         return retval;
     }
 
