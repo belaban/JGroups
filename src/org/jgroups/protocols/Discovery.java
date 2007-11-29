@@ -29,7 +29,7 @@ import java.util.concurrent.TimeoutException;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.36 2007/11/19 16:05:20 belaban Exp $
+ * @version $Id: Discovery.java,v 1.37 2007/11/29 11:27:36 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -62,7 +62,7 @@ public abstract class Discovery extends Protocol {
     public void localAddressSet(Address addr) {
     }
 
-    public abstract void sendGetMembersRequest();
+    public abstract void sendGetMembersRequest(String cluster_name);
 
 
     public void handleDisconnect() {
@@ -183,7 +183,7 @@ public abstract class Discovery extends Protocol {
             ping_responses.add(rsps);
         }
 
-        sender.start();
+        sender.start(group_addr);
         try {
             return rsps.get(timeout);
         }
@@ -253,6 +253,23 @@ public abstract class Discovery extends Protocol {
                 if(local_addr != null && msg.getSrc() != null && local_addr.equals(msg.getSrc())) {
                     return null;
                 }
+
+                if(group_addr == null || hdr.cluster_name == null) {
+                    if(log.isWarnEnabled())
+                        log.warn("group_addr (" + group_addr + ") or cluster_name of header (" + hdr.cluster_name
+                        + ") is null; passing up discovery request from " + msg.getSrc() + ", but this should not" +
+                                "be the case");
+                }
+                else {
+                    if(!group_addr.equals(hdr.cluster_name)) {
+                        if(log.isWarnEnabled())
+                            log.warn("discarding discovery request for cluster '" + hdr.cluster_name + "' from " +
+                                    msg.getSrc() + "; our cluster name is '" + group_addr + "'. " +
+                                    "Please separate your clusters cleanly.");
+                        return null;
+                    }
+                }
+
                 synchronized(members) {
                     coord=!members.isEmpty()? members.firstElement() : local_addr;
                 }
@@ -379,12 +396,12 @@ public abstract class Discovery extends Protocol {
             interval=timeout / (double)num_requests;
         }
 
-        public synchronized void start() {
+        public synchronized void start(final String cluster_name) {
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
                         try {
-                            sendGetMembersRequest();
+                            sendGetMembersRequest(cluster_name);
                         }
                         catch(Exception ex) {
                             if(log.isErrorEnabled())

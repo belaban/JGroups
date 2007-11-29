@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.2 2007/11/28 08:56:14 belaban Exp $
+// $Id: MessageTest.java,v 1.3 2007/11/29 11:27:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -351,7 +351,7 @@ public class MessageTest extends TestCase {
         msg.putHeader("UDP", udp_hdr);
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
         msg.putHeader("TP", tp_hdr);
-        PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+        PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster");
         msg.putHeader("PING", ping_hdr);
         NakAckHeader nak_hdr=new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104);
         msg.putHeader("NAKACK", nak_hdr);

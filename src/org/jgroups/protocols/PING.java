@@ -24,7 +24,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.36 2007/07/27 09:04:44 belaban Exp $
+ * @version $Id: PING.java,v 1.37 2007/11/29 11:27:08 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
@@ -144,7 +144,7 @@ public class PING extends Discovery {
 
 
 
-    public void sendGetMembersRequest() {
+    public void sendGetMembersRequest(String cluster_name) {
         Message       msg;
         PingHeader    hdr;
         List<Address> gossip_rsps;
@@ -167,7 +167,7 @@ public class PING extends Discovery {
                     Address dest=(Address)it.next();
                     msg=new Message(dest, null, null);  // unicast msg
                     msg.setFlag(Message.OOB);
-                    msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, null));
+                    msg.putHeader(getName(), new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
                     down_prot.down(new Event(Event.MSG, msg));
                 }
             }
@@ -182,7 +182,7 @@ public class PING extends Discovery {
                     // }
                     msg=new Message(addr, null, null);
                     msg.setFlag(Message.OOB);
-                    msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, null));
+                    msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
 
                     if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
                     down_prot.down(new Event(Event.MSG, msg));
@@ -190,7 +190,7 @@ public class PING extends Discovery {
             }
             else {
                 // 1. Mcast GET_MBRS_REQ message
-                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+                hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
                 msg=new Message(null);  // mcast msg
                 msg.setFlag(Message.OOB);
                 msg.putHeader(getName(), hdr); // needs to be getName(), so we might get "MPING" !

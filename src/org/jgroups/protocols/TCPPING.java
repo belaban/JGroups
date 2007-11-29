@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.32 2007/06/11 06:15:34 belaban Exp $
+// $Id: TCPPING.java,v 1.33 2007/11/29 11:27:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -97,7 +97,7 @@ public class TCPPING extends Discovery {
     }
 
 
-    public void sendGetMembersRequest() {
+    public void sendGetMembersRequest(String cluster_name) {
         Message msg;
 
         for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
@@ -107,7 +107,7 @@ public class TCPPING extends Discovery {
             // }
             msg=new Message(addr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, null));
+            msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
 
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
             down_prot.down(new Event(Event.MSG, msg));

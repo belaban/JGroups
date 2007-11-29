@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.26 2007/07/18 02:13:17 vlada Exp $
+// $Id: TCPGOSSIP.java,v 1.27 2007/11/29 11:27:08 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -104,7 +104,7 @@ public class TCPGOSSIP extends Discovery {
         }
     }
 
-    public void sendGetMembersRequest() {
+    public void sendGetMembersRequest(String cluster_name) {
         Message msg, copy;
         PingHeader hdr;
         List tmp_mbrs;
@@ -123,7 +123,7 @@ public class TCPGOSSIP extends Discovery {
         if(log.isTraceEnabled()) log.trace("consolidated mbrs from GossipRouter(s) are " + tmp_mbrs);
 
         // 1. 'Mcast' GET_MBRS_REQ message
-        hdr=new PingHeader(PingHeader.GET_MBRS_REQ, null);
+        hdr=new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name);
         msg=new Message(null);
         msg.setFlag(Message.OOB);
         msg.putHeader(name, hdr);
