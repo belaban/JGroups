@@ -1,4 +1,4 @@
-// $Id: PingHeader.java,v 1.11 2007/05/01 10:55:10 belaban Exp $
+// $Id: PingHeader.java,v 1.12 2007/11/29 11:15:58 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -16,9 +16,16 @@ public class PingHeader extends Header implements Streamable {
 
     public byte type=0;
     public PingRsp arg=null;
+    public String cluster_name=null;
+    private static final long serialVersionUID=3054979699998282428L;
 
     public PingHeader() {
     } // for externalization
+
+    public PingHeader(byte type, String cluster_name) {
+        this.type=type;
+        this.cluster_name=cluster_name;
+    }
 
     public PingHeader(byte type, PingRsp arg) {
         this.type=type;
@@ -26,18 +33,28 @@ public class PingHeader extends Header implements Streamable {
     }
 
     public int size() {
-        int retval=Global.BYTE_SIZE *2; // type and presence
+        int retval=Global.BYTE_SIZE *3; // type and presence
         if(arg != null) {
             retval+=arg.size();
+        }
+        if(cluster_name != null) {
+            retval += cluster_name.length() +2;
         }
         return retval;
     }
 
     public String toString() {
-        return "[PING: type=" + type2Str(type) + ", arg=" + arg + ']';
+        StringBuilder sb=new StringBuilder();
+        sb.append("[PING: type=" + type2Str(type));
+        if(cluster_name != null)
+            sb.append(", cluster=").append(cluster_name);
+        if(arg != null)
+            sb.append(", arg=" + arg);
+        sb.append(']');
+        return sb.toString();
     }
 
-    String type2Str(byte t) {
+    static String type2Str(byte t) {
         switch(t) {
             case GET_MBRS_REQ:
                 return "GET_MBRS_REQ";
@@ -52,21 +69,25 @@ public class PingHeader extends Header implements Streamable {
     public void writeExternal(ObjectOutput out) throws IOException {
         out.writeByte(type);
         out.writeObject(arg);
+        out.writeObject(cluster_name);
     }
 
 
     public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
         type=in.readByte();
         arg=(PingRsp)in.readObject();
+        cluster_name=(String)in.readObject();
     }
 
     public void writeTo(DataOutputStream outstream) throws IOException {
         outstream.writeByte(type);
         Util.writeStreamable(arg, outstream);
+        Util.writeString(cluster_name, outstream);
     }
 
     public void readFrom(DataInputStream instream) throws IOException, IllegalAccessException, InstantiationException {
         type=instream.readByte();
         arg=(PingRsp)Util.readStreamable(PingRsp.class, instream);
+        cluster_name=Util.readString(instream);
     }
 }
