@@ -1,10 +1,10 @@
-// $Id: MessageListStreamableTest.java,v 1.3 2007/08/20 09:40:12 belaban Exp $
+// $Id: MessageListStreamableTest.java,v 1.4 2007/11/29 11:27:09 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.3 2007/08/20 09:40:12 belaban Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.4 2007/11/29 11:27:09 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -74,7 +74,7 @@ public class MessageListStreamableTest {
      */
     static void addHeaders(Message msg) {
         msg.putHeader("UDP", new UdpHeader("MyGroup"));
-        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, null));
+        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster"));
         msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
         msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
         msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());

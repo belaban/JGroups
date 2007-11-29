@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.10 2005/08/10 11:31:03 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.11 2007/11/29 11:27:09 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -110,7 +110,7 @@ public class MessageSerializationTest {
      */
     static void addHeaders(Message msg) {
         msg.putHeader("UDP", new UdpHeader("MyGroup"));
-        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, null));
+        msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "x"));
         msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
         msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
         msg.putHeader("STABLE", new org.jgroups.protocols.pbcast.STABLE.StableHeader());
