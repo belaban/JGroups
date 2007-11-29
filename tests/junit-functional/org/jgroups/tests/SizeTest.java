@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.3 2007/10/01 07:09:18 belaban Exp $$
+// $Id: SizeTest.java,v 1.4 2007/11/29 11:18:54 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -62,7 +62,11 @@ public class SizeTest extends TestCase {
     }
 
     public void testPingHeader() throws Exception {
-        _testSize(new PingHeader(PingHeader.GET_MBRS_REQ, null));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp()));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (PingRsp)null));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, (String)null));
+        _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp(new IpAddress(4444), null, true)));
         IpAddress self=new IpAddress("127.0.0.1", 5555);
         PingRsp rsp=new PingRsp(self, self, true);
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
