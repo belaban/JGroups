@@ -33,7 +33,10 @@ public final class ViewDeliveryDemo {
             return;
         }
 
-        connect();
+        channel=new JChannel(props);
+        channel.connect("view_test");
+        channel.setReceiver(new MyReceiver());
+
         while (true) {
             switch (random.nextInt(3)) {
             case SEND:
@@ -53,8 +56,9 @@ public final class ViewDeliveryDemo {
     }
 
     private static void send() throws Exception {
-        System.out.println("Sending batch of messages.");
-        for (int i = 0, max = random.nextInt(1000); i < max; i++) {
+        int max=random.nextInt(1000);
+        System.out.println("Sending " + max + " messages");
+        for (int i = 0; i < max; i++) {
             channel.send(null, null, channel.getView().getVid());
         }
     }
@@ -64,45 +68,50 @@ public final class ViewDeliveryDemo {
         channel.close();
         Thread.sleep(random.nextInt(5000));
         channel.open();
-        connect();
+        channel.connect("view_test");
     }
 
     private static void reconnect() throws Exception {
         System.out.println("disconnecting and reconnecting.");
         channel.disconnect();
         Thread.sleep(random.nextInt(5000));
-        connect();
-    }
-
-    private static synchronized void connect() throws Exception {
-        if (channel == null) {
-            channel=new JChannel(props);
-        }
-        channel.setReceiver(new MyReceiver());
         channel.connect("view_test");
     }
 
 
 
     private static class MyReceiver extends ReceiverAdapter {
+        ViewId my_vid;
+        long last_time=System.currentTimeMillis();
+        static final long MAX_TIME=20000;
+        int count=0, violations=0;
 
 
         public void viewAccepted(View new_view) {
             System.out.println("new_view = " + new_view);
+            my_vid=new_view.getVid();
         }
 
         public void receive(final Message msg) {
             final Object obj = msg.getObject ();
             if (obj instanceof ViewId) {
+                count++;
                 final ViewId sent_in_vid = (ViewId) obj;
-                final ViewId arrived_in_vid = channel.getView().getVid();
+                final ViewId arrived_in_vid = my_vid;
                 if (!sent_in_vid.equals(arrived_in_vid)) {
-                    System.out
-                            .printf(
-                                    "VIOLATION: message sent in view %s received in %s\n",
-                                    sent_in_vid, arrived_in_vid);
+                    System.out.printf("******** VIOLATION: message sent in view %s received in %s\n",
+                                      sent_in_vid, arrived_in_vid);
+                    violations++;
                 }
-            } else {
+
+                long curr_time=System.currentTimeMillis();
+                long diff=curr_time - last_time;
+                if(diff > MAX_TIME) {
+                    last_time=System.currentTimeMillis();
+                    System.out.println("-- received " + count + " valid msgs, " + violations + " violations so far");
+                }
+            }
+            else {
                 System.out.println("ERROR: unexpected payload: " + obj);
             }
         }
