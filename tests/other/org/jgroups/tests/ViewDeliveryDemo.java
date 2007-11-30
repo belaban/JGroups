@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 
 import java.security.SecureRandom;
 import java.util.Random;
@@ -53,7 +54,7 @@ public final class ViewDeliveryDemo {
             default:
                 assert false;
             }
-            Thread.sleep(random.nextInt(2000));
+            Util.sleep(5000);
         }
     }
 
