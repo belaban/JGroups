@@ -20,6 +20,7 @@ public final class ViewDeliveryDemo {
 
     private static Channel channel=null;
     private static final Random random = new SecureRandom();
+    private static MyReceiver mr = null;
 
     static String props="flush-udp.xml";
 
@@ -35,7 +36,8 @@ public final class ViewDeliveryDemo {
 
         channel=new JChannel(props);
         channel.connect("view_test");
-        channel.setReceiver(new MyReceiver());
+        mr = new MyReceiver();
+        channel.setReceiver(mr);
 
         while (true) {
             switch (random.nextInt(3)) {
@@ -59,7 +61,7 @@ public final class ViewDeliveryDemo {
         int max=random.nextInt(1000);
         System.out.println("Sending " + max + " messages");
         for (int i = 0; i < max; i++) {
-            channel.send(null, null, channel.getView().getVid());
+            channel.send(null, null, mr.getViewId());
         }
     }
 
@@ -90,6 +92,10 @@ public final class ViewDeliveryDemo {
         public void viewAccepted(View new_view) {
             System.out.println("new_view = " + new_view);
             my_vid=new_view.getVid();
+        }
+        
+        public ViewId getViewId(){
+            return my_vid;            
         }
 
         public void receive(final Message msg) {
