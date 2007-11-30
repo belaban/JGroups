@@ -5,6 +5,7 @@ import org.jgroups.util.Util;
 
 import java.security.SecureRandom;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Verify that all messages are delivered in the view they are sent in
@@ -54,7 +55,7 @@ public final class ViewDeliveryDemo {
             default:
                 assert false;
             }
-            Util.sleep(5000);
+            Thread.sleep(random.nextInt(2000));
         }
     }
 
@@ -83,11 +84,22 @@ public final class ViewDeliveryDemo {
 
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private static class MyReceiver extends ReceiverAdapter implements Runnable {
         ViewId my_vid;
         long last_time=System.currentTimeMillis();
-        static final long MAX_TIME=20000;
-        int count=0, violations=0;
+        static final long MAX_TIME=10000;
+        final AtomicInteger count=new AtomicInteger(0), violations=new AtomicInteger(0);
+
+        private MyReceiver() {
+            new Thread(this).start();
+        }
+
+        public void run() {
+            while(true) {
+                Util.sleep(MAX_TIME);
+                System.out.println("==> received " + count.get() + " valid msgs, " + violations.get() + " violations so far");
+            }
+        }
 
 
         public void viewAccepted(View new_view) {
@@ -102,20 +114,13 @@ public final class ViewDeliveryDemo {
         public void receive(final Message msg) {
             final Object obj = msg.getObject ();
             if (obj instanceof ViewId) {
-                count++;
+                count.incrementAndGet();
                 final ViewId sent_in_vid = (ViewId) obj;
                 final ViewId arrived_in_vid = my_vid;
                 if (!sent_in_vid.equals(arrived_in_vid)) {
                     System.out.printf("******** VIOLATION: message sent in view %s received in %s\n",
                                       sent_in_vid, arrived_in_vid);
-                    violations++;
-                }
-
-                long curr_time=System.currentTimeMillis();
-                long diff=curr_time - last_time;
-                if(diff > MAX_TIME) {
-                    last_time=System.currentTimeMillis();
-                    System.out.println("-- received " + count + " valid msgs, " + violations + " violations so far");
+                    violations.incrementAndGet();
                 }
             }
             else {
