@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.7 2007/11/30 16:09:12 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.8 2007/11/30 16:19:19 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -41,10 +41,11 @@ public final class ViewDeliveryDemo {
         }
 
         channel=new JChannel(props);
-        channel.setOpt(Channel.BLOCK, true);
-        channel.connect("view_test");
         mr = new MyReceiver();
         channel.setReceiver(mr);
+        channel.setOpt(Channel.BLOCK, true);
+        channel.connect("view_test");
+
 
         while (true) {
             switch (random.nextInt(3)) {
