@@ -5,7 +5,6 @@ import org.jgroups.util.Util;
 
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -13,6 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
+ * @version $Id: ViewDeliveryDemo.java,v 1.7 2007/11/30 16:09:12 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
