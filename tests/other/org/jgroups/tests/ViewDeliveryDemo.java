@@ -3,9 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
-import java.security.SecureRandom;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Verify that all messages are delivered in the view they are sent in
@@ -21,7 +23,9 @@ public final class ViewDeliveryDemo {
     private static final int RECONNECT = 2;
 
     private static Channel channel=null;
-    private static final Random random = new SecureRandom();
+    private static final Lock lock=new ReentrantLock();
+    private static boolean blocked=false;
+    private static final Random random = new Random();
     private static MyReceiver mr = null;
 
     static String props="flush-udp.xml";
@@ -37,6 +41,7 @@ public final class ViewDeliveryDemo {
         }
 
         channel=new JChannel(props);
+        channel.setOpt(Channel.BLOCK, true);
         channel.connect("view_test");
         mr = new MyReceiver();
         channel.setReceiver(mr);
@@ -44,7 +49,17 @@ public final class ViewDeliveryDemo {
         while (true) {
             switch (random.nextInt(3)) {
             case SEND:
-                send();
+                lock.lock();
+                try {
+                    if(!blocked)
+                        send();
+                    else
+                        System.out.println("Didn't send any messages because I was blocked");
+                }
+                finally {
+                    lock.unlock();
+                }
+
                 break;
             case REOPEN:
                 reopen();
@@ -63,7 +78,7 @@ public final class ViewDeliveryDemo {
         int max=random.nextInt(1000);
         System.out.println("Sending " + max + " messages");
         for (int i = 0; i < max; i++) {
-            channel.send(null, null, mr.getViewId());
+            channel.send(null, null, channel.getView().getVid());
         }
     }
 
@@ -84,7 +99,7 @@ public final class ViewDeliveryDemo {
 
 
 
-    private static class MyReceiver extends ReceiverAdapter implements Runnable {
+    private static class MyReceiver extends ExtendedReceiverAdapter implements Runnable {
         ViewId my_vid;
         long last_time=System.currentTimeMillis();
         static final long MAX_TIME=10000;
@@ -107,9 +122,6 @@ public final class ViewDeliveryDemo {
             my_vid=new_view.getVid();
         }
         
-        public ViewId getViewId(){
-            return my_vid;            
-        }
 
         public void receive(final Message msg) {
             final Object obj = msg.getObject ();
@@ -125,6 +137,28 @@ public final class ViewDeliveryDemo {
             }
             else {
                 System.out.println("ERROR: unexpected payload: " + obj);
+            }
+        }
+
+        public void block() {
+            System.out.println("block()");
+            lock.lock();
+            try {
+                blocked=true;
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        public void unblock() {
+            System.out.println("unblock()");
+            lock.lock();
+            try {
+                blocked=false;
+            }
+            finally {
+                lock.unlock();
             }
         }
     }
