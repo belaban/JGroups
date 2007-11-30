@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.160 2007/11/23 20:57:45 vlada Exp $
+ * @version $Id: JChannel.java,v 1.161 2007/11/30 07:58:50 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -519,7 +519,7 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Opens the channel.
+     * Opens the channel. Note that the channel is only open, but <em>not connected</em>.
      * This does the following actions:
      * <ol>
      * <li> Resets the receiver queue by calling Queue.reset
