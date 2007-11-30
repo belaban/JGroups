@@ -1,0 +1,114 @@
+package org.jgroups.tests;
+
+import org.jgroups.*;
+
+import java.security.SecureRandom;
+import java.util.Random;
+
+/**
+ * Verify that all messages are delivered in the view they are sent in
+ * regardless of members joining, leaving or crashing.
+ * @author rnewson
+ *
+ */
+public final class ViewDeliveryDemo {
+
+
+    private static final int SEND = 0;
+    private static final int REOPEN = 1;
+    private static final int RECONNECT = 2;
+
+    private static Channel channel=null;
+    private static final Random random = new SecureRandom();
+
+    static String props="flush-udp.xml";
+
+    public static void main(final String[] args) throws Exception {
+        for(int i=0; i < args.length; i++) {
+            if(args[i].equals("-props")) {
+                props=args[++i];
+                continue;
+            }
+            System.out.println("ViewDeliveryDemo [-help] [-props <props>]");
+            return;
+        }
+
+        connect();
+        while (true) {
+            switch (random.nextInt(3)) {
+            case SEND:
+                send();
+                break;
+            case REOPEN:
+                reopen();
+                break;
+            case RECONNECT:
+                reconnect();
+                break;
+            default:
+                assert false;
+            }
+            Thread.sleep(random.nextInt(2000));
+        }
+    }
+
+    private static void send() throws Exception {
+        System.out.println("Sending batch of messages.");
+        for (int i = 0, max = random.nextInt(1000); i < max; i++) {
+            channel.send(null, null, channel.getView().getVid());
+        }
+    }
+
+    private static void reopen() throws Exception {
+        System.out.println("closing and reopening.");
+        channel.close();
+        Thread.sleep(random.nextInt(5000));
+        channel.open();
+        connect();
+    }
+
+    private static void reconnect() throws Exception {
+        System.out.println("disconnecting and reconnecting.");
+        channel.disconnect();
+        Thread.sleep(random.nextInt(5000));
+        connect();
+    }
+
+    private static synchronized void connect() throws Exception {
+        if (channel == null) {
+            channel=new JChannel(props);
+        }
+        channel.setReceiver(new MyReceiver());
+        channel.connect("view_test");
+    }
+
+
+
+    private static class MyReceiver extends ReceiverAdapter {
+
+
+        public void viewAccepted(View new_view) {
+            System.out.println("new_view = " + new_view);
+        }
+
+        public void receive(final Message msg) {
+            final Object obj = msg.getObject ();
+            if (obj instanceof ViewId) {
+                final ViewId sent_in_vid = (ViewId) obj;
+                final ViewId arrived_in_vid = channel.getView().getVid();
+                if (!sent_in_vid.equals(arrived_in_vid)) {
+                    System.out
+                            .printf(
+                                    "VIOLATION: message sent in view %s received in %s\n",
+                                    sent_in_vid, arrived_in_vid);
+                }
+            } else {
+                System.out.println("ERROR: unexpected payload: " + obj);
+            }
+        }
+    }
+
+
+
+    
+}
