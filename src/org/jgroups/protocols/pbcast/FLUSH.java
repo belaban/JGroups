@@ -60,10 +60,7 @@ public class FLUSH extends Protocol {
     private final List<Address> flushMembers;
 
     @GuardedBy("sharedLock")
-    private final Map<Address, Digest> flushCompletedMap;
-
-    @GuardedBy("sharedLock")
-    private final Set<Address> stopFlushOkSet;
+    private final Map<Address, Digest> flushCompletedMap;    
 
     @GuardedBy("sharedLock")
     private final Set<Address> suspected;
@@ -119,8 +116,7 @@ public class FLUSH extends Protocol {
     public FLUSH(){
         super();
         currentView = new View(new ViewId(), new Vector<Address>());      
-        flushCompletedMap = new HashMap<Address, Digest>();
-        stopFlushOkSet = new TreeSet<Address>();
+        flushCompletedMap = new HashMap<Address, Digest>();        
         flushMembers = new ArrayList<Address>();
         suspected = new TreeSet<Address>();
     }
@@ -166,8 +162,7 @@ public class FLUSH extends Protocol {
     public void stop() {
         synchronized(sharedLock){
             currentView = new View(new ViewId(), new Vector<Address>());
-            flushCompletedMap.clear();            
-            stopFlushOkSet.clear();
+            flushCompletedMap.clear();                       
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
@@ -571,8 +566,7 @@ public class FLUSH extends Protocol {
         }
                             
         synchronized(sharedLock){                     
-            flushCompletedMap.clear();          
-            stopFlushOkSet.clear();
+            flushCompletedMap.clear();                     
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
