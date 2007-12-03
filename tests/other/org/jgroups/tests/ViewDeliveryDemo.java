@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.jgroups.util.BoundedList;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -14,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.12 2007/12/03 10:17:25 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.13 2007/12/03 10:58:25 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -126,6 +127,7 @@ public final class ViewDeliveryDemo {
         static final long MAX_TIME=10000;
         final AtomicInteger count=new AtomicInteger(0), violations=new AtomicInteger(0);
         final List<String> violations_list=new LinkedList<String>();
+        final BoundedList<View> views=new BoundedList<View>(10);
 
         private MyReceiver() {
             new Thread(this).start();
@@ -134,17 +136,29 @@ public final class ViewDeliveryDemo {
         public void run() {
             while(true) {
                 Util.sleep(MAX_TIME);
-                System.out.println("==> received " + count.get() + " valid msgs, " + violations.get() + " violations so far");
+                StringBuilder sb=new StringBuilder();
+                sb.append("==> received " + count.get() + " valid msgs, " + violations.get() + " violations so far");
                 if(violations.get() > 0) {
-                    System.out.println("violations:\n" + printViolationsList());
+                    sb.append("violations:\n" + printViolationsList());
                 }
+                sb.append("\nlast views:\n").append(printViews() + "\n");
+
+                System.out.println(sb);
             }
+        }
+
+        private String printViews() {
+            StringBuilder sb=new StringBuilder();
+            for(View view: views)
+                sb.append(view).append("\n");
+            return sb.toString();
         }
 
 
         public void viewAccepted(View new_view) {
             System.out.println("new_view = " + new_view);
             my_vid=new_view.getVid();
+            views.add(new_view);
         }
         
 
