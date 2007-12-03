@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.29 2007/12/03 13:16:46 belaban Exp $
+ * @version $Id: Configurator.java,v 1.30 2007/12/03 14:33:58 belaban Exp $
  */
 public class Configurator {
 
@@ -135,6 +135,8 @@ public class Configurator {
                         if(num_starts > 0) {
                             continue; // don't call TP.stop() if we still have references to the transport
                         }
+                        else
+                            singletons.remove(singleton_name);
                     }
                 }
             }
