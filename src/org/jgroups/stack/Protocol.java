@@ -29,7 +29,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.54 2007/10/30 17:53:06 vlada Exp $
+ * @version $Id: Protocol.java,v 1.55 2007/12/03 13:17:55 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -49,6 +49,11 @@ public abstract class Protocol {
         if(props != null)
             this.props.putAll(props);
         return true;
+    }
+
+
+    public void setProperty(String key, String val) {
+        this.props.put(key, val);
     }
 
 
