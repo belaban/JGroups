@@ -3,6 +3,8 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.Lock;
@@ -12,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.8 2007/11/30 16:19:19 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.9 2007/12/03 08:48:41 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -105,6 +107,7 @@ public final class ViewDeliveryDemo {
         long last_time=System.currentTimeMillis();
         static final long MAX_TIME=10000;
         final AtomicInteger count=new AtomicInteger(0), violations=new AtomicInteger(0);
+        final List<String> violations_list=new LinkedList<String>();
 
         private MyReceiver() {
             new Thread(this).start();
@@ -131,14 +134,23 @@ public final class ViewDeliveryDemo {
                 final ViewId sent_in_vid = (ViewId) obj;
                 final ViewId arrived_in_vid = my_vid;
                 if (!sent_in_vid.equals(arrived_in_vid)) {
-                    System.out.printf("******** VIOLATION: message sent in view %s received in %s\n",
-                                      sent_in_vid, arrived_in_vid);
+                    String tmp="*** VIOLATION: message " + msg + " sent in view "+sent_in_vid+" received in "+arrived_in_vid+"\n";
+                    violations_list.add(tmp);
+                    System.out.println(tmp);
+                    System.out.println("violations:\n" + printViolationsList());
                     violations.incrementAndGet();
                 }
             }
             else {
                 System.out.println("ERROR: unexpected payload: " + obj);
             }
+        }
+
+        private String printViolationsList() {
+            StringBuilder sb=new StringBuilder();
+            for(String tmp: violations_list)
+                sb.append(tmp).append("\n");
+            return sb.toString();
         }
 
         public void block() {
