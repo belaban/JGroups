@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.10 2007/12/03 09:25:05 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.11 2007/12/03 09:51:58 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -80,24 +80,42 @@ public final class ViewDeliveryDemo {
     private static void send() throws Exception {
         int max=random.nextInt(1000);
         System.out.println("Sending " + max + " messages");
-        for (int i = 0; i < max; i++) {
-            channel.send(null, null, channel.getView().getVid());
+        try {
+            for (int i = 0; i < max; i++) {
+                channel.send(null, null, channel.getView().getVid());
+            }
+        }
+        catch(Throwable t) {
+            System.err.println("failed to send messages");
+            t.printStackTrace();
         }
     }
 
     private static void reopen() throws Exception {
         System.out.println("closing and reopening.");
-        channel.close();
-        Thread.sleep(random.nextInt(5000));
-        channel.open();
-        channel.connect("view_test");
+        try {
+            channel.close();
+            Thread.sleep(random.nextInt(5000));
+            channel.open();
+            channel.connect("view_test");
+        }
+        catch(Throwable t) {
+            System.err.println("failed to reopen the channel");
+            t.printStackTrace();
+        }
     }
 
     private static void reconnect() throws Exception {
         System.out.println("disconnecting and reconnecting.");
-        channel.disconnect();
-        Thread.sleep(random.nextInt(5000));
-        channel.connect("view_test");
+        try {
+            channel.disconnect();
+            Thread.sleep(random.nextInt(5000));
+            channel.connect("view_test");
+        }
+        catch(Throwable t) {
+            System.err.println("failed to reconnect channel");
+            t.printStackTrace();
+        }
     }
 
 
