@@ -355,6 +355,11 @@ public class FLUSH extends Protocol {
                 // for processing of application messages after we join, 
                 // lets wait for STOP_FLUSH to complete
                 // before we start allowing message up.
+                Address dest=msg.getDest();
+                if(dest != null && !dest.isMulticastAddress()) {
+                    return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny applies to multicasts
+                }
+
                 if(!allowMessagesToPassUp)
                     return null;
             }
