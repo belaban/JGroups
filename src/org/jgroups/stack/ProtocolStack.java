@@ -3,13 +3,12 @@ package org.jgroups.stack;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.ThreadFactory;
-import org.jgroups.util.ThreadNamingPattern;
-import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
+import org.jgroups.protocols.TP;
+import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -21,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59 2007/11/06 17:13:51 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.60 2007/12/03 13:17:08 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -37,9 +36,20 @@ public class ProtocolStack extends Protocol implements Transport {
     private JChannel channel = null;
     private volatile boolean stopped = true;
 
+
+    static {
+        singleton_transports=new ConcurrentHashMap<String,Tuple<TP,Short>>();
+    }
+
+
     /** Locks acquired by protocol below, need to get released on down().
      * See http://jira.jboss.com/jira/browse/JGRP-535 for details */
     private final Map<Thread, ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
+
+
+    /** Holds the shared transports, keyed by 'TP.singleton_name'.
+     * The values are the transport and the use count for start() (decremented by stop() */
+    private static final ConcurrentMap<String,Tuple<TP,Short>> singleton_transports;
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {               
@@ -98,6 +108,10 @@ public class ProtocolStack extends Protocol implements Transport {
     public Protocol getTransport() {
         Vector<Protocol> prots=getProtocols();
         return !prots.isEmpty()? prots.lastElement() : null;
+    }
+
+    public static ConcurrentMap<String, Tuple<TP, Short>> getSingletonTransports() {
+        return singleton_transports;
     }
 
     /**
@@ -205,7 +219,8 @@ public class ProtocolStack extends Protocol implements Transport {
             top_prot=Configurator.setupProtocolStack(setup_string, this);
             top_prot.setUpProtocol(this);
             bottom_prot=Configurator.getBottommostProtocol(top_prot);
-            Configurator.initProtocolStack(bottom_prot);         // calls init() on each protocol, from bottom to top
+            List<Protocol> protocols=getProtocols();
+            Configurator.initProtocolStack(protocols);         // calls init() on each protocol, from bottom to top
         }
     }
 
@@ -277,7 +292,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void destroy() {
         if(top_prot != null) {
-            Configurator.destroyProtocolStack(top_prot);           // destroys msg queues and threads
+            Configurator.destroyProtocolStack(getProtocols());           // destroys msg queues and threads
             top_prot=null;
         }        
         try {
@@ -294,11 +309,11 @@ public class ProtocolStack extends Protocol implements Transport {
      * <em>from top to bottom</em>.
      * Each layer can perform some initialization, e.g. create a multicast socket
      */
-    public void startStack() throws Exception {
+    public void startStack(String cluster_name) throws Exception {
         if(stopped == false) return;
 
         timer.start();
-        Configurator.startProtocolStack(top_prot);
+        Configurator.startProtocolStack(getProtocols(), cluster_name, singleton_transports);
         stopped=false;
     }
 
@@ -314,7 +329,7 @@ public class ProtocolStack extends Protocol implements Transport {
      */
     public void stopStack() {       
         if(stopped) return;
-        Configurator.stopProtocolStack(top_prot);
+        Configurator.stopProtocolStack(getProtocols(), singleton_transports);
         stopped=true;
     }
 

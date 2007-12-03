@@ -6,7 +6,7 @@ package org.jgroups.conf;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolParameter.java,v 1.5 2006/08/15 05:50:06 belaban Exp $
+ * @version $Id: ProtocolParameter.java,v 1.6 2007/12/03 13:17:08 belaban Exp $
  */
 
 public class ProtocolParameter {
@@ -14,8 +14,7 @@ public class ProtocolParameter {
     private final String mParameterName;
     private String mParameterValue;
 
-    public ProtocolParameter(String parameterName,
-                             String parameterValue) {
+    public ProtocolParameter(String parameterName, String parameterValue) {
         mParameterName=parameterName;
         mParameterValue=parameterValue;
     }
@@ -40,21 +39,18 @@ public class ProtocolParameter {
     }
 
     public boolean equals(Object another) {
-        if(another instanceof ProtocolParameter)
-            return getName().equals(((ProtocolParameter)another).getName());
-        else
-            return false;
+        return another instanceof ProtocolParameter && getName().equals(((ProtocolParameter)another).getName());
     }
 
     public String getParameterString() {
-        StringBuffer buf=new StringBuffer(mParameterName);
+        StringBuilder buf=new StringBuilder(mParameterName);
         if(mParameterValue != null)
             buf.append('=').append(mParameterValue);
         return buf.toString();
     }
 
     public String getParameterStringXml() {
-        StringBuffer buf=new StringBuffer(mParameterName);
+        StringBuilder buf=new StringBuilder(mParameterName);
         if(mParameterValue != null)
             buf.append("=\"").append(mParameterValue).append('\"');
         return buf.toString();
