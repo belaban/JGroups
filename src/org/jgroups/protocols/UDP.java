@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.159 2007/11/27 15:11:51 belaban Exp $
+ * @version $Id: UDP.java,v 1.160 2007/12/03 13:19:14 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -415,7 +415,16 @@ public class UDP extends TP implements Runnable {
             sock=createDatagramSocketWithBindPort();
         }
         else {
-            sock=createEphemeralDatagramSocket();
+            DatagramSocket tmp_sock=null;
+            if(prevent_port_reuse) {
+                tmp_sock=new DatagramSocket(0, bind_addr);
+            }
+            try {
+                sock=createEphemeralDatagramSocket();
+            }
+            finally {
+                Util.close(tmp_sock);
+            }
         }
         if(tos > 0) {
             try {
