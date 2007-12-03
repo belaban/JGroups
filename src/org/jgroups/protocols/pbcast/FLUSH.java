@@ -269,7 +269,12 @@ public class FLUSH extends Protocol {
             if(sentBlock.compareAndSet(false, true)){                
                 sendBlockUpToChannel();              
             }
-            break;
+
+            Object result=down_prot.down(evt);
+            if(result instanceof Throwable) {
+                sentBlock.set(false); // set the var back to its original state if we cannot connect successfully
+            }
+            return result;
 
         case Event.SUSPEND:
             return startFlush(evt);
