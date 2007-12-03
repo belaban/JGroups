@@ -10,29 +10,26 @@ import org.jgroups.util.Util;
 import java.util.LinkedList;
 import java.util.List;
 
+
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.3 2007/12/03 13:17:20 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.4 2007/12/03 14:18:37 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
-    private JChannel a, b, c, d, e;
-    private Receiver r1, r2, r3, r4, r5;
+    private JChannel a, b, c;
+    private MyReceiver r1, r2, r3;
     static final String SINGLETON_1="singleton-1", SINGLETON_2="singleton-2";
 
 
     protected void tearDown() throws Exception {
-        if(e != null)
-            e.close();
-        if(d != null)
-            d.close();
         if(c != null)
             c.close();
         if(b != null)
             b.close();
         if(a != null)
             a.close();
-        r1=r2=r3=r4=r5=null;
+        r1=r2=r3=null;
         super.tearDown();
     }
 
@@ -71,15 +68,15 @@ public class SharedTransportTest extends ChannelTestBase {
 
     public void testReferenceCounting() throws ChannelException {
         a=createSharedChannel(SINGLETON_1);
-        r1=new Receiver("a");
+        r1=new MyReceiver("a");
         a.setReceiver(r1);
 
         b=createSharedChannel(SINGLETON_1);
-        r2=new Receiver("b");
+        r2=new MyReceiver("b");
         b.setReceiver(r2);
 
         c=createSharedChannel(SINGLETON_1);
-        r3=new Receiver("c");
+        r3=new MyReceiver("c");
         c.setReceiver(r3);
 
 
@@ -107,11 +104,11 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
-    private static class Receiver extends ReceiverAdapter {
+    private static class MyReceiver extends ReceiverAdapter {
         final List<Message> list=new LinkedList<Message>();
         final String name;
 
-        private Receiver(String name) {
+        private MyReceiver(String name) {
             this.name=name;
         }
 
