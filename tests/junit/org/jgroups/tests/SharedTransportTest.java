@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.4 2007/12/03 14:18:37 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5 2007/12/03 14:54:17 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -79,7 +79,6 @@ public class SharedTransportTest extends ChannelTestBase {
         r3=new MyReceiver("c");
         c.setReceiver(r3);
 
-
         a.connect("A");
         b.connect("B");
         c.connect("C");
@@ -91,6 +90,22 @@ public class SharedTransportTest extends ChannelTestBase {
         assertEquals(1, r1.size());
         assertEquals(1, r2.size());
         assertEquals(1, r3.size());
+        r1.clear(); r2.clear(); r3.clear();
+
+        b.disconnect();
+        System.out.println("\n");
+        a.send(null, null, "message from a");
+        c.send(null, null, "message from c");
+        Util.sleep(500);
+        assertEquals(1, r1.size());
+        assertEquals(1, r3.size());
+        r1.clear(); r3.clear();
+
+        c.disconnect();
+        System.out.println("\n");
+        a.send(null, null, "message from a");
+        Util.sleep(500);
+        assertEquals(1, r1.size());
     }
 
 
@@ -118,6 +133,10 @@ public class SharedTransportTest extends ChannelTestBase {
 
         public int size() {
             return list.size();
+        }
+
+        public void clear() {
+            list.clear();
         }
 
         public void receive(Message msg) {
