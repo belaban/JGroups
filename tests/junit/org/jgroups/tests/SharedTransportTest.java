@@ -1,21 +1,23 @@
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.conf.ConfiguratorFactory;
-import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.ProtocolData;
-import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.conf.ProtocolParameter;
+import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.util.Util;
+
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.2 2007/11/29 13:42:38 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.3 2007/12/03 13:17:20 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
-    JChannel a, b, c, d, e;
+    private JChannel a, b, c, d, e;
+    private Receiver r1, r2, r3, r4, r5;
     static final String SINGLETON_1="singleton-1", SINGLETON_2="singleton-2";
 
 
@@ -30,13 +32,13 @@ public class SharedTransportTest extends ChannelTestBase {
             b.close();
         if(a != null)
             a.close();
+        r1=r2=r3=r4=r5=null;
         super.tearDown();
     }
 
 
     public void testCreation() throws Exception {
         a=createChannel();
-        makeSingleton(a, SINGLETON_1);
         a.connect("x");
         View view=a.getView();
         System.out.println("view = " + view);
@@ -44,30 +46,87 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
     public void testCreationOfDuplicateCluster() throws Exception {
-//        ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(CHANNEL_CONFIG);
-//        ProtocolData[] protocols=config.getProtocolStack();
-//        ProtocolData transport=protocols[0];
-//        transport.getParameters().put(Global.SINGLETON_NAME, "bla");
-        
-
-
-
-        a=createChannel();
-        makeSingleton(a, SINGLETON_1);
-
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1);
         a.connect("x");
+        try {
+            b.connect("x");
+            fail("b should not be able to join cluster 'x' as a has already joined it");
+        }
+        catch(Exception ex) {
+            System.out.println("b was not able to join the same cluster (\"x\") as expected");
+        }
+    }
 
-        b=createChannel();
-        makeSingleton(b, SINGLETON_1);
-
+    public void testCreationOfDifferentCluster() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_2);
+        a.connect("x");
         b.connect("x");
+        View view=b.getView();
+        System.out.println("b's view is " + view);
+        assertEquals(2, view.size());
+    }
+
+
+    public void testReferenceCounting() throws ChannelException {
+        a=createSharedChannel(SINGLETON_1);
+        r1=new Receiver("a");
+        a.setReceiver(r1);
+
+        b=createSharedChannel(SINGLETON_1);
+        r2=new Receiver("b");
+        b.setReceiver(r2);
+
+        c=createSharedChannel(SINGLETON_1);
+        r3=new Receiver("c");
+        c.setReceiver(r3);
+
+
+        a.connect("A");
+        b.connect("B");
+        c.connect("C");
+
+        a.send(null, null, "message from a");
+        b.send(null, null, "message from b");
+        c.send(null, null, "message from c");
+        Util.sleep(500);
+        assertEquals(1, r1.size());
+        assertEquals(1, r2.size());
+        assertEquals(1, r3.size());
     }
 
 
 
-    private static void makeSingleton(JChannel channel, String singleton_name) {
-//        ProtocolStack stack=channel.getProtocolStack();
-//        Protocol transport=stack.getTransport();
-//        transport.setProperty(Global.SINGLETON_NAME, singleton_name);
+    private static JChannel createSharedChannel(String singleton_name) throws ChannelException {
+        ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(CHANNEL_CONFIG);
+        ProtocolData[] protocols=config.getProtocolStack();
+        ProtocolData transport=protocols[0];
+        transport.getParameters().put(Global.SINGLETON_NAME, new ProtocolParameter(Global.SINGLETON_NAME, singleton_name));
+        return new JChannel(config);
     }
+
+
+    private static class Receiver extends ReceiverAdapter {
+        final List<Message> list=new LinkedList<Message>();
+        final String name;
+
+        private Receiver(String name) {
+            this.name=name;
+        }
+
+        public List<Message> getList() {
+            return list;
+        }
+
+        public int size() {
+            return list.size();
+        }
+
+        public void receive(Message msg) {
+            System.out.println("[" + name + "]: received message from " + msg.getSrc() + ": " + msg.getObject());
+            list.add(msg);
+        }
+    }
+
 }

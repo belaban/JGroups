@@ -4,15 +4,17 @@ package org.jgroups.conf;
 /**
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version $Id: ProtocolData.java,v 1.7 2006/08/15 05:50:06 belaban Exp $
+ * @author Bela Ban
+ * @version $Id: ProtocolData.java,v 1.8 2007/12/03 13:17:08 belaban Exp $
  */
 
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 
 public class ProtocolData {
     /** Map<String,ProtocolParameter> of property keys and values */
-    private final HashMap mParameters=new HashMap();
+    private final Map<String,ProtocolParameter> mParameters=new HashMap<String,ProtocolParameter>();
     private final String mProtocolName;
     private final String mDescription;
     private final String mClassName;
@@ -32,8 +34,7 @@ public class ProtocolData {
         }
     }
 
-    public ProtocolData(String overRideName,
-                        ProtocolParameter[] params) {
+    public ProtocolData(String overRideName, ProtocolParameter[] params) {
         this(overRideName, null, null, params);
         mIsOverRide=true;
 
@@ -51,7 +52,7 @@ public class ProtocolData {
         return mDescription;
     }
 
-    public HashMap getParameters() {
+    public Map<String,ProtocolParameter> getParameters() {
         return mParameters;
     }
 
@@ -64,7 +65,7 @@ public class ProtocolData {
         Iterator it=mParameters.keySet().iterator();
         for(int i=0; i < result.length; i++) {
             String key=(String)it.next();
-            result[i]=(ProtocolParameter)mParameters.get(key);
+            result[i]=mParameters.get(key);
         }
         return result;
     }
@@ -80,28 +81,28 @@ public class ProtocolData {
     }
 
     public String getProtocolString() {
-        StringBuffer buf=new StringBuffer(mClassName);
-        if(mParameters.size() > 0) {
+        StringBuilder buf=new StringBuilder(mClassName);
+        if(!mParameters.isEmpty()) {
             buf.append('(');
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
-                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
+                ProtocolParameter param=mParameters.get(key);
                 buf.append(param.getParameterString());
                 if(i.hasNext()) buf.append(';');
-            }//while
+            }
             buf.append(')');
         }
         return buf.toString();
     }
 
     public String getProtocolStringNewXml() {
-        StringBuffer buf=new StringBuffer(mClassName + ' ');
-        if(mParameters.size() > 0) {
+        StringBuilder buf=new StringBuilder(mClassName + ' ');
+        if(!mParameters.isEmpty()) {
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {
                 String key=(String)i.next();
-                ProtocolParameter param=(ProtocolParameter)mParameters.get(key);
+                ProtocolParameter param=mParameters.get(key);
                 buf.append(param.getParameterStringXml());
                 if(i.hasNext()) buf.append(' ');
             }
@@ -114,10 +115,7 @@ public class ProtocolData {
     }
 
     public boolean equals(Object another) {
-        if(another instanceof ProtocolData)
-            return getProtocolName().equals(((ProtocolData)another).getProtocolName());
-        else
-            return false;
+        return another instanceof ProtocolData && getProtocolName().equals(((ProtocolData)another).getProtocolName());
     }
 
 

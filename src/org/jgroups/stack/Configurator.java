@@ -4,14 +4,19 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.TpHeader;
+import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.PushbackReader;
 import java.io.Reader;
 import java.io.StringReader;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
+import java.util.concurrent.ConcurrentMap;
 
 
 /**
@@ -22,7 +27,7 @@ import java.util.Vector;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28 2007/07/03 13:16:55 belaban Exp $
+ * @version $Id: Configurator.java,v 1.29 2007/12/03 13:16:46 belaban Exp $
  */
 public class Configurator {
 
@@ -63,32 +68,84 @@ public class Configurator {
     }
 
 
-    public static void initProtocolStack(Protocol bottom_prot) throws Exception {
-        while(bottom_prot != null) {
-            bottom_prot.init();
-            bottom_prot=bottom_prot.getUpProtocol();
+    public static void initProtocolStack(List<Protocol> protocols) throws Exception {
+        Collections.reverse(protocols);
+        for(Protocol prot: protocols) {
+            prot.init();
         }
     }
 
-    public static void startProtocolStack(Protocol prot) throws Exception {
-        while(prot != null) {
+    public static void startProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) throws Exception {
+        Protocol above_prot=null;
+        for(final Protocol prot: protocols) {
+            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
+            if(singleton_name != null && singleton_name.length() > 0) {
+                TP transport=(TP)prot;
+                final Map<String, Protocol> up_prots=transport.getUpProtocols();
+                synchronized(up_prots) {
+                    Set<String> keys=up_prots.keySet();
+                    if(keys.contains(cluster_name))
+                        throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
+                                "transport: " + keys);
+
+                    for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
+                        Map.Entry<String,Protocol> entry=it.next();
+                        Protocol tmp=entry.getValue();
+                        if(tmp == above_prot) {
+                            it.remove();
+                        }
+                    }
+
+                    if(above_prot != null) {
+                        ProtocolAdapter ad=new ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                        above_prot.setDownProtocol(ad);
+                        up_prots.put(cluster_name, ad);
+                    }
+                }
+                synchronized(singletons) {
+                    Tuple<TP,Short> val=singletons.get(singleton_name);
+                    if(val == null) {
+                        singletons.put(singleton_name, new Tuple<TP,Short>(transport,(short)1));
+                    }
+                    else {
+                        short num_starts=val.getVal2();
+                        val.setVal2((short)(num_starts +1));
+                        if(num_starts >= 1) {
+                            if(above_prot != null)
+                                above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
+                            continue;
+                        }
+                    }
+                }
+            }
             prot.start();
-            prot=prot.getDownProtocol();
+            above_prot=prot;
         }
     }
 
-    public static void stopProtocolStack(Protocol prot) {
-        while(prot != null) {
+    public static void stopProtocolStack(List<Protocol> protocols, final Map<String,Tuple<TP,Short>> singletons) {
+        for(final Protocol prot: protocols) {
+            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
+            if(singleton_name != null && singleton_name.length() > 0) {
+                synchronized(singletons) {
+                    Tuple<TP,Short> val=singletons.get(singleton_name);
+                    if(val != null) {
+                        short num_starts=(short)Math.max(val.getVal2() -1, 0);
+                        val.setVal2(num_starts);
+                        if(num_starts > 0) {
+                            continue; // don't call TP.stop() if we still have references to the transport
+                        }
+                    }
+                }
+            }
             prot.stop();
-            prot=prot.getDownProtocol();
         }
     }
 
 
-    public static void destroyProtocolStack(Protocol start_prot) {
-        while(start_prot != null) {
-            start_prot.destroy();
-            start_prot=start_prot.getDownProtocol();
+    public static void destroyProtocolStack(List<Protocol> protocols) {
+        for(Protocol prot: protocols) {
+            prot.destroy();
         }
     }
 
@@ -233,8 +290,26 @@ public class Configurator {
             if(i + 1 >= protocol_list.size())
                 break;
             next_layer=(Protocol)protocol_list.elementAt(i + 1);
-            current_layer.setUpProtocol(next_layer);
             next_layer.setDownProtocol(current_layer);
+            current_layer.setUpProtocol(next_layer);
+
+             if(current_layer instanceof TP) {
+                String singleton_name=Util.getProperty(current_layer, Global.SINGLETON_NAME);
+                if(singleton_name != null && singleton_name.length() > 0) {
+                    ConcurrentMap<String, Protocol> up_prots=((TP)current_layer).getUpProtocols();
+                    String key;
+                    synchronized(up_prots) {
+                        while(true) {
+                            key=Global.DUMMY + System.currentTimeMillis();
+                            if(up_prots.containsKey(key))
+                                continue;
+                            up_prots.put(key, next_layer);
+                            break;
+                        }
+                    }
+                    current_layer.setUpProtocol(null);
+                }
+            }
         }
         return current_layer;
     }
@@ -365,13 +440,37 @@ public class Configurator {
      * @param stack The protocol stack
      * @return Vector of Protocols
      */
-    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, ProtocolStack stack) throws Exception {
+    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
         Vector<Protocol> retval=new Vector<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;
+        String singleton_name;
 
         for(int i=0; i < protocol_configs.size(); i++) {
             protocol_config=protocol_configs.elementAt(i);
+            singleton_name=protocol_config.getProperties().getProperty(Global.SINGLETON_NAME);
+            if(singleton_name != null && singleton_name.trim().length() > 0) {
+                synchronized(stack) {
+                    if(i > 0) { // crude way to check whether protocol is a transport
+                        throw new IllegalArgumentException("Property 'singleton_name' can only be used in a transport" +
+                                " protocol (was used in " + protocol_config.getProtocolName() + ")");
+                    }
+                    Map<String,Tuple<TP,Short>> singleton_transports=ProtocolStack.getSingletonTransports();
+                    Tuple<TP,Short> val=singleton_transports.get(singleton_name);
+                    layer=val != null? val.getVal1() : null;
+                    if(layer != null) {
+                        retval.add(layer);
+                    }
+                    else {
+                        layer=protocol_config.createLayer(stack);
+                        if(layer == null)
+                            return null;
+                        singleton_transports.put(singleton_name, new Tuple<TP,Short>((TP)layer,(short)0));
+                        retval.addElement(layer);
+                    }
+                }
+                continue;
+            }
             layer=protocol_config.createLayer(stack);
             if(layer == null)
                 return null;
@@ -383,8 +482,7 @@ public class Configurator {
 
 
     /**
-     Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol
-     names.
+     Throws an exception if sanity check fails. Possible sanity check is uniqueness of all protocol names
      */
     public static void sanityCheck(Vector<Protocol> protocols) throws Exception {
         Vector<String> names=new Vector<String>();
@@ -723,33 +821,34 @@ public class Configurator {
     }
 
 
-    public static void main(String args[]) {
-        if(args.length != 1) {
-            System.err.println("Configurator <string>");
-            System.exit(0);
-        }
-        String config_str=args[0];
-        Configurator conf=new Configurator();
-        Vector<ProtocolConfiguration> protocol_configs;
-        Vector<Protocol> protocols=null;
-        Protocol protocol_stack;
+    private static class ProtocolAdapter extends Protocol {
+        final String cluster_name;
+        final String transport_name;
+        final TpHeader header;
 
-
-        try {
-            protocol_configs=Configurator.parseConfigurations(config_str);
-            protocols=Configurator.createProtocols(protocol_configs, null);
-            if(protocols == null)
-                return;
-            protocol_stack=Configurator.connectProtocols(protocols);
-            Thread.sleep(3000);
-            Configurator.destroyProtocolStack(protocol_stack);
-            // conf.stopProtocolStackInternal(protocol_stack);
-        }
-        catch(Exception e) {
-            System.err.println(e);
+        private ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down) {
+            this.cluster_name=cluster_name;
+            this.transport_name=transport_name;
+            this.up_prot=up;
+            this.down_prot=down;
+            this.header=new TpHeader(cluster_name);
         }
 
-        System.err.println(protocols);
+        public Object down(Event evt) {
+            if(evt.getType() == Event.MSG) {
+                Message msg=(Message)evt.getArg();
+                msg.putHeader(transport_name, header);
+            }
+            return down_prot.down(evt);
+        }
+
+        public String getName() {
+            return null;
+        }
+
+        public String toString() {
+            return cluster_name + " (" + transport_name + ")";
+        }
     }
 
 
