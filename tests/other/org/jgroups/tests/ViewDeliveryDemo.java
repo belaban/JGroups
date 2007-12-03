@@ -14,7 +14,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.11 2007/12/03 09:51:58 belaban Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.12 2007/12/03 10:17:25 belaban Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -155,7 +155,8 @@ public final class ViewDeliveryDemo {
                 final ViewId sent_in_vid = (ViewId) obj;
                 final ViewId arrived_in_vid = my_vid;
                 if (!sent_in_vid.equals(arrived_in_vid)) {
-                    String tmp="*** VIOLATION: message " + msg + " sent in view "+sent_in_vid+" received in "+arrived_in_vid+"\n";
+                    String tmp="*** VIOLATION: message sent in view "+sent_in_vid+" received in "+arrived_in_vid+"\n" +
+                            "msg: " + msg + ", headers: " + msg.getHeaders();
                     violations_list.add(tmp);
                     System.out.println(tmp);
                     violations.incrementAndGet();
