@@ -318,6 +318,26 @@
     </section>
   </section>
 
+    <section>
+        <title>Sharing a transport between multiple channels in a JVM</title>
+
+        <para>
+            
+        </para>
+
+        <para>
+            How channels can share a single transport is shown in <xref linkend="SharedTransportFig"/>.
+        </para>
+
+        <figure id="SharedTransportFig"><title>A shared transport</title>
+            <graphic fileref="images/SharedTransport.png" format="PNG" align="center"  />
+        </figure>
+
+        <para>
+            Here we see 4 channels which share 2 transports.
+        </para>
+    </section>
+
   <section>
     <title>Transport protocols</title>
 
