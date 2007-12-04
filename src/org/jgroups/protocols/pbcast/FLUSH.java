@@ -275,6 +275,14 @@ public class FLUSH extends Protocol {
                 sentBlock.set(false); // set the var back to its original state if we cannot connect successfully
             }
             return result;
+            
+        case Event.DISCONNECT:
+            long start_time = System.currentTimeMillis(), backofftime = start_flush_timeout;
+            while (backofftime > 0 && flushInProgress.get()) {
+                Util.sleep(Util.random(3)*1000);
+                backofftime = start_flush_timeout - (System.currentTimeMillis() - start_time);
+            }
+            break;
 
         case Event.SUSPEND:
             return startFlush(evt);
@@ -558,7 +566,7 @@ public class FLUSH extends Protocol {
         synchronized(sharedLock){            
             suspected.retainAll(view.getMembers());
             currentView = view;
-            coordinatorLeft = flushCoordinator != null && !view.containsMember(flushCoordinator);            
+            coordinatorLeft = view.getMembers().size()>0 && !view.containsMember(view.getCreator());            
         }      
         if(log.isDebugEnabled())
             log.debug("Installing view at  " + localAddress + " view is " + view);
@@ -637,10 +645,7 @@ public class FLUSH extends Protocol {
             log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
     }
 
-    private void onStartFlush(Address flushStarter, FlushHeader fh) {             
-        synchronized(blockMutex){
-            isBlockingFlushDown = true;
-        }       
+    private void onStartFlush(Address flushStarter, FlushHeader fh) {                           
         if(stats){
             startFlushTime = System.currentTimeMillis();
             numberOfFlushes += 1;
@@ -660,6 +665,9 @@ public class FLUSH extends Protocol {
             //ensures that we do not repeat block event
             //and that we do not send block event to non participants            
             sendBlockUpToChannel();            
+            synchronized(blockMutex){
+                isBlockingFlushDown = true;
+            }
         }
         else{
             if(log.isDebugEnabled())
