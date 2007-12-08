@@ -431,8 +431,8 @@ public class FLUSH extends Protocol {
     private boolean waitForFlushCompletion(long timeout){
         long start_time = System.currentTimeMillis(), backofftime = timeout;
         while (backofftime > 0 && flushInProgress.get()) {
-            Util.sleep(1000);
-            backofftime =- (System.currentTimeMillis() - start_time);
+            Util.sleep(500);
+            backofftime = timeout - (System.currentTimeMillis() - start_time);            
         }
         return backofftime < 0; 
     }
