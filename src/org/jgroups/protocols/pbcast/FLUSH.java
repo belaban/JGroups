@@ -81,12 +81,10 @@ public class FLUSH extends Protocol {
      * <code>isBlockingFlushDown</code>
      */
     private long timeout = 8000;
+     
+    private long start_flush_timeout = 2000;
     
-    /**
-     * Default timeout for a group member to wait for <code>Channel#startFlush</code> to return
-     * 
-     */
-    private long start_flush_timeout = 8000;
+    private long retry_timeout = 3000;
 
     private boolean enable_reconciliation = true;
     
@@ -129,7 +127,8 @@ public class FLUSH extends Protocol {
         super.setProperties(props);
 
         timeout = Util.parseLong(props, "timeout", timeout);
-        start_flush_timeout = Util.parseLong(props, "start_flush_timeout", start_flush_timeout);
+        start_flush_timeout = Util.parseLong(props, "start_flush_timeout", start_flush_timeout);        
+        retry_timeout = Util.parseLong(props, "retry_timeout", retry_timeout);
         enable_reconciliation = Util.parseBoolean(props,
                                                   "enable_reconciliation",
                                                   enable_reconciliation);
@@ -216,13 +215,7 @@ public class FLUSH extends Protocol {
         }
 
         if(!successfulFlush && numberOfAttempts > 0){                  
-            //we sleep for at most start_flush_timeout and
-            //at least until current flush ends 
-            long start_time = System.currentTimeMillis(), backofftime = start_flush_timeout;
-            while (backofftime > 0 && flushInProgress.get()) {
-                Util.sleep(Util.random(5)*1000);
-                backofftime = start_flush_timeout - (System.currentTimeMillis() - start_time);
-            }      
+            waitForFlushCompletion(retry_timeout);      
             if(log.isDebugEnabled()){               
                 log.debug("Retrying FLUSH at " + localAddress
                           + ", "
@@ -277,11 +270,7 @@ public class FLUSH extends Protocol {
             return result;
             
         case Event.DISCONNECT:
-            long start_time = System.currentTimeMillis(), backofftime = start_flush_timeout;
-            while (backofftime > 0 && flushInProgress.get()) {
-                Util.sleep(Util.random(3)*1000);
-                backofftime = start_flush_timeout - (System.currentTimeMillis() - start_time);
-            }
+            waitForFlushCompletion(retry_timeout);
             break;
 
         case Event.SUSPEND:
@@ -437,6 +426,15 @@ public class FLUSH extends Protocol {
         }
 
         return up_prot.up(evt);
+    }
+    
+    private boolean waitForFlushCompletion(long timeout){
+        long start_time = System.currentTimeMillis(), backofftime = timeout;
+        while (backofftime > 0 && flushInProgress.get()) {
+            Util.sleep(1000);
+            backofftime =- (System.currentTimeMillis() - start_time);
+        }
+        return backofftime < 0; 
     }
 
     private void onFlushReconcileOK(Message msg) {
