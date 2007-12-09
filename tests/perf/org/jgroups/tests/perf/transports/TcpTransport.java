@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.16 2006/12/19 08:51:46 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.17 2007/12/09 22:00:56 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -44,13 +44,7 @@ public class TcpTransport implements Transport {
         else if((tmp=config.getProperty("start_port")) != null)
             start_port=Integer.parseInt(tmp);
 
-        String bind_addr_str=System.getProperty("udp.bind_addr", config.getProperty("bind_addr"));
-        if(bind_addr_str != null) {
-            bind_addr=InetAddress.getByName(bind_addr_str);
-        }
-        else
-            bind_addr=InetAddress.getLocalHost();
-
+        bind_addr=Util.getBindAddress(config);
         String cluster_def=config.getProperty("cluster");
         if(cluster_def == null)
             throw new Exception("TcpTransport.create(): property 'cluster' is not defined");
@@ -62,6 +56,7 @@ public class TcpTransport implements Transport {
     public void start() throws Exception {
         srv_sock=Util.createServerSocket(bind_addr, start_port);
         local_addr=new IpAddress(srv_sock.getInetAddress(), srv_sock.getLocalPort());
+        System.out.println("-- local address is " + local_addr);
         ct.init();
 
         // accept connections and start 1 Receiver per connection
