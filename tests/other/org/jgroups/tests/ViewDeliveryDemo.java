@@ -15,7 +15,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Verify that all messages are delivered in the view they are sent in
  * regardless of members joining, leaving or crashing.
  * @author rnewson
- * @version $Id: ViewDeliveryDemo.java,v 1.13.2.2 2007/12/06 14:06:07 vlada Exp $
+ * @version $Id: ViewDeliveryDemo.java,v 1.13.2.3 2007/12/11 16:27:32 vlada Exp $
  *
  */
 public final class ViewDeliveryDemo {
@@ -84,7 +84,7 @@ public final class ViewDeliveryDemo {
         System.out.println("Sending " + max + " messages");
         try {
             for (int i = 0; i < max; i++) {
-                channel.send(null, null, channel.getView().getVid());
+                channel.send(null, null, channel.getView());
             }
         }
         catch(Throwable t) {
@@ -97,6 +97,7 @@ public final class ViewDeliveryDemo {
         System.out.println("closing and reopening.");
         try {
             channel.close();
+            System.out.println("closed");
             Thread.sleep(random.nextInt(5000));
             channel.open();
             channel.connect("view_test");
@@ -111,7 +112,9 @@ public final class ViewDeliveryDemo {
         System.out.println("disconnecting and reconnecting.");
         try {
             channel.disconnect();
+            System.out.println("disconnected");
             Thread.sleep(random.nextInt(5000));
+            System.out.println("connecting");
             channel.connect("view_test");
         }
         catch(Throwable t) {
@@ -165,11 +168,12 @@ public final class ViewDeliveryDemo {
 
         public void receive(final Message msg) {
             final Object obj = msg.getObject ();
-            if (obj instanceof ViewId) {
+            if (obj instanceof View) {
                 count.incrementAndGet();
-                final ViewId sent_in_vid = (ViewId) obj;
+                final View viewArrived = (View) obj;
+                final ViewId sent_in_vid = viewArrived.getVid();
                 final ViewId arrived_in_vid = my_vid;
-                if (!sent_in_vid.equals(arrived_in_vid)) {
+                if (!sent_in_vid.equals(arrived_in_vid) && viewArrived.containsMember(channel.getLocalAddress())) {
                     String tmp="*** VIOLATION: message sent in view "+sent_in_vid+" received in "+arrived_in_vid+"\n" +
                             "msg: " + msg + ", headers: " + msg.getHeaders();
                     violations_list.add(tmp);
