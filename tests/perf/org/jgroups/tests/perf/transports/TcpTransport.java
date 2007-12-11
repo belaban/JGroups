@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.17 2007/12/09 22:00:56 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.18 2007/12/11 11:57:20 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -133,9 +133,6 @@ public class TcpTransport implements Transport {
                     catch(ConnectException connect_ex) {
                         System.out.println("-- failed to connect to " +addr);
                     }
-                    catch(Exception all_others) {
-                        throw all_others;
-                    }
                 }
                 i++;
             }
@@ -165,7 +162,7 @@ public class TcpTransport implements Transport {
          }
 
          public String toString() {
-             StringBuffer sb=new StringBuffer();
+             StringBuilder sb=new StringBuilder();
              for(Iterator it=myNodes.iterator(); it.hasNext();) {
                  sb.append(it.next()).append(' ');
              }
@@ -266,7 +263,7 @@ public class TcpTransport implements Transport {
 
 
 
-    public List parseCommaDelimitedList(String s) throws Exception {
+    public static List parseCommaDelimitedList(String s) throws Exception {
         List retval=new ArrayList();
         StringTokenizer tok;
         String hostname, tmp;
