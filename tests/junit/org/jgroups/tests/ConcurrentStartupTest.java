@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.35 2007/11/26 14:27:18 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.36 2007/12/11 16:25:27 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -154,7 +154,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     }  
 
     protected class ConcurrentStartupChannelWithLargeState extends ConcurrentStartupChannel {
-        private static final long TRANSFER_TIME = 5000; 
+        private static final long TRANSFER_TIME = 2500; 
         public ConcurrentStartupChannelWithLargeState(Semaphore semaphore,
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
