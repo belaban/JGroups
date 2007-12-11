@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.1 2007/11/26 21:16:44 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.2 2007/12/11 16:22:55 vlada Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -278,7 +278,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     }
 
     protected class ConcurrentLargeStateTransfer extends ConcurrentStateTransfer {
-        private static final long TRANSFER_TIME = 5000;
+        private static final long TRANSFER_TIME = 2500;
         public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
         }
