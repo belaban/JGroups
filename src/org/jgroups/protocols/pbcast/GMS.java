@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.2 2007/12/11 16:21:23 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.3 2007/12/13 05:14:15 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -820,14 +820,10 @@ public class GMS extends Protocol {
                 return arg;  // don't pass down: was already passed down    
 
             case Event.DISCONNECT:
-                /* Bela&Vladimir Dec 11,2007
-                 * 
-                 * We reasoned that it does not make sense to have coordinator
-                 * not initialize it state back to client
+                impl.leave((Address)evt.getArg());
                 if(!(impl instanceof CoordGmsImpl)) {
                     initState(); // in case connect() is called again
-                }*/
-                initState();
+                }
                 down_prot.down(evt); // notify the other protocols, but ignore the result
                 return null;
 
@@ -1197,7 +1193,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.2 2007/12/11 16:21:23 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.3 2007/12/13 05:14:15 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
