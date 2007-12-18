@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.37 2007/11/07 13:14:41 belaban Exp $
+// $Id: Channel.java,v 1.37.2.1 2007/12/18 12:24:08 belaban Exp $
 
 package org.jgroups;
 
@@ -470,6 +470,7 @@ public abstract class Channel implements Transport {
     public abstract void returnState(byte[] state, String state_id);
     
     public abstract Map<String,Object> getInfo();
+    public abstract void setInfo(String key, Object value);
 
 
     public static String option2String(int option) {
