@@ -73,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.1 2007/11/26 21:16:45 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.2 2007/12/18 12:24:08 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1670,6 +1670,11 @@ public class JChannel extends Channel {
     @Override
     public Map<String, Object> getInfo(){
        return new HashMap<String, Object>(info);
+    }
+
+    public void setInfo(String key, Object value) {
+        if(key != null)
+            info.put(key, value);
     }
 
     Address determineCoordinator() {
