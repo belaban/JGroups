@@ -9,7 +9,7 @@ import java.text.NumberFormat;
 /**
  * Tool to measure TCP throughput, similar to iperf
  * @author Bela Ban
- * @version $Id: JPerf.java,v 1.3 2007/12/27 10:25:55 belaban Exp $
+ * @version $Id: JPerf.java,v 1.4 2007/12/28 23:29:17 belaban Exp $
  */
 public class JPerf {
     boolean sender;
@@ -44,7 +44,7 @@ public class JPerf {
 
         if(sender) {
             System.out.println("-- creating socket to " + this.remote_addr + ":" + this.remote_port);
-            Socket sock=new Socket(this.remote_addr, remote_port, this.local_addr, 0);
+            Socket sock=new Socket(this.remote_addr, remote_port);
             sock.setReceiveBufferSize(receivebuf);
             sock.setSendBufferSize(sendbuf);
             DataOutputStream out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
