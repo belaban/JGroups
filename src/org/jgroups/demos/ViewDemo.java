@@ -1,4 +1,4 @@
-// $Id: ViewDemo.java,v 1.14 2007/09/21 07:15:05 belaban Exp $
+// $Id: ViewDemo.java,v 1.15 2007/12/29 16:39:24 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -82,7 +82,7 @@ public class ViewDemo extends ReceiverAdapter {
             t.start(props, use_additional_data);
         }
         catch(Exception e) {
-            System.err.println(e);
+            e.printStackTrace();
         }
     }
 
