@@ -18,7 +18,7 @@ import java.util.*;
  * It includes the name of the method (case sensitive) and a list of arguments.
  * A method call is serializable and can be passed over the wire.
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class MethodCall implements Externalizable {
 
@@ -215,7 +215,7 @@ public class MethodCall implements Externalizable {
      * The method walks up the class hierarchy and returns <i>all</i> methods of this class
      * and those inherited from superclasses and superinterfaces.
      */
-    Method[] getAllMethods(Class target) {
+    static Method[] getAllMethods(Class target) {
         Class superclass = target;
         List methods = new ArrayList();
         int size = 0;
@@ -254,7 +254,7 @@ public class MethodCall implements Externalizable {
      *
      * @return the matching method or null if no mathching method has been found.
      */
-    Method getMethod(Class target, String methodName, Class[] types) {
+    static Method getMethod(Class target, String methodName, Class[] types) {
 
         if (types == null) {
             types = new Class[0];
@@ -338,7 +338,7 @@ public class MethodCall implements Externalizable {
             throw inv_ex.getTargetException();
         }
         catch(NoSuchMethodException no) {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append("found no method called ").append(method_name).append(" in class ");
             sb.append(cl.getName()).append(" with (");
             if(args != null) {
@@ -366,7 +366,7 @@ public class MethodCall implements Externalizable {
     }
 
 
-    Class[] getTypesFromString(Class cl, String[] signature) throws Exception {
+    static Class[] getTypesFromString(Class cl, String[] signature) throws Exception {
         String  name;
         Class   parameter;
         Class[] mytypes=new Class[signature.length];
@@ -398,7 +398,7 @@ public class MethodCall implements Externalizable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         boolean first=true;
         if(method_name != null)
             ret.append(method_name);
@@ -419,7 +419,7 @@ public class MethodCall implements Externalizable {
     }
 
     public String toStringDetails() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         ret.append("MethodCall ");
         if(method_name != null)
             ret.append("name=").append(method_name);
