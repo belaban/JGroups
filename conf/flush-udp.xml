@@ -50,7 +50,7 @@
                    exponential_backoff="150"
                    use_mcast_xmit="true" gc_lag="0"
                    retransmit_timeout="50,300,600,1200"
-                   discard_delivered_msgs="true"/>
+                   discard_delivered_msgs="false"/>
     <UNICAST timeout="300,600,1200"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>   
