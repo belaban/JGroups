@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.172 2008/01/06 06:28:13 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.173 2008/01/06 06:30:22 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -859,7 +859,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
         finally {
-            locks.remove(Thread.currentThread());
+            if(eager_lock_release)
+                locks.remove(Thread.currentThread());
             if(lock.isHeldByCurrentThread())
                 lock.unlock();
         }

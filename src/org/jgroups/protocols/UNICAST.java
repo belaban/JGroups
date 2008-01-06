@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.91 2007/11/02 13:18:50 belaban Exp $
+// $Id: UNICAST.java,v 1.92 2008/01/06 06:30:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -50,6 +50,15 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     /** whether to loop back messages sent to self (will be removed in the future, default=false) */
     private boolean          loopback=false;
+
+    /**
+     * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
+     * However, with eager_lock_release enabled (default), we release the lock as soon as the application calls
+     * Channel.down() <em>within</em> the receive() callback. This leads to issues as the one described in
+     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
+     * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
+     */
+    private boolean eager_lock_release=true;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
     private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
@@ -202,6 +211,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         if(str != null) {
             loopback=Boolean.valueOf(str).booleanValue();
             props.remove("loopback");
+        }
+
+        str=props.getProperty("eager_lock_release");
+        if(str != null) {
+            eager_lock_release=Boolean.valueOf(str).booleanValue();
+            props.remove("eager_lock_release");
         }
 
         if(!props.isEmpty()) {
@@ -570,7 +585,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         ReentrantLock lock=win.getLock();
         lock.lock(); // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
         try {
-            locks.put(Thread.currentThread(), lock);
+            if(eager_lock_release)
+                locks.put(Thread.currentThread(), lock);
             while((m=win.remove()) != null) {
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
@@ -580,7 +596,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
         finally {
-            locks.remove(Thread.currentThread());
+            if(eager_lock_release)
+                locks.remove(Thread.currentThread());
             if(lock.isHeldByCurrentThread())
                 lock.unlock();
         }
