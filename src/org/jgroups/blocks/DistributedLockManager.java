@@ -20,7 +20,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.9 2007/05/10 16:42:04 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.10 2008/01/06 06:05:17 belaban Exp $
  */
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
@@ -637,7 +637,8 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         current_members.clear();
         current_members.addAll(new_view.getMembers());
 
-        System.out.println("-- VIEW: " + current_members + ", old view: " + prev_view);
+        if(log.isDebugEnabled())
+            log.debug("-- VIEW: " + current_members + ", old view: " + prev_view);
 
         prev_view.removeAll(current_members);
         if(!prev_view.isEmpty()) { // we have left members, so we need to check for locks which are still held by them
