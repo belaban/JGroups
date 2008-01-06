@@ -629,14 +629,82 @@
 
         </section>
 
+         <section>
+            <title>UNICAST</title>
+
+            <para>
+                UNICAST provides reliable delivery and FIFO (= First In First Out) properties for point-to-point
+                messages between one sender and one receiver.
+                </para>
+            <para>
+                Reliable delivery means that no message sent by a sender will ever be lost, as all messages are
+                numbered with sequence numbers (by sender) and retransmission requests are sent to the sender of
+                a message<footnote>
+            </footnote> if that sequence number is not received.
+            </para>
+            <para>
+                FIFO order means that all messages from a given sender are received in exactly the order in which
+                they were sent.
+            </para>
+             <para>
+                 On top of a reliable transport, such as TCP, UNICAST is not really needed. However, concurrent
+                 delivery of messages from the same sender is prevented by UNICAST by acquiring a lock on the sender's
+                 retransmission table, so unless concurrent delivery is desired, UNICAST should not be removed from
+                 the stack even if TCP is used.
+             </para>
+
+            <table>
+                <title>Properties</title>
+
+                <tgroup cols="2">
+                    <colspec align="left"/>
+
+                    <thead>
+                        <row>
+                            <entry align="center">Name</entry>
+                            <entry align="center">Description</entry>
+                        </row>
+                    </thead>
+
+                    <tbody>
+                        <row>
+                            <entry>retransmit_timeout</entry>
+                            <entry>
+                                A comma-separated list of milliseconds, e.g. 100,200,400,800,1600. We ask for
+                                retransmission of a given message 100ms after it wasn't received, then 200ms, and so on,
+                                until we're at 1600ms. From then on, we will send retransmit requests for that message
+                                every 100ms, until the message is received, or the original sender crashed.
+                                <para>
+                                    Example: retransmit_timeout="300,600,1200,2400"
+                                </para>
+                            </entry>
+                        </row>
+
+                        <row>
+                            <entry>eager_lock_release</entry>
+                            <entry>
+                                By default, we release the lock on the sender in up() after the up() method call passed
+                                up the stack returns. However, with eager_lock_release enabled (default), we release the
+                                lock as soon as the application calls Channel.down() <emphasis>within</emphasis> the
+                                receive() callback. This leads to issues as the one described in
+                                http://jira.jboss.com/jira/browse/JGRP-656.
+
+                                <para>
+                                    Note that ordering is <emphasis>still correct </emphasis>, but messages from self
+                                    might get delivered concurrently. This can be turned off by setting eager_lock_release
+                                    to false.
+                                </para>
+                            </entry>
+                        </row>
+
+                    </tbody>
+                </tgroup>
+            </table>
+
+         </section>
+
         <section>
             <title>SMACK</title>
-
-            <para></para>
-        </section>
-
-        <section>
-            <title>UNICAST</title>
 
             <para></para>
         </section>
