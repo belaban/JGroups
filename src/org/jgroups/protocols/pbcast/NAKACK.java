@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170 2007/11/02 16:48:10 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.1 2008/01/06 06:00:18 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -907,7 +907,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(long i=first_seqno; i <= last_seqno; i++) {
             msg=win.get(i);
             if(msg == null || msg == NakReceiverWindow.NULL_MSG) {
-                if(log.isErrorEnabled() && !local_addr.equals(xmit_requester)) {
+                if(log.isWarnEnabled() && !local_addr.equals(xmit_requester)) {
                     StringBuffer sb=new StringBuffer();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
@@ -915,7 +915,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     if(print_stability_history_on_failed_xmit) {
                         sb.append(" (stability history:\n").append(printStabilityHistory());
                     }
-                    log.error(sb);
+                    log.warn(sb);
                 }
                 continue;
             }
