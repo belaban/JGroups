@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.171 2008/01/06 05:59:12 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.172 2008/01/06 06:28:13 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -80,6 +80,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * around, and don't need to wait for garbage collection to remove them.
      */
     private boolean discard_delivered_msgs=false;
+
+    /**
+     * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
+     * However, with eager_lock_release enabled (default), we release the lock as soon as the application calls
+     * Channel.down() <em>within</em> the receive() callback. This leads to issues as the one described in
+     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
+     * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
+     */
+    private boolean eager_lock_release=true;
 
     /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
      * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
@@ -390,6 +399,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(str != null) {
             max_rebroadcast_timeout=Long.parseLong(str);
             props.remove("max_rebroadcast_timeout");
+        }
+
+        str=props.getProperty("eager_lock_release");
+        if(str != null) {
+            eager_lock_release=Boolean.valueOf(str).booleanValue();
+            props.remove("eager_lock_release");
         }
 
         if(xmit_from_random_member) {
@@ -829,7 +844,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         ReentrantLock lock=win.getLock();
         lock.lock();
         try {
-            locks.put(Thread.currentThread(), lock);
+            if(eager_lock_release)
+                locks.put(Thread.currentThread(), lock);
             while((msg_to_deliver=win.remove()) != null) {
 
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
