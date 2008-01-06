@@ -605,6 +605,23 @@
                                 </para>
                             </entry>
                         </row>
+
+                        <row>
+                            <entry>eager_lock_release</entry>
+                            <entry>
+                                By default, we release the lock on the sender in up() after the up() method call passed
+                                up the stack returns. However, with eager_lock_release enabled (default), we release the
+                                lock as soon as the application calls Channel.down() <emphasis>within</emphasis> the
+                                receive() callback. This leads to issues as the one described in
+                                http://jira.jboss.com/jira/browse/JGRP-656.
+
+                                <para>
+                                    Note that ordering is <emphasis>still correct </emphasis>, but messages from self
+                                    might get delivered concurrently. This can be turned off by setting eager_lock_release
+                                    to false.
+                                </para>
+                            </entry>
+                        </row>
                     </tbody>
                 </tgroup>
             </table>
