@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.87 2007/11/23 20:57:44 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.88 2008/01/07 06:07:23 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -91,7 +91,7 @@ public class Multiplexer implements UpHandler {
         }
     }
     
-    public JChannel getChannel(){
+    JChannel getChannel(){
         return channel;
     }
 
@@ -121,13 +121,13 @@ public class Multiplexer implements UpHandler {
      * @param service_id
      * @return The service view
      */
-    public View getServiceView(String service_id) {
+    View getServiceView(String service_id) {
         List<Address> hosts=service_state.get(service_id);
         if(hosts == null) return null;
         return generateServiceView(hosts);
     }
 
-    public boolean stateTransferListenersPresent() {
+    boolean stateTransferListenersPresent() {
         return !state_transfer_listeners.isEmpty();
     }
     
@@ -138,7 +138,7 @@ public class Multiplexer implements UpHandler {
         state_transfer_listeners.put(key, Boolean.FALSE);
     }
 
-    public synchronized boolean getState(Address target, String id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
+    synchronized boolean getState(Address target, String id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         if(state_transfer_listeners.isEmpty())
             return false;            
         
@@ -229,14 +229,14 @@ public class Multiplexer implements UpHandler {
         return flushStarted && all_tranfers_ok;
     }
     
-    public void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
+    void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
         //we have to make this service message non OOB since we have
         //to FIFO order service messages and BLOCK/UNBLOCK messages        
         sendServiceMessage(true,ServiceInfo.SERVICE_UP, service, host,bypassFlush, null,false);        
     }
 
 
-    public void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
+    void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
        //we have to make this service message non OOB since we have
        //to FIFO order service messages and BLOCK/UNBLOCK messages        
        sendServiceMessage(true,ServiceInfo.SERVICE_DOWN, service, host,bypassFlush, null,false);       
@@ -419,7 +419,7 @@ public class Multiplexer implements UpHandler {
         }
     }
     
-    public void addServiceIfNotPresent(String id, MuxChannel ch) {
+    void addServiceIfNotPresent(String id, MuxChannel ch) {
         services.putIfAbsent(id, ch);
     }
 
@@ -434,7 +434,7 @@ public class Multiplexer implements UpHandler {
 
 
     /** Closes the underlying JChannel if all MuxChannels have been disconnected */
-    public void disconnect() {
+    void disconnect() {
         boolean all_disconnected=true;
         for(MuxChannel mux_ch: services.values()) {
             if(mux_ch.isConnected()) {
@@ -471,14 +471,11 @@ public class Multiplexer implements UpHandler {
 
     public void closeAll() {
         for(MuxChannel mux_ch: services.values()) {
-            mux_ch.setConnected(false);
-            mux_ch.setClosed(true);
-            mux_ch.closeMessageQueue(true);
-        }
-        shutdownThreadPool();
+            mux_ch.close();
+        }        
     }
 
-    public boolean shutdown() {
+    boolean shutdown() {
         boolean all_closed=true;
         for(MuxChannel mux_ch: services.values()) {
             if(mux_ch.isOpen()) {
@@ -497,45 +494,35 @@ public class Multiplexer implements UpHandler {
         return all_closed;
     }
 
-    public Address getLocalAddress() {       
+    Address getLocalAddress() {       
     	return channel.getLocalAddress();             
     } 
     
-    public boolean flushSupported(){
+    boolean flushSupported(){
     	return channel.flushSupported();
     }
     
-    public boolean startFlush(boolean automatic_resume){
+    boolean startFlush(boolean automatic_resume){
     	return channel.startFlush(automatic_resume);
     }
     
-    public void stopFlush(){
+    void stopFlush(){
     	channel.stopFlush();
     }
     
-    public boolean isConnected(){
+    boolean isConnected(){
     	return channel.isConnected();
     }
     
-    public void connect(String cluster_name) throws ChannelException{
+    void connect(String cluster_name) throws ChannelException{
     	channel.connect(cluster_name);
     }
-    
-    /**
-    Re-opens a closed channel. Throws an exception if the channel is already open. After this method
-    returns, connect() may be called to join a group. The address of this member will be different from
-    the previous incarnation.
-    */
-    public void open() throws ChannelException {
-    	channel.open();
-    }
-
 
    /**
     Determines whether the channel is open; 
     i.e., the protocol stack has been created (may not be connected though).
     */
-    public boolean isOpen(){
+    boolean isOpen(){
     	return channel.isOpen();
     }
 
@@ -550,7 +537,7 @@ public class Multiplexer implements UpHandler {
     * @param service_id
     * @return
     */
-    public Address getStateProvider(Address preferredTarget, String service_id) {
+    Address getStateProvider(Address preferredTarget, String service_id) {
         Address result = null;      
         List<Address> hosts=service_state.get(service_id);
         if(hosts != null && !hosts.isEmpty()){
