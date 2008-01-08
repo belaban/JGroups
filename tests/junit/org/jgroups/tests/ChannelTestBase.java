@@ -486,7 +486,7 @@ public class ChannelTestBase extends TestCase {
 
         public void viewAccepted(View new_view) {
             events.add(new_view);
-            log.debug("Channel " + getLocalAddress()
+            log.info("Channel " + getLocalAddress()
                       + "["
                       + getName()
                       + "] accepted view "
