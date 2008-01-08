@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.1 2007/11/26 21:16:44 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.2 2008/01/08 07:40:28 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -260,11 +260,7 @@ public class MuxChannel extends JChannel {
 
 
 
-    public synchronized void open() throws ChannelException {
-        
-        if (!mux.isOpen())
-                mux.open();  
-        
+    public synchronized void open() throws ChannelException {             
         setClosed(false);
         setConnected(false); // needs to be connected next        
     }
