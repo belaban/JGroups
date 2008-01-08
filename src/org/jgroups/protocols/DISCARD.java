@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.17 2007/11/12 13:52:07 belaban Exp $
+// $Id: DISCARD.java,v 1.17.2.1 2008/01/08 07:40:30 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -21,7 +21,6 @@ import java.util.*;
  */
 
 public class DISCARD extends Protocol {
-    final Vector members=new Vector();
     double up=0.0;    // probability of dropping up   msgs
     double down=0.0;  // probability of dropping down msgs
     boolean excludeItself=true;   // if true don't discard messages sent/received in this stack
@@ -99,8 +98,7 @@ public class DISCARD extends Protocol {
             msg=(Message)evt.getArg();
             Address sender=msg.getSrc();
 
-            if(discard_all && !sender.equals(localAddress)) {
-                // System.out.println("[" + localAddress + "] up(): dropping message " + msg + ", hdrs:\n" + msg.getHeaders());
+            if(discard_all && !sender.equals(localAddress)) {                
                 return null;
             }
 
@@ -125,15 +123,11 @@ public class DISCARD extends Protocol {
 						if (excludeItself && sender.equals(localAddress)) {
 							if (log.isTraceEnabled())
 								log.trace("excluding itself");
-						} else {
-							dropMessage = ignoredMembers.contains(sender);
-								
-							if (dropMessage) {
-								if (log.isTraceEnabled())
-									log.trace("dropping message from " + sender);
-								num_up++;
-								return null;
-							}
+						} else {						
+							if (log.isTraceEnabled())
+								log.trace("dropping message from " + sender);
+							num_up++;
+							return null;							
 						}
 					}
 				}
