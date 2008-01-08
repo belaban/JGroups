@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.88 2008/01/07 06:07:23 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.89 2008/01/08 07:14:31 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -78,6 +78,7 @@ public class Multiplexer implements UpHandler {
     		throw new IllegalArgumentException("Channel " + channel + " cannot be used for Multiplexer");
        
         this.channel=channel;
+        this.channel.addChannelListener(new MultiplexerChannelListener());
         this.channel.setUpHandler(this);
         this.channel.setOpt(Channel.BLOCK, Boolean.TRUE); // we want to handle BLOCK events ourselves                
         
@@ -370,6 +371,10 @@ public class Multiplexer implements UpHandler {
             case Event.UNBLOCK: // process queued-up MergeViews                
                 passToAllMuxChannels(evt);
                 break;
+            case Event.EXIT:
+                //we are being shunned, close all services                
+                closeAll();                
+                break;
 
             default:
                 passToAllMuxChannels(evt);
@@ -470,8 +475,10 @@ public class Multiplexer implements UpHandler {
     }
 
     public void closeAll() {
-        for(MuxChannel mux_ch: services.values()) {
-            mux_ch.close();
+        for(MuxChannel mux_ch: services.values()) {                         
+            mux_ch.setConnected(false);                   
+            mux_ch.setClosed(true);                 
+            mux_ch.closeMessageQueue(true);                       
         }        
     }
 
@@ -619,6 +626,13 @@ public class Multiplexer implements UpHandler {
         String original_id=id;
         Address requester=info.target; // the sender of the state request
 
+        if(id == null){
+        	if(log.isWarnEnabled()){
+	            log.warn("Invalid state request arrived at Multiplexer, dropping it");
+	        }
+            return null;
+        }
+        
         try {
             int index=id.indexOf(SEPARATOR);
             if(index > -1) {
@@ -996,6 +1010,42 @@ public class Multiplexer implements UpHandler {
             Thread.currentThread().interrupt();
         }
         return null;
+    }
+    
+    private class MultiplexerChannelListener extends ChannelListenerAdapter{        
+
+        //handle reconnecting of services after being shunned and 
+        //then reconnected back 
+        @Override
+        public void channelReconnected(Address addr) {
+            if(log.isDebugEnabled())
+                log.debug("Reconnecting services " + services.keySet());
+            
+            for(MuxChannel mux_ch: services.values()) {                         
+                try {
+                    if(log.isDebugEnabled())
+                        log.debug("Reconnecting service " + mux_ch.getId());
+                    
+                    mux_ch.open();
+                    boolean reconnect = ((Boolean) mux_ch.getOpt(Channel.AUTO_RECONNECT)).booleanValue();
+                    boolean getState = ((Boolean) mux_ch.getOpt(Channel.AUTO_GETSTATE)).booleanValue();
+                    boolean fetchAndGetState = reconnect && getState;
+                    if(fetchAndGetState){
+                        mux_ch.connect(mux_ch.getClusterName(),null,null,10000);
+                    }else{
+                        if(reconnect){
+                            mux_ch.connect(mux_ch.getClusterName());
+                        }                        
+                        if(getState){
+                            mux_ch.getState(null, 5000);
+                        }
+                    }
+                } catch (ChannelException e) {                   
+                    if(log.isErrorEnabled()) 
+                        log.error("MuxChannel reconnect failed " + e);                                     
+                }                                               
+            }
+        }                
     }
 
 
