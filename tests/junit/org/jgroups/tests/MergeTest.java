@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -11,6 +12,7 @@ import org.jgroups.View;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MPING;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -19,7 +21,7 @@ import org.jgroups.util.Util;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.14 2008/01/06 23:48:53 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.15 2008/01/09 06:34:05 vlada Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -139,6 +141,7 @@ public class MergeTest extends ChannelTestBase {
 
         public MergeApplication(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
+            replaceDiscoveryProtocol((JChannel)channel);
             addDiscardProtocol((JChannel)channel); 
             modiftFDAndMergeSettings((JChannel)channel);
         }
@@ -166,6 +169,21 @@ public class MergeTest extends ChannelTestBase {
         discard.setProtocolStack(ch.getProtocolStack());
         discard.start();
         stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
+    }
+    
+    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol discovery=stack.removeProtocol("TCPPING");
+        if(discovery != null){
+            Protocol transport = stack.getTransport();
+            MPING mping =new MPING();
+            mping.setProperties(new Properties());
+            mping.setProtocolStack(ch.getProtocolStack());
+            mping.init();
+            mping.start();
+            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
+            System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
+        }        
     }
 
     private void modiftFDAndMergeSettings(JChannel ch) {
