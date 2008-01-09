@@ -1,54 +1,58 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
-import org.jgroups.*;
-import org.jgroups.util.Util;
-
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 
+import org.jgroups.BlockEvent;
+import org.jgroups.Channel;
+import org.jgroups.ExtendedReceiverAdapter;
+import org.jgroups.UnblockEvent;
+import org.jgroups.View;
+import org.jgroups.util.Util;
+
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.1 2007/12/03 13:12:26 belaban Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.2 2008/01/09 04:33:31 vlada Exp $
  */
-public class ConcurrentStartFlushTest extends TestCase {
-    private JChannel c1, c2, c3;
+public class ConcurrentStartFlushTest extends ChannelTestBase {    
     private Receiver r1, r2, r3;
+    Channel c1,c2,c3;
     private static final long TIMEOUT=10000L;
 
 
     protected void setUp() throws Exception {
-        super.setUp();
-        c1=new JChannel("flush-udp.xml"); c1.setOpt(Channel.BLOCK, true);
-        c2=new JChannel("flush-udp.xml"); c2.setOpt(Channel.BLOCK, true);
-        c3=new JChannel("flush-udp.xml"); c3.setOpt(Channel.BLOCK, true);
-
-        c1.connect("x");
-        c2.connect("x");
-        c3.connect("x");
+        super.setUp();      
+        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
-    protected void tearDown() throws Exception {
-        if(c3 != null)
-            c3.close();
-        if(c2 != null)
-            c2.close();
-        if(c1 != null)
-            c1.close();
+    protected void tearDown() throws Exception {       
         super.tearDown();
+        c3.close();
+        c2.close();
+        c1.close();
     }
-
+    
+    public boolean useBlocking() {
+        return true;
+    }
 
     public void testSimpleFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(2);
+        c1 = createChannel();
         r1=new Receiver("C1", c1);
+        c2 = createChannel();
         r2=new Receiver("C2", c2);
+        c3 = createChannel();
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
+        
+        c1.connect("test");
+        c2.connect("test");
+        c3.connect("test");
 
         Flusher flusher_one=new Flusher(c1, barrier);
 
@@ -59,26 +63,36 @@ public class ConcurrentStartFlushTest extends TestCase {
         barrier.await();
         flusher_one.join();
 
+        //let async events propagate up
+        Util.sleep(500);
+        
         System.out.println("events for C1: " + r1.getEvents());
         System.out.println("events for C2: " + r2.getEvents());
         System.out.println("events for C3: " + r3.getEvents());
-        assertEquals(2, r1.getEvents().size());
-        assertEquals(2, r2.getEvents().size());
-        assertEquals(2, r3.getEvents().size());
-        ensureOrdering(r1.getEvents(), BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r2.getEvents(), BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r3.getEvents(), BlockEvent.class, UnblockEvent.class);
+        
+        checkEventStateTransferSequence(r1);
+        checkEventStateTransferSequence(r2);
+        checkEventStateTransferSequence(r3);
+        
+
     }
 
 
     public void testConcurrentFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(3);
+        c1 = createChannel();
         r1=new Receiver("C1", c1);
+        c2 = createChannel();
         r2=new Receiver("C2", c2);
+        c3 = createChannel();
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
+        
+        c1.connect("test");
+        c2.connect("test");
+        c3.connect("test");
 
         Flusher flusher_one=new Flusher(c1, barrier);
         Flusher flusher_three=new Flusher(c3, barrier);
@@ -92,25 +106,33 @@ public class ConcurrentStartFlushTest extends TestCase {
         flusher_one.join();
         flusher_three.join();
 
+        //let async events propagate up
+        Util.sleep(500);
+        
         System.out.println("events for C1: " + r1.getEvents());
         System.out.println("events for C2: " + r2.getEvents());
         System.out.println("events for C3: " + r3.getEvents());
-        assertEquals(4, r1.getEvents().size());
-        assertEquals(4, r2.getEvents().size());
-        assertEquals(4, r3.getEvents().size());
-        ensureOrdering(r1.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r2.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r3.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
+        
+        checkEventStateTransferSequence(r1);
+        checkEventStateTransferSequence(r2);
+        checkEventStateTransferSequence(r3);
     }
 
 
     public void testFlushStartedByOneButCompletedByOther() throws Exception {
+        c1 = createChannel();
         r1=new Receiver("C1", c1);
+        c2 = createChannel();
         r2=new Receiver("C2", c2);
+        c3 = createChannel();
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
+        
+        c1.connect("test");
+        c2.connect("test");
+        c3.connect("test");
 
         Util.sleep(1000);
 
@@ -118,45 +140,36 @@ public class ConcurrentStartFlushTest extends TestCase {
         boolean rc=c1.startFlush(TIMEOUT, false);
         assertTrue(rc);
         Util.sleep(500);
-        System.out.println("starting flush at C2");
-        rc=c2.startFlush(TIMEOUT, false);
-        assertTrue(rc);
-
+        
         Util.sleep(1000);
         System.out.println("Stopping flush at C2");
         c2.stopFlush();
+        
+        System.out.println("starting flush at C2");
+        rc=c2.startFlush(TIMEOUT, false);
+        assertTrue(rc);
+        
 
         Util.sleep(1000);
         System.out.println("Stopping flush at C1");
         c1.stopFlush();
 
+        //let async events propagate up
+        Util.sleep(500);
         System.out.println("events for C1: " + r1.getEvents());
         System.out.println("events for C2: " + r2.getEvents());
         System.out.println("events for C3: " + r3.getEvents());
-
-        assertEquals(4, r1.getEvents().size());
-        assertEquals(4, r2.getEvents().size());
-        assertEquals(4, r3.getEvents().size());
-        ensureOrdering(r1.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r2.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
-        ensureOrdering(r3.getEvents(), BlockEvent.class, UnblockEvent.class, BlockEvent.class, UnblockEvent.class);
-    }
-
-
-    private static void ensureOrdering(List<Object> events, Class... classes) {
-        for(Class cl: classes) {
-            Object element=events.remove(0);
-            Class clazz=element.getClass();
-            assertEquals(clazz, cl);
-        }
-    }
-
+        
+        checkEventStateTransferSequence(r1);
+        checkEventStateTransferSequence(r2);
+        checkEventStateTransferSequence(r3);
+    }  
 
     private static class Flusher extends Thread {
-        final JChannel channel;
+        final Channel channel;
         final CyclicBarrier barrier;
 
-        public Flusher(JChannel channel, CyclicBarrier barrier) {
+        public Flusher(Channel channel, CyclicBarrier barrier) {
             this.channel=channel;
             this.barrier=barrier;
         }
@@ -177,14 +190,15 @@ public class ConcurrentStartFlushTest extends TestCase {
         }
     }
 
-    private static class Receiver extends ExtendedReceiverAdapter {
+    private static class Receiver extends ExtendedReceiverAdapter implements EventSequence {
         final String name;
-        final JChannel channel;
-        final List<Object> events=new LinkedList<Object>();
+        final Channel channel;
+        final List<Object> events;
 
-        public Receiver(String name, JChannel channel) {
+        public Receiver(String name, Channel channel) {
             this.name=name;
             this.channel=channel;
+            this.events=new LinkedList<Object>();
         }
 
         public List<Object> getEvents() {
@@ -204,6 +218,10 @@ public class ConcurrentStartFlushTest extends TestCase {
         public void viewAccepted(View new_view) {
             System.out.println("[" + name + ", " + channel.getLocalAddress() + "] view=" + new_view);
             events.add(new_view);
+        }
+
+        public String getName() {
+            return name;
         }
 
     }
