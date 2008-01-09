@@ -1,193 +1,212 @@
-
 package org.jgroups.tests;
 
+import java.util.Properties;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-import org.jgroups.*;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+
+import org.jgroups.JChannel;
+import org.jgroups.View;
+import org.jgroups.protocols.DISCARD;
+import org.jgroups.protocols.FD;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MPING;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.jgroups.stack.GossipRouter;
-
-import java.util.Vector;
-import java.util.List;
-import java.util.LinkedList;
-
 
 /**
- * Tests merging
- * @author Bela Ban
- * @version $Id: MergeTest.java,v 1.12 2007/06/07 10:42:12 belaban Exp $
+ * Tests merging on all stacks
+ * 
+ * @author vlada
+ * @version $Id: MergeTest.java,v 1.12.4.1 2008/01/09 08:12:10 vlada Exp $
  */
-public class MergeTest extends TestCase {
-    JChannel     channel;
-    static final int    TIMES=10;
-    static final int    router_port=12001;
-    static final String bind_addr="127.0.0.1";
-    GossipRouter router;
-    JChannel     ch1, ch2;
-    private ViewChecker  checker1, checker2;
-    private static final int  NUM_MCASTS=5;
-    private static final int  NUM_UCASTS=10;
-    private static final long WAIT_TIME=2000L;
-
-    String props="tunnel.xml";
-
-
-
-    public MergeTest(String name) {
-        super(name);
+public class MergeTest extends ChannelTestBase {
+   
+    public boolean useBlocking() {
+        return false;
     }
-
-    protected void setUp() throws Exception {
-        super.setUp();
-        startRouter();
-        ch1=new JChannel(props);
-        checker1=new ViewChecker(ch1);
-        ch1.setReceiver(checker1);
-        ch1.connect("demo");
-        ch2=new JChannel(props);
-        checker2=new ViewChecker(ch2);
-        ch2.setReceiver(checker2);
-        ch2.connect("demo");
-        Util.sleep(1000);
-    }
-
-    public void tearDown() throws Exception {
-        super.tearDown();
-        ch2.close();
-        ch1.close();
-        stopRouter();
-    }
-
-    public void testPartitionAndSubsequentMerge() throws Exception {
-        partitionAndMerge();
-    }
-
-
-    public void testTwoMerges() throws Exception {
-        partitionAndMerge();
-        partitionAndMerge();
-    }
-
-
-
-    private void partitionAndMerge() throws Exception {
-        View v=ch2.getView();
-        System.out.println("view is " + v);
-        assertEquals("channel is supposed to have 2 members", 2, ch2.getView().size());
-
-        System.out.println("sending " + NUM_MCASTS + " multicast messages");
-        for(int i=0; i < NUM_MCASTS; i++) {
-            Message msg=new Message();
-            ch1.send(msg);
+   
+    public void testMerging2Members() {
+        String[] names = null;
+        if(isMuxChannelUsed()){           
+            names = createMuxApplicationNames(1, 2);            
+        }else{
+            names = createApplicationNames(2);            
         }
-        System.out.println("sending " + NUM_UCASTS + " unicast messages to " + v.size() + " members");
-        Vector<Address> mbrs=v.getMembers();
-        for(Address mbr: mbrs) {
-            for(int i=0; i < NUM_UCASTS; i++) {
-                Channel ch=i % 2 == 0? ch1 : ch2;
-                ch.send(new Message(mbr));
+        mergeHelper(names);
+    }
+    
+    public void testMerging4Members() {
+        String[] names = null;
+        if(isMuxChannelUsed()){            
+            names = createMuxApplicationNames(1, 4);            
+        }else{
+            names = createApplicationNames(4);            
+        }
+        mergeHelper(names);
+    }
+
+    /**
+     *
+     * 
+     */
+    protected void mergeHelper(String [] names) {               
+        int count = names.length;
+
+        //List<MergeApplication> channels = new ArrayList<MergeApplication>();
+        MergeApplication[] channels = new MergeApplication[count];
+        try{
+            // Create a semaphore and take all its permits
+            Semaphore semaphore = new Semaphore(count);
+            semaphore.acquire(count);
+
+            // Create activation threads that will block on the semaphore
+            for(int i = 0;i < count;i++){               
+                channels[i] = new MergeApplication(names[i],semaphore,false);                    
+                // Release one ticket at a time to allow the thread to start
+                // working
+                channels[i].start();
+                semaphore.release(1);
+                //sleep at least a second and max second and a half
+                sleepRandom(1000,1500);
             }
-        }
-        System.out.println("done, sleeping for " + WAIT_TIME + " time");
-        Util.sleep(WAIT_TIME);
 
-        System.out.println("++ simulating network partition by stopping the GossipRouter");
-        stopRouter();
+            // Make sure everyone is in sync
+            
+            blockUntilViewsReceived(channels, 60000);
+            
 
-        System.out.println("sleeping for 10 secs");
-        checker1.waitForNViews(1, 10000);
-        checker2.waitForNViews(1, 10000);
-        v=ch1.getView();
-        System.out.println("-- ch1.view: " + v);
-
-        v=ch2.getView();
-        System.out.println("-- ch2.view: " + v);
-        assertEquals("view should be 1 (channels should have excluded each other): " + v, 1, v.size());
-
-        System.out.println("++ simulating merge by starting the GossipRouter again");
-        startRouter();
-
-        System.out.println("sleeping for 30 secs");
-        checker1.waitForNViews(1, 30000);
-        checker2.waitForNViews(1, 30000);
-
-        v=ch1.getView();
-        System.out.println("-- ch1.view: " + v);
-
-        v=ch2.getView();
-        System.out.println("-- ch2.view: " + v);
-
-        assertEquals("channel is supposed to have 2 members again after merge", 2, ch2.getView().size());
-    }
-
-
-
-
-
-
-    private void startRouter() throws Exception {
-        router=new GossipRouter(router_port, bind_addr);
-        router.start();
-    }
-
-    private void stopRouter() {
-        router.stop();
-    }
-
-    private static class ViewChecker extends ReceiverAdapter {
-        final Object    mutex=new Object();
-        int             count=0;
-        final Channel   channel;
-        final List<View> views=new LinkedList<View>();
-
-
-        public ViewChecker(Channel channel) {
-            this.channel=channel;
-        }
-
-        public void viewAccepted(View new_view) {
-            synchronized(mutex) {
-                count++;
-                View view=channel != null? channel.getView() : null;
-                views.add(view);
-                // System.out.println("-- view: " + new_view + " (count=" + count + ", channel's view=" + view + ")");
-                mutex.notifyAll();
+            // Sleep to ensure the threads get all the semaphore tickets
+            Util.sleep(2000);
+            
+            int split = count/2;
+            
+            for (int i = 0; i < split; i++) {              
+                DISCARD discard=(DISCARD)((JChannel)channels[i].getChannel()).getProtocolStack().findProtocol("DISCARD");               
+                for(int j=split;j<count;j++){
+                    discard.addIgnoreMember(channels[j].getLocalAddress());
+                }                   
             }
-        }
+            
+            for (int i = count-1; i >= split; i--) {              
+                DISCARD discard=(DISCARD)((JChannel)channels[i].getChannel()).getProtocolStack().findProtocol("DISCARD");               
+                for(int j=0;j<split;j++){
+                    discard.addIgnoreMember(channels[j].getLocalAddress());
+                }                   
+            }
+                                        
+            System.out.println("Waiting for split to be detected...");
+            Util.sleep(35*1000);
+            
+            System.out.println("Waiting for merging to kick in....");
+            
+            for (int i = 0; i < count; i++) {              
+                ((JChannel)channels[i].getChannel()).getProtocolStack().removeProtocol("DISCARD");                                     
+            }            
+                       
+            //Either merge properly or time out...
+            //we check that each channel again has correct view
+            blockUntilViewsReceived(channels, 60000);
+            
 
-
-        public void waitForNViews(int n, long timeout) {
-            long sleep_time=timeout, curr, start;
-            synchronized(mutex) {
-                views.clear();
-                count=0;
-                start=System.currentTimeMillis();
-                while(count < n) {
-                    try {mutex.wait(sleep_time);} catch(InterruptedException e) {}
-                    curr=System.currentTimeMillis();
-                    sleep_time-=(curr - start);
-                    if(sleep_time <= 0)
-                        break;
+            // Re-acquire the semaphore tickets; when we have them all
+            // we know the threads are done
+            boolean acquired = semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
+            if(!acquired){
+                log.warn("Most likely a bug, analyse the stack below:");
+                log.warn(Util.dumpThreads());
+            }                 
+            Util.sleep(1000);
+        }catch(Exception ex){
+            log.warn("Exception encountered during test", ex);
+            fail(ex.getLocalizedMessage());
+        }finally{
+            
+            for(MergeApplication channel:channels){
+                channel.cleanup();
+                Util.sleep(2000);
+            }
+            if(useBlocking()){
+                for(MergeApplication channel:channels){                
+                    checkEventStateTransferSequence(channel);
                 }
             }
+        }
+    }   
+    
+    protected class MergeApplication extends PushChannelApplicationWithSemaphore {      
 
-            // System.out.println("+++++ VIEW_CHECKER for " + channel.getLocalAddress() + " terminated, view=" + channel.getView() +
-            // ", views=" + views + ")");
+        public MergeApplication(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+            super(name, semaphore, useDispatcher);
+            replaceDiscoveryProtocol((JChannel)channel);
+            addDiscardProtocol((JChannel)channel); 
+            modiftFDAndMergeSettings((JChannel)channel);
         }
 
-
-        public void receive(Message msg) {
-            Address sender=msg.getSrc(), receiver=msg.getDest();
-            boolean multicast=receiver == null || receiver.isMulticastAddress();
-            System.out.println("[" + receiver + "]: received " + (multicast? " multicast " : " unicast ") + " message from " + sender);
+        public void useChannel() throws Exception {
+            channel.connect("test");           
+        }  
+        
+        @Override
+        public void viewAccepted(View new_view) {
+            events.add(new_view);
+            log.info("Channel " + getLocalAddress()
+                      + "["
+                      + getName()
+                      + "] accepted view "
+                      + new_view);
         }
     }
+    
+    
+    private void addDiscardProtocol(JChannel ch) throws Exception {
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol transport=stack.getTransport();
+        DISCARD discard=new DISCARD();
+        discard.setProtocolStack(ch.getProtocolStack());
+        discard.start();
+        stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
+    }
+    
+    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol discovery=stack.removeProtocol("TCPPING");
+        if(discovery != null){
+            Protocol transport = stack.getTransport();
+            MPING mping =new MPING();
+            mping.setProperties(new Properties());
+            mping.setProtocolStack(ch.getProtocolStack());
+            mping.init();
+            mping.start();
+            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
+            System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
+        }        
+    }
 
+    private void modiftFDAndMergeSettings(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+
+        FD fd=(FD)stack.findProtocol("FD");
+        if(fd != null) {
+            fd.setMaxTries(3);
+            fd.setTimeout(1000);
+        }
+        MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
+        if(merge != null) {
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
+        }      
+    }
+
+    public static Test suite() {
+        return new TestSuite(MergeTest.class);
+    }
 
     public static void main(String[] args) {
-        String[] testCaseName={MergeTest.class.getName()};
+        String[] testCaseName = { MergeTest.class.getName() };
         junit.textui.TestRunner.main(testCaseName);
     }
-
-
 }
