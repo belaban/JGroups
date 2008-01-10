@@ -662,7 +662,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		/* (non-Javadoc)
 		 * @see java.lang.Comparable#compareTo(java.lang.Object)
 		 */
-		public int compareTo(Object o)
+		public int compareTo(Address o)
 		{
 			return -1;
 		}
