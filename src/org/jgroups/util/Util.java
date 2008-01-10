@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.138 2007/11/27 15:03:24 belaban Exp $
+ * @version $Id: Util.java,v 1.139 2008/01/10 08:46:10 belaban Exp $
  */
 public class Util {
 
@@ -2027,11 +2027,7 @@ public class Util {
         InetAddress retval=null, bind_addr_host=null;
 
         if(bind_addr != null) {
-            try {
-                bind_addr_host=InetAddress.getByName(bind_addr);
-            }
-            catch(UnknownHostException e) {
-            }
+            bind_addr_host=InetAddress.getByName(bind_addr);
         }
 
         if(bind_interface != null) {
