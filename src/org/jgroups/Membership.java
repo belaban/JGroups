@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.11 2008/01/10 06:52:11 vlada Exp $
+// $Id: Membership.java,v 1.12 2008/01/10 08:07:26 belaban Exp $
 
 package org.jgroups;
 
