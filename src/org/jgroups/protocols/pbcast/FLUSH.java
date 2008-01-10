@@ -201,7 +201,7 @@ public class FLUSH extends Protocol {
             if(log.isDebugEnabled())
                 log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
 
-            onSuspend((View) evt.getArg());
+            onSuspend((List<Address>) evt.getArg());
             try{
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
@@ -277,7 +277,7 @@ public class FLUSH extends Protocol {
             return startFlush(evt);
 
         case Event.RESUME:
-            onResume();
+            onResume(evt);
             return null;
         }
         return down_prot.down(evt);
@@ -420,7 +420,7 @@ public class FLUSH extends Protocol {
             return startFlush(evt);
 
         case Event.RESUME:
-            onResume();
+            onResume(evt);
             return null;
 
         }
@@ -431,7 +431,7 @@ public class FLUSH extends Protocol {
     private boolean waitForFlushCompletion(long timeout){
         long start_time = System.currentTimeMillis(), backofftime = timeout;
         while (backofftime > 0 && flushInProgress.get()) {
-            Util.sleep(500);
+            Util.sleep(100);
             backofftime = timeout - (System.currentTimeMillis() - start_time);            
         }
         return backofftime < 0; 
@@ -605,13 +605,13 @@ public class FLUSH extends Protocol {
         flushInProgress.set(false);
     }
 
-    private void onSuspend(View view) {
+    private void onSuspend(List<Address> members) {
         Message msg = null;
         Collection<Address> participantsInFlush = null;
         synchronized(sharedLock){
             // start FLUSH only on group members that we need to flush
-            if(view != null){
-                participantsInFlush = new ArrayList<Address>(view.getMembers());
+            if(members != null){
+                participantsInFlush = members;
                 participantsInFlush.retainAll(currentView.getMembers());
             }else{
                 participantsInFlush = new ArrayList<Address>(currentView.getMembers());
@@ -632,15 +632,28 @@ public class FLUSH extends Protocol {
         }
     }
 
-    private void onResume() {
+    private void onResume(Event evt) {
+        List<Address> members = (List<Address>) evt.getArg();
         long viewID = currentViewId();
-        Message msg = new Message(null, localAddress, null);    
-        //Cannot be OOB since START_FLUSH is not OOB
-        //we have to FIFO order two subsequent flushes       
-        msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
-        down_prot.down(new Event(Event.MSG, msg));
-        if(log.isDebugEnabled())
-            log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
+        if(members == null || members.isEmpty()){
+            Message msg = new Message(null, localAddress, null);    
+            //Cannot be OOB since START_FLUSH is not OOB
+            //we have to FIFO order two subsequent flushes       
+            msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
+            down_prot.down(new Event(Event.MSG, msg));
+            if(log.isDebugEnabled())
+                log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to all");
+        }else{
+            for (Address address : members) {
+                Message msg = new Message(address, localAddress, null);    
+                //Cannot be OOB since START_FLUSH is not OOB
+                //we have to FIFO order two subsequent flushes       
+                msg.putHeader(getName(), new FlushHeader(FlushHeader.STOP_FLUSH, viewID));
+                down_prot.down(new Event(Event.MSG, msg));
+                if(log.isDebugEnabled())
+                    log.debug("Received RESUME at " + localAddress + ", sent STOP_FLUSH to " + address);
+            }
+        }
     }
 
     private void onStartFlush(Address flushStarter, FlushHeader fh) {                           
