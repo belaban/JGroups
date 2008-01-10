@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.24 2007/01/15 16:33:13 belaban Exp $ 
+// $Id: JMS.java,v 1.25 2008/01/10 08:07:20 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -488,7 +488,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
      * 
      * @return randomly generated local address.
      */
-    protected String generateLocalAddress() throws java.net.UnknownHostException {
+    protected static String generateLocalAddress() throws java.net.UnknownHostException {
         String  hostName = java.net.InetAddress.getLocalHost().getHostName();
        
         int rndPort = RND.nextInt(65535);
@@ -599,7 +599,7 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
          * @return value compliant with the {@link Comparable#compareTo(Object)}
          * specififaction.
          */
-        public int compareTo(Object o) throws ClassCastException {
+        public int compareTo(Address o) throws ClassCastException {
             if (!(o instanceof JMSAddress))
                 throw new ClassCastException("Cannot compare different classes.");
 

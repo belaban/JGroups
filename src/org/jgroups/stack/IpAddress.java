@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.42 2007/09/14 14:51:52 belaban Exp $
+// $Id: IpAddress.java,v 1.43 2008/01/10 08:07:08 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -135,7 +135,7 @@ public class IpAddress implements Address {
      * @exception java.lang.ClassCastException - if the specified object's type prevents it
      *            from being compared to this Object.
      */
-    public final int compareTo(Object o) {
+    public final int compareTo(Address o) {
         int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
 
         if(this == o) return 0;
@@ -195,7 +195,10 @@ public class IpAddress implements Address {
     public final boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
         if(obj == null) return false;
-        return compareTo(obj) == 0;
+        if(!(obj instanceof Address))
+            throw new ClassCastException(obj + " is not an Address");
+        Address other=(Address)obj;
+        return compareTo(other) == 0;
     }
 
 
