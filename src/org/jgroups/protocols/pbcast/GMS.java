@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.3 2007/12/13 05:14:15 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.4 2008/01/10 06:57:38 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -629,16 +629,29 @@ public class GMS extends Protocol {
         return (Digest)down_prot.down(Event.GET_DIGEST_EVT);
     }
 
-    boolean startFlush(View new_view){           	  
-    	return (Boolean) up_prot.up(new Event(Event.SUSPEND, new_view));
+    boolean startFlush(View new_view) {
+        if(new_view != null && new_view.size() > 0){
+            return (Boolean) up_prot.up(new Event(Event.SUSPEND,
+                                                  new ArrayList<Address>(new_view.getMembers())));
+        }
+        //flushing empty view always succeeds
+        return true;
     }
 
     void stopFlush() {
        
         if(log.isDebugEnabled()){
-            log.debug("sending RESUME event");
+            log.debug(getLocalAddress() + " sending RESUME event");
         }
         up_prot.up(new Event(Event.RESUME));
+    }
+    
+    void stopFlush(List<Address> members) {
+        
+        if(log.isDebugEnabled()){
+            log.debug(getLocalAddress() + " sending RESUME event");
+        }
+        up_prot.up(new Event(Event.RESUME,members));
     }
 
 
@@ -1193,7 +1206,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.3 2007/12/13 05:14:15 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.4 2008/01/10 06:57:38 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1387,7 +1400,7 @@ public class GMS extends Protocol {
                     finally {
                         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
                         if(flushProtocolInStack)
-                            stopFlush();
+                            stopFlush(firstReq.target_members);
                     }
                     break;
                 default:

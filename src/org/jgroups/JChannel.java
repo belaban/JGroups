@@ -20,6 +20,7 @@ import java.io.OutputStream;
 import java.io.Serializable;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.ConcurrentHashMap;
@@ -73,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.3 2007/12/20 13:20:29 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.4 2008/01/10 06:57:38 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -244,7 +245,7 @@ public class JChannel extends Channel {
      * @throws ChannelException if problems occur during the initialization of
      *                          the protocol stack.
      */
-    protected JChannel(ProtocolStackConfigurator configurator) throws ChannelException {
+    public JChannel(ProtocolStackConfigurator configurator) throws ChannelException {
         init(configurator);
     }
 
@@ -519,7 +520,7 @@ public class JChannel extends Channel {
     }
 
     /**
-     * Opens the channel.
+     * Opens the channel. Note that the channel is only open, but <em>not connected</em>.
      * This does the following actions:
      * <ol>
      * <li> Resets the receiver queue by calling Queue.reset
@@ -1633,6 +1634,41 @@ public class JChannel extends Channel {
     }
     
     /**
+     * Performs a partial flush in a cluster for flush participants. 
+     * <p>
+     * All pending messages are flushed out only for flush participants.
+     * Remaining members in a cluster are not included in flush.
+     * Flush participants should be a proper subset of a current view. 
+     * 
+     * <p>
+     * In case of flush collisions, random sleep time backoff algorithm is employed and
+     * flush is reattempted for numberOfAttempts. Therefore this method is guaranteed 
+     * to return after timeout x numberOfAttempts miliseconds.
+     * 
+     * @param automatic_resume Call {@link #stopFlush()} after the flush
+     * @return true if FLUSH completed within the timeout
+     */
+    public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume) {
+        boolean successfulFlush = false;
+        if(!flush_supported){
+            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
+        View v = getView();
+        if(v != null && v.getMembers().containsAll(flushParticipants)){
+            successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND, flushParticipants));
+        }else{
+            throw new IllegalArgumentException("Current view " + v
+                                               + " does not contain all flush participants "
+                                               + flushParticipants);
+        }
+        
+        if(automatic_resume)
+            stopFlush(flushParticipants);
+
+        return successfulFlush;              
+    }
+    
+    /**
      * Will perform a flush of the system, ie. all pending messages are flushed out of the 
      * system and all members ack their reception. After this call returns, no member will
      * be sending any messages until {@link #stopFlush()} is called.
@@ -1655,6 +1691,25 @@ public class JChannel extends Channel {
         
         flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
+        
+        //do not return until UNBLOCK event is received        
+        boolean shouldWaitForUnblock = receive_blocks;        
+        if(shouldWaitForUnblock){
+           try{              
+              flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+           }
+           catch (TimeoutException te){              
+           }
+        }
+    }
+    
+    public void stopFlush(List<Address> flushParticipants) {
+        if(!flush_supported) {
+            throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
+        }
+        
+        flush_unblock_promise.reset();
+        down(new Event(Event.RESUME, flushParticipants));
         
         //do not return until UNBLOCK event is received        
         boolean shouldWaitForUnblock = receive_blocks;        
