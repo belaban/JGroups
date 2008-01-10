@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.38 2007/12/18 12:23:55 belaban Exp $
+// $Id: Channel.java,v 1.39 2008/01/10 06:53:31 vlada Exp $
 
 package org.jgroups;
 
@@ -392,12 +392,16 @@ public abstract class Channel implements Transport {
     abstract public Object getOpt(int option);
 
     abstract public boolean flushSupported();
+    
+    abstract public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume);
 
     abstract public boolean startFlush(boolean automatic_resume);
     
     abstract public boolean startFlush(long timeout, boolean automatic_resume);
 
     abstract public void stopFlush();
+    
+    abstract public void stopFlush(List<Address> flushParticipants);
 
 
     /** Called to acknowledge a block() (callback in <code>MembershipListener</code> or
