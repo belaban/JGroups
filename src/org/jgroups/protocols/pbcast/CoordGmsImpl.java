@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.83 2007/11/28 20:45:11 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.84 2008/01/10 06:52:10 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -194,40 +194,6 @@ public class CoordGmsImpl extends GmsImpl {
         view=new View(gms.view_id.copy(), gms.members.getMembers());
         sendMergeResponse(sender, view, digest);
     }
-
-
-    private MergeData getMergeResponse(Address sender, ViewId merge_id) {
-        Digest         digest;
-        View           view;
-        MergeData      retval;
-
-        if(sender == null) {
-            if(log.isErrorEnabled()) log.error("sender == null; cannot send back a response");
-            return null;
-        }
-        if(merging) {
-            if(log.isErrorEnabled()) log.error("merge already in progress");
-            retval=new MergeData(sender, null, null);
-            retval.merge_rejected=true;
-            return retval;
-        }
-        merging=true;
-        setMergeId(merge_id);
-        if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
-
-        try {
-            digest=gms.getDigest();
-            view=new View(gms.view_id.copy(), gms.members.getMembers());
-            retval=new MergeData(sender, view, digest);
-            retval.view=view;
-            retval.digest=digest;
-        }
-        catch(NullPointerException null_ex) {
-            return null;
-        }
-        return retval;
-    }
-
 
     public void handleMergeResponse(MergeData data, ViewId merge_id) {
         if(data == null) {
@@ -471,7 +437,7 @@ public class CoordGmsImpl extends GmsImpl {
      *                 be set by GMS
      */
     public void handleViewChange(View new_view, Digest digest) {
-        Vector mbrs=new_view.getMembers();
+        Vector<Address> mbrs=new_view.getMembers();
         if(log.isDebugEnabled()) {
             if(digest != null)
                 log.debug("view=" + new_view + ", digest=" + digest);
@@ -546,27 +512,18 @@ public class CoordGmsImpl extends GmsImpl {
      * @param coords A list of Addresses of subgroup coordinators (inluding myself)
      * @param timeout Max number of msecs to wait for the merge responses from the subgroup coords
      */
-    private void getMergeDataFromSubgroupCoordinators(Vector coords, long timeout) {
+    private void getMergeDataFromSubgroupCoordinators(Vector<Address> coords, long timeout) {
         Message msg;
         GMS.GmsHeader hdr;
 
         long curr_time, time_to_wait, end_time, start, stop;
-        int num_rsps_expected;
+        int num_rsps_expected;        
 
-        if(coords == null || coords.size() <= 1) {
-            if(log.isErrorEnabled()) log.error("coords == null or size <= 1");
-            return;
-        }
-
-        start=System.currentTimeMillis();
-        MergeData tmp;
+        start=System.currentTimeMillis();        
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
-            if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);
-            Address coord;
-            for(int i=0; i < coords.size(); i++) {
-                coord=(Address)coords.elementAt(i);
-                
+            if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);            
+            for(Address coord:coords) {               
                 // this allows UNICAST to remove coord from previous_members in case of a merge
                 gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
@@ -625,20 +582,17 @@ public class CoordGmsImpl extends GmsImpl {
      *          not to be null and to contain at least 1 member.
      */
     private MergeData consolidateMergeData(Vector<MergeData> merge_rsps) {
-        MergeData ret;
-        MergeData tmp_data;
+        MergeData ret;       
         long logical_time=0; // for new_vid
         ViewId new_vid, tmp_vid;
         MergeView new_view;
         View tmp_view;
-        Membership new_mbrs=new Membership();
-        int num_mbrs;
+        Membership new_mbrs=new Membership();       
         Address new_coord;
         Vector<View> subgroups=new Vector<View>(11);
         // contains a list of Views, each View is a subgroup
 
-        for(int i=0; i < merge_rsps.size(); i++) {
-            tmp_data=merge_rsps.elementAt(i);
+        for(MergeData tmp_data:merge_rsps) {           
             if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
             tmp_view=tmp_data.getView();
             if(tmp_view != null) {
@@ -654,9 +608,8 @@ public class CoordGmsImpl extends GmsImpl {
         }
 
         // the new coordinator is the first member of the consolidated & sorted membership list
-        new_mbrs.sort();
-        num_mbrs=new_mbrs.size();
-        new_coord=num_mbrs > 0? (Address)new_mbrs.elementAt(0) : null;
+        new_mbrs.sort();       
+        new_coord = new_mbrs.size() > 0 ? new_mbrs.elementAt(0) : null;
         if(new_coord == null) {
             if(log.isErrorEnabled()) log.error("new_coord == null");
             return null;
@@ -669,7 +622,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
 
         // determine the new digest
-        Digest new_digest=consolidateDigests(merge_rsps, num_mbrs);
+        Digest new_digest=consolidateDigests(merge_rsps, new_mbrs.size());
         if(new_digest == null) {
             if(log.isErrorEnabled()) log.error("digest could not be consolidated");
             return null;
@@ -683,14 +636,11 @@ public class CoordGmsImpl extends GmsImpl {
      * Merge all digests into one. For each sender, the new value is min(low_seqno), max(high_seqno),
      * max(high_seqno_seen). This method has a lock on merge_rsps
      */
-    private Digest consolidateDigests(Vector<MergeData> merge_rsps, int num_mbrs) {
-        MergeData data;
-        Digest tmp_digest;
+    private Digest consolidateDigests(Vector<MergeData> merge_rsps, int num_mbrs) {               
         MutableDigest retval=new MutableDigest(num_mbrs);
 
-        for(int i=0; i < merge_rsps.size(); i++) {
-            data=merge_rsps.elementAt(i);
-            tmp_digest=data.getDigest();
+        for(MergeData data:merge_rsps) {            
+            Digest tmp_digest=data.getDigest();
             if(tmp_digest == null) {
                 if(log.isErrorEnabled()) log.error("tmp_digest == null; skipping");
                 continue;
@@ -708,10 +658,7 @@ public class CoordGmsImpl extends GmsImpl {
      *     the new view
      * </ol>
      */
-    private void sendMergeView(Vector coords, MergeData combined_merge_data) {
-        Message msg;
-        GMS.GmsHeader hdr;
-        Address coord;
+    private void sendMergeView(Vector<Address> coords, MergeData combined_merge_data) {                      
         View v;
         Digest d;
 
@@ -728,10 +675,9 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isTraceEnabled())
             log.trace("sending merge view " + v.getVid() + " to coordinators " + coords);
 
-        for(int i=0; i < coords.size(); i++) {
-            coord=(Address)coords.elementAt(i);
-            msg=new Message(coord, null, null);
-            hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW);
+        for(Address coord:coords) {            
+            Message msg=new Message(coord, null, null);
+            GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW);
             hdr.view=v;
             hdr.my_digest=d;
             hdr.merge_id=merge_id;
@@ -757,20 +703,15 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
 
-    private void sendMergeCancelledMessage(Vector coords, ViewId merge_id) {
-        Message msg;
-        GMS.GmsHeader hdr;
-        Address coord;
-
+    private void sendMergeCancelledMessage(Vector<Address> coords, ViewId merge_id) {              
         if(coords == null || merge_id == null) {
             if(log.isErrorEnabled()) log.error("coords or merge_id == null");
             return;
         }
-        for(int i=0; i < coords.size(); i++) {
-            coord=(Address)coords.elementAt(i);
-            msg=new Message(coord, null, null);
+        for(Address coord:coords) {            
+            Message msg=new Message(coord, null, null);
             // msg.setFlag(Message.OOB);
-            hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
+            GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.CANCEL_MERGE);
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
@@ -778,10 +719,9 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     /** Removed rejected merge requests from merge_rsps and coords. This method has a lock on merge_rsps */
-    private void removeRejectedMergeRequests(Vector coords) {
-        MergeData data;
-        for(Iterator it=merge_rsps.iterator(); it.hasNext();) {
-            data=(MergeData)it.next();
+    private void removeRejectedMergeRequests(Vector<Address> coords) {        
+        for(Iterator<MergeData> it=merge_rsps.iterator(); it.hasNext();) {
+            MergeData data=it.next();
             if(data.merge_rejected) {
                 if(data.getSender() != null && coords != null)
                     coords.removeElement(data.getSender());
@@ -802,11 +742,11 @@ public class CoordGmsImpl extends GmsImpl {
      */
     private class MergeTask implements Runnable {
         Thread t=null;
-        Vector coords=null; // list of subgroup coordinators to be contacted
+        Vector<Address> coords=null; // list of subgroup coordinators to be contacted
 
-        public void start(Vector coords) {
-            if(t == null || !t.isAlive()) {
-                this.coords=(Vector)(coords != null? coords.clone() : null);
+        public void start(Vector<Address> groupCoord) {
+            this.coords = groupCoord != null ? new Vector<Address>(groupCoord) : null;
+            if(!isRunning()) {              
                 t=gms.getProtocolStack().getThreadFactory().newThread(this, "MergeTask");               
                 t.setDaemon(true);
                 t.start();
@@ -833,6 +773,11 @@ public class CoordGmsImpl extends GmsImpl {
         public void run() {
             if(merging == true) {
                 if(log.isWarnEnabled()) log.warn("merge is already in progress, terminating");
+                return;
+            }
+            
+            if(coords == null || coords.size() <= 1) {
+                if(log.isErrorEnabled()) log.error("coords == null or size <= 1");
                 return;
             }
 

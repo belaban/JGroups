@@ -1,4 +1,4 @@
-// $Id: Membership.java,v 1.10 2007/03/15 12:09:09 belaban Exp $
+// $Id: Membership.java,v 1.11 2008/01/10 06:52:11 vlada Exp $
 
 package org.jgroups;
 
@@ -36,7 +36,7 @@ public class Membership implements Cloneable {
      *
      * @param initial_members - a list of members that belong to this membership
      */
-    public Membership(Collection initial_members) {
+    public Membership(Collection<Address> initial_members) {
         if(initial_members != null)
             add(initial_members);
     }
@@ -80,10 +80,10 @@ public class Membership implements Cloneable {
      * @throws ClassCastException if v contains objects that don't implement the Address interface
      * @see #add
      */
-    public final void add(Collection v) {
+    public final void add(Collection<Address> v) {
         if(v != null) {
-            for(Iterator it=v.iterator(); it.hasNext();) {
-                Address addr=(Address)it.next();
+            for(Iterator<Address> it=v.iterator(); it.hasNext();) {
+                Address addr=it.next();
                 add(addr);
             }
         }
@@ -110,7 +110,7 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members to be removed
      */
-    public void remove(Collection v) {
+    public void remove(Collection<Address> v) {
         if(v != null) {
             synchronized(members) {
                 members.removeAll(v);
@@ -136,7 +136,7 @@ public class Membership implements Cloneable {
      *
      * @param v - a vector containing all the members this membership will contain
      */
-    public void set(Collection v) {
+    public void set(Collection<Address> v) {
         clear();
         if(v != null) {
             add(v);
@@ -171,7 +171,7 @@ public class Membership implements Cloneable {
      * @param new_mems - a vector containing a list of members (Address) to be added to this membership
      * @param suspects - a vector containing a list of members (Address) to be removed from this membership
      */
-    public void merge(Collection new_mems, Collection suspects) {
+    public void merge(Collection<Address> new_mems, Collection<Address> suspects) {
         remove(suspects);
         add(new_mems);
     }
@@ -239,7 +239,7 @@ public class Membership implements Cloneable {
      * @see java.util.Vector#elementAt
      */
 
-    public Object elementAt(int index) {
+    public Address elementAt(int index) {
         synchronized(members) {
             return members.get(index);
         }
