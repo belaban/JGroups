@@ -34,7 +34,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.2 2008/01/08 07:40:27 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.3 2008/01/10 06:57:57 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -532,6 +532,11 @@ public class Multiplexer implements UpHandler {
     boolean isOpen(){
     	return channel.isOpen();
     }
+    
+    void open() throws ChannelException{
+        channel.open();
+    }
+    
 
     /**
     * Returns an Address of a state provider for a given service_id.
