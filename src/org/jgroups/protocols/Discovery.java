@@ -2,15 +2,14 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.*;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 
 /**
@@ -29,7 +28,7 @@ import java.util.concurrent.TimeoutException;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.37 2007/11/29 11:27:36 belaban Exp $
+ * @version $Id: Discovery.java,v 1.38 2008/01/11 03:45:01 vlada Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -145,7 +144,7 @@ public abstract class Discovery extends Protocol {
 
         if(!props.isEmpty()) {
             StringBuffer sb=new StringBuffer();
-            for(Enumeration e=props.propertyNames(); e.hasMoreElements();) {
+            for(Enumeration<?> e=props.propertyNames(); e.hasMoreElements();) {
                 sb.append(e.nextElement().toString());
                 if(e.hasMoreElements()) {
                     sb.append(", ");
@@ -175,7 +174,7 @@ public abstract class Discovery extends Protocol {
      * until 'num_initial_members' have been retrieved
      * @return List<PingRsp>
      */
-    public List<PingRsp> findInitialMembers(Promise promise) {
+    public List<PingRsp> findInitialMembers(Promise<JoinRsp> promise) {
         num_discovery_requests++;
 
         final Responses rsps=new Responses(num_initial_members, promise);
@@ -188,7 +187,7 @@ public abstract class Discovery extends Protocol {
             return rsps.get(timeout);
         }
         catch(Exception e) {
-            return null;
+            return new LinkedList<PingRsp>();
         }
         finally {
         	sender.stop();
@@ -336,7 +335,7 @@ public abstract class Discovery extends Protocol {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
-            return findInitialMembers((Promise)evt.getArg());
+            return findInitialMembers((Promise<JoinRsp>)evt.getArg());
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
@@ -390,7 +389,7 @@ public abstract class Discovery extends Protocol {
 
     class PingSenderTask {
         private double		interval;
-		private Future		senderFuture;
+	private Future<?>		senderFuture;
 
         public PingSenderTask(long timeout, int num_requests) {
             interval=timeout / (double)num_requests;
@@ -422,13 +421,13 @@ public abstract class Discovery extends Protocol {
 
 
     private static class Responses {
-        final Promise       promise;
+        final Promise<JoinRsp>       promise;
         final List<PingRsp> ping_rsps=new LinkedList<PingRsp>();
         final int           num_expected_rsps;
 
-        public Responses(int num_expected_rsps, Promise promise) {
+        public Responses(int num_expected_rsps, Promise<JoinRsp> promise) {
             this.num_expected_rsps=num_expected_rsps;
-            this.promise=promise != null? promise : new Promise();
+            this.promise=promise != null? promise : new Promise<JoinRsp>();
         }
 
         public void addResponse(PingRsp rsp) {
@@ -447,7 +446,7 @@ public abstract class Discovery extends Protocol {
             }
         }
 
-        public List<PingRsp> get(long timeout) throws InterruptedException, ExecutionException, TimeoutException {
+        public List<PingRsp> get(long timeout) throws InterruptedException{
             long start_time=System.currentTimeMillis(), time_to_wait=timeout;
 
             promise.getLock().lock();
