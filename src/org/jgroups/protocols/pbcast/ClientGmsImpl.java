@@ -20,7 +20,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Id: ClientGmsImpl.java,v 1.56.2.1 2007/11/20 08:37:26 belaban Exp $
+ * @version $Id: ClientGmsImpl.java,v 1.56.2.2 2008/01/11 01:43:11 vlada Exp $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -194,7 +194,7 @@ public class ClientGmsImpl extends GmsImpl {
         }
     }
 
-    private List<PingRsp> findInitialMembers(Promise promise) {
+    private List<PingRsp> findInitialMembers(Promise<JoinRsp> promise) {
         List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
         if(responses != null) {
             for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
@@ -244,7 +244,7 @@ public class ClientGmsImpl extends GmsImpl {
      * becomes coordinator.
      */
     private boolean installView(View new_view) {
-        Vector mems=new_view.getMembers();
+        Vector<Address> mems=new_view.getMembers();
          if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
             if(log.isErrorEnabled()) log.error("I (" + gms.local_addr +
