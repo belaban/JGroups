@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.59 2008/01/15 13:24:53 belaban Exp $
+ * @version $Id: FD.java,v 1.60 2008/01/15 14:11:58 belaban Exp $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -224,25 +224,6 @@ public class FD extends Protocol {
                         break;                                     // don't pass up !
 
                     case FdHeader.HEARTBEAT_ACK:                   // heartbeat ack
-//                        if(ping_dest != null && ping_dest.equals(hdr.from)) {
-//                            last_ack=System.currentTimeMillis();
-//                            num_tries=0;
-//                            if(log.isDebugEnabled()) log.debug("received ack from " + hdr.from);
-//                        }
-//                        else {
-//                            stop();
-//                            ping_dest=(Address)getPingDest(pingable_mbrs);
-//                            if(ping_dest != null) {
-//                                try {
-//                                    startMonitor();
-//                                }
-//                                catch(Exception ex) {
-//                                    if(log.isWarnEnabled()) log.warn("exception when calling startMonitor(): " + ex);
-//                                }
-//                            }
-//                        }
-
-
                         if(ping_dest != null && ping_dest.equals(hdr.from)) {
                             last_ack=System.currentTimeMillis();
                             num_tries=0;
@@ -255,7 +236,7 @@ public class FD extends Protocol {
                              * taking down the timeouts with it. This inhibits ping_dest Failure Detection.
                              */
                             synchronized(this) {
-                                Address previewNextPingDest =getPingDest(pingable_mbrs);
+                                Address previewNextPingDest=getPingDest(pingable_mbrs);
                                 /* We are only interested to stop or restart the monitor thread iff the current target ping_dest is going
                                    change */
                                 if(log.isDebugEnabled()) log.debug("Recevied Ack. is invalid (was from: " + hdr.from + "), ");
