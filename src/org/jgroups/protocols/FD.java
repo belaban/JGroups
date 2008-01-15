@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.58 2007/07/27 11:00:58 belaban Exp $
+ * @version $Id: FD.java,v 1.59 2008/01/15 13:24:53 belaban Exp $
  */
 public class FD extends Protocol {
     Address               ping_dest=null;
@@ -139,8 +139,8 @@ public class FD extends Protocol {
     }
 
 
-    private Object getPingDest(List mbrs) {
-        Object tmp, retval=null;
+    private Address getPingDest(List<Address> mbrs) {
+        Address tmp, retval=null;
 
         if(mbrs == null || mbrs.size() < 2 || local_addr == null)
             return null;
@@ -255,7 +255,7 @@ public class FD extends Protocol {
                              * taking down the timeouts with it. This inhibits ping_dest Failure Detection.
                              */
                             synchronized(this) {
-                                Address previewNextPingDest = (Address)getPingDest(pingable_mbrs);
+                                Address previewNextPingDest =getPingDest(pingable_mbrs);
                                 /* We are only interested to stop or restart the monitor thread iff the current target ping_dest is going
                                    change */
                                 if(log.isDebugEnabled()) log.debug("Recevied Ack. is invalid (was from: " + hdr.from + "), ");
@@ -302,7 +302,7 @@ public class FD extends Protocol {
                                 }
                                 else {
                                     pingable_mbrs.remove(m);
-                                    ping_dest=(Address)getPingDest(pingable_mbrs);
+                                    ping_dest=getPingDest(pingable_mbrs);
                                 }
                                 up_prot.up(new Event(Event.SUSPECT, m));
                                 down_prot.down(new Event(Event.SUSPECT, m));
@@ -338,7 +338,7 @@ public class FD extends Protocol {
                     bcast_task.adjustSuspectedMembers(members);
                     pingable_mbrs.clear();
                     pingable_mbrs.addAll(members);
-                    ping_dest=(Address)getPingDest(pingable_mbrs);
+                    ping_dest=getPingDest(pingable_mbrs);
                     if(ping_dest != null) {
                         try {
                             startMonitor();
@@ -372,7 +372,7 @@ public class FD extends Protocol {
         pingable_mbrs.clear();
         pingable_mbrs.addAll(members);
         pingable_mbrs.removeAll(bcast_task.getSuspectedMembers());
-        ping_dest=(Address)getPingDest(pingable_mbrs);
+        ping_dest=getPingDest(pingable_mbrs);
         if(ping_dest != null) {
             try {
                 startMonitor();
@@ -426,7 +426,7 @@ public class FD extends Protocol {
         byte    type=HEARTBEAT;
         Vector<Address>  mbrs=null;
         Address from=null;  // member who detected that suspected_mbr has failed
-
+        private static final long serialVersionUID=-6387039473828820899L;
 
 
         public FdHeader() {
