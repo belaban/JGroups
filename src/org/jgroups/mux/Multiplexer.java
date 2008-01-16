@@ -11,6 +11,7 @@ import org.jgroups.util.*;
 
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The multiplexer allows multiple channel interfaces to be associated with one
@@ -34,7 +35,7 @@ import java.util.concurrent.*;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.3 2008/01/10 06:57:57 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.4 2008/01/16 09:15:14 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -70,8 +71,12 @@ public class Multiplexer implements UpHandler {
     /** Map<Address, Set<String>>. Keys are senders, values are a set of services hosted by that sender.
      * Used to collect responses to LIST_SERVICES_REQ */
     private final Map<Address, Set<String>> service_responses=new HashMap<Address, Set<String>>();
+    
+    private final List<Address> services_merged_collector=new ArrayList<Address>();
+    
+    private AtomicBoolean services_merged = new AtomicBoolean(false);
 
-    private long service_response_timeout=10000;  
+    private long service_response_timeout=3000;  
 
     public Multiplexer(JChannel channel) {       
     	if(channel == null || !channel.isOpen())
@@ -340,12 +345,14 @@ public class Multiplexer implements UpHandler {
 
             case Event.SUSPECT:
                 Address suspected_mbr=(Address)evt.getArg();
-
-                service_ack_collector.suspect(suspected_mbr);
-                synchronized(service_responses) {
-                    service_responses.put(suspected_mbr, null);
-                    service_responses.notifyAll();
-                }
+                service_ack_collector.suspect(suspected_mbr);  
+                /*
+                 * http://jira.jboss.com/jira/browse/JGRP-665
+                 * Intentionally do not update service_response since we might
+                 * get false suspect while merging if FD is aggressive enough.
+                 * Instead rely on ServiceInfo.SERVICES_MERGED and timeout
+                 * mechanism in handleMergeView
+                 */
                 passToAllMuxChannels(evt);
                 break;
 
@@ -726,7 +733,24 @@ public class Multiplexer implements UpHandler {
                 break;
             case ServiceInfo.ACK:
                 service_ack_collector.ack(sender);
-                break;    
+                break;  
+            case ServiceInfo.SERVICES_MERGED:  
+                synchronized(services_merged_collector){
+                    if(!services_merged_collector.contains(sender)){
+                        services_merged_collector.add(sender);
+                    }
+                    boolean mergeOk = view != null && services_merged_collector.containsAll(view.getMembers());
+                    services_merged.set(mergeOk);
+                    if(log.isDebugEnabled())
+                        log.debug(getLocalAddress() + " got service merged from "
+                                  + sender
+                                  + " merged so far "
+                                  + services_merged_collector
+                                  + " view is "
+                                  + view.size());
+    
+                }
+                break;      
             default:
                 if(log.isErrorEnabled())
                     log.error("service request type " + info.type + " not known");
@@ -750,6 +774,7 @@ public class Multiplexer implements UpHandler {
 
     private void handleServicesRsp(Address sender, byte[] state) throws Exception {       
         Set<String> s=(Set<String>) Util.objectFromByteBuffer(state);
+        boolean all_merged = false;
 
         synchronized(service_responses) {
             Set<String> tmp=service_responses.get(sender);
@@ -758,9 +783,22 @@ public class Multiplexer implements UpHandler {
             tmp.addAll(s);
 
             service_responses.put(sender, tmp);
-            if(log.isTraceEnabled())
-                log.trace("received service response: " + sender + "(" + s.toString() + ")");
-            service_responses.notifyAll();
+            if(log.isDebugEnabled())
+                log.debug(getLocalAddress() + " received service response: " + sender + "(" + s.toString() + ")");
+            
+            all_merged = (view != null && service_responses.keySet().containsAll(view.getMembers()));                
+        }
+        if(all_merged){
+            if(log.isDebugEnabled())
+                log.debug(getLocalAddress() + " sent service merged " + service_responses.keySet() + " view is " + view.getMembers());
+            
+            sendServiceMessage(false,
+                               ServiceInfo.SERVICES_MERGED,
+                               null,
+                               channel.getLocalAddress(),
+                               true,
+                               null,
+                               true);
         }
     }
 
@@ -846,50 +884,51 @@ public class Multiplexer implements UpHandler {
      * @param view
      */
     private void handleMergeView(MergeView view) throws Exception {
-        long time_to_wait=service_response_timeout, start;
-        int num_members=view.size(); // include myself
+        long time_to_wait=service_response_timeout;     
+        long start_time = System.currentTimeMillis();
         Map<Address, Set<String>> copy=null;
 
-        byte[] data=Util.objectToByteBuffer(new HashSet<String>(services.keySet()));
+        byte[] data=Util.objectToByteBuffer(new HashSet<String>(services.keySet()));                           
         
-        //we have to make this message OOB since we are running on a thread 
-        //propelling a regular synchronous message call to install a new view 
-        sendServiceMessage(false,ServiceInfo.LIST_SERVICES_RSP, null, channel.getLocalAddress(), true, data,true);
+        //loop and keep sending our service list until either 
+        //we hit timeout or we get notification of merge completed
+        //http://jira.jboss.com/jira/browse/JGRP-665
+        while(time_to_wait > 0 && !services_merged.get()){
+            // we have to make this message OOB since we are running on a thread
+            // propelling a regular synchronous message call to install a new view
+            sendServiceMessage(false,
+                               ServiceInfo.LIST_SERVICES_RSP,
+                               null,
+                               channel.getLocalAddress(),
+                               true,
+                               data,
+                               true);
+            Util.sleep(500);
+            time_to_wait = service_response_timeout - (System.currentTimeMillis() - start_time);
+        }
+        
+        if(time_to_wait <= 0 && !services_merged.get()){
+            log.warn("Services not merged at " + getLocalAddress()
+                     + " received merge from "
+                     + services_merged_collector);
+        }              
 
-        synchronized(service_responses) {
-            start=System.currentTimeMillis();
-            try {
-                while(time_to_wait > 0 && numResponses(service_responses) < num_members) {
-                    service_responses.wait(time_to_wait);
-                    time_to_wait-=System.currentTimeMillis() - start;
-                }
-                copy=new HashMap<Address, Set<String>>(service_responses);
-            }
-            catch(Exception ex) {
-                if(log.isErrorEnabled())
-                    log.error("failed fetching a list of services from other members in the cluster, cannot handle merge view " + view, ex);
-            }
+        synchronized(service_responses){
+            copy = new HashMap<Address, Set<String>>(service_responses);
+            service_responses.clear();
         }
 
-        if(log.isTraceEnabled())
-            log.trace("merging service state, my service_state: " + service_state + ", received responses: " + copy);
+        if(log.isDebugEnabled())
+            log.debug("At " + getLocalAddress() + " emitting views to MuxChannels " + copy);
 
-        // merges service_responses with service_state and emits MergeViews for the services affected (MuxChannel)
+        // merges service_responses with service_state and emits MergeViews for
+        // the services affected (MuxChannel)
         mergeServiceState(view, copy);
-        service_responses.clear();       
-    }
-
-    private static int numResponses(Map<Address, Set<String>> m) {
-        int num=0;
-        Collection<Set<String>> values=m.values();
-        for(Iterator<Set<String>> it=values.iterator(); it.hasNext();) {
-            if(it.next() != null)
-                num++;
+        synchronized(services_merged_collector){
+            services_merged_collector.clear();
         }
-
-        return num;
-    }
-
+        services_merged.set(false);
+    } 
 
     private void mergeServiceState(MergeView view, Map<Address, Set<String>> copy) {
         Set<String> modified_services=new HashSet<String>();                             

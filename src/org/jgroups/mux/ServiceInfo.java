@@ -10,13 +10,14 @@ import java.io.*;
 /**
  * Class used for service state communication between Multiplexers
  * @author Bela Ban
- * @version $Id: ServiceInfo.java,v 1.7 2007/10/22 19:51:34 belaban Exp $
+ * @version $Id: ServiceInfo.java,v 1.7.2.1 2008/01/16 09:15:14 vlada Exp $
  */
 public class ServiceInfo implements Externalizable, Streamable {       
     public static final byte SERVICE_UP        = 3;
     public static final byte SERVICE_DOWN      = 4;
     public static final byte LIST_SERVICES_RSP = 5; // list of services available on a given node (available in 'state')
     public static final byte ACK               = 6;
+    public static final byte SERVICES_MERGED   = 7;
 
     byte    type=0;
     String  service=null;
@@ -103,6 +104,7 @@ public class ServiceInfo implements Externalizable, Streamable {
             case SERVICE_UP:   return "SERVICE_UP(" + service + "," + host + ")";
             case SERVICE_DOWN: return "SERVICE_DOWN(" + service + "," + host + ")";
             case ACK: return "ACK";
+            case SERVICES_MERGED: return "SERVICES_MERGED("+ host + ")";
             case LIST_SERVICES_RSP:
                 String services=null;
                 try {
@@ -120,6 +122,7 @@ public class ServiceInfo implements Externalizable, Streamable {
             case SERVICE_UP:   return "SERVICE_UP";
             case SERVICE_DOWN: return "SERVICE_DOWN";
             case ACK:          return "ACK";
+            case SERVICES_MERGED: return "SERVICES_MERGED";
             case LIST_SERVICES_RSP: return "LIST_SERVICES_RSP";
             default:           return "n/a";
         }

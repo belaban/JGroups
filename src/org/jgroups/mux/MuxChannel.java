@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.3 2008/01/10 06:57:57 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.4 2008/01/16 09:15:14 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -55,8 +55,17 @@ public class MuxChannel extends JChannel {
     private final Multiplexer mux;
 
 
-    MuxChannel(String id, String stack_name, Multiplexer mux) {
-        super(false); // don't create protocol stack, queues and threads               
+    MuxChannel(String id, String stack_name, Multiplexer mux) {       
+        super(false); // don't create protocol stack, queues and threads
+        if(id == null || id.length() == 0)
+            throw new IllegalArgumentException("Cannot create MuxChannel with id " + id);
+        
+        if(stack_name == null || stack_name.length() == 0)
+            throw new IllegalArgumentException("Cannot create MuxChannel with stack_name " + stack_name);
+        
+        if(mux == null)
+            throw new IllegalArgumentException("Cannot create MuxChannel with Multiplexer " + mux);
+        
         this.stack_name=stack_name;
         this.id=id;
         this.hdr=new MuxHeader(id);
