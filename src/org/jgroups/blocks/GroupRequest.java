@@ -42,7 +42,7 @@ import java.util.concurrent.TimeUnit;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.30 2007/07/30 10:53:23 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.31 2008/01/17 00:21:13 rachmatowicz Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -507,6 +507,10 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         if(timeout <= 0) {
+        	
+            if(log.isTraceEnabled()) 
+                log.trace("doExecute: waiting for responses without timeout ");
+            
             while(true) { /* Wait for responses: */
                 adjustMembership(); // may not be necessary, just to make sure...
                 if(responsesComplete()) {
@@ -526,6 +530,10 @@ public class GroupRequest implements RspCollector, Command {
             }
         }
         else {
+        	
+            if(log.isTraceEnabled()) 
+                log.trace("doExecute: waiting for responses with timeout = " + timeout + "msecs");        	
+        	
             start_time=System.currentTimeMillis();
             long timeout_time=start_time + timeout;
             while(timeout > 0) { /* Wait for responses: */
@@ -549,6 +557,10 @@ public class GroupRequest implements RspCollector, Command {
             if(corr != null) {
                 corr.done(req_id);
             }
+            
+            if(log.isTraceEnabled())
+                log.trace("call to doExecute() timed out waiting for responses");
+            
             return false;
         }
     }
@@ -574,6 +586,11 @@ public class GroupRequest implements RspCollector, Command {
                     num_not_received++;
                 }
             }
+        }
+        
+        if(log.isTraceEnabled()) {
+            log.trace("checking if responses complete: " +  " num_received = " + num_received + 
+     			   	", num_suspected = " + num_suspected + ", num_not_received = " + num_not_received);
         }
 
         switch(rsp_mode) {
