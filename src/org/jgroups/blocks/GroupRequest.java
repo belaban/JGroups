@@ -11,13 +11,12 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Command;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
-import org.jgroups.util.Util;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.TimeUnit;
 
 
 /**
@@ -42,7 +41,7 @@ import java.util.concurrent.TimeUnit;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.31 2008/01/17 00:21:13 rachmatowicz Exp $
+ * @version $Id: GroupRequest.java,v 1.32 2008/01/17 08:03:16 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
