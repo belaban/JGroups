@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.31 2008/01/17 00:23:08 rachmatowicz Exp $
+// $Id: RpcDispatcher.java,v 1.32 2008/01/17 19:03:34 rachmatowicz Exp $
 
 package org.jgroups.blocks;
 
@@ -9,6 +9,7 @@ import org.jgroups.util.Util;
 
 import java.io.Serializable;
 import java.lang.reflect.Method;
+import java.lang.IllegalArgumentException ;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -286,7 +287,7 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
             if(log.isErrorEnabled()) log.error("message does not contain a MethodCall object");
             
             // create an exception to represent this and return it
-            InvalidMethodCallException e = new InvalidMethodCallException() ; 
+            IllegalArgumentException e = new IllegalArgumentException("message does not contain a MethodCall object") ; 
             return e;
         }
 
