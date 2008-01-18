@@ -23,14 +23,13 @@ import java.util.concurrent.*;
  * In fixed-rate scheduling, the next schedule is calculated as:<br>
  * new_schedule = time_task_was_supposed_to_start + scheduling_interval
  * <p/>
- * The scheduler internally holds a queue of tasks sorted in ascending order
+ * The scheduler internally holds a queue (DelayQueue) of tasks sorted in ascending order
  * according to their next execution time. A task is removed from the queue
  * if it is cancelled, i.e. if <tt>TimeScheduler.Task.isCancelled()</tt>
  * returns true.
  * <p/>
- * The scheduler internally uses a <tt>java.util.SortedSet</tt> to keep tasks
- * sorted. <tt>java.util.Timer</tt> uses an array arranged as a binary heap
- * that doesn't shrink. It is likely that the latter arrangement is faster.
+ * The scheduler extends <tt>ScheduledThreadPoolExecutor</tt> to keep tasks
+ * sorted. <tt>java.util.Timer</tt> uses an array arranged as a binary heap (DelayQueue).
  * <p/>
  * Initially, the scheduler is in <tt>SUSPEND</tt>ed mode, <tt>start()</tt>
  * need not be called: if a task is added, the scheduler gets started
@@ -39,7 +38,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.23 2007/05/02 15:33:22 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.24 2008/01/18 06:42:06 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
