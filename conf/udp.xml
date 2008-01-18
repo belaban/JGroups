@@ -3,12 +3,12 @@
   Default stack using IP multicasting. It is similar to the "udp"
   stack in stacks.xml, but doesn't use streaming state transfer and flushing
   author: Bela Ban
-  version: $Id: udp.xml,v 1.25 2007/11/19 16:02:15 belaban Exp $
+  version: $Id: udp.xml,v 1.26 2008/01/18 14:50:03 belaban Exp $
 -->
 
 <config>
     <UDP
-         mcast_addr="${jgroups.udp.mcast_addr:228.10.10.10}"
+         mcast_addr="${jgroups.udp.mcast_addr:232.10.10.10}"
          mcast_port="${jgroups.udp.mcast_port:45588}"
          tos="8"
          ucast_recv_buf_size="20000000"
