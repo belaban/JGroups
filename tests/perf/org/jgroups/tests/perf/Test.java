@@ -199,7 +199,7 @@ public class Test implements Receiver {
         }
     }
 
-    private String printProperties() {
+    private static String printProperties() {
         StringBuilder sb=new StringBuilder();
         Properties p=System.getProperties();
         for(Iterator it=p.entrySet().iterator(); it.hasNext();) {
@@ -225,7 +225,7 @@ public class Test implements Receiver {
 
     public void receive(Object sender, byte[] payload) {
         if(payload == null || payload.length == 0) {
-            System.err.println("payload is incorrect (sender=" + sender + "): " + payload);
+            System.err.println("payload is incorrect (sender=" + sender + ")");
             return;
         }
 
@@ -519,7 +519,7 @@ public class Test implements Receiver {
 
 
 
-    byte[] generatePayload(Data d, byte[] buf) throws Exception {
+    static byte[] generatePayload(Data d, byte[] buf) throws Exception {
         byte[] tmp=buf != null? buf : Util.streamableToByteBuffer(d);
         byte[] payload=new byte[tmp.length +1];
         payload[0]=intToByte(d.getType());
@@ -527,7 +527,7 @@ public class Test implements Receiver {
         return payload;
     }
 
-    private byte intToByte(int type) {
+    private static byte intToByte(int type) {
         switch(type) {
             case Data.DATA: return 1;
             case Data.DISCOVERY_REQ: return 2;
@@ -578,7 +578,7 @@ public class Test implements Receiver {
         System.out.println(sb.toString());
     }
 
-    private void dump(Map map, StringBuffer sb) {
+    private static void dump(Map map, StringBuffer sb) {
         Map.Entry  entry;
         Object     mySender;
         MemberInfo mi;
@@ -605,7 +605,7 @@ public class Test implements Receiver {
         double msgs_sec, throughput_sec;
         long   current;
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(received_msgs).append(' ');
 
         current=System.currentTimeMillis();
@@ -651,7 +651,7 @@ public class Test implements Receiver {
         return sb.toString();
     }
 
-    private void print(Map stats, StringBuffer sb) {
+    private static void print(Map stats, StringBuilder sb) {
         sb.append("\nTransport stats:\n\n");
         Map.Entry entry;
         Object key, val;
