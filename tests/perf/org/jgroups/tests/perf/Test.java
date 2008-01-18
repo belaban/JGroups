@@ -3,6 +3,7 @@ package org.jgroups.tests.perf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
+import org.jgroups.Address;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -30,7 +31,7 @@ public class Test implements Receiver {
     Map             senders=new ConcurrentHashMap(10);
 
     /** Keeps track of members. ArrayList<SocketAddress> */
-    final ArrayList       members=new ArrayList();
+    final List      members=new ArrayList();
 
 
     /** Set when first message is received */
@@ -41,6 +42,10 @@ public class Test implements Receiver {
 
     int             num_members=0;
     int             num_senders=0;
+
+    int             num_buddies=0; // 0 == off, > 0 == on
+    List            buddies=null;
+
     long            num_msgs_expected=0;
 
     long            num_msgs_received=0;  // from everyone
@@ -90,7 +95,7 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean verbose, boolean jmx, String output, int num_threads) throws Exception {
+    public void start(Properties c, boolean verbose, boolean jmx, String output, int num_threads, int num_buddies) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
@@ -124,9 +129,9 @@ public class Test implements Receiver {
 
         num_msgs=Integer.parseInt(config.getProperty("num_msgs"));
         if(num_threads > 0 && num_msgs % num_threads != 0)
-            throw new IllegalArgumentException("num_msgs (" + num_msgs + ") must be devisible by num_threads (" + num_threads + ")");
+            throw new IllegalArgumentException("num_msgs (" + num_msgs + ") must be divisible by num_threads (" + num_threads + ")");
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- TEST -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
@@ -145,6 +150,13 @@ public class Test implements Receiver {
         props=this.config.getProperty("props");
         num_members=Integer.parseInt(this.config.getProperty("num_members"));
         num_senders=Integer.parseInt(this.config.getProperty("num_senders"));
+        this.num_buddies=Integer.parseInt(this.config.getProperty("num_buddies", "0"));
+        if(num_buddies > 0)
+            this.num_buddies=num_buddies;
+        if(num_buddies > num_members -1) {
+            throw new IllegalArgumentException("num_buddes (" + num_buddies + " cannot be greater than num_members -1 ("
+                    + (num_members -1) + ")");
+        }
         num_msgs=Long.parseLong(this.config.getProperty("num_msgs"));
         this.num_msgs_expected=num_senders * num_msgs;
         sender=Boolean.valueOf(this.config.getProperty("sender")).booleanValue();
@@ -159,7 +171,7 @@ public class Test implements Receiver {
         if(num_threads > 0 && log_interval % num_threads != 0)
             throw new IllegalArgumentException("log_interval (" + log_interval + ") must be divisible by num_threads (" + num_threads + ")");
 
-        sb=new StringBuffer();
+        sb=new StringBuilder();
         sb.append("\n##### msgs_received");
         sb.append(", current time (in ms)");
         sb.append(", msgs/sec");
@@ -243,11 +255,9 @@ public class Test implements Receiver {
 
             switch(d.getType()) {
                 case Data.DISCOVERY_REQ:
-                    // System.out.println("-- received discovery request");
                     sendDiscoveryResponse();
                     break;
                 case Data.DISCOVERY_RSP:
-                    // System.out.println("-- received discovery response from " + sender);
                     synchronized(this.members) {
                         if(!this.members.contains(sender)) {
                             this.members.add(sender);
@@ -258,6 +268,8 @@ public class Test implements Receiver {
                                 }
                             }
                             this.members.notifyAll();
+                            if(num_buddies > 0)
+                                computeBuddies();
                         }
                     }
                     break;
@@ -317,6 +329,10 @@ public class Test implements Receiver {
         catch(Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private void computeBuddies() {
+
     }
 
     private void handleData(Object sender, int num_bytes) {
@@ -694,7 +710,6 @@ public class Test implements Receiver {
 
 
     void waitForAllOKs() throws Exception {
-        // System.out.println("-- waiting for " + num_members + " START messages");
         sendStarted();
         boolean received_all_start_msgs=false;
         while(!received_all_start_msgs) {
@@ -740,6 +755,7 @@ public class Test implements Receiver {
         int interval_nanos=0;
         boolean busy_sleep=false;
         int num_threads=0;
+        int num_buddies=0; // 0 == off, > 0 == enabled
 
         for(int i=0; i < args.length; i++) {
             if("-bind_addr".equals(args[i])) {
@@ -799,6 +815,10 @@ public class Test implements Receiver {
                 output=args[++i];
                 continue;
             }
+            if("-num_buddies".equals(args[i])) {
+                num_buddies=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -806,7 +826,7 @@ public class Test implements Receiver {
   
         try {
             t=new Test();
-            t.start(config, verbose, jmx, output, num_threads);
+            t.start(config, verbose, jmx, output, num_threads, num_buddies);
             t.runDiscoveryPhase();
             t.waitForAllOKs();
             if(sender) {
@@ -849,7 +869,8 @@ public class Test implements Receiver {
                 "[-config <config file>] [-num_threads <number of threads for sending messages>]" +
                 "[-props <stack config>] [-verbose] [-jmx] [-bind_addr <bind address>" +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
-                "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)]");
+                "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)] " +
+                "[-num_buddies <number of backup buddies>, this enables buddy replication]");
     }
 
 
