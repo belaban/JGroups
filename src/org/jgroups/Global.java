@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.23 2007/08/21 08:56:26 belaban Exp $
+ * @version $Id: Global.java,v 1.23.2.1 2008/01/21 13:53:26 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -52,10 +52,14 @@ public class Global {
     public static final String MUX_MIN_THREADS="jgroups.mux.min_threads";
     public static final String MUX_MAX_THREADS="jgroups.mux.max_threads";
     public static final String MUX_KEEPALIVE="jgroups.mux.keepalive_time";
-    
+
+
+    public static final String SINGLETON_NAME="singleton_name";
+
     public static final long THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long THREAD_SHUTDOWN_WAIT_TIME=300;
-    
+    public static final String DUMMY="dummy-";
+
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
 	boolean result = defaultValue;
 	try{

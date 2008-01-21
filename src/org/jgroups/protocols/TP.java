@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.3 2008/01/21 09:51:10 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.4 2008/01/21 13:53:27 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -211,6 +211,15 @@ public abstract class TP extends Protocol {
     String diagnostics_addr="224.0.0.75";
     int    diagnostics_port=7500;
 
+    /** If this transport is shared, identifies all the transport instances which are to be shared */
+    String singleton_name=null;
+
+    /** If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their
+     * cluster names (attached to the message by the transport anyway). The values are the next protocols above
+     * the transports.
+     */
+    private final ConcurrentMap<String,Protocol> up_prots=new ConcurrentHashMap<String,Protocol>();
+
     TpHeader header;
     final String name=getName();
 
@@ -294,9 +303,9 @@ public abstract class TP extends Protocol {
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
 
-
-
-
+    public ConcurrentMap<String, Protocol> getUpProtocols() {
+        return up_prots;
+    }
 
     public int getOOBMinPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getCorePoolSize() : 0;
@@ -509,7 +518,7 @@ public abstract class TP extends Protocol {
         if(bind_addr != null) {
             Map<String,Object> m=new HashMap<String,Object>(1);
             m.put("bind_addr", bind_addr);
-            up_prot.up(new Event(Event.CONFIG, m));
+            up(new Event(Event.CONFIG, m));
         }
         
         HashMap <String,ThreadNamingPattern> map = new HashMap<String,ThreadNamingPattern>();
@@ -578,7 +587,7 @@ public abstract class TP extends Protocol {
         }
 
         thread_naming_pattern.setAddress(local_addr);
-        up_prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        sendUpLocalAddressEvent();
     }
 
 
@@ -916,6 +925,12 @@ public abstract class TP extends Protocol {
             props.remove("diagnostics_port");
         }
 
+        str=props.getProperty(Global.SINGLETON_NAME);
+        if(str != null) {
+            singleton_name=str;
+            props.remove(Global.SINGLETON_NAME);
+        }
+
         return true;
     }
 
@@ -929,12 +944,20 @@ public abstract class TP extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
         case Event.CONFIG:
-            up_prot.up(evt);
+            if(singleton_name != null)
+                passToAllUpProtocols(evt);
+            else
+                up_prot.up(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
             handleConfigEvent((Map<String,Object>)evt.getArg());
             return null;
         }
-        return up_prot.up(evt);
+        if(singleton_name != null) {
+            passToAllUpProtocols(evt);
+            return null;
+        }
+        else
+            return up_prot.up(evt);
     }
 
     /**
@@ -952,7 +975,7 @@ public abstract class TP extends Protocol {
         if(header != null) {
             // added patch by Roland Kurmann (March 20 2003)
             // msg.putHeader(name, new TpHeader(channel_name));
-            msg.putHeader(name, header);
+            msg.putHeaderIfAbsent(name, header);
         }
 
         setSourceAddress(msg); // very important !! listToBuffer() will fail with a null src address !!
@@ -1412,6 +1435,32 @@ public abstract class TP extends Protocol {
     }
 
 
+    protected void passToAllUpProtocols(Event evt) {
+        for(Protocol prot: up_prots.values()) {
+            try {
+                prot.up(evt);
+            }
+            catch(Exception e) {
+                if(log.isErrorEnabled())
+                    log.error("failed passing up event " + evt, e);
+            }
+        }
+    }
+
+    public void sendUpLocalAddressEvent() {
+        if(up_prot != null)
+            up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+        else {
+            for(Map.Entry<String,Protocol> entry: up_prots.entrySet()) {
+                String tmp=entry.getKey();
+                if(tmp.startsWith(Global.DUMMY))
+                    continue;
+                Protocol prot=entry.getValue();
+                prot.up(new Event(Event.SET_LOCAL_ADDRESS, local_addr));
+            }
+        }
+    }
+
     /* ----------------------------- End of Private Methods ---------------------------------------- */
 
 
@@ -1506,13 +1555,32 @@ public abstract class TP extends Protocol {
             TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
             if(hdr != null) {
                 String ch_name=hdr.channel_name;
-
-                // Discard if message's group name is not the same as our group name
-                if(channel_name != null && !channel_name.equals(ch_name)) {
-                    if(log.isWarnEnabled())
-                        log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
-                                append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
-                    return;
+                if(singleton_name != null) {
+                    Protocol up_prot=up_prots.get(ch_name);
+                    if(up_prot != null) {
+                        Event evt=new Event(Event.MSG, msg);
+                        if(log.isTraceEnabled()) {
+                            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+                            log.trace(sb);
+                        }
+                        up_prot.up(evt);
+                        return;
+                    }
+                    else {
+                        if(log.isWarnEnabled())
+                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                                    append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
+                        return;
+                    }
+                }
+                else {
+                    // Discard if message's group name is not the same as our group name
+                    if(channel_name != null && !channel_name.equals(ch_name)) {
+                        if(log.isWarnEnabled())
+                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                                    append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+                        return;
+                    }
                 }
             }
             else {
