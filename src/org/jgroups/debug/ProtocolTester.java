@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.12 2007/04/17 13:08:49 belaban Exp $
+// $Id: ProtocolTester.java,v 1.12.4.1 2008/01/21 13:53:27 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -11,6 +11,9 @@ import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+
+import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -86,20 +89,24 @@ public class ProtocolTester {
     public void stop() {
         Protocol p;
         if(harness != null) {
+            List<Protocol> protocols=new LinkedList<Protocol>();
             p=harness;
             while(p != null) {
+                protocols.add(p);
                 p.stop();
                 p=p.getDownProtocol();
             }
-            config.destroyProtocolStack(harness);
+            Configurator.destroyProtocolStack(protocols);
         }
         else if(top != null) {
             p=top;
+            List<Protocol> protocols=new LinkedList<Protocol>();
             while(p != null) {
+                protocols.add(p);
                 p.stop();
                 p=p.getDownProtocol();
             }
-            config.destroyProtocolStack(top);
+            Configurator.destroyProtocolStack(protocols);
         }
     }
 

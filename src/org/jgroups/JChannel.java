@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.4 2008/01/10 06:57:38 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.5 2008/01/21 13:53:26 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1440,7 +1440,7 @@ public class JChannel extends Channel {
             this.cluster_name=cluster_name;
 
         try {
-            prot_stack.startStack(); // calls start() in all protocols, from top to bottom
+            prot_stack.startStack(cluster_name); // calls start() in all protocols, from top to bottom
         }
         catch(Throwable e) {
             throw new ChannelException("failed to start protocol stack", e);
