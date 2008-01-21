@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.112.2.2 2007/10/24 09:05:53 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.112.2.3 2008/01/21 19:45:40 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -310,9 +310,13 @@
                 <include name="**/*~"/>
             </fileset>
         </delete>
-        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
+    	<!-- clean the docs directory if docs have been processed -->
+        <antcall target="clean-docs"/>
     </target>
 
+	<target name="clean-docs" if="docbook.support.present">
+        <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
+	</target>
 
     <target name="version"
             depends="compile"
@@ -731,7 +735,7 @@
 
 
     <target name="findxalan">
-        <available property="xalan.available" classname="org.apache.xalan.Version"/>
+        <available property="xalan.available" classpathref="jg.classpath" classname="org.apache.xalan.Version"/>
         <fail unless="xalan.available"
               message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
     </target>
