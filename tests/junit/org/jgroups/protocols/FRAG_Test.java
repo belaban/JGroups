@@ -52,8 +52,6 @@ public class FRAG_Test extends TestCase {
         System.out.println("protocol to be tested: " + frag);
         Properties props=new Properties();
         props.setProperty("frag_size", "512");
-        props.setProperty("up_thread", "false");
-        props.setProperty("down_thread", "false");
         frag.setPropertiesInternal(props);
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
