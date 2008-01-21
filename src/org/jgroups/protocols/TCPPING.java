@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.33 2007/11/29 11:27:08 belaban Exp $
+// $Id: TCPPING.java,v 1.34 2008/01/21 23:29:19 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -94,23 +94,28 @@ public class TCPPING extends Discovery {
                                                    ") from initial_hosts; initial_hosts=" + initial_hosts);
             }
         }
-    }
-
-
+    }   
+    
     public void sendGetMembersRequest(String cluster_name) {
-        Message msg;
 
-        for(Iterator it=initial_hosts.iterator(); it.hasNext();) {
-            Address addr=(Address)it.next();
-            // if(tmpMbrs.contains(addr)) {
-               // ; // continue; // changed as suggested by Mark Kopec
-            // }
-            msg=new Message(addr, null, null);
+        for(Iterator<Address> it = initial_hosts.iterator();it.hasNext();){
+            final Address addr = it.next();
+            final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
 
-            if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());
-            down_prot.down(new Event(Event.MSG, msg));
+            if(log.isTraceEnabled())
+                log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
+            timer.submit(new Runnable() {
+                public void run() {
+                    try{                        
+                        down_prot.down(new Event(Event.MSG, msg));
+                    }catch(Exception ex){
+                        if(log.isErrorEnabled())
+                            log.error("failed sending discovery request to " + addr, ex);
+                    }
+                }
+            });
         }
     }
 
