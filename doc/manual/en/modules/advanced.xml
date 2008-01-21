@@ -319,10 +319,37 @@
   </section>
 
     <section>
-        <title>Sharing a transport between multiple channels in a JVM</title>
+        <title id="SharedTransport">Sharing a transport between multiple channels in a JVM</title>
 
         <para>
-            
+            To save resources (threads, sockets and CPU cycles), transports of channels residing within the same
+            JVM can be shared. If we have 4 channels inside of a JVM (as is the case in an application server
+            such as JBoss), then we have 4 separate thread pools and sockets (1 per transport, and there are 4
+            transports (1 per channel)).
+        </para>
+
+        <para>
+            If those transport happen to be the same (all 4 channels use UDP, for example), then we can share them and
+            only create 1 instance of UDP. That transport instance is created and started only once, when the first
+            channel is created, and is deleted when the last channel is closed.
+        </para>
+
+        <para>
+            Each channel created over a shared transport has to join a different cluster. An exception will be thrown
+            if a channel sharing a transport tries to connect to a cluster to which another channel over the same
+            transport is already connected.
+        </para>
+
+        <para>
+            When we have 3 channels (C1 connected to "cluster-1", C2 connected to "cluster-2" and C3 connected to
+            "cluster-3") sending messages over the same shared transport, the cluster name
+            with which the channel connected is used to multiplex messages over the shared transport: a header with
+            the cluster name ("cluster-1") is added when C1 sends a message.
+        </para>
+
+        <para>
+            When a message with a header of "cluster-1" is received by the shared transport, it is used to demultiplex
+            the message and dispatch it to the right channel (C1 in this example) for processing.
         </para>
 
         <para>
@@ -334,7 +361,16 @@
         </figure>
 
         <para>
-            Here we see 4 channels which share 2 transports.
+            Here we see 4 channels which share 2 transports. Note that first 3 channels which share transport
+            "tp_one" have the same protocols on top of the shared transport. This is <emphasis>not</emphasis>
+            required; the protocols above "tp_one" could be different for each of the 3 channels as long
+            as all applications residing on the same shared transport have the same requirements for the transport's
+            configuration.
+        </para>
+
+        <para>
+            To use shared transports, all we need to do is to add a property "singleton_name" to the transport
+            configuration. All channels with the same singleton name will be shared.
         </para>
     </section>
 
@@ -1262,12 +1298,16 @@
 
 
         <section>
-            <title>Sharing of thread pools between channel in the same JVM</title>
+            <title>Sharing of thread pools between channels in the same JVM</title>
             <para>
                 In 2.7, the default and OOB thread pools can be shared between instances running inside the same JVM. The
                 advantage here is that multiple channels running within the same JVM can pool (and therefore save) threads.
                 The disadvantage is that thread naming will not show to which channel instance an incoming thread
                 belongs to.
+            </para>
+            <para>
+                Note that we can not just shared thread pools between JChannels within the same JVM, but we can also
+                share entire transports. For details see <xref linkend="SharedTransport">this section</xref>.
             </para>
         </section>
 
