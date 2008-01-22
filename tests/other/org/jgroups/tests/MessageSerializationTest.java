@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.11 2007/11/29 11:27:09 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.12 2008/01/22 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,8 +9,6 @@ package org.jgroups.tests;
  */
 
 import org.jgroups.Message;
-import org.jgroups.util.MagicObjectOutputStream;
-import org.jgroups.util.MagicObjectInputStream;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Buffer;
 import org.jgroups.conf.ClassConfigurator;
@@ -75,7 +73,7 @@ public class MessageSerializationTest {
                 dos.close();
             }
             else {
-                ObjectOutputStream msg_out=use_magic? new MagicObjectOutputStream(msg_data) : new ObjectOutputStream(msg_data);
+                ObjectOutputStream msg_out=new ObjectOutputStream(msg_data);
                 m.writeExternal(msg_out);
                 // msg_out.writeObject(m);
                 msg_out.close();
@@ -92,7 +90,7 @@ public class MessageSerializationTest {
                 dis.close();
             }
             else {
-                ObjectInputStream msg_in=use_magic? new MagicObjectInputStream(msg_in_data) : new ObjectInputStream(msg_in_data);
+                ObjectInputStream msg_in=new ObjectInputStream(msg_in_data);
 
                 m2.readExternal(msg_in);
                 // Message m2=(Message)msg_in.readObject();
