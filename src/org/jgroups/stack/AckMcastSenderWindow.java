@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  * retransmissions because of timeouts.
  * @author Bela Ban June 9 1999, 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: AckMcastSenderWindow.java,v 1.14 2007/08/10 12:32:16 belaban Exp $
+ * @version $Id: AckMcastSenderWindow.java,v 1.15 2008/01/22 10:44:36 belaban Exp $
  */
 public class AckMcastSenderWindow {
     /**
@@ -500,10 +500,10 @@ public class AckMcastSenderWindow {
 
 
     public String toString() {
-        StringBuffer ret;
+        StringBuilder ret;
         Entry entry;
 
-        ret=new StringBuffer();
+        ret=new StringBuilder();
         synchronized(msgs) {
             ret.append("msgs: (").append(msgs.size()).append(')');
             for(Long key: msgs.keySet()) {

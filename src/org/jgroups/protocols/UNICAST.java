@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.92 2008/01/06 06:30:22 belaban Exp $
+// $Id: UNICAST.java,v 1.93 2008/01/22 10:44:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -342,7 +342,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled())
-                            log.trace(new StringBuffer().append(local_addr).append(" --> DATA(").append(dst).append(": #").
+                            log.trace(new StringBuilder().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                                     append(seqno));
                         entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
                         entry.sent_msgs_seqno++;
@@ -532,7 +532,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      */
     private boolean handleDataReceived(Address sender, long seqno, Message msg) {
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer().append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno));
+            log.trace(new StringBuilder().append(local_addr).append(" <-- DATA(").append(sender).append(": #").append(seqno));
 
         if(previous_members.contains(sender)) {
             // we don't want to see messages from departed members
@@ -611,7 +611,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         AckSenderWindow win;
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer().append(local_addr).append(" <-- ACK(").append(sender).
+            log.trace(new StringBuilder().append(local_addr).append(" <-- ACK(").append(sender).
                       append(": #").append(seqno).append(')'));
         synchronized(connections) {
             entry=connections.get(sender);
@@ -630,7 +630,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         ack.setFlag(Message.OOB);
         ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer().append(local_addr).append(" --> ACK(").append(dst).
+            log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
                       append(": #").append(seqno).append(')'));
         down_prot.down(new Event(Event.MSG, ack));
         num_acks_sent++;

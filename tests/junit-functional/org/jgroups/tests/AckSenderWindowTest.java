@@ -1,4 +1,4 @@
-// $Id: AckSenderWindowTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
+// $Id: AckSenderWindowTest.java,v 1.3 2008/01/22 10:44:32 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -82,7 +82,7 @@ public class AckSenderWindowTest extends TestCase {
 
 
 	public String toString() {
-	    StringBuffer sb=new StringBuffer();
+	    StringBuilder sb=new StringBuilder();
 	    sb.append(first_xmit - start_time).append(", ").append(second_xmit-first_xmit).append(", ");
 	    sb.append(third_xmit-second_xmit).append(", ").append(fourth_xmit-third_xmit);
 	    return sb.toString();

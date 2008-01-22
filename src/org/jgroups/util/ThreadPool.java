@@ -1,4 +1,4 @@
-// $Id: ThreadPool.java,v 1.9 2005/07/17 11:33:58 chrislott Exp $
+// $Id: ThreadPool.java,v 1.10 2008/01/22 10:44:33 belaban Exp $
 
 package org.jgroups.util;
 
@@ -71,7 +71,7 @@ public class ThreadPool {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
 
         synchronized(pool) {
             ret.append("ThreadPool: capacity=" + pool.length + ", index=" + current_index + '\n');

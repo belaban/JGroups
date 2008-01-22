@@ -382,8 +382,8 @@ public abstract class BasicConnectionTable {
            if(sock_addr != null)
                return sock_addr;
            if(sock != null) {
-               StringBuffer sb;
-               sb=new StringBuffer();
+               StringBuilder sb;
+               sb=new StringBuilder();
                sb.append(sock.getLocalAddress().getHostAddress()).append(':').append(sock.getLocalPort());
                sb.append(" - ").append(sock.getInetAddress().getHostAddress()).append(':').append(sock.getPort());
                sock_addr=sb.toString();
@@ -577,7 +577,7 @@ public abstract class BasicConnectionTable {
 
                    if(Version.isBinaryCompatible(version) == false) {
                        if(log.isWarnEnabled())
-                           log.warn(new StringBuffer("packet from ").append(client_addr).append(':').append(client_port).
+                           log.warn(new StringBuilder("packet from ").append(client_addr).append(':').append(client_port).
                                    append(" has different version (").append(Version.print(version)).append(") from ours (").
                                    append(Version.printVersion()).append("). This may cause problems"));
                    }

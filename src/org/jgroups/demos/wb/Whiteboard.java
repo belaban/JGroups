@@ -1,4 +1,4 @@
-// $Id: Whiteboard.java,v 1.6 2007/07/23 10:42:07 belaban Exp $
+// $Id: Whiteboard.java,v 1.7 2008/01/22 10:44:37 belaban Exp $
 
 package org.jgroups.demos.wb;
 
@@ -50,7 +50,7 @@ public class Whiteboard extends Applet implements ActionListener, MessageListene
 
 
     private String getInfo() {
-        StringBuffer ret = new StringBuffer();
+        StringBuilder ret = new StringBuilder();
         ret.append(" (" + System.getProperty("os.name") + ' ' + System.getProperty("os.version") +
                    ' ' + System.getProperty("os.arch") + ')');
         return ret.toString();

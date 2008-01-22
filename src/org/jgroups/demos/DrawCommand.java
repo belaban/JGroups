@@ -1,4 +1,4 @@
-// $Id: DrawCommand.java,v 1.6 2006/10/09 11:35:46 belaban Exp $
+// $Id: DrawCommand.java,v 1.7 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -60,7 +60,7 @@ public class DrawCommand implements Streamable {
 
 
     public String toString() {
-        StringBuffer ret=new StringBuffer();
+        StringBuilder ret=new StringBuilder();
         switch(mode) {
             case DRAW: ret.append("DRAW(" + x + ", " + y + ") [" + r + '|' + g + '|' + b + ']');
                 break;

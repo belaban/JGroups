@@ -9,8 +9,6 @@ import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.*;
-import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -33,20 +31,29 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.60 2008/01/15 14:11:58 belaban Exp $
+ * @version $Id: FD.java,v 1.61 2008/01/22 10:44:30 belaban Exp $
  */
 public class FD extends Protocol {
-    Address               ping_dest=null;
     Address               local_addr=null;
     long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
-    final List<Address>   members=new CopyOnWriteArrayList<Address>();
-    final Hashtable<Address,Integer>  invalid_pingers=new Hashtable<Address,Integer>(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
+
+    protected final Lock  lock=new ReentrantLock();
+
+    @GuardedBy("lock")
+    Address               ping_dest=null;
+
+    @GuardedBy("lock")
+    final List<Address>   members=new ArrayList<Address>();
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
-    final List<Address>   pingable_mbrs=new CopyOnWriteArrayList<Address>();
+    @GuardedBy("lock")
+    final List<Address>   pingable_mbrs=new ArrayList<Address>();
+
+    // number of pings from suspected mbrs
+    final Map<Address,Integer>  invalid_pingers=new HashMap<Address,Integer>(7);
 
     boolean               shun=true;
     TimeScheduler         timer=null;
@@ -312,7 +319,9 @@ public class FD extends Protocol {
             case Event.VIEW_CHANGE:
                 down_prot.down(evt);
                 stop();
-                synchronized(this) {
+                
+                lock.lock();
+                try {
                     View v=(View)evt.getArg();
                     members.clear();
                     members.addAll(v.getMembers());
@@ -329,10 +338,19 @@ public class FD extends Protocol {
                         }
                     }
                 }
+                finally {
+                    lock.unlock();
+                }
                 return null;
 
             case Event.UNSUSPECT:
-                unsuspect((Address)evt.getArg());
+                lock.lock();
+                try {
+                    unsuspect((Address)evt.getArg());
+                }
+                finally {
+                    lock.unlock();
+                }
                 return down_prot.down(evt);
         }
         return down_prot.down(evt);
@@ -348,6 +366,7 @@ public class FD extends Protocol {
         down_prot.down(new Event(Event.MSG, hb_ack));
     }
 
+    @GuardedBy("lock")
     private void unsuspect(Address mbr) {
         bcast_task.removeSuspectedMember(mbr);
         pingable_mbrs.clear();
@@ -370,29 +389,32 @@ public class FD extends Protocol {
      */
     private void shunInvalidHeartbeatSender(Address hb_sender) {
         int num_pings=0;
-        Message shun_msg;
+        Message shun_msg=null;
 
         if(hb_sender != null && members != null && !members.contains(hb_sender)) {
-            if(invalid_pingers.containsKey(hb_sender)) {
-                num_pings=invalid_pingers.get(hb_sender).intValue();
-                if(num_pings >= max_tries) {
-                    if(log.isDebugEnabled())
-                        log.debug(hb_sender + " is not in " + members + " ! Shunning it");
-                    shun_msg=new Message(hb_sender, null, null);
-                    shun_msg.setFlag(Message.OOB);
-                    shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
-                    down_prot.down(new Event(Event.MSG, shun_msg));
-                    invalid_pingers.remove(hb_sender);
+            synchronized(invalid_pingers) {
+                if(invalid_pingers.containsKey(hb_sender)) {
+                    num_pings=invalid_pingers.get(hb_sender).intValue();
+                    if(num_pings >= max_tries) {
+                        if(log.isDebugEnabled())
+                            log.debug(hb_sender + " is not in " + members + " ! Shunning it");
+                        shun_msg=new Message(hb_sender, null, null);
+                        shun_msg.setFlag(Message.OOB);
+                        shun_msg.putHeader(name, new FdHeader(FdHeader.NOT_MEMBER));
+                        invalid_pingers.remove(hb_sender);
+                    }
+                    else {
+                        num_pings++;
+                        invalid_pingers.put(hb_sender, new Integer(num_pings));
+                    }
                 }
                 else {
                     num_pings++;
                     invalid_pingers.put(hb_sender, new Integer(num_pings));
                 }
             }
-            else {
-                num_pings++;
-                invalid_pingers.put(hb_sender, new Integer(num_pings));
-            }
+            if(shun_msg != null)
+                down_prot.down(new Event(Event.MSG, shun_msg));
         }
     }
 

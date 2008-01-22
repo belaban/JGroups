@@ -1,4 +1,4 @@
-// $Id: ReplicatedTreeDemo.java,v 1.8 2007/11/19 16:08:27 belaban Exp $
+// $Id: ReplicatedTreeDemo.java,v 1.9 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -301,7 +301,7 @@ public class ReplicatedTreeDemo {
 
 
         String makeFQN(Object[] path) {
-            StringBuffer sb=new StringBuffer("");
+            StringBuilder sb=new StringBuilder("");
             String tmp_name;
 
             if(path == null) return null;
@@ -585,7 +585,7 @@ public class ReplicatedTreeDemo {
 
 
             String print(int indent) {
-                StringBuffer sb=new StringBuffer();
+                StringBuilder sb=new StringBuilder();
 
                 for(int i=0; i < indent; i++)
                     sb.append(' ');

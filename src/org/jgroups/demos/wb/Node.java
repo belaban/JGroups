@@ -1,4 +1,4 @@
-// $Id: Node.java,v 1.2 2004/07/05 05:44:56 belaban Exp $
+// $Id: Node.java,v 1.3 2008/01/22 10:44:37 belaban Exp $
 
 package org.jgroups.demos.wb;
 import org.jgroups.Address;
@@ -16,7 +16,7 @@ public class Node implements java.io.Serializable {
 
     
     public String toString() {
-	StringBuffer ret=new StringBuffer();
+	StringBuilder ret=new StringBuilder();
 	ret.append("name=" + lbl + ", addr=" + addr + " at " + x + ',' + y);
 	return ret.toString();
     }
