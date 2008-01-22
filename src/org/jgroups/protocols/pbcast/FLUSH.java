@@ -856,6 +856,18 @@ public class FLUSH extends Protocol {
             if(flushView != null){
                 this.flushParticipants = new ArrayList<Address>(flushView);
             }
+        }             
+
+        @Override
+        public int size() {
+            int retval=Global.BYTE_SIZE; // type            
+            retval+=Global.LONG_SIZE; // viewID            
+            retval+= Util.size(flushParticipants);                      
+            retval+=Global.BYTE_SIZE; // presence for digest
+            if(digest != null){
+                retval += digest.serializedSize();
+            }
+            return retval;
         }
 
         public void addDigest(Digest digest) {
