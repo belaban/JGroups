@@ -682,7 +682,7 @@ public class FLUSH extends Protocol {
         }
         else{
             if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress + " but not sending UNBLOCK up");
+                log.debug("Received START_FLUSH at " + localAddress + " but not sending BLOCK up");
         }
         if(amIParticipant){                      
             
@@ -694,11 +694,14 @@ public class FLUSH extends Protocol {
             msg.putHeader(getName(), fhr);
             down_prot.down(new Event(Event.MSG, msg));
             if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress + " responded with FLUSH_COMPLETED");
+                log.debug("Received START_FLUSH at " + localAddress
+                          + " responded with FLUSH_COMPLETED");
         }
         else{
             if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress + " but I am not participant, not responding");
+                log.debug("Received START_FLUSH at " + localAddress
+                          + " but I am not flush participant, not responding");
+            flushInProgress.set(false);
         }
     }
     
@@ -853,6 +856,18 @@ public class FLUSH extends Protocol {
             if(flushView != null){
                 this.flushParticipants = new ArrayList<Address>(flushView);
             }
+        }             
+
+        @Override
+        public int size() {
+            int retval=Global.BYTE_SIZE; // type            
+            retval+=Global.LONG_SIZE; // viewID            
+            retval+= Util.size(flushParticipants);                      
+            retval+=Global.BYTE_SIZE; // presence for digest
+            if(digest != null){
+                retval += digest.serializedSize();
+            }
+            return retval;
         }
 
         public void addDigest(Digest digest) {
