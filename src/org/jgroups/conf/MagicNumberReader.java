@@ -1,4 +1,4 @@
-// $Id: MagicNumberReader.java,v 1.13 2007/05/09 23:50:21 belaban Exp $
+// $Id: MagicNumberReader.java,v 1.14 2008/01/22 15:24:35 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -48,8 +48,8 @@ public class MagicNumberReader {
                     if(log.isTraceEnabled())
                         log.trace("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
                     stream=new FileInputStream(mMagicNumberFile);
-                    if(stream != null && log.isTraceEnabled())
-                        log.trace("Magic number File found at '" + mMagicNumberFile + '\'');
+                    if(log.isTraceEnabled())
+                        log.trace("Magic number file found at '" + mMagicNumberFile + '\'');
                 }
                 catch(FileNotFoundException fnfe) {
                     if(log.isWarnEnabled())
@@ -65,7 +65,7 @@ public class MagicNumberReader {
             return parse(stream);
         }
         catch(Exception x) {
-            if(log.isErrorEnabled()) log.error("failed reading mapig map", x);
+            if(log.isErrorEnabled()) log.error("failed reading magic map", x);
         }
         return new ClassMap[0];
     }
