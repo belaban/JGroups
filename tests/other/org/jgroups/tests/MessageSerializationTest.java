@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.12 2008/01/22 15:39:20 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.13 2008/01/22 16:15:49 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -32,8 +32,6 @@ public class MessageSerializationTest {
         boolean add_headers=false;
         InetAddress addr=InetAddress.getLocalHost();
         int num=10000;
-        boolean use_magic=false;
-        boolean use_streamable=false;
 
         for(int i=0; i < args.length; i++) {
             if("-add_headers".equals(args[i])) {
@@ -42,14 +40,6 @@ public class MessageSerializationTest {
             }
             if("-num".equals(args[i])) {
                 num=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if("-use_magic".equals(args[i])) {
-                use_magic=true;
-                continue;
-            }
-            if("-use_streamable".equals(args[i])) {
-                use_streamable=true;
                 continue;
             }
             help();
@@ -67,36 +57,18 @@ public class MessageSerializationTest {
             ExposedByteArrayOutputStream msg_data=new ExposedByteArrayOutputStream();
             Buffer jgbuf;
 
-            if(use_streamable) {
-                DataOutputStream dos=new DataOutputStream(msg_data);
-                m.writeTo(dos);
-                dos.close();
-            }
-            else {
-                ObjectOutputStream msg_out=new ObjectOutputStream(msg_data);
-                m.writeExternal(msg_out);
-                // msg_out.writeObject(m);
-                msg_out.close();
-            }
+            DataOutputStream dos=new DataOutputStream(msg_data);
+            m.writeTo(dos);
+            dos.close();
 
             jgbuf=new Buffer(msg_data.getRawBuffer(), 0, msg_data.size());
 
             ByteArrayInputStream msg_in_data=new ByteArrayInputStream(jgbuf.getBuf(), jgbuf.getOffset(), jgbuf.getLength());
             Message m2=(Message)Message.class.newInstance();
 
-            if(use_streamable) {
-                DataInputStream dis=new DataInputStream(msg_in_data);
-                m2.readFrom(dis);
-                dis.close();
-            }
-            else {
-                ObjectInputStream msg_in=new ObjectInputStream(msg_in_data);
-
-                m2.readExternal(msg_in);
-                // Message m2=(Message)msg_in.readObject();
-                msg_in.close();
-            }
-
+            DataInputStream dis=new DataInputStream(msg_in_data);
+            m2.readFrom(dis);
+            dis.close();
         }
 
         long stop=System.currentTimeMillis();
@@ -120,7 +92,6 @@ public class MessageSerializationTest {
 
 
     static void help() {
-        System.out.println("MessageSerializationTest [-help] [-add_headers] [-num <iterations>] " +
-                           "[-use_magic] [-use_streamable]");
+        System.out.println("MessageSerializationTest [-help] [-add_headers] [-num <iterations>]");
     }
 }

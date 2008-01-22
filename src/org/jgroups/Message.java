@@ -6,7 +6,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Marshaller;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -25,9 +24,9 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.77 2007/11/28 08:56:44 belaban Exp $
+ * @version $Id: Message.java,v 1.78 2008/01/22 16:15:49 belaban Exp $
  */
-public class Message implements Externalizable, Streamable {
+public class Message implements Streamable {
     protected Address dest_addr=null;
     protected Address src_addr=null;
 
@@ -35,19 +34,18 @@ public class Message implements Externalizable, Streamable {
     private byte[]    buf=null;
 
     /** The index into the payload (usually 0) */
-    protected transient int     offset=0;
+    protected int     offset=0;
 
     /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
-    protected transient int     length=0;
+    protected int     length=0;
 
     /** Map<String,Header> */
     protected Map<String,Header> headers;
 
-    protected final transient ReentrantReadWriteLock header_lock=new ReentrantReadWriteLock();
+    protected final ReentrantReadWriteLock header_lock=new ReentrantReadWriteLock();
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    private static final long serialVersionUID=7966206671974139740L;
 
     static final byte DEST_SET      = 1;
     static final byte SRC_SET       = 2;
@@ -546,98 +544,6 @@ public class Message implements Externalizable, Streamable {
 
 
 
-    /* ----------------------------------- Interface Externalizable ------------------------------- */
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        int             len;
-        Externalizable  hdr;
-        Map.Entry       entry;
-
-        if(dest_addr != null) {
-            out.writeBoolean(true);
-            Marshaller.write(dest_addr, out);
-        }
-        else {
-            out.writeBoolean(false);
-        }
-
-        if(src_addr != null) {
-            out.writeBoolean(true);
-            Marshaller.write(src_addr, out);
-        }
-        else {
-            out.writeBoolean(false);
-        }
-
-        out.write(flags);
-
-        if(buf == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(length);
-            out.write(buf, offset, length);
-        }
-
-        header_lock.readLock().lock();
-        try {
-            len=headers.size();
-            out.writeInt(len);
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                out.writeUTF((String)entry.getKey());
-                hdr=(Externalizable)entry.getValue();
-                Marshaller.write(hdr, out);
-            }
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean  destAddressExist=in.readBoolean();
-
-        if(destAddressExist) {
-            dest_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                dest_addr=canonicalAddress(dest_addr);
-        }
-
-        boolean srcAddressExist=in.readBoolean();
-        if(srcAddressExist) {
-            src_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                src_addr=canonicalAddress(src_addr);
-        }
-
-        flags=in.readByte();
-
-        int i=in.readInt();
-        if(i != 0) {
-            buf=new byte[i];
-            in.readFully(buf);
-            offset=0;
-            length=buf.length;
-        }
-
-        int len=in.readInt();
-        header_lock.writeLock().lock();
-        try {
-            while(len-- > 0) {
-                String key=in.readUTF();
-                Header value=(Header)Marshaller.read(in);
-                headers.put(key, value);
-            }
-        }
-        finally {
-            header_lock.writeLock().unlock();
-        }
-    }
-
-    /* --------------------------------- End of Interface Externalizable ----------------------------- */
-
-
     /* ----------------------------------- Interface Streamable  ------------------------------- */
 
     /**
@@ -647,12 +553,6 @@ public class Message implements Externalizable, Streamable {
      */
     public void writeTo(DataOutputStream out) throws IOException {
         byte leading=0;
-
-//        if(dest_addr != null) {
-//            leading+=DEST_SET;
-//            if(dest_addr instanceof IpAddress)
-//                leading+=IPADDR_DEST;
-//        }
 
         if(src_addr != null) {
             leading+=SRC_SET;
@@ -671,14 +571,6 @@ public class Message implements Externalizable, Streamable {
 
         // the flags (e.g. OOB, LOW_PRIO)
         out.write(flags);
-
-        // 2. dest_addr
-//        if(dest_addr != null) {
-//            if(dest_addr instanceof IpAddress)
-//                dest_addr.writeTo(out);
-//            else
-//                Util.writeAddress(dest_addr, out);
-//        }
 
         // 3. src_addr
         if(src_addr != null) {
@@ -716,17 +608,6 @@ public class Message implements Externalizable, Streamable {
 
         // 1. read the leading byte first
         leading=in.readByte();
-
-        // 1. dest_addr
-//        if((leading & DEST_SET) == DEST_SET) {
-//            if((leading & IPADDR_DEST) == IPADDR_DEST) {
-//                dest_addr=new IpAddress();
-//                dest_addr.readFrom(in);
-//            }
-//            else {
-//                dest_addr=Util.readAddress(in);
-//            }
-//        }
 
         flags=in.readByte();
 
