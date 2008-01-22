@@ -30,7 +30,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.60 2007/11/15 19:39:49 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.61 2008/01/22 01:25:55 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -137,6 +137,30 @@ public class FlushTest extends ChannelTestBase {
         c2.getState(null, 10000);
         // now send unicast, this might block as described in the case
         c2.send(unicast_msg);
+    }
+    
+    /**
+     * Tests http://jira.jboss.com/jira/browse/JGRP-661
+     * @throws Exception 
+     */
+    public void testPartialFlush() throws Exception {
+        c1 = createChannel();
+        c1.setReceiver(new SimpleReplier(c1, true));
+        c1.connect("test");
+    
+        c2 = createChannel();
+        c2.setReceiver(new SimpleReplier(c2, false));
+        c2.connect("test");
+       
+        List<Address> members = new ArrayList<Address>();
+        members.add(c2.getLocalAddress());       
+        boolean flushedOk = c2.startFlush(members, false);
+        
+        assertTrue("Partial flush worked", flushedOk);
+        
+        c2.stopFlush(members);
+               
+
     }
 
     /**
