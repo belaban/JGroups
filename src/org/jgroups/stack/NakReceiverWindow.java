@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.52 2007/11/02 16:48:11 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.52.2.1 2008/01/22 10:01:01 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -274,7 +274,7 @@ public class NakReceiverWindow {
                     xmit_table.put(seqno, msg);
                     int num_xmits=retransmitter.remove(seqno);
                     if(log.isTraceEnabled())
-                        log.trace(new StringBuffer("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
+                        log.trace(new StringBuilder("added missing msg ").append(msg.getSrc()).append('#').append(seqno));
                     if(listener != null && num_xmits > 0) {
                         try {listener.missingMessageReceived(seqno, msg.getSrc());} catch(Throwable t) {}
                     }

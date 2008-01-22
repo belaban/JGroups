@@ -55,7 +55,7 @@ import java.util.*;
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Id: CAUSAL.java,v 1.16.4.1 2007/11/27 16:43:01 belaban Exp $
+ *  @version $Id: CAUSAL.java,v 1.16.4.2 2008/01/22 10:01:18 belaban Exp $
  *
  **/
 
@@ -396,8 +396,8 @@ public class CAUSAL extends Protocol
         }
         
         public String toString() {
-            StringBuffer sb;
-            sb=new StringBuffer();
+            StringBuilder sb;
+            sb=new StringBuilder();
             sb.append(viewId).append("; ").append(members.length).append(" members: ");
             for(int i=0;i<members.length;i++) {
                 if (i>0) sb.append(", ");

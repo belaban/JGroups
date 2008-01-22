@@ -1,4 +1,4 @@
-// $Id: FC.java.txt,v 1.1 2005/08/16 12:58:58 belaban Exp $
+// $Id: FC.java.txt,v 1.1.14.1 2008/01/22 10:01:12 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * Note that this protocol must be located towards the top of the stack, or all down_threads from JChannel to this
  * protocol must be set to false ! This is in order to block JChannel.send()/JChannel.down().
  * @author Bela Ban
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.14.1 $
  */
 public class FC extends Protocol {
 
@@ -150,7 +150,7 @@ public class FC extends Protocol {
     }
 
     public String printCredits() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
         return sb.toString();
     }
@@ -320,12 +320,12 @@ public class FC extends Protocol {
 
     private void handleCredit(Address sender) {
         if(sender == null) return;
-        StringBuffer sb=null;
+        StringBuilder sb=null;
         boolean unblock=false;
 
         if(trace) {
             Long old_credit=(Long)sent.get(sender);
-            sb=new StringBuffer();
+            sb=new StringBuilder();
             sb.append("received credit from ").append(sender).append(", old credit was ").
                     append(old_credit).append(", new credits are ").append(max_credits).
                     append(".\nCreditors before are: ").append(creditors);
@@ -518,7 +518,7 @@ public class FC extends Protocol {
         }
         else {
             if(trace) {
-                StringBuffer sb=new StringBuffer();
+                StringBuilder sb=new StringBuilder();
                 sb.append("not enough credits left for ").append(dest).append(": left=").append(new_credits_left);
                 sb.append(", required+min_credits=").append((credits_required +min_credits)).append(", required=");
                 sb.append(credits_required).append(", min_credits=").append(min_credits);
@@ -584,7 +584,7 @@ public class FC extends Protocol {
 
     private static String printMap(Map m) {
         Map.Entry entry;
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
             entry=(Map.Entry)it.next();
             sb.append(entry.getKey()).append(": ").append(entry.getValue()).append("\n");

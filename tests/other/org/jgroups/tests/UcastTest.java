@@ -1,4 +1,4 @@
-// $Id: UcastTest.java,v 1.5 2005/05/30 16:15:12 belaban Exp $
+// $Id: UcastTest.java,v 1.5.14.1 2008/01/22 10:01:30 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.5 $
+   @version $Revision: 1.5.14.1 $
  */
 public class UcastTest {
 
@@ -122,7 +122,7 @@ public class UcastTest {
 	InetAddress     dst;
 	int             dst_port;
 	StringTokenizer tok;
-	StringBuffer    sb;
+	StringBuilder    sb;
 	String          tmp, buf;
 	byte[]          bbuf;
 	AckReceiver     ack_receiver=new AckReceiver(sock);
@@ -144,7 +144,7 @@ public class UcastTest {
 		    System.err.println(e);
 		    continue;
 		}
-		sb=new StringBuffer();
+		sb=new StringBuilder();
 		while(tok.hasMoreTokens()) {
 		    tmp=tok.nextToken();
 		    sb.append(tmp + ' ');

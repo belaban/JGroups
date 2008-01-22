@@ -1,4 +1,4 @@
-// $Id: Proxy.java,v 1.3 2006/12/31 14:27:58 belaban Exp $
+// $Id: Proxy.java,v 1.3.4.1 2008/01/22 10:01:16 belaban Exp $
 
 package org.jgroups.util;
 
@@ -329,7 +329,7 @@ public class Proxy {
      */
     boolean relay(SocketChannel from, SocketChannel to, ByteBuffer buf) throws Exception {
         int num;
-        StringBuffer sb;
+        StringBuilder sb;
 
         buf.clear();
         while (true) {
@@ -344,7 +344,7 @@ public class Proxy {
                 log(printRelayedData(toString(from), toString(to), buf.remaining()));
             }
             if (debug) {
-                sb=new StringBuffer();
+                sb=new StringBuilder();
                 sb.append(new String(buf.array()).trim());
                 sb.append('\n');
                 log(sb.toString());
@@ -367,8 +367,8 @@ public class Proxy {
     }
 
     String toString(InetSocketAddress addr) {
-        StringBuffer sb;
-        sb=new StringBuffer();
+        StringBuilder sb;
+        sb=new StringBuilder();
 
         if (addr == null)
             return null;
@@ -380,8 +380,8 @@ public class Proxy {
 
     
     static String printRelayedData(String from, String to, int num_bytes) {
-        StringBuffer sb;
-        sb=new StringBuffer();
+        StringBuilder sb;
+        sb=new StringBuilder();
         sb.append("\n[PROXY] ").append(from);
         sb.append(" to ").append(to);
         sb.append(" (").append(num_bytes).append(" bytes)");
@@ -620,7 +620,7 @@ public class Proxy {
         public void run() {
             byte[]       buf=new byte[1024];
             int          num;
-            StringBuffer sb;
+            StringBuilder sb;
 
             try {
                 while(t != null) {
@@ -629,7 +629,7 @@ public class Proxy {
 
                     if (verbose) {
                         
-                        //sb=new StringBuffer();
+                        //sb=new StringBuilder();
 
 
                         //sb.append("forwarding ").append(num).append(" bytes from ").append(toString(in_sock));
@@ -638,7 +638,7 @@ public class Proxy {
                         log(printRelayedData(toString(in_sock), toString(out_sock), num));
                     }
                     if (debug) {
-                        sb=new StringBuffer();
+                        sb=new StringBuilder();
                         sb.append(new String(buf, 0, num).trim());
                         log(sb.toString());
                     }

@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.16 2006/12/19 08:51:46 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.16.4.1 2008/01/22 10:01:34 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -170,7 +170,7 @@ public class TcpTransport implements Transport {
          }
 
          public String toString() {
-             StringBuffer sb=new StringBuffer();
+             StringBuilder sb=new StringBuilder();
              for(Iterator it=myNodes.iterator(); it.hasNext();) {
                  sb.append(it.next()).append(' ');
              }

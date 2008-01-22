@@ -32,7 +32,7 @@ import java.util.*;
  * the unicast routing caches should ensure that unicasts are only sent via 1 interface in almost all cases.
  * 
  * @author Bela Ban Oct 2003
- * @version $Id: UDP_NIO.java.txt,v 1.1 2006/05/02 08:56:59 belaban Exp $
+ * @version $Id: UDP_NIO.java.txt,v 1.1.10.1 2008/01/22 10:01:11 belaban Exp $
  * @deprecated Use UDP instead with send_interfaces or receive_interfaces properties defined
  */
 public class UDP_NIO extends Protocol implements  Receiver {
@@ -267,7 +267,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
     }
 
     String getDiagResponse() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(local_addr).append(" (").append(group_name).append(')');
         sb.append(" [").append(mcast_addr).append("]\n");
         sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
@@ -1084,7 +1084,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append("local_addr=").append(localAddr).append(", mcast_group=");
             return sb.toString();
         }
@@ -1341,7 +1341,7 @@ public class UDP_NIO extends Protocol implements  Receiver {
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append("*** todo: implement ***");
             return sb.toString();
         }

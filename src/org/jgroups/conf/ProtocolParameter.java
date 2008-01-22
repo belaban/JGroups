@@ -6,7 +6,7 @@ package org.jgroups.conf;
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: ProtocolParameter.java,v 1.5 2006/08/15 05:50:06 belaban Exp $
+ * @version $Id: ProtocolParameter.java,v 1.5.6.1 2008/01/22 10:01:25 belaban Exp $
  */
 
 public class ProtocolParameter {
@@ -47,14 +47,14 @@ public class ProtocolParameter {
     }
 
     public String getParameterString() {
-        StringBuffer buf=new StringBuffer(mParameterName);
+        StringBuilder buf=new StringBuilder(mParameterName);
         if(mParameterValue != null)
             buf.append('=').append(mParameterValue);
         return buf.toString();
     }
 
     public String getParameterStringXml() {
-        StringBuffer buf=new StringBuffer(mParameterName);
+        StringBuilder buf=new StringBuilder(mParameterName);
         if(mParameterValue != null)
             buf.append("=\"").append(mParameterValue).append('\"');
         return buf.toString();

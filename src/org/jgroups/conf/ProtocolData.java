@@ -4,7 +4,7 @@ package org.jgroups.conf;
 /**
  * Data holder for protocol
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version $Id: ProtocolData.java,v 1.7 2006/08/15 05:50:06 belaban Exp $
+ * @version $Id: ProtocolData.java,v 1.7.6.1 2008/01/22 10:01:25 belaban Exp $
  */
 
 import java.util.HashMap;
@@ -80,7 +80,7 @@ public class ProtocolData {
     }
 
     public String getProtocolString() {
-        StringBuffer buf=new StringBuffer(mClassName);
+        StringBuilder buf=new StringBuilder(mClassName);
         if(mParameters.size() > 0) {
             buf.append('(');
             Iterator i=mParameters.keySet().iterator();
@@ -96,7 +96,7 @@ public class ProtocolData {
     }
 
     public String getProtocolStringNewXml() {
-        StringBuffer buf=new StringBuffer(mClassName + ' ');
+        StringBuilder buf=new StringBuilder(mClassName + ' ');
         if(mParameters.size() > 0) {
             Iterator i=mParameters.keySet().iterator();
             while(i.hasNext()) {

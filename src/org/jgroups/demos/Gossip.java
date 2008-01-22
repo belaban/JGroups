@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.9 2005/10/31 10:56:31 belaban Exp $
+// $Id: Gossip.java,v 1.9.14.1 2008/01/22 10:00:55 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -465,7 +465,7 @@ public class Gossip implements Runnable, WindowListener, ActionListener, Channel
 
 
         public String toString() {
-            StringBuffer ret=new StringBuffer();
+            StringBuilder ret=new StringBuilder();
             switch(mode) {
                 case GOSSIP:
                     ret.append("GOSSIP(" + r + '|' + g + '|' + b);

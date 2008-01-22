@@ -25,7 +25,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.1.4.1 2008/01/22 10:01:33 belaban Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
@@ -400,7 +400,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
       }
 
       public String toString(){
-         StringBuffer ret = new StringBuffer();
+         StringBuilder ret = new StringBuilder();
          ret.append("[ENCRYPT_ORDER_TEST: seqno=" + seqno);
          ret.append(']');
 

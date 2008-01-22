@@ -775,7 +775,7 @@ public class ChannelTestBase extends TestCase {
             }
         }
 
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         for (MemberRetrievable c : channels) {            
             sb.append(c.getLocalAddress()+ ",view=" +c.getMembers()+"|");
         }

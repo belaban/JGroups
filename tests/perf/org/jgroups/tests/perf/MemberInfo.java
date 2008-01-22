@@ -11,7 +11,7 @@ import java.text.NumberFormat;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: MemberInfo.java,v 1.8 2006/09/04 12:38:41 belaban Exp $
+ * @version $Id: MemberInfo.java,v 1.8.6.1 2008/01/22 10:01:14 belaban Exp $
  */
 public class MemberInfo implements Streamable {
     public  long start=0;
@@ -43,7 +43,7 @@ public class MemberInfo implements Streamable {
 
 
 //    public String toString() {
-//        StringBuffer sb=new StringBuffer();
+//        StringBuilder sb=new StringBuilder();
 //        double msgs_sec, throughput_kb=0, throughput_mb=0, kb_received=0, mb_received=0;
 //        long total_time=stop-start;
 //        double loss_rate=0;
@@ -74,7 +74,7 @@ public class MemberInfo implements Streamable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         double msgs_sec, throughput=0;
         long total_time=stop-start;
         double loss_rate=0;

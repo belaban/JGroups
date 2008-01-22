@@ -1,4 +1,4 @@
-// $Id: PingRsp.java,v 1.10.4.1 2007/11/29 11:18:13 belaban Exp $
+// $Id: PingRsp.java,v 1.10.4.2 2008/01/22 10:01:20 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -77,7 +77,7 @@ public class PingRsp implements Serializable, Streamable {
     }
 
     public String toString() {
-        return new StringBuffer("[own_addr=").append(own_addr).append(", coord_addr=").append(coord_addr).
+        return new StringBuilder("[own_addr=").append(own_addr).append(", coord_addr=").append(coord_addr).
                 append(", is_server=").append(is_server).append(']').toString();
     }
 

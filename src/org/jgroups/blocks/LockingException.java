@@ -1,4 +1,4 @@
-// $Id: LockingException.java,v 1.2 2006/11/13 17:42:10 bstansberry Exp $
+// $Id: LockingException.java,v 1.2.4.1 2008/01/22 10:00:58 belaban Exp $
 
 
 package org.jgroups.blocks;
@@ -23,7 +23,7 @@ public class LockingException extends Exception {
 
     
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
 
         sb.append(super.toString());
 
