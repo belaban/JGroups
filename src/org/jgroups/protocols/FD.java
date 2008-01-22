@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.62 2008/01/22 14:23:55 belaban Exp $
+ * @version $Id: FD.java,v 1.63 2008/01/22 16:15:50 belaban Exp $
  */
 public class FD extends Protocol {
     Address               local_addr=null;
@@ -450,10 +450,10 @@ public class FD extends Protocol {
                 out.writeInt(mbrs.size());
                 for(Iterator it=mbrs.iterator(); it.hasNext();) {
                     Address addr=(Address)it.next();
-                    Marshaller.write(addr, out);
+                    out.writeObject(addr);
                 }
             }
-            Marshaller.write(from, out);
+            out.writeObject(from);
         }
 
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
@@ -463,11 +463,11 @@ public class FD extends Protocol {
                 int len=in.readInt();
                 mbrs=new Vector<Address>(11);
                 for(int i=0; i < len; i++) {
-                    Address addr=(Address)Marshaller.read(in);
+                    Address addr=(Address)in.readObject();
                     mbrs.add(addr);
                 }
             }
-            from=(Address)Marshaller.read(in);
+            from=(Address)in.readObject();
         }
 
 
