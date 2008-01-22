@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.3 2007/11/29 11:27:09 belaban Exp $
+// $Id: MessageTest.java,v 1.4 2008/01/22 16:59:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -133,44 +133,6 @@ public class MessageTest extends TestCase {
         assertEquals(buf.length, m2.getRawBuffer().length);
         assertEquals(3, m2.getBuffer().length);
         assertEquals(3, m2.getLength());
-    }
-
-    public void testSerialization() throws Exception {
-        byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
-        byte[] tmp;
-        m1=new Message(null, null, buf, 0, 4);
-        m2=new Message(null, null, buf, 4, 3);
-
-
-        ByteArrayOutputStream output=new ByteArrayOutputStream();
-        ObjectOutputStream out=new ObjectOutputStream(output);
-        out.writeObject(m1);
-        output.close();
-        tmp=output.toByteArray();
-
-        ByteArrayInputStream input=new ByteArrayInputStream(tmp);
-        ObjectInputStream in=new ObjectInputStream(input);
-        Message m3, m4;
-
-        m3=(Message)in.readObject();
-        assertEquals(4, m3.getLength());
-        assertEquals(4, m3.getRawBuffer().length);
-        assertEquals(4, m3.getBuffer().length);
-        assertEquals(0, m3.getOffset());
-
-        output=new ByteArrayOutputStream();
-        out=new ObjectOutputStream(output);
-        out.writeObject(m2);
-        output.close();
-        tmp=output.toByteArray();
-
-        input=new ByteArrayInputStream(tmp);
-        in=new ObjectInputStream(input);
-        m4=(Message)in.readObject();
-        assertEquals(3, m4.getLength());
-        assertEquals(3, m4.getBuffer().length);
-        assertEquals(3, m4.getRawBuffer().length);
-        assertEquals(0, m4.getOffset());
     }
 
 
