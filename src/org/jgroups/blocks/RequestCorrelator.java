@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.41 2007/11/20 10:59:00 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.42 2008/01/22 10:44:31 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -471,7 +471,7 @@ public class RequestCorrelator {
 
         if(hdr.corrName == null || !hdr.corrName.equals(name)) {
             if(log.isTraceEnabled()) {
-                log.trace(new StringBuffer("name of request correlator header (").append(hdr.corrName).
+                log.trace(new StringBuilder("name of request correlator header (").append(hdr.corrName).
                           append(") is different from ours (").append(name).append("). Msg not accepted, passed up"));
             }
             return false;
@@ -482,7 +482,7 @@ public class RequestCorrelator {
         java.util.List dests=hdr.dest_mbrs;
         if(dests != null && local_addr != null && !dests.contains(local_addr)) {
             if(log.isTraceEnabled()) {
-                log.trace(new StringBuffer("discarded request from ").append(msg.getSrc()).
+                log.trace(new StringBuilder("discarded request from ").append(msg.getSrc()).
                           append(" as we are not part of destination list (local_addr=").
                           append(local_addr).append(", hdr=").append(hdr).append(')'));
             }
@@ -615,7 +615,7 @@ public class RequestCorrelator {
         // ID as the request and the name of the sender request correlator
 
         if(log.isTraceEnabled()) {
-            log.trace(new StringBuffer("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
+            log.trace(new StringBuilder("calling (").append((request_handler != null? request_handler.getClass().getName() : "null")).
                       append(") with request ").append(hdr.id));
         }
 
@@ -655,7 +655,7 @@ public class RequestCorrelator {
         rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
         rsp.putHeader(name, rsp_hdr);
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
+            log.trace(new StringBuilder("sending rsp for ").append(rsp_hdr.id).append(" to ").append(rsp.getDest()));
 
         try {
             if(transport instanceof Protocol)

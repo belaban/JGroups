@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.167 2008/01/22 08:20:49 belaban Exp $
+ * @version $Id: TP.java,v 1.168 2008/01/22 10:44:30 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -462,8 +462,8 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
-    private StringBuffer _getInfo() {
-        StringBuffer sb=new StringBuffer();
+    private StringBuilder _getInfo() {
+        StringBuilder sb=new StringBuilder();
         sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
         sb.append("local_addr=").append(local_addr).append("\n");
         sb.append("group_name=").append(channel_name).append("\n");
@@ -478,7 +478,7 @@ public abstract class TP extends Protocol {
         try {
             StringTokenizer tok=new StringTokenizer(request);
             String req=tok.nextToken();
-            StringBuffer info=new StringBuffer("n/a");
+            StringBuilder info=new StringBuilder("n/a");
             if(req.trim().toLowerCase().startsWith("query")) {
                 ArrayList<String> l=new ArrayList<String>(tok.countTokens());
                 while(tok.hasMoreTokens())
@@ -490,7 +490,7 @@ public abstract class TP extends Protocol {
                     Channel ch=stack.getChannel();
                     if(ch != null) {
                         Map m=ch.dumpStats();
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("stats:\n");
                         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
                             sb.append(it.next()).append("\n");
@@ -1020,14 +1020,15 @@ public abstract class TP extends Protocol {
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             final Message copy=msg.copy();
-            if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
+            if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(copy));
             // up_prot.up(new Event(Event.MSG, copy));
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
             Executor pool=msg.isFlagSet(Message.OOB)? oob_thread_pool : thread_pool;
             pool.execute(new Runnable() {
                 public void run() {
-                    up_prot.up(new Event(Event.MSG, copy));
+                    // up_prot.up(new Event(Event.MSG, copy));
+                    passMessageUp(copy, false);
                 }
             });
 
@@ -1069,6 +1070,75 @@ public abstract class TP extends Protocol {
         if(msg.getSrc() == null)
             msg.setSrc(local_addr);
     }
+
+
+    private void passMessageUp(Message msg, boolean perform_cluster_name_matching) {
+        TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
+        if(hdr == null) {
+            if(channel_name == null) {
+                Event evt=new Event(Event.MSG, msg);
+                if(singleton_name != null) {
+                    passMessageToAll(evt);
+                }
+                else {
+                    up_prot.up(evt);
+                }
+            }
+            else {
+                if(log.isErrorEnabled())
+                    log.error(new StringBuilder("message does not have a transport header, msg is ").append(msg).
+                            append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
+            }
+            return;
+        }
+
+        String ch_name=hdr.channel_name;
+        if(singleton_name != null) {
+            Protocol tmp_prot=up_prots.get(ch_name);
+            if(tmp_prot != null) {
+                Event evt=new Event(Event.MSG, msg);
+                if(log.isTraceEnabled()) {
+                    StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+                    log.trace(sb);
+                }
+                tmp_prot.up(evt);
+            }
+            else {
+                if(log.isWarnEnabled())
+                    log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
+                            append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
+            }
+        }
+        else {
+            // Discard if message's group name is not the same as our group name
+            if(perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
+                if(log.isWarnEnabled())
+                    log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
+                            append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+            }
+            else {
+                Event evt=new Event(Event.MSG, msg);
+                if(log.isTraceEnabled()) {
+                    StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+                    log.trace(sb);
+                }
+                up_prot.up(evt);
+            }
+        }
+    }
+
+    private void passMessageToAll(Event evt) {
+        for(Protocol tmp_prot: up_prots.values()) {
+            try {
+                tmp_prot.up(evt);
+            }
+            catch(Exception ex) {
+                if(log.isErrorEnabled())
+                    log.error("failure passing message up: message is " + evt.getArg(), ex);
+            }
+        }
+    }
+
 
     /**
      * Subclasses must call this method when a unicast or multicast message has been received.
@@ -1119,7 +1189,7 @@ public abstract class TP extends Protocol {
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
-                log.error(new StringBuffer("failed handling data from ").append(sender), t);
+                log.error(new StringBuilder("failed handling data from ").append(sender), t);
         }
     }
 
@@ -1164,7 +1234,7 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
@@ -1214,41 +1284,40 @@ public abstract class TP extends Protocol {
 
 
     private void handleIncomingMessage(Message msg) {
-        TpHeader   hdr;
-
         if(stats) {
             num_msgs_received++;
             num_bytes_received+=msg.getLength();
         }
 
+        passMessageUp(msg, true);
 
-        if(log.isTraceEnabled()) {
-            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
-            log.trace(sb);
-        }
-
-        hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
-        if(hdr != null) {
-
-            /* Discard all messages destined for a channel with a different name */
-            String ch_name=hdr.channel_name;
-
-            // Discard if message's group name is not the same as our group name unless the
-            // message is a diagnosis message (special group name DIAG_GROUP)
-            if(channel_name != null && !channel_name.equals(ch_name)) {
-                if(log.isWarnEnabled())
-                    log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
-                            append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
-                return;
-            }
-        }
-        else {
-            if(log.isTraceEnabled())
-                log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
-                          append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
-            return;
-        }
-        up_prot.up(new Event(Event.MSG, msg));
+//        if(log.isTraceEnabled()) {
+//            StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+//            log.trace(sb);
+//        }
+//
+//        hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
+//        if(hdr != null) {
+//
+//            /* Discard all messages destined for a channel with a different name */
+//            String ch_name=hdr.channel_name;
+//
+//            // Discard if message's group name is not the same as our group name unless the
+//            // message is a diagnosis message (special group name DIAG_GROUP)
+//            if(channel_name != null && !channel_name.equals(ch_name)) {
+//                if(log.isWarnEnabled())
+//                    log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
+//                            append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+//                return;
+//            }
+//        }
+//        else {
+//            if(log.isTraceEnabled())
+//                log.trace(new StringBuilder("message does not have a transport header, msg is ").append(msg).
+//                          append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
+//            return;
+//        }
+//        up_prot.up(new Event(Event.MSG, msg));
     }
 
 
@@ -1532,7 +1601,7 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
@@ -1581,56 +1650,58 @@ public abstract class TP extends Protocol {
                 return; // drop message that was already looped back and delivered
             }
 
-            TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
-            if(hdr != null) {
-                String ch_name=hdr.channel_name;
-                if(singleton_name != null) {
-                    Protocol up_prot=up_prots.get(ch_name);
-                    if(up_prot != null) {
-                        Event evt=new Event(Event.MSG, msg);
-                        if(log.isTraceEnabled()) {
-                            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
-                            log.trace(sb);
-                        }
-                        up_prot.up(evt);
-                        return;
-                    }
-                    else {
-                        if(log.isWarnEnabled())
-                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
-                                    append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
-                        return;
-                    }
-                }
-                else {
-                    // Discard if message's group name is not the same as our group name
-                    if(channel_name != null && !channel_name.equals(ch_name)) {
-                        if(log.isWarnEnabled())
-                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
-                                    append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
-                        return;
-                    }
-                }
-            }
-            else {
-                if(channel_name == null) {
-                    ;
-                }
-                else {
-                    if(log.isTraceEnabled())
-                        log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
-                                append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
-                    return;
-                }
-            }
+            passMessageUp(msg, true);
 
-            Event evt=new Event(Event.MSG, msg);
-            if(log.isTraceEnabled()) {
-                StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
-                log.trace(sb);
-            }
-
-            up_prot.up(evt);
+//            TpHeader hdr=(TpHeader)msg.getHeader(name); // replaced removeHeader() with getHeader()
+//            if(hdr != null) {
+//                String ch_name=hdr.channel_name;
+//                if(singleton_name != null) {
+//                    Protocol up_prot=up_prots.get(ch_name);
+//                    if(up_prot != null) {
+//                        Event evt=new Event(Event.MSG, msg);
+//                        if(log.isTraceEnabled()) {
+//                            StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+//                            log.trace(sb);
+//                        }
+//                        up_prot.up(evt);
+//                        return;
+//                    }
+//                    else {
+//                        if(log.isWarnEnabled())
+//                            log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
+//                                    append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
+//                        return;
+//                    }
+//                }
+//                else {
+//                    // Discard if message's group name is not the same as our group name
+//                    if(channel_name != null && !channel_name.equals(ch_name)) {
+//                        if(log.isWarnEnabled())
+//                            log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
+//                                    append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
+//                        return;
+//                    }
+//                }
+//            }
+//            else {
+//                if(channel_name == null) {
+//                    ;
+//                }
+//                else {
+//                    if(log.isTraceEnabled())
+//                        log.trace(new StringBuilder("message does not have a transport header, msg is ").append(msg).
+//                                append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
+//                    return;
+//                }
+//            }
+//
+//            Event evt=new Event(Event.MSG, msg);
+//            if(log.isTraceEnabled()) {
+//                StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+//                log.trace(sb);
+//            }
+//
+//            up_prot.up(evt);
         }
 
 

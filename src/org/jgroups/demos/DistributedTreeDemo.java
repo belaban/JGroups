@@ -1,4 +1,4 @@
-// $Id: DistributedTreeDemo.java,v 1.9 2007/11/19 16:07:54 belaban Exp $
+// $Id: DistributedTreeDemo.java,v 1.10 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.demos;
 
@@ -125,7 +125,7 @@ class MyNode extends DefaultMutableTreeNode {
 
     
     String print(int indent) {
-	StringBuffer sb=new StringBuffer();
+	StringBuilder sb=new StringBuilder();
 
 	for(int i=0; i < indent; i++)
 	    sb.append(' ');
@@ -285,7 +285,7 @@ public class DistributedTreeDemo extends Frame implements WindowListener,
 
 
     String makeFQN(Object[] path) {
-	StringBuffer sb=new StringBuffer("");
+	StringBuilder sb=new StringBuilder("");
 	String       tmp_name;
 
 	if(path == null) return null;

@@ -1,4 +1,4 @@
-// $Id: MergeData.java,v 1.6 2007/04/04 05:23:33 belaban Exp $
+// $Id: MergeData.java,v 1.7 2008/01/22 10:44:34 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -84,7 +84,7 @@ public class MergeData implements Externalizable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("sender=").append(sender);
         if(merge_rejected)
             sb.append(" (merge_rejected)");

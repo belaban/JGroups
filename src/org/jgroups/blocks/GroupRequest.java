@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.32 2008/01/17 08:03:16 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.33 2008/01/22 10:44:31 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -284,7 +284,7 @@ public class GroupRequest implements RspCollector, Command {
                     rsp.setValue(response_value);
                     rsp.setReceived(true);
                     if(log.isTraceEnabled())
-                        log.trace(new StringBuffer("received response for request ").append(req_id).append(", sender=").
+                        log.trace(new StringBuilder("received response for request ").append(req_id).append(", sender=").
                                 append(sender).append(", val=").append(response_value));
                     if(rsp_filter != null && !rsp_filter.needMoreResponses())
                         done=true;
@@ -477,7 +477,7 @@ public class GroupRequest implements RspCollector, Command {
         }
 
         try {
-            if(log.isTraceEnabled()) log.trace(new StringBuffer("sending request (id=").append(req_id).append(')'));
+            if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
             if(corr != null) {
                 List<Address> tmp=new Vector<Address>(members);
                 corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);

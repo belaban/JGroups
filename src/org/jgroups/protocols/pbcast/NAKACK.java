@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.173 2008/01/06 06:30:22 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.174 2008/01/22 10:44:34 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -911,7 +911,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         NakReceiverWindow win=xmit_table.get(original_sender);
         if(win == null) {
             if(log.isErrorEnabled()) {
-                StringBuffer sb=new StringBuffer();
+                StringBuilder sb=new StringBuilder();
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                 sb.append(") ").append(original_sender).append(" not found in retransmission table: ").append(printMessages());
                 if(print_stability_history_on_failed_xmit) {
@@ -925,7 +925,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             msg=win.get(i);
             if(msg == null || msg == NakReceiverWindow.NULL_MSG) {
                 if(log.isWarnEnabled() && !local_addr.equals(xmit_requester)) {
-                    StringBuffer sb=new StringBuffer();
+                    StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
                     sb.append(" not found in retransmission table of ").append(printMessages());

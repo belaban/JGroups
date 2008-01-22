@@ -1,4 +1,4 @@
-// $Id: McastTest.java,v 1.5 2005/05/30 16:15:11 belaban Exp $
+// $Id: McastTest.java,v 1.6 2008/01/22 10:44:28 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -12,7 +12,7 @@ import java.util.StringTokenizer;
 
 /**
    @author Bela Ban
-   @version $Revision: 1.5 $
+   @version $Revision: 1.6 $
  */
 public class McastTest {
 
@@ -100,7 +100,7 @@ public class McastTest {
 	InetAddress     dst;
 	int             dst_port;
 	StringTokenizer tok;
-	StringBuffer    sb;
+	StringBuilder    sb;
 	String          tmp, buf;
 	byte[]          bbuf;
 	
@@ -120,7 +120,7 @@ public class McastTest {
 		    System.err.println(e);
 		    continue;
 		}
-		sb=new StringBuffer();
+		sb=new StringBuilder();
 		while(tok.hasMoreTokens()) {
 		    tmp=tok.nextToken();
 		    sb.append(tmp + ' ');

@@ -1,4 +1,4 @@
-// $Id: UDP.java.txt,v 1.1 2005/06/24 11:19:28 belaban Exp $
+// $Id: UDP.java.txt,v 1.2 2008/01/22 10:44:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -280,7 +280,7 @@ public class UDP extends Protocol implements Runnable {
                 }
 
                 if(log.isTraceEnabled()){
-                    StringBuffer sb=new StringBuffer("received (mcast) ");
+                    StringBuilder sb=new StringBuilder("received (mcast) ");
                     sb.append(len).append(" bytes from ").append(sender_addr).append(':');
                     sb.append(sender_port).append(" (size=").append(len).append(" bytes)");
                     log.trace(sb.toString());
@@ -330,7 +330,7 @@ public class UDP extends Protocol implements Runnable {
     }
 
     private String getDiagResponse() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(local_addr).append(" (").append(channel_name).append(')');
         sb.append(" [").append(mcast_addr_name).append(':').append(mcast_port).append("]\n");
         sb.append("Version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
@@ -738,7 +738,7 @@ public class UDP extends Protocol implements Runnable {
 
             if(Version.compareTo(version) == false) {
                 if(log.isWarnEnabled()) {
-                    StringBuffer sb=new StringBuffer();
+                    StringBuilder sb=new StringBuilder();
                     sb.append("packet from ").append(sender).append(':').append(port);
                     sb.append(" has different version (").append(version);
                     sb.append(") from ours (").append(Version.printVersion()).append("). ");
@@ -807,7 +807,7 @@ public class UDP extends Protocol implements Runnable {
 
         evt=new Event(Event.MSG, msg);
         if(log.isTraceEnabled()) {
-            StringBuffer sb=new StringBuffer("message is ");
+            StringBuilder sb=new StringBuilder("message is ");
             sb.append(msg).append(", headers are ").append(msg.getHeaders());
             log.trace(sb.toString());
         }
@@ -853,7 +853,7 @@ public class UDP extends Protocol implements Runnable {
         setSourceAddress(msg);
 
         if(log.isTraceEnabled()) {
-            StringBuffer sb=new StringBuffer("sending msg to ");
+            StringBuilder sb=new StringBuilder("sending msg to ");
             sb.append(msg.getDest()).append(" (src=").append(msg.getSrc()).append("), headers are ").append(msg.getHeaders());
             log.trace(sb.toString());
         }
@@ -1263,7 +1263,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     private String dumpSocketInfo() throws Exception {
-        StringBuffer sb=new StringBuffer(128);
+        StringBuilder sb=new StringBuilder(128);
         sb.append("local_addr=").append(local_addr);
         sb.append(", mcast_addr=").append(mcast_addr);
         sb.append(", bind_addr=").append(bind_addr);
@@ -1593,7 +1593,7 @@ public class UDP extends Protocol implements Runnable {
                     len=packet.getLength();
                     data=packet.getData();
                     if(log.isTraceEnabled())
-                        log.trace(new StringBuffer("received (ucast) ").append(len).append(" bytes from ").
+                        log.trace(new StringBuilder("received (ucast) ").append(len).append(" bytes from ").
                                   append(sender_addr).append(':').append(sender_port));
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
@@ -1855,7 +1855,7 @@ public class UDP extends Protocol implements Runnable {
                     start_time=System.currentTimeMillis();
 
                 if(log.isTraceEnabled()) {
-                    StringBuffer sb=new StringBuffer("sending ").append(numMsgs(msgs)).append(" msgs (");
+                    StringBuilder sb=new StringBuilder("sending ").append(numMsgs(msgs)).append(" msgs (");
                     sb.append(total_bytes).append(" bytes, ").append(stop_time-start_time).append("ms)");
                     sb.append(" to ").append(msgs.size()).append(" destination(s)");
                     if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
@@ -1897,7 +1897,7 @@ public class UDP extends Protocol implements Runnable {
 
 
     String dumpMessages(HashMap map) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Map.Entry    entry;
         List         l;
         Object       key;

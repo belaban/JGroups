@@ -357,7 +357,7 @@ public class Test implements Receiver {
             }
 
             if(num_msgs_received % log_interval == 0) {
-                System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
+                System.out.println(new StringBuilder("-- received ").append(num_msgs_received).append(" messages"));
             }
 
             if(counter % log_interval == 0) {
@@ -589,12 +589,12 @@ public class Test implements Receiver {
 
 
     private void dumpSenders() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         dump(this.senders, sb);
         System.out.println(sb.toString());
     }
 
-    private static void dump(Map map, StringBuffer sb) {
+    private static void dump(Map map, StringBuilder sb) {
         Map.Entry  entry;
         Object     mySender;
         MemberInfo mi;

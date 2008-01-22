@@ -1,4 +1,4 @@
-// $Id: FD_PROB.java.txt,v 1.1 2007/01/11 15:41:21 belaban Exp $
+// $Id: FD_PROB.java.txt,v 1.2 2008/01/22 10:44:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,7 +25,7 @@ import java.util.Vector;
  * for timeout seconds, Q will be suspected.<p>
  * This protocol can be used both with a PBCAST *and* regular stacks.
  * @author Bela Ban 1999
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
 public class FD_PROB extends Protocol implements Runnable {
     Address local_addr=null;
@@ -363,7 +363,7 @@ public class FD_PROB extends Protocol implements Runnable {
 
 
     String printCounters() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         Address mbr;
         FdEntry entry;
 
@@ -463,7 +463,7 @@ public class FD_PROB extends Protocol implements Runnable {
         }
 
         public String printDetails() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             Address mbr;
 
             if(members != null && counters != null)

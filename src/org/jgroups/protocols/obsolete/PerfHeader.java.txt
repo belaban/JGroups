@@ -1,4 +1,4 @@
-// $Id: PerfHeader.java.txt,v 1.1 2006/12/27 16:46:19 belaban Exp $
+// $Id: PerfHeader.java.txt,v 1.2 2008/01/22 10:44:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -68,7 +68,7 @@ public class PerfHeader extends Header {
 
 
     public String printContents(boolean detailed, Vector prots) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         String key;
         PerfEntry val;
         Protocol p;
@@ -402,7 +402,7 @@ class PerfEntry implements Externalizable {
 
 
     public String printContents(boolean detailed) {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         if(detailed) {
             if(received > 0) sb.append("received=").append(received);
             if(done > 0) {

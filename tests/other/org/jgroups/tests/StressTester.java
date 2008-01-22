@@ -8,7 +8,7 @@ import java.net.URL;
  * Test driver for testing JGroups-based HttpSession replication.
  *
  * @author Brian Stansberry
- * @version $Id: StressTester.java,v 1.4 2006/09/07 18:35:29 belaban Exp $
+ * @version $Id: StressTester.java,v 1.5 2008/01/22 10:44:28 belaban Exp $
  */
 public class StressTester implements Runnable
 {
@@ -64,7 +64,7 @@ public class StressTester implements Runnable
 
             if (rc != 200 || count % 1000 == 0)
             {
-               StringBuffer sb = new StringBuffer(name);
+               StringBuilder sb = new StringBuilder(name);
                sb.append('-');
                sb.append(count);
                sb.append('-');

@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.45 2007/09/27 10:21:47 vlada Exp $
+// $Id: TUNNEL.java,v 1.46 2008/01/22 10:44:30 belaban Exp $
 
 
 package org.jgroups.protocols;
@@ -123,7 +123,7 @@ public class TUNNEL extends TP {
         }
         
         if(!props.isEmpty()) {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             for(Enumeration e=props.propertyNames(); e.hasMoreElements();) {
                 sb.append(e.nextElement().toString());
                 if(e.hasMoreElements()) {
