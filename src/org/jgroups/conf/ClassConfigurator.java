@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.22 2008/01/22 15:31:41 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.23 2008/01/22 15:39:19 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -33,13 +33,6 @@ public class ClassConfigurator {
     //this is where we store magic numbers
     private final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
     private final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
-
-    /** Map<Short,ObjectStreamClass> */
-    private final Map<Short,ObjectStreamClass> streamMapId=new HashMap<Short,ObjectStreamClass>();
-
-    /** Map<ObjectStreamClass, Short> */
-    private final Map<ObjectStreamClass, Short> streamMapClass=new HashMap<ObjectStreamClass, Short>();
-
     protected final Log log=LogFactory.getLog(getClass());
 
 
@@ -47,7 +40,6 @@ public class ClassConfigurator {
     }
 
     public void init() throws ChannelException {
-        //populate the map
         try {
             // make sure we have a class for DocumentBuilderFactory
             // getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
@@ -67,7 +59,6 @@ public class ClassConfigurator {
             catch (SecurityException ex){
             }
 
-            ObjectStreamClass objStreamClass;
             ClassMap[] mapping=reader.readMagicNumberMapping();
             if(mapping != null) {
                 Short m;
@@ -75,9 +66,6 @@ public class ClassConfigurator {
                     m=new Short(mapping[i].getMagicNumber());
                     try {
                         Class clazz=mapping[i].getClassForMap();
-                        objStreamClass=ObjectStreamClass.lookup(clazz);
-                        if(objStreamClass == null)
-                            throw new ChannelException("ObjectStreamClass for " + clazz + " not found");
                         if(magicMap.containsKey(m)) {
                             throw new ChannelException("magic key " + m + " (" + clazz.getName() + ')' +
                                                        " is already in map; please make sure that " +
@@ -86,9 +74,6 @@ public class ClassConfigurator {
                         else {
                             magicMap.put(m, clazz);
                             classMap.put(clazz, m);
-
-                            streamMapId.put(m, objStreamClass);
-                            streamMapClass.put(objStreamClass, m);
                         }
                     }
                     catch(ClassNotFoundException cnf) {
@@ -102,7 +87,6 @@ public class ClassConfigurator {
             throw ex;
         }
         catch(Throwable x) {
-            // if(log.isErrorEnabled()) log.error("failed reading the magic number mapping file, reason: " + Util.print(x));
             throw new ChannelException("failed reading the magic number mapping file", x);
         }
     }
@@ -160,19 +144,7 @@ public class ClassConfigurator {
             return i;
     }
 
-    public short getMagicNumberFromObjectStreamClass(ObjectStreamClass objStream) {
-        Short i=streamMapClass.get(objStream);
-        if(i == null)
-            return -1;
-        else
-            return i.shortValue();
-    }
 
-    public ObjectStreamClass getObjectStreamClassFromMagicNumber(short magic_number) {
-        ObjectStreamClass retval=null;
-        retval=streamMapId.get(magic_number);
-        return retval;
-    }
 
 
     public String toString() {
