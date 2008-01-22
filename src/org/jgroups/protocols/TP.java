@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.5 2008/01/22 06:38:10 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.6 2008/01/22 10:01:20 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -461,8 +461,8 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
-    private StringBuffer _getInfo() {
-        StringBuffer sb=new StringBuffer();
+    private StringBuilder _getInfo() {
+        StringBuilder sb=new StringBuilder();
         sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
         sb.append("local_addr=").append(local_addr).append("\n");
         sb.append("group_name=").append(channel_name).append("\n");
@@ -477,7 +477,7 @@ public abstract class TP extends Protocol {
         try {
             StringTokenizer tok=new StringTokenizer(request);
             String req=tok.nextToken();
-            StringBuffer info=new StringBuffer("n/a");
+            StringBuilder info=new StringBuilder("n/a");
             if(req.trim().toLowerCase().startsWith("query")) {
                 ArrayList<String> l=new ArrayList<String>(tok.countTokens());
                 while(tok.hasMoreTokens())
@@ -489,7 +489,7 @@ public abstract class TP extends Protocol {
                     Channel ch=stack.getChannel();
                     if(ch != null) {
                         Map m=ch.dumpStats();
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("stats:\n");
                         for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
                             sb.append(it.next()).append("\n");
@@ -1013,7 +1013,7 @@ public abstract class TP extends Protocol {
             // we *have* to make a copy, or else up_prot.up() might remove headers from msg which will then *not*
             // be available for marshalling further down (when sending the message)
             final Message copy=msg.copy();
-            if(log.isTraceEnabled()) log.trace(new StringBuffer("looping back message ").append(copy));
+            if(log.isTraceEnabled()) log.trace(new StringBuilder("looping back message ").append(copy));
             // up_prot.up(new Event(Event.MSG, copy));
 
             // changed to fix http://jira.jboss.com/jira/browse/JGRP-506
@@ -1112,7 +1112,7 @@ public abstract class TP extends Protocol {
         }
         catch(Throwable t) {
             if(log.isErrorEnabled())
-                log.error(new StringBuffer("failed handling data from ").append(sender), t);
+                log.error(new StringBuilder("failed handling data from ").append(sender), t);
         }
     }
 
@@ -1157,7 +1157,7 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
@@ -1217,7 +1217,7 @@ public abstract class TP extends Protocol {
 
         evt=new Event(Event.MSG, msg);
         if(log.isTraceEnabled()) {
-            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+            StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
             log.trace(sb);
         }
 
@@ -1231,14 +1231,14 @@ public abstract class TP extends Protocol {
             // message is a diagnosis message (special group name DIAG_GROUP)
             if(channel_name != null && !channel_name.equals(ch_name)) {
                 if(log.isWarnEnabled())
-                    log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                    log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
                             append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
                 return;
             }
         }
         else {
             if(log.isTraceEnabled())
-                log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
+                log.trace(new StringBuilder("message does not have a transport header, msg is ").append(msg).
                           append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
             return;
         }
@@ -1526,7 +1526,7 @@ public abstract class TP extends Protocol {
                 }
                 if(Version.isBinaryCompatible(version) == false) {
                     if(log.isWarnEnabled()) {
-                        StringBuffer sb=new StringBuffer();
+                        StringBuilder sb=new StringBuilder();
                         sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
                         sb.append(") from ours (").append(Version.printVersion()).append("). ");
                         if(discard_incompatible_packets)
@@ -1583,7 +1583,7 @@ public abstract class TP extends Protocol {
                     if(up_prot != null) {
                         Event evt=new Event(Event.MSG, msg);
                         if(log.isTraceEnabled()) {
-                            StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+                            StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
                             log.trace(sb);
                         }
                         up_prot.up(evt);
@@ -1591,7 +1591,7 @@ public abstract class TP extends Protocol {
                     }
                     else {
                         if(log.isWarnEnabled())
-                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                            log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
                                     append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
                         return;
                     }
@@ -1600,7 +1600,7 @@ public abstract class TP extends Protocol {
                     // Discard if message's group name is not the same as our group name
                     if(channel_name != null && !channel_name.equals(ch_name)) {
                         if(log.isWarnEnabled())
-                            log.warn(new StringBuffer("discarded message from different group \"").append(ch_name).
+                            log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
                                     append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
                         return;
                     }
@@ -1612,7 +1612,7 @@ public abstract class TP extends Protocol {
                 }
                 else {
                     if(log.isTraceEnabled())
-                        log.trace(new StringBuffer("message does not have a transport header, msg is ").append(msg).
+                        log.trace(new StringBuilder("message does not have a transport header, msg is ").append(msg).
                                 append(", headers are ").append(msg.printHeaders()).append(", will be discarded"));
                     return;
                 }
@@ -1620,7 +1620,7 @@ public abstract class TP extends Protocol {
 
             Event evt=new Event(Event.MSG, msg);
             if(log.isTraceEnabled()) {
-                StringBuffer sb=new StringBuffer("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
+                StringBuilder sb=new StringBuilder("message is ").append(msg).append(", headers are ").append(msg.printHeaders());
                 log.trace(sb);
             }
 

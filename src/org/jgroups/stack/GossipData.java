@@ -1,4 +1,4 @@
-// $Id: GossipData.java,v 1.3 2006/10/11 14:35:45 belaban Exp $
+// $Id: GossipData.java,v 1.3.6.1 2008/01/22 10:01:10 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -50,7 +50,7 @@ public class GossipData implements Streamable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(GossipRouter.type2String(type)).append( "(").append("group=").append(group).append(", addr=").append(addr);
         sb.append(", mbrs=").append(mbrs);
         return sb.toString();

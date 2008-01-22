@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.30.2.1 2008/01/18 14:51:27 rachmatowicz Exp $
+// $Id: RpcDispatcher.java,v 1.30.2.2 2008/01/22 10:00:57 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -185,13 +185,13 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
         if(dests != null && dests.isEmpty()) {
             // don't send if dest list is empty
             if(log.isTraceEnabled())
-                log.trace(new StringBuffer("destination list of ").append(method_call.getName()).
+                log.trace(new StringBuilder("destination list of ").append(method_call.getName()).
                         append("() is empty: no need to send message"));
             return new RspList();
         }
 
         if(log.isTraceEnabled())
-            log.trace(new StringBuffer("dests=").append(dests).append(", method_call=").append(method_call).
+            log.trace(new StringBuilder("dests=").append(dests).append(", method_call=").append(method_call).
                     append(", mode=").append(mode).append(", timeout=").append(timeout));
 
         byte[] buf;

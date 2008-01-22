@@ -1,4 +1,4 @@
-// $Id: Gossip.java,v 1.7 2007/04/04 05:23:33 belaban Exp $
+// $Id: Gossip.java,v 1.7.4.1 2008/01/22 10:01:27 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -92,7 +92,7 @@ public class Gossip implements Serializable {
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("sender=");
         if(sender != null)
             sb.append(sender);
@@ -107,7 +107,7 @@ public class Gossip implements Serializable {
 
 
     public String shortForm() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         if(sender != null)
             sb.append(sender);
         else

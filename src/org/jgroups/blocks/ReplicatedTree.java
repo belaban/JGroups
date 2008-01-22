@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.15.6.1 2007/11/20 08:53:45 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.15.6.2 2008/01/22 10:00:59 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -417,7 +417,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
 
     public String toString() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         int indent=0;
         Map children;
 
@@ -689,12 +689,12 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         Node curr=root, node;
         StringTokenizer tok;
         String name;
-        StringBuffer sb=null;
+        StringBuilder sb=null;
 
         if(fqn == null || fqn.equals(SEPARATOR) || "".equals(fqn))
             return curr;
 
-        sb=new StringBuffer();
+        sb=new StringBuilder();
         tok=new StringTokenizer(fqn, SEPARATOR);
         while(tok.countTokens() > 1) {
             name=tok.nextToken();
@@ -885,7 +885,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
                 children.clear();
         }
 
-        void print(StringBuffer sb, int indent) {
+        void print(StringBuilder sb, int indent) {
             printIndent(sb, indent);
             sb.append(SEPARATOR).append(name);
             if(children != null && children.size() > 0) {
@@ -897,7 +897,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
             }
         }
 
-        void printIndent(StringBuffer sb, int indent) {
+        void printIndent(StringBuilder sb, int indent) {
             if(sb != null) {
                 for(int i=0; i < indent; i++)
                     sb.append(' ');
@@ -906,7 +906,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
 
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             if(name != null) sb.append("\nname=" + name);
             if(fqn != null) sb.append("\nfqn=" + fqn);
             if(data != null) sb.append("\ndata=" + data);
@@ -975,7 +975,7 @@ public class ReplicatedTree implements Runnable, MessageListener, MembershipList
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(type2String(type)).append(" (");
             if(fqn != null) sb.append(" fqn=" + fqn);
             switch(type) {

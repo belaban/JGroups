@@ -1,4 +1,4 @@
-// $Id: PerfTest.java,v 1.10 2007/05/01 10:55:20 belaban Exp $
+// $Id: PerfTest.java,v 1.10.4.1 2008/01/22 10:01:30 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -160,7 +160,7 @@ public class PerfTest implements MessageListener, MembershipListener{
 
         total_time=stop_time - start_time;
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("total number of messages sent by me: ").append(sent_msgs).append('\n');
         sb.append("total number of messages received: ").append(num_msgs).append('\n');
         sb.append("total number of senders: ").append(num_senders).append('\n');
@@ -410,7 +410,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             switch(type) {
                 case DATA: sb.append("DATA (seqno=").append(seqno).append(')'); break;
                 case START: sb.append("START"); break;
@@ -481,7 +481,7 @@ public class PerfTest implements MessageListener, MembershipListener{
         }
 
         String printStats() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append("done=").append(done()).append('\n');
             sb.append("number of messages received: ").append(getRealReceived()).append('\n');
             sb.append("total time: ").append(stop-start).append(" ms\n");

@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.15 2007/07/04 14:30:58 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.15.4.1 2008/01/22 10:00:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -482,7 +482,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         }
 
         public String toString() {
-            StringBuffer sb=new StringBuffer();
+            StringBuilder sb=new StringBuilder();
             sb.append(type2String(req_type));
             if(key != null)
                 sb.append("\nkey=" + key);

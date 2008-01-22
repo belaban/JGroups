@@ -2,7 +2,7 @@ package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: StringTest.java,v 1.1 2005/04/20 10:27:04 belaban Exp $
+ * @version $Id: StringTest.java,v 1.1.20.1 2008/01/22 10:01:30 belaban Exp $
  */
 public class StringTest {
     final int NUM=1000000;
@@ -15,7 +15,7 @@ public class StringTest {
     private void start() {
         rawStringsWithObjects();
         rawStringsWithLiterals();
-        stringBuffer();
+        StringBuilder();
     }
 
 
@@ -45,18 +45,18 @@ public class StringTest {
         System.out.println("result=" + result);
     }
 
-    private void stringBuffer() {
+    private void StringBuilder() {
         String result=null;
-        StringBuffer sb;
+        StringBuilder sb;
         long time=System.currentTimeMillis();
         start=System.currentTimeMillis();
         for(int i=0; i < NUM; i++) {
-            sb=new StringBuffer("a");
+            sb=new StringBuilder("a");
             sb.append("b").append("c").append("d").append("ecdsfh").append(time);
             result=sb.toString();
         }
         stop=System.currentTimeMillis();
-        System.out.println("total time for stringBuffer(): " + (stop-start));
+        System.out.println("total time for StringBuilder(): " + (stop-start));
         System.out.println("result=" + result);
     }
 }

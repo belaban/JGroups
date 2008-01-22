@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.1 2008/01/21 13:53:28 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.2 2008/01/22 10:01:01 belaban Exp $
  */
 public class Configurator {
 
@@ -644,8 +644,8 @@ public class Configurator {
 
 
         String printUpReqs() {
-            StringBuffer ret;
-            ret=new StringBuffer("[");
+            StringBuilder ret;
+            ret=new StringBuilder("[");
             if(up_reqs != null) {
                 for(int i=0; i < up_reqs.size(); i++) {
                     ret.append(Event.type2String(((Integer)up_reqs.elementAt(i)).intValue()) + ' ');

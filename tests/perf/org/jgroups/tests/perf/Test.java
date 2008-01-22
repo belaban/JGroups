@@ -126,7 +126,7 @@ public class Test implements Receiver {
         if(num_threads > 0 && num_msgs % num_threads != 0)
             throw new IllegalArgumentException("num_msgs (" + num_msgs + ") must be devisible by num_threads (" + num_threads + ")");
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append("\n\n----------------------- TEST -----------------------\n");
         sb.append("Date: ").append(new Date()).append('\n');
         sb.append("Run by: ").append(System.getProperty("user.name")).append("\n\n");
@@ -159,7 +159,7 @@ public class Test implements Receiver {
         if(num_threads > 0 && log_interval % num_threads != 0)
             throw new IllegalArgumentException("log_interval (" + log_interval + ") must be divisible by num_threads (" + num_threads + ")");
 
-        sb=new StringBuffer();
+        sb=new StringBuilder();
         sb.append("\n##### msgs_received");
         sb.append(", current time (in ms)");
         sb.append(", msgs/sec");
@@ -341,7 +341,7 @@ public class Test implements Receiver {
             }
 
             if(num_msgs_received % log_interval == 0) {
-                System.out.println(new StringBuffer("-- received ").append(num_msgs_received).append(" messages"));
+                System.out.println(new StringBuilder("-- received ").append(num_msgs_received).append(" messages"));
             }
 
             if(counter % log_interval == 0) {
@@ -573,12 +573,12 @@ public class Test implements Receiver {
 
 
     private void dumpSenders() {
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         dump(this.senders, sb);
         System.out.println(sb.toString());
     }
 
-    private void dump(Map map, StringBuffer sb) {
+    private void dump(Map map, StringBuilder sb) {
         Map.Entry  entry;
         Object     mySender;
         MemberInfo mi;
@@ -605,7 +605,7 @@ public class Test implements Receiver {
         double msgs_sec, throughput_sec;
         long   current;
 
-        StringBuffer sb=new StringBuffer();
+        StringBuilder sb=new StringBuilder();
         sb.append(received_msgs).append(' ');
 
         current=System.currentTimeMillis();
@@ -651,7 +651,7 @@ public class Test implements Receiver {
         return sb.toString();
     }
 
-    private void print(Map stats, StringBuffer sb) {
+    private void print(Map stats, StringBuilder sb) {
         sb.append("\nTransport stats:\n\n");
         Map.Entry entry;
         Object key, val;
