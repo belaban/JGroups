@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.21 2007/05/01 09:15:18 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.22 2008/01/22 15:31:41 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.ObjectStreamClass;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class will be replaced with the class that read info
@@ -30,8 +31,8 @@ public class ClassConfigurator {
     static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
 
     //this is where we store magic numbers
-    private final Map<Class,Short> classMap=new HashMap<Class,Short>(); // key=Class, value=magic number
-    private final Map<Short,Class> magicMap=new HashMap<Short,Class>(); // key=magic number, value=Class
+    private final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
+    private final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
 
     /** Map<Short,ObjectStreamClass> */
     private final Map<Short,ObjectStreamClass> streamMapId=new HashMap<Short,ObjectStreamClass>();
