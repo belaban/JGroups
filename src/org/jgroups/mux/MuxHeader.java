@@ -10,13 +10,14 @@ import java.io.*;
 /**
  * Header used for multiplexing and de-multiplexing between service components on top of a Multiplexer (Channel)
  * @author Bela Ban
- * @version $Id: MuxHeader.java,v 1.7 2007/05/01 10:55:18 belaban Exp $
+ * @version $Id: MuxHeader.java,v 1.8 2008/01/22 11:45:53 belaban Exp $
  */
 public class MuxHeader extends Header implements Streamable {
     String      id=null;
 
     /** Used for service state communication between Multiplexers */
     ServiceInfo info;
+    private static final long serialVersionUID=9197570523315316128L;
 
     public MuxHeader() {
     }
