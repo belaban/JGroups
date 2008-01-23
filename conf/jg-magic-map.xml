@@ -217,5 +217,17 @@
         <preload>true</preload>
         <magic-number>63</magic-number>
     </class>
+    <class>
+        <description>(Description goes here)</description>
+        <class-name>org.jgroups.protocols.pbcast.FLUSH$FlushHeader</class-name>
+        <preload>true</preload>
+        <magic-number>64</magic-number>
+    </class>
+    <class>
+        <description>(Description goes here)</description>
+        <class-name>org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader</class-name>
+        <preload>true</preload>
+        <magic-number>65</magic-number>
+    </class>
 
 </magic-number-class-mapping>
