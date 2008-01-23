@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.93 2008/01/22 10:44:30 belaban Exp $
+// $Id: UNICAST.java,v 1.94 2008/01/23 16:40:52 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -627,7 +627,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private void sendAck(Address dst, long seqno) {
         Message ack=new Message(dst);
-        ack.setFlag(Message.OOB);
+        // commented Jan 23 2008 (bela): TP.enable_unicast_bundling should decide whether we bundle or not, and *not*
+        // the OOB flag ! Bundling UNICAST ACKs should be really fast
+        // ack.setFlag(Message.OOB);
         ack.putHeader(name, new UnicastHeader(UnicastHeader.ACK, seqno));
         if(log.isTraceEnabled())
             log.trace(new StringBuilder().append(local_addr).append(" --> ACK(").append(dst).
