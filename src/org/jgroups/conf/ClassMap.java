@@ -1,5 +1,3 @@
-// $Id: ClassMap.java,v 1.5 2007/05/01 09:15:18 belaban Exp $
-
 package org.jgroups.conf;
 
 import org.jgroups.util.Util;
@@ -9,21 +7,15 @@ import org.jgroups.util.Util;
  * Maintains mapping between magic number and class
  *
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
+ * @author Bela Ban
  * @version 1.0
  */
 public class ClassMap {
     private final String  mClassname;
-    private final String  mDescription;
-    private final boolean mPreload;
-    private final short    mMagicNumber;
+    private final short   mMagicNumber;
 
-    public ClassMap(String clazz,
-                    String desc,
-                    boolean preload,
-                    short magicnumber) {
+    public ClassMap(String clazz, short magicnumber) {
         mClassname=clazz;
-        mDescription=desc;
-        mPreload=preload;
         mMagicNumber=magicnumber;
     }
 
@@ -33,14 +25,6 @@ public class ClassMap {
 
     public String getClassName() {
         return mClassname;
-    }
-
-    public String getDescription() {
-        return mDescription;
-    }
-
-    public boolean getPreload() {
-        return mPreload;
     }
 
     public short getMagicNumber() {
