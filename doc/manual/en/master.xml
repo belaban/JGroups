@@ -7,14 +7,15 @@
         <!ENTITY installation SYSTEM "modules/installation.xml">
         <!ENTITY api          SYSTEM "modules/api.xml">
         <!ENTITY advanced     SYSTEM "modules/advanced.xml">
+        <!ENTITY writing      SYSTEM "modules/writing.xml">
         ]>
 
 <book>
 
     <bookinfo>
         <title>Reliable Multicasting with the JGroups Toolkit</title>
-        <pubdate>$Date: 2007/07/16 07:48:34 $</pubdate>
-        <releaseinfo>$Revision: 1.9 $</releaseinfo>
+        <pubdate>$Date: 2008/01/23 14:36:56 $</pubdate>
+        <releaseinfo>$Revision: 1.10 $</releaseinfo>
         <authorgroup>
             <author>
                 <firstname>Bela</firstname>
@@ -183,6 +184,7 @@
     &api;
     &blocks;
     &advanced;
+    &writing;
     &protocols;
 
 
