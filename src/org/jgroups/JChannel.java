@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.5 2008/01/21 13:53:26 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.6 2008/01/23 11:10:18 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -654,12 +654,6 @@ public class JChannel extends Channel {
             Event evt=(timeout <= 0)? (Event)mq.remove() : (Event)mq.remove(timeout);
             Object retval=getEvent(evt);
             evt=null;
-            if(stats) {
-                if(retval != null && retval instanceof Message) {
-                    received_msgs++;
-                    received_bytes+=((Message)retval).getLength();
-                }
-            }
             return retval;
         }
         catch(QueueClosedException queue_closed) {
@@ -1018,6 +1012,11 @@ public class JChannel extends Channel {
 
         case Event.MSG:
             msg=(Message)evt.getArg();
+            if(stats) {
+                received_msgs++;
+                received_bytes+=msg.getLength();
+            }
+
             if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
                 if(local_addr != null && msg.getSrc() != null)
                     if(local_addr.equals(msg.getSrc()))
