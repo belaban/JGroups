@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.78 2008/01/22 16:15:49 belaban Exp $
+ * @version $Id: Message.java,v 1.79 2008/01/23 14:51:51 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -689,9 +689,9 @@ public class Message implements Streamable {
             if(magic_number == -1) {
                 classname=value.getClass().getName();
                 out.writeUTF(classname);
-            }
-            else {
-                ;
+                if(log.isWarnEnabled())
+                    log.warn("magic number for " + classname + " not found, make sure you add your header to " +
+                            "jg-magic-map.xml, or register it programmatically with the ClassConfigurator");
             }
 
             out.writeShort(size);
