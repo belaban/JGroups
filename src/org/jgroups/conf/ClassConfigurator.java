@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.21 2007/05/01 09:15:18 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.21.4.1 2008/01/23 15:01:31 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -11,6 +11,7 @@ import org.jgroups.util.Util;
 
 import java.io.ObjectStreamClass;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * This class will be replaced with the class that read info
@@ -28,10 +29,11 @@ import java.util.*;
  */
 public class ClassConfigurator {
     static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
+    private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
 
     //this is where we store magic numbers
-    private final Map<Class,Short> classMap=new HashMap<Class,Short>(); // key=Class, value=magic number
-    private final Map<Short,Class> magicMap=new HashMap<Short,Class>(); // key=magic number, value=Class
+    private final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
+    private final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
 
     /** Map<Short,ObjectStreamClass> */
     private final Map<Short,ObjectStreamClass> streamMapId=new HashMap<Short,ObjectStreamClass>();
@@ -116,6 +118,26 @@ public class ClassConfigurator {
         return instance;
     }
 
+    public static ClassConfigurator getInstance() throws ChannelException {
+        return getInstance(false);
+    }
+
+    /**
+     * Method to register a user-defined header with jg-magic-map at runtime
+     * @param magic The magic number. Needs to be > 1024
+     * @param clazz The class. Usually a subclass of Header
+     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
+     */
+     public void add(short magic, Class clazz) throws IllegalArgumentException {
+        if(magic <= MIN_CUSTOM_MAGIC_NUMBER)
+            throw new IllegalArgumentException("magic number (" + magic + ") needs to be greater than " +
+                    MIN_CUSTOM_MAGIC_NUMBER);
+        if(magicMap.containsKey(magic) || classMap.containsKey(clazz))
+            throw new IllegalArgumentException("magic number " + magic + " for class " + clazz.getName() +
+                    " is already present");
+        magicMap.put(magic, clazz);
+        classMap.put(clazz, magic);
+    }
 
     /**
      * Returns a class for a magic number.
