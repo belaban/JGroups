@@ -1,10 +1,9 @@
-// $Id: MagicNumberReader.java,v 1.13 2007/05/09 23:50:21 belaban Exp $
-
 package org.jgroups.conf;
 
 /**
  * Reads and maintains mapping between magic numbers and classes
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
+ * @author Bela Ban
  * @version 1.0
  */
 
@@ -14,6 +13,7 @@ import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.NamedNodeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -48,8 +48,8 @@ public class MagicNumberReader {
                     if(log.isTraceEnabled())
                         log.trace("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
                     stream=new FileInputStream(mMagicNumberFile);
-                    if(stream != null && log.isTraceEnabled())
-                        log.trace("Magic number File found at '" + mMagicNumberFile + '\'');
+                    if(log.isTraceEnabled())
+                        log.trace("Magic number file found at '" + mMagicNumberFile + '\'');
                 }
                 catch(FileNotFoundException fnfe) {
                     if(log.isWarnEnabled())
@@ -65,7 +65,7 @@ public class MagicNumberReader {
             return parse(stream);
         }
         catch(Exception x) {
-            if(log.isErrorEnabled()) log.error("failed reading mapig map", x);
+            if(log.isErrorEnabled()) log.error("failed reading magic map", x);
         }
         return new ClassMap[0];
     }
@@ -76,7 +76,7 @@ public class MagicNumberReader {
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(stream);
         NodeList class_list=document.getElementsByTagName("class");
-        java.util.Vector v=new java.util.Vector();
+        java.util.Vector<ClassMap> v=new java.util.Vector<ClassMap>();
         for(int i=0; i < class_list.getLength(); i++) {
             if(class_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
                 v.addElement(parseClassData(class_list.item(i)));
@@ -85,47 +85,18 @@ public class MagicNumberReader {
         ClassMap[] data=new ClassMap[v.size()];
         v.copyInto(data);
         return data;
-    }//parse
+    }
 
     protected static ClassMap parseClassData(Node protocol) throws java.io.IOException {
         try {
             protocol.normalize();
-            int pos=0;
-            NodeList children=protocol.getChildNodes();
-            /**
-             * there should be 4 Element Nodes if we are not overriding
-             * 1. description
-             * 2. class-name
-             * 3. preload
-             * 4. magic-number
-             */
-
+            NamedNodeMap attrs=protocol.getAttributes();
             String clazzname=null;
-            String desc=null;
-            String preload=null;
             String magicnumber=null;
 
-            for(int i=0; i < children.getLength(); i++) {
-                if(children.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    pos++;
-                    switch(pos) {
-                        case 1:
-                            desc=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 2:
-                            clazzname=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 3:
-                            preload=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 4:
-                            magicnumber=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                    }
-                }
-            }
-
-            return new ClassMap(clazzname, desc, Boolean.valueOf(preload).booleanValue(), Short.valueOf(magicnumber).shortValue());
+            magicnumber=attrs.getNamedItem("id").getNodeValue();
+            clazzname=attrs.getNamedItem("name").getNodeValue();
+            return new ClassMap(clazzname, Short.valueOf(magicnumber));
         }
         catch(Exception x) {
             IOException tmp=new IOException();
