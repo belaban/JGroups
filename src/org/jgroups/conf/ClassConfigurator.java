@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.23 2008/01/22 15:39:19 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.24 2008/01/23 14:51:09 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -9,8 +9,10 @@ import org.jgroups.ChannelException;
 import org.jgroups.Global;
 import org.jgroups.util.Util;
 
-import java.io.ObjectStreamClass;
-import java.util.*;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -29,6 +31,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 public class ClassConfigurator {
     static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
+    private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
 
     //this is where we store magic numbers
     private final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
@@ -101,6 +104,26 @@ public class ClassConfigurator {
         return instance;
     }
 
+    public static ClassConfigurator getInstance() throws ChannelException {
+        return getInstance(false);
+    }
+
+    /**
+     * Method to register a user-defined header with jg-magic-map at runtime
+     * @param magic The magic number. Needs to be > 1024
+     * @param clazz The class. Usually a subclass of Header
+     * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
+     */
+     public void add(short magic, Class clazz) throws IllegalArgumentException {
+        if(magic <= MIN_CUSTOM_MAGIC_NUMBER)
+            throw new IllegalArgumentException("magic number (" + magic + ") needs to be greater than " +
+                    MIN_CUSTOM_MAGIC_NUMBER);
+        if(magicMap.containsKey(magic) || classMap.containsKey(clazz))
+            throw new IllegalArgumentException("magic number " + magic + " for class " + clazz.getName() +
+                    " is already present");
+        magicMap.put(magic, clazz);
+        classMap.put(clazz, magic);
+    }
 
     /**
      * Returns a class for a magic number.
