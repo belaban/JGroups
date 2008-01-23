@@ -1,11 +1,11 @@
-// $Id: MagicNumberReader.java,v 1.14 2008/01/22 15:24:35 belaban Exp $
 
 package org.jgroups.conf;
 
 /**
  * Reads and maintains mapping between magic numbers and classes
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
- * @version 1.0
+ * @author Bela Ban
+ * @version $Id: MagicNumberReader.java,v 1.15 2008/01/23 15:32:42 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 import org.w3c.dom.Document;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+import org.w3c.dom.NamedNodeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -76,7 +77,7 @@ public class MagicNumberReader {
         DocumentBuilder builder=factory.newDocumentBuilder();
         Document document=builder.parse(stream);
         NodeList class_list=document.getElementsByTagName("class");
-        java.util.Vector v=new java.util.Vector();
+        java.util.Vector<ClassMap> v=new java.util.Vector<ClassMap>();
         for(int i=0; i < class_list.getLength(); i++) {
             if(class_list.item(i).getNodeType() == Node.ELEMENT_NODE) {
                 v.addElement(parseClassData(class_list.item(i)));
@@ -85,47 +86,18 @@ public class MagicNumberReader {
         ClassMap[] data=new ClassMap[v.size()];
         v.copyInto(data);
         return data;
-    }//parse
+    }
 
     protected static ClassMap parseClassData(Node protocol) throws java.io.IOException {
         try {
             protocol.normalize();
-            int pos=0;
-            NodeList children=protocol.getChildNodes();
-            /**
-             * there should be 4 Element Nodes if we are not overriding
-             * 1. description
-             * 2. class-name
-             * 3. preload
-             * 4. magic-number
-             */
-
+            NamedNodeMap attrs=protocol.getAttributes();
             String clazzname=null;
-            String desc=null;
-            String preload=null;
             String magicnumber=null;
 
-            for(int i=0; i < children.getLength(); i++) {
-                if(children.item(i).getNodeType() == Node.ELEMENT_NODE) {
-                    pos++;
-                    switch(pos) {
-                        case 1:
-                            desc=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 2:
-                            clazzname=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 3:
-                            preload=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                        case 4:
-                            magicnumber=children.item(i).getFirstChild().getNodeValue();
-                            break;
-                    }
-                }
-            }
-
-            return new ClassMap(clazzname, desc, Boolean.valueOf(preload).booleanValue(), Short.valueOf(magicnumber).shortValue());
+            magicnumber=attrs.getNamedItem("id").getNodeValue();
+            clazzname=attrs.getNamedItem("name").getNodeValue();
+            return new ClassMap(clazzname, Short.valueOf(magicnumber));
         }
         catch(Exception x) {
             IOException tmp=new IOException();
