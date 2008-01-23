@@ -1,233 +1,42 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- <!DOCTYPE jgroups-internal SYSTEM "jg-magic-map.dtd"> -->
-<magic-number-class-mapping>
-    <class>
-        <description>IPv4 Address (4 bytes) + port</description>
-        <class-name>org.jgroups.stack.IpAddress</class-name>
-        <preload>true</preload>
-        <magic-number>1</magic-number>
-    </class>
-    <class>
-        <description>CAUSAL Header</description>
-        <class-name>org.jgroups.protocols.CAUSAL$CausalHeader</class-name>
-        <preload>true</preload>
-        <magic-number>2</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD$FdHeader</class-name>
-        <preload>true</preload>
-        <magic-number>3</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD_SOCK$FdHeader</class-name>
-        <preload>true</preload>
-        <magic-number>6</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FragHeader</class-name>
-        <preload>true</preload>
-        <magic-number>7</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.PingHeader</class-name>
-        <preload>true</preload>
-        <magic-number>13</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TcpHeader</class-name>
-        <preload>true</preload>
-        <magic-number>14</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.TunnelHeader</class-name>
-        <preload>true</preload>
-        <magic-number>19</magic-number>
-    </class>
-    <class>
-        <description>UDP Header</description>
-        <class-name>org.jgroups.protocols.UdpHeader</class-name>
-        <preload>true</preload>
-        <magic-number>20</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.UNICAST$UnicastHeader</class-name>
-        <preload>true</preload>
-        <magic-number>21</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader</class-name>
-        <preload>true</preload>
-        <magic-number>22</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.GMS$GmsHeader</class-name>
-        <preload>true</preload>
-        <magic-number>24</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.NakAckHeader</class-name>
-        <preload>true</preload>
-        <magic-number>25</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.STABLE$StableHeader</class-name>
-        <preload>true</preload>
-        <magic-number>27</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.STATE_TRANSFER$StateHeader</class-name>
-        <preload>true</preload>
-        <magic-number>28</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.SMACK$SmackHeader</class-name>
-        <preload>true</preload>
-        <magic-number>29</magic-number>
-    </class>
-    <class>
-        <description>Message</description>
-        <class-name>org.jgroups.Message</class-name>
-        <preload>true</preload>
-        <magic-number>30</magic-number>
-    </class>
-    <class>
-        <description>View</description>
-        <class-name>org.jgroups.View</class-name>
-        <preload>true</preload>
-        <magic-number>31</magic-number>
-    </class>
-     <class>
-        <description>ViewId</description>
-        <class-name>org.jgroups.ViewId</class-name>
-        <preload>true</preload>
-        <magic-number>32</magic-number>
-    </class>
-    <class>
-        <description>Address</description>
-        <class-name>org.jgroups.Address</class-name>
-        <preload>true</preload>
-        <magic-number>34</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.blocks.RequestCorrelator$Header</class-name>
-        <preload>true</preload>
-        <magic-number>35</magic-number>
-    </class>
-     <class>
-        <description>PingRsp</description>
-        <class-name>org.jgroups.protocols.PingRsp</class-name>
-        <preload>true</preload>
-        <magic-number>36</magic-number>
-    </class>
-     <class>
-        <description>Vector</description>
-        <class-name>java.util.Vector</class-name>
-        <preload>true</preload>
-        <magic-number>38</magic-number>
-     </class>
-    <class>
-        <description>JoinRsp</description>
-        <class-name>org.jgroups.protocols.pbcast.JoinRsp</class-name>
-        <preload>true</preload>
-        <magic-number>39</magic-number>
-    </class>
-    <class>
-        <description>Digest</description>
-        <class-name>org.jgroups.util.Digest</class-name>
-        <preload>true</preload>
-        <magic-number>40</magic-number>
-    </class>
-    <class>
-        <description>Hashtable</description>
-        <class-name>java.util.Hashtable</class-name>
-        <preload>true</preload>
-        <magic-number>41</magic-number>
-    </class>
-    <class>
-        <description>Header for COMPRESS protocol</description>
-        <class-name>org.jgroups.protocols.COMPRESS$CompressHeader</class-name>
-        <preload>true</preload>
-        <magic-number>53</magic-number>
-    </class>
-    <class>
-        <description>Header for FC protocol</description>
-        <class-name>org.jgroups.protocols.FC$FcHeader</class-name>
-        <preload>true</preload>
-        <magic-number>54</magic-number>
-    </class>
-    <class>
-        <description>TP Header</description>
-        <class-name>org.jgroups.protocols.TpHeader</class-name>
-        <preload>true</preload>
-        <magic-number>56</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.ENCRYPT$EncryptHeader</class-name>
-        <preload>true</preload>
-        <magic-number>57</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.SEQUENCER$SequencerHeader</class-name>
-        <preload>true</preload>
-        <magic-number>58</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD_SIMPLE$FdHeader</class-name>
-        <preload>true</preload>
-        <magic-number>59</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.VIEW_SYNC$ViewSyncHeader</class-name>
-        <preload>true</preload>
-        <magic-number>60</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.FD_ALL$Header</class-name>
-        <preload>true</preload>
-        <magic-number>61</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.SFC$Header</class-name>
-        <preload>true</preload>
-        <magic-number>62</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.mux.MuxHeader</class-name>
-        <preload>true</preload>
-        <magic-number>63</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.FLUSH$FlushHeader</class-name>
-        <preload>true</preload>
-        <magic-number>64</magic-number>
-    </class>
-    <class>
-        <description>(Description goes here)</description>
-        <class-name>org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader</class-name>
-        <preload>true</preload>
-        <magic-number>65</magic-number>
-    </class>
 
+<magic-number-class-mapping>
+    <class id="1" name="org.jgroups.stack.IpAddress"/>
+    <class id="2" name="org.jgroups.protocols.CAUSAL$CausalHeader"/>
+    <class id="3" name="org.jgroups.protocols.FD$FdHeader"/>
+    <class id="6" name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
+    <class id="7" name="org.jgroups.protocols.FragHeader"/>
+    <class id="13" name="org.jgroups.protocols.PingHeader"/>
+    <class id="14" name="org.jgroups.protocols.TcpHeader"/>
+    <class id="19" name="org.jgroups.protocols.TunnelHeader"/>
+    <class id="20" name="org.jgroups.protocols.UdpHeader"/>
+    <class id="21" name="org.jgroups.protocols.UNICAST$UnicastHeader"/>
+    <class id="22" name="org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader"/>
+    <class id="24" name="org.jgroups.protocols.pbcast.GMS$GmsHeader"/>
+    <class id="25" name="org.jgroups.protocols.pbcast.NakAckHeader"/>
+    <class id="27" name="org.jgroups.protocols.pbcast.STABLE$StableHeader"/>
+    <class id="28" name="org.jgroups.protocols.pbcast.STATE_TRANSFER$StateHeader"/>
+    <class id="29" name="org.jgroups.protocols.SMACK$SmackHeader"/>
+    <class id="30" name="org.jgroups.Message"/>
+    <class id="31" name="org.jgroups.View"/>
+    <class id="32" name="org.jgroups.ViewId"/>
+    <class id="34" name="org.jgroups.Address"/>
+    <class id="35" name="org.jgroups.blocks.RequestCorrelator$Header"/>
+    <class id="36" name="org.jgroups.protocols.PingRsp"/>
+    <class id="38" name="java.util.Vector"/>
+    <class id="39" name="org.jgroups.protocols.pbcast.JoinRsp"/>
+    <class id="40" name="org.jgroups.util.Digest"/>
+    <class id="41" name="java.util.Hashtable"/>
+    <class id="53" name="org.jgroups.protocols.COMPRESS$CompressHeader"/>
+    <class id="54" name="org.jgroups.protocols.FC$FcHeader"/>
+    <class id="56" name="org.jgroups.protocols.TpHeader"/>
+    <class id="57" name="org.jgroups.protocols.ENCRYPT$EncryptHeader"/>
+    <class id="58" name="org.jgroups.protocols.SEQUENCER$SequencerHeader"/>
+    <class id="59" name="org.jgroups.protocols.FD_SIMPLE$FdHeader"/>
+    <class id="60" name="org.jgroups.protocols.VIEW_SYNC$ViewSyncHeader"/>
+    <class id="61" name="org.jgroups.protocols.FD_ALL$Header"/>
+    <class id="62" name="org.jgroups.protocols.SFC$Header"/>
+    <class id="63" name="org.jgroups.mux.MuxHeader"/>
+    <class id="64" name="org.jgroups.protocols.pbcast.FLUSH$FlushHeader"/>
+    <class id="65" name="org.jgroups.protocols.pbcast.STREAMING_STATE_TRANSFER$StateHeader"/>
 </magic-number-class-mapping>
