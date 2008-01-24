@@ -1,13 +1,12 @@
 package org.jgroups.util;
 
+import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
-import org.jgroups.protocols.UdpHeader;
-import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 
@@ -28,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.140 2008/01/24 12:48:33 belaban Exp $
+ * @version $Id: Util.java,v 1.141 2008/01/24 13:52:11 belaban Exp $
  */
 public class Util {
 
@@ -1987,9 +1986,6 @@ public class Util {
                     catch(BindException bind_ex) { // port already used
                         port++;
                     }
-                    catch(Exception ex) {
-                        throw ex;
-                    }
                 }
             }
         }
@@ -2002,13 +1998,46 @@ public class Util {
                 catch(BindException bind_ex) { // port already used
                     port++;
                 }
-                catch(Exception ex) {
-                    throw ex;
-                }
             }
         }
         return sock; // will never be reached, but the stupid compiler didn't figure it out...
     }
+
+
+    public static MulticastSocket createMulticastSocket(int port, Log log) throws IOException {
+        return createMulticastSocket(null, port, null);
+    }
+
+    public static MulticastSocket createMulticastSocket(InetAddress mcast_addr, int port, Log log) throws IOException {
+        if(mcast_addr != null && !mcast_addr.isMulticastAddress()) {
+            if(log != null && log.isWarnEnabled())
+                log.warn("mcast_addr (" + mcast_addr + ") is not a multicast address, will be ignored");
+            return new MulticastSocket(port);
+        }
+
+        SocketAddress saddr=new InetSocketAddress(mcast_addr, port);
+        MulticastSocket retval=null;
+
+        try {
+            retval=new MulticastSocket(saddr);
+        }
+        catch(IOException ex) {
+            if(log != null && log.isWarnEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                sb.append("failed binding MulticastSocket to " + mcast_addr).append(", mcast_addr is an ");
+                sb.append(mcast_addr instanceof Inet4Address? "IPv4 " : "IPv6 ").append("address, but the defined " +
+                        "stack is [IPv4=" + Util.isIPv4Stack() + ", IPv6=" + Util.isIPv6Stack());
+                sb.append("]. \nWill ignore mcast_addr, but this may lead to cross talking " +
+                        "(see http://wiki.jboss.org/wiki/Wiki.jsp?page=PromiscuousTraffic for details). ");
+                sb.append("\nException was: " + ex);
+                log.warn(sb);
+            }
+        }
+        if(retval == null)
+            retval=new MulticastSocket(port);
+        return retval;
+    }
+
 
 
     /**
@@ -2187,7 +2216,7 @@ public class Util {
     }
 
     public static short getIpStack() {
-        short retval=6;
+        short retval=4;
         if(Boolean.getBoolean(Global.IPv4)) {
             retval=4;
         }
