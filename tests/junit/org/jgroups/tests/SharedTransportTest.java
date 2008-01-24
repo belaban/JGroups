@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5 2007/12/03 14:54:17 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.6 2008/01/24 07:51:56 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -34,7 +34,7 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
-    public void testCreation() throws Exception {
+    public void testCreationNonSharedTransport() throws Exception {
         a=createChannel();
         a.connect("x");
         View view=a.getView();
@@ -53,6 +53,36 @@ public class SharedTransportTest extends ChannelTestBase {
         catch(Exception ex) {
             System.out.println("b was not able to join the same cluster (\"x\") as expected");
         }
+    }
+
+    public void testView() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_2);
+        a.setReceiver(new MyReceiver(SINGLETON_1));
+        b.setReceiver(new MyReceiver(SINGLETON_2));
+
+        a.connect("x");
+        b.connect("x");
+
+        View view=a.getView();
+        assertEquals(2, view.size());
+        view=b.getView();
+        assertEquals(2, view.size());
+    }
+
+    public void testView2() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("first-channel"));
+        b.setReceiver(new MyReceiver("second-channel"));
+
+        a.connect("x");
+        b.connect("y");
+
+        View view=a.getView();
+        assertEquals(1, view.size());
+        view=b.getView();
+        assertEquals(1, view.size());
     }
 
     public void testCreationOfDifferentCluster() throws Exception {
@@ -142,6 +172,10 @@ public class SharedTransportTest extends ChannelTestBase {
         public void receive(Message msg) {
             System.out.println("[" + name + "]: received message from " + msg.getSrc() + ": " + msg.getObject());
             list.add(msg);
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("view = " + new_view);
         }
     }
 
