@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.4 2008/01/16 09:15:14 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.5 2008/01/24 13:54:28 belaban Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -321,6 +321,10 @@ public class MuxChannel extends JChannel {
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         msg.putHeader(name, hdr);
         mux.getChannel().send(msg);
+        if(stats) {
+            sent_msgs++;
+            sent_bytes+=msg.getLength();
+        }
     }
 
     public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
