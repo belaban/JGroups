@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.139 2008/01/10 08:46:10 belaban Exp $
+ * @version $Id: Util.java,v 1.140 2008/01/24 12:48:33 belaban Exp $
  */
 public class Util {
 
@@ -2155,8 +2155,8 @@ public class Util {
 
     public static InetAddress getFirstNonLoopbackAddress() throws SocketException {
         Enumeration en=NetworkInterface.getNetworkInterfaces();
-        boolean preferIpv4=Boolean.getBoolean("java.net.preferIPv4Stack");
-        boolean preferIPv6=Boolean.getBoolean("java.net.preferIPv6Addresses");
+        boolean preferIpv4=Boolean.getBoolean(Global.IPv4);
+        boolean preferIPv6=Boolean.getBoolean(Global.IPv6);
         while(en.hasMoreElements()) {
             NetworkInterface i=(NetworkInterface)en.nextElement();
             for(Enumeration en2=i.getInetAddresses(); en2.hasMoreElements();) {
@@ -2178,7 +2178,25 @@ public class Util {
         return null;
     }
 
+    public static boolean isIPv4Stack() {
+        return getIpStack()== 4;
+    }
 
+    public static boolean isIPv6Stack() {
+        return getIpStack() == 6;
+    }
+
+    public static short getIpStack() {
+        short retval=6;
+        if(Boolean.getBoolean(Global.IPv4)) {
+            retval=4;
+        }
+
+        if(Boolean.getBoolean(Global.IPv6)) {
+            retval=6;
+        }
+        return retval;
+    }
 
     public static InetAddress getFirstNonLoopbackIPv6Address() throws SocketException {
         Enumeration en=NetworkInterface.getNetworkInterfaces();
@@ -2335,33 +2353,8 @@ public class Util {
     */
 
     public static void main(String args[]) throws Exception {
-        ClassConfigurator.getInstance(true);
-
-        Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), "Bela");
-        int size=Util.sizeOf(msg);
-        System.out.println("size=" + msg.size() + ", streamable size=" + size);
-
-        msg.putHeader("belaban", new NakAckHeader((byte)1, 23, 34));
-        size=Util.sizeOf(msg);
-        System.out.println("size=" + msg.size() + ", streamable size=" + size);
-
-        msg.putHeader("bla", new UdpHeader("groupname"));
-        size=Util.sizeOf(msg);
-        System.out.println("size=" + msg.size() + ", streamable size=" + size);
-
-
-        IpAddress a1=new IpAddress(1234), a2=new IpAddress("127.0.0.1", 3333);
-        a1.setAdditionalData("Bela".getBytes());
-        size=Util.sizeOf(a1);
-        System.out.println("size=" + a1.size() + ", streamable size of a1=" + size);
-        size=Util.sizeOf(a2);
-        System.out.println("size=" + a2.size() + ", streamable size of a2=" + size);
-
-
-//        System.out.println("Check for Linux:   " + checkForLinux());
-//        System.out.println("Check for Solaris: " + checkForSolaris());
-//        System.out.println("Check for Windows: " + checkForWindows());
-//        System.out.println("version: " + getJavaVersion());
+        System.out.println("IPv4: " + isIPv4Stack());
+        System.out.println("IPv6: " + isIPv6Stack());
     }
 
 
