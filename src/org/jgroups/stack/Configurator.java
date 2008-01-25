@@ -27,7 +27,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.2 2008/01/22 10:01:01 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.3 2008/01/25 12:08:44 belaban Exp $
  */
 public class Configurator {
 
@@ -123,10 +123,17 @@ public class Configurator {
         }
     }
 
-    public static void stopProtocolStack(List<Protocol> protocols, final Map<String,Tuple<TP,Short>> singletons) {
+    public static void stopProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) {
         for(final Protocol prot: protocols) {
             String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
             if(singleton_name != null && singleton_name.length() > 0) {
+                TP transport=(TP)prot;
+                final Map<String, Protocol> up_prots=transport.getUpProtocols();
+
+                synchronized(up_prots) {
+                    up_prots.remove(cluster_name);
+                }
+
                 synchronized(singletons) {
                     Tuple<TP,Short> val=singletons.get(singleton_name);
                     if(val != null) {
