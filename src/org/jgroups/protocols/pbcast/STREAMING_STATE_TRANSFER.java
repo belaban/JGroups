@@ -899,6 +899,8 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             retval += Global.BYTE_SIZE; // presence byte for my_digest
             if(my_digest != null)
                 retval += my_digest.serializedSize();
+            
+            retval += Util.size(bind_addr);                        
 
             retval += Global.BYTE_SIZE; // presence byte for state_id
             if(state_id != null)
