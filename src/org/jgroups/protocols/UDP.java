@@ -37,7 +37,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.161 2008/01/25 07:07:04 belaban Exp $
+ * @version $Id: UDP.java,v 1.162 2008/01/25 07:48:59 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -448,9 +448,9 @@ public class UDP extends TP implements Runnable {
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
             // 3a. Create mcast receiver socket
-            // mcast_sock=new MulticastSocket(mcast_port);
             tmp_addr=InetAddress.getByName(mcast_addr_name);
-            mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
+            // mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
+            mcast_sock=new MulticastSocket(mcast_port);
             mcast_sock.setTimeToLive(ip_ttl);
 
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
