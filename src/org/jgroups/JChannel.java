@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.166 2008/01/23 11:09:24 belaban Exp $
+ * @version $Id: JChannel.java,v 1.167 2008/01/25 11:57:35 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -492,7 +492,7 @@ public class JChannel extends Channel {
 
             connected=false;
             try {
-                prot_stack.stopStack(); // calls stop() in all protocols, from top to bottom
+                prot_stack.stopStack(cluster_name); // calls stop() in all protocols, from top to bottom
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("exception: " + e);
@@ -1566,7 +1566,7 @@ public class JChannel extends Channel {
 
         if(prot_stack != null) {
             try {
-                prot_stack.stopStack();
+                prot_stack.stopStack(cluster_name);
                 prot_stack.destroy();
             }
             catch(Exception e) {
