@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.2 2008/01/21 13:53:28 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.3 2008/01/25 00:24:43 bstansberry Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -106,6 +106,44 @@ public class SharedTransportTest extends ChannelTestBase {
         a.send(null, null, "message from a");
         Util.sleep(500);
         assertEquals(1, r1.size());
+    }
+    
+    /**
+     * Tests that a second channel with the same group name can be
+     * created and connected once the first channel is disconnected.
+     * 
+     * @throws Exception
+     */
+    public void testSimpleReCreation() throws Exception {
+       a=createSharedChannel(SINGLETON_1);
+       a.connect("A");
+       a.disconnect();
+       b=createSharedChannel(SINGLETON_1);
+       b.connect("A");
+    }
+    
+    /**
+     * Tests that a second channel with the same group name can be
+     * created and connected once the first channel is disconnected even
+     * if 3rd channel with a different group name is still using the shared
+     * transport.
+     * 
+     * @throws Exception
+     */
+    public void testReCreationWithSurvivingChannel() throws Exception {
+       
+       // Create 2 channels sharing a transport
+       a=createSharedChannel(SINGLETON_1);
+       a.connect("A");
+       b=createSharedChannel(SINGLETON_1);
+       b.connect("B");
+       
+       a.disconnect();
+       
+       // a is disconnected so we should be able to create a new
+       // channel with group "A"
+       c=createSharedChannel(SINGLETON_1);
+       c.connect("A");       
     }
 
 
