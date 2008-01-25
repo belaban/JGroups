@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.170 2008/01/25 07:06:45 belaban Exp $
+ * @version $Id: TP.java,v 1.171 2008/01/25 07:48:59 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1898,8 +1898,8 @@ public abstract class TP extends Protocol {
         }
 
         void start() throws IOException {
-            // diag_sock=new MulticastSocket(diagnostics_port);
-            diag_sock=Util.createMulticastSocket(null, diagnostics_port, log);
+            diag_sock=new MulticastSocket(diagnostics_port);
+            // diag_sock=Util.createMulticastSocket(null, diagnostics_port, log);
             java.util.List interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
 
