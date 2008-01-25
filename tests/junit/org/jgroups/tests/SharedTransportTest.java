@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.3 2008/01/25 00:24:43 bstansberry Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.4 2008/01/25 12:13:21 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -34,7 +34,7 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
-    public void testCreation() throws Exception {
+    public void testCreationNonSharedTransport() throws Exception {
         a=createChannel();
         a.connect("x");
         View view=a.getView();
@@ -53,6 +53,36 @@ public class SharedTransportTest extends ChannelTestBase {
         catch(Exception ex) {
             System.out.println("b was not able to join the same cluster (\"x\") as expected");
         }
+    }
+
+    public void testView() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_2);
+        a.setReceiver(new MyReceiver(SINGLETON_1));
+        b.setReceiver(new MyReceiver(SINGLETON_2));
+
+        a.connect("x");
+        b.connect("x");
+
+        View view=a.getView();
+        assertEquals(2, view.size());
+        view=b.getView();
+        assertEquals(2, view.size());
+    }
+
+    public void testView2() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("first-channel"));
+        b.setReceiver(new MyReceiver("second-channel"));
+
+        a.connect("x");
+        b.connect("y");
+
+        View view=a.getView();
+        assertEquals(1, view.size());
+        view=b.getView();
+        assertEquals(1, view.size());
     }
 
     public void testCreationOfDifferentCluster() throws Exception {
@@ -108,43 +138,88 @@ public class SharedTransportTest extends ChannelTestBase {
         assertEquals(1, r1.size());
     }
     
+
+
+
     /**
      * Tests that a second channel with the same group name can be
      * created and connected once the first channel is disconnected.
-     * 
+     *
      * @throws Exception
      */
     public void testSimpleReCreation() throws Exception {
-       a=createSharedChannel(SINGLETON_1);
-       a.connect("A");
-       a.disconnect();
-       b=createSharedChannel(SINGLETON_1);
-       b.connect("A");
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("A"));
+        a.connect("A");
+        a.disconnect();
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(new MyReceiver("A'"));
+        b.connect("A");
     }
-    
+
+
+    public void testReCreationWithSurvivingChannel() throws Exception {
+
+        // Create 2 channels sharing a transport
+        System.out.println("-- creating A");
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("A"));
+        a.connect("A");
+
+        System.out.println("-- creating B");
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(new MyReceiver("B"));
+        b.connect("B");
+
+        System.out.println("-- disconnecting A");
+        a.disconnect();
+
+        // a is disconnected so we should be able to create a new channel with group "A"
+        System.out.println("-- creating A'");
+        c=createSharedChannel(SINGLETON_1);
+        c.setReceiver(new MyReceiver("A'"));
+        c.connect("A");
+    }
+
     /**
      * Tests that a second channel with the same group name can be
      * created and connected once the first channel is disconnected even
      * if 3rd channel with a different group name is still using the shared
      * transport.
-     * 
+     *
      * @throws Exception
      */
-    public void testReCreationWithSurvivingChannel() throws Exception {
-       
-       // Create 2 channels sharing a transport
-       a=createSharedChannel(SINGLETON_1);
-       a.connect("A");
-       b=createSharedChannel(SINGLETON_1);
-       b.connect("B");
-       
-       a.disconnect();
-       
-       // a is disconnected so we should be able to create a new
-       // channel with group "A"
-       c=createSharedChannel(SINGLETON_1);
-       c.connect("A");       
+    public void testCreationFollowedByDeletion() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("A"));
+        a.connect("A");
+
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(new MyReceiver("B"));
+        b.connect("B");
+
+        b.close();
+        a.close();
     }
+
+
+     public void test2ChannelsCreationFollowedByDeletion() throws Exception {
+         a=createSharedChannel(SINGLETON_1);
+         a.setReceiver(new MyReceiver("A"));
+         a.connect("A");
+
+         b=createSharedChannel(SINGLETON_2);
+         b.setReceiver(new MyReceiver("B"));
+         b.connect("A");
+
+         c=createSharedChannel(SINGLETON_2);
+         c.setReceiver(new MyReceiver("C"));
+         c.connect("B");
+
+         c.send(null, null, "hello world from C");
+    }
+
+ 
 
 
 
@@ -180,6 +255,10 @@ public class SharedTransportTest extends ChannelTestBase {
         public void receive(Message msg) {
             System.out.println("[" + name + "]: received message from " + msg.getSrc() + ": " + msg.getObject());
             list.add(msg);
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[" + name + "]: view = " + new_view);
         }
     }
 
