@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.46 2008/01/24 13:53:37 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.47 2008/01/25 02:46:43 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -380,7 +380,13 @@ public class MuxChannel extends JChannel {
         if(!mux.stateTransferListenersPresent())
             return mux.getChannel().getState(target, my_id, timeout, useFlushIfPresent);
         else {
-            return mux.getState(target, my_id, timeout);
+            View serviceView = mux.getServiceView(getId());            
+            boolean fetchState = serviceView != null && serviceView.size() > 1;
+            if(fetchState){
+                return mux.getState(target, my_id, timeout);
+            }else{
+                return false;
+            }
         }
     }
 

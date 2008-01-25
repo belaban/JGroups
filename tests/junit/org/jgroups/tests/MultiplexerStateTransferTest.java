@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.2 2007/10/24 15:16:35 vlada Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.3 2008/01/25 02:45:30 vlada Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -200,15 +200,20 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
     public void testStateTransferWithRegistration() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1",true,null);
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
+        boolean rc = ch1.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
         assertEquals("cache has to be empty initially", 0, c1.size());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2",true,null);
         ch2.connect("bla");
         c2=new Cache(ch2, "cache-2");
+        rc = ch2.getState(null, 5000);
+        System.out.println("state transfer: " + rc);
         assertEquals("cache has to be empty initially", 0, c2.size());
+        
         c1.put("name", "cache-1");
         c2.put("name", "cache-2");
 
@@ -217,7 +222,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
         ch1_repl.connect("bla");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        boolean rc=ch1_repl.getState(null, 5000); // this will *not* trigger the state transfer protocol
+        rc=ch1_repl.getState(null, 5000); // this will *not* trigger the state transfer protocol
         System.out.println("state transfer: " + rc);
 
         ch2_repl.connect("bla");
