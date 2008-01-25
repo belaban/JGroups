@@ -1,0 +1,57 @@
+
+Release Notes JGroups 2.5.2
+===========================
+
+Version: $Id: ReleaseNotes-2.5.2.txt,v 1.1.2.1 2008/01/25 19:37:39 rachmatowicz Exp $
+Author: Bela Ban
+
+JGroups 2.5.2 is a patch release for 2.5 GA. It contains no new functionality, but some 
+limited feature requests and primarily bug fixes.
+
+
+IMPORTANT NOTE:
+
+JGroups 2.5.2 is also an EOL (End of Line) release for JGroups 2.5 - meaning that it
+represents the last release of JGroups 2.5.x. The reason is that 2.4.x is used in 
+JBoss EAP 4, 2.6.2 will be used in EAP 5, and 2.5.x is somewhat orphaned in between. 
+Any bugs found in 2.5 will only get fixed in 2.6. It is a simple matter to switch 
+from 2.5 to 2.6.
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+Bug fixes
+---------
+GMS: A concurrency-related exception which was preventing successful group merges and necessitated
+shutdown of the enire group.
+[JGRP-611] - MergeTask GMS ConcurrentModificationException
+
+SEQUENCER: SEQUENCER provides total ordering of messages. This issue caused total ordering to be 
+violated in circumstances involving concurrent sends.
+[JGRP-607] - SEQUENCER: incorrect ordering on concurrent sends
+
+RPC DISPATCHER: The callRemoteMethods() method would hang on some processes within a group during
+periods where group membership was changing significantly. 
+[JGRP-620] - RpcDispatcher.callRemoteMethods() hangs
+
+Feature Requests
+----------------
+REINCARNATION: reincarnation occurs when a group member crashes and upon restart assumes the 
+identity of a member known previously to the group, which leads to anomalous behaviour.
+[JGRP-130] - Problems with reincarnation 
+
+Tasks
+-----
+CHANNEL OPTIONS: Shunned channels will now automatically attempt to rejoin the group, and fetch
+the state from the coordinator by default.
+[JGRP-651] - JChannel: set auto_reconnect and auto_getstate to true by default
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland, January 2008
