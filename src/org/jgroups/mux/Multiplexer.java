@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.91 2008/01/16 06:55:08 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.92 2008/01/25 01:45:12 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -303,12 +303,17 @@ public class Multiplexer implements UpHandler {
                     catch(Exception e) {
                         if(log.isErrorEnabled())
                             log.error("failed handling merge view", e);
-                    }                                       
-                }
-                else { // regular view
-                    synchronized(service_responses) {
-                        service_responses.clear();
+                    }finally{
+                        synchronized(service_responses){                            
+                            service_responses.clear();
+                        }
+                        synchronized(services_merged_collector){
+                            services_merged_collector.clear();
+                        }
+                        services_merged.set(false);                       
                     }
+                }
+                else { // regular view                    
                     HashMap<String,List<Address>> payload = (HashMap<String, List<Address>>) view.getPayload("service_state");                                      
                     if(payload != null){
                         synchronized(service_state){                           
@@ -914,8 +919,7 @@ public class Multiplexer implements UpHandler {
         }              
 
         synchronized(service_responses){
-            copy = new HashMap<Address, Set<String>>(service_responses);
-            service_responses.clear();
+            copy = new HashMap<Address, Set<String>>(service_responses);            
         }
 
         if(log.isDebugEnabled())
@@ -923,11 +927,7 @@ public class Multiplexer implements UpHandler {
 
         // merges service_responses with service_state and emits MergeViews for
         // the services affected (MuxChannel)
-        mergeServiceState(view, copy);
-        synchronized(services_merged_collector){
-            services_merged_collector.clear();
-        }
-        services_merged.set(false);
+        mergeServiceState(view, copy);       
     } 
 
     private void mergeServiceState(MergeView view, Map<Address, Set<String>> copy) {
