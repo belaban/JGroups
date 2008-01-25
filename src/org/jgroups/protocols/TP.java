@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.171 2008/01/25 07:48:59 belaban Exp $
+ * @version $Id: TP.java,v 1.172 2008/01/25 11:58:05 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1103,9 +1103,12 @@ public abstract class TP extends Protocol {
                 tmp_prot.up(evt);
             }
             else {
-                if(log.isWarnEnabled())
-                    log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
-                            append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
+                // we discard messages for a group we don't have. If we had a scenario with channel C1 and A,B on it,
+                // and channel C2 and only A on it (asymmetric setup), then C2 would always log warnings that B was
+                // not found (Jan 25 2008 (bela))
+                // if(log.isWarnEnabled())
+                   // log.warn(new StringBuilder("discarded message from group \"").append(ch_name).
+                     //       append("\" (our groups are ").append(up_prots.keySet()).append("). Sender was ").append(msg.getSrc()));
             }
         }
         else {
