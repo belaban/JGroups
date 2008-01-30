@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.19 2008/01/23 00:50:20 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.20 2008/01/30 03:46:28 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -69,12 +69,24 @@ public class StateTransferTest extends ChannelTestBase {
             semaphore.release();
             Util.sleep(2500);
         }
+        
+        // Make sure everyone is in sync
+        if(isMuxChannelUsed()){
+            blockUntilViewsReceived(apps, getMuxFactoryCount(), 60000);
+        }else{
+            blockUntilViewsReceived(apps, 60000);
+        }            
 
         // Reacquire the semaphore tickets; when we have them all
         // we know the threads are done
-        semaphore.tryAcquire(APP_COUNT, 40, TimeUnit.SECONDS);
-
-        Util.sleep(1000);
+        boolean acquired = semaphore.tryAcquire( apps.length, 20, TimeUnit.SECONDS);
+        if(!acquired){
+            log.warn("Most likely a bug, analyse the stack below:");
+            log.warn(Util.dumpThreads());
+        }
+        
+        //allow messages to arrive 
+        Util.sleep(3000);
         // have we received all and the correct messages?
         for(int i = 0;i < apps.length;i++){
             StateTransferApplication w = apps[i];
@@ -217,22 +229,7 @@ public class StateTransferTest extends ChannelTestBase {
                     break;
                 }
             }
-        }
-
-        public void run() {
-            boolean acquired = false;
-            try{
-                acquired = semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
-                if(!acquired){
-                    throw new Exception(name + " cannot acquire semaphore");
-                }
-                useChannel();
-            }catch(Exception e){
-                log.error(name + ": " + e.getLocalizedMessage(), e);
-                // Save it for the test to check
-                exception = e;
-            }
-        }
+        }        
     }
 
     public static Test suite() {
