@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.167 2008/01/25 11:57:35 belaban Exp $
+ * @version $Id: JChannel.java,v 1.168 2008/01/30 05:18:38 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -364,13 +364,13 @@ public class JChannel extends Channel {
             Event connect_event=new Event(Event.CONNECT, cluster_name);
             Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
+                stopStack(true, false);
+                init();
                 throw new ChannelException("connect() failed", (Throwable)res);
             }
 
-            //if FLUSH is used do not return from connect() until UNBLOCK event is received
-            boolean singletonMember=my_view != null && my_view.size() == 1;
-            boolean shouldWaitForUnblock=flush_supported && receive_blocks && !singletonMember && !flush_unblock_promise.hasResult();
-            if(shouldWaitForUnblock) {
+            //if FLUSH is used do not return from connect() until UNBLOCK event is received                       
+            if(flush_supported) {
                try {
                   flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
                }
@@ -431,6 +431,8 @@ public class JChannel extends Channel {
                 // closed)
                 joinSuccessful=!(res != null && res instanceof Exception);
                 if(!joinSuccessful) {
+                    stopStack(true, false);
+                    init();
                     throw new ChannelException("connect() failed", (Throwable)res);
                 }
 
@@ -489,14 +491,8 @@ public class JChannel extends Channel {
                 Event disconnect_event=new Event(Event.DISCONNECT, local_addr);
                 down(disconnect_event);   // DISCONNECT is handled by each layer
             }
-
             connected=false;
-            try {
-                prot_stack.stopStack(cluster_name); // calls stop() in all protocols, from top to bottom
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception: " + e);
-            }
+            stopStack(true, false);            
             notifyChannelDisconnected(this);
             init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
         }
@@ -1227,13 +1223,7 @@ public class JChannel extends Channel {
                         catch(Throwable t) {
                             if(log.isWarnEnabled())
                                 log.warn("failed calling getState() in receiver", t);
-                        }
-                        //Vladimir Oct 29,2007 JChannel.java 1.156
-                        //STREAMING_STATE_TRANSFER does not require return value.
-                        //If there is not return value STATE_TRANSFER_OUTPUTSTREAM event 
-                        //can be processed concurrently by Multiplexer along with other messages 
-                        //for a specific MuxChannel
-                        //@see Multiplexer#passToMuxChannel();
+                        }                       
                     }                    
                 }
                 else if(receiver instanceof Receiver){
@@ -1262,21 +1252,19 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.UNBLOCK:
-                //discard if client has not set 'receiving blocks' to 'on'
-                if(!receive_blocks) {
-                    return null;
-                }
-                if(receiver instanceof ExtendedReceiver) {
+                //invoke receiver if block receiving is on
+                if(receive_blocks && receiver instanceof ExtendedReceiver) {                                                     
                     try {
                         ((ExtendedReceiver)receiver).unblock();
                     }
                     catch(Throwable t) {
                         if(log.isErrorEnabled())
                             log.error("failed calling unblock() in receiver", t);
-                    }                                        
+                    }                                                            
                 }
-                flush_unblock_promise.setResult(Boolean.TRUE);
-                break;
+                //flip promise
+                flush_unblock_promise.setResult(Boolean.TRUE);              
+                return null;                
             default:
                 break;
         }
@@ -1554,29 +1542,29 @@ public class JChannel extends Channel {
         if(disconnect)
             disconnect();                     // leave group if connected
 
-        if(close_mq) {
-            try {
-                if(mq != null)
-                    mq.close(false);              // closes and removes all messages
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("exception: " + e);
-            }
-        }
+        if(close_mq) 
+            closeMessageQueue(false);       
 
-        if(prot_stack != null) {
-            try {
-                prot_stack.stopStack(cluster_name);
-                prot_stack.destroy();
-            }
-            catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("failed destroying the protocol stack", e);
-            }
-        }
+        stopStack(true, true);
         closed=true;
         connected=false;
         notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
+    }
+    
+    protected void stopStack(boolean disconnect, boolean destroy) {
+        if(prot_stack != null){
+            try{
+                if(disconnect)
+                    prot_stack.stopStack(cluster_name);
+
+                if(destroy)
+                    prot_stack.destroy();
+            }catch(Exception e){
+                if(log.isErrorEnabled())
+                    log.error("failed destroying the protocol stack", e);
+            }
+        }
     }
 
 
@@ -1691,33 +1679,27 @@ public class JChannel extends Channel {
         flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
         
-        //do not return until UNBLOCK event is received        
-        boolean shouldWaitForUnblock = receive_blocks;        
-        if(shouldWaitForUnblock){
-           try{              
-              flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-           }
-           catch (TimeoutException te){              
-           }
+        //do not return until UNBLOCK event is received            
+        try{
+            flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+        }catch(TimeoutException te){
+            log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
     
     public void stopFlush(List<Address> flushParticipants) {
-        if(!flush_supported) {
+        if(!flush_supported){
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-        
+
         flush_unblock_promise.reset();
         down(new Event(Event.RESUME, flushParticipants));
-        
-        //do not return until UNBLOCK event is received        
-        boolean shouldWaitForUnblock = receive_blocks;        
-        if(shouldWaitForUnblock){
-           try{              
-              flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-           }
-           catch (TimeoutException te){              
-           }
+
+        // do not return until UNBLOCK event is received
+        try{
+            flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
+        }catch(TimeoutException te){
+            log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
     
