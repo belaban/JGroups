@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.20 2008/01/30 03:46:28 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.21 2008/02/01 04:24:50 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -67,7 +67,7 @@ public class StateTransferTest extends ChannelTestBase {
             StateTransferApplication app = apps[i];
             app.start();
             semaphore.release();
-            Util.sleep(2500);
+            Util.sleep(4000);
         }
         
         // Make sure everyone is in sync
@@ -75,18 +75,18 @@ public class StateTransferTest extends ChannelTestBase {
             blockUntilViewsReceived(apps, getMuxFactoryCount(), 60000);
         }else{
             blockUntilViewsReceived(apps, 60000);
-        }            
+        }
+        
+        Util.sleep(1000);
 
         // Reacquire the semaphore tickets; when we have them all
         // we know the threads are done
-        boolean acquired = semaphore.tryAcquire( apps.length, 20, TimeUnit.SECONDS);
+        boolean acquired = semaphore.tryAcquire( apps.length, 30, TimeUnit.SECONDS);
         if(!acquired){
             log.warn("Most likely a bug, analyse the stack below:");
             log.warn(Util.dumpThreads());
         }
-        
-        //allow messages to arrive 
-        Util.sleep(3000);
+                      
         // have we received all and the correct messages?
         for(int i = 0;i < apps.length;i++){
             StateTransferApplication w = apps[i];
@@ -211,17 +211,34 @@ public class StateTransferTest extends ChannelTestBase {
                 mapLock.unlock();
             }
         }
+        
+        public void run() {
+            boolean acquired = false;
+            try{
+                acquired = semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
+                if(!acquired){
+                    throw new Exception(name + " cannot acquire semaphore");
+                }
+                useChannel();
+            }catch(Exception e){
+                log.error(name + ": " + e.getLocalizedMessage(), e);
+                // Save it for the test to check
+                exception = e;
+            }
+        }
 
         @Override
         protected void useChannel() throws Exception {
-            channel.connect("StateTransferTest-Group");
-            channel.getState(null, 10000);
+            channel.connect("test",null,null,10000);            
             Object[] data = new Object[2];
             for(int i = from;i < to;i++){
                 data[0] = new Integer(i);
                 data[1] = "Value #" + i;
                 try{
                     channel.send(null, null, data);
+                    if(i % 100 == 0)
+                    	Util.sleep(50);
+                    
                     if(i % 1000 == 0)
                         log.info("sent " + i);
                 }catch(Exception e){
