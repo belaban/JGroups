@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.18.2.2 2008/01/30 03:46:56 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.18.2.3 2008/02/01 02:04:14 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -75,18 +75,18 @@ public class StateTransferTest extends ChannelTestBase {
             blockUntilViewsReceived(apps, getMuxFactoryCount(), 60000);
         }else{
             blockUntilViewsReceived(apps, 60000);
-        }            
+        }
+        
+        Util.sleep(1000);
 
         // Reacquire the semaphore tickets; when we have them all
         // we know the threads are done
-        boolean acquired = semaphore.tryAcquire( apps.length, 20, TimeUnit.SECONDS);
+        boolean acquired = semaphore.tryAcquire( apps.length, 30, TimeUnit.SECONDS);
         if(!acquired){
             log.warn("Most likely a bug, analyse the stack below:");
             log.warn(Util.dumpThreads());
         }
-        
-        //allow messages to arrive 
-        Util.sleep(3000);
+                      
         // have we received all and the correct messages?
         for(int i = 0;i < apps.length;i++){
             StateTransferApplication w = apps[i];
@@ -209,6 +209,21 @@ public class StateTransferTest extends ChannelTestBase {
                 e.printStackTrace();
             }finally{
                 mapLock.unlock();
+            }
+        }
+        
+        public void run() {
+            boolean acquired = false;
+            try{
+                acquired = semaphore.tryAcquire(60000L, TimeUnit.MILLISECONDS);
+                if(!acquired){
+                    throw new Exception(name + " cannot acquire semaphore");
+                }
+                useChannel();
+            }catch(Exception e){
+                log.error(name + ": " + e.getLocalizedMessage(), e);
+                // Save it for the test to check
+                exception = e;
             }
         }
 
