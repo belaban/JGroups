@@ -24,7 +24,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.18.2.3 2008/02/01 02:04:14 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.18.2.4 2008/02/01 03:48:41 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -67,7 +67,7 @@ public class StateTransferTest extends ChannelTestBase {
             StateTransferApplication app = apps[i];
             app.start();
             semaphore.release();
-            Util.sleep(2500);
+            Util.sleep(4000);
         }
         
         // Make sure everyone is in sync
@@ -229,14 +229,16 @@ public class StateTransferTest extends ChannelTestBase {
 
         @Override
         protected void useChannel() throws Exception {
-            channel.connect("StateTransferTest-Group");
-            channel.getState(null, 10000);
+            channel.connect("test",null,null,10000);            
             Object[] data = new Object[2];
             for(int i = from;i < to;i++){
                 data[0] = new Integer(i);
                 data[1] = "Value #" + i;
                 try{
                     channel.send(null, null, data);
+                    if(i % 100 == 0)
+                    	Util.sleep(50);
+                    
                     if(i % 1000 == 0)
                         log.info("sent " + i);
                 }catch(Exception e){
