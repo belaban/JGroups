@@ -615,6 +615,68 @@ public class ChannelTestBase extends TestCase {
         }        
     }   
 
+    protected void checkEventSequence(PushChannelApplication receiver, boolean isMuxUsed) {
+        List<Object> events = receiver.getEvents();
+        String eventString = "[" + receiver.getName()
+                             + "|"
+                             + receiver.getLocalAddress()
+                             + ",events:"
+                             + events;
+        log.info(eventString);        
+        assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
+        int size = events.size();
+        for(int i = 0;i < size;i++){
+            Object event = events.get(i);
+            if(event instanceof BlockEvent){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    if(isMuxUsed){
+                        assertTrue("After Block should be View or Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                                   ev instanceof View || ev instanceof UnblockEvent);
+                    }else{
+                        assertTrue("After Block should be View but it is " + ev.getClass() + ",events= " + eventString,
+                                   ev instanceof View);
+                    }
+                }
+                if(i > 0){
+                    Object ev = events.get(i - 1);
+                    assertTrue("Before Block should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
+                }
+            }
+            else if(event instanceof View){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    assertTrue("After View should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof UnblockEvent);
+                }
+                Object ev = events.get(i - 1);
+                assertTrue("Before View should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                           ev instanceof BlockEvent);
+            }
+            else if(event instanceof UnblockEvent){
+                if(i + 1 < size){
+                    Object ev = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof BlockEvent);
+                }
+
+                Object ev = events.get(i - 1);
+                if(isMuxUsed){
+                    assertTrue("Before UnBlock should be View or Block but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof View || ev instanceof BlockEvent);
+                }else{
+                    assertTrue("Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString,
+                               ev instanceof View);
+                }
+            }
+        }       
+    }
+    
+
     protected interface MemberRetrievable {
         public List getMembers();
 
