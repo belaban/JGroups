@@ -32,7 +32,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.4.2.1 2008/01/16 09:15:25 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.4.2.2 2008/02/04 03:49:18 vlada Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {
 
@@ -186,7 +186,8 @@ public class ReconciliationTest extends ChannelTestBase {
         for(int i = 1;i <= 5;i++){
             last.send(null, null, new Integer(i));
         }
-        Util.sleep(1000); // until al messages have been received, this is
+        Util.sleep(1500); 
+        // until al messages have been received, this is
         // asynchronous so we need to wait a bit
 
         printDigests(channels, "\nDigests after " + lastsName + " sent messages:");
