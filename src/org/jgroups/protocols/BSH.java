@@ -1,4 +1,4 @@
-// $Id: BSH.java,v 1.18 2007/05/01 10:55:09 belaban Exp $
+// $Id: BSH.java,v 1.19 2008/02/04 13:43:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,7 +23,8 @@ import java.io.Serializable;
 /**
  * Beanshell (<a href=http://www.beanshell.org>www.beanshell.org</a>) interpreter class.
  * The <tt>eval()</tt> method receives Java code, executes it and returns the
- * result of the evaluation (or an exception).
+ * result of the evaluation (or an exception).<p/>
+ * This protocol is experimental
  * User: Bela
  * Date: Mar 8, 2003
  * Time: 1:57:07 PM
