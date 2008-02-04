@@ -18,9 +18,10 @@ import java.util.concurrent.TimeUnit;
  * Note that the max size should always be greater than the size of the largest message to be received, otherwise an
  * additon would always fail because msg.length > max size !<br/>
  * Access patterns: this instance is always accessed by the thread pool only ! Concurrent take() or poll() methods,
- * but only a single thread at a time calls put() !
+ * but only a single thread at a time calls put() !<p/>
+ * Note that as of Jan 2008, this class has not yet been used.
  * @author Bela Ban
- * @version $Id: SizeBoundedQueue.java,v 1.3 2006/12/31 14:29:52 belaban Exp $
+ * @version $Id: SizeBoundedQueue.java,v 1.4 2008/02/04 13:43:14 belaban Exp $
  */
 public class SizeBoundedQueue implements BlockingQueue {
     int max_size=1000 * 1000;

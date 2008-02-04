@@ -1,4 +1,4 @@
-// $Id: ReusableThread.java,v 1.7 2005/01/16 01:04:52 belaban Exp $
+// $Id: ReusableThread.java,v 1.8 2008/02/04 13:43:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -24,7 +24,7 @@ import org.apache.commons.logging.LogFactory;
  * then stopped
  * <li>ReusableThread is started, assigned a task
  * </ol>
- *
+ * @deprecated This class will be removed in 3.0
  * @author Bela Ban
  */
 public class ReusableThread implements Runnable {

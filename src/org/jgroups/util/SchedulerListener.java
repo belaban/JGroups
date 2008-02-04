@@ -1,8 +1,9 @@
-// $Id: SchedulerListener.java,v 1.2 2005/07/17 11:33:58 chrislott Exp $
+// $Id: SchedulerListener.java,v 1.3 2008/02/04 13:43:14 belaban Exp $
 
 package org.jgroups.util;
 
 /**
+ * @deprecated This class will be removed in 3.0
  * Provides callback for use with a {@link Scheduler}.
  */
 public interface SchedulerListener {

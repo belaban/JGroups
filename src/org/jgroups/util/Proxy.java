@@ -1,4 +1,4 @@
-// $Id: Proxy.java,v 1.4 2008/01/22 10:44:33 belaban Exp $
+// $Id: Proxy.java,v 1.5 2008/02/04 13:43:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -61,7 +61,8 @@ import java.util.concurrent.TimeUnit;
  * <br/>
  * If you run a web browser, simply enter https://<host>:<port> as URL to connect to an SSLServerSocket
  * <br/>Note that we cannot use JDK 1.4's selectors for SSL sockets, as
- * getChannel() on an SSL socket doesn't seem to work.
+ * getChannel() on an SSL socket doesn't seem to work.<p/>
+ * <em>Note that this class is exoerimental and is not supported !<em/>
  * @todo Check whether SSLSocket.getChannel() or SSLServerSocket.getChannel() works.
  * @author Bela Ban
  */

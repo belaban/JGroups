@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.15 2007/06/26 18:51:16 belaban Exp $
+// $Id: Scheduler.java,v 1.16 2008/02/04 13:43:14 belaban Exp $
 
 package org.jgroups.util;
 
@@ -17,7 +17,7 @@ import org.jgroups.Global;
  * handled. This is recursive: a priority task can always be interrupted by another priority
  * task.  Resursion ends when no more priority tasks are added, or when the thread pool is
  * exhausted.
- * 
+ * @deprecated This class will be removed in 3.0
  * @author Bela Ban
  */
 public class Scheduler implements Runnable {

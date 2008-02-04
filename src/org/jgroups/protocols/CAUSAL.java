@@ -54,8 +54,9 @@ import java.util.*;
  *<p>
  *    for every k:1...n VT(pj)[k] == max(VT(mi)[k],VT(pj)[k])
  *</p>
+ * <em>Note that this protocol is experimental and has never been tested extensively !</em>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Id: CAUSAL.java,v 1.18 2008/01/22 10:44:30 belaban Exp $
+ *  @version $Id: CAUSAL.java,v 1.19 2008/02/04 13:43:14 belaban Exp $
  *
  **/
 
