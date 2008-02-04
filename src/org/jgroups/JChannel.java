@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.168 2008/01/30 05:18:38 vlada Exp $
+ * @version $Id: JChannel.java,v 1.169 2008/02/04 07:47:40 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1551,16 +1551,17 @@ public class JChannel extends Channel {
         notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
     }
-    
+
     protected void stopStack(boolean disconnect, boolean destroy) {
-        if(prot_stack != null){
-            try{
+        if(prot_stack != null) {
+            try {
                 if(disconnect)
                     prot_stack.stopStack(cluster_name);
 
                 if(destroy)
                     prot_stack.destroy();
-            }catch(Exception e){
+            }
+            catch(Exception e) {
                 if(log.isErrorEnabled())
                     log.error("failed destroying the protocol stack", e);
             }
@@ -1675,20 +1676,21 @@ public class JChannel extends Channel {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-        
+
         flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
-        
+
         //do not return until UNBLOCK event is received            
-        try{
+        try {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }catch(TimeoutException te){
+        }
+        catch(TimeoutException te) {
             log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
-    
+
     public void stopFlush(List<Address> flushParticipants) {
-        if(!flush_supported){
+        if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
 
@@ -1696,9 +1698,10 @@ public class JChannel extends Channel {
         down(new Event(Event.RESUME, flushParticipants));
 
         // do not return until UNBLOCK event is received
-        try{
+        try {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }catch(TimeoutException te){
+        }
+        catch(TimeoutException te) {
             log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
