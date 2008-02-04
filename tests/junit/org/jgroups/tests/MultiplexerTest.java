@@ -13,7 +13,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.47 2007/09/27 16:19:51 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.47.2.1 2008/02/04 03:31:12 vlada Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -213,7 +213,7 @@ public class MultiplexerTest extends ChannelTestBase {
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
         ch1_repl.connect("bla");
-        Util.sleep(200);
+        Util.sleep(500);
 
         View v=ch1_repl.getView();
         assertNotNull(v);
