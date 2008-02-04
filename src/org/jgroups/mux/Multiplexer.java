@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.5 2008/01/25 01:45:06 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.6 2008/02/04 14:24:46 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -958,11 +958,13 @@ public class Multiplexer implements UpHandler {
         // now emit MergeViews for all services which were modified
         for(String service:modified_services) {           
             MuxChannel ch=services.get(service);
-            List<Address> hosts=service_state.get(service);           
-            Vector<Address> membersCopy = new Vector<Address>(view.getMembers());
-            membersCopy.retainAll(hosts);
-            MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());               
-            passToMuxChannel(ch, new Event(Event.VIEW_CHANGE, v), fifo_queue, null, service, false);
+            if(ch != null) {
+                List<Address> hosts=service_state.get(service);           
+                Vector<Address> membersCopy = new Vector<Address>(view.getMembers());
+                membersCopy.retainAll(hosts);
+                MergeView v=new MergeView(view.getVid(), membersCopy, view.getSubgroups());
+                passToMuxChannel(ch, new Event(Event.VIEW_CHANGE, v), fifo_queue, null, service, false);
+            }
         }
     }
 
