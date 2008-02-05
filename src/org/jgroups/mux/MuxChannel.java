@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.6 2008/01/25 02:44:00 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.7 2008/02/05 01:19:15 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -119,8 +119,14 @@ public class MuxChannel extends JChannel {
         return mux != null? mux.getChannel().getProtocolStack() : null;
     }
 
-    public Map dumpStats() {
-        return mux.getChannel().dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=mux.getChannel().getProtocolStack().dumpStats();
+        if(retval != null) {
+            Map<String,Long> tmp=dumpChannelStats();
+            if(tmp != null)
+                retval.put("channel", tmp);
+        } 
+        return retval;
     }
 
 
