@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.8 2008/01/25 12:10:37 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.9 2008/02/05 11:28:34 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -567,30 +567,36 @@ public abstract class TP extends Protocol {
 
 
         // ========================================== OOB thread pool ==============================
-        if(oob_thread_pool_enabled) { // create a ThreadPoolExecutor for the unmarshaller thread pool
-            if(oob_thread_pool_queue_enabled)
-                oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
-            else
-                oob_thread_pool_queue=new SynchronousQueue<Runnable>();
-            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB");
-        }
-        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-            oob_thread_pool=new DirectExecutor();
+        // create a ThreadPoolExecutor for the unmarshaller thread pool
+        if(oob_thread_pool == null) { // only create if not yet set (e.g. by a user)
+            if(oob_thread_pool_enabled) {
+                if(oob_thread_pool_queue_enabled)
+                    oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
+                else
+                    oob_thread_pool_queue=new SynchronousQueue<Runnable>();
+                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB");
+            }
+            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                oob_thread_pool=new DirectExecutor();
+            }
         }
 
 
         // ====================================== Regular thread pool ===========================
-        if(thread_pool_enabled) { // create a ThreadPoolExecutor for the unmarshaller thread pool
-            if(thread_pool_queue_enabled)
-                thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
-            else
-                thread_pool_queue=new SynchronousQueue<Runnable>();
-            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                         thread_pool_rejection_policy, thread_pool_queue, "Incoming");
-        }
-        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-            thread_pool=new DirectExecutor();
+        // create a ThreadPoolExecutor for the unmarshaller thread pool
+        if(thread_pool == null) { // only create if not yet set (e.g.by a user)
+            if(thread_pool_enabled) {
+                if(thread_pool_queue_enabled)
+                    thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
+                else
+                    thread_pool_queue=new SynchronousQueue<Runnable>();
+                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                             thread_pool_rejection_policy, thread_pool_queue, "Incoming");
+            }
+            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+                thread_pool=new DirectExecutor();
+            }
         }
 
 
