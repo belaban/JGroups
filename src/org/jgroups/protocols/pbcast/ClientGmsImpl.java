@@ -20,7 +20,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Id: ClientGmsImpl.java,v 1.56.2.3 2008/02/05 11:54:24 belaban Exp $
+ * @version $Id: ClientGmsImpl.java,v 1.56.2.4 2008/02/05 13:19:09 belaban Exp $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -144,12 +144,19 @@ public class ClientGmsImpl extends GmsImpl {
                         throw new SecurityException(failure);
 
                     // 2. Install digest
+                    // See if the digest does not have senders, this seems to happen on high volume startup
+                    if(rsp.getDigest() == null || rsp.getDigest().getSenders() == null) {
+                        if(log.isWarnEnabled())
+                            log.warn("digest response has no senders: digest=" + rsp.getDigest());
+                        rsp=null; // just skip the response we guess
+                        continue;
+                    }
                     MutableDigest tmp_digest=new MutableDigest(rsp.getDigest());
                     tmp_view=rsp.getView();
-                    if(tmp_digest == null || tmp_view == null) {
+                    if(tmp_view == null) {
                         if(log.isErrorEnabled())
-                            log.error("JoinRsp has a null view or digest: view=" + tmp_view
-                                    + ", digest=" + tmp_digest + ", skipping it");
+                            log.error("JoinRsp has a null view, skipping it");
+                        rsp=null;
                     }
                     else {
                         if(!tmp_digest.contains(gms.local_addr)) {
@@ -166,6 +173,7 @@ public class ClientGmsImpl extends GmsImpl {
                         if(!installView(tmp_view)) {
                             if(log.isErrorEnabled())
                                 log.error("view installation failed, retrying to join group");
+                            rsp=null;
                             continue;
                         }
 
@@ -190,6 +198,7 @@ public class ClientGmsImpl extends GmsImpl {
             catch(Throwable e) {
                 if(log.isDebugEnabled())
                     log.debug("exception=" + e + ", retrying");
+                rsp=null;
             }
         }
     }
@@ -245,10 +254,10 @@ public class ClientGmsImpl extends GmsImpl {
      */
     private boolean installView(View new_view) {
         Vector<Address> mems=new_view.getMembers();
-         if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
+        if(log.isDebugEnabled()) log.debug("new_view=" + new_view);
         if(gms.local_addr == null || mems == null || !mems.contains(gms.local_addr)) {
-            if(log.isErrorEnabled()) log.error("I (" + gms.local_addr +
-                                                       ") am not member of " + mems + ", will not install view");
+            if(log.isErrorEnabled())
+                log.error("I (" + gms.local_addr + ") am not member of " + mems + ", will not install view");
             return false;
         }
         gms.installView(new_view);
