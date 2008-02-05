@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.3 2008/01/22 10:01:28 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.4 2008/02/05 16:00:43 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -1137,6 +1137,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
             Address sender=it.next();
             if(!new_members.contains(sender)) {
+                if(local_addr != null && local_addr.equals(sender)) {
+                    if(log.isErrorEnabled())
+                        log.error("will not remove myself (" + sender + ") from xmit_table, received incorrect new membership of " + new_members);
+                    continue;
+                }
                 win=xmit_table.get(sender);
                 win.reset();
                 if(log.isDebugEnabled()) {
@@ -1190,7 +1195,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             return;
         }
 
-        clear();
+        if(local_addr != null && digest.contains(local_addr)) {
+            clear();
+        }
+        else {
+            // remove all but local_addr (if not null)
+            for(Iterator<Address> it=xmit_table.keySet().iterator(); it.hasNext();) {
+                Address key=it.next();
+                if(local_addr != null && local_addr.equals(key)) {
+                    ;
+                }
+                else {
+                    it.remove();
+                }
+            }
+        }
 
         Address sender;
         Digest.Entry val;
