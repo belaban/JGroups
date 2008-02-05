@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.169 2008/02/04 07:47:40 belaban Exp $
+ * @version $Id: JChannel.java,v 1.170 2008/02/05 01:18:22 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -570,18 +570,18 @@ public class JChannel extends Channel {
      * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is
      * used for the channel itself") and the values are property maps.
      */
-    public Map dumpStats() {
-        Map retval=prot_stack.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=prot_stack.dumpStats();
         if(retval != null) {
-            Map tmp=dumpChannelStats();
+            Map<String,Long> tmp=dumpChannelStats();
             if(tmp != null)
                 retval.put("channel", tmp);
         }
         return retval;
     }
 
-    private Map dumpChannelStats() {
-        Map retval=new HashMap();
+    protected Map<String,Long> dumpChannelStats() {
+        Map<String,Long> retval=new HashMap<String,Long>();
         retval.put("sent_msgs", new Long(sent_msgs));
         retval.put("sent_bytes", new Long(sent_bytes));
         retval.put("received_msgs", new Long(received_msgs));
@@ -1445,7 +1445,7 @@ public class JChannel extends Channel {
         }
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
-        Vector t=new Vector(1);
+        Vector<Address> t=new Vector<Address>(1);
         t.addElement(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
     }
