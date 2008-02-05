@@ -23,6 +23,8 @@ else
    CP=$CLASSPATH
 fi
 
+#java -classpath $CP -Dbind.address=192.168.2.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
+#sleep 5
 
 count=0
 while [ $count -lt 20 ]
