@@ -20,7 +20,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Id: ClientGmsImpl.java,v 1.56.2.2 2008/01/11 01:43:11 vlada Exp $
+ * @version $Id: ClientGmsImpl.java,v 1.56.2.3 2008/02/05 11:54:24 belaban Exp $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -75,7 +75,7 @@ public class ClientGmsImpl extends GmsImpl {
                 List<PingRsp> responses=findInitialMembers(join_promise);
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
-                if(responses.isEmpty()) {
+                if(responses == null || responses.isEmpty()) {
                     if(gms.disable_initial_coord) {
                         if(log.isTraceEnabled())
                             log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
