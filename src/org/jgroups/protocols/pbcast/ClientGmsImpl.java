@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.60 2008/01/11 03:45:02 vlada Exp $
+// $Id: ClientGmsImpl.java,v 1.61 2008/02/05 11:57:01 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.60 $
+ * @version $Revision: 1.61 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -76,7 +76,7 @@ public class ClientGmsImpl extends GmsImpl {
                 List<PingRsp> responses=findInitialMembers(join_promise);
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
-                if(responses.isEmpty()) {
+                if(responses == null || responses.isEmpty()) {
                     if(gms.disable_initial_coord) {
                         if(log.isTraceEnabled())
                             log.trace("received an initial membership of 0, but cannot become coordinator " + "(disable_initial_coord=true), will retry fetching the initial membership");
