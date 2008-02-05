@@ -20,15 +20,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59.2.2 2008/01/25 12:09:12 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.59.2.3 2008/02/05 11:26:46 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
     public static final int ABOVE = 1; // used by insertProtocol()
     public static final int BELOW = 2; // used by insertProtocol()
 
-    protected final PatternedThreadFactory thread_factory;
-    protected final PatternedThreadFactory timer_thread_factory;
+    protected PatternedThreadFactory thread_factory;
+    protected PatternedThreadFactory timer_thread_factory;
     public final TimeScheduler timer;
     private Protocol top_prot = null;
     private Protocol bottom_prot = null;
@@ -76,6 +76,19 @@ public class ProtocolStack extends Protocol implements Transport {
     
     public ThreadFactory getThreadFactory(){
         return thread_factory;
+    }
+
+    public ThreadFactory getTimerThreadFactory() {
+        return timer_thread_factory;
+    }
+
+    public void setThreadFactory(ThreadFactory f) {
+        thread_factory=new PatternedThreadFactory(f, null);
+    }
+
+    public void setTimerThreadFactory(ThreadFactory f) {
+        timer_thread_factory=new PatternedThreadFactory(f, null);
+        timer.setThreadFactory(f);
     }
 
     public Map<Thread,ReentrantLock> getLocks() {
@@ -431,9 +444,7 @@ public class ProtocolStack extends Protocol implements Transport {
         private final ThreadFactory f;
         private ThreadNamingPattern pattern;
         
-        public PatternedThreadFactory(ThreadFactory factory,
-                ThreadNamingPattern pattern){
-            
+        public PatternedThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern){
             f = factory;
             this.pattern = pattern;           
         }
