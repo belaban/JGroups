@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.8 2008/01/30 05:18:40 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.9 2008/02/05 01:19:15 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -570,18 +570,18 @@ public class JChannel extends Channel {
      * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is
      * used for the channel itself") and the values are property maps.
      */
-    public Map dumpStats() {
-        Map retval=prot_stack.dumpStats();
+    public Map<String,Object> dumpStats() {
+        Map<String,Object> retval=prot_stack.dumpStats();
         if(retval != null) {
-            Map tmp=dumpChannelStats();
+            Map<String,Long> tmp=dumpChannelStats();
             if(tmp != null)
                 retval.put("channel", tmp);
         }
         return retval;
     }
 
-    private Map dumpChannelStats() {
-        Map retval=new HashMap();
+    protected Map<String,Long> dumpChannelStats() {
+        Map<String,Long> retval=new HashMap<String,Long>();
         retval.put("sent_msgs", new Long(sent_msgs));
         retval.put("sent_bytes", new Long(sent_bytes));
         retval.put("received_msgs", new Long(received_msgs));
@@ -1445,7 +1445,7 @@ public class JChannel extends Channel {
         }
 
         /*create a temporary view, assume this channel is the only member and is the coordinator*/
-        Vector t=new Vector(1);
+        Vector<Address> t=new Vector<Address>(1);
         t.addElement(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
     }
@@ -1551,16 +1551,17 @@ public class JChannel extends Channel {
         notifyChannelClosed(this);
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
     }
-    
+
     protected void stopStack(boolean disconnect, boolean destroy) {
-        if(prot_stack != null){
-            try{
+        if(prot_stack != null) {
+            try {
                 if(disconnect)
                     prot_stack.stopStack(cluster_name);
 
                 if(destroy)
                     prot_stack.destroy();
-            }catch(Exception e){
+            }
+            catch(Exception e) {
                 if(log.isErrorEnabled())
                     log.error("failed destroying the protocol stack", e);
             }
@@ -1675,20 +1676,21 @@ public class JChannel extends Channel {
         if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-        
+
         flush_unblock_promise.reset();
         down(new Event(Event.RESUME));
-        
+
         //do not return until UNBLOCK event is received            
-        try{
+        try {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }catch(TimeoutException te){
+        }
+        catch(TimeoutException te) {
             log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
-    
+
     public void stopFlush(List<Address> flushParticipants) {
-        if(!flush_supported){
+        if(!flush_supported) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
 
@@ -1696,9 +1698,10 @@ public class JChannel extends Channel {
         down(new Event(Event.RESUME, flushParticipants));
 
         // do not return until UNBLOCK event is received
-        try{
+        try {
             flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
-        }catch(TimeoutException te){
+        }
+        catch(TimeoutException te) {
             log.warn("Timeout waiting for UNBLOCK event at " + getLocalAddress());
         }
     }
