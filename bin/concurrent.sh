@@ -5,9 +5,7 @@ BIN=`dirname $0`
 
 LIB=$BIN/../lib
 
-LIBS=$LIB/log4j-1.2.6.jar:$LIB/commons-logging.jar:$LIB/concurrent.jar
-
-echo $CLASSPATH
+LIBS=$LIB/commons-logging.jar
 
 CLASSPATH=$BIN/../classes:$CLASSPATH:$LIBS
 
@@ -30,7 +28,8 @@ count=0
 while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
-  java -classpath $CP -Dbind.address=192.168.0.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
+  # change the IP address to your system
+  java -classpath $CP -Dbind.address=192.168.2.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
   sleep 1
   count=$(($count+1))
 done
