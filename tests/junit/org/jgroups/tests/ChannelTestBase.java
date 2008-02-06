@@ -224,20 +224,20 @@ public class ChannelTestBase extends TestCase {
 
         protected JChannel createChannel(String configFile, boolean useBlocking)
                 throws Exception {
-            HashMap channelOptions = new HashMap();
-            channelOptions.put(new Integer(Channel.BLOCK), Boolean.valueOf(useBlocking));
+            Map<Integer,Object> channelOptions = new HashMap<Integer,Object>();
+            channelOptions.put(Channel.BLOCK, useBlocking);
             return createChannel(configFile, channelOptions);
         }
 
-        protected JChannel createChannel(String configFile, Map channelOptions)
+        protected JChannel createChannel(String configFile, Map<Integer,Object> channelOptions)
                 throws Exception {
             JChannel ch = null;
             log.info("Using configuration file " + configFile);
             ch = new JChannel(configFile);
-            for (Iterator iter = channelOptions.keySet().iterator(); iter.hasNext();) {
-                Integer key = (Integer) iter.next();
-                Object value = channelOptions.get(key);
-                ch.setOpt(key.intValue(), value);
+            for (Map.Entry<Integer,Object> entry: channelOptions.entrySet()) {
+                Integer key = entry.getKey();
+                Object value = entry.getValue();
+                ch.setOpt(key, value);
             }
             return ch;
         }
