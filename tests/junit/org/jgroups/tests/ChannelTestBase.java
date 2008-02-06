@@ -93,8 +93,10 @@ public class ChannelTestBase extends TestCase {
 
     protected static boolean isTunnelUsed() {
 
+        String channelConf = System.getProperty("channel.conf","");
+        String channelFlushConf = System.getProperty("channel.conf.flush","");
         // TODO add maybe a bit more foolproof check later
-        return CHANNEL_CONFIG.contains("tunnel");
+        return channelConf.contains("tunnel") || channelFlushConf.contains("tunnel");
     }
 
     protected void tearDown() throws Exception {
@@ -277,11 +279,16 @@ public class ChannelTestBase extends TestCase {
     protected interface ChannelTestFactory {
         public Channel createChannel(Object id) throws Exception;
     }
+    
+    interface EventSequence{
+        List<Object> getEvents();
+        String getName();
+    }
 
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication implements Runnable, MemberRetrievable {
+    protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable {
         protected Channel channel;
 
         protected Thread thread;
@@ -486,7 +493,7 @@ public class ChannelTestBase extends TestCase {
 
         public void viewAccepted(View new_view) {
             events.add(new_view);
-            log.debug("Channel " + getLocalAddress()
+            log.info("Channel " + getLocalAddress()
                       + "["
                       + getName()
                       + "] accepted view "
@@ -544,8 +551,72 @@ public class ChannelTestBase extends TestCase {
                 }
             }
         }
-    }
-    
+    }  
+
+    protected void checkEventStateTransferSequence(EventSequence receiver) {
+        
+        List<Object> events = receiver.getEvents();
+        String eventString = "[" + receiver.getName() + ",events:" + events;
+        log.info(eventString);        
+        assertNotNull(events);
+        assertTrue(events.size()>1);
+        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
+        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
+        int size = events.size();
+        for(int i = 0;i < size;i++){
+            Object event = events.get(i);
+            if(event instanceof BlockEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After Block should be state|unblock|view, but it is " + o.getClass() + ",events= "+ eventString,
+                               o instanceof SetStateEvent || o instanceof GetStateEvent
+                                       || o instanceof UnblockEvent
+                                       || o instanceof View);
+                }
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString, 
+                               o instanceof UnblockEvent);
+                }
+            }
+            else if(event instanceof SetStateEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After setstate should be unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent);
+                }
+                Object o = events.get(i - 1);
+                assertTrue("Before setstate should be block|view, but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || o instanceof View);
+            }
+            else if(event instanceof GetStateEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After getstate should be view/unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent || o instanceof View); 
+                }
+                Object o = events.get(i - 1);
+                assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
+                           o instanceof BlockEvent || o instanceof View || o instanceof GetStateEvent);
+            }
+            else if(event instanceof UnblockEvent){
+                if(i + 1 < size){
+                    Object o = events.get(i + 1);
+                    assertTrue("After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof BlockEvent);
+                }
+                if(i > 0){
+                    Object o = events.get(i - 1);
+                    assertTrue("Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof SetStateEvent || o instanceof GetStateEvent
+                                       || o instanceof BlockEvent
+                                       || o instanceof View);
+                }
+            }
+
+        }        
+    }   
+
     protected void checkEventSequence(PushChannelApplication receiver, boolean isMuxUsed) {
         List<Object> events = receiver.getEvents();
         String eventString = "[" + receiver.getName()
@@ -606,70 +677,7 @@ public class ChannelTestBase extends TestCase {
             }
         }       
     }
-
-    protected void checkEventStateTransferSequence(PushChannelApplication receiver) {
-        
-        List<Object> events = receiver.getEvents();
-        String eventString = "[" + receiver.getName() + ",events:" + events;
-        log.info(eventString);        
-        assertNotNull(events);
-        assertTrue(events.size()>1);
-        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
-        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
-        int size = events.size();
-        for(int i = 0;i < size;i++){
-            Object event = events.get(i);
-            if(event instanceof BlockEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After Block should be state|unblock|view, but it is " + o.getClass() + ",events= "+ eventString,
-                               o instanceof SetStateEvent || o instanceof GetStateEvent
-                                       || o instanceof UnblockEvent
-                                       || o instanceof View);
-                }
-                if(i > 0){
-                    Object o = events.get(i - 1);
-                    assertTrue("Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString, 
-                               o instanceof UnblockEvent);
-                }
-            }
-            else if(event instanceof SetStateEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After setstate should be unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent);
-                }
-                Object o = events.get(i - 1);
-                assertTrue("Before setstate should be block|view, but it is " + o.getClass() + ",events= " + eventString,
-                           o instanceof BlockEvent || o instanceof View);
-            }
-            else if(event instanceof GetStateEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After getstate should be getstate/unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent || o instanceof GetStateEvent); 
-                }
-                Object o = events.get(i - 1);
-                assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
-                           o instanceof BlockEvent || o instanceof View || o instanceof GetStateEvent);
-            }
-            else if(event instanceof UnblockEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof BlockEvent);
-                }
-                if(i > 0){
-                    Object o = events.get(i - 1);
-                    assertTrue("Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof SetStateEvent || o instanceof GetStateEvent
-                                       || o instanceof BlockEvent
-                                       || o instanceof View);
-                }
-            }
-
-        }        
-    }   
+    
 
     protected interface MemberRetrievable {
         public List getMembers();
