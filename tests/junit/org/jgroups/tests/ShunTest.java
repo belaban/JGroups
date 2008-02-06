@@ -25,7 +25,7 @@ import org.jgroups.util.Rsp;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.2 2008/02/06 13:27:53 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.3 2008/02/06 13:43:38 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -63,30 +63,33 @@ public class ShunTest extends ChannelTestBase {
 
     public void testTwoMembersShun() throws Exception {
         c1=createChannel();
-        c1.setReceiver(new BelasReceiver("C1"));
         c1.addChannelListener(new BelasChannelListener("C1"));
         c2=createChannel();
-        c2.setReceiver(new BelasReceiver("C2"));
         c2.addChannelListener(new BelasChannelListener("C2"));
-        disp1=new RpcDispatcher(c1, null, null, this);
-        disp2=new RpcDispatcher(c2, null, null, this);
+        disp1=new RpcDispatcher(c1, null, new BelasReceiver("C1"), this);
+        disp2=new RpcDispatcher(c2, null, new BelasReceiver("C2"), this);
         c1.connect("demo");
         c2.connect("demo");
         assertEquals(2, c1.getView().size());
         
-        RspList rsps=disp1.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
+        RspList rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
         System.out.println(">> rsps:\n" + rsps);
         assertEquals(2, rsps.size());
 
         System.out.println("shunning C2:");
         c2.up(new Event(Event.EXIT));
 
+        Util.sleep(3000); // give the closer thread time to close the channel
         System.out.println("waiting for C2 to come back");
         int count=1;
-        while(c1.getView().size() < 2 && count++ < 10) {
+        while(true) {
+            View view=c2.getView();
+            if(view != null && view.size() >= 2 && count >= 10)
+                break;
+            count++;
             Util.sleep(1000);
         }
-        View view=c1.getView();
+        View view=c2.getView();
         System.out.println(">>> view is " + view + " <<<< (should have 2 members)");
         assertEquals(2, view.size());
 
@@ -278,7 +281,7 @@ public class ShunTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[name" + name + "] new_view = " + new_view);
+            System.out.println("[" + name + "] new_view = " + new_view);
         }
     }
     
