@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.7 2008/02/05 01:19:15 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.8 2008/02/06 23:24:33 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -239,8 +239,8 @@ public class MuxChannel extends JChannel {
             return;
         
         if(isConnected()){
-            notifyServiceDown();
             setConnected(false);
+            notifyServiceDown();            
         }        
         setClosed(true);      
         
