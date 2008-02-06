@@ -21,7 +21,7 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.18 2007/07/27 09:04:45 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.19 2008/02/06 11:47:30 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
@@ -53,13 +53,13 @@ public class GossipClient {
      @param gossip_hosts List of IpAddresses
      @param expiry Interval (in msecs) for the refresher task
      */
-    public GossipClient(Vector gossip_hosts, long expiry) {
+    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry) {
         if(gossip_hosts == null) {
             if(log.isErrorEnabled()) log.error("empty set of GossipRouters given");
             return;
         }
-        for(int i=0; i < gossip_hosts.size(); i++)
-            init((IpAddress) gossip_hosts.elementAt(i), expiry);
+        for(IpAddress host: gossip_hosts)
+            init(host, expiry);
     }
 
     public boolean isRefresherEnabled() {
@@ -80,7 +80,6 @@ public class GossipClient {
         // provide another refresh tools in case the channel gets reconnected
         // timer=new Timer();
         // refresher_task=new Refresher();
-
     }
 
 
@@ -339,7 +338,7 @@ public class GossipClient {
 
 
     public static void main(String[] args) {
-        Vector<Address> gossip_hosts=new Vector<Address>();
+        Vector<IpAddress> gossip_hosts=new Vector<IpAddress>();
         String host;
         InetAddress ip_addr;
         int port;
