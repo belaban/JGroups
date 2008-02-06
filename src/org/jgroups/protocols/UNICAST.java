@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.94 2008/01/23 16:40:52 belaban Exp $
+// $Id: UNICAST.java,v 1.95 2008/02/06 12:27:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -391,9 +391,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // See DESIGN for details
                 boolean rc;
                 if(use_gms && !left_members.isEmpty()) {
-                    Address mbr;
-                    for(int i=0; i < left_members.size(); i++) {
-                        mbr=left_members.elementAt(i);
+                    for(Address mbr: left_members) {
                         rc=removeConnection(mbr); // adds to previous_members
                         if(rc && log.isTraceEnabled())
                             log.trace("removed " + mbr + " from connection table, member(s) " + left_members + " left");
