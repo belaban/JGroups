@@ -1,4 +1,4 @@
-// $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
+// $Id: ChannelTest.java,v 1.10.2.1 2008/02/06 07:01:57 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -16,7 +16,7 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.10 2007/09/19 20:42:42 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.10.2.1 2008/02/06 07:01:57 vlada Exp $
  */
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
@@ -170,24 +170,42 @@ public class ChannelTest extends ChannelTestBase {
         ch2.close();
     }
     
-    public void testNoViewIsReceivedAferDisconnect() throws Exception {    	
-        final Channel ch2=createChannel();            
+    public void testNoViewIsReceivedAferDisconnect() throws Exception {
+        final Channel ch2 = createChannel();
         ReceiverAdapter ra = new ReceiverAdapter() {
-        	
-			@Override
-			public void viewAccepted(View new_view) {				
-				receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
-			}		
-		};
+
+            @Override
+            public void viewAccepted(View new_view) {
+                receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
+            }
+        };
         ch2.setReceiver(ra);
         ch2.connect(GROUP);
-          
+
         Util.sleep(1000);
         ch2.disconnect();
         Util.sleep(1000);
         assertFalse("Received view where not member", receivedViewWhenDisconnected);
-        
-        ch2.close();        
+
+        ch2.close();
+    }
+    
+    public void testNoViewIsReceivedAferClose() throws Exception {
+        final Channel ch2 = createChannel();
+        ReceiverAdapter ra = new ReceiverAdapter() {
+
+            @Override
+            public void viewAccepted(View new_view) {
+                receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
+            }
+        };
+        ch2.setReceiver(ra);
+        ch2.connect(GROUP);
+
+        Util.sleep(1000);
+        ch2.close();
+        Util.sleep(1000);
+        assertFalse("Received view where not member", receivedViewWhenDisconnected);
     }
 
 
@@ -299,7 +317,7 @@ public class ChannelTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             connected=channel.isConnected();
-            System.out.println("ConnectedChecker: channel.isConnected()=" + channel.isConnected() + ", view=" + new_view);
+            System.out.println("ConnectedChecker: channel.isConnected()=" + connected + ", view=" + new_view);
         }
     }
 
@@ -339,9 +357,6 @@ public class ChannelTest extends ChannelTestBase {
     public static void main(String[] args) {
         junit.textui.TestRunner.run(suite());
     }
-
-
-
 
 }
 
