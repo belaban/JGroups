@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.2 2008/02/06 07:21:06 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.3 2008/02/06 07:23:05 belaban Exp $
  */
 public class GossipRouterTest extends TestCase {
     final static String PROPS="tunnel.xml";
@@ -103,7 +103,7 @@ public class GossipRouterTest extends TestCase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("**********************[" + name + "]: view=" + new_view);
+            System.out.println("[" + name + "]: view=" + new_view);
             if(new_view.size() == 2) {
                 lock.lock();
                 try {
