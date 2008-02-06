@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.26 2007/09/25 08:41:00 belaban Exp $
+// $Id: GossipRouter.java,v 1.27 2008/02/06 11:19:07 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -921,6 +921,7 @@ public class GossipRouter {
         System.out.println("                            a gossip request after connection was established;");
         System.out.println("                            upon expiration, the router initiates the routing");
         System.out.println("                            protocol on the connection.");
+        System.out.println("        -rtimeout  <mcsec> - Routing timeout");
     }
 
 
