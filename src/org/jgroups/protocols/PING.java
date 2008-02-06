@@ -24,10 +24,11 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.36.2.1 2008/01/11 01:43:11 vlada Exp $
+ * @version $Id: PING.java,v 1.36.2.2 2008/02/06 11:52:56 belaban Exp $
  */
 public class PING extends Discovery {
     String       gossip_host=null;
+    Vector<IpAddress>  gossip_hosts=null;
     int          gossip_port=0;
     long         gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
     GossipClient client;
@@ -63,6 +64,17 @@ public class PING extends Discovery {
             props.remove("gossip_host");
         }
 
+        str=props.getProperty("gossip_hosts");
+        if(str != null) {
+            try {
+                gossip_hosts=createInitialHosts(str);
+            }
+            catch(UnknownHostException e) {
+                throw new IllegalArgumentException(e);
+            }
+            props.remove("gossip_hosts");
+        }
+
         str=props.getProperty("gossip_port");
         if(str != null) {
             gossip_port=Integer.parseInt(str);
@@ -75,7 +87,10 @@ public class PING extends Discovery {
             props.remove("gossip_refresh");
         }
 
-        if(gossip_host != null && gossip_port != 0) {
+        if(gossip_hosts != null) {
+            client=new GossipClient(gossip_hosts, gossip_refresh);
+        }
+        else if(gossip_host != null && gossip_port != 0) {
             try {
                 client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh);
             }
@@ -98,7 +113,9 @@ public class PING extends Discovery {
         if(str != null) {
             props.remove("initial_hosts");
             try {
-                initial_hosts=createInitialHosts(str);
+                initial_hosts=new ArrayList<Address>();
+                List<IpAddress> tmp=createInitialHosts(str);
+                initial_hosts.addAll(tmp);
             }
             catch(UnknownHostException e) {
                 if(log.isErrorEnabled())
@@ -210,11 +227,11 @@ public class PING extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
      */
-    private List<Address> createInitialHosts(String l) throws UnknownHostException {
+    private Vector<IpAddress> createInitialHosts(String l) throws UnknownHostException {
         StringTokenizer tok=new StringTokenizer(l, ",");
         String          t;
         IpAddress       addr;
-        java.util.List<Address> retval=new ArrayList<Address>();
+        Vector<IpAddress> retval=new Vector<IpAddress>();
 
         while(tok.hasMoreTokens()) {
             try {
