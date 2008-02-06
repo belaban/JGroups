@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.1 2008/02/05 09:54:44 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.2 2008/02/06 07:21:06 belaban Exp $
  */
 public class GossipRouterTest extends TestCase {
     final static String PROPS="tunnel.xml";
@@ -72,7 +72,7 @@ public class GossipRouterTest extends TestCase {
         long target_time=System.currentTimeMillis() + 30000;
         lock.lock();
         try {
-            while(System.currentTimeMillis() < target_time) {
+            while(System.currentTimeMillis() < target_time && done.get() == false) {
                 cond.await(1000, TimeUnit.MILLISECONDS);
             }
         }
@@ -80,9 +80,13 @@ public class GossipRouterTest extends TestCase {
             lock.unlock();
         }
 
-        View view=c2.getView();
+        Util.sleep(500);
+        View view=c1.getView();
         System.out.println("view=" + view);
         assertEquals(2, view.size());
+
+        c2.close();
+        c1.close();
     }
 
     private static class MyReceiver extends ReceiverAdapter {
@@ -99,7 +103,7 @@ public class GossipRouterTest extends TestCase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "]: view=" + new_view);
+            System.out.println("**********************[" + name + "]: view=" + new_view);
             if(new_view.size() == 2) {
                 lock.lock();
                 try {
