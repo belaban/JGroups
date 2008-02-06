@@ -4,6 +4,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
 import java.util.Map;
+import java.util.Vector;
 import java.util.concurrent.Semaphore;
 
 import junit.framework.Test;
@@ -25,7 +26,7 @@ import org.jgroups.util.Rsp;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.3 2008/02/06 13:43:38 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.4 2008/02/06 17:05:56 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -76,20 +77,32 @@ public class ShunTest extends ChannelTestBase {
         System.out.println(">> rsps:\n" + rsps);
         assertEquals(2, rsps.size());
 
-        System.out.println("shunning C2:");
+        View view=c1.getView();
+        ViewId vid=view.getVid();
+        ViewId new_vid=new ViewId(vid.getCoordAddress(), vid.getId() +1);
+        Vector<Address> mbrs=view.getMembers();
+        Vector<Address> new_mbrs=new Vector<Address>(mbrs);
+        new_mbrs.removeElement(c2.getLocalAddress());
+        View new_view=new View(new_vid, new_mbrs);
+
+        System.out.println(">> installing new view " + new_view + " in C1:");
+        c1.down(new Event(Event.VIEW_CHANGE, new_view));
+        c1.up(new Event(Event.VIEW_CHANGE, new_view));
+
+        System.out.println(">> shunning C2:");
         c2.up(new Event(Event.EXIT));
 
         Util.sleep(3000); // give the closer thread time to close the channel
         System.out.println("waiting for C2 to come back");
         int count=1;
         while(true) {
-            View view=c2.getView();
+            view=c2.getView();
             if(view != null && view.size() >= 2 && count >= 10)
                 break;
             count++;
             Util.sleep(1000);
         }
-        View view=c2.getView();
+        view=c2.getView();
         System.out.println(">>> view is " + view + " <<<< (should have 2 members)");
         assertEquals(2, view.size());
 
