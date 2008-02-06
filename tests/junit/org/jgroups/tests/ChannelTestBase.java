@@ -93,8 +93,10 @@ public class ChannelTestBase extends TestCase {
 
     protected static boolean isTunnelUsed() {
 
+        String channelConf = System.getProperty("channel.conf","");
+        String channelFlushConf = System.getProperty("channel.conf.flush","");
         // TODO add maybe a bit more foolproof check later
-        return CHANNEL_CONFIG.contains("tunnel");
+        return channelConf.contains("tunnel") || channelFlushConf.contains("tunnel");
     }
 
     protected void tearDown() throws Exception {
@@ -590,8 +592,8 @@ public class ChannelTestBase extends TestCase {
             else if(event instanceof GetStateEvent){
                 if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("After getstate should be getstate/unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent || o instanceof GetStateEvent); 
+                    assertTrue("After getstate should be view/unblock , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent || o instanceof View); 
                 }
                 Object o = events.get(i - 1);
                 assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
