@@ -3,34 +3,49 @@ package org.jgroups.tests;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Properties;
+import java.util.Map;
 import java.util.concurrent.Semaphore;
 
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelListenerAdapter;
-import org.jgroups.JChannel;
+import org.jgroups.*;
+import org.jgroups.blocks.RpcDispatcher;
+import org.jgroups.blocks.GroupRequest;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.FD;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Rsp;
 
 /**
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.1 2008/01/08 07:14:30 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.2 2008/02/06 13:27:53 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
-   
+    JChannel c1, c2;
+    RpcDispatcher disp1, disp2;
 
     public void setUp() throws Exception {
         super.setUp();        
         CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+    }
+
+    protected void tearDown() throws Exception {
+        if(disp2 != null)
+            disp2.stop();
+        if(c2 != null)
+            c2.close();
+        if(disp1 != null)
+            disp1.stop();
+        if(c1 != null)
+            c1.close();
+        super.tearDown();
     }
 
     public boolean useBlocking() {
@@ -40,7 +55,55 @@ public class ShunTest extends ChannelTestBase {
     public void testShunning() {
         connectAndShun(2,false);
     }
-   
+
+
+    public long getCurrentTime() {
+        return System.currentTimeMillis();
+    }
+
+    public void testTwoMembersShun() throws Exception {
+        c1=createChannel();
+        c1.setReceiver(new BelasReceiver("C1"));
+        c1.addChannelListener(new BelasChannelListener("C1"));
+        c2=createChannel();
+        c2.setReceiver(new BelasReceiver("C2"));
+        c2.addChannelListener(new BelasChannelListener("C2"));
+        disp1=new RpcDispatcher(c1, null, null, this);
+        disp2=new RpcDispatcher(c2, null, null, this);
+        c1.connect("demo");
+        c2.connect("demo");
+        assertEquals(2, c1.getView().size());
+        
+        RspList rsps=disp1.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
+        System.out.println(">> rsps:\n" + rsps);
+        assertEquals(2, rsps.size());
+
+        System.out.println("shunning C2:");
+        c2.up(new Event(Event.EXIT));
+
+        System.out.println("waiting for C2 to come back");
+        int count=1;
+        while(c1.getView().size() < 2 && count++ < 10) {
+            Util.sleep(1000);
+        }
+        View view=c1.getView();
+        System.out.println(">>> view is " + view + " <<<< (should have 2 members)");
+        assertEquals(2, view.size());
+
+        Util.sleep(1000);
+        System.out.println("invoking RPC on shunned member");
+        rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
+        System.out.println(">> rsps:\n" + rsps);
+        assertEquals(2, rsps.size());
+        for(Map.Entry<Address, Rsp> entry: rsps.entrySet()) {
+            Rsp rsp=entry.getValue();
+            assertFalse(rsp.wasSuspected());
+            assertTrue(rsp.wasReceived());
+        }
+
+        c1.setReceiver(null);
+        c2.setReceiver(null);
+    }
     
     protected void connectAndShun(int shunChannelIndex, boolean useDispatcher) {
         String[] names = null;
@@ -177,6 +240,46 @@ public class ShunTest extends ChannelTestBase {
                 }               
             }            
         }       
+    }
+
+    private static class BelasChannelListener extends ChannelListenerAdapter {
+        final String name;
+
+        public BelasChannelListener(String name) {
+            this.name=name;
+        }
+
+        public void channelClosed(Channel channel) {
+            System.out.println("[" + name + "] channelClosed()");
+        }
+
+        public void channelConnected(Channel channel) {
+            System.out.println("[" + name + "] channelConnected()");
+        }
+
+        public void channelDisconnected(Channel channel) {
+            System.out.println("[" + name + "] channelDisconnected()");
+        }
+
+        public void channelReconnected(Address addr) {
+            System.out.println("[" + name + "] channelReconnected(" + addr + ")");
+        }
+
+        public void channelShunned() {
+            System.out.println("[" + name + "] channelShunned()");
+        }
+    }
+
+    private static class BelasReceiver extends ReceiverAdapter {
+        final String name;
+
+        public BelasReceiver(String name) {
+            this.name=name;
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[name" + name + "] new_view = " + new_view);
+        }
     }
     
     protected class ShunChannel extends PushChannelApplicationWithSemaphore {
