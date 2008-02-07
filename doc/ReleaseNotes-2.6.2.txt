@@ -1,0 +1,82 @@
+
+Release Notes JGroups 2.6.2
+===========================
+
+Version: $Id: ReleaseNotes-2.6.2.txt,v 1.4.2.2 2008/02/07 11:29:19 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.2 is still API-backwards compatible with previous versions (down to 2.2.5).
+JGroups 2.6.2 is also binary backwards compatible with 2.6 and 2.6.1.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.1 and 2.6.2.
+
+
+Shared transport
+----------------
+[http://jira.jboss.com/jira/browse/JGRP-631]
+
+When running multiple channels within the same JVM, we can make all channels refer to the same transport
+(e.g. UDP, or TCP). The transport then effectively becomes a JVM singleton. Note that the protocols of the
+individual stacks can be different, but the shared transport is the same.
+
+The advantage of this is that costly resources like thread pools are shared between channels, reducing overall
+resources (e.g. fewer threads).
+
+Compared to MuxChannels, shared transports do *not* change semantics, so there are no service views etc. Additionally,
+there is no separate thread pool needed, like in the Multiplexer. So shared transports can be used as a replacement for
+MuxChannels.
+
+Documentation is at http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2325.
+
+
+FLUSH: flush a subset of the cluster
+------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-661]
+
+This is needed for buddy replication in JBossCache for example, where we don't want to flush the entire cluster, but
+just a few members.
+Advantage: not everyone needs to block during the flush phase; other members can continue sending messages.
+
+
+Eager lock release in NAKACK and UNICAST
+----------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-656]
+
+Determines when a message can be considered 'delivered'. When set to true, and the message receiver has received it, but
+calls down() on the same thread, the lock on the sender is released when eager_lock_release is set (default=true).
+This allows another thread to acquire the lock and process the next message *from the same sender*. This results in
+performance gains, and does *not* change the ordering of messages from a given sender. Note that messages from
+different senders are not affected, as they're delivered concurrently anyway.
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+
+
+Bug fixes
+---------
+AUTH: bug in 2.5 which caused AUTH to fail on second and subsequent JOIN attempts *if* the first
+attempt was rejected by AUTH.
+[http://jira.jboss.com/jira/browse/JGRP-577]
+
+VIEW_SYNC: there was a regression in 2.5, which causes VIEW_SYNC messages to get dropped.
+Note that this bug didn't occur in 2.4.x.
+[http://jira.jboss.com/jira/browse/JGRP-586]
+
+X.509 token not marshalled correctly. This affects ENCRYPT.
+[http://jira.jboss.com/jira/browse/JGRP-576]
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Feb 2008
+
+
