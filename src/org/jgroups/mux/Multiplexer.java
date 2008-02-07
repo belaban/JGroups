@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.93 2008/02/04 14:22:02 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.94 2008/02/07 06:20:53 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -274,17 +274,32 @@ public class Multiplexer implements UpHandler {
                     }
                     catch(Exception e) {
                         if(log.isErrorEnabled())
-                            log.error("failure in handling service state request", e);
+                            log.error("failure in handling service message " + hdr.info
+                                  + " from sender "
+                                  + sender, e);
                     }                    
                     return null;
                 }                
                 else {
-                  //regular message between MuxChannel(s)
-                    MuxChannel mux_ch=services.get(hdr.id);
+                    //regular message between MuxChannel(s)
+                    final MuxChannel mux_ch=services.get(hdr.id);
                     if(mux_ch == null) {
                         return null;
                     }
-                    return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !                                                          
+                    //is it oob
+                    if(msg.isFlagSet(Message.OOB)){
+                        if(thread_pool == null) {
+                            return mux_ch.up(evt);
+                        }else{
+                            thread_pool.execute(new Runnable(){
+                                public void run() {
+                                    mux_ch.up(evt);    
+                                }});
+                            return null;
+                        }                                             
+                    }else{
+                        return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
+                    }                                                                           
                 }                
 
             case Event.VIEW_CHANGE:
