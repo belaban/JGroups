@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.8 2008/02/06 23:24:33 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.9 2008/02/07 08:27:15 belaban Exp $
  */
 public class MuxChannel extends JChannel {
    

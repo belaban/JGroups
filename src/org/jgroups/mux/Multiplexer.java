@@ -30,12 +30,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * application with that id for sent messages. When receiving a message from a
  * remote peer, the multiplexer will dispatch a message to the appropriate
  * MuxChannel depending on the id attached to the message.
- * 
+ *
  * 
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.7 2008/02/07 06:20:49 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.8 2008/02/07 08:27:15 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -283,24 +283,9 @@ public class Multiplexer implements UpHandler {
                 else {
                     //regular message between MuxChannel(s)
                     final MuxChannel mux_ch=services.get(hdr.id);
-                    if(mux_ch == null) {
-                        return null;
+                    return mux_ch == null? null :
+                            passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false, msg.isFlagSet(Message.OOB));
                     }
-                    //is it oob
-                    if(msg.isFlagSet(Message.OOB)){
-                        if(thread_pool == null) {
-                            return mux_ch.up(evt);
-                        }else{
-                            thread_pool.execute(new Runnable(){
-                                public void run() {
-                                    mux_ch.up(evt);    
-                                }});
-                            return null;
-                        }                                             
-                    }else{
-                        return passToMuxChannel(mux_ch, evt, fifo_queue, sender, hdr.id, false); // don't block !
-                    }                                                                           
-                }                
 
             case Event.VIEW_CHANGE:
                 Vector<Address> old_members=view != null? view.getMembers() : null;
