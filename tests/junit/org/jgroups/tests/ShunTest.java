@@ -26,7 +26,7 @@ import org.jgroups.util.Rsp;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.4 2008/02/06 17:05:56 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.5 2008/02/07 09:04:41 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -62,7 +62,14 @@ public class ShunTest extends ChannelTestBase {
         return System.currentTimeMillis();
     }
 
+    /**
+     * Tests the case where (members A and B) member B is shunned, excluded by A , then closes and reopens the channel.
+     * After B has rejoined, it invokes an RPC and it should get valid return values from both A and B.
+     * @throws Exception
+     */
     public void testTwoMembersShun() throws Exception {
+        View view;
+        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "udp.xml");
         c1=createChannel();
         c1.addChannelListener(new BelasChannelListener("C1"));
         c2=createChannel();
@@ -77,27 +84,22 @@ public class ShunTest extends ChannelTestBase {
         System.out.println(">> rsps:\n" + rsps);
         assertEquals(2, rsps.size());
 
-        View view=c1.getView();
-        ViewId vid=view.getVid();
-        ViewId new_vid=new ViewId(vid.getCoordAddress(), vid.getId() +1);
-        Vector<Address> mbrs=view.getMembers();
-        Vector<Address> new_mbrs=new Vector<Address>(mbrs);
-        new_mbrs.removeElement(c2.getLocalAddress());
-        View new_view=new View(new_vid, new_mbrs);
-
-        System.out.println(">> installing new view " + new_view + " in C1:");
-        c1.down(new Event(Event.VIEW_CHANGE, new_view));
-        c1.up(new Event(Event.VIEW_CHANGE, new_view));
+        ProtocolStack stack=c1.getProtocolStack();
+        stack.removeProtocol("VERIFY_SUSPECT");
+        Protocol transport=stack.getTransport();
+        System.out.println(">> suspecting C2:");
+        transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
 
         System.out.println(">> shunning C2:");
         c2.up(new Event(Event.EXIT));
 
-        Util.sleep(3000); // give the closer thread time to close the channel
+        Util.sleep(1000); // give the closer thread time to close the channel
         System.out.println("waiting for C2 to come back");
         int count=1;
         while(true) {
             view=c2.getView();
-            if(view != null && view.size() >= 2 && count >= 10)
+            // System.out.println("<< C2.view: " + view);
+            if((view != null && view.size() >= 2) || count >= 10)
                 break;
             count++;
             Util.sleep(1000);
