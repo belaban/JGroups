@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.37.2.2 2008/01/10 06:57:38 vlada Exp $
+// $Id: Channel.java,v 1.37.2.3 2008/02/07 09:15:26 belaban Exp $
 
 package org.jgroups;
 
@@ -357,6 +357,11 @@ public abstract class Channel implements Transport {
     public synchronized void removeChannelListener(ChannelListener listener) {
         if(channel_listeners != null && listener != null)
             channel_listeners.remove(listener);
+    }
+
+    public synchronized void clearChannelListeners() {
+        if(channel_listeners != null)
+            channel_listeners.clear();
     }
 
     /** Sets the receiver, which will handle all messages, view changes etc */
