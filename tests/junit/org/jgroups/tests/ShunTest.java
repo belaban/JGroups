@@ -26,7 +26,7 @@ import org.jgroups.util.Rsp;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.5 2008/02/07 09:04:41 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.6 2008/02/07 09:11:57 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -71,8 +71,10 @@ public class ShunTest extends ChannelTestBase {
         View view;
         CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "udp.xml");
         c1=createChannel();
+        c1.setOpt(Channel.AUTO_GETSTATE, false);
         c1.addChannelListener(new BelasChannelListener("C1"));
         c2=createChannel();
+        c2.setOpt(Channel.AUTO_GETSTATE, false);
         c2.addChannelListener(new BelasChannelListener("C2"));
         disp1=new RpcDispatcher(c1, null, new BelasReceiver("C1"), this);
         disp2=new RpcDispatcher(c2, null, new BelasReceiver("C2"), this);
