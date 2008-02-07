@@ -1,0 +1,54 @@
+
+Release Notes JGroups 2.6.2
+===========================
+
+Version: $Id: ReleaseNotes-2.6.2.txt,v 1.1 2008/02/07 09:26:07 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.2 is still API-backwards compatible with previous versions (down to 2.2.5).
+JGroups 2.6.2 is also binary backwards compatible with 2.6 and 2.6.1.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.1 and 2.6.2.
+
+
+Shared transport
+----------------
+[http://jira.jboss.com/jira/browse/JGRP-631]
+
+When running multiple channels within the same JVM, we can make all channels refer to the same transport
+(e.g. UDP, or TCP). Some the transport then effectively becomes a JVM singleton. Note that the protocols of the
+individual stacks can be different, but the shared transport is the same.
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+
+
+Bug fixes
+---------
+AUTH: bug in 2.5 which caused AUTH to fail on second and subsequent JOIN attempts *if* the first
+attempt was rejected by AUTH.
+[http://jira.jboss.com/jira/browse/JGRP-577]
+
+VIEW_SYNC: there was a regression in 2.5, which causes VIEW_SYNC messages to get dropped.
+Note that this bug didn't occur in 2.4.x.
+[http://jira.jboss.com/jira/browse/JGRP-586]
+
+X.509 token not marshalled correctly. This affects ENCRYPT.
+[http://jira.jboss.com/jira/browse/JGRP-576]
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Feb 2008
+
+
