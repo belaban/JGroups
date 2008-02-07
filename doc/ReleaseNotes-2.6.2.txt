@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.2
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.2.txt,v 1.1 2008/02/07 09:26:07 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.2.txt,v 1.2 2008/02/07 09:32:05 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.2 is still API-backwards compatible with previous versions (down to 2.2.5).
@@ -16,8 +16,18 @@ Shared transport
 [http://jira.jboss.com/jira/browse/JGRP-631]
 
 When running multiple channels within the same JVM, we can make all channels refer to the same transport
-(e.g. UDP, or TCP). Some the transport then effectively becomes a JVM singleton. Note that the protocols of the
+(e.g. UDP, or TCP). The transport then effectively becomes a JVM singleton. Note that the protocols of the
 individual stacks can be different, but the shared transport is the same.
+
+The advantage of this is that costly resources like thread pools are shared between channels, reducing overall
+resources (e.g. fewer threads).
+
+Compared to MuxChannels, shared transports do *not* change semantics, so there are no service views etc. Additionally,
+there is no separate thread pool needed, like in the Multiplexer. So shared transports can be used as a replacement for
+MuxChannels.
+
+Documentation is at http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2325.
+
 
 
 
