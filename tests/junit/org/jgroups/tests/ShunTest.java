@@ -1,32 +1,30 @@
 package org.jgroups.tests;
 
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.util.Properties;
-import java.util.Map;
-import java.util.Vector;
-import java.util.concurrent.Semaphore;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
 import org.jgroups.*;
-import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.FD;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Util;
-import org.jgroups.util.RspList;
 import org.jgroups.util.Rsp;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
+
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Map;
+import java.util.Properties;
+import java.util.concurrent.Semaphore;
 
 /**
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.6 2008/02/07 09:11:57 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.7 2008/02/07 09:16:19 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -123,6 +121,8 @@ public class ShunTest extends ChannelTestBase {
 
         c1.setReceiver(null);
         c2.setReceiver(null);
+        c1.clearChannelListeners();
+        c2.clearChannelListeners();
     }
     
     protected void connectAndShun(int shunChannelIndex, boolean useDispatcher) {
