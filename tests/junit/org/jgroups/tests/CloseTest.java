@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.11.2.1 2007/11/21 14:08:25 belaban Exp $
+// $Id: CloseTest.java,v 1.11.2.2 2008/02/08 08:01:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -64,7 +64,7 @@ public class CloseTest extends TestCase {
         assertEquals(msg, active_threads, current_active_threads);
     }
 
-    private void closeChannel(JChannel c) {
+    private static void closeChannel(JChannel c) {
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
         }
@@ -171,7 +171,7 @@ public class CloseTest extends TestCase {
         assertEquals(0, c2.getNumMessages());
     }
 
-    private void dumpMessages(String msg, JChannel ch) throws Exception {
+    private static void dumpMessages(String msg, JChannel ch) throws Exception {
         while(ch.getNumMessages() > 0) {
             Object obj=ch.receive(0);
             if(obj instanceof View)
@@ -340,7 +340,7 @@ public class CloseTest extends TestCase {
     }
 
 
-    private void assertServiceAndClusterView(Channel ch, int num) {
+    private static void assertServiceAndClusterView(Channel ch, int num) {
         View view=ch.getView();
         String msg="view=" + view;
         assertNotNull(view);
@@ -348,10 +348,5 @@ public class CloseTest extends TestCase {
     }
 
 
-
-    public static void main(String[] args) {
-        String[] testCaseName={CloseTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }
