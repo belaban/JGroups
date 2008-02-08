@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.10 2008/02/07 09:10:43 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.11 2008/02/08 06:22:29 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -1058,31 +1058,35 @@ public class JChannel extends Channel {
            break;    
 
         case Event.GET_STATE_OK:
-            StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
-            byte[] state=state_info.state;
+            StateTransferInfo state_info = (StateTransferInfo) evt.getArg();
+            byte[] state = state_info.state;
 
-            state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
-            if(up_handler != null) {
-                return up_handler.up(evt);
-            }
+            try{
+                if(up_handler != null){
+                    return up_handler.up(evt);
+                }
 
-            if(state != null) {
-                String state_id=state_info.state_id;
-                if(receiver != null) {
-                    try {
-                        if(receiver instanceof ExtendedReceiver && state_id!=null)
-                            ((ExtendedReceiver)receiver).setState(state_id, state);
-                        else
-                            receiver.setState(state);
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling setState() in receiver", t);
+                if(state != null){
+                    String state_id = state_info.state_id;
+                    if(receiver != null){
+                        try{
+                            if(receiver instanceof ExtendedReceiver && state_id != null)
+                                ((ExtendedReceiver) receiver).setState(state_id, state);
+                            else
+                                receiver.setState(state);
+                        }catch(Throwable t){
+                            if(log.isWarnEnabled())
+                                log.warn("failed calling setState() in receiver", t);
+                        }
+                    }else{
+                        try{
+                            mq.add(new Event(Event.STATE_RECEIVED, state_info));
+                        }catch(Exception e){
+                        }
                     }
                 }
-                else {
-                    try {mq.add(new Event(Event.STATE_RECEIVED, state_info));} catch(Exception e) {}
-                }
+            }finally{
+                state_promise.setResult(state != null ? Boolean.TRUE : Boolean.FALSE);
             }
             break;
         case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
