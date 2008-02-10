@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.9 2008/02/07 08:27:15 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.10 2008/02/10 23:31:58 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -143,7 +143,7 @@ public class MuxChannel extends JChannel {
         checkClosed();
 
         /*if we already are connected, then ignore this*/
-        if(connected) {
+        if(isConnected()) {
             if(log.isTraceEnabled()) log.trace("already connected to " + channel_name);
             return;
         }
@@ -152,25 +152,27 @@ public class MuxChannel extends JChannel {
         if (!mux.isConnected()) {
             mux.connect(getStackName());
         }
-        try {
-            if (mux.flushSupported()) {
+        try{
+            if(mux.flushSupported()){
                 boolean successfulFlush = mux.startFlush(false);
-                if (!successfulFlush && log.isWarnEnabled()) {
-                    log.warn("Flush failed at " + mux.getLocalAddress() + ":"
-                            + getId());
+                if(!successfulFlush && log.isWarnEnabled()){
+                    log.warn("Flush failed at " + mux.getLocalAddress() + ":" + getId());
                 }
             }
-            mux.sendServiceUpMessage(getId(), mux.getLocalAddress(), true);
-        } catch (Exception e) {
-            if (log.isErrorEnabled())
-                log.error("failed sending SERVICE_UP message", e);
-        } finally {
-            if (mux.flushSupported())
+            try{
+                mux.sendServiceUpMessage(getId(), mux.getLocalAddress(), true);
+                setClosed(false);
+                setConnected(true);
+                notifyChannelConnected(this);
+            }catch(Exception e){
+                if(log.isErrorEnabled())
+                    log.error("failed sending SERVICE_UP message", e);                              
+                throw new ChannelException("MuxChannel.connect() failed", e);
+            }
+        }finally{
+            if(mux.flushSupported())
                 mux.stopFlush();
-        }
-        setClosed(false);
-        setConnected(true);
-        notifyChannelConnected(this);
+        }        
     }
  
     public synchronized void connect(String cluster_name, Address target, String state_id, long timeout) throws ChannelException {
@@ -178,7 +180,7 @@ public class MuxChannel extends JChannel {
         checkClosed();
 
         /*if we already are connected, then ignore this*/
-        if(connected) {
+        if(isConnected()) {
             if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
             return;
         }
@@ -196,9 +198,13 @@ public class MuxChannel extends JChannel {
             }
             try {
                 mux.sendServiceUpMessage(getId(), mux.getLocalAddress(), true);
+                setClosed(false);
+                setConnected(true);
+                notifyChannelConnected(this);
             } catch (Exception e) {
                 if (log.isErrorEnabled())
                     log.error("failed sending SERVICE_UP message", e);
+                throw new ChannelException("MuxChannel.connect() failed", e);
             }
             View serviceView = mux.getServiceView(getId());
             boolean stateTransferOk = false;
@@ -214,14 +220,11 @@ public class MuxChannel extends JChannel {
         } finally {
             if (mux.flushSupported())
                 mux.stopFlush();
-        }
-        setClosed(false);
-        setConnected(true);
-        notifyChannelConnected(this);                       
+        }                     
     }
 
     public synchronized void disconnect() {
-        if (!connected)
+        if (!isConnected())
             return;
 
         setClosed(false);
