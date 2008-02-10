@@ -592,8 +592,8 @@ public class ChannelTestBase extends TestCase {
             else if(event instanceof GetStateEvent){
                 if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("After getstate should be view/unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent || o instanceof View); 
+                    assertTrue("After getstate should be view/unblock/getstate , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent || o instanceof View || o instanceof GetStateEvent); 
                 }
                 Object o = events.get(i - 1);
                 assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
