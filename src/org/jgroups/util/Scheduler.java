@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.15 2007/06/26 18:51:16 belaban Exp $
+// $Id: Scheduler.java,v 1.15.4.1 2008/02/11 23:32:14 vlada Exp $
 
 package org.jgroups.util;
 
@@ -15,7 +15,7 @@ import org.jgroups.Global;
  * it will be added to the head of the queue and the scheduler will be interrupted. In this
  * case, the currently handled task is suspended, and the one at the head of the queue
  * handled. This is recursive: a priority task can always be interrupted by another priority
- * task.  Resursion ends when no more priority tasks are added, or when the thread pool is
+ * task.  Recursion ends when no more priority tasks are added, or when the thread pool is
  * exhausted.
  * 
  * @author Bela Ban
@@ -103,12 +103,11 @@ public class Scheduler implements Runnable {
                 }
 
                 if(sched_thread.isInterrupted()) { // will continue at "catch(InterruptedException)" below
-                    // sched_thread.interrupt();
-
-                    // changed on suggestion from Victor Cardoso: sched_thread.interrupt() does *not* throw an
-                    // InterruptedException, so we don't land in the catch clause, but rather execute the code below
-                    // (which we don't want) - bela April 15 2004
-
+                    /*
+                     * http://jira.jboss.com/jira/browse/JGRP-690 
+                     * Thread interrupt status is not always cleared by default
+                     */
+                    Thread.interrupted();
                     throw new InterruptedException();
                 }
 
