@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.8 2008/02/07 08:27:15 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.9 2008/02/11 07:33:24 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 	
@@ -235,17 +235,24 @@ public class Multiplexer implements UpHandler {
         return flushStarted && all_tranfers_ok;
     }
     
-    void sendServiceUpMessage(String service, Address host,boolean bypassFlush) throws Exception {
-        //we have to make this service message non OOB since we have
-        //to FIFO order service messages and BLOCK/UNBLOCK messages        
-        sendServiceMessage(true,ServiceInfo.SERVICE_UP, service, host,bypassFlush, null,false);        
+    void sendServiceUpMessage(String service) throws Exception {
+        // we have to make this service message non OOB since we have
+        // to FIFO order service messages and BLOCK/UNBLOCK messages
+        sendServiceMessage(true,
+                           ServiceInfo.SERVICE_UP,
+                           service,
+                           null,
+                           false);
     }
 
-
-    void sendServiceDownMessage(String service, Address host,boolean bypassFlush) throws Exception {
-       //we have to make this service message non OOB since we have
-       //to FIFO order service messages and BLOCK/UNBLOCK messages        
-       sendServiceMessage(true,ServiceInfo.SERVICE_DOWN, service, host,bypassFlush, null,false);       
+    void sendServiceDownMessage(String service) throws Exception {
+        // we have to make this service message non OOB since we have
+        // to FIFO order service messages and BLOCK/UNBLOCK messages
+        sendServiceMessage(true,
+                           ServiceInfo.SERVICE_DOWN,
+                           service,
+                           null,
+                           false);
     }
 
 
@@ -376,8 +383,7 @@ public class Multiplexer implements UpHandler {
                 break;
 
             case Event.BLOCK:               
-                passToAllMuxChannels(evt, true, true); // do block and bypass the thread pool               
-                waitUntilThreadPoolHasNoRunningTasks(1000);
+                passToAllMuxChannels(evt,true,true);                      
                 return null;
 
             case Event.UNBLOCK: // process queued-up MergeViews                
@@ -394,18 +400,7 @@ public class Multiplexer implements UpHandler {
         }
         return null;
     }
-
-    private int waitUntilThreadPoolHasNoRunningTasks(long timeout) {
-        int num_threads=0;
-        long end_time=System.currentTimeMillis() + timeout;
-
-        while((num_threads=fifo_queue.size()) > 0 && System.currentTimeMillis() < end_time) {
-            Util.sleep(100);
-        }
-        return num_threads;
-    }
-
-
+    
     public Channel createMuxChannel(String id, String stack_name) throws Exception {        
         if (services.containsKey(id)) {
             throw new Exception("service ID \"" + id
@@ -575,9 +570,13 @@ public class Multiplexer implements UpHandler {
         return result;       
     }
 
-    private void sendServiceMessage(boolean synchronous, byte type, String service, Address host,boolean bypassFlush, byte[] payload, boolean oob) throws Exception {
-        if(host == null)
-            host=getLocalAddress();
+    private void sendServiceMessage(boolean synchronous,
+                                    byte type,
+                                    String service,
+                                    byte[] payload,
+                                    boolean oob) throws Exception {
+        
+        Address host=getLocalAddress();
         if(host == null) {
             if(log.isWarnEnabled()) {
                 log.warn("local_addr is null, cannot send ServiceInfo." + ServiceInfo.typeToString(type) + " message");
@@ -585,15 +584,14 @@ public class Multiplexer implements UpHandler {
             return;
         }
 
-        ServiceInfo si=new ServiceInfo(type, service, host, payload);
-        MuxHeader hdr=new MuxHeader(si);
-        Message service_msg=new Message();           
+            
+        Message service_msg=new Message();
+        service_msg.putHeader(NAME, new MuxHeader(new ServiceInfo(type, service, host, payload)));
         
         if(oob)
-           service_msg.setFlag(Message.OOB);
+           service_msg.setFlag(Message.OOB);            
         
-        service_msg.putHeader(NAME, hdr);
-        if(bypassFlush && channel.flushSupported())
+        if(channel.flushSupported())
            service_msg.putHeader(FLUSH.NAME, new FLUSH.FlushHeader(FLUSH.FlushHeader.FLUSH_BYPASS));             
         
         if (synchronous) {   
@@ -726,11 +724,11 @@ public class Multiplexer implements UpHandler {
     private void handleServiceMessage(ServiceInfo info, Address sender) throws Exception {
         switch(info.type) {                    
             case ServiceInfo.SERVICE_UP:
-                handleServiceUp(info.service, info.host, true);
+                handleServiceUp(info.service, info.host);
                 ackServiceMessage(info, sender);
                 break;
             case ServiceInfo.SERVICE_DOWN:
-                handleServiceDown(info.service, info.host, true);                
+                handleServiceDown(info.service, info.host);                
                 ackServiceMessage(info, sender);
                 break;
             case ServiceInfo.LIST_SERVICES_RSP:
@@ -763,10 +761,10 @@ public class Multiplexer implements UpHandler {
         }                                     
     }
 
-    private void ackServiceMessage(ServiceInfo info, Address sender)
+    private void ackServiceMessage(ServiceInfo info, Address ackTarget)
             throws ChannelNotConnectedException, ChannelClosedException {
         
-        Message ack=new Message(sender, null, null);
+        Message ack=new Message(ackTarget, null, null);
         ack.setFlag(Message.OOB);
         
         ServiceInfo si=new ServiceInfo(ServiceInfo.ACK, info.service, info.host,null);
@@ -800,15 +798,13 @@ public class Multiplexer implements UpHandler {
             sendServiceMessage(false,
                                ServiceInfo.SERVICES_MERGED,
                                null,
-                               channel.getLocalAddress(),
-                               true,
                                null,
                                true);
         }
     }
 
 
-    private void handleServiceDown(String service, Address host, boolean received) {
+    private void handleServiceDown(String service, Address host) {
         List<Address>    hosts, hosts_copy;
         boolean removed=false;
 
@@ -845,7 +841,7 @@ public class Multiplexer implements UpHandler {
     }
 
 
-    private void handleServiceUp(String service, Address host, boolean received) {
+    private void handleServiceUp(String service, Address host) {
         List<Address>    hosts, hosts_copy;
         boolean added=false;
 
@@ -904,8 +900,6 @@ public class Multiplexer implements UpHandler {
             sendServiceMessage(false,
                                ServiceInfo.LIST_SERVICES_RSP,
                                null,
-                               channel.getLocalAddress(),
-                               true,
                                data,
                                true);
             Util.sleep(500);

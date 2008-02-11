@@ -25,7 +25,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.10 2008/02/10 23:31:58 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.11 2008/02/11 07:33:24 vlada Exp $
  */
 public class MuxChannel extends JChannel {
    
@@ -88,7 +88,7 @@ public class MuxChannel extends JChannel {
     }
 
     public Address getLocalAddress() {
-        return mux != null? mux.getLocalAddress() : null;
+        return mux.getLocalAddress();
     }
 
     /** This should never be used (just for testing) ! */
@@ -112,11 +112,11 @@ public class MuxChannel extends JChannel {
      * @return The JGroups view
      */
     public View getClusterView() {
-        return mux != null? mux.getChannel().getView() : null;
+        return mux.getChannel().getView();
     }
 
     public ProtocolStack getProtocolStack() {
-        return mux != null? mux.getChannel().getProtocolStack() : null;
+        return mux.getChannel().getProtocolStack();
     }
 
     public Map<String,Object> dumpStats() {
@@ -160,7 +160,7 @@ public class MuxChannel extends JChannel {
                 }
             }
             try{
-                mux.sendServiceUpMessage(getId(), mux.getLocalAddress(), true);
+                mux.sendServiceUpMessage(getId());
                 setClosed(false);
                 setConnected(true);
                 notifyChannelConnected(this);
@@ -197,7 +197,7 @@ public class MuxChannel extends JChannel {
                 }
             }
             try {
-                mux.sendServiceUpMessage(getId(), mux.getLocalAddress(), true);
+                mux.sendServiceUpMessage(getId());  
                 setClosed(false);
                 setConnected(true);
                 notifyChannelConnected(this);
@@ -260,7 +260,7 @@ public class MuxChannel extends JChannel {
                 }
             }
             try {    
-                mux.sendServiceDownMessage(getId(), mux.getLocalAddress(), true);
+                mux.sendServiceDownMessage(getId());
             } catch (Exception e) {
                 if (log.isErrorEnabled())
                     log.error("failed sending SERVICE_DOWN message", e);
@@ -309,7 +309,7 @@ public class MuxChannel extends JChannel {
                 }
             }
             try {    
-                mux.sendServiceDownMessage(getId(), mux.getLocalAddress(),true);
+                mux.sendServiceDownMessage(getId());
             } catch (Exception e) {
                 if (log.isErrorEnabled())
                     log.error("failed sending SERVICE_DOWN message", e);
