@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.16 2008/02/04 13:43:14 belaban Exp $
+// $Id: Scheduler.java,v 1.17 2008/02/11 23:32:18 vlada Exp $
 
 package org.jgroups.util;
 
@@ -103,12 +103,11 @@ public class Scheduler implements Runnable {
                 }
 
                 if(sched_thread.isInterrupted()) { // will continue at "catch(InterruptedException)" below
-                    // sched_thread.interrupt();
-
-                    // changed on suggestion from Victor Cardoso: sched_thread.interrupt() does *not* throw an
-                    // InterruptedException, so we don't land in the catch clause, but rather execute the code below
-                    // (which we don't want) - bela April 15 2004
-
+                    /*
+                     * http://jira.jboss.com/jira/browse/JGRP-690 
+                     * Thread interrupt status is not always cleared by default
+                     */
+                    Thread.interrupted();
                     throw new InterruptedException();
                 }
 
