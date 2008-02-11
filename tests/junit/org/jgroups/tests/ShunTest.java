@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.1.2.5 2008/02/07 09:18:25 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.1.2.6 2008/02/11 01:50:08 vlada Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -91,7 +91,12 @@ public class ShunTest extends ChannelTestBase {
         transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
 
         System.out.println(">> shunning C2:");
-        c2.up(new Event(Event.EXIT));
+        if(c2 instanceof MuxChannel) {
+            ((MuxChannel)c2).getChannel().up(new Event(Event.EXIT));
+        }
+        else {
+            c2.up(new Event(Event.EXIT));
+        }
 
         Util.sleep(1000); // give the closer thread time to close the channel
         System.out.println("waiting for C2 to come back");
