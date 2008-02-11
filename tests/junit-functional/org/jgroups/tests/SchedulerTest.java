@@ -1,4 +1,4 @@
-// $Id: SchedulerTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: SchedulerTest.java,v 1.2 2008/02/11 23:32:18 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -67,12 +67,9 @@ public class SchedulerTest extends TestCase {
 
         Util.sleep(1000);
         sch.addPrio(new MyThread("Gabi"));
-        sch.add(new MyThread("Rolf"));
-        Util.sleep(100);
-        sch.addPrio(new MyThread("Gabi2"));
-        Util.sleep(100);
-        sch.addPrio(new MyThread("Gabi3"));
-        Util.sleep(100);
+        sch.add(new MyThread("Rolf"));        
+        sch.addPrio(new MyThread("Gabi2"));        
+        sch.addPrio(new MyThread("Gabi3"));        
         sch.addPrio(new MyThread("Gabi4"));
         Util.sleep(1000);  // increase this if you want to see all thread running (and possibly completing)
         sch.stop();
