@@ -908,7 +908,7 @@ public class FLUSH extends Protocol {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type = in.readByte();
             viewID = in.readLong();
-            flushParticipants = (Collection) in.readObject();
+            flushParticipants = (Collection<Address>) in.readObject();
             digest = (Digest) in.readObject();
         }
 
