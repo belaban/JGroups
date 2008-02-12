@@ -1,9 +1,9 @@
-// $Id: MessageDispatcherTest.java,v 1.14 2005/08/29 12:19:11 belaban Exp $
+// $Id: MessageDispatcherTest.java,v 1.15 2008/02/12 04:37:39 vlada Exp $
 
 package org.jgroups.tests;
 
-
 import org.jgroups.Channel;
+import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -12,10 +12,10 @@ import org.jgroups.blocks.RequestHandler;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
-
 /**
- * Example for MessageDispatcher (see also RpcDispatcherTest). Message is periodically broadcast to all
- * members; handle() method is invoked whenever a message is received.
+ * Example for MessageDispatcher (see also RpcDispatcherTest). Message is
+ * periodically broadcast to all members; handle() method is invoked whenever a
+ * message is received.
  */
 public class MessageDispatcherTest implements RequestHandler {
     Channel channel;
@@ -23,24 +23,19 @@ public class MessageDispatcherTest implements RequestHandler {
     RspList rsp_list;
     String props=null;
 
+    public MessageDispatcherTest() throws ChannelException {
+        super();
+        this.channel=new JChannel();
+    }
+
+    public MessageDispatcherTest(Channel channel) {
+        super();
+        this.channel=channel;
+    }
 
     public void start() throws Exception {
-        channel=new JChannel(props);
-        //channel.setOpt(Channel.LOCAL, Boolean.FALSE);
-        // disp=new MessageDispatcher(channel, null, null, this);
-        disp=new MessageDispatcher(channel, null, null, this,
-                false, // deadlock detection is disabled
-                true); // concurrent processing is enabled
+        disp=new MessageDispatcher(channel, null, null, this, false, true);
         channel.connect("MessageDispatcherTestGroup");
-
-//        for(int i=0; i < 10; i++) {
-//            //Util.sleep(1000);
-//            System.out.println("Casting message #" +i);
-//            rsp_list=disp.castMessage(null,
-//                    new Message(null, null, new String("Number #" +i).getBytes()),
-//                    GroupRequest.GET_ALL, 0);
-//            System.out.println("Responses:\n" + rsp_list);
-//        }
 
         MyThread t1=new MyThread("one"), t2=new MyThread("two");
         t1.start();
@@ -59,12 +54,7 @@ public class MessageDispatcherTest implements RequestHandler {
         System.out.println("** disp.stop()");
         disp.stop();
         System.out.println("** disp.stop() -- done");
-
-        //Util.printThreads();
-        //Util.sleep(2000);
-        //Util.printThreads();
     }
-
 
     class MyThread extends Thread {
         public MyThread(String name) {
@@ -72,23 +62,24 @@ public class MessageDispatcherTest implements RequestHandler {
         }
 
         public void run() {
-            for(int i=0; i < 10; i++) {
-                System.out.println('[' + getName() + "] casting message #" +i);
+            for(int i=0;i < 10;i++) {
+                System.out.println('[' + getName() + "] casting message #" + i);
                 rsp_list=disp.castMessage(null,
-                        new Message(null, null, '[' + getName() + "] number #" + i),
-                        GroupRequest.GET_ALL, 0);
+                                          new Message(null, null, '[' + getName()
+                                                                  + "] number #"
+                                                                  + i),
+                                          GroupRequest.GET_ALL,
+                                          0);
                 System.out.println('[' + getName() + "] responses:\n" + rsp_list);
             }
         }
     }
-
 
     public Object handle(Message msg) {
         System.out.println("handle(): " + msg.getObject());
         Util.sleepRandom(1000);
         return "Success !";
     }
-
 
     public static void main(String[] args) {
 
