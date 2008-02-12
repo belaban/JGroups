@@ -1,7 +1,8 @@
 package org.jgroups.blocks;
 
-import junit.framework.TestCase;
 
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.tests.MessageDispatcherTest;
 
 import java.util.Arrays;
@@ -14,13 +15,26 @@ import java.util.Set;
 
 /**
  * @author BConlon
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.1.14.1 $
  */
-public class MessageDispatcherThreadingTest
-    extends TestCase {
+public class MessageDispatcherThreadingTest extends ChannelTestBase {
 
+    Channel channel = null;
     //~ Methods ----------------------------------------------------------------------------------------------
 
+    public void setUp() throws Exception {
+        super.setUp();      
+        channel = createChannel();
+    }
+    
+    public void tearDown() throws Exception {        
+        if(channel != null){
+            channel.close();
+        }
+
+        super.tearDown();
+    }
+    
     public void testAllThreadsAreStopped() throws Exception {
         // get the threads for this thread group
         ThreadGroup threadGroup = Thread.currentThread().getThreadGroup();
@@ -28,9 +42,9 @@ public class MessageDispatcherThreadingTest
 
         // populate the array with the threads in this group.
         threadGroup.enumerate(originalThreads);
-        Set originalThreadSet = new HashSet(Arrays.asList(originalThreads));
+        Set<Thread> originalThreadSet = new HashSet<Thread>(Arrays.asList(originalThreads));
 
-        new MessageDispatcherTest().start();
+        new MessageDispatcherTest(createChannel()).start();
 
         // wait for anything necessary to finish up.
         Thread.sleep(10000);
