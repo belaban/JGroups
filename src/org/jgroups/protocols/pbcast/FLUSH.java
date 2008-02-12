@@ -187,9 +187,9 @@ public class FLUSH extends Protocol {
     }
     
     private boolean startFlush(Event evt){
-        int numberOfAttempts = 2;
+        int numberOfAttempts = 3;
         synchronized (sharedLock) {
-            numberOfAttempts = (currentView != null) ? currentView.size() : numberOfAttempts;
+            numberOfAttempts=(currentView != null) ? currentView.size() + 1 : numberOfAttempts;
         }
         return startFlush(evt, numberOfAttempts);
     }
@@ -908,7 +908,7 @@ public class FLUSH extends Protocol {
         public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
             type = in.readByte();
             viewID = in.readLong();
-            flushParticipants = (Collection) in.readObject();
+            flushParticipants = (Collection<Address>) in.readObject();
             digest = (Digest) in.readObject();
         }
 
