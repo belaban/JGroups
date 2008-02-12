@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.15.4.1 2008/02/11 23:32:14 vlada Exp $
+// $Id: Scheduler.java,v 1.15.4.2 2008/02/12 05:47:26 vlada Exp $
 
 package org.jgroups.util;
 
@@ -102,14 +102,12 @@ public class Scheduler implements Runnable {
                         continue;
                 }
 
-                if(sched_thread.isInterrupted()) { // will continue at "catch(InterruptedException)" below
-                    /*
-                     * http://jira.jboss.com/jira/browse/JGRP-690 
-                     * Thread interrupt status is not always cleared by default
-                     */
-                    Thread.interrupted();
-                    throw new InterruptedException();
-                }
+                /*
+                 * http://jira.jboss.com/jira/browse/JGRP-690 
+                 * Thread interrupt status is not always cleared by default
+                 */
+                if(Thread.interrupted())
+                    throw new InterruptedException();               
 
                 if(concurrent_processing == false) { // this is the default: process serially
                     synchronized(current_task.thread) {
