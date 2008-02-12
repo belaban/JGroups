@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.3 2007/11/28 11:47:29 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.4 2008/02/12 04:38:43 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -675,6 +675,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
+        	<param name="mux.conf.stack" value="tcp"/>
         </antcall>
     </target>
 	
@@ -690,6 +691,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp-nio.xml"/>
             <param name="channel.conf.flush" value="flush-tcp-nio.xml"/>
+        	<param name="mux.conf.stack" value="tcp-nio"/>
         </antcall>
     </target>
 	
