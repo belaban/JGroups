@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.10 2008/02/12 03:23:38 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.11 2008/02/13 02:16:42 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -661,9 +661,9 @@ public class Multiplexer implements UpHandler {
 
         if(id == null) {
             if(log.isWarnEnabled()) {
-                log.warn("Invalid state request arrived at Multiplexer, dropping it");
+                log.warn("Invalid state request " + info + " arrived at Multiplexer, dropping it");
             }
-            return null;
+            return new StateTransferInfo(null, original_id, 0L, null);
         }
 
         try {
@@ -695,8 +695,12 @@ public class Multiplexer implements UpHandler {
                                                                       requester,
                                                                       id,
                                                                       hasReturnValue);
-            if(ret != null)
+            if(ret != null) {
                 ret.state_id=original_id;
+            }
+            else {
+                return new StateTransferInfo(null, original_id, 0L, null);
+            }
             return ret;
         }
         catch(Throwable ex) {
