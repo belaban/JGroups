@@ -13,23 +13,23 @@ import java.util.*;
 
 
 /**
- * New STATE_TRANSFER protocol based on PBCAST. Compared to the one in ./protocols, it doesn't
- * need a QUEUE layer above it. A state request is sent to a chosen member (coordinator if
- * null). That member makes a copy D of its current digest and asks the application for a copy of
- * its current state S. Then the member returns both S and D to the requester. The requester
- * first sets its digest to D and then returns the state to the application.
+ * New STATE_TRANSFER protocol based on PBCAST. Compared to the one in
+ * ./protocols, it doesn't need a QUEUE layer above it. A state request is sent
+ * to a chosen member (coordinator if null). That member makes a copy D of its
+ * current digest and asks the application for a copy of its current state S.
+ * Then the member returns both S and D to the requester. The requester first
+ * sets its digest to D and then returns the state to the application.
+ * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.76 2007/09/17 07:03:35 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.76.2.1 2008/02/13 02:13:24 vlada Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
-    final Vector   members=new Vector();
+    final Vector<Address>   members=new Vector<Address>();
     long           state_id=1;  // used to differentiate between state transfers (not currently used)
 
-    // final Set      state_requesters=new HashSet(); // requesters of state (usually just 1, could be more)
-
     /** Map<String,Set> of state requesters. Keys are state IDs, values are Sets of Addresses (one for each requester) */
-    final Map      state_requesters=new HashMap();
+    final Map<String,Set<Address>>      state_requesters=new HashMap<String,Set<Address>>();
 
     /** set to true while waiting for a STATE_RSP */
     boolean        waiting_for_state_response=false;
@@ -52,8 +52,8 @@ public class STATE_TRANSFER extends Protocol {
     public long getNumberOfStateBytesSent() {return num_bytes_sent;}
     public double getAverageStateSize() {return avg_state_size;}
 
-    public Vector requiredDownServices() {
-        Vector retval=new Vector();
+    public Vector<Integer> requiredDownServices() {
+        Vector<Integer> retval=new Vector<Integer>();
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
         return retval;
@@ -135,10 +135,10 @@ public class STATE_TRANSFER extends Protocol {
             break;
             
         case Event.CONFIG :
-            Map<String,Object> config = (Map<String,Object>) evt.getArg();
-            if(config != null && config.containsKey("state_transfer")){
-				log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
-			}
+            Map<String,Object> config=(Map<String,Object>)evt.getArg();
+            if(config != null && config.containsKey("state_transfer")) {
+                log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+            }
             break;           
         }
         return up_prot.up(evt);
@@ -211,24 +211,23 @@ public class STATE_TRANSFER extends Protocol {
     /* --------------------------- Private Methods -------------------------------- */
 
     /**
-	 * When FLUSH is used we do not need to pass digests between members
-	 *
-	 * see JGroups/doc/design/PartialStateTransfer.txt
-	 * see JGroups/doc/design/FLUSH.txt
-	 *
-	 * @return true if use of digests is required, false otherwise
-	 */
-	private boolean isDigestNeeded(){
-		return !flushProtocolInStack;
-	}
+     * When FLUSH is used we do not need to pass digests between members
+     * 
+     * see JGroups/doc/design/PartialStateTransfer.txt see
+     * JGroups/doc/design/FLUSH.txt
+     * 
+     * @return true if use of digests is required, false otherwise
+     */
+    private boolean isDigestNeeded() {
+        return !flushProtocolInStack;
+    }
 
     private void requestApplicationStates(Address requester, Digest digest, boolean open_barrier) {
-        Set appl_ids=new HashSet(state_requesters.keySet());
-        String id;
-
+        Set<String> appl_ids=new HashSet<String>(state_requesters.keySet());
+      
         List<StateTransferInfo> responses=new LinkedList<StateTransferInfo>();
-        for(Iterator it=appl_ids.iterator(); it.hasNext();) {
-            id=(String)it.next();
+        for(Iterator<String> it=appl_ids.iterator(); it.hasNext();) {
+            String id=it.next();
             StateTransferInfo info=new StateTransferInfo(requester, id, 0L, null);
             StateTransferInfo rsp=(StateTransferInfo)up_prot.up(new Event(Event.GET_APPLSTATE, info));
             responses.add(rsp);
@@ -259,15 +258,14 @@ public class STATE_TRANSFER extends Protocol {
                 avg_state_size=num_bytes_sent / num_state_reqs;
             }
 
-            Set requesters=(Set)state_requesters.get(id);
+            Set<Address> requesters=state_requesters.get(id);
             if(requesters == null || requesters.isEmpty()) {
                 log.warn("received state for id=" + id + ", but there are no requesters for this ID");
             }
-            else {
-                Address requester;
+            else {                
                 responses=new LinkedList<Message>();
-                for(Iterator it=requesters.iterator(); it.hasNext();) {
-                    requester=(Address)it.next();
+                for(Iterator<Address> it=requesters.iterator(); it.hasNext();) {
+                    Address requester=it.next();
                     Message state_rsp=new Message(requester, null, state);
                     StateHeader hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest, id);
                     state_rsp.putHeader(name, hdr);
@@ -316,11 +314,11 @@ public class STATE_TRANSFER extends Protocol {
 
     private void handleViewChange(View v) {
         Address old_coord;
-        Vector new_members=v.getMembers();
+        Vector<Address> new_members=v.getMembers();
         boolean send_up_null_state_rsp=false;
 
         synchronized(members) {
-            old_coord=(Address)(!members.isEmpty()? members.firstElement() : null);
+            old_coord=(!members.isEmpty()? members.firstElement() : null);
             members.clear();
             members.addAll(new_members);
 
@@ -356,9 +354,9 @@ public class STATE_TRANSFER extends Protocol {
         String id=hdr.state_id; // id could be null, which means get the entire state
         synchronized(state_requesters) {
             boolean empty=state_requesters.isEmpty();
-            Set requesters=(Set)state_requesters.get(id);
+            Set<Address> requesters=state_requesters.get(id);
             if(requesters == null) {
-                requesters=new HashSet();
+                requesters=new HashSet<Address>();
                 state_requesters.put(id, requesters);
             }
             requesters.add(sender);
@@ -578,8 +576,5 @@ public class STATE_TRANSFER extends Protocol {
                 retval+=state_id.length() +2;
             return retval;
         }
-
     }
-
-
 }
