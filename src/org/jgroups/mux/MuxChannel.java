@@ -26,7 +26,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.50 2008/02/12 04:01:20 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.51 2008/02/14 01:55:29 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -302,13 +302,6 @@ public class MuxChannel extends JChannel {
         }
     }
 
-    protected void _close(boolean disconnect, boolean close_mq) {
-        super._close(disconnect, close_mq);
-        setClosed(!mux.isOpen());
-        setConnected(mux.isConnected());
-        notifyChannelClosed(this);
-    }
-
     public synchronized void shutdown() {
         if(closed)
             return;
@@ -372,16 +365,6 @@ public class MuxChannel extends JChannel {
         return mux.getChannel().downcall(evt);
     }
 
-    public boolean getState(Address target, long timeout) throws ChannelNotConnectedException,
-                                                         ChannelClosedException {
-        return getState(target, null, timeout);
-    }
-
-    public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException,
-                                                                          ChannelClosedException {
-        return getState(target, state_id, timeout, true);
-    }
-
     public boolean getState(Address target, String state_id, long timeout, boolean useFlushIfPresent) throws ChannelNotConnectedException,
                                                                                                      ChannelClosedException {
         String my_id=id;
@@ -417,6 +400,14 @@ public class MuxChannel extends JChannel {
         }
     }
 
+    void fireChannelShunned(){
+        notifyChannelShunned();
+    }
+      
+    void fireChannelReconnected(Address address){
+        notifyChannelReconnected(address);
+    }
+    
     public void returnState(byte[] state) {
         mux.getChannel().returnState(state, id);
     }
