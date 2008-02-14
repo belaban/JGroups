@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.1.2.6 2008/02/11 01:50:08 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.1.2.7 2008/02/14 01:02:39 vlada Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -91,6 +91,10 @@ public class ShunTest extends ChannelTestBase {
         transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
 
         System.out.println(">> shunning C2:");
+        
+        //always up EXIT on underlying JChannel as that is what happens
+        //in real scenarios
+        
         if(c2 instanceof MuxChannel) {
             ((MuxChannel)c2).getChannel().up(new Event(Event.EXIT));
         }
@@ -262,6 +266,7 @@ public class ShunTest extends ChannelTestBase {
                     c.getProtocolStack().removeProtocol("DISCARD");
                 } catch (Exception e) {                    
                     e.printStackTrace();
+                    c.close();
                 }               
             }            
         }       
