@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.98 2008/02/14 01:55:29 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.99 2008/02/14 06:41:14 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -597,6 +597,16 @@ public class Multiplexer implements UpHandler {
             }
             return;
         }
+        
+        if(!channel.isOpen() || !channel.isConnected()) {
+            if(log.isWarnEnabled()) {
+                log.warn("Underlying multiplexer channel " + channel.getLocalAddress()
+                         + " is not connected, cannot send ServiceInfo."
+                         + ServiceInfo.typeToString(type)
+                         + " message");
+            }
+            return;
+        }            
 
         Message service_msg=new Message();
         service_msg.putHeader(NAME, new MuxHeader(new ServiceInfo(type, service, host, payload)));
