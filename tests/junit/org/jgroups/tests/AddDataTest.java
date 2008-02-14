@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 
@@ -8,25 +7,12 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- *
+ * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.11 2007/11/19 16:07:53 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.12 2008/02/14 01:49:37 vlada Exp $
  */
-public class AddDataTest extends TestCase {
+public class AddDataTest extends ChannelTestBase {
     JChannel ch1, ch2;
-    
-    String properties="udp.xml";
-
-    String bundlingProperties="UDP(mcast_addr=228.1.2.3;mcast_port=45566;ip_ttl=32;" +
-            "enable_bundling=true;max_bundle_size=3000;max_bundle_timeout=500):" +
-            "PING(timeout=2000;num_initial_members=2):" +
-            "pbcast.NAKACK(gc_lag=10;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400,4800):" +
-            "pbcast.GMS(join_timeout=5000;" +
-            "shun=true;print_local_addr=true)";
-
-
-
 
     public AddDataTest(String name) {
         super(name);
@@ -40,62 +26,13 @@ public class AddDataTest extends TestCase {
             ch1.close();
     }
 
-
-    /**
-     * Uncomment to test shunning/reconnecting (using CTRL-Z and fg)
-     */
-//    public void testAdditionalDataWithShun() {
-//        try {
-//            JChannel c=new JChannel(props);
-//            Map m=new HashMap();
-//            m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
-//            c.down(new Event(Event.CONFIG, m));
-//            c.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-//            c.setChannelListener(new ChannelListener() {
-//                public void channelDisconnected(Channel channel) {
-//                    System.out.println("channel disconnected");
-//                }
-//
-//                public void channelShunned() {
-//                    System.out.println("channel shunned");
-//                }
-//
-//                public void channelReconnected(Address addr) {
-//                    System.out.println("channel reconnected");
-//                }
-//
-//                public void channelConnected(Channel channel) {
-//                    System.out.println("channel connected");
-//                }
-//
-//                public void channelClosed(Channel channel) {
-//                    System.out.println("channel closed");
-//                }
-//            });
-//            System.out.println("CONNECTING");
-//            c.connect("bla");
-//            System.out.println("CONNECTING: done");
-//            IpAddress addr=(IpAddress)c.getLocalAddress();
-//            System.out.println("address is " + addr);
-//            assertNotNull(addr.getAdditionalData());
-//            assertEquals(addr.getAdditionalData()[0], 'b');
-//            Util.sleep(600000);
-//            c.close();
-//        }
-//        catch(ChannelException e) {
-//            e.printStackTrace();
-//            fail(e.toString());
-//        }
-//    }
-
-
-    public void testAdditionalData() {
+    public void testAdditionalData() throws Exception {
         try {
-            for(int i=1; i <= 5; i++) {
+            for(int i=1;i <= 5;i++) {
                 System.out.println("-- attempt # " + i + "/10");
-                JChannel c=new JChannel(properties);
+                Channel c=createChannel();
                 Map<String,Object> m=new HashMap<String,Object>();
-                m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
+                m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
                 c.down(new Event(Event.CONFIG, m));
                 c.connect("bla");
                 IpAddress addr=(IpAddress)c.getLocalAddress();
@@ -111,34 +48,31 @@ public class AddDataTest extends TestCase {
         }
     }
 
-
     public void testBetweenTwoChannelsMcast() throws Exception {
-        _testWithProps(this.properties, true);
+        _testWithProps(true);
     }
 
     public void testBetweenTwoChannelsUnicast() throws Exception {
-        _testWithProps(this.properties, false);
+        _testWithProps(false);
     }
 
     public void testBetweenTwoChannelsWithBundlingMcast() throws Exception {
-        _testWithProps(this.bundlingProperties, true);
+        _testWithProps(true);
     }
 
     public void testBetweenTwoChannelsWithBundlingUnicast() throws Exception {
-        _testWithProps(this.bundlingProperties, false);
+        _testWithProps(false);
     }
 
-
-
-    private void _testWithProps(String props, boolean mcast) throws Exception {
+    private void _testWithProps(boolean mcast) throws Exception {
         Map<String,Object> m=new HashMap<String,Object>();
-        m.put("additional_data", new byte[]{'b', 'e', 'l', 'a'});
+        m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
         byte[] buf=new byte[1000];
 
-        ch1=new JChannel(props);
+        ch1=createChannel();
         ch1.down(new Event(Event.CONFIG, m));
 
-        ch2=new JChannel(props);
+        ch2=createChannel();
         ch2.down(new Event(Event.CONFIG, m));
         ch1.connect("group");
         ch2.connect("group");
@@ -163,10 +97,8 @@ public class AddDataTest extends TestCase {
         assertEquals(4, src.getAdditionalData().length);
     }
 
-
     public static void main(String[] args) {
-        String[] testCaseName={AddDataTest.class.getName()};
+        String[] testCaseName= { AddDataTest.class.getName() };
         junit.textui.TestRunner.main(testCaseName);
     }
-
 }
