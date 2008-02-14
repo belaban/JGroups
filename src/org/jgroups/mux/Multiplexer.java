@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.97 2008/02/13 02:16:50 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.98 2008/02/14 01:55:29 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -1089,7 +1089,7 @@ public class Multiplexer implements UpHandler {
         return null;
     }
 
-    private class MultiplexerChannelListener extends ChannelListenerAdapter {
+    private class MultiplexerChannelListener extends ChannelListenerAdapter {        
 
         //handle reconnecting of services after being shunned and 
         //then reconnected back 
@@ -1109,10 +1109,12 @@ public class Multiplexer implements UpHandler {
                     boolean fetchAndGetState=reconnect && getState;
                     if(fetchAndGetState) {
                         mux_ch.connect(mux_ch.getClusterName(), null, null, 10000);
+                        mux_ch.fireChannelReconnected(mux_ch.getLocalAddress());
                     }
                     else {
                         if(reconnect) {
                             mux_ch.connect(mux_ch.getClusterName());
+                            mux_ch.fireChannelReconnected(mux_ch.getLocalAddress());
                         }
                         if(getState) {
                             mux_ch.getState(null, 5000);
@@ -1123,6 +1125,13 @@ public class Multiplexer implements UpHandler {
                     if(log.isErrorEnabled())
                         log.error("MuxChannel reconnect failed " + e);
                 }
+            }
+        }
+        
+        @Override
+        public void channelShunned() {
+            for(MuxChannel mux_ch:services.values()) {
+                mux_ch.fireChannelShunned();
             }
         }
     }
