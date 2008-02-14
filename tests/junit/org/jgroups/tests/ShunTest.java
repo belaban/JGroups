@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.1.2.7 2008/02/14 01:02:39 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.1.2.8 2008/02/14 06:38:47 vlada Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -263,7 +263,8 @@ public class ShunTest extends ChannelTestBase {
             for (ShunChannel ch : channels) {
                 JChannel c = (JChannel)ch.getChannel();
                 try {
-                    c.getProtocolStack().removeProtocol("DISCARD");
+                    if(c.getProtocolStack().findProtocol("DISCARD") != null)
+                        c.getProtocolStack().removeProtocol("DISCARD");
                 } catch (Exception e) {                    
                     e.printStackTrace();
                     c.close();

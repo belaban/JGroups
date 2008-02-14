@@ -384,8 +384,13 @@ public class ChannelTestBase extends TestCase {
             }else{
                 log.info("Closing channel [" + getName() + "]");
             }
-            channel.close();
-            log.info("Closed channel " + a + "[" + getName() + "]");
+            try {
+                channel.close();
+                log.info("Closed channel " + a + "[" + getName() + "]");
+            }
+            catch(Throwable t) {
+                log.warn("Got exception while closing channel " + a + "[" + getName() + "]");
+            }            
         }
     }
 
