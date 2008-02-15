@@ -26,7 +26,7 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.38.2.13 2008/02/14 01:55:26 vlada Exp $
+ * @version $Id: MuxChannel.java,v 1.38.2.14 2008/02/15 04:23:42 vlada Exp $
  */
 public class MuxChannel extends JChannel {
 
@@ -95,6 +95,10 @@ public class MuxChannel extends JChannel {
 
     public Address getLocalAddress() {
         return mux.getLocalAddress();
+    }
+   
+    public String getProperties() {
+        return mux.getChannel().getProperties();
     }
 
     /** This should never be used (just for testing) ! */
