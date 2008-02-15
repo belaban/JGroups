@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.173 2008/02/08 07:51:31 belaban Exp $
+ * @version $Id: JChannel.java,v 1.174 2008/02/15 04:23:38 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -320,23 +320,28 @@ public class JChannel extends Channel {
     public long getSentBytes() {return sent_bytes;}
     public long getReceivedMessages() {return received_msgs;}
     public long getReceivedBytes() {return received_bytes;}
-    public int  getNumberOfTasksInTimer() {return prot_stack != null ? prot_stack.timer.size() : -1;}
-
+    public int getNumberOfTasksInTimer() {
+        ProtocolStack ps=getProtocolStack();
+        return ps != null? ps.timer.size() : -1;
+    }
 
     public int getTimerThreads() {
-        return prot_stack != null? prot_stack.getTimerThreads() : -1;
+        ProtocolStack ps=getProtocolStack();
+        return ps != null? ps.getTimerThreads() : -1;
     }
 
     public String dumpTimerQueue() {
-        return prot_stack != null? prot_stack.dumpTimerQueue() : "<n/a";
+        ProtocolStack ps=getProtocolStack();
+        return ps != null? ps.dumpTimerQueue() : "<n/a";
     }
 
     /**
-     * Returns a pretty-printed form of all the protocols. If include_properties is set,
-     * the properties for each protocol will also be printed.
+     * Returns a pretty-printed form of all the protocols. If include_properties
+     * is set, the properties for each protocol will also be printed.
      */
     public String printProtocolSpec(boolean include_properties) {
-        return prot_stack != null ? prot_stack.printProtocolSpec(include_properties) : null;
+        ProtocolStack ps=getProtocolStack();
+        return ps != null? ps.printProtocolSpec(include_properties) : null;
     }
 
 
