@@ -88,6 +88,8 @@ public class FLUSH extends Protocol {
 
     private boolean enable_reconciliation = true;
     
+    private int flush_retry_count = 4;
+    
     private final AtomicInteger viewCounter = new AtomicInteger(0);   
     
     private volatile boolean allowMessagesToPassUp = false;
@@ -127,6 +129,7 @@ public class FLUSH extends Protocol {
         super.setProperties(props);
 
         timeout = Util.parseLong(props, "timeout", timeout);
+        flush_retry_count = Util.parseInt(props, "flush_retry_count", flush_retry_count);
         start_flush_timeout = Util.parseLong(props, "start_flush_timeout", start_flush_timeout);        
         retry_timeout = Util.parseLong(props, "retry_timeout", retry_timeout);
         enable_reconciliation = Util.parseBoolean(props,
@@ -186,12 +189,8 @@ public class FLUSH extends Protocol {
         return startFlush(new Event(Event.SUSPEND));
     }
     
-    private boolean startFlush(Event evt){
-        int numberOfAttempts = 3;
-        synchronized (sharedLock) {
-            numberOfAttempts=(currentView != null) ? currentView.size() + 1 : numberOfAttempts;
-        }
-        return startFlush(evt, numberOfAttempts);
+    private boolean startFlush(Event evt){        
+        return startFlush(evt, flush_retry_count);
     }
     
     private boolean startFlush(Event evt, int numberOfAttempts) {
