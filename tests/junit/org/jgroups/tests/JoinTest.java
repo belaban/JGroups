@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.9.4.1 2007/11/20 08:37:25 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.9.4.2 2008/02/15 01:06:20 vlada Exp $
  */
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -154,13 +154,7 @@ public class JoinTest extends ChannelTestBase {
             gms.setJoinTimeout(join_timeout);
         }
 
-        Discovery discovery=(Discovery)stack.findProtocol("PING");
-        if(discovery == null)
-            discovery=(Discovery)stack.findProtocol("TCPPING");
-        if(discovery == null)
-            discovery=(Discovery)stack.findProtocol("MPING");
-        if(discovery == null)
-            discovery=(Discovery)stack.findProtocol("TCPGOSSIP");
+        Discovery discovery=(Discovery)stack.findProtocol(Discovery.class);        
         if(discovery != null) {
             discovery.setNumInitialMembers(10);
             discovery.setTimeout(discovery_timeout);
