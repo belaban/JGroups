@@ -1,14 +1,12 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.ChannelException;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
-import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -20,12 +18,11 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.5 2007/03/15 10:58:36 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.5.4.1 2008/02/15 01:06:20 vlada Exp $
  */
-public class MessageDispatcherUnitTest extends TestCase {
+public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
-    JChannel ch, ch2;
-    static final String props="udp.xml";
+    JChannel ch, ch2;    
 
 
     public MessageDispatcherUnitTest(String name) {
@@ -35,7 +32,7 @@ public class MessageDispatcherUnitTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        ch=new JChannel(props);
+        ch=createChannel();
         disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
         ch.connect("x");
@@ -82,10 +79,10 @@ public class MessageDispatcherUnitTest extends TestCase {
     }
 
 
-    public void testNullMessageToAll() throws ChannelException {
+    public void testNullMessageToAll() throws Exception {
         disp.setRequestHandler(new MyHandler(null));
 
-        ch2=new JChannel(props);
+        ch2=createChannel();
         disableBundling(ch2);
         long stop,start=System.currentTimeMillis();
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
@@ -114,15 +111,15 @@ public class MessageDispatcherUnitTest extends TestCase {
         assertNull(ret);
     }
 
-    public void test200ByteMessageToAll() throws ChannelException {
+    public void test200ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(200);
     }
 
-    public void test2000ByteMessageToAll() throws ChannelException {
+    public void test2000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(2000);
     }
 
-    public void test20000ByteMessageToAll() throws ChannelException {
+    public void test20000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(20000);
     }
     
@@ -144,11 +141,11 @@ public class MessageDispatcherUnitTest extends TestCase {
 
 
 
-    private void sendMessageToBothChannels(int size) throws ChannelException {
+    private void sendMessageToBothChannels(int size) throws Exception {
         long start, stop;
         disp.setRequestHandler(new MyHandler(new byte[size]));
 
-        ch2=new JChannel(props);
+        ch2=createChannel();
         disableBundling(ch2);
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(new byte[size]));
         ch2.connect("x");
@@ -176,7 +173,7 @@ public class MessageDispatcherUnitTest extends TestCase {
 
     private void disableBundling(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        UDP transport=(UDP)stack.findProtocol("UDP");
+        TP transport = (TP)stack.findProtocol(TP.class);       
         if(transport != null) {
             Properties tmp=new Properties();
             tmp.setProperty("enable_bundling", "false");
