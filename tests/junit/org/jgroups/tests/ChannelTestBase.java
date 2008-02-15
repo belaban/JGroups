@@ -246,13 +246,15 @@ public class ChannelTestBase extends TestCase {
             JChannel c = null;
             if (isMuxChannelUsed()) {
                 log.info("Using configuration file " + MUX_CHANNEL_CONFIG + ", stack is " + MUX_CHANNEL_CONFIG_STACK_NAME);
-                for (int i = 0; i < muxFactory.length; i++) {
-                    if (!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString())) {
-                        c = (JChannel) muxFactory[i].createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
-                        if (useBlocking()) {
-                            c.setOpt(Channel.BLOCK, Boolean.TRUE);
+                synchronized(muxFactory){
+                    for (int i = 0; i < muxFactory.length; i++) {
+                        if (!muxFactory[i].hasMuxChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString())) {
+                            c = (JChannel) muxFactory[i].createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, id.toString());
+                            if (useBlocking()) {
+                                c.setOpt(Channel.BLOCK, Boolean.TRUE);
+                            }
+                            return c;
                         }
-                        return c;
                     }
                 }
 
@@ -384,8 +386,13 @@ public class ChannelTestBase extends TestCase {
             }else{
                 log.info("Closing channel [" + getName() + "]");
             }
-            channel.close();
-            log.info("Closed channel " + a + "[" + getName() + "]");
+            try {
+                channel.close();
+                log.info("Closed channel " + a + "[" + getName() + "]");
+            }
+            catch(Throwable t) {
+                log.warn("Got exception while closing channel " + a + "[" + getName() + "]");
+            }              
         }
     }
 
@@ -592,8 +599,8 @@ public class ChannelTestBase extends TestCase {
             else if(event instanceof GetStateEvent){
                 if(i + 1 < size){
                     Object o = events.get(i + 1);
-                    assertTrue("After getstate should be view/unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent || o instanceof View); 
+                    assertTrue("After getstate should be view/unblock/getstate , but it is " + o.getClass() + ",events= " + eventString,
+                               o instanceof UnblockEvent || o instanceof View || o instanceof GetStateEvent);  
                 }
                 Object o = events.get(i - 1);
                 assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
