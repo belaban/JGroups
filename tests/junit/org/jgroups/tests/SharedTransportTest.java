@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.8 2008/01/25 11:58:59 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.9 2008/02/18 16:04:49 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -71,6 +71,21 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
     public void testView2() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createChannel();
+        a.setReceiver(new MyReceiver("first-channel"));
+        b.setReceiver(new MyReceiver("second-channel"));
+
+        a.connect("x");
+        b.connect("x");
+
+        View view=a.getView();
+        assertEquals(2, view.size());
+        view=b.getView();
+        assertEquals(2, view.size());
+    }
+
+    public void testSharedTransportAndNonsharedTransport() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
         a.setReceiver(new MyReceiver("first-channel"));
