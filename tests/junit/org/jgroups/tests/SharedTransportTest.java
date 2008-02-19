@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.protocols.TP;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolData;
 import org.jgroups.conf.ProtocolParameter;
@@ -15,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.11 2008/02/19 11:02:37 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.12 2008/02/19 13:51:13 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -333,7 +332,12 @@ public class SharedTransportTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "]: view = " + new_view);
+            StringBuilder sb=new StringBuilder();
+            sb.append("[" + name + "]: view = " + new_view);
+            String cluster_name=(String)new_view.getPayload(Global.CLUSTER_NAME);
+            if(cluster_name != null)
+                sb.append(", cluster_name=" + cluster_name);
+            System.out.println(sb);
         }
     }
 
