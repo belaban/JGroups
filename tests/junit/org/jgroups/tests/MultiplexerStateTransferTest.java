@@ -14,7 +14,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.3 2008/01/25 02:45:30 vlada Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.4 2008/02/19 23:33:59 vlada Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -418,20 +418,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
         assertEquals(msg, num_service_view_mbrs, service_view.size());
         assertEquals(msg, num_cluster_view_mbrs, cluster_view.size());
-    }
-
-
-    public void testStateTransferFromSelfWithRegularChannel() throws Exception {
-        JChannel ch=new JChannel();
-        ch.connect("X");
-        try {
-            boolean rc=ch.getState(null, 2000);
-            assertFalse("getState() on singleton should return false", rc);
-        }
-        finally {
-            ch.close();
-        }
-    }
+    }   
 
     public void testStateTransferFromSelf() throws Exception {
         ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
