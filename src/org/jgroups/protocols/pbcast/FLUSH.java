@@ -328,7 +328,16 @@ public class FLUSH extends Protocol {
                     case FlushHeader.FLUSH_BYPASS:
                         return up_prot.up(evt);                     
                     case FlushHeader.START_FLUSH:
-                        handleStartFlush(msg, fh);
+                        Collection<Address> fp=fh.flushParticipants;
+                        boolean amIParticipant = fp != null && fp.contains(localAddress);
+                        if(amIParticipant){
+                            handleStartFlush(msg, fh);
+                        }         
+                        else{ 
+                            if (log.isDebugEnabled())                        
+                                log.debug("Received START_FLUSH at " + localAddress
+                                      + " but I am not flush participant, not responding");                                            
+                        }
                         break;
                     case FlushHeader.FLUSH_RECONCILE:
                         handleFlushReconcile(msg, fh);
@@ -659,19 +668,17 @@ public class FLUSH extends Protocol {
         if(stats){
             startFlushTime = System.currentTimeMillis();
             numberOfFlushes += 1;
-        }
-        boolean amIParticipant = false;
+        }        
         synchronized(sharedLock){
             flushCoordinator = flushStarter;
             flushMembers.clear();
             if(fh.flushParticipants != null){
                 flushMembers.addAll(fh.flushParticipants);
             }
-            flushMembers.removeAll(suspected);
-            amIParticipant = flushMembers.contains(localAddress);
+            flushMembers.removeAll(suspected);            
         }
         
-        if(amIParticipant && sentBlock.compareAndSet(false, true)){
+        if(sentBlock.compareAndSet(false, true)){
             //ensures that we do not repeat block event
             //and that we do not send block event to non participants            
             sendBlockUpToChannel();            
@@ -682,26 +689,19 @@ public class FLUSH extends Protocol {
         else{
             if(log.isDebugEnabled())
                 log.debug("Received START_FLUSH at " + localAddress + " but not sending BLOCK up");
-        }
-        if(amIParticipant){                      
+        }                        
             
-            Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
-            FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID);
-            fhr.addDigest(digest);            
-            
-            Message msg = new Message(flushStarter);
-            msg.putHeader(getName(), fhr);
-            down_prot.down(new Event(Event.MSG, msg));
-            if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress
-                          + " responded with FLUSH_COMPLETED");
-        }
-        else{
-            if(log.isDebugEnabled())
-                log.debug("Received START_FLUSH at " + localAddress
-                          + " but I am not flush participant, not responding");
-            flushInProgress.set(false);
-        }
+        Digest digest = (Digest) down_prot.down(new Event(Event.GET_DIGEST));
+        FlushHeader fhr = new FlushHeader(FlushHeader.FLUSH_COMPLETED, fh.viewID);
+        fhr.addDigest(digest);            
+        
+        Message msg = new Message(flushStarter);
+        msg.putHeader(getName(), fhr);
+        down_prot.down(new Event(Event.MSG, msg));
+        if(log.isDebugEnabled())
+            log.debug("Received START_FLUSH at " + localAddress
+                      + " responded with FLUSH_COMPLETED");
+              
     }
     
     private void onFlushCompleted(Address address, Digest digest) {
