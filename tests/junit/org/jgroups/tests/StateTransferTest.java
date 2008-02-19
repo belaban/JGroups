@@ -16,6 +16,8 @@ import java.util.concurrent.locks.ReentrantLock;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 
@@ -24,7 +26,7 @@ import org.jgroups.util.Util;
  * the group
  * 
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.18.2.4 2008/02/01 03:48:41 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.18.2.5 2008/02/19 23:16:51 vlada Exp $
  */
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT = 10000;
@@ -42,6 +44,18 @@ public class StateTransferTest extends ChannelTestBase {
 
     public boolean useBlocking() {
         return true;
+    }
+    
+    public void testStateTransferFromSelfWithRegularChannel() throws Exception {
+        Channel ch = createChannel();
+        ch.connect("test");
+        try {
+            boolean rc=ch.getState(null, 2000);
+            assertFalse("getState() on singleton should return false", rc);
+        }
+        finally {
+            ch.close();
+        }
     }
 
     public void testStateTransferWhileSending() throws Exception {
