@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.10 2008/02/19 10:58:54 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.11 2008/02/19 11:02:37 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -86,6 +86,12 @@ public class SharedTransportTest extends ChannelTestBase {
         assertEquals(1, view.size());
     }
 
+    /** Tests http://jira.jboss.com/jira/browse/JGRP-689: with TCP or UDP.ip_mcast=false, the transport iterates through
+     * the 'members' instance variable to send a group message. However, the 'members' var is the value of the last
+     * view change received. If we receive multiple view changes, this leads to incorrect membership.
+     *
+     * @throws Exception
+     */
     public void testView3() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
