@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.12 2008/02/15 04:23:43 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.13 2008/02/19 01:28:21 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -362,9 +362,7 @@ public class JChannel extends Channel {
         startStack(cluster_name);
 
         // only connect if we are not a unicast channel
-        if(cluster_name != null) {
-            if(flush_supported)
-               flush_unblock_promise.reset();
+        if(cluster_name != null) {            
             
             Event connect_event=new Event(Event.CONNECT, cluster_name);
             Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
@@ -375,7 +373,7 @@ public class JChannel extends Channel {
             }
 
             //if FLUSH is used do not return from connect() until UNBLOCK event is received                       
-            if(flush_supported) {
+            if(flushSupported()) {
                try {
                   flush_unblock_promise.getResultWithTimeout(FLUSH_UNBLOCK_TIMEOUT);
                }
@@ -467,7 +465,7 @@ public class JChannel extends Channel {
 
             }
             finally {
-                if(flush_supported && canFetchState)
+                if(flushSupported() && canFetchState)
                     stopFlush();
             }
         }
@@ -926,7 +924,7 @@ public class JChannel extends Channel {
 
         
         StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);
-        boolean initiateFlush = flush_supported && useFlushIfPresent;
+        boolean initiateFlush = flushSupported() && useFlushIfPresent;
         
         if(initiateFlush)
             startFlush(false);
@@ -1619,7 +1617,7 @@ public class JChannel extends Channel {
      * @return true if FLUSH completed within the timeout
      */
     public boolean startFlush(boolean automatic_resume) {
-        if(!flush_supported) {
+        if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }           	  
         boolean successfulFlush = (Boolean) downcall(new Event(Event.SUSPEND));
@@ -1647,7 +1645,7 @@ public class JChannel extends Channel {
      */
     public boolean startFlush(List<Address> flushParticipants,boolean automatic_resume) {
         boolean successfulFlush = false;
-        if(!flush_supported){
+        if(!flushSupported()){
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
         View v = getView();
@@ -1682,11 +1680,10 @@ public class JChannel extends Channel {
     }
 
     public void stopFlush() {
-        if(!flush_supported) {
+        if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-
-        flush_unblock_promise.reset();
+       
         down(new Event(Event.RESUME));
 
         //do not return until UNBLOCK event is received            
@@ -1699,11 +1696,10 @@ public class JChannel extends Channel {
     }
 
     public void stopFlush(List<Address> flushParticipants) {
-        if(!flush_supported) {
+        if(!flushSupported()) {
             throw new IllegalStateException("Flush is not supported, add pbcast.FLUSH protocol to your configuration");
         }
-
-        flush_unblock_promise.reset();
+        
         down(new Event(Event.RESUME, flushParticipants));
 
         // do not return until UNBLOCK event is received
@@ -1726,7 +1722,7 @@ public class JChannel extends Channel {
     }
 
     Address determineCoordinator() {
-        Vector mbrs=my_view != null? my_view.getMembers() : null;
+        Vector<Address> mbrs=my_view != null? my_view.getMembers() : null;
         if(mbrs == null)
             return null;
         if(!mbrs.isEmpty())
