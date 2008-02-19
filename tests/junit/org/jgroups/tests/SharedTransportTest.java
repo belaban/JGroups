@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolData;
 import org.jgroups.conf.ProtocolParameter;
@@ -14,7 +15,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.9 2008/02/18 16:04:49 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.10 2008/02/19 10:58:54 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -72,21 +73,6 @@ public class SharedTransportTest extends ChannelTestBase {
 
     public void testView2() throws Exception {
         a=createSharedChannel(SINGLETON_1);
-        b=createChannel();
-        a.setReceiver(new MyReceiver("first-channel"));
-        b.setReceiver(new MyReceiver("second-channel"));
-
-        a.connect("x");
-        b.connect("x");
-
-        View view=a.getView();
-        assertEquals(2, view.size());
-        view=b.getView();
-        assertEquals(2, view.size());
-    }
-
-    public void testSharedTransportAndNonsharedTransport() throws Exception {
-        a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
         a.setReceiver(new MyReceiver("first-channel"));
         b.setReceiver(new MyReceiver("second-channel"));
@@ -98,6 +84,78 @@ public class SharedTransportTest extends ChannelTestBase {
         assertEquals(1, view.size());
         view=b.getView();
         assertEquals(1, view.size());
+    }
+
+    public void testView3() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createSharedChannel(SINGLETON_1);
+        c=createSharedChannel(SINGLETON_2);
+        r1=new MyReceiver("A::" + SINGLETON_1); r2=new MyReceiver("B::" + SINGLETON_1); r3=new MyReceiver("C::" + SINGLETON_2);
+        a.setReceiver(r1);
+        b.setReceiver(r2);
+        c.setReceiver(r3);
+
+        a.connect("a");
+        c.connect("a");
+
+        View view=a.getView();
+        assertEquals(2, view.size());
+        view=c.getView();
+        assertEquals(2, view.size());
+
+        a.send(new Message(null, null, "msg-1"));
+        c.send(new Message(null, null, "msg-2"));
+
+        Util.sleep(1000); // async sending - wait a little
+        List<Message> list=r1.getList();
+        assertEquals(2, list.size());
+        list=r3.getList();
+        assertEquals(2, list.size());
+
+        r1.clear(); r2.clear(); r3.clear();
+        b.connect("b");
+
+        a.send(new Message(null, null, "msg-3"));
+        b.send(new Message(null, null, "msg-4"));
+        c.send(new Message(null, null, "msg-5"));
+        Util.sleep(1000); // async sending - wait a little
+
+        printLists(r1, r2, r3);
+        list=r1.getList();
+        assertEquals(2, list.size());
+        list=r2.getList();
+        assertEquals(1, list.size());
+        list=r3.getList();
+        assertEquals(2, list.size());
+    }
+
+    private static void printLists(MyReceiver... receivers) {
+        StringBuilder sb=new StringBuilder();
+        int cnt=1;
+        for(MyReceiver rec: receivers) {
+            List<Message> list=rec.getList();
+            sb.append("receiver #" + cnt++).append(":\n");
+            for(Message msg: list) {
+                sb.append(msg.getObject()).append("\n");
+            }
+        }
+        System.out.println(sb);
+    }
+
+
+    public void testSharedTransportAndNonsharedTransport() throws Exception {
+        a=createSharedChannel(SINGLETON_1);
+        b=createChannel();
+        a.setReceiver(new MyReceiver("first-channel"));
+        b.setReceiver(new MyReceiver("second-channel"));
+
+        a.connect("x");
+        b.connect("x");
+
+        View view=a.getView();
+        assertEquals(2, view.size());
+        view=b.getView();
+        assertEquals(2, view.size());
     }
 
     public void testCreationOfDifferentCluster() throws Exception {
