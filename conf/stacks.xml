@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.35.2.3 2007/11/27 15:49:44 vlada Exp $
+  Version: $Id: stacks.xml,v 1.35.2.4 2008/02/20 06:02:23 vlada Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -185,7 +185,7 @@
                            discard_delivered_msgs="false"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="7000"  
+            <pbcast.GMS print_local_addr="true" join_timeout="5000"  
                         shun="false"
                         view_bundling="true"/>
             <FC max_credits="2000000"
@@ -248,7 +248,7 @@
                            discard_delivered_msgs="false"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
-            <pbcast.GMS print_local_addr="true" join_timeout="7000"  
+            <pbcast.GMS print_local_addr="true" join_timeout="5000"  
                         shun="false"
                         view_bundling="true"/>
             <pbcast.STREAMING_STATE_TRANSFER/>
