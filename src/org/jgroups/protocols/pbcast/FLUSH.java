@@ -548,8 +548,8 @@ public class FLUSH extends Protocol {
     }
     
     private void sendUnBlockUpToChannel() {
-        up_prot.up(new Event(Event.UNBLOCK));
         sentBlock.set(false);
+        up_prot.up(new Event(Event.UNBLOCK));       
     }
 
     private boolean isCurrentFlushMessage(FlushHeader fh) {
