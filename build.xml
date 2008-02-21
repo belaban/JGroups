@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.128 2007/11/27 15:54:32 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.129 2008/02/21 01:12:54 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -382,6 +382,9 @@
             <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            	<jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+            	<jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
+            	<jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
                 <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
                 <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
                 <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
