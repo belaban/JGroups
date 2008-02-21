@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.9 2007/11/09 12:25:17 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.10 2008/02/21 06:32:12 vlada Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -24,24 +24,9 @@ public class MessageBundlingTest extends ChannelTestBase {
     private static final int MAX_BYTES=20000;
 
     public void setUp() throws Exception {
-        super.setUp();
-        ch1=createChannel();
-        setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
-        setLoopback(ch1, false);
-        ch1.setReceiver(new NullReceiver());
-        ch1.connect("x");
-        ch2=createChannel();
-        setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
-        setLoopback(ch1, false);
-        r2=new MyReceiver();
-        ch2.setReceiver(r2);
-        ch2.connect("x");
-
-        View view=ch2.getView();
-        assertEquals(2, view.size());
+        super.setUp();         
     }
-
-
+    
     public void tearDown() throws Exception {
         closeChannel(ch2);
         closeChannel(ch1);
@@ -52,13 +37,31 @@ public class MessageBundlingTest extends ChannelTestBase {
     protected boolean useBlocking() {
        return false;
     }
+    
+    private void prepareChannels() throws Exception,ChannelException {
+        ch1=createChannel();
+        setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
+        setLoopback(ch1, false);
+        ch1.setReceiver(new NullReceiver());
+        ch1.connect("x");
+        ch2=createChannel();
+        setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
+        setLoopback(ch2, false);
+        r2=new MyReceiver();
+        ch2.setReceiver(r2);
+        ch2.connect("x");
+
+        View view=ch2.getView();
+        assertEquals(2, view.size());
+    }
 
 
-    public void testLatencyWithoutMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithoutMessageBundling() throws Exception {
+        prepareChannels();
         Message tmp=new Message();
         setBundling(ch1, false, 20000, 30);
         r2.setNumExpectedMesssages(1);
-        Promise promise=new Promise();
+        Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
@@ -73,10 +76,11 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    public void testLatencyWithMessageBundling() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithMessageBundling() throws Exception {
+        prepareChannels();
         Message tmp=new Message();
         r2.setNumExpectedMesssages(1);
-        Promise promise=new Promise();
+        Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         ch1.send(tmp);
@@ -93,12 +97,13 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
 
-    public void testLatencyWithMessageBundlingAndLoopback() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
+        prepareChannels();
         Message tmp=new Message();
         setLoopback(ch1, true);
         setLoopback(ch2, true);
         r2.setNumExpectedMesssages(1);
-        Promise promise=new Promise();
+        Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
         long time=System.currentTimeMillis();
         System.out.println(">>> sending message at " + new Date());
@@ -114,11 +119,12 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    public void testLatencyWithMessageBundlingAndMaxBytes() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
+        prepareChannels();
         setLoopback(ch1, true);
         setLoopback(ch2, true);
         r2.setNumExpectedMesssages(10);
-        Promise promise=new Promise();
+        Promise<Integer> promise=new Promise<Integer>();
         r2.setPromise(promise);
         Util.sleep(LATENCY *2);
         System.out.println(">>> sending 10 messages at " + new Date());
@@ -136,7 +142,8 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    public void testSimple() throws ChannelClosedException, ChannelNotConnectedException {
+    public void testSimple() throws Exception {
+        prepareChannels();
         Message tmp=new Message();
         ch2.setReceiver(new SimpleReceiver());
         ch1.send(tmp);
@@ -193,7 +200,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     private static class MyReceiver extends ReceiverAdapter {
         private final List<Long> times=new LinkedList<Long>();
         private int num_expected_msgs;
-        private Promise promise;
+        private Promise<Integer> promise;
 
         public List<Long> getTimes() {
             return times;
@@ -205,7 +212,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         }
 
 
-        public void setPromise(Promise promise) {
+        public void setPromise(Promise<Integer> promise) {
             this.promise=promise;
         }
 
