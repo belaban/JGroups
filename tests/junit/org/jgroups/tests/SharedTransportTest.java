@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.13 2008/02/21 13:23:54 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.14 2008/02/21 13:43:10 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -334,9 +334,6 @@ public class SharedTransportTest extends ChannelTestBase {
         public void viewAccepted(View new_view) {
             StringBuilder sb=new StringBuilder();
             sb.append("[" + name + "]: view = " + new_view);
-            String cluster_name=(String)new_view.getPayload(Global.CLUSTER_NAME);
-            if(cluster_name != null)
-                sb.append(", cluster_name=" + cluster_name);
             System.out.println(sb);
         }
     }
