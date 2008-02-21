@@ -5,9 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.Global;
-import org.jgroups.Message;
 import org.jgroups.protocols.TP;
-import org.jgroups.protocols.TpHeader;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -27,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.32 2008/01/25 11:56:59 belaban Exp $
+ * @version $Id: Configurator.java,v 1.33 2008/02/21 13:22:15 belaban Exp $
  */
 public class Configurator {
 
@@ -97,7 +95,7 @@ public class Configurator {
                     }
 
                     if(above_prot != null) {
-                        ProtocolAdapter ad=new ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                        TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
                         above_prot.setDownProtocol(ad);
                         up_prots.put(cluster_name, ad);
                     }
@@ -826,37 +824,6 @@ public class Configurator {
             if(properties != null)
                 retval.append("(" + properties + ')');
             return retval.toString();
-        }
-    }
-
-
-    private static class ProtocolAdapter extends Protocol {
-        final String cluster_name;
-        final String transport_name;
-        final TpHeader header;
-
-        private ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down) {
-            this.cluster_name=cluster_name;
-            this.transport_name=transport_name;
-            this.up_prot=up;
-            this.down_prot=down;
-            this.header=new TpHeader(cluster_name);
-        }
-
-        public Object down(Event evt) {
-            if(evt.getType() == Event.MSG) {
-                Message msg=(Message)evt.getArg();
-                msg.putHeader(transport_name, header);
-            }
-            return down_prot.down(evt);
-        }
-
-        public String getName() {
-            return null;
-        }
-
-        public String toString() {
-            return cluster_name + " (" + transport_name + ")";
         }
     }
 
