@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.12 2008/02/19 13:51:13 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.13 2008/02/21 13:23:54 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -125,7 +125,7 @@ public class SharedTransportTest extends ChannelTestBase {
         c.send(new Message(null, null, "msg-5"));
         Util.sleep(1000); // async sending - wait a little
 
-        printLists(r1, r2, r3);
+        // printLists(r1, r2, r3);
         list=r1.getList();
         assertEquals(2, list.size());
         list=r2.getList();
@@ -134,7 +134,7 @@ public class SharedTransportTest extends ChannelTestBase {
         assertEquals(2, list.size());
     }
 
-    private static void printLists(MyReceiver... receivers) {
+    private static void  printLists(MyReceiver... receivers) {
         StringBuilder sb=new StringBuilder();
         int cnt=1;
         for(MyReceiver rec: receivers) {
