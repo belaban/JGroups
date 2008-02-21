@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.130 2008/01/10 06:53:30 vlada Exp $
+ * @version $Id: GMS.java,v 1.131 2008/02/21 11:09:11 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -554,7 +554,7 @@ public class GMS extends Protocol {
 
     protected Address determineCoordinator() {
         synchronized(members) {
-            return members != null && members.size() > 0? (Address)members.elementAt(0) : null;
+            return members != null && members.size() > 0? members.elementAt(0) : null;
         }
     }
 
@@ -567,7 +567,7 @@ public class GMS extends Protocol {
 
         synchronized(members) {
             if(members.size() < 2) return false;
-            new_coord=(Address)members.elementAt(1);  // member at 2nd place
+            new_coord=members.elementAt(1);  // member at 2nd place
             return new_coord != null && new_coord.equals(potential_new_coord);
         }
     }
@@ -808,7 +808,7 @@ public class GMS extends Protocol {
     public Object down(Event evt) {
         Object arg=null;
         switch(evt.getType()) {            
-            case Event.CONNECT:               
+            case Event.CONNECT:
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -820,7 +820,7 @@ public class GMS extends Protocol {
                 }
                 return arg;  // don't pass down: was already passed down
                 
-            case Event.CONNECT_WITH_STATE_TRANSFER:                
+            case Event.CONNECT_WITH_STATE_TRANSFER:
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1206,7 +1206,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.130 2008/01/10 06:53:30 vlada Exp $
+     * @version $Id: GMS.java,v 1.131 2008/02/21 11:09:11 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
