@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.174 2008/02/05 11:50:51 belaban Exp $
+ * @version $Id: TP.java,v 1.175 2008/02/21 13:23:40 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -88,7 +88,7 @@ public abstract class TP extends Protocol {
     boolean         prevent_port_reuse=false;
 
     /** The members of this group (updated when a member joins or leaves) */
-    final protected Vector<Address>    members=new Vector<Address>(11);
+    final protected HashSet<Address>   members=new HashSet<Address>(11);
 
     protected View                     view=null;
 
@@ -324,7 +324,7 @@ public abstract class TP extends Protocol {
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
 
-    public ConcurrentMap<String, Protocol> getUpProtocols() {
+    public ConcurrentMap<String,Protocol> getUpProtocols() {
         return up_prots;
     }
 
@@ -1421,8 +1421,20 @@ public abstract class TP extends Protocol {
             synchronized(members) {
                 view=(View)evt.getArg();
                 members.clear();
-                Vector<Address> tmpvec=view.getMembers();
-                members.addAll(tmpvec);
+
+                if(singleton_name == null) {
+                    Vector<Address> tmpvec=view.getMembers();
+                    members.addAll(tmpvec);
+                }
+                else {
+                    for(Protocol prot: up_prots.values()) {
+                        if(prot instanceof ProtocolAdapter) {
+                            ProtocolAdapter ad=(ProtocolAdapter)prot;
+                            List<Address> tmp=ad.getMembers();
+                            members.addAll(tmp);
+                        }
+                    }
+                }
             }
             break;
 
@@ -1964,6 +1976,49 @@ public abstract class TP extends Protocol {
                     log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
                 }
             }
+        }
+    }
+
+    public static class ProtocolAdapter extends Protocol {
+        final String cluster_name;
+        final String transport_name;
+        final TpHeader header;
+        final List<Address> members=new ArrayList<Address>();
+
+        public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down) {
+            this.cluster_name=cluster_name;
+            this.transport_name=transport_name;
+            this.up_prot=up;
+            this.down_prot=down;
+            this.header=new TpHeader(cluster_name);
+        }
+
+        public List<Address> getMembers() {
+            return Collections.unmodifiableList(members);
+        }
+
+        public Object down(Event evt) {
+            switch(evt.getType()) {
+                case Event.MSG:
+                    Message msg=(Message)evt.getArg();
+                    msg.putHeader(transport_name, header);
+                    break;
+                case Event.VIEW_CHANGE:
+                    View view=(View)evt.getArg();
+                    Vector<Address> tmp=view.getMembers();
+                    members.clear();
+                    members.addAll(tmp);
+                    break;
+            }
+            return down_prot.down(evt);
+        }
+
+        public String getName() {
+            return null;
+        }
+
+        public String toString() {
+            return cluster_name + " (" + transport_name + ")";
         }
     }
 }
