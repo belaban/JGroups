@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.62 2008/02/05 12:24:45 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.63 2008/02/21 11:09:52 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.62 $
+ * @version $Revision: 1.63 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -343,6 +343,7 @@ public class ClientGmsImpl extends GmsImpl {
     }
 
 
+
     void becomeSingletonMember(Address mbr) {
         Digest initial_digest;
         ViewId view_id;
@@ -354,7 +355,12 @@ public class ClientGmsImpl extends GmsImpl {
 
         view_id=new ViewId(mbr);       // create singleton view with mbr as only member
         mbrs.addElement(mbr);
-        gms.installView(new View(view_id, mbrs));
+
+        View new_view=new View(view_id, mbrs);
+        gms.up(new Event(Event.PREPARE_VIEW,new_view));
+        gms.down(new Event(Event.PREPARE_VIEW,new_view));
+
+        gms.installView(new_view);
         gms.becomeCoordinator(); // not really necessary - installView() should do it
 
         gms.getUpProtocol().up(new Event(Event.BECOME_SERVER));
@@ -362,6 +368,5 @@ public class ClientGmsImpl extends GmsImpl {
         if(log.isDebugEnabled()) log.debug("created group (first member). My view is " + gms.view_id +
                                            ", impl is " + gms.getImpl().getClass().getName());
     }
-
 
 }
