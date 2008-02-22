@@ -522,7 +522,7 @@ public abstract class BasicConnectionTable {
                Thread.currentThread().interrupt(); // set interrupt flag again
            }
            catch(Throwable ex) {
-               if(log.isErrorEnabled()) log.error("exception is " + ex);
+               if(log.isErrorEnabled()) log.error("failed sending data to " + peer_addr + ": " + ex);
            }
            finally {
                if(acquire_lock)
