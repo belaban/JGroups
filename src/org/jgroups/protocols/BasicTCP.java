@@ -3,7 +3,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.View;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -12,7 +11,7 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.Properties;
-import java.util.Vector;
+import java.util.Set;
 
 /**
  * Shared base class for tcpip protocols
@@ -186,10 +185,8 @@ public abstract class BasicTCP extends TP {
 
 
     public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        Address dest;
-        Vector mbrs=(Vector)members.clone();
-        for(int i=0; i < mbrs.size(); i++) {
-            dest=(Address)mbrs.elementAt(i);
+        Set<Address> mbrs=(Set<Address>)members.clone();
+        for(Address dest: mbrs) {
             sendToSingleMember(dest, data, offset, length);
         }
     }
@@ -251,12 +248,8 @@ public abstract class BasicTCP extends TP {
         Object ret=super.handleDownEvent(evt);
         if(evt.getType() == Event.VIEW_CHANGE) {
             suspected_mbrs.clear();
-            View v=(View)evt.getArg();
-            Vector<Address> tmp_mbrs=v != null? v.getMembers() : null;
-            if(tmp_mbrs != null) {
-                retainAll(tmp_mbrs); // remove all connections from the ConnectionTable which are not members
+            retainAll(members); // remove all connections from the ConnectionTable which are not members
             }
-        }
         else if(evt.getType() == Event.UNSUSPECT) {
             Address suspected_mbr=(Address)evt.getArg();
             suspected_mbrs.remove(suspected_mbr);
