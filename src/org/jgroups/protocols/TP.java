@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.10 2008/02/05 11:52:03 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.11 2008/02/22 16:29:39 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1406,32 +1406,44 @@ public abstract class TP extends Protocol {
     protected Object handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            synchronized(members) {
-                view=(View)evt.getArg();
-                members.clear();
-                Vector<Address> tmpvec=view.getMembers();
-                members.addAll(tmpvec);
-            }
-            break;
+            case Event.TMP_VIEW:
+            case Event.VIEW_CHANGE:
+                synchronized(members) {
+                    view=(View)evt.getArg();
+                    members.clear();
 
-        case Event.CONNECT:
-        case Event.CONNECT_WITH_STATE_TRANSFER:    
-            channel_name=(String)evt.getArg();
-            header=new TpHeader(channel_name);            
-            thread_naming_pattern.setClusterName(channel_name);
-            setThreadNames();                               
-            return null;
+                    if(singleton_name == null) {
+                        Vector<Address> tmpvec=view.getMembers();
+                        members.addAll(tmpvec);
+                    }
+                    else {
+                        for(Protocol prot: up_prots.values()) {
+                            if(prot instanceof ProtocolAdapter) {
+                                ProtocolAdapter ad=(ProtocolAdapter)prot;
+                                List<Address> tmp=ad.getMembers();
+                                members.addAll(tmp);
+                            }
+                        }
+                    }
+                }
+                break;
 
-        case Event.DISCONNECT:
-            unsetThreadNames();
-            break;
+            case Event.CONNECT:
+            case Event.CONNECT_WITH_STATE_TRANSFER:
+                channel_name=(String)evt.getArg();
+                header=new TpHeader(channel_name);
+                thread_naming_pattern.setClusterName(channel_name);
+                setThreadNames();
+                return null;
 
-        case Event.CONFIG:
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((Map<String,Object>)evt.getArg());
-            break;
+            case Event.DISCONNECT:
+                unsetThreadNames();
+                break;
+
+            case Event.CONFIG:
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+                handleConfigEvent((Map<String,Object>)evt.getArg());
+                break;
         }
         return null;
     }
@@ -1953,6 +1965,49 @@ public abstract class TP extends Protocol {
                     log.warn("failed to join " + group_addr + " on " + i.getName() + ": " + e);
                 }
             }
+        }
+    }
+
+    public static class ProtocolAdapter extends Protocol {
+        final String cluster_name;
+        final String transport_name;
+        final TpHeader header;
+        final List<Address> members=new ArrayList<Address>();
+
+        public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down) {
+            this.cluster_name=cluster_name;
+            this.transport_name=transport_name;
+            this.up_prot=up;
+            this.down_prot=down;
+            this.header=new TpHeader(cluster_name);
+}
+
+        public List<Address> getMembers() {
+            return Collections.unmodifiableList(members);
+        }
+
+        public Object down(Event evt) {
+            switch(evt.getType()) {
+                case Event.MSG:
+                    Message msg=(Message)evt.getArg();
+                    msg.putHeader(transport_name, header);
+                    break;
+                case Event.VIEW_CHANGE:
+                    View view=(View)evt.getArg();
+                    Vector<Address> tmp=view.getMembers();
+                    members.clear();
+                    members.addAll(tmp);
+                    break;
+            }
+            return down_prot.down(evt);
+        }
+
+        public String getName() {
+            return null;
+        }
+
+        public String toString() {
+            return cluster_name + " (" + transport_name + ")";
         }
     }
 }
