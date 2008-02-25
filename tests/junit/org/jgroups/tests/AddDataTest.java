@@ -1,15 +1,18 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.stack.IpAddress;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.LinkedList;
+import java.util.List;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.10.2.2 2008/02/14 01:49:35 vlada Exp $
+ * @version $Id: AddDataTest.java,v 1.10.2.3 2008/02/25 12:01:23 belaban Exp $
  */
 public class AddDataTest extends ChannelTestBase {
     JChannel ch1, ch2;
@@ -74,31 +77,40 @@ public class AddDataTest extends ChannelTestBase {
 
         ch2=createChannel();
         ch2.down(new Event(Event.CONFIG, m));
+        MyReceiver receiver=new MyReceiver();
+        ch2.setReceiver(receiver);
         ch1.connect("group");
         ch2.connect("group");
-        while(ch2.peek(10) != null) {
-            System.out.println("-- received " + ch2.receive(100));
-        }
+
         if(mcast)
             ch1.send(new Message(null, null, buf));
         else {
             Address dest=ch2.getLocalAddress();
             ch1.send(new Message(dest, null, buf));
         }
-        Message msg=(Message)ch2.receive(10000);
-        System.out.println("received " + msg);
+
+        Util.sleep(500); // msgs are sent asynchronously, give ch2 some time to receive them
+        List<Message> list=receiver.getMsgs();
+        assertTrue(!list.isEmpty());
+        Message msg=list.get(0);
         IpAddress src=(IpAddress)msg.getSrc();
-        System.out.println("src=" + src);
-
-        // Thread.sleep(600000); // todo: remove
-
         assertNotNull(src);
         assertNotNull(src.getAdditionalData());
         assertEquals(4, src.getAdditionalData().length);
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName= { AddDataTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
+
+
+    private static class MyReceiver extends ReceiverAdapter {
+        final List<Message> msgs=new LinkedList<Message>();
+
+        public List<Message> getMsgs() {return msgs;}
+
+        public void clear() {msgs.clear();}
+
+        public void receive(Message msg) {
+            System.out.println("received " + msg);
+            msgs.add(msg);
+        }
     }
 }
