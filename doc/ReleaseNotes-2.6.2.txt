@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.2
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.2.txt,v 1.4.2.3 2008/02/07 11:39:43 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.2.txt,v 1.4.2.4 2008/02/25 16:26:33 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.2 is still API-backwards compatible with previous versions (down to 2.2.5).
@@ -51,26 +51,26 @@ different senders are not affected, as they're delivered concurrently anyway.
 
 Hooks to provide ones own thread factory and/or thread pools (transport)
 ------------------------------------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-683]
 
 Users can now replace the thread factories which create all threads. Additionally, the default and OOB thread pools
 in the transport can be replaced / modified as well.
-[http://jira.jboss.com/jira/browse/JGRP-683]
 
 
 PING can now use multiple GossipRouters
 ---------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-684]
 
 This is for redundancy; a member can register itself with multiple GossipRouters, and all will get pinged for
-initial membership. This eliminates a single point of failure. 
-[http://jira.jboss.com/jira/browse/JGRP-684]
+initial membership. This eliminates a single point of failure.
 
 
 TCPPING: discovery done in parallel
 -----------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-375]
 
 Instead of sequentially pinging all listed members (some of which might block), we do this in parallel. This
 reduces chances of not getting a response from a member.
-[http://jira.jboss.com/jira/browse/JGRP-375]
 
 
 Manual
