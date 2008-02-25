@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.11 2008/02/22 16:29:39 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.12 2008/02/25 08:00:23 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -86,7 +86,7 @@ public abstract class TP extends Protocol {
     int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
     /** The members of this group (updated when a member joins or leaves) */
-    final protected Vector<Address>    members=new Vector<Address>(11);
+    final protected HashSet<Address>   members=new HashSet<Address>(11);
 
     protected View                     view=null;
 
@@ -322,7 +322,7 @@ public abstract class TP extends Protocol {
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
 
-    public ConcurrentMap<String, Protocol> getUpProtocols() {
+    public ConcurrentMap<String,Protocol> getUpProtocols() {
         return up_prots;
     }
 
@@ -1406,27 +1406,27 @@ public abstract class TP extends Protocol {
     protected Object handleDownEvent(Event evt) {
         switch(evt.getType()) {
 
-            case Event.TMP_VIEW:
-            case Event.VIEW_CHANGE:
-                synchronized(members) {
-                    view=(View)evt.getArg();
-                    members.clear();
+        case Event.TMP_VIEW:
+        case Event.VIEW_CHANGE:
+            synchronized(members) {
+                view=(View)evt.getArg();
+                members.clear();
 
-                    if(singleton_name == null) {
-                        Vector<Address> tmpvec=view.getMembers();
-                        members.addAll(tmpvec);
-                    }
-                    else {
-                        for(Protocol prot: up_prots.values()) {
-                            if(prot instanceof ProtocolAdapter) {
-                                ProtocolAdapter ad=(ProtocolAdapter)prot;
-                                List<Address> tmp=ad.getMembers();
-                                members.addAll(tmp);
-                            }
+                if(singleton_name == null) {
+                    Vector<Address> tmpvec=view.getMembers();
+                    members.addAll(tmpvec);
+                }
+                else {
+                    for(Protocol prot: up_prots.values()) {
+                        if(prot instanceof ProtocolAdapter) {
+                            ProtocolAdapter ad=(ProtocolAdapter)prot;
+                            List<Address> tmp=ad.getMembers();
+                            members.addAll(tmp);
                         }
                     }
                 }
-                break;
+            }
+            break;
 
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:
