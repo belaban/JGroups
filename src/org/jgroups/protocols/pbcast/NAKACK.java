@@ -1,4 +1,4 @@
-// $Id: NAKACK.java,v 1.81.2.1 2007/04/27 08:03:55 belaban Exp $
+// $Id: NAKACK.java,v 1.81.2.2 2008/02/25 10:04:59 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -1027,12 +1027,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     received_msgs.put(sender, win);
                 }
                 else {
-                    if(win.getHighestReceived() < initial_seqno) {
-                        win.reset();
-                        received_msgs.remove(sender);
-                        win=createNakReceiverWindow(sender, initial_seqno);
-                        received_msgs.put(sender, win);
-                    }
+                    // don't touch existing entries as merges should be between non-overlapping memberships !
                 }
             }
         }
