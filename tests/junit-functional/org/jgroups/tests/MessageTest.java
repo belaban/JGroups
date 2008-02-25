@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.4 2008/01/22 16:59:15 belaban Exp $
+// $Id: MessageTest.java,v 1.5 2008/02/25 16:24:18 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,19 +6,13 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Message;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.protocols.UdpHeader;
-import org.jgroups.protocols.TpHeader;
 import org.jgroups.protocols.PingHeader;
+import org.jgroups.protocols.TpHeader;
+import org.jgroups.protocols.UdpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
-
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 
 
 
@@ -302,7 +296,6 @@ public class MessageTest extends TestCase {
 
 
     public void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
-        ClassConfigurator.getInstance(true);
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), "bela".getBytes());
         addHeaders(msg);
         _testSize(msg);

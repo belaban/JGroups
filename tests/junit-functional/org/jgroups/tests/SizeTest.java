@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.4 2007/11/29 11:18:54 belaban Exp $$
+// $Id: SizeTest.java,v 1.5 2008/02/25 16:24:18 belaban Exp $$
 
 package org.jgroups.tests;
 
@@ -6,28 +6,22 @@ import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
-import org.jgroups.mux.ServiceInfo;
-import org.jgroups.mux.MuxHeader;
 import org.jgroups.blocks.RequestCorrelator;
-import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.mux.MuxHeader;
+import org.jgroups.mux.ServiceInfo;
 import org.jgroups.protocols.*;
-import org.jgroups.protocols.FD;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.util.Digest;
-import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.protocols.pbcast.STATE_TRANSFER;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Util;
-import org.jgroups.util.Streamable;
+import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
-import java.util.*;
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.util.*;
 
 
 /**
@@ -39,18 +33,6 @@ public class SizeTest extends TestCase {
     public SizeTest(String name) {
         super(name);
     }
-
-
-
-    static {
-        try {
-            ClassConfigurator.getInstance(true);
-        }
-        catch(ChannelException e) {
-            e.printStackTrace();
-        }
-    }
-
 
 
     public void testUdpHeader() throws Exception {

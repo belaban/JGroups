@@ -1,4 +1,4 @@
-// $Id: GossipRouter.java,v 1.27 2008/02/06 11:19:07 belaban Exp $
+// $Id: GossipRouter.java,v 1.28 2008/02/25 16:24:09 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -903,7 +903,6 @@ public class GossipRouter {
         System.out.println("GossipRouter is starting...");
 
         try {
-            ClassConfigurator.getInstance(true);
             router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout);
             router.start();
         }

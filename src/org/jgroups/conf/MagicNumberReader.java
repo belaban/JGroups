@@ -5,23 +5,23 @@ package org.jgroups.conf;
  * Reads and maintains mapping between magic numbers and classes
  * @author Filip Hanik (<a href="mailto:filip@filip.net">filip@filip.net)
  * @author Bela Ban
- * @version $Id: MagicNumberReader.java,v 1.15 2008/01/23 15:32:42 belaban Exp $
+ * @version $Id: MagicNumberReader.java,v 1.16 2008/02/25 16:24:06 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.ChannelException;
 import org.jgroups.util.Util;
 import org.w3c.dom.Document;
+import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.NamedNodeMap;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.InputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 public class MagicNumberReader {
     public static final String MAGIC_NUMBER_FILE="jg-magic-map.xml";
@@ -40,35 +40,21 @@ public class MagicNumberReader {
      *
      * @return an array of ClassMap objects that where parsed from the file (if found) or an empty array if file not found or had en exception
      */
-    public ClassMap[] readMagicNumberMapping() {
+    public ClassMap[] readMagicNumberMapping() throws Exception {
+        InputStream stream=null;
         try {
-            InputStream stream=Util.getResourceAsStream(mMagicNumberFile, this.getClass());
+            stream=Util.getResourceAsStream(mMagicNumberFile, this.getClass());
             // try to load the map from file even if it is not a Resource in the class path
             if(stream == null) {
-                try {
-                    if(log.isTraceEnabled())
-                        log.trace("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
-                    stream=new FileInputStream(mMagicNumberFile);
-                    if(log.isTraceEnabled())
-                        log.trace("Magic number file found at '" + mMagicNumberFile + '\'');
-                }
-                catch(FileNotFoundException fnfe) {
-                    if(log.isWarnEnabled())
-                        log.warn("Failed reading - '" + mMagicNumberFile + "' is not found, got error '" +
-                                 fnfe.getLocalizedMessage() + "'. Please make sure it is in the CLASSPATH or in the " +
-                                 "specified location. Will continue, but marshalling will be slower");
-                }
+                if(log.isTraceEnabled())
+                    log.trace("Could not read " + mMagicNumberFile + " as Resource from the CLASSPATH, will try to read it from file.");
+                stream=new FileInputStream(mMagicNumberFile);
             }
-
-            if(stream == null) {
-                return new ClassMap[0];
-            }
-            return parse(stream);
         }
         catch(Exception x) {
-            if(log.isErrorEnabled()) log.error("failed reading magic map", x);
+            throw new ChannelException(mMagicNumberFile + " not found. Please make sure it is on the classpath.", x);
         }
-        return new ClassMap[0];
+        return parse(stream);
     }
 
     protected static ClassMap[] parse(InputStream stream) throws Exception {

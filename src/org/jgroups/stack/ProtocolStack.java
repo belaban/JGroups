@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.63 2008/02/15 01:05:08 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.64 2008/02/25 16:24:09 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -60,7 +60,16 @@ public class ProtocolStack extends Protocol implements Transport {
         this.thread_factory=new PatternedThreadFactory(factory,null);
         this.setup_string=setup_string;
         this.channel=channel;
-        ClassConfigurator.getInstance(true); // will create the singleton
+        // ClassConfigurator.getInstance(true); // will create the singleton
+
+        Class tmp=ClassConfigurator.class; // load this class, trigger init()
+        try {
+            tmp.newInstance();
+        }
+        catch(Exception e) {
+            throw new ChannelException("failed initializing ClassConfigurator", e);
+        }
+
         this.timer_thread_factory=new PatternedThreadFactory(
                 newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
                 null);

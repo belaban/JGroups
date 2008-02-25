@@ -1,12 +1,14 @@
-// $Id: StreamableTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: StreamableTest.java,v 1.2 2008/02/25 16:24:19 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.Address;
+import org.jgroups.MergeView;
+import org.jgroups.Message;
+import org.jgroups.View;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingRsp;
 import org.jgroups.protocols.UdpHeader;
@@ -28,16 +30,6 @@ public class StreamableTest extends TestCase {
         super(name);
     }
 
-
-
-    static {
-        try {
-            ClassConfigurator.getInstance(true);
-        }
-        catch(ChannelException e) {
-            e.printStackTrace();
-        }
-    }
 
 
 

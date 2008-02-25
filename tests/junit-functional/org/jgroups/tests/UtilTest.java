@@ -1,12 +1,14 @@
-// $Id: UtilTest.java,v 1.4 2007/08/20 09:22:54 belaban Exp $
+// $Id: UtilTest.java,v 1.5 2008/02/25 16:24:18 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
 import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.*;
-import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.ViewId;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
@@ -20,14 +22,6 @@ import java.util.Vector;
 
 public class UtilTest extends TestCase {
 
-    static {
-        try {
-            ClassConfigurator.getInstance(true);
-        }
-        catch(ChannelException e) {
-            e.printStackTrace();
-        }
-    }
 
     public UtilTest(String name) {
         super(name);

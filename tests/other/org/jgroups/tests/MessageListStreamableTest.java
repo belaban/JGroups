@@ -1,10 +1,10 @@
-// $Id: MessageListStreamableTest.java,v 1.4 2007/11/29 11:27:09 belaban Exp $
+// $Id: MessageListStreamableTest.java,v 1.5 2008/02/25 16:24:21 belaban Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.4 2007/11/29 11:27:09 belaban Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.5 2008/02/25 16:24:21 belaban Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -48,7 +48,6 @@ public class MessageListStreamableTest {
 
         Buffer buf;
         List<Message> list=new LinkedList<Message>();
-        ClassConfigurator.getInstance(true);
         long start=System.currentTimeMillis();
         long stop;
         for(int i=0; i < num; i++) {
