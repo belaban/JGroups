@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.175 2008/02/19 01:32:07 vlada Exp $
+ * @version $Id: JChannel.java,v 1.176 2008/02/25 12:47:57 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1399,7 +1399,7 @@ public class JChannel extends Channel {
             prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
         }
         catch(Throwable e) {
-            throw new ChannelException("unable to setup the protocol stack", e);
+            throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
         }
     }
 
