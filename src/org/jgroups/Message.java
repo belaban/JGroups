@@ -24,7 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.79 2008/01/23 14:51:51 belaban Exp $
+ * @version $Id: Message.java,v 1.80 2008/02/25 16:24:15 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -683,7 +683,7 @@ public class Message implements Streamable {
         ObjectOutputStream oos=null;
         int size=value.size();
         try {
-            magic_number=ClassConfigurator.getInstance(false).getMagicNumber(value.getClass());
+            magic_number=ClassConfigurator.getMagicNumber(value.getClass());
             // write the magic number or the class name
             out.writeShort(magic_number);
             if(magic_number == -1) {
@@ -710,11 +710,6 @@ public class Message implements Streamable {
                 }
             }
         }
-        catch(ChannelException e) {
-            IOException io_ex=new IOException("failed writing header");
-            io_ex.initCause(e);
-            throw io_ex;
-        }
         finally {
             if(oos != null)
                 oos.close(); // this is a no-op on ByteArrayOutputStream
@@ -732,13 +727,13 @@ public class Message implements Streamable {
         try {
             magic_number=in.readShort();
             if(magic_number != -1) {
-                clazz=ClassConfigurator.getInstance(false).get(magic_number);
+                clazz=ClassConfigurator.get(magic_number);
                 if(clazz == null)
                     throw new IllegalArgumentException("magic number " + magic_number + " is not available in magic map");
             }
             else {
                 classname=in.readUTF();
-                clazz=ClassConfigurator.getInstance(false).get(classname);
+                clazz=ClassConfigurator.get(classname);
             }
 
             in.readShort(); // we discard the size since we don't use it

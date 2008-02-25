@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.24 2008/01/23 14:51:09 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.25 2008/02/25 16:24:07 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -30,26 +30,34 @@ import java.util.concurrent.ConcurrentHashMap;
  * @see MagicNumberReader
  */
 public class ClassConfigurator {
-    static volatile ClassConfigurator instance=null; // works under the new JSR 133 memory model in JDK 5
     private static final short MIN_CUSTOM_MAGIC_NUMBER=1024;
 
     //this is where we store magic numbers
-    private final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
-    private final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
-    protected final Log log=LogFactory.getLog(getClass());
+    private static final Map<Class,Short> classMap=new ConcurrentHashMap<Class,Short>(); // key=Class, value=magic number
+    private static final Map<Short,Class> magicMap=new ConcurrentHashMap<Short,Class>(); // key=magic number, value=Class
+    protected static final Log log=LogFactory.getLog(ClassConfigurator.class);
 
 
-    private ClassConfigurator() {
+    static {
+        try {
+            init();
+        }
+        catch(Exception e) {
+            throw new ExceptionInInitializerError(e);
+        }
     }
 
-    public void init() throws ChannelException {
+    public ClassConfigurator() {
+    }
+
+    protected static void init() throws ChannelException {
         try {
             // make sure we have a class for DocumentBuilderFactory
             // getClass().getClassLoader().loadClass("javax.xml.parsers.DocumentBuilderFactory");
-            Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", this.getClass());
+            Util.loadClass("javax.xml.parsers.DocumentBuilderFactory", ClassConfigurator.class);
 
             MagicNumberReader reader=new MagicNumberReader();
-            
+
             // PropertyPermission not granted if running in an untrusted environment with JNLP.
             try {
                 String mnfile=Util.getProperty(new String[]{Global.MAGIC_NUMBER_FILE, "org.jgroups.conf.magicNumberFile"},
@@ -95,18 +103,18 @@ public class ClassConfigurator {
     }
 
 
-    public static ClassConfigurator getInstance(boolean init) throws ChannelException {
-        if(instance == null) {
-            instance=new ClassConfigurator();
-            if(init)
-                instance.init();
-        }
-        return instance;
-    }
-
-    public static ClassConfigurator getInstance() throws ChannelException {
-        return getInstance(false);
-    }
+//    public static ClassConfigurator getInstance(boolean init) throws ChannelException {
+//        if(instance == null) {
+//            instance=new ClassConfigurator();
+//            if(init)
+//                instance.init();
+//        }
+//        return instance;
+//    }
+//
+//    public static ClassConfigurator getInstance() throws ChannelException {
+//        return getInstance(false);
+//    }
 
     /**
      * Method to register a user-defined header with jg-magic-map at runtime
@@ -114,7 +122,7 @@ public class ClassConfigurator {
      * @param clazz The class. Usually a subclass of Header
      * @throws IllegalArgumentException If the magic number is already taken, or the magic number is <= 1024
      */
-     public void add(short magic, Class clazz) throws IllegalArgumentException {
+     public static void add(short magic, Class clazz) throws IllegalArgumentException {
         if(magic <= MIN_CUSTOM_MAGIC_NUMBER)
             throw new IllegalArgumentException("magic number (" + magic + ") needs to be greater than " +
                     MIN_CUSTOM_MAGIC_NUMBER);
@@ -132,7 +140,7 @@ public class ClassConfigurator {
      * @param magic the magic number that maps to the class
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public Class get(short magic) {
+    public static Class get(short magic) {
         return magicMap.get(magic);
     }
 
@@ -142,10 +150,10 @@ public class ClassConfigurator {
      * @param clazzname a fully classified class name to be loaded
      * @return a Class object that represents a class that implements java.io.Externalizable
      */
-    public Class get(String clazzname) {
+    public static Class get(String clazzname) {
         try {
             // return ClassConfigurator.class.getClassLoader().loadClass(clazzname);
-            return Util.loadClass(clazzname, this.getClass());
+            return Util.loadClass(clazzname, ClassConfigurator.class);
         }
         catch(Exception x) {
             if(log.isErrorEnabled()) log.error("failed loading class " + clazzname, x);
@@ -159,7 +167,7 @@ public class ClassConfigurator {
      * @param clazz a class object that we want the magic number for
      * @return the magic number for a class, -1 if no mapping is available
      */
-    public short getMagicNumber(Class clazz) {
+    public static short getMagicNumber(Class clazz) {
         Short i=classMap.get(clazz);
         if(i == null)
             return -1;
@@ -174,7 +182,7 @@ public class ClassConfigurator {
         return printMagicMap();
     }
 
-    public String printMagicMap() {
+    public static String printMagicMap() {
         StringBuilder sb=new StringBuilder();
         SortedSet<Short> keys=new TreeSet<Short>(magicMap.keySet());
 
@@ -184,7 +192,7 @@ public class ClassConfigurator {
         return sb.toString();
     }
 
-    public String printClassMap() {
+    public static String printClassMap() {
         StringBuilder sb=new StringBuilder();
         Map.Entry entry;
 
@@ -197,13 +205,4 @@ public class ClassConfigurator {
 
 
 
-    /* --------------------------------- Private methods ------------------------------------ */
-
-    /* ------------------------------ End of Pivate methods --------------------------------- */
-    public static void main(String[] args)
-            throws Exception {
-
-        ClassConfigurator test=getInstance(true);
-        System.out.println('\n' + test.printMagicMap());
-    }
 }

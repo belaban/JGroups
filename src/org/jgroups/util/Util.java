@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.142 2008/01/25 07:06:19 belaban Exp $
+ * @version $Id: Util.java,v 1.143 2008/02/25 16:24:20 belaban Exp $
  */
 public class Util {
 
@@ -489,15 +489,6 @@ public class Util {
     }
 
     private static Address readOtherAddress(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        ClassConfigurator conf;
-        try {
-            conf=ClassConfigurator.getInstance(false);
-        }
-        catch(ChannelException e) {
-            IllegalAccessException new_ex=new IllegalAccessException();
-            new_ex.initCause(e);
-            throw new_ex;
-        }
         int b=in.read();
         short magic_number;
         String classname;
@@ -505,11 +496,11 @@ public class Util {
         Address addr;
         if(b == 1) {
             magic_number=in.readShort();
-            cl=conf.get(magic_number);
+            cl=ClassConfigurator.get(magic_number);
         }
         else {
             classname=in.readUTF();
-            cl=conf.get(classname);
+            cl=ClassConfigurator.get(classname);
         }
         addr=(Address)cl.newInstance();
         addr.readFrom(in);
@@ -517,16 +508,7 @@ public class Util {
     }
 
     private static void writeOtherAddress(Address addr, DataOutputStream out) throws IOException {
-        ClassConfigurator conf=null;
-        try {
-            conf=ClassConfigurator.getInstance(false);
-        }
-        catch(ChannelException e) {
-            IOException new_ex=new IOException();
-            new_ex.initCause(e);
-            throw new_ex;
-        }
-        short magic_number=conf != null? conf.getMagicNumber(addr.getClass()) : -1;
+        short magic_number=ClassConfigurator.getMagicNumber(addr.getClass());
 
         // write the class info
         if(magic_number == -1) {
@@ -630,26 +612,21 @@ public class Util {
             return;
         }
 
-        try {
-            out.write(1);
-            magic_number=ClassConfigurator.getInstance(false).getMagicNumber(obj.getClass());
-            // write the magic number or the class name
-            if(magic_number == -1) {
-                out.writeBoolean(false);
-                classname=obj.getClass().getName();
-                out.writeUTF(classname);
-            }
-            else {
-                out.writeBoolean(true);
-                out.writeShort(magic_number);
-            }
+        out.write(1);
+        magic_number=ClassConfigurator.getMagicNumber(obj.getClass());
+        // write the magic number or the class name
+        if(magic_number == -1) {
+            out.writeBoolean(false);
+            classname=obj.getClass().getName();
+            out.writeUTF(classname);
+        }
+        else {
+            out.writeBoolean(true);
+            out.writeShort(magic_number);
+        }
 
-            // write the contents
-            obj.writeTo(out);
-        }
-        catch(ChannelException e) {
-            throw new IOException("failed writing object of type " + obj.getClass() + " to stream: " + e.toString());
-        }
+        // write the contents
+        obj.writeTo(out);
     }
 
 
@@ -667,14 +644,14 @@ public class Util {
         try {
             if(use_magic_number) {
                 short magic_number=in.readShort();
-                clazz=ClassConfigurator.getInstance(false).get(magic_number);
+                clazz=ClassConfigurator.get(magic_number);
                 if (clazz==null) {
                    throw new ClassNotFoundException("Class for magic number "+magic_number+" cannot be found.");
                 }
             }
             else {
                 classname=in.readUTF();
-                clazz=ClassConfigurator.getInstance(false).get(classname);
+                clazz=ClassConfigurator.get(classname);
                 if (clazz==null) {
                    throw new ClassNotFoundException(classname);
                 }

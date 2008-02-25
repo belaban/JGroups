@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import org.jgroups.Message;
-import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
@@ -13,7 +12,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.17 2008/01/22 16:15:49 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.18 2008/02/25 16:24:22 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -39,7 +38,7 @@ public class MessageSerializationTest2 {
         if(use_additional_data)
             src.setAdditionalData("bela".getBytes());
 
-        ClassConfigurator.getInstance(true);
+        // ClassConfigurator.getInstance(true);
 
         this.num=num;
         System.out.println("-- starting to create " + num + " msgs");
