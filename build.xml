@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.7 2008/02/26 05:10:06 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.8 2008/02/26 22:52:20 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -636,6 +636,24 @@
 
 
     <!--
+          Runs entire functional testsuite.
+          Other valid parameters that can additionally be specified are:
+          threadcount
+          test.verbose
+     -->
+    <target name="all-tests-functional" depends="makeKeystore"
+            description="Runs entire functional testsuite">
+        <antcall target="runtests-functional">
+            <param name="testset" value="all.tests"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
+        	<param name="testname.ext" value="functional"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+            <param name="test.verbose" value="true"/>
+        </antcall>
+    </target>
+	
+	
+    <!--
           Runs entire testsuite with default udp confguration specified by udp.xml.
           Other valid parameters that can additionally be specified are:
           threadcount
@@ -645,9 +663,12 @@
             description="Runs entire testsuite with default udp confguration specified by udp.xml">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
             <param name="channel.conf" value="udp.xml"/>
             <param name="channel.conf.flush" value="flush-udp.xml"/>
-        	<param name="junit.excludes" value="junit.excludes"/>
+        	<param name="testname.ext" value="udp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+            <param name="test.verbose" value="true"/>
         </antcall>
     </target>
 
@@ -682,9 +703,12 @@
             description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="udp"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
+        	<param name="testname.ext" value="mux-udp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+            <param name="test.verbose" value="true"/>
         </antcall>
     </target>
 
@@ -698,10 +722,12 @@
             description="Runs entire testsuite with default tcp confguration specified by tcp.xml">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
-        	<param name="mux.conf.stack" value="tcp"/>
-        	<param name="junit.excludes" value="junit.excludes"/>
+        	<param name="testname.ext" value="tcp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+            <param name="test.verbose" value="true"/>
         </antcall>
     </target>
 	
@@ -736,9 +762,12 @@
             description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="tcp"/>
-        	<param name="junit.excludes" value="junit.mux.excludes"/>
+        	<param name="testname.ext" value="mux-tcp"/>
+        	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+            <param name="test.verbose" value="true"/>
         </antcall>
     </target>
 
