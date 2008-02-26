@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.6 2008/02/25 16:33:47 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.7 2008/02/26 05:10:06 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -73,6 +73,12 @@
     <patternset id="junit.excludes">
         <exclude name="**/DistributedQueueTest*"/>
         <exclude name="**/ChannelTestBase*"/>
+    </patternset>
+
+    <patternset id="junit.mux.excludes">
+    	<exclude name="**/DistributedQueueTest*"/>
+    	<exclude name="**/ChannelTestBase*"/>
+        <exclude name="**/SharedTransportTest*"/>        
     </patternset>
 
 
@@ -402,7 +408,7 @@
                 <batchtest todir="${tmp.dir}/tests-results">
                     <fileset dir="${junit.dir}">
                         <patternset refid="@{set}"/>
-                        <patternset refid="junit.excludes"/>
+                        <patternset refid="${junit.excludes}"/>
                     </fileset>
                 </batchtest>
             </junit>
@@ -440,7 +446,7 @@
                 <batchtest todir="${tmp.dir}/tests-results">
                     <fileset dir="${junit-functional.dir}">
                         <patternset refid="@{set}"/>
-                        <patternset refid="junit.excludes"/>
+                        <patternset refid="${junit.excludes}"/>
                     </fileset>
                 </batchtest>
             </junit>
@@ -464,6 +470,7 @@
             test.verbose=${test.verbose}
             testname.ext=${testname.ext}
             formatter.class=${formatter.class}
+        	junit.excludes=${junit.excludes}
         </testrunner>
     </target>
 
@@ -480,6 +487,7 @@
             test.verbose=${test.verbose}
             testname.ext=${testname.ext}
             formatter.class=${formatter.class}
+        	junit.excludes=${junit.excludes}
         </testrunner-functional>
     </target>
 	
@@ -501,7 +509,8 @@
     		<param name="channel.conf" value="udp.xml"/>
     		<param name="channel.conf.flush" value="flush-udp.xml"/>
     		<param name="test.verbose" value="false"/>
-    		<param name="testname.ext" value="udp"/>
+    		<param name="testname.ext" value="udp"/>    		
+    		<param name="junit.excludes" value="junit.excludes"/>
     		<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -512,6 +521,7 @@
         	<param name="channel.conf.flush" value="flush-tcp.xml"/>
         	<param name="test.verbose" value="false"/>
         	<param name="testname.ext" value="tcp"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -521,6 +531,7 @@
             <param name="mux.conf.stack" value="udp"/>
             <param name="test.verbose" value="false"/>
             <param name="testname.ext" value="mux-udp"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -530,6 +541,7 @@
             <param name="mux.conf.stack" value="tcp"/>
 			<param name="test.verbose" value="false"/>
 			<param name="testname.ext" value="mux-tcp"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     </target>
@@ -555,6 +567,7 @@
             <param name="testset" value="all.tests"/>
             <param name="testname.ext" value="functional"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
 
         <antcall target="runtests">
@@ -562,6 +575,7 @@
             <param name="channel.conf" value="udp.xml"/>
             <param name="channel.conf.flush" value="flush-udp.xml"/>
             <param name="testname.ext" value="udp"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
 
@@ -571,6 +585,7 @@
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
             <param name="testname.ext" value="tcp"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
 
@@ -579,6 +594,7 @@
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="udp"/>
             <param name="testname.ext" value="mux-udp"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     	
@@ -587,6 +603,7 @@
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="tcp"/>
             <param name="testname.ext" value="mux-tcp"/>
+    		<param name="junit.excludes" value="junit.mux.excludes"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
     	</antcall>
     </target>
@@ -604,6 +621,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="udp.xml"/>
             <param name="channel.conf.flush" value="flush-udp.xml"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
 
 
@@ -611,6 +629,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
+			<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
 
     </target>
@@ -628,6 +647,7 @@
             <param name="testset" value="all.tests"/>
             <param name="channel.conf" value="udp.xml"/>
             <param name="channel.conf.flush" value="flush-udp.xml"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 
@@ -644,6 +664,7 @@
             <param name="channel.conf" value="tunnel.xml"/>
             <param name="channel.conf.flush" value="tunnel.xml"/>
             <param name="mux.conf.stack" value="tunnel"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 
@@ -663,6 +684,7 @@
             <param name="testset" value="all.tests"/>
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="udp"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
@@ -679,6 +701,7 @@
             <param name="channel.conf" value="tcp.xml"/>
             <param name="channel.conf.flush" value="flush-tcp.xml"/>
         	<param name="mux.conf.stack" value="tcp"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 	
@@ -695,6 +718,7 @@
             <param name="channel.conf" value="tcp-nio.xml"/>
             <param name="channel.conf.flush" value="flush-tcp-nio.xml"/>
         	<param name="mux.conf.stack" value="tcp-nio"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 	
@@ -714,6 +738,7 @@
             <param name="testset" value="all.tests"/>
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="tcp"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
@@ -732,6 +757,7 @@
             <param name="testset" value="all.tests"/>
             <param name="mux.on" value="true"/>
             <param name="mux.conf.stack" value="tcp-nio"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 	
@@ -760,6 +786,7 @@
         <antcall target="runtests">
             <param name="testset" value="one.test"/>
             <param name="test.verbose" value="true"/>
+        	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
 
@@ -778,6 +805,7 @@
             <param name="mux.conf.stack" value="udp"/>
             <param name="testset" value="mux.tests"/>
             <param name="test.verbose" value="true"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
@@ -796,6 +824,7 @@
             <param name="mux.conf.stack" value="udp-sync"/>
             <param name="testset" value="mux.tests"/>
             <param name="test.verbose" value="true"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
@@ -814,6 +843,7 @@
             <param name="mux.conf.stack" value="tcp"/>
             <param name="testset" value="mux.tests"/>
             <param name="test.verbose" value="true"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
@@ -833,6 +863,7 @@
             <param name="mux.conf.stack" value="tcp-sync"/>
             <param name="testset" value="mux.tests"/>
             <param name="test.verbose" value="true"/>
+        	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
 
