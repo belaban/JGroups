@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.8 2008/02/26 22:52:20 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.9 2008/02/26 23:40:44 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -351,7 +351,14 @@
         </java>
     </target>
 
-
+	<target name="downloadFormatter" 
+		description="Download jboss-test.jar containing the class org.jboss.ant.taskdefs.XMLFormatter">
+		
+        <get usetimestamp="true"
+             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
+             dest="${lib.dir}/jboss-test.jar"/>
+    
+	</target>
 
     <target name="unittests-xml" depends="compile, makeKeystore, copy-build-properties">
         <delete dir="${tmp.dir}/tests-results"/>
@@ -495,13 +502,9 @@
           Runs flush tests in various channel modes
                     
 	     -->
-    <target name="all-flush-tests" depends="makeKeystore"
+    <target name="all-flush-tests" depends="makeKeystore, downloadFormatter"
             description="Runs flush tests in various channel modes">
     	
-        <get usetimestamp="true"
-             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
-             dest="${lib.dir}/jboss-test.jar"/>
-             	
     	<antcall target="runtests">
             <param name="testset" value="flush.tests"/>
             <param name="mux.on" value="false"/>
@@ -552,16 +555,8 @@
     <!--
               Runs entire testsuite for nightly Cruise Control builds.
      -->
-    <target name="all-tests-cc" depends="makeKeystore"
+    <target name="all-tests-cc" depends="makeKeystore, downloadFormatter"
             description="Runs entire testsuite for nightly Cruise Control builds">
-
-
-        <!-- jboss-test.jar contains org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter
-                 get jboss-test.jar only if not present locally -->
-
-        <get usetimestamp="true"
-             src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
-             dest="${lib.dir}/jboss-test.jar"/>
 
         <antcall target="runtests-functional">
             <param name="testset" value="all.tests"/>
@@ -641,7 +636,7 @@
           threadcount
           test.verbose
      -->
-    <target name="all-tests-functional" depends="makeKeystore"
+    <target name="all-tests-functional" depends="makeKeystore, downloadFormatter"
             description="Runs entire functional testsuite">
         <antcall target="runtests-functional">
             <param name="testset" value="all.tests"/>
@@ -659,7 +654,7 @@
           threadcount
           test.verbose
      -->
-    <target name="all-tests-udp" depends="makeKeystore"
+    <target name="all-tests-udp" depends="makeKeystore, downloadFormatter"
             description="Runs entire testsuite with default udp confguration specified by udp.xml">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
@@ -699,7 +694,7 @@
           threadcount
           test.verbose
      -->
-    <target name="all-tests-mux-udp" depends="makeKeystore"
+    <target name="all-tests-mux-udp" depends="makeKeystore, downloadFormatter"
             description="Runs entire testsuite in multiplexer mode using multiplexer udp stack configuration">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
@@ -718,7 +713,7 @@
           threadcount
           test.verbose
      -->
-    <target name="all-tests-tcp" depends="makeKeystore"
+    <target name="all-tests-tcp" depends="makeKeystore, downloadFormatter"
             description="Runs entire testsuite with default tcp confguration specified by tcp.xml">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
@@ -758,7 +753,7 @@
           threadcount
           test.verbose
      -->
-    <target name="all-tests-mux-tcp" depends="makeKeystore"
+    <target name="all-tests-mux-tcp" depends="makeKeystore, downloadFormatter"
             description="Runs entire testsuite in multiplexer mode using multiplexer tcp stack configuration">
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
