@@ -1,12 +1,5 @@
 package org.jgroups.tests;
 
-import java.util.Properties;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.DISCARD;
@@ -17,11 +10,15 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
+import java.util.Properties;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
+
 /**
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.12.4.3 2008/02/27 13:28:09 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.12.4.4 2008/02/27 13:29:03 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -172,7 +169,7 @@ public class MergeTest extends ChannelTestBase {
     }
     
     
-    private void addDiscardProtocol(JChannel ch) throws Exception {
+    private static void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();
@@ -181,7 +178,7 @@ public class MergeTest extends ChannelTestBase {
         stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
     }
     
-    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+    private static void replaceDiscoveryProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol discovery=stack.removeProtocol("TCPPING");
         if(discovery != null){
@@ -196,7 +193,7 @@ public class MergeTest extends ChannelTestBase {
         }        
     }
 
-    private void modiftFDAndMergeSettings(JChannel ch) {
+    private static void modiftFDAndMergeSettings(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         FD fd=(FD)stack.findProtocol("FD");
