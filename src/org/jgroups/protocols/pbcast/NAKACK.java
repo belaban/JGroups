@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.175 2008/02/05 15:58:37 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.176 2008/02/27 16:20:13 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -928,7 +928,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in retransmission table of ").append(printMessages());
+                    sb.append(" not found in retransmission table of ").append(original_sender).append(": ").append(win);
                     if(print_stability_history_on_failed_xmit) {
                         sb.append(" (stability history:\n").append(printStabilityHistory());
                     }
@@ -1238,9 +1238,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     /**
-     * For all members of the digest, adjust the NakReceiverWindows in the xmit_table hashtable. If the member
-     * already exists, sets its seqno to be the max of the seqno and the seqno of the member in the digest. If no entry
-     * exists, create one with the initial seqno set to the seqno of the member in the digest.
+     * For all members of the digest, adjust the NakReceiverWindows in the xmit_table hashtable. If no entry
+     * exists, create one with the initial seqno set to the seqno of the member in the digest. If the member already
+     * exists, and is not the local address, replace it with the new entry (http://jira.jboss.com/jira/browse/JGRP-699)
      */
     private void mergeDigest(Digest digest) {
         if(digest == null) {
@@ -1248,6 +1248,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 log.error("digest or digest.senders is null");
             }
             return;
+        }
+
+
+        StringBuilder sb=null;
+        if(log.isDebugEnabled()) {
+            sb=new StringBuilder();
+            sb.append("existing digest:  " + getDigest()).append("\nnew digest:       " + digest);
         }
 
         Address sender;
@@ -1267,15 +1274,26 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             highest_delivered_seqno=val.getHighestDeliveredSeqno();
             low_seqno=val.getLow();
 
+            // changed Feb 2008 (bela): http://jira.jboss.com/jira/browse/JGRP-699: we replace all existing entries
+            // except for myself
             win=xmit_table.get(sender);
-            if(win == null) {
-                win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
-                xmit_table.putIfAbsent(sender, win);
+            if(win != null) {
+                if(local_addr != null && local_addr.equals(sender)) {
+                    continue;
             }
             else {
-                // don't touch existing entries as merges should be between non-overlapping memberships !
+                    win.reset(); // stops retransmission
+                    win.remove();
             }
         }
+            win=createNakReceiverWindow(sender, highest_delivered_seqno, low_seqno);
+            xmit_table.put(sender, win);
+        }
+        if(log.isDebugEnabled() && sb != null) {
+            sb.append("\n").append("resulting digest: " + getDigest());
+            log.debug(sb);
+        }
+
         if(!xmit_table.containsKey(local_addr)) {
             if(log.isWarnEnabled()) {
                 log.warn("digest does not contain local address (local_addr=" + local_addr + ", digest=" + digest);
