@@ -19,11 +19,11 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.12 2007/07/27 11:00:58 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.12.2.1 2008/02/27 13:53:43 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
-    Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
+    final Map<Address,Long>    timestamps=new ConcurrentHashMap<Address,Long>();
 
     /** Number of milliseconds after which a HEARTBEAT is sent to the cluster */
     long                       interval=3000;
