@@ -21,7 +21,7 @@ import org.jgroups.util.Util;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.12.4.2 2008/02/27 11:31:25 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.12.4.3 2008/02/27 13:28:09 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -75,9 +75,7 @@ public class MergeTest extends ChannelTestBase {
             }
 
             // Make sure everyone is in sync
-            
             blockUntilViewsReceived(channels, 60000);
-            
 
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(2000);
