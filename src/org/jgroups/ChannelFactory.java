@@ -1,4 +1,4 @@
-// $Id: ChannelFactory.java,v 1.11 2007/11/06 13:34:26 vlada Exp $
+// $Id: ChannelFactory.java,v 1.12 2008/02/27 16:58:44 belaban Exp $
 
 package org.jgroups;
 
@@ -157,4 +157,6 @@ public interface ChannelFactory {
 
     /** Create a new channel with the properties defined in the factory */
     Channel createChannel() throws ChannelException;
+
+    Channel createChannel(String stack_name) throws Exception;
 }
