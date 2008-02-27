@@ -21,7 +21,7 @@ import org.jgroups.util.Util;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.12.4.1 2008/01/09 08:12:10 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.12.4.2 2008/02/27 11:31:25 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -99,7 +99,19 @@ public class MergeTest extends ChannelTestBase {
             }
                                         
             System.out.println("Waiting for split to be detected...");
-            Util.sleep(35*1000);
+            View view;
+            long stop=System.currentTimeMillis() + 35*1000;
+            do {
+                view=channels[0].channel.getView();
+                // System.out.println("view = " + view);
+                if(view.size() == 1)
+                    break;
+                else
+                    Util.sleep(1000);
+            }
+            while(System.currentTimeMillis() < stop);
+
+            // Util.sleep(35*1000);
             
             System.out.println("Waiting for merging to kick in....");
             
@@ -153,7 +165,7 @@ public class MergeTest extends ChannelTestBase {
         @Override
         public void viewAccepted(View new_view) {
             events.add(new_view);
-            log.info("Channel " + getLocalAddress()
+            System.out.println("Channel " + getLocalAddress()
                       + "["
                       + getName()
                       + "] accepted view "
@@ -201,12 +213,6 @@ public class MergeTest extends ChannelTestBase {
         }      
     }
 
-    public static Test suite() {
-        return new TestSuite(MergeTest.class);
-    }
 
-    public static void main(String[] args) {
-        String[] testCaseName = { MergeTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
+
 }
