@@ -1,11 +1,10 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.Address;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.BARRIER;
 import org.jgroups.protocols.PING;
@@ -19,7 +18,7 @@ import java.util.Vector;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.1.4.1 2008/02/28 13:20:59 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.1.4.2 2008/02/28 13:23:29 belaban Exp $
  */
 public class BARRIERTest extends TestCase {
     IpAddress a1;
