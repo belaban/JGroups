@@ -5,6 +5,9 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.Properties;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
@@ -22,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.6.4.1 2008/02/28 12:06:55 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.6.4.2 2008/02/28 13:22:59 belaban Exp $
  */
 
 public class BARRIER extends Protocol {
@@ -149,26 +152,41 @@ public class BARRIER extends Protocol {
     }
 
 
+    /** Close the barrier. Temporarily remove all threads which are waiting or blocked, re-insert them after the call */
     private void closeBarrier() {
         if(!barrier_closed.compareAndSet(false, true))
             return; // barrier was already closed
 
+        Set<Thread> threads=new HashSet<Thread>();
+
         lock.lock();
         try {
-            // wait until all pending (= in-progress) msgs have returned
+            // wait until all pending (= in-progress, runnable threads) msgs have returned
             in_flight_threads.remove(Thread.currentThread());
             while(!in_flight_threads.isEmpty()) {
-                try {
-                    no_msgs_pending.await();
+                for(Iterator<Thread> it=in_flight_threads.keySet().iterator(); it.hasNext();) {
+                    Thread thread=it.next();
+                    Thread.State state=thread.getState();
+                    if(state != Thread.State.RUNNABLE && state != Thread.State.NEW) {
+                        threads.add(thread);
+                        it.remove();
+                    }
                 }
-                catch(InterruptedException e) {
+                if(!in_flight_threads.isEmpty()) {
+                    try {
+                        no_msgs_pending.await(1000, TimeUnit.MILLISECONDS);
+                    }
+                    catch(InterruptedException e) {
+                    }
                 }
             }
         }
         finally {
+            for(Thread thread: threads)
+                in_flight_threads.put(thread, NULL);
             lock.unlock();
         }
-
+        
         if(log.isTraceEnabled())
             log.trace("barrier was closed");
 
