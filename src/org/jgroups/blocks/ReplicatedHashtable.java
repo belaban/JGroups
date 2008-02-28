@@ -1,4 +1,4 @@
-// $Id: ReplicatedHashtable.java,v 1.16 2008/01/22 10:44:31 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.17 2008/02/28 07:32:28 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -73,7 +73,7 @@ public class ReplicatedHashtable extends Hashtable implements MessageListener, M
         if(l != null)
             addStateTransferListener(l);
         try {
-            channel=factory != null ? factory.createChannel(properties) : new JChannel(properties);
+            channel=factory != null ? factory.createChannel((Object)properties) : new JChannel(properties);
             channel.connect(groupname);
             adapter=new PullPushAdapter(channel, this, this);
             adapter.setListener(this);
