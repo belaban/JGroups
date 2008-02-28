@@ -1,4 +1,4 @@
-// $Id: DistributedHashtable.java,v 1.33 2007/08/30 10:06:01 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.33.2.1 2008/02/28 07:31:56 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -32,7 +32,7 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.33 2007/08/30 10:06:01 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.33.2.1 2008/02/28 07:31:56 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
 public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
@@ -85,7 +85,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
         this.groupname=groupname;
         initSignatures();
         if(factory != null) {
-            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+            channel=properties != null? factory.createChannel((Object)properties) : factory.createChannel();
         }
         else {
             channel=new JChannel(properties);
@@ -113,7 +113,7 @@ public class DistributedHashtable extends Hashtable implements ExtendedMessageLi
         this.persistent=persistent;
         initSignatures();
         if(factory != null) {
-            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+            channel=properties != null? factory.createChannel((Object)properties) : factory.createChannel();
         }
         else {
             channel=new JChannel(properties);
