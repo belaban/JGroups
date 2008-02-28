@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
@@ -18,11 +18,11 @@ import java.util.Vector;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.2 2008/02/28 13:28:12 belaban Exp $
  */
 public class BARRIERTest extends TestCase {
     IpAddress a1;
-    Vector members;
+    Vector<Address> members;
     View v;
     Simulator s;
     BARRIER barrier_prot=new BARRIER();
@@ -37,7 +37,7 @@ public class BARRIERTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         a1=new IpAddress(1111);
-        members=new Vector();
+        members=new Vector<Address>();
         members.add(a1);
         v=new View(a1, 1, members);
         s=new Simulator();
@@ -79,7 +79,7 @@ public class BARRIERTest extends TestCase {
 
         Util.sleep(500);
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
-        assertEquals(5, num_in_flight_threads);
+        assertEquals(0, num_in_flight_threads);
 
         s.send(new Event(Event.OPEN_BARRIER));
         Util.sleep(500);
@@ -88,6 +88,25 @@ public class BARRIERTest extends TestCase {
         assertEquals(5, receiver.getNumberOfReceivedMessages());
     }
 
+
+    public void testThreadsBlockedOnMutex() throws InterruptedException {
+        BlockingReceiver receiver=new BlockingReceiver();
+        s.setReceiver(receiver);
+
+        Thread thread=new Thread() {
+            public void run() {bottom_prot.up(new Event(Event.MSG, new Message()));}
+        };
+
+        Thread thread2=new Thread() {
+            public void run() {bottom_prot.up(new Event(Event.MSG, new Message()));}
+        };
+
+        thread.start();
+        thread2.start();
+
+        thread.join();
+        thread2.join();
+    }
 
 
 
@@ -109,12 +128,20 @@ public class BARRIERTest extends TestCase {
     }
 
 
+    class BlockingReceiver implements Simulator.Receiver {
 
-    public static junit.framework.Test suite() {
-        return new TestSuite(BARRIERTest.class);
+        public void receive(Event evt) {
+            System.out.println("Thread " + Thread.currentThread().getId() + " receive() called - about to enter mutex");
+            synchronized(this) {
+                System.out.println("Thread " + Thread.currentThread().getId() + " entered mutex");
+                Util.sleep(2000);
+                System.out.println("Thread " + Thread.currentThread().getId() + " closing barrier");
+                s.send(new Event(Event.CLOSE_BARRIER));
+                System.out.println("Thread " + Thread.currentThread().getId() + " closed barrier");
+}
+        }
     }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
+
+
 }
