@@ -1,4 +1,4 @@
-// $Id: DistributedQueue.java,v 1.19 2006/07/31 09:21:58 belaban Exp $
+// $Id: DistributedQueue.java,v 1.20 2008/02/28 07:30:24 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
@@ -75,7 +75,7 @@ public class DistributedQueue implements MessageListener, MembershipListener, Cl
         this.groupname = groupname;
         initSignatures();
         internalQueue = new LinkedList();
-        channel = (factory != null) ? factory.createChannel(properties) : new JChannel(properties);
+        channel = (factory != null) ? factory.createChannel((Object)properties) : new JChannel(properties);
         disp = new RpcDispatcher(channel, this, this, this);
         disp.setDeadlockDetection(false); // To ensure strict FIFO MethodCall
         channel.connect(groupname);
