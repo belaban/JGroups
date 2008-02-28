@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.12 2007/11/07 09:39:25 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.12.2.1 2008/02/28 07:31:56 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -120,7 +120,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
             throws ChannelException {
         this.cluster_name=clustername;
         if(factory != null) {
-            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+            channel=properties != null? factory.createChannel((Object)properties) : factory.createChannel();
         }
         else {
             channel=new JChannel(properties);
@@ -151,7 +151,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         this.cluster_name=clustername;
         this.persistent=persistent;
         if(factory != null) {
-            channel=properties != null? factory.createChannel(properties) : factory.createChannel();
+            channel=properties != null? factory.createChannel((Object)properties) : factory.createChannel();
         }
         else {
             channel=new JChannel(properties);
