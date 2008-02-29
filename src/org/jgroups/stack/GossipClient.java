@@ -21,7 +21,7 @@ import java.util.*;
  * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.19 2008/02/06 11:47:30 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.20 2008/02/29 08:22:56 belaban Exp $
  */
 public class GossipClient {
     Timer timer=new Timer(true);
@@ -32,8 +32,8 @@ public class GossipClient {
     final Vector<Address> gossip_servers=new Vector<Address>();          // a list of GossipRouters (IpAddress)
     boolean timer_running=false;
     boolean refresher_enabled=true;
-    long EXPIRY_TIME=20000;                    // must be less than in GossipRouter
-    static final int SOCKET_TIMEOUT=5000;            // max number of ms to wait for socket establishment to GossipRouter
+    long EXPIRY_TIME=20000;          // must be less than in GossipRouter
+    int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
@@ -62,6 +62,12 @@ public class GossipClient {
             init(host, expiry);
     }
 
+
+    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry, int sock_conn_timeout) {
+        this(gossip_hosts, expiry);
+        this.sock_conn_timeout=sock_conn_timeout;
+    }
+
     public boolean isRefresherEnabled() {
         return refresher_enabled;
     }
@@ -70,6 +76,13 @@ public class GossipClient {
         this.refresher_enabled=refresher_enabled;
     }
 
+    public int getSockConnectionTimeout() {
+        return sock_conn_timeout;
+    }
+
+    public void setSocketConnectionTimeout(int sock_conn_timeout) {
+        this.sock_conn_timeout=sock_conn_timeout;
+    }
 
     public void stop() {
         timer_running=false;
@@ -189,7 +202,8 @@ public class GossipClient {
             try {
                 if(log.isTraceEnabled())
                     log.trace("REGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
-                sock=new Socket(entry.getIpAddress(), entry.getPort());
+                sock=new Socket();
+                sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
                 out=new DataOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipRouter.REGISTER, group, mbr, null);
                 // must send GossipData as fast as possible, otherwise the
@@ -225,7 +239,8 @@ public class GossipClient {
             try {
                 if(log.isTraceEnabled())
                     log.trace("UNREGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
-                sock=new Socket(entry.getIpAddress(), entry.getPort());
+                sock=new Socket();
+                sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
                 out=new DataOutputStream(sock.getOutputStream());
                 gossip_req=new GossipData(GossipRouter.UNREGISTER, group, mbr, null);
                 // must send GossipData as fast as possible, otherwise the
@@ -267,10 +282,9 @@ public class GossipClient {
             }
             
             try {
-                // sock=new Socket(entry.getIpAddress(), entry.getPort());
                 sock=new Socket();
                 destAddr=new InetSocketAddress(entry.getIpAddress(), entry.getPort());
-                sock.connect(destAddr, SOCKET_TIMEOUT);
+                sock.connect(destAddr, sock_conn_timeout);
                 out=new DataOutputStream(sock.getOutputStream());
 
                 gossip_req=new GossipData(GossipRouter.GOSSIP_GET, group, null, null);
