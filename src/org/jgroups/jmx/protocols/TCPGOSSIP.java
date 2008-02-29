@@ -1,10 +1,8 @@
 package org.jgroups.jmx.protocols;
 
-import org.jgroups.jmx.Protocol;
-
 /**
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.1 2005/06/14 10:10:10 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.2 2008/02/29 08:47:10 belaban Exp $
  */
 public class TCPGOSSIP extends Discovery implements TCPGOSSIPMBean {
 
