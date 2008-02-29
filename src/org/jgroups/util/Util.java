@@ -27,13 +27,13 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.143 2008/02/25 16:24:20 belaban Exp $
+ * @version $Id: Util.java,v 1.144 2008/02/29 12:20:14 belaban Exp $
  */
 public class Util {
 
     private static  NumberFormat f;
 
-    private static Map PRIMITIVE_TYPES=new HashMap(10);
+    private static Map<Class,Byte> PRIMITIVE_TYPES=new HashMap<Class,Byte>(10);
     private static final byte TYPE_NULL         =  0;
     private static final byte TYPE_STREAMABLE   =  1;
     private static final byte TYPE_SERIALIZABLE =  2;
@@ -421,7 +421,7 @@ public class Util {
     }
 
 
-    public static byte[] collectionToByteBuffer(Collection c) throws Exception {
+    public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         byte[] result=null;
         final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(out_stream);
@@ -530,15 +530,13 @@ public class Util {
      * @param out
      * @throws IOException
      */
-    public static void writeAddresses(Collection v, DataOutputStream out) throws IOException {
+    public static void writeAddresses(Collection<Address> v, DataOutputStream out) throws IOException {
         if(v == null) {
             out.writeShort(-1);
             return;
         }
         out.writeShort(v.size());
-        Address addr;
-        for(Iterator it=v.iterator(); it.hasNext();) {
-            addr=(Address)it.next();
+        for(Address addr: v) {
             Util.writeAddress(addr, out);
         }
     }
@@ -571,10 +569,10 @@ public class Util {
      * @param addrs Collection<Address>
      * @return long size
      */
-    public static long size(Collection addrs) {
+    public static long size(Collection<Address> addrs) {
         int retval=Global.SHORT_SIZE; // number of elements
         if(addrs != null && !addrs.isEmpty()) {
-            Address addr=(Address)addrs.iterator().next();
+            Address addr=addrs.iterator().next();
             retval+=size(addr) * addrs.size();
         }
         return retval;
@@ -994,7 +992,7 @@ public class Util {
                     if(type == Event.MSG) {
                         s+="[";
                         Message m=(Message)event.getArg();
-                        Map headers=new HashMap(m.getHeaders());
+                        Map<String,Header> headers=new HashMap<String,Header>(m.getHeaders());
                         for(Iterator i=headers.keySet().iterator(); i.hasNext();) {
                             Object headerKey=i.next();
                             Object value=headers.get(headerKey);
@@ -1226,8 +1224,8 @@ public class Util {
      * @param frag_size
      * @return List. A List<Range> of offset/length pairs
      */
-    public static java.util.List computeFragOffsets(int offset, int length, int frag_size) {
-        java.util.List   retval=new ArrayList();
+    public static List<Range> computeFragOffsets(int offset, int length, int frag_size) {
+        List<Range>   retval=new ArrayList<Range>();
         long   total_size=length + offset;
         int    index=offset;
         int    tmp_size=0;
@@ -1245,7 +1243,7 @@ public class Util {
         return retval;
     }
 
-    public static java.util.List computeFragOffsets(byte[] buf, int frag_size) {
+    public static List<Range> computeFragOffsets(byte[] buf, int frag_size) {
         return computeFragOffsets(0, buf.length, frag_size);
     }
 
@@ -1431,14 +1429,14 @@ public class Util {
      * Selects a random subset of members according to subset_percentage and returns them.
      * Picks no member twice from the same membership. If the percentage is smaller than 1 -> picks 1 member.
      */
-    public static Vector pickSubset(Vector members, double subset_percentage) {
-        Vector ret=new Vector(), tmp_mbrs;
+    public static Vector<Address> pickSubset(Vector<Address> members, double subset_percentage) {
+        Vector<Address> ret=new Vector<Address>(), tmp_mbrs;
         int num_mbrs=members.size(), subset_size, index;
 
         if(num_mbrs == 0) return ret;
         subset_size=(int)Math.ceil(num_mbrs * subset_percentage);
 
-        tmp_mbrs=(Vector)members.clone();
+        tmp_mbrs=(Vector<Address>)members.clone();
 
         for(int i=subset_size; i > 0 && !tmp_mbrs.isEmpty(); i--) {
             index=(int)((Math.random() * num_mbrs) % tmp_mbrs.size());
@@ -1743,7 +1741,7 @@ public class Util {
      */
     public static long[] parseCommaDelimitedLongs(String s) {
         StringTokenizer tok;
-        Vector v=new Vector();
+        Vector<Long> v=new Vector<Long>();
         Long l;
         long[] retval=null;
 
@@ -1756,7 +1754,7 @@ public class Util {
         if(v.isEmpty()) return null;
         retval=new long[v.size()];
         for(int i=0; i < v.size(); i++)
-            retval[i]=((Long)v.elementAt(i)).longValue();
+            retval[i]=v.elementAt(i).longValue();
         return retval;
     }
 
