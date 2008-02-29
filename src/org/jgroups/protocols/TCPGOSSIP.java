@@ -1,4 +1,4 @@
-// $Id: TCPGOSSIP.java,v 1.27 2007/11/29 11:27:08 belaban Exp $
+// $Id: TCPGOSSIP.java,v 1.28 2008/02/29 08:22:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -25,12 +25,13 @@ import java.net.UnknownHostException;
  * @author Bela Ban
  */
 public class TCPGOSSIP extends Discovery {
-    Vector initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
-    GossipClient gossip_client=null;  // accesses the GossipRouter(s) to find initial mbrship
+    Vector              initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
+    GossipClient        gossip_client=null;  // accesses the GossipRouter(s) to find initial mbrship
 
     // we need to refresh the registration with the GossipRouter(s) periodically,
     // so that our entries are not purged from the cache
-    long gossip_refresh_rate=20000;    
+    long                gossip_refresh_rate=20000;
+    int                 sock_conn_timeout=1000;     // max time in millis for a socket creation
     final static String name="TCPGOSSIP";
 
 
@@ -46,6 +47,12 @@ public class TCPGOSSIP extends Discovery {
         if(str != null) {
             gossip_refresh_rate=Integer.parseInt(str);
             props.remove("gossip_refresh_rate");
+        }
+
+        str=props.getProperty("sock_conn_timeout");  // wait for at most n members
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
         }
 
         str=props.getProperty("initial_hosts");
@@ -65,6 +72,12 @@ public class TCPGOSSIP extends Discovery {
             if(log.isErrorEnabled()) log.error("initial_hosts must contain the address of at least one GossipRouter");
             return false;
         }
+
+        if(timeout <= sock_conn_timeout) {
+            log.warn("timeout should be greater than sock_conn_timeout");
+        }
+
+
         return super.setProperties(props);
     }
 
@@ -73,7 +86,7 @@ public class TCPGOSSIP extends Discovery {
     public void start() throws Exception {
         super.start();
         if(gossip_client == null)
-            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate);
+            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout);
     }
 
     public void stop() {
