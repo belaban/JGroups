@@ -1,4 +1,4 @@
-// $Id: GossipData.java,v 1.4 2008/01/22 10:44:36 belaban Exp $
+// $Id: GossipData.java,v 1.5 2008/02/29 12:19:52 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -7,11 +7,11 @@ import org.jgroups.Address;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.Vector;
-import java.util.List;
-import java.util.ArrayList;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.LinkedList;
+import java.util.List;
 
 
 /**
@@ -19,10 +19,10 @@ import java.util.LinkedList;
  * @author Bela Ban Oct 4 2001
  */
 public class GossipData implements Streamable {
-    byte    type=0;      // One of GossipRouter type, e.g. CONNECT, REGISTER etc
-    String  group=null;  // CONNECT, GET_REQ and GET_RSP
-    Address addr=null;   // CONNECT
-    List    mbrs=null;   // GET_RSP
+    byte           type=0;      // One of GossipRouter type, e.g. CONNECT, REGISTER etc
+    String         group=null;  // CONNECT, GET_REQ and GET_RSP
+    Address        addr=null;   // CONNECT
+    List<Address>  mbrs=null;   // GET_RSP
 
     public GossipData() { // for streamable
     }
@@ -31,7 +31,7 @@ public class GossipData implements Streamable {
         this.type=type;
     }
 
-    public GossipData(byte type, String group, Address addr, List mbrs) {
+    public GossipData(byte type, String group, Address addr, List<Address> mbrs) {
         this.type=type;
         this.group=group;
         this.addr=addr;
@@ -39,12 +39,12 @@ public class GossipData implements Streamable {
     }
 
 
-    public byte    getType()    {return type;}
-    public String  getGroup()   {return group;}
-    public Address getAddress() {return addr;}
-    public List    getMembers() {return mbrs;}
+    public byte             getType()    {return type;}
+    public String           getGroup()   {return group;}
+    public Address          getAddress() {return addr;}
+    public List<Address>    getMembers() {return mbrs;}
 
-    public void setMembers(List mbrs) {
+    public void setMembers(List<Address> mbrs) {
         this.mbrs=mbrs;
     }
 
@@ -68,7 +68,7 @@ public class GossipData implements Streamable {
         type=in.readByte();
         group=Util.readString(in);
         addr=Util.readAddress(in);
-        mbrs=(List)Util.readAddresses(in, LinkedList.class);
+        mbrs=(List<Address>)Util.readAddresses(in, LinkedList.class);
     }
 
 
