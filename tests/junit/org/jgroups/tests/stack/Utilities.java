@@ -1,4 +1,4 @@
-// $Id: Utilities.java,v 1.10 2006/10/11 14:33:53 belaban Exp $
+// $Id: Utilities.java,v 1.11 2008/02/29 12:20:06 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -14,7 +14,7 @@ import java.net.ServerSocket;
  * Utility functions shared by stack tests.
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Revision: 1.10 $
+ * @version $Revision: 1.11 $
  * @since 2.2.1
  */
 public class Utilities {
@@ -89,7 +89,7 @@ public class Utilities {
 
         while(crtms - startms < 10000) {
             try {
-                client=new GossipClient(new IpAddress(bind_addr, routerPort), 10000);
+                client=new GossipClient(new IpAddress(bind_addr, routerPort), 10000, 1000, null);
                 client.getMembers("Utilities:startGossipRouterConnectionTest");
                 lastConnectException=null;
                 break;
