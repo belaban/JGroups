@@ -24,7 +24,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.40 2008/02/06 11:51:00 belaban Exp $
+ * @version $Id: PING.java,v 1.41 2008/03/01 08:05:42 belaban Exp $
  */
 public class PING extends Discovery {
     String             gossip_host=null;
@@ -88,11 +88,12 @@ public class PING extends Discovery {
         }
 
         if(gossip_hosts != null) {
-            client=new GossipClient(gossip_hosts, gossip_refresh);
+            client=new GossipClient(gossip_hosts, gossip_refresh, 1000, timer);
         }
         else if(gossip_host != null && gossip_port != 0) {
             try {
-                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh);
+                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh,
+                                        1000, timer);
             }
             catch(Exception e) {
                 if(log.isErrorEnabled()) log.error("creation of GossipClient failed, exception=" + e);

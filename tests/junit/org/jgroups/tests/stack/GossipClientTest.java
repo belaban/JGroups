@@ -1,11 +1,10 @@
-// $Id: GossipClientTest.java,v 1.2 2006/10/11 14:33:53 belaban Exp $
+// $Id: GossipClientTest.java,v 1.3 2008/03/01 08:05:29 belaban Exp $
 
 package org.jgroups.tests.stack;
 
-import junit.framework.Test;
 import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.util.Util;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 
@@ -17,7 +16,7 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  * @since 2.2.1
  */
 public class GossipClientTest extends TestCase {
@@ -32,7 +31,7 @@ public class GossipClientTest extends TestCase {
     public void setUp() throws Exception {
         super.setUp();
         port=Utilities.startGossipRouter(expiryTime, "127.0.0.1");
-        client=new GossipClient(new IpAddress("127.0.0.1", port), expiryTime);
+        client=new GossipClient(new IpAddress("127.0.0.1", port), expiryTime, 1000, null);
         client.setRefresherEnabled(false); // don't refresh the registrations
     }
 
@@ -58,7 +57,7 @@ public class GossipClientTest extends TestCase {
         String groupName="TESTGROUP";
         int mbrPort=7777;
         Address mbr=new IpAddress("127.0.0.1", mbrPort);
-        client.register(groupName, mbr);
+        client.register(groupName, mbr, true);
 
         List mbrs=client.getMembers(groupName);
         assertEquals(1, mbrs.size());
@@ -75,7 +74,8 @@ public class GossipClientTest extends TestCase {
         assertEquals(1, mbrs.size());
         assertEquals(new IpAddress("127.0.0.1", mbrPort), mbrs.get(0));
 
-        client.unregister(groupName, mbr);
+        client.unregister(groupName, mbr);// done asynchronous, on a separate thread
+        Util.sleep(500);
         mbrs=client.getMembers(groupName);
         assertNotNull(mbrs);
         assertEquals(0, mbrs.size());
@@ -103,17 +103,10 @@ public class GossipClientTest extends TestCase {
 
         // send a second GET after more than EXPIRY_TIME ms
         mbrs=client.getMembers(groupName);
-        assertTrue(mbrs == null || mbrs.size() == 0);
+        assertTrue(mbrs == null || mbrs.isEmpty());
     }
 
-    public static Test suite() {
-        return new TestSuite(GossipClientTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-        System.exit(0);
-    }
+  
 
 
 }

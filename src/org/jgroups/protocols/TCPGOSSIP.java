@@ -1,4 +1,3 @@
-// $Id: TCPGOSSIP.java,v 1.28 2008/02/29 08:22:13 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -23,9 +22,10 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  *
  * @author Bela Ban
+ * @version $Id: TCPGOSSIP.java,v 1.29 2008/03/01 08:04:43 belaban Exp $
  */
 public class TCPGOSSIP extends Discovery {
-    Vector              initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
+    Vector<IpAddress>   initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
     GossipClient        gossip_client=null;  // accesses the GossipRouter(s) to find initial mbrship
 
     // we need to refresh the registration with the GossipRouter(s) periodically,
@@ -74,7 +74,8 @@ public class TCPGOSSIP extends Discovery {
         }
 
         if(timeout <= sock_conn_timeout) {
-            log.warn("timeout should be greater than sock_conn_timeout");
+            throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout (" +
+                    sock_conn_timeout + ")");
         }
 
 
@@ -86,7 +87,7 @@ public class TCPGOSSIP extends Discovery {
     public void start() throws Exception {
         super.start();
         if(gossip_client == null)
-            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout);
+            gossip_client=new GossipClient(initial_hosts, gossip_refresh_rate, sock_conn_timeout, timer);
     }
 
     public void stop() {
@@ -128,7 +129,8 @@ public class TCPGOSSIP extends Discovery {
             return;
         }
         if(log.isTraceEnabled()) log.trace("fetching members from GossipRouter(s)");
-        tmp_mbrs=gossip_client.getMembers(group_addr);
+        tmp_mbrs=gossip_client.getMembers(group_addr,
+                                          (long)(timeout * .50)); // needs to be below timeout
         if(tmp_mbrs == null || tmp_mbrs.isEmpty()) {
             if(log.isErrorEnabled()) log.error("[FIND_INITIAL_MBRS]: gossip client found no members");           
             return;
@@ -158,8 +160,8 @@ public class TCPGOSSIP extends Discovery {
     /**
      * Input is "daddy[8880],sindhu[8880],camille[5555]. Return list of IpAddresses
      */
-    private Vector<Address> createInitialHosts(String l) throws UnknownHostException {
-        Vector<Address> tmp=new Vector<Address>();
+    private Vector<IpAddress> createInitialHosts(String l) throws UnknownHostException {
+        Vector<IpAddress> tmp=new Vector<IpAddress>();
         String host;
         int port;
         IpAddress addr;
