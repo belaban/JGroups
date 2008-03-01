@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.39 2008/01/22 10:44:30 belaban Exp $
+ * @version $Id: Discovery.java,v 1.40 2008/03/01 08:04:11 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -140,6 +140,7 @@ public abstract class Discovery extends Protocol {
             props.remove("num_ping_requests");
             if(num_ping_requests < 1)
                 num_ping_requests=1;
+            sender.setNumPingRequests(num_ping_requests);
         }
 
         if(!props.isEmpty()) {
@@ -416,6 +417,10 @@ public abstract class Discovery extends Protocol {
                 senderFuture.cancel(true);
                 senderFuture=null;
             }
+        }
+
+        public void setNumPingRequests(int num_ping_requests) {
+            interval=timeout / (double)num_ping_requests;
         }
     }
 

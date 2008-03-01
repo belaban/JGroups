@@ -1,36 +1,39 @@
-
 package org.jgroups.stack;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 
 /**
  * Local stub for clients to access one (or more) GossipRouters. Will use proprietary protocol
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
- * Requires JDK >= 1.3 due to the use of Timer.
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.20 2008/02/29 08:22:56 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.21 2008/03/01 08:05:24 belaban Exp $
  */
 public class GossipClient {
-    Timer timer=new Timer(true);
+    TimeScheduler timer=null;
 
     /** Hashtable<String,List<Address>> */
     final Map<String,List<Address>> groups=new Hashtable<String,List<Address>>();               // groups - List of Addresses
-    private Refresher refresher_task=new Refresher();
+    private Future<?> refresher_task=null;
     final Vector<Address> gossip_servers=new Vector<Address>();          // a list of GossipRouters (IpAddress)
-    boolean timer_running=false;
     boolean refresher_enabled=true;
     long EXPIRY_TIME=20000;          // must be less than in GossipRouter
     int sock_conn_timeout=2000;      // max number of ms to wait for socket establishment to GossipRouter
@@ -38,22 +41,18 @@ public class GossipClient {
     protected final Log log=LogFactory.getLog(this.getClass());
 
 
-    /**
-     * Creates the GossipClient
-     * @param gossip_host The address and port of the host on which the GossipRouter is running
-     * @param expiry Interval (in msecs) for the refresher task
-     */
-    public GossipClient(IpAddress gossip_host, long expiry) {
-        init(gossip_host, expiry);
+    public GossipClient(IpAddress gossip_host, long expiry, int sock_conn_timeout, TimeScheduler timer) {
+        this(new Vector<IpAddress>(Arrays.asList(gossip_host)), expiry, sock_conn_timeout, timer);
     }
-
 
     /**
      Creates the GossipClient
      @param gossip_hosts List of IpAddresses
      @param expiry Interval (in msecs) for the refresher task
      */
-    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry) {
+    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry, int sock_conn_timeout, TimeScheduler timer) {
+        this.sock_conn_timeout=sock_conn_timeout;
+        setTimer(timer);
         if(gossip_hosts == null) {
             if(log.isErrorEnabled()) log.error("empty set of GossipRouters given");
             return;
@@ -62,11 +61,6 @@ public class GossipClient {
             init(host, expiry);
     }
 
-
-    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry, int sock_conn_timeout) {
-        this(gossip_hosts, expiry);
-        this.sock_conn_timeout=sock_conn_timeout;
-    }
 
     public boolean isRefresherEnabled() {
         return refresher_enabled;
@@ -84,22 +78,32 @@ public class GossipClient {
         this.sock_conn_timeout=sock_conn_timeout;
     }
 
+    public void setTimer(TimeScheduler timer) {
+        if(this.timer != null) {
+            try {
+                this.timer.stop();
+            }
+            catch(InterruptedException e) {
+            }
+        }
+        this.timer=timer;
+        if(this.timer == null)
+            this.timer=new TimeScheduler();
+    }
+
     public void stop() {
-        timer_running=false;
-        if(refresher_task != null)
-            refresher_task.cancel();
-        timer.cancel();
+        synchronized(this) {
+            if(refresher_task != null) {
+                refresher_task.cancel(true);
+                refresher_task=null;
+            }
+        }
         groups.clear();
-        // provide another refresh tools in case the channel gets reconnected
-        // timer=new Timer();
-        // refresher_task=new Refresher();
     }
 
 
     public void destroy() {
-        timer_running=false;
-        timer.cancel();
-        groups.clear();
+        stop(); // needed ?
     }
 
 
@@ -117,7 +121,7 @@ public class GossipClient {
      its timestamp will be updated, preventing the cache cleaner from removing the entry.<p>
      The entry will be registered <em>with all GossipRouters that GossipClient is configured to access</em>
      */
-    public void register(String group, Address mbr) {
+    public void register(String group, Address mbr, boolean synchronous) {
         if(group == null || mbr == null) {
             if(log.isErrorEnabled()) log.error("group or mbr is null");
             return;
@@ -134,16 +138,20 @@ public class GossipClient {
                 mbrs.add(mbr);
         }
 
-        _register(group, mbr); // update entry in GossipRouter
+        _register(group, mbr, synchronous); // update entry in GossipRouter
 
         if(refresher_enabled) {
-            if(!timer_running) {
-                timer=new Timer(true);
-                refresher_task=new Refresher();
-                timer.schedule(refresher_task, EXPIRY_TIME, EXPIRY_TIME);
-                timer_running=true;
+            synchronized(this) {
+                if(refresher_task == null || refresher_task.isDone()) {
+                    Refresher tmp=new Refresher();
+                    refresher_task=timer.scheduleWithFixedDelay(tmp, EXPIRY_TIME, EXPIRY_TIME, TimeUnit.MILLISECONDS);
+                }
             }
         }
+    }
+
+    public void register(String group, Address mbr) {
+        register(group, mbr, false);
     }
 
 
@@ -162,15 +170,19 @@ public class GossipClient {
      @param group The group name
      @return List A list of Addresses
      */
-    public List<Address> getMembers(String group) {
+    public List<Address> getMembers(String group, long timeout) {
         if(group == null) {
             if(log.isErrorEnabled()) log.error("group is null");
             return null;
         }
-        List<Address> result=_getMembers(group);
+        List<Address> result=_getMembers(group, timeout);
         if(log.isTraceEnabled())
             log.trace("GET(" + group + ") --> " + result);
         return result;
+    }
+
+    public List<Address> getMembers(String group) {
+        return getMembers(group, 0);
     }
 
 
@@ -187,76 +199,97 @@ public class GossipClient {
     /**
      * Registers the group|mbr with *all* GossipRouters.
      */
-    void _register(String group, Address mbr) {
-        Socket sock=null;
-        DataOutputStream out=null;
-        IpAddress entry;
-        GossipData gossip_req;
+    void _register(final String group, final Address mbr, boolean synchronous) {
+        List<Future<?>> futures=null;
+        if(synchronous)
+            futures=new ArrayList<Future<?>>();
 
         for(int i=0; i < gossip_servers.size(); i++) {
-            entry=(IpAddress) gossip_servers.elementAt(i);
+            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
-            try {
-                if(log.isTraceEnabled())
-                    log.trace("REGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
-                sock=new Socket();
-                sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
-                out=new DataOutputStream(sock.getOutputStream());
-                gossip_req=new GossipData(GossipRouter.REGISTER, group, mbr, null);
-                // must send GossipData as fast as possible, otherwise the
-                // request might be rejected
-                gossip_req.writeTo(out);
-                out.flush();
-            }
-            catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
-            }
-            finally {
-                Util.close(out);
-                if(sock != null) {
-                    try {sock.close();} catch(IOException e) {}
+            Future<?> future=timer.submit(new Runnable() {
+                public void run() {
+                    Socket sock=null;
+                    DataOutputStream out=null;
+                    try {
+                        if(log.isTraceEnabled())
+                            log.trace("REGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
+                        sock=new Socket();
+                        sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
+                        out=new DataOutputStream(sock.getOutputStream());
+                        GossipData gossip_req=new GossipData(GossipRouter.REGISTER, group, mbr, null);
+                        // must send GossipData as fast as possible, otherwise the request might be rejected
+                        gossip_req.writeTo(out);
+                        out.flush();
+                    }
+                    catch(Exception ex) {
+                        if(log.isErrorEnabled())
+                            log.error("register(" + group + ", " + mbr + "): exception connecting to host " + entry);
+                    }
+                    finally {
+                        Util.close(out);
+                        if(sock != null) {
+                            try {
+                                sock.close();
+                            }
+                            catch(IOException e) {
+                            }
+                        }
+                    }
+                }
+            });
+
+            if(futures != null)
+                futures.add(future);
+        }
+        if(futures != null) {
+            for(Future<?> f: futures) {
+                try {
+                    f.get();
+                }
+                catch(Throwable t) {
                 }
             }
         }
     }
 
 
-    void _unregister(String group, Address mbr) {
-        Socket sock=null;
-        DataOutputStream out=null;
-        IpAddress entry;
-        GossipData gossip_req;
-
+    void _unregister(final String group, final Address mbr) {
         for(int i=0; i < gossip_servers.size(); i++) {
-            entry=(IpAddress) gossip_servers.elementAt(i);
+            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
-            try {
-                if(log.isTraceEnabled())
-                    log.trace("UNREGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
-                sock=new Socket();
-                sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
-                out=new DataOutputStream(sock.getOutputStream());
-                gossip_req=new GossipData(GossipRouter.UNREGISTER, group, mbr, null);
-                // must send GossipData as fast as possible, otherwise the
-                // request might be rejected
-                gossip_req.writeTo(out);
-                out.flush();
-            }
-            catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
-            }
-            finally {
-                Util.close(out);
-                if(sock != null) {
-                    try {sock.close();} catch(IOException e) {}
+            timer.submit(new Runnable() {
+                public void run() {
+                    Socket sock=null;
+                    DataOutputStream out=null;
+                    try {
+                        if(log.isTraceEnabled())
+                            log.trace("UNREGISTER(" + group + ", " + mbr + ") with GossipRouter at " + entry.getIpAddress() + ':' + entry.getPort());
+                        sock=new Socket();
+                        sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
+                        out=new DataOutputStream(sock.getOutputStream());
+                        GossipData gossip_req=new GossipData(GossipRouter.UNREGISTER, group, mbr, null);
+                        // must send GossipData as fast as possible, otherwise the request might be rejected
+                        gossip_req.writeTo(out);
+                        out.flush();
+                    }
+                    catch(Exception ex) {
+                        if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
+                    }
+                    finally {
+                        Util.close(out);
+                        if(sock != null) {
+                            try {sock.close();} catch(IOException e) {}
+                        }
+                    }
                 }
-            }
+            });
         }
     }
 
@@ -264,54 +297,149 @@ public class GossipClient {
     /**
      * Sends a GET_MBR_REQ to *all* GossipRouters, merges responses.
      */
-    private List<Address> _getMembers(String group) {
-        List<Address> ret=new LinkedList<Address>();
-        Socket sock=null;
-        SocketAddress destAddr;
-        DataOutputStream out=null;
-        DataInputStream in=null;
-        IpAddress entry;
-        GossipData gossip_req, gossip_rsp;
-        Address mbr;
+/*    private List<Address> _getMembers(final String group) {
+        final List<Address> ret=new LinkedList<Address>();
 
+        List<Callable<List<Address>>> tasks=new ArrayList<Callable<List<Address>>>(gossip_servers.size());
         for(int i=0; i < gossip_servers.size(); i++) {
-            entry=(IpAddress) gossip_servers.elementAt(i);
+            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
             if(entry.getIpAddress() == null || entry.getPort() == 0) {
                 if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
                 continue;
             }
-            
-            try {
-                sock=new Socket();
-                destAddr=new InetSocketAddress(entry.getIpAddress(), entry.getPort());
-                sock.connect(destAddr, sock_conn_timeout);
-                out=new DataOutputStream(sock.getOutputStream());
 
-                gossip_req=new GossipData(GossipRouter.GOSSIP_GET, group, null, null);
-                // must send GossipData as fast as possible, otherwise the
-                // request might be rejected
-                gossip_req.writeTo(out);
-                out.flush();
+            tasks.add(new Callable<List<Address>>() {
+                public List<Address> call() throws Exception {
+                    Socket sock=null;
+                    DataOutputStream out=null;
+                    DataInputStream in=null;
+                    try {
+                        sock=new Socket();
+                        System.out.println("CONNECTING to " + entry);
+                        sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
+                        out=new DataOutputStream(sock.getOutputStream());
+                        GossipData gossip_req=new GossipData(GossipRouter.GOSSIP_GET, group, null, null);
+                        // must send GossipData as fast as possible, otherwise the request might be rejected
+                        gossip_req.writeTo(out);
+                        out.flush();
+                        in=new DataInputStream(sock.getInputStream());
+                        GossipData gossip_rsp=new GossipData();
+                        gossip_rsp.readFrom(in);
+                        System.out.println("gossip_rsp = " + gossip_rsp);
+                        return gossip_rsp.mbrs;
+                    }
+                    catch(Exception ex) {
+                        if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
+                        return null;
+                    }
+                    finally {
+                        Util.close(out);
+                        Util.close(in);
+                        if(sock != null) {
+                            try {sock.close();} catch(IOException e) {}
+                        }
+                    }
+                }
+            });
+        }
 
-                in=new DataInputStream(sock.getInputStream());
-                gossip_rsp=new GossipData();
-                gossip_rsp.readFrom(in);
-                if(gossip_rsp.mbrs != null) { // merge with ret
-                    for(Iterator it=gossip_rsp.mbrs.iterator(); it.hasNext();) {
-                        mbr=(Address)it.next();
-                        if(!ret.contains(mbr))
-                            ret.add(mbr);
+        try {
+            List<Future<List<Address>>> responses=timer.invokeAll(tasks);
+            for(Future<List<Address>> future: responses) {
+                if(!future.isCancelled()) {
+                    try {
+                        List<Address> addrs=future.get();
+                        if(addrs != null) {
+                            for(Address addr: addrs) {
+                                synchronized(ret) {
+                                    if(!ret.contains(addr)) {
+                                        System.out.println("adding " + addr);
+                                        ret.add(addr);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch(Throwable t) {
                     }
                 }
             }
-            catch(Exception ex) {
-                if(log.isErrorEnabled()) log.error("exception connecting to host " + entry);
+        }
+        catch(InterruptedException e) {
+            e.printStackTrace();
+        }
+
+        return ret;
+    }*/
+
+    private List<Address> _getMembers(final String group, long timeout) {
+        final List<Address> ret=new LinkedList<Address>();
+        final AtomicInteger num_rsps=new AtomicInteger(0);
+        final long stop_time=System.currentTimeMillis() + timeout;
+
+        for(int i=0; i < gossip_servers.size(); i++) {
+            final IpAddress entry=(IpAddress) gossip_servers.elementAt(i);
+            if(entry.getIpAddress() == null || entry.getPort() == 0) {
+                if(log.isErrorEnabled()) log.error("entry.host or entry.port is null");
+                continue;
             }
-            finally {
-                Util.close(out);
-                Util.close(in);
-                if(sock != null) {
-                    try {sock.close();} catch(IOException e) {}
+
+            timer.execute(new Runnable() {
+                public void run() {
+                    Socket sock=null;
+                    DataOutputStream out=null;
+                    DataInputStream in=null;
+                    try {
+                        sock=new Socket();
+                        sock.connect(new InetSocketAddress(entry.getIpAddress(), entry.getPort()), sock_conn_timeout);
+                        out=new DataOutputStream(sock.getOutputStream());
+                        GossipData gossip_req=new GossipData(GossipRouter.GOSSIP_GET, group, null, null);
+                        // must send GossipData as fast as possible, otherwise the request might be rejected
+                        gossip_req.writeTo(out);
+                        out.flush();
+                        in=new DataInputStream(sock.getInputStream());
+                        GossipData gossip_rsp=new GossipData();
+                        gossip_rsp.readFrom(in);
+                        if(gossip_rsp.mbrs != null) {
+                            for(Address addr: gossip_rsp.mbrs) {
+                                synchronized(ret) {
+                                    if(!ret.contains(addr)) {
+                                        ret.add(addr);
+                                    }
+                                }
+                            }
+                        }
+                        synchronized(ret) {
+                            num_rsps.incrementAndGet();
+                            ret.notifyAll();
+                        }
+                    }
+                    catch(Exception ex) {
+                        if(log.isErrorEnabled()) log.error("getMembers(" + group + "): exception connecting to host " + entry);
+                    }
+                    finally {
+                        Util.close(out);
+                        Util.close(in);
+                        if(sock != null) {
+                            try {sock.close();} catch(IOException e) {}
+                        }
+                    }
+                }
+            });
+        }
+
+        synchronized(ret) {
+            if(timeout <= 0) {
+                if(num_rsps.get() == 0)
+                    try {ret.wait();} catch(InterruptedException e) {}
+            }
+            else {
+                long curr_time;
+                while(num_rsps.get() == 0 && (curr_time=System.currentTimeMillis()) < stop_time) {
+                    long wait_time=stop_time - curr_time;
+                    if(wait_time <= 0)
+                        break;
+                    try {ret.wait(wait_time);} catch(InterruptedException e) {}
                 }
             }
         }
@@ -326,7 +454,7 @@ public class GossipClient {
     /**
      * Periodically iterates through groups and refreshes all registrations with GossipRouter
      */
-    private class Refresher extends TimerTask {
+    private class Refresher implements Runnable {
 
         public void run() {
             int num_items=0;
@@ -347,7 +475,6 @@ public class GossipClient {
             }
             if(log.isTraceEnabled()) log.trace("refresher task done. Registered " + num_items + " items");
         }
-
     }
 
 
@@ -417,7 +544,7 @@ public class GossipClient {
         }
 
         try {
-            gossip_client=new GossipClient(gossip_hosts, expiry);
+            gossip_client=new GossipClient(gossip_hosts, expiry, 1000, null);
             if(register) {
                 System.out.println("Registering " + register_group + " --> " + register_host + ':' + register_port);
                 gossip_client.register(register_group, new IpAddress(register_host, register_port));
