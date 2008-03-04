@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.7 2008/03/04 14:41:38 belaban Exp $
+Version: $Id: TestNG.txt,v 1.8 2008/03/04 15:13:00 belaban Exp $
 
 Goals
 -----
@@ -82,3 +82,8 @@ Questions, issues
 -----------------
 
 - Why are methods in *superclasses* annotated with @BeforeTest, @BeforeClass etc *not* invoked ?
+- Identify useful group names and use those consistently
+  - udp, mux-udp, tcp, mux-tcp ?
+  - functional ?
+  - stack-dependent ?
+  
