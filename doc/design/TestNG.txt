@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.8 2008/03/04 15:13:00 belaban Exp $
+Version: $Id: TestNG.txt,v 1.9 2008/03/04 16:01:05 belaban Exp $
 
 Goals
 -----
@@ -68,6 +68,7 @@ x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
 x. Distributed execution across a cluster
    - Same as #2, but different tests are run on different hosts
    - The thread pool consists of different threads pools, hosted by different boxes
+   - http://beust.com/weblog/archives/000362.html ?
 
 
 Todos:
