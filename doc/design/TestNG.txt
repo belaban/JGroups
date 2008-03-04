@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.6 2008/03/04 14:22:09 belaban Exp $
+Version: $Id: TestNG.txt,v 1.7 2008/03/04 14:41:38 belaban Exp $
 
 Goals
 -----
@@ -34,13 +34,13 @@ Goals
    - The dependOn{Methods,Groups} option allows us to define an ordering between methods of a test. However, this
      requires detailed dependency analysis between the methods of a test. While this probably makes parallel
      processing even faster (as we don't need sequential processing for methods inside a test), we should do it
-     in a second stage.
+     in a second stage. This would allow us to use parallel="tests" or even "methods"
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
    - As data providers ?
    - @Parameter annotation, e.g.
 
-     @Parameter(name="channel.conf")
+     @Parameter(name="channel.conf") // defined in the ChannelTestsBase (or whichever) super class
      public void setupStack(String config) {
          channel=createChannel(config);
      }
@@ -69,6 +69,13 @@ x. Distributed execution across a cluster
    - Same as #2, but different tests are run on different hosts
    - The thread pool consists of different threads pools, hosted by different boxes
 
+
+Todos:
+------
+- Convert all tests to TestNG (use TestNG's automatic converter or use awk.sed ?)
+- Remove junit.jar, add testng.jar
+- Write correct TestNG XML file
+- Integrate with build.xml
 
 
 Questions, issues
