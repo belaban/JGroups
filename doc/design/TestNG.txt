@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.3 2008/03/04 13:08:34 belaban Exp $
+Version: $Id: TestNG.txt,v 1.4 2008/03/04 13:10:16 belaban Exp $
 
 Goals
 -----
@@ -29,7 +29,8 @@ Goals
      concurrently
    - This is similar to TestNG's parallel="methods" | "tests", but TestNG doesn't currently have a mode which allows for
      concurrent execution of different tests (with sequential execution of methods inside those tests)
-   - We probably have to extend TestNG to do this
+   - We probably have to extend TestNG to do this:
+     - parallel="tests", but provide a list of tests (one for each test class) to TestNG *programmatically*
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
    - As data providers ?
