@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.5 2008/03/04 13:54:47 belaban Exp $
+Version: $Id: TestNG.txt,v 1.6 2008/03/04 14:22:09 belaban Exp $
 
 Goals
 -----
@@ -38,6 +38,32 @@ Goals
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
    - As data providers ?
+   - @Parameter annotation, e.g.
+
+     @Parameter(name="channel.conf")
+     public void setupStack(String config) {
+         channel=createChannel(config);
+     }
+
+   - The @Parameter annotation is probably better than data providers, as we can run the stack dependent test suites
+     as separate tests, with different parameters, e.g.:
+
+     <suite name="JGroups test suite">
+        <test name="UDP tests">
+            <parameter name="channel.conf"  value="udp.xml"/>
+        </test>
+        <test name="TCP tests">
+            <parameter name="channel.conf"  value="tcp.xml"/>
+        </test>
+        <test name="mux-udp tests">
+            <parameter name="channel.conf"  value="mux-udp"/>
+        </test>
+
+        <test name="mux-tcp tests">
+            <parameter name="channel.conf"  value="mux-tcp"/>
+        </test>
+        ...
+     </suite>
 
 x. Distributed execution across a cluster
    - Same as #2, but different tests are run on different hosts
