@@ -1,0 +1,38 @@
+
+
+Migration from JUnit to TestNG
+==============================
+
+Author Bela Ban
+Version: $Id: TestNG.txt,v 1.1 2008/03/04 10:55:37 belaban Exp $
+
+Goals
+-----
+
+1. Reduce unnecessary channel creations, cluster joins and cluster leaves
+   - Example: if we have 10 methods in a test class, we create and connect to a channel
+     in setup() and disconnect and tear down the channel in tearDown for *each* test method
+   - Unless channel creation/teardown is tested (like in CloseTest), we can create a connect to the
+     channel before the test, and disconnect and tear down the channel after all 10 methods have been executed
+   - This will save us the cost of 9 channel creations/connects/disconnects
+
+2. Run all the tests in separate threads
+   - A thread pool (say 20 threads, depending on how many core we have) is configured
+   - All tests are processed by different threads in that pool
+   - The first 20 tests to be run are processed: each test is run by a separate thread
+   - When a thread is done, it grabs the next test, until no more tests are available
+   - All methods inside a given test are still executed *sequentially*, this is necessary as different methods within
+     a test modify shared state, e.g. a view or the number of messages received, and are therefore dependent on
+     running sequentially
+   - Later, we might be able to take advantage of annotations which mark an entire test, such that it can be executed
+     concurrently
+   - This is similar to TestNG's parallel="methods" | "tests", but TestNG doesn't currently have a mode which allows for
+     concurrent execution of different tests (with sequential execution of methods inside those tests)
+   - We probably have to extend TestNG to do this
+
+x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
+   - As data providers ?
+
+x. Distributed execution across a cluster
+   - Same as #2, but different tests are run on different hosts
+   - The thread pool consists of different threads pools, hosted by different boxes
