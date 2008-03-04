@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.4 2008/03/04 13:10:16 belaban Exp $
+Version: $Id: TestNG.txt,v 1.5 2008/03/04 13:54:47 belaban Exp $
 
 Goals
 -----
@@ -31,6 +31,10 @@ Goals
      concurrent execution of different tests (with sequential execution of methods inside those tests)
    - We probably have to extend TestNG to do this:
      - parallel="tests", but provide a list of tests (one for each test class) to TestNG *programmatically*
+   - The dependOn{Methods,Groups} option allows us to define an ordering between methods of a test. However, this
+     requires detailed dependency analysis between the methods of a test. While this probably makes parallel
+     processing even faster (as we don't need sequential processing for methods inside a test), we should do it
+     in a second stage.
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
    - As data providers ?
