@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.9 2008/03/04 16:01:05 belaban Exp $
+Version: $Id: TestNG.txt,v 1.10 2008/03/05 11:01:29 belaban Exp $
 
 Goals
 -----
@@ -87,4 +87,6 @@ Questions, issues
   - udp, mux-udp, tcp, mux-tcp ?
   - functional ?
   - stack-dependent ?
+- How do we generate mcast addresses and ports such that traffic doesn't overlap ?
+
   
