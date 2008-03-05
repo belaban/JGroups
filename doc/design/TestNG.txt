@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.10 2008/03/05 11:01:29 belaban Exp $
+Version: $Id: TestNG.txt,v 1.11 2008/03/05 16:07:25 belaban Exp $
 
 Goals
 -----
@@ -71,6 +71,26 @@ x. Distributed execution across a cluster
    - http://beust.com/weblog/archives/000362.html ?
 
 
+Conversion
+----------
+
+#1 Change ANT build for tests
+   - Provide a bunch of TestNG XML files, one for each config, e.g. testng-functional.xml, testng-udp.xml,
+     testng-mux-udp.xml and so on
+   - Change ANT targets to invoke the right TestNG XML file
+   - All TestNG XML files have junit="true", so the unchanged tests can be run
+   - Output uses the ReportNG reporter
+   - [tbd] Convert into the old XML format, so JUnitReport can process those files
+
+#2 Change unit test to TestNG
+   - Modify ChannelTestBase, rename setUp() and teardown() and add @BeforeMethod and @AfterMethod to them
+   - Remove 'extends TestCase'
+   - Add @BeforeMethod to setUp() and @AfterMethod to tearDown()
+   - Replace assertXXX() with org.testng.Assert.assertXXX()
+   - OR: replace assertXXX() with assert <expr>
+
+
+
 Todos:
 ------
 - Convert all tests to TestNG (use TestNG's automatic converter or use awk.sed ?)
@@ -88,5 +108,6 @@ Questions, issues
   - functional ?
   - stack-dependent ?
 - How do we generate mcast addresses and ports such that traffic doesn't overlap ?
+  --> Possibly a @BeforeTest annotation which modifies the stack config ?
 
   
