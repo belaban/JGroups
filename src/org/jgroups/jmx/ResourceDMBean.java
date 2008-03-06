@@ -19,7 +19,7 @@ import java.util.Vector;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.2 2008/03/06 00:50:17 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.3 2008/03/06 01:03:54 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -69,7 +69,10 @@ public class ResourceDMBean implements DynamicMBean {
                                                          false));
             }           
             //walk class hierarchy and find all fields
-            for(Class<?> clazz=obj.getClass();clazz != null;clazz=clazz.getSuperclass()) {
+            for(Class<?> clazz=obj.getClass();
+                clazz != null && clazz.isAnnotationPresent(MBean.class);
+                clazz=clazz.getSuperclass()) {
+                
                 Field[] fields=clazz.getDeclaredFields();
                 for(Field field:fields) {
                     ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
