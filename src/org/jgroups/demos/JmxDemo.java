@@ -11,44 +11,51 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.2 2008/03/06 08:51:02 belaban Exp $
+ * @version $Id: JmxDemo.java,v 1.3 2008/03/06 09:17:09 belaban Exp $
  */
 @MBean
 public class JmxDemo {
     @ManagedAttribute
-    private int age;
+    private int age;   // exposed as read-only 'age'
 
     @ManagedAttribute
-    private static final String last_name="Ban";
-    @ManagedAttribute
-    private static final String first_name="Bela";
+    private static final String last_name="Ban";  // read-only (because final) 'last_name'
 
-    @ManagedAttribute(description="social security number")
+    @ManagedAttribute
+    private static final String first_name="Bela";  // read-only (final) 'first_name'
+
+    @ManagedAttribute(description="social security number") // read-only
     private static final long id=322649L;
 
-    @ManagedOperation(description="bla")
-    public void foo() {
-        System.out.println("foo(" + my_number + "): age=" + age + ", name=" + first_name + " " + last_name);
+    public void foo() { // must be exposed because we have @MBean on the class
+        System.out.println("foo(" + number + "): age=" + age + ", name=" + first_name + " " + last_name);
     }
 
-    @ManagedAttribute(writable=true)
-    private int my_number=10;
+    @ManagedAttribute
+    private int number=10; // writeable because we have the (non-annnotated) setter below !!
+
+    public int setNumber(int num) {number=num; return num;}
 
     @ManagedAttribute
-    public int getMyNumber() {return my_number;}
+    public void getMyFoo() {} // exposed as 'MyFoo' *not* 'getMyFoo()' !! 
 
-    @ManagedAttribute(writable=true)
-    public int setMy_number(int num) {my_number=num; return num;}
+    @ManagedAttribute
+    private int other_number=20;  // exposed as 'otherNumber' ?
+    public int getOtherNumber() {return other_number;}   // this should show up as 'otherNumber'
+    public void setOtherNumber(int num) {other_number=num;}
 
     @ManagedAttribute
     public void foobar() {} // doesn't start with setXXX() or getXXX(), ignored
+
+    @ManagedAttribute
+    public boolean isFlag() {return true;} // exposed as Flag, *not* 'isFlag()' !!
 
     @ManagedOperation
     public String sayName() {
         return "I'm " + first_name + " " + last_name;
     }
 
-    public int add(int a, int b) {return a+b;} // not exposed although @MBean is on the JmxDemo class
+    public int add(int a, int b) {return a+b;} // exposed because @MBean is on the class
 
 
     public static void main(String[] args) {
