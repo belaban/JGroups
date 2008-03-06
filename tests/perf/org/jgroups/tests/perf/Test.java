@@ -19,7 +19,7 @@ import java.util.concurrent.CyclicBarrier;
  * @author Bela Ban (belaban@yahoo.com)
 
  */
-public class PerfTest implements Receiver {
+public class Test implements Receiver {
     String          props=null;
     Properties      config;
     boolean         sender=false;
@@ -748,7 +748,7 @@ public class PerfTest implements Receiver {
     public static void main(String[] args) {
         Properties config=new Properties();
         boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
-        PerfTest t=null;
+        Test t=null;
         String output=null;
         long interval=0;
         int interval_nanos=0;
@@ -824,7 +824,7 @@ public class PerfTest implements Receiver {
 
   
         try {
-            t=new PerfTest();
+            t=new Test();
             t.start(config, verbose, jmx, output, num_threads, num_buddies);
             t.runDiscoveryPhase();
             t.waitForAllOKs();
@@ -864,7 +864,7 @@ public class PerfTest implements Receiver {
 
 
     static void help() {
-        System.out.println("PerfTest [-help] ([-sender] | [-receiver]) " +
+        System.out.println("Test [-help] ([-sender] | [-receiver]) " +
                 "[-config <config file>] [-num_threads <number of threads for sending messages>]" +
                 "[-props <stack config>] [-verbose] [-jmx] [-bind_addr <bind address>" +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
