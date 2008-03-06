@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.53 2008/03/06 00:21:49 vlada Exp $
+// $Id: Draw.java,v 1.54 2008/03/06 01:02:18 vlada Exp $
 
 
 package org.jgroups.demos;
@@ -368,29 +368,35 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     /* ------------------------------ ChannelListener interface -------------------------- */
 
     public void channelConnected(Channel channel) {
-    	if(jmx) {
+        if(jmx) {
             MBeanServer server=Util.getMBeanServer();
-            if(server != null){                
-            	try {
-					JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
-				} catch (Exception e) {					
-					e.printStackTrace();
-				}
+            if(server != null) {
+                try {
+                    JmxConfigurator.registerChannel((JChannel)channel,
+                                                    server,
+                                                    "jgroups",
+                                                    channel.getClusterName(),
+                                                    true);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
 
     public void channelDisconnected(Channel channel) {
-    	if(jmx) {
+        if(jmx) {
             MBeanServer server=Util.getMBeanServer();
-            if(server != null){
-            	try {
-					JmxConfigurator.unregisterChannel(server, groupname);
-				} catch (Exception e) {					
-					e.printStackTrace();
-				}
+            if(server != null) {
+                try {
+                    JmxConfigurator.unregisterChannel(server, groupname);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
-    	}
+        }
     }
 
     public void channelClosed(Channel channel) {
