@@ -2,6 +2,9 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
@@ -34,8 +37,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.91 2007/12/18 07:57:40 belaban Exp $
+ * @version $Id: FC.java,v 1.92 2008/03/06 02:40:52 vlada Exp $
  */
+@MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
 
     /**
@@ -70,6 +74,9 @@ public class FC extends Protocol {
      * Max number of bytes to send per receiver until an ack must
      * be received before continuing sending
      */
+    @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
+                                   "be received before continuing sending",
+                      readable=true,writable=true)
     private long max_credits=500000;
 
     /**
@@ -77,18 +84,24 @@ public class FC extends Protocol {
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
      * wait forever.
      */
+    @ManagedAttribute(description="Max time (in milliseconds) to block",
+                      readable=true,writable=true)
     private long max_block_time=5000;
 
     /**
      * If credits fall below this limit, we send more credits to the sender. (We also send when
      * credits are exhausted (0 credits left))
      */
+    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",
+                      readable=true,writable=true)
     private double min_threshold=0.25;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation
      */
+    @ManagedAttribute(description="Computed as max_credits x min_theshold",
+                      readable=true,writable=true)
     private long min_credits=0;
 
     /**
@@ -189,6 +202,7 @@ public class FC extends Protocol {
         this.min_credits=min_credits;
     }
 
+    @ManagedAttribute(description="Number of times flow control blocks sender")
     public int getNumberOfBlockings() {
         return num_blockings;
     }
@@ -200,39 +214,48 @@ public class FC extends Protocol {
     public void setMaxBlockTime(long t) {
         max_block_time=t;
     }
-
+    
+    @ManagedAttribute(description="Total time (ms) spent in flow control block")
     public long getTotalTimeBlocked() {
         return total_time_blocking;
     }
 
+    @ManagedAttribute(description="Average time spent in a flow control block")
     public double getAverageTimeBlocked() {
         return num_blockings == 0? 0.0 : total_time_blocking / (double)num_blockings;
     }
 
+    @ManagedAttribute(description="Number of credit requests received")
     public int getNumberOfCreditRequestsReceived() {
         return num_credit_requests_received;
     }
-
+    
+    @ManagedAttribute(description="Number of credit requests sent")
     public int getNumberOfCreditRequestsSent() {
         return num_credit_requests_sent;
     }
 
+    @ManagedAttribute(description="Number of credit responses received")
     public int getNumberOfCreditResponsesReceived() {
         return num_credit_responses_received;
     }
 
+    @ManagedAttribute(description="Number of credit responses sent")
     public int getNumberOfCreditResponsesSent() {
         return num_credit_responses_sent;
     }
 
+    @ManagedOperation(description="Print sender credits")
     public String printSenderCredits() {
         return printMap(sent);
     }
 
+    @ManagedOperation(description="Print receiver credits")
     public String printReceiverCredits() {
         return printMap(received);
     }
 
+    @ManagedOperation(description="Print credits")
     public String printCredits() {
         StringBuilder sb=new StringBuilder();
         sb.append("senders:\n").append(printMap(sent)).append("\n\nreceivers:\n").append(printMap(received));
@@ -253,6 +276,7 @@ public class FC extends Protocol {
         return retval;
     }
 
+    @ManagedOperation(description="Print last blocking times")
     public String showLastBlockingTimes() {
         return last_blockings.toString();
     }
@@ -261,6 +285,7 @@ public class FC extends Protocol {
     /**
      * Allows to unblock a blocked sender from an external program, e.g. JMX
      */
+    @ManagedOperation(description="Unblock a sender")
     public void unblock() {
         sent_lock.lock();
         try {
