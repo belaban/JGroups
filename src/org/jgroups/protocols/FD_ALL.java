@@ -25,7 +25,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.14 2008/03/06 05:38:45 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.15 2008/03/06 06:41:33 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -47,7 +47,7 @@ public class FD_ALL extends Protocol {
     Address                    local_addr=null;
     final List<Address>        members=new ArrayList<Address>();
 
-    @ManagedAttribute(description="Shun switch")
+    @ManagedAttribute(description="Shun switch",readable=true,writable=true)
     boolean                    shun=true;
     
     TimeScheduler              timer=null;
