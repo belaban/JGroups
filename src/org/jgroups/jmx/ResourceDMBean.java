@@ -19,14 +19,14 @@ import java.util.Vector;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.3 2008/03/06 01:03:54 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.4 2008/03/06 01:28:13 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
  * 
  */
 public class ResourceDMBean implements DynamicMBean {
-    private static final Class[] primitives= { int.class,
+    private static final Class<?>[] primitives= { int.class,
                                               byte.class,
                                               short.class,
                                               long.class,
@@ -34,120 +34,118 @@ public class ResourceDMBean implements DynamicMBean {
                                               double.class,
                                               boolean.class,
                                               char.class };
-    
-    private final Log log=LogFactory.getLog(ResourceDMBean.class);
+        
     private static final String MBEAN_DESCRITION="Dynamic MBean Description";
-
-    private final String name;
+   
+    private final Log log=LogFactory.getLog(ResourceDMBean.class);
     private final Object obj;
     private String description = "";
 
-    int i=0;
-
-    public ResourceDMBean(Object obj,String name) {
-        this.obj=obj;
-        this.name=name;
+    public ResourceDMBean(Object obj) {
+        if(obj == null) throw new NullPointerException("Cannot make an MBean wrapper for null instance");
+        this.obj=obj;       
     }
 
-    public synchronized MBeanInfo getMBeanInfo() {
-        try {
-            Vector<MBeanAttributeInfo> vctAttributes=new Vector<MBeanAttributeInfo>();
-            Vector<MBeanOperationInfo> vctOperations=new Vector<MBeanOperationInfo>();
+    public synchronized MBeanInfo getMBeanInfo() { 
+        
+        Vector<MBeanAttributeInfo> vctAttributes=new Vector<MBeanAttributeInfo>();
+        Vector<MBeanOperationInfo> vctOperations=new Vector<MBeanOperationInfo>();
 
-            //set a field to hold the description of the MBean
-            MBean mbean=obj.getClass().getAnnotation(MBean.class);
-            if(mbean.description() != null && mbean.description().trim().length() > 0) {
-                if(log.isDebugEnabled()) {
-                    log.debug("@MBean description set - " + mbean.description());
-                }
-                this.description=mbean.description();
-                vctAttributes.add(new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
-                                                         "java.lang.String",
-                                                         "@MBean description",
-                                                         true,
-                                                         false,
-                                                         false));
-            }           
-            //walk class hierarchy and find all fields
-            for(Class<?> clazz=obj.getClass();
-                clazz != null && clazz.isAnnotationPresent(MBean.class);
-                clazz=clazz.getSuperclass()) {
-                
-                Field[] fields=clazz.getDeclaredFields();
-                for(Field field:fields) {
-                    ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
-                    if(attr != null) {
-                        if(Modifier.isFinal(field.getModifiers())) {
-                            //field is declared final - no changes allowed
-                            if(log.isWarnEnabled() && attr.writable()) {
-                                log.warn(field.getName() + " declared final, so cannot be marked as writable - writable is ignored");
-                            }
-                            vctAttributes.add(new MBeanAttributeInfo(field.getName(),
-                                                                     field.getType().getCanonicalName(),
-                                                                     attr.description(),
-                                                                     attr.readable(),
-                                                                     false,
-                                                                     false));
-                        }
-                        else {
-                            vctAttributes.add(new MBeanAttributeInfo(field.getName(),
-                                                                     field.getType().getCanonicalName(),
-                                                                     attr.description(),
-                                                                     attr.readable(),
-                                                                     attr.writable(),
-                                                                     false));
-                        }
-                        if(log.isInfoEnabled()) {
-                            log.info("@Attr found for field " + field.getName());
-                        }
-                    }
-                }
+        //set a field to hold the description of the MBean
+        MBean mbean=obj.getClass().getAnnotation(MBean.class);
+        if(mbean.description() != null && mbean.description().trim().length() > 0) {
+            if(log.isDebugEnabled()) {
+                log.debug("@MBean description set - " + mbean.description());
             }
-
-            //find all methods
-            Method[] methods=obj.getClass().getMethods();
-            for(Method method:methods) {
-                ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
+            this.description=mbean.description();
+            vctAttributes.add(new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
+                                                     "java.lang.String",
+                                                     "@MBean description",
+                                                     true,
+                                                     false,
+                                                     false));
+        }           
+        
+        //walk annotated class hierarchy and find all fields
+        for(Class<?> clazz=obj.getClass();
+            clazz != null && clazz.isAnnotationPresent(MBean.class);
+            clazz=clazz.getSuperclass()) {
+            
+            Field[] fields=clazz.getDeclaredFields();
+            for(Field field:fields) {
+                ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
                 if(attr != null) {
-                    if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                        vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
-                                                                 method.getReturnType().getCanonicalName(),
+                    if(Modifier.isFinal(field.getModifiers())) {
+                        //field is declared final - no changes allowed
+                        if(log.isWarnEnabled() && attr.writable()) {
+                            log.warn(field.getName() + " declared final, so cannot be marked as writable - writable is ignored");
+                        }
+                        vctAttributes.add(new MBeanAttributeInfo(field.getName(),
+                                                                 field.getType().getCanonicalName(),
                                                                  attr.description(),
                                                                  attr.readable(),
                                                                  false,
                                                                  false));
-                        if(log.isInfoEnabled()) {
-                            log.info("@Attr found for method " + method.getName());
-                        }
                     }
                     else {
-                        if(log.isWarnEnabled()) {
-                            log.warn("Method " + method.getName()
-                                     + " must have a valid return type and zero parameters");
-                        }
+                        vctAttributes.add(new MBeanAttributeInfo(field.getName(),
+                                                                 field.getType().getCanonicalName(),
+                                                                 attr.description(),
+                                                                 attr.readable(),
+                                                                 attr.writable(),
+                                                                 false));
                     }
-                }
-                ManagedOperation op=method.getAnnotation(ManagedOperation.class);
-                if(op != null) {
-                    vctOperations.add(new MBeanOperationInfo(op.description(), method));
                     if(log.isInfoEnabled()) {
-                        log.info("@Operation found for method " + method.getName());
+                        log.info("@Attr found for field " + field.getName());
                     }
                 }
             }
-
-            MBeanAttributeInfo[] attrInfo=new MBeanAttributeInfo[vctAttributes.size()];
-            vctAttributes.toArray(attrInfo);
-
-            MBeanOperationInfo[] operations=new MBeanOperationInfo[vctOperations.size()];
-            vctOperations.toArray(operations);
-
-            return new MBeanInfo(this.name, this.description, attrInfo, null, operations, null);
         }
-        catch(Exception e) {
-            e.printStackTrace();
-            return null;
+
+        //find all methods
+        Method[] methods=obj.getClass().getMethods();
+        for(Method method:methods) {
+            ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
+            if(attr != null) {
+                if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
+                    vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
+                                                             method.getReturnType().getCanonicalName(),
+                                                             attr.description(),
+                                                             attr.readable(),
+                                                             false,
+                                                             false));
+                    if(log.isInfoEnabled()) {
+                        log.info("@Attr found for method " + method.getName());
+                    }
+                }
+                else {
+                    if(log.isWarnEnabled()) {
+                        log.warn("Method " + method.getName()
+                                 + " must have a valid return type and zero parameters");
+                    }
+                }
+            }
+            ManagedOperation op=method.getAnnotation(ManagedOperation.class);
+            if(op != null) {
+                vctOperations.add(new MBeanOperationInfo(op.description(), method));
+                if(log.isInfoEnabled()) {
+                    log.info("@Operation found for method " + method.getName());
+                }
+            }
         }
+
+        MBeanAttributeInfo[] attrInfo=new MBeanAttributeInfo[vctAttributes.size()];
+        vctAttributes.toArray(attrInfo);
+
+        MBeanOperationInfo[] opInfo=new MBeanOperationInfo[vctOperations.size()];
+        vctOperations.toArray(opInfo);
+
+        return new MBeanInfo(obj.getClass().getCanonicalName(),
+                             this.description,
+                             attrInfo,
+                             null,
+                             opInfo,
+                             null);     
     }
 
     public synchronized Object getAttribute(String name) {
@@ -224,7 +222,7 @@ public class ResourceDMBean implements DynamicMBean {
             if(log.isDebugEnabled()) {
                 log.debug("Invoke method called on " + name);
             }
-            Class[] classes=new Class[sig.length];
+            Class<?>[] classes=new Class[sig.length];
             for(int i=0;i < classes.length;i++) {
                 classes[i]=getClassForName(sig[i]);
             }
@@ -255,8 +253,7 @@ public class ResourceDMBean implements DynamicMBean {
     private Attribute getNamedAttribute(String name) {
         try {
             if(name.endsWith("()")) {
-                Method method=this.obj.getClass().getMethod(name.substring(0, name.length() - 2),
-                                                            new Class[] {});
+                Method method=this.obj.getClass().getMethod(name.substring(0, name.length() - 2),new Class[] {});
                 return new Attribute(name, method.invoke(this.obj, new Object[] {}));
             }
             else {
@@ -307,7 +304,7 @@ public class ResourceDMBean implements DynamicMBean {
         }
         catch(NoSuchFieldException e) {
             Class<?> superClazz=clazz.getSuperclass();
-            if(superClazz != null) {
+            if(superClazz != null && superClazz.isAnnotationPresent(MBean.class)) {
                 return getFieldInHierarchy(superClazz, name);
             }
             else {

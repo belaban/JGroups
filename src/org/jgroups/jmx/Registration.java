@@ -12,7 +12,7 @@ import org.jgroups.annotations.ManagedOperation;
  * Registers annotated object instances with with MBeanServer. 
  * 
  * @author Chris Mills
- * @version $Id: Registration.java,v 1.2 2008/03/06 00:50:17 vlada Exp $
+ * @version $Id: Registration.java,v 1.3 2008/03/06 01:28:13 vlada Exp $
  * 
  * @see ManagedAttribute
  * @see ManagedOperation
@@ -60,7 +60,7 @@ public class Registration {
 
         try {
             ObjectName objName=getObjectName(obj, name);
-            ResourceDMBean res=new ResourceDMBean(obj, objName.getCanonicalName());
+            ResourceDMBean res=new ResourceDMBean(obj);
             server.registerMBean(res, objName);
 
             if(log.isDebugEnabled()) {
