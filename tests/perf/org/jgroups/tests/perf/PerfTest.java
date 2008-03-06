@@ -3,7 +3,6 @@ package org.jgroups.tests.perf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
-import org.jgroups.Address;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -12,15 +11,15 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CyclicBarrier;
-import java.util.concurrent.BrokenBarrierException;
 
 /**  You start the test by running this class.
  * @author Bela Ban (belaban@yahoo.com)
 
  */
-public class Test implements Receiver {
+public class PerfTest implements Receiver {
     String          props=null;
     Properties      config;
     boolean         sender=false;
@@ -749,7 +748,7 @@ public class Test implements Receiver {
     public static void main(String[] args) {
         Properties config=new Properties();
         boolean sender=false, verbose=false, jmx=false, dump_stats=false; // dumps at end of run
-        Test t=null;
+        PerfTest t=null;
         String output=null;
         long interval=0;
         int interval_nanos=0;
@@ -825,7 +824,7 @@ public class Test implements Receiver {
 
   
         try {
-            t=new Test();
+            t=new PerfTest();
             t.start(config, verbose, jmx, output, num_threads, num_buddies);
             t.runDiscoveryPhase();
             t.waitForAllOKs();
@@ -865,7 +864,7 @@ public class Test implements Receiver {
 
 
     static void help() {
-        System.out.println("Test [-help] ([-sender] | [-receiver]) " +
+        System.out.println("PerfTest [-help] ([-sender] | [-receiver]) " +
                 "[-config <config file>] [-num_threads <number of threads for sending messages>]" +
                 "[-props <stack config>] [-verbose] [-jmx] [-bind_addr <bind address>" +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
