@@ -1,9 +1,11 @@
-// $Id: Channel.java,v 1.40 2008/02/07 09:14:01 belaban Exp $
+// $Id: Channel.java,v 1.41 2008/03/06 00:17:58 vlada Exp $
 
 package org.jgroups;
 
 
 import org.apache.commons.logging.Log;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedOperation;
 
 import java.io.Serializable;
 import java.util.*;
@@ -42,6 +44,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  @see     java.net.DatagramPacket
  @see     java.net.MulticastSocket
  */
+@MBean(description="Channel")
 public abstract class Channel implements Transport {
     public static final int BLOCK=0;
     public static final int VIEW=1;
@@ -346,6 +349,7 @@ public abstract class Channel implements Transport {
      E.g. a PullPushAdapter may choose to stop when the channel is closed, or to start when
      it is opened.
      */
+    @ManagedOperation
     public synchronized void addChannelListener(ChannelListener listener) {
         if(listener == null)
             return;
@@ -354,6 +358,7 @@ public abstract class Channel implements Transport {
         channel_listeners.add(listener);
     }
 
+    @ManagedOperation
     public synchronized void removeChannelListener(ChannelListener listener) {
         if(channel_listeners != null && listener != null)
             channel_listeners.remove(listener);

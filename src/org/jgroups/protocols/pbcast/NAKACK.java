@@ -4,7 +4,10 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 
@@ -30,8 +33,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.177 2008/02/27 16:40:52 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.178 2008/03/06 00:15:28 vlada Exp $
  */
+@MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     private boolean             is_server=false;
@@ -41,6 +45,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @GuardedBy("seqno_lock")
     private long                seqno=0;                                  // current message sequence number (starts with 1)
     private final Lock          seqno_lock=new ReentrantLock();
+    
+    @ManagedAttribute(description = "Garbage collection lag", readable = true, writable = true)
     private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
     private Map<Thread,ReentrantLock> locks;
 
@@ -50,6 +56,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
      * message, the sender only retransmits once.
      */
+    @ManagedAttribute(description = "Retransmit messages using multicast rather than unicast.", readable = true, writable = true)
     private boolean use_mcast_xmit=true;
 
     /** Use a multicast to request retransmission of missing messages. This may be costly as every member in the cluster
@@ -61,6 +68,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Ask a random member for retransmission of a missing message. If set to true, discard_delivered_msgs will be
      * set to false
      */
+    @ManagedAttribute(description = "Ask a random member for retransmission of a missing message.", readable = true, writable = true)
     private boolean xmit_from_random_member=false;
 
 
@@ -79,6 +87,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
      * around, and don't need to wait for garbage collection to remove them.
      */
+    @ManagedAttribute(description = "Discard delivered messages", readable = true, writable = true)
     private boolean discard_delivered_msgs=false;
 
     /**
@@ -93,6 +102,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
      * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
      */
+    @ManagedAttribute(description = "If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used", readable = true, writable = true)
     private int max_xmit_buf_size=0;
 
 
@@ -108,10 +118,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private TimeScheduler timer=null;
     private static final String name="NAKACK";
 
+    @ManagedAttribute(description = "TODO", readable = true)
     private long xmit_reqs_received;
+    @ManagedAttribute(description = "TODO", readable = true)
     private long xmit_reqs_sent;
+    @ManagedAttribute(description = "TODO", readable = true)
     private long xmit_rsps_received;
+    @ManagedAttribute(description = "TODO", readable = true)
     private long xmit_rsps_sent;
+    @ManagedAttribute(description = "TODO", readable = true)
     private long missing_msgs_received;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
@@ -198,6 +213,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public long getXmitResponsesSent() {return xmit_rsps_sent;}
     public long getMissingMessagesReceived() {return missing_msgs_received;}
 
+    @ManagedOperation(description="TODO")
     public int getPendingRetransmissionRequests() {
         int num=0;
         for(NakReceiverWindow win: xmit_table.values()) {
@@ -206,6 +222,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return num;
     }
 
+    @ManagedOperation(description="TODO")
     public int getXmitTableSize() {
         int num=0;
         for(NakReceiverWindow win: xmit_table.values()) {
@@ -477,6 +494,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public String printStabilityMessages() {
         StringBuilder sb=new StringBuilder();
         sb.append(Util.printListWithDelimiter(stability_msgs, "\n"));
@@ -492,6 +510,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public String printLossRates() {
         StringBuilder sb=new StringBuilder();
         NakReceiverWindow win;
@@ -502,6 +521,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public double getAverageLossRate() {
         double retval=0.0;
         int count=0;
@@ -514,6 +534,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return retval / (double)count;
     }
 
+    @ManagedOperation(description="TODO")
     public double getAverageSmoothedLossRate() {
             double retval=0.0;
             int count=0;
@@ -1604,6 +1625,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    @ManagedOperation(description="TODO")
     public String printMessages() {
         StringBuilder ret=new StringBuilder();
         Map.Entry<Address,NakReceiverWindow> entry;
@@ -1620,6 +1642,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
+    @ManagedOperation(description="TODO")
     public String printRetransmissionAvgs() {
         StringBuilder sb=new StringBuilder();
 
@@ -1638,6 +1661,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public String printSmoothedRetransmissionAvgs() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,Double> entry: smoothed_avg_xmit_times.entrySet()) {
@@ -1646,6 +1670,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public String printRetransmissionTimes() {
         StringBuilder sb=new StringBuilder();
 
@@ -1657,6 +1682,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return sb.toString();
     }
 
+    @ManagedOperation(description="TODO")
     public double getTotalAverageRetransmissionTime() {
         long total=0;
         int i=0;
@@ -1670,6 +1696,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return i > 0? total / i: -1;
     }
 
+    @ManagedOperation(description="TODO")
     public double getTotalAverageSmoothedRetransmissionTime() {
         double total=0.0;
         int cnt=0;

@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.51 2007/09/07 04:56:34 belaban Exp $
+// $Id: Draw.java,v 1.52 2008/03/06 00:18:20 vlada Exp $
 
 
 package org.jgroups.demos;
@@ -171,15 +171,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
 
     public void go() throws Exception {
         if(!no_channel && !use_state) {
-            channel.connect(groupname);
-            if(jmx) {
-                MBeanServer server=Util.getMBeanServer();
-                if(server == null)
-                    throw new Exception("No MBeanServers found;" +
-                            "\nDraw needs to be run with an MBeanServer present, or inside JDK 5");
-                JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
-            }
-
+            channel.connect(groupname);            
         }
         mainFrame=new JFrame();
         mainFrame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -376,11 +368,29 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
     /* ------------------------------ ChannelListener interface -------------------------- */
 
     public void channelConnected(Channel channel) {
-
+    	if(jmx) {
+            MBeanServer server=Util.getMBeanServer();
+            if(server != null){                
+            	try {
+					JmxConfigurator.registerChannel((JChannel)channel, server, "jgroups", channel.getClusterName(), true);
+				} catch (Exception e) {					
+					e.printStackTrace();
+				}
+            }
+        }
     }
 
     public void channelDisconnected(Channel channel) {
-
+    	if(jmx) {
+            MBeanServer server=Util.getMBeanServer();
+            if(server != null){
+            	try {
+					JmxConfigurator.unregisterChannel((JChannel) channel, server, groupname);
+				} catch (Exception e) {					
+					e.printStackTrace();
+				}
+            }
+    	}
     }
 
     public void channelClosed(Channel channel) {

@@ -2,12 +2,16 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
+
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -43,23 +47,28 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.175 2008/02/21 13:23:40 belaban Exp $
+ * @version $Id: TP.java,v 1.176 2008/03/06 00:14:44 vlada Exp $
  */
+@MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
 
     /** The address (host and port) of this member */
+	@ManagedAttribute
     protected Address         local_addr=null;
 
     /** The name of the group to which this member is connected */
+	@ManagedAttribute
     protected String          channel_name=null;
 
     /** The interface (NIC) which should be used by this transport */
+    @ManagedAttribute
     protected InetAddress     bind_addr=null;
 
     /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
     boolean                   use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
+    @ManagedAttribute
     boolean                   receive_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
@@ -67,10 +76,12 @@ public abstract class TP extends Protocol {
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
      * If this property is set, it override receive_on_all_interfaces.
      */
+    @ManagedAttribute
     List<NetworkInterface>    receive_interfaces=null;
 
     /** If true, the transport should use all available interfaces to send multicast messages. This means
      * the same multicast message is sent N times, so use with care */
+    @ManagedAttribute
     boolean                   send_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
@@ -78,6 +89,7 @@ public abstract class TP extends Protocol {
      * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
      * If this property is set, it override send_on_all_interfaces.
      */
+    @ManagedAttribute
     List<NetworkInterface>    send_interfaces=null;
 
 
@@ -100,17 +112,23 @@ public abstract class TP extends Protocol {
      * looped back immediately, multicast messages get a local copy first and -
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
-    boolean         loopback=false;
+    @ManagedAttribute(description = "", readable = true, writable = true)
+	boolean loopback = false;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
+    @ManagedAttribute(description="Discard packets with a different version",readable=true,writable=true)
     protected boolean discard_incompatible_packets=false;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
      * thread(s) simply put packet in queue and return immediately. Setting this to
      * true adds one more thread */
+    @ManagedAttribute(description="Sometimes receivers are overloaded (they have to handle de-serialization etc) + " +
+    		"Packet handler is a separate thread taking care of de-serialization, receiver " +
+            "thread(s) simply put packet in queue and return immediately. Setting this to " + 
+            "true adds one more thread",readable=true,writable=true)
     boolean         use_incoming_packet_handler=true;
 
     /** Used by packet handler to store incoming DatagramPackets */
@@ -148,6 +166,7 @@ public abstract class TP extends Protocol {
     /** Number of milliseconds after which an idle thread is removed */
     long oob_thread_pool_keep_alive_time=30000;
 
+    @ManagedAttribute
     long num_oob_msgs_received=0;
 
     /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
@@ -155,6 +174,7 @@ public abstract class TP extends Protocol {
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with direct executor) */
     boolean oob_thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
+    @ManagedAttribute
     int oob_thread_pool_queue_max_size=500;
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
@@ -180,6 +200,7 @@ public abstract class TP extends Protocol {
     /** Number of milliseconds after which an idle thread is removed */
     long thread_pool_keep_alive_time=30000;
 
+    @ManagedAttribute
     long num_incoming_msgs_received=0;
 
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
@@ -187,6 +208,7 @@ public abstract class TP extends Protocol {
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
     boolean thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
+    @ManagedAttribute
     int thread_pool_queue_max_size=500;
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
@@ -210,14 +232,18 @@ public abstract class TP extends Protocol {
 
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest datagram packet size in case of UDP */
+    
+    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent", readable=true, writable=true)
     int max_bundle_size=65535;
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
      */
+    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", readable=true, writable=true)
     long max_bundle_timeout=20;
 
     /** Enable bundling of smaller messages into bigger ones */
+    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", readable=true, writable=true)
     boolean enable_bundling=false;
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
@@ -252,7 +278,16 @@ public abstract class TP extends Protocol {
     static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
     static final byte OOB       = 4;  // message has OOB flag set (Message.OOB)
 
-    long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
+    @ManagedAttribute
+    protected long num_msgs_sent=0;
+    @ManagedAttribute
+    protected long num_msgs_received=0; 
+    
+    @ManagedAttribute
+    protected long num_bytes_sent=0; 
+    
+    @ManagedAttribute
+    protected long num_bytes_received=0;
 
     static  NumberFormat f;
     private static final int INITIAL_BUFSIZE=1024;
@@ -328,32 +363,39 @@ public abstract class TP extends Protocol {
         return up_prots;
     }
 
+    @ManagedOperation
     public int getOOBMinPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getCorePoolSize() : 0;
     }
 
+    @ManagedOperation
     public void setOOBMinPoolSize(int size) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
     }
 
+    @ManagedOperation
     public int getOOBMaxPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getMaximumPoolSize() : 0;
     }
 
+    @ManagedOperation
     public void setOOBMaxPoolSize(int size) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
     }
 
+    @ManagedOperation
     public int getOOBPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
     }
 
+    @ManagedOperation
     public long getOOBKeepAliveTime() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
     }
 
+    @ManagedOperation
     public void setOOBKeepAliveTime(long time) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
@@ -363,6 +405,7 @@ public abstract class TP extends Protocol {
         return num_oob_msgs_received;
     }
 
+    @ManagedOperation
     public int getOOBQueueSize() {
         return oob_thread_pool_queue.size();
     }
@@ -373,33 +416,39 @@ public abstract class TP extends Protocol {
 
 
 
-
+    @ManagedOperation
     public int getIncomingMinPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getCorePoolSize() : 0;
     }
 
+    @ManagedOperation
     public void setIncomingMinPoolSize(int size) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
     }
 
+    @ManagedOperation
     public int getIncomingMaxPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getMaximumPoolSize() : 0;
     }
 
+    @ManagedOperation
     public void setIncomingMaxPoolSize(int size) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
     }
 
+    @ManagedOperation
     public int getIncomingPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getPoolSize() : 0;
     }
 
+    @ManagedOperation
     public long getIncomingKeepAliveTime() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
     }
 
+    @ManagedOperation
     public void setIncomingKeepAliveTime(long time) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
@@ -409,6 +458,7 @@ public abstract class TP extends Protocol {
         return num_incoming_msgs_received;
     }
 
+    @ManagedOperation
     public int getIncomingQueueSize() {
         return thread_pool_queue.size();
     }
