@@ -1,0 +1,17 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Functional tests" thread-count="10" parallel="tests">
+
+
+    <test name="all-functional-tests" junit="false">
+        <groups>
+            <run>
+                <include name="functional"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+        </packages>
+    </test>
+
+
+</suite>

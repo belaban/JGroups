@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.132 2008/03/04 12:34:53 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.133 2008/03/06 12:41:19 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -11,11 +11,12 @@
     <property file="${build.properties.file}"/>
     <property name="root.dir" value="${basedir}"/>
     <property name="src.dir" value="${root.dir}/src"/>
-    <property name="tests.dir" value="${root.dir}/tests/other"/>
-    <property name="junit.dir" value="${root.dir}/tests/junit"/>
-    <property name="junit-functional.dir" value="${root.dir}/tests/junit-functional"/>
-    <property name="stress.dir" value="${root.dir}/tests/stress"/>
-    <property name="perf.dir" value="${root.dir}/tests/perf"/>
+    <property name="tests.dir" value="${root.dir}/tests"/>
+    <property name="other.dir" value="${tests.dir}/other"/>
+    <property name="junit.dir" value="${tests.dir}/junit"/>
+    <property name="junit-functional.dir" value="${tests.dir}/junit-functional"/>
+    <property name="stress.dir" value="${tests.dir}/stress"/>
+    <property name="perf.dir" value="${tests.dir}/perf"/>
     <property name="compile.dir" value="${root.dir}/classes"/>
     <property name="lib.dir" value="${root.dir}/lib"/>
     <property name="license.dir" value="${lib.dir}/licenses"/>
@@ -39,6 +40,9 @@
     <property name="mux.factorycount" value="4"/>
     <property name="threadcount" value="false"/>
     <property name="test.verbose" value="false"/>
+
+
+    <taskdef resource="testngtasks" classpathref="jg.classpath"/>
 
 
     <path id="jg.classpath">
@@ -103,7 +107,7 @@
                includes="org/jgroups/**">
             <exclude name="**/obsolete/**"/>
             <src path="${src.dir}"/>
-            <src path="${tests.dir}"/>
+            <src path="${other.dir}"/>
             <src path="${junit.dir}"/>
             <src path="${junit-functional.dir}"/>
             <src path="${stress.dir}"/>
@@ -914,4 +918,26 @@
         <echo message="The unit test report is available in ${tmp.dir}/html/index.html"/>
         <echo message="********************************************************************"/>
     </target>
+
+
+    <!-- =============================== TestNG ======================================== -->
+
+    <target name="functional" depends="prepare">
+        <testng classpathref="jg.classpath"
+                usedefaultlisteners="false"
+                outputdir="${tmp.dir}/test-results"
+                listeners="org.uncommons.reportng.HTMLReporter"
+                threadcount="1"
+                parallel="methods"
+                >
+            <xmlfileset dir="${tests.dir}" includes="functional.xml"/>
+            <!--<classfileset dir="${basedir}/classes" includes="**/*.class" excludes="**/MySuperClass*.class"/>-->
+            <sysproperty key="org.uncommons.reportng.title" value="My Test Report"/>
+        </testng>
+
+    </target>
+
+
+    <!-- =============================== TestNG ======================================== -->
+
 </project>
