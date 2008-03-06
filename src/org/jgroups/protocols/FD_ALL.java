@@ -25,7 +25,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.15 2008/03/06 06:41:33 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.16 2008/03/06 07:12:20 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -504,7 +504,7 @@ public class FD_ALL extends Protocol {
                 if(diff > timeout) {
                     if(log.isTraceEnabled())
                         log.trace("haven't received a heartbeat from " + key + " for " + diff + " ms, suspecting it");
-                    suspect((Address)key);
+                    suspect(key);
                 }
             }
         }

@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.43 2007/11/19 10:31:26 belaban Exp $
+// $Id: MERGE2.java,v 1.44 2008/03/06 07:16:59 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -43,10 +45,13 @@ import java.util.concurrent.TimeUnit;
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
  */
+@MBean(description="Protocol to discover subgroups existing due to a network partition")
 public class MERGE2 extends Protocol {
     private Address					local_addr=null;   
-    private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator    
+    private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator
+    @ManagedAttribute(description="Minimum time between runs to discover other clusters",readable=true,writable=true)
     private long					min_interval=5000;     // minimum time between executions of the FindSubgroups task
+    @ManagedAttribute(description="Maximum time between runs to discover other clusters",readable=true,writable=true)
     private long					max_interval=20000;    // maximum time between executions of the FindSubgroups task
     private volatile boolean		is_coord=false;  
     private volatile boolean		use_separate_thread=false; // Use a new thread to send the MERGE event up the stack    
@@ -152,12 +157,12 @@ public class MERGE2 extends Protocol {
         
             case Event.VIEW_CHANGE:
                 Object ret=down_prot.down(evt);
-                Vector mbrs=((View)evt.getArg()).getMembers();
+                Vector<Address> mbrs=((View)evt.getArg()).getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     task.stop();
                     return ret;
                 }
-                Address coord=(Address)mbrs.elementAt(0);
+                Address coord=mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     is_coord=true;
                     task.start(); // start task if we became coordinator (doesn't start if already running)
@@ -185,7 +190,7 @@ public class MERGE2 extends Protocol {
 	 */
     private class FindSubgroupsTask {
         @GuardedBy("this")
-        private Future future;
+        private Future<?> future;
 
         public synchronized void start() {
             if(future == null || future.isDone()) {
@@ -193,7 +198,7 @@ public class MERGE2 extends Protocol {
                     public void run() {
                         findAndNotify();
                     }
-                }, 0, (long)computeInterval(), TimeUnit.MILLISECONDS);
+                }, 0, computeInterval(), TimeUnit.MILLISECONDS);
             }
         }
 
