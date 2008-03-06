@@ -19,7 +19,7 @@ import java.util.Vector;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.4 2008/03/06 01:28:13 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.5 2008/03/06 08:55:21 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -107,21 +107,29 @@ public class ResourceDMBean implements DynamicMBean {
         for(Method method:methods) {
             ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
             if(attr != null) {
-                if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                    vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
-                                                             method.getReturnType().getCanonicalName(),
-                                                             attr.description(),
-                                                             attr.readable(),
-                                                             false,
-                                                             false));
-                    if(log.isInfoEnabled()) {
-                        log.info("@Attr found for method " + method.getName());
-                    }
+                String methodName=method.getName();
+                if(!methodName.startsWith("get") && !methodName.startsWith("set") && !methodName.startsWith("is")) {
+                    if(log.isWarnEnabled())
+                        log.warn("method name " + methodName + " doesn't start with \"get\", \"set\", or \"is\"" +
+                                ", but is annotated with @ManagedAttribute: will be ignored");
                 }
                 else {
-                    if(log.isWarnEnabled()) {
-                        log.warn("Method " + method.getName()
-                                 + " must have a valid return type and zero parameters");
+                    if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
+                        vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
+                                                                 method.getReturnType().getCanonicalName(),
+                                                                 attr.description(),
+                                                                 attr.readable(),
+                                                                 false,
+                                                                 false));
+                        if(log.isInfoEnabled()) {
+                            log.info("@Attr found for method " + method.getName());
+                        }
+                    }
+                    else {
+                        if(log.isWarnEnabled()) {
+                            log.warn("Method " + method.getName()
+                                    + " must have a valid return type and zero parameters");
+                        }
                     }
                 }
             }
