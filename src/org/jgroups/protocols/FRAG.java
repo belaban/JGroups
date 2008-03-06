@@ -5,6 +5,8 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
@@ -13,23 +15,32 @@ import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.util.*;
+import java.util.Map.Entry;
 
 
 
 /**
- * Fragmentation layer. Fragments messages larger than FRAG_SIZE into smaller packets.
- * Reassembles fragmented packets into bigger ones. The fragmentation number is prepended
- * to the messages as a header (and removed at the receiving side).<p>
- * Each fragment is identified by (a) the sender (part of the message to which the header is appended),
- * (b) the fragmentation ID (which is unique per FRAG layer (monotonically increasing) and (c) the
- * fragement ID which ranges from 0 to number_of_fragments-1.<p>
- * Requirement: lossless delivery (e.g. NAK, ACK). No requirement on ordering. Works for both unicast and
- * multicast messages.
+ * Fragmentation layer. Fragments messages larger than FRAG_SIZE into smaller
+ * packets. Reassembles fragmented packets into bigger ones. The fragmentation
+ * number is prepended to the messages as a header (and removed at the receiving
+ * side).
+ * <p>
+ * Each fragment is identified by (a) the sender (part of the message to which
+ * the header is appended), (b) the fragmentation ID (which is unique per FRAG
+ * layer (monotonically increasing) and (c) the fragement ID which ranges from 0
+ * to number_of_fragments-1.
+ * <p>
+ * Requirement: lossless delivery (e.g. NAK, ACK). No requirement on ordering.
+ * Works for both unicast and multicast messages.
+ * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.39 2007/09/07 11:42:44 belaban Exp $
+ * @version $Id: FRAG.java,v 1.40 2008/03/06 07:12:20 vlada Exp $
  */
+@MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
+    
+    @ManagedAttribute(description="Fragmentation size",readable=true,writable=true)
     private int frag_size=8192;  // conservative value
 
     /*the fragmentation list contains a fragmentation table per sender
@@ -38,12 +49,16 @@ public class FRAG extends Protocol {
     private final FragmentationList     fragment_list=new FragmentationList();
     private int                         curr_id=1;
     private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(1024);
-    private final Vector                members=new Vector(11);
+    private final Vector<Address>       members=new Vector<Address>(11);
     private final static String         name="FRAG";
 
+    @ManagedAttribute(description="Number of sent messages",readable=true)
     long num_sent_msgs=0;
+    @ManagedAttribute(description="Number of sent fragments",readable=true)
     long num_sent_frags=0;
+    @ManagedAttribute(description="Number of received messages",readable=true)
     long num_received_msgs=0;
+    @ManagedAttribute(description="Number of received fragments",readable=true)
     long num_received_frags=0;
 
 
@@ -119,21 +134,18 @@ public class FRAG extends Protocol {
             //we are receiving a view change,
             //in here we check for the
             View view=(View)evt.getArg();
-            Vector new_mbrs=view.getMembers(), left_mbrs;
-            Address mbr;
-
+            Vector<Address> new_mbrs=view.getMembers(), left_mbrs;           
             left_mbrs=Util.determineLeftMembers(members, new_mbrs);
             members.clear();
             members.addAll(new_mbrs);
 
-            for(int i=0; i < left_mbrs.size(); i++) {
-                mbr=(Address)left_mbrs.elementAt(i);
+            for(Address mbr:left_mbrs){
                 //the new view doesn't contain the sender, he must have left,
                 //hence we will clear all his fragmentation tables
                 fragment_list.remove(mbr);
                 if(log.isTraceEnabled())
-                    log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
-            }
+                    log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table"); 
+            }           
             break;
 
         case Event.CONFIG:
@@ -311,7 +323,7 @@ public class FRAG extends Protocol {
          * 11 is the best growth capacity to start with<br/>
          * HashMap<Address,FragmentationTable>
          */
-        private final HashMap frag_tables=new HashMap(11);
+        private final HashMap<Address,FragmentationTable> frag_tables=new HashMap<Address,FragmentationTable>(11);
 
 
         /**
@@ -323,10 +335,9 @@ public class FRAG extends Protocol {
          * @throws IllegalArgumentException if an entry for this sender already exist
          */
         public void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
-            FragmentationTable healthCheck;
-
+            
             synchronized(frag_tables) {
-                healthCheck=(FragmentationTable)frag_tables.get(sender);
+                FragmentationTable healthCheck=frag_tables.get(sender);
                 if(healthCheck == null) {
                     frag_tables.put(sender, table);
                 }
@@ -343,7 +354,7 @@ public class FRAG extends Protocol {
          */
         public FragmentationTable get(Address sender) {
             synchronized(frag_tables) {
-                return (FragmentationTable)frag_tables.get(sender);
+                return frag_tables.get(sender);
             }
         }
 
@@ -385,20 +396,19 @@ public class FRAG extends Protocol {
 
             synchronized(frag_tables) {
                 result=new Address[frag_tables.size()];
-                for(Iterator it=frag_tables.keySet().iterator(); it.hasNext();) {
-                    result[index++]=(Address)it.next();
+                for(Iterator<Address> it=frag_tables.keySet().iterator(); it.hasNext();) {
+                    result[index++]=it.next();
                 }
             }
             return result;
         }
 
-        public String toString() {
-            Map.Entry entry;
+        public String toString() {          
             StringBuilder buf=new StringBuilder("Fragmentation list contains ");
             synchronized(frag_tables) {
                 buf.append(frag_tables.size()).append(" tables\n");
-                for(Iterator it=frag_tables.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
+                for(Iterator<Entry<Address,FragmentationTable>> it=frag_tables.entrySet().iterator(); it.hasNext();) {
+                    Entry<Address,FragmentationTable> entry=it.next();
                     buf.append(entry.getKey()).append(": " ).append(entry.getValue()).append("\n");
                 }
             }
@@ -416,7 +426,7 @@ public class FRAG extends Protocol {
     static class FragmentationTable {
         private final Address sender;
         /* the hashtable that holds the fragmentation entries for this sender*/
-        private final Hashtable h=new Hashtable(11);  // keys: frag_ids, vals: Entrys
+        private final Hashtable<Long,FragEntry> h=new Hashtable<Long,FragEntry>(11);  // keys: frag_ids, vals: Entrys
 
 
         FragmentationTable(Address sender) {
@@ -430,7 +440,7 @@ public class FRAG extends Protocol {
          * once all the byte buffer entries have been filled
          * the fragmentation is considered complete.
          */
-        static class Entry {
+        static class FragEntry {
             //the total number of fragment in this message
             int tot_frags=0;
             // each fragment is a byte buffer
@@ -445,7 +455,7 @@ public class FRAG extends Protocol {
              *
              * @param tot_frags the number of fragments to expect for this message
              */
-            Entry(long msg_id, int tot_frags) {
+            FragEntry(long msg_id, int tot_frags) {
                 this.msg_id=msg_id;
                 this.tot_frags=tot_frags;
                 fragments=new byte[tot_frags][];
@@ -524,10 +534,10 @@ public class FRAG extends Protocol {
             /*initialize the return value to default not complete */
             byte[] retval=null;
 
-            Entry e=(Entry)h.get(new Long(id));
+            FragEntry e=h.get(new Long(id));
 
             if(e == null) {   // Create new entry if not yet present
-                e=new Entry(id, tot_frags);
+                e=new FragEntry(id, tot_frags);
                 h.put(new Long(id), e);
             }
 
@@ -545,9 +555,9 @@ public class FRAG extends Protocol {
 
         public String toString() {
             StringBuilder buf=new StringBuilder("Fragmentation Table Sender:").append(sender).append("\n\t");
-            java.util.Enumeration e=this.h.elements();
+            Enumeration<FragEntry> e=this.h.elements();
             while(e.hasMoreElements()) {
-                Entry entry=(Entry)e.nextElement();
+                FragEntry entry=e.nextElement();
                 int count=0;
                 for(int i=0; i < entry.fragments.length; i++) {
                     if(entry.fragments[i] != null) {
