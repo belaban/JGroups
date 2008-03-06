@@ -1,4 +1,4 @@
-// $Id: Draw.java,v 1.52 2008/03/06 00:18:20 vlada Exp $
+// $Id: Draw.java,v 1.53 2008/03/06 00:21:49 vlada Exp $
 
 
 package org.jgroups.demos;
@@ -385,7 +385,7 @@ public class Draw extends ExtendedReceiverAdapter implements ActionListener, Cha
             MBeanServer server=Util.getMBeanServer();
             if(server != null){
             	try {
-					JmxConfigurator.unregisterChannel((JChannel) channel, server, groupname);
+					JmxConfigurator.unregisterChannel(server, groupname);
 				} catch (Exception e) {					
 					e.printStackTrace();
 				}
