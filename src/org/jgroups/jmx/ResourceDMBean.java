@@ -19,7 +19,7 @@ import java.util.Vector;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.5 2008/03/06 08:55:21 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.6 2008/03/06 09:07:44 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -114,21 +114,26 @@ public class ResourceDMBean implements DynamicMBean {
                                 ", but is annotated with @ManagedAttribute: will be ignored");
                 }
                 else {
-                    if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                        vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
-                                                                 method.getReturnType().getCanonicalName(),
-                                                                 attr.description(),
-                                                                 attr.readable(),
-                                                                 false,
-                                                                 false));
-                        if(log.isInfoEnabled()) {
-                            log.info("@Attr found for method " + method.getName());
-                        }
+                    if(methodName.startsWith("set")) { // setter
+                        
                     }
-                    else {
-                        if(log.isWarnEnabled()) {
-                            log.warn("Method " + method.getName()
-                                    + " must have a valid return type and zero parameters");
+                    else { // getter
+                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
+                            vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
+                                                                     method.getReturnType().getCanonicalName(),
+                                                                     attr.description(),
+                                                                     attr.readable(),
+                                                                     false,
+                                                                     false));
+                            if(log.isInfoEnabled()) {
+                                log.info("@Attr found for method " + method.getName());
+                            }
+                        }
+                        else {
+                            if(log.isWarnEnabled()) {
+                                log.warn("Method " + method.getName()
+                                        + " must have a valid return type and zero parameters");
+                            }
                         }
                     }
                 }
