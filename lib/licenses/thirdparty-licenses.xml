@@ -76,6 +76,13 @@
         description='Java logging framework (runtime)'>
         <jar name='log4j.jar' />
     </module>
+    <module name='TestNG'
+            licenseType='apache-2.0'
+            version='5.7'
+            projectHome='http://www.testng.org'
+            description='Used for unit testing'>
+        <jar name='testng.jar' />
+	</module>
     <module name='apache-xalan'
             licenseType='apache-2.0'
             version='2.4.D1'
