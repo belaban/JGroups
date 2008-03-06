@@ -3,10 +3,13 @@ package org.jgroups.protocols;
 import org.jgroups.stack.Protocol;
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.*;
 
 import java.util.*;
-import java.util.List;
+import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -15,48 +18,63 @@ import java.util.concurrent.locks.ReentrantLock;
 import java.io.*;
 
 /**
- * Failure detection based on simple heartbeat protocol. Every member periodically multicasts a heartbeat. Every member
- * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
- * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
+ * Failure detection based on simple heartbeat protocol. Every member
+ * periodically multicasts a heartbeat. Every member also maintains a table of
+ * all members (minus itself). When data or a heartbeat from P are received, we
+ * reset the timestamp for P to the current time. Periodically, we check for
+ * expired members, and suspect those.
+ * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.12 2007/07/27 11:00:58 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.13 2008/03/06 05:28:59 vlada Exp $
  */
+@MBean
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
     Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
 
-    /** Number of milliseconds after which a HEARTBEAT is sent to the cluster */
+    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster",
+                      readable=true,writable=true)
     long                       interval=3000;
 
-    /** Number of milliseconds after which a node P is suspected if neither a heartbeat nor data were received from P */
+    @ManagedAttribute(description="Number of milliseconds after which a " + 
+                      "node P is suspected if neither a heartbeat nor data were received from P",
+                      readable=true,writable=true)
     long                       timeout=5000;
 
     /** when a message is received from P, this is treated as if P sent a heartbeat */
     boolean                    msg_counts_as_heartbeat=true;
 
     Address                    local_addr=null;
-    final List                 members=new ArrayList();
+    final List<Address>        members=new ArrayList<Address>();
 
+    @ManagedAttribute(description="Shun switch")
     boolean                    shun=true;
+    
     TimeScheduler              timer=null;
 
     // task which multicasts HEARTBEAT message after 'interval' ms
     @GuardedBy("lock")
-    private ScheduledFuture    heartbeat_sender_future=null;
+    private ScheduledFuture<?> heartbeat_sender_future=null;
 
     // task which checks for members exceeding timeout and suspects them
     @GuardedBy("lock")
-    private ScheduledFuture    timeout_checker_future=null;
+    private ScheduledFuture<?> timeout_checker_future=null;
 
     private boolean            tasks_running=false;
 
-    protected int              num_heartbeats_sent, num_heartbeats_received=0;
+    @ManagedAttribute(description="Number of heartbeats sent")
+    protected int              num_heartbeats_sent;
+    
+    @ManagedAttribute(description="Number of heartbeats received")
+    protected int              num_heartbeats_received=0;
+    
+    @ManagedAttribute(description="Number of suspected events received")
     protected int              num_suspect_events=0;
 
     final static String        name="FD_ALL";
 
     final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
-    final Map<Address,Integer> invalid_pingers=new HashMap(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
+    final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
 
     final Lock                 lock=new ReentrantLock();
 
@@ -65,7 +83,9 @@ public class FD_ALL extends Protocol {
 
 
     public String getName() {return FD_ALL.name;}
+    @ManagedAttribute(description="Member address")    
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    @ManagedAttribute(description="Lists members of a cluster")
     public String getMembers() {return members != null? members.toString() : "null";}
     public int getHeartbeatsSent() {return num_heartbeats_sent;}
     public int getHeartbeatsReceived() {return num_heartbeats_received;}
@@ -76,8 +96,11 @@ public class FD_ALL extends Protocol {
     public void setInterval(long interval) {this.interval=interval;}
     public boolean isShun() {return shun;}
     public void setShun(boolean flag) {this.shun=flag;}
+    
+    @ManagedAttribute(description="Are heartbeat tasks running")
     public boolean isRunning() {return tasks_running;}
 
+    @ManagedOperation(description="Prints suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Address tmp: suspect_history) {
@@ -86,6 +109,7 @@ public class FD_ALL extends Protocol {
         return sb.toString();
     }
 
+    @ManagedOperation(description="Prints timestamps")
     public String printTimestamps() {
         return printTimeStamps();
     }
@@ -299,14 +323,14 @@ public class FD_ALL extends Protocol {
 
 
     private void handleViewChange(View v) {
-        Vector mbrs=v.getMembers();
+        Vector<Address> mbrs=v.getMembers();
         members.clear();
         members.addAll(mbrs);
 
-        Set keys=timestamps.keySet();
+        Set<Address> keys=timestamps.keySet();
         keys.retainAll(mbrs); // remove all nodes which have left the cluster
-        for(Iterator it=mbrs.iterator(); it.hasNext();) { // and add new members
-            Address mbr=(Address)it.next();
+        for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) { // and add new members
+            Address mbr=it.next();
             if(mbr.equals(local_addr))
                 continue;
             if(!timestamps.containsKey(mbr)) {
@@ -355,10 +379,10 @@ public class FD_ALL extends Protocol {
 
     private String printTimeStamps() {
         StringBuilder sb=new StringBuilder();
-        Map.Entry<Address,Long> entry;
+        
         long current_time=System.currentTimeMillis();
-        for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
+            Entry<Address,Long> entry=it.next();
             sb.append(entry.getKey()).append(": ");
             sb.append(current_time - entry.getValue().longValue()).append(" ms old\n");
         }
@@ -462,20 +486,16 @@ public class FD_ALL extends Protocol {
 
     class TimeoutChecker extends HeartbeatSender {
 
-        public void run() {
-            Map.Entry entry;
-            Object key;
-            Long val;
-
-
+        public void run() {                        
+            
             if(log.isTraceEnabled())
                 log.trace("checking for expired senders, table is:\n" + printTimeStamps());
 
             long current_time=System.currentTimeMillis(), diff;
-            for(Iterator it=timestamps.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=entry.getKey();
-                val=(Long)entry.getValue();
+            for(Iterator<Entry<Address,Long>> it=timestamps.entrySet().iterator(); it.hasNext();) {
+                Entry<Address,Long> entry=it.next();
+                Address key=entry.getKey();
+                Long val=entry.getValue();
                 if(val == null) {
                     it.remove();
                     continue;
