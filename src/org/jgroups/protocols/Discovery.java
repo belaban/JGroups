@@ -2,6 +2,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
@@ -28,19 +30,30 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.40 2008/03/01 08:04:11 belaban Exp $
+ * @version $Id: Discovery.java,v 1.41 2008/03/06 02:19:27 vlada Exp $
  */
+@MBean
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
     Address					local_addr=null;
     String					group_addr=null;
+    
+    @ManagedAttribute(description="Timeout (ms) to wait for the initial members",
+                      readable=true,writable=true)
     long					timeout=3000;
+    
+    @ManagedAttribute(description="Minimum number of initial members to get a response from",
+                      readable=true,writable=true)
     int						num_initial_members=2;
     boolean					is_server=false;
     TimeScheduler			timer=null;
-
-    /** Number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms */
+    
+    @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " +
+                      "distributed over timeout ms",
+                      readable=true,writable=true)
     int                     num_ping_requests=2;
+    
+    @ManagedAttribute(description="Total number of discovery requests sent ")
     int                     num_discovery_requests=0;
 
 
