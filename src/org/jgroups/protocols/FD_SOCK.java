@@ -3,6 +3,9 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -29,8 +32,9 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83 2007/11/06 17:30:11 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.84 2008/03/06 05:38:45 vlada Exp $
  */
+@MBean(description="Failure detection protocol based on sockets connecting members")
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
     long                        suspect_msg_interval=5000;         // (BroadcastTask): mcast SUSPECT every 5000 msecs
@@ -85,15 +89,31 @@ public class FD_SOCK extends Protocol implements Runnable {
         return name;
     }
 
+    @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    @ManagedAttribute(description="List of cluster members")
     public String getMembers() {return members != null? members.toString() : "null";}
+    @ManagedAttribute(description="List of pingable members of a cluster")
     public String getPingableMembers() {return pingable_mbrs != null? pingable_mbrs.toString() : "null";}
+    @ManagedAttribute(description="Ping destination")
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
+    @ManagedAttribute(description="Number of suspect event generated")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
+    
+    @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Address suspect: suspect_history) {
             sb.append(new Date()).append(": ").append(suspect).append("\n");
+        }
+        return sb.toString();
+    }
+    
+    @ManagedOperation
+    public String printCache() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<Address,IpAddress> entry: cache.entrySet()) {
+            sb.append(entry.getKey()).append(" has server socket at ").append(entry.getValue()).append("\n");
         }
         return sb.toString();
     }
@@ -155,18 +175,8 @@ public class FD_SOCK extends Protocol implements Runnable {
             return false;
         }
         return true;
-    }
-
-
-    public String printCache() {
-        StringBuilder sb=new StringBuilder();
-        for(Map.Entry<Address,IpAddress> entry: cache.entrySet()) {
-            sb.append(entry.getKey()).append(" has server socket at ").append(entry.getValue()).append("\n");
-        }
-        return sb.toString();
-    }
-
-
+    }    
+    
     public void init() throws Exception {
         srv_sock_handler=new ServerSocketHandler();
         timer=stack != null ? stack.timer : null;
@@ -1100,7 +1110,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      */
     private class BroadcastTask implements Runnable {
         final Set<Address> suspected_mbrs=new HashSet<Address>();
-        Future             future;
+        Future<?>             future;
 
 
         /** Adds a suspected member. Starts the task if not yet running */

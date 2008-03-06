@@ -25,9 +25,9 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.13 2008/03/06 05:28:59 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.14 2008/03/06 05:38:45 vlada Exp $
  */
-@MBean
+@MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
     Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
