@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.11 2008/03/05 16:07:25 belaban Exp $
+Version: $Id: TestNG.txt,v 1.12 2008/03/06 11:28:43 belaban Exp $
 
 Goals
 -----
@@ -83,6 +83,7 @@ Conversion
    - [tbd] Convert into the old XML format, so JUnitReport can process those files
 
 #2 Change unit test to TestNG
+   - Tag @Test with group "functional" or "stack"
    - Modify ChannelTestBase, rename setUp() and teardown() and add @BeforeMethod and @AfterMethod to them
    - Remove 'extends TestCase'
    - Add @BeforeMethod to setUp() and @AfterMethod to tearDown()
@@ -105,8 +106,7 @@ Questions, issues
 - Why are methods in *superclasses* annotated with @BeforeTest, @BeforeClass etc *not* invoked ?
 - Identify useful group names and use those consistently
   - udp, mux-udp, tcp, mux-tcp ?
-  - functional ?
-  - stack-dependent ?
+  - functional vs. stack-dependent ?
 - How do we generate mcast addresses and ports such that traffic doesn't overlap ?
   --> Possibly a @BeforeTest annotation which modifies the stack config ?
 
