@@ -3,6 +3,9 @@ package org.jgroups;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.IpAddress;
@@ -74,8 +77,9 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.176 2008/02/25 12:47:57 belaban Exp $
+ * @version $Id: JChannel.java,v 1.177 2008/03/06 00:17:58 vlada Exp $
  */
+@MBean(description="JGroups channel")
 public class JChannel extends Channel {
 
     /**
@@ -150,6 +154,7 @@ public class JChannel extends Channel {
     protected final Log log=LogFactory.getLog(getClass());
 
     /** Collect statistics */
+    @ManagedAttribute(description="Collect channel statistics",readable=true, writable=true)
     protected boolean stats=true;
 
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
@@ -312,19 +317,26 @@ public class JChannel extends Channel {
         this.stats=stats;
     }
 
+    @ManagedOperation
     public void resetStats() {
         sent_msgs=received_msgs=sent_bytes=received_bytes=0;
     }
 
+    @ManagedAttribute
     public long getSentMessages() {return sent_msgs;}
+    @ManagedAttribute
     public long getSentBytes() {return sent_bytes;}
+    @ManagedAttribute
     public long getReceivedMessages() {return received_msgs;}
+    @ManagedAttribute
     public long getReceivedBytes() {return received_bytes;}
+    @ManagedAttribute
     public int getNumberOfTasksInTimer() {
         ProtocolStack ps=getProtocolStack();
         return ps != null? ps.timer.size() : -1;
     }
 
+    @ManagedAttribute
     public int getTimerThreads() {
         ProtocolStack ps=getProtocolStack();
         return ps != null? ps.getTimerThreads() : -1;
@@ -339,6 +351,7 @@ public class JChannel extends Channel {
      * Returns a pretty-printed form of all the protocols. If include_properties
      * is set, the properties for each protocol will also be printed.
      */
+    @ManagedOperation
     public String printProtocolSpec(boolean include_properties) {
         ProtocolStack ps=getProtocolStack();
         return ps != null? ps.printProtocolSpec(include_properties) : null;
@@ -358,6 +371,7 @@ public class JChannel extends Channel {
      * @exception ChannelClosedException The channel is closed and therefore cannot be used any longer.
      *                                   A new channel has to be created first.
      */
+    @ManagedOperation(description="Connects the channel to a group")
     public synchronized void connect(String cluster_name) throws ChannelException {
         startStack(cluster_name);
 
@@ -484,6 +498,7 @@ public class JChannel extends Channel {
      * <li> Notifies the listener, if the listener is available<BR>
      * </ol>
      */
+    @ManagedOperation(description="Disconnects the channel if it is connected")
     public synchronized void disconnect() {
         if(closed) return;
 
@@ -507,12 +522,13 @@ public class JChannel extends Channel {
      * After this method has been called, the channel us unusable.<BR>
      * This operation will disconnect the channel and close the channel receive queue immediately<BR>
      */
+    @ManagedOperation(description="Disconnects and destroys the channel")
     public synchronized void close() {
         _close(true, true); // by default disconnect before closing channel and close mq
     }
 
-
-    /** Shuts down the channel without disconnecting */
+    
+    @ManagedOperation(description="Shuts down the channel without disconnecting")
     public synchronized void shutdown() {
         down(new Event(Event.SHUTDOWN));
         _close(false, true); // by default disconnect before closing channel and close mq
@@ -547,6 +563,7 @@ public class JChannel extends Channel {
     /**
      * returns true if the Open operation has been called successfully
      */
+    @ManagedAttribute
     public boolean isOpen() {
         return !closed;
     }
@@ -555,15 +572,17 @@ public class JChannel extends Channel {
     /**
      * returns true if the Connect operation has been called successfully
      */
+    @ManagedAttribute
     public boolean isConnected() {
         return connected;
     }
 
+    @ManagedAttribute
     public int getNumMessages() {
         return mq != null? mq.size() : -1;
     }
 
-
+    @ManagedOperation
     public String dumpQueue() {
         return Util.dumpQueue(mq);
     }
@@ -573,6 +592,7 @@ public class JChannel extends Channel {
      * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is
      * used for the channel itself") and the values are property maps.
      */
+    @ManagedOperation
     public Map<String,Object> dumpStats() {
         Map<String,Object> retval=prot_stack.dumpStats();
         if(retval != null) {
@@ -602,6 +622,7 @@ public class JChannel extends Channel {
      * @exception ChannelNotConnectedException
      * @exception ChannelClosedException
      */
+    @ManagedOperation
     public void send(Message msg) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
         if(msg == null)
@@ -625,6 +646,7 @@ public class JChannel extends Channel {
      * @exception ChannelClosedException
      * @see JChannel#send
      */
+    @ManagedOperation
     public void send(Address dst, Address src, Serializable obj) throws ChannelNotConnectedException, ChannelClosedException {
         send(new Message(dst, src, obj));
     }
@@ -730,6 +752,7 @@ public class JChannel extends Channel {
         return closed ? null : !connected ? null : cluster_name;
     }
 
+    @ManagedOperation(description="Returns cluster name this channel is connected to")
     public String getClusterName() {
         return closed ? null : !connected ? null : cluster_name;
     }
@@ -1364,6 +1387,7 @@ public class JChannel extends Channel {
 
 
 
+    @ManagedOperation
     public String toString(boolean details) {
         StringBuilder sb=new StringBuilder();
         sb.append("local_addr=").append(local_addr).append('\n');

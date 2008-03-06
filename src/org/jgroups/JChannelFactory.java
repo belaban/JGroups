@@ -1,9 +1,12 @@
-// $Id: JChannelFactory.java,v 1.52 2007/11/28 11:29:35 belaban Exp $
+// $Id: JChannelFactory.java,v 1.53 2008/03/06 00:17:58 vlada Exp $
 
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.conf.XmlConfigurator;
@@ -28,6 +31,7 @@ import java.util.*;
  * interface.
  * See {@link JChannel} for a discussion of channel properties.
  */
+@MBean(description="Factory to create channels")
 public class JChannelFactory implements ChannelFactory {
     private ProtocolStackConfigurator configurator;
 
@@ -55,12 +59,15 @@ public class JChannelFactory implements ChannelFactory {
 	private MBeanServer server = null;
 
     /** To expose the channels and protocols */
+	@ManagedAttribute(readable=true,writable=true)
 	private String domain = "jgroups";
 
     /** Whether or not to expose channels via JMX */
+	@ManagedAttribute(description="Expose channels via JMX",readable=true,writable=true)
     private boolean expose_channels=true;
 
     /** Whether to expose the factory only, or all protocols as well */
+	@ManagedAttribute(description="Expose protocols via JMX",readable=true,writable=true)
     private boolean expose_protocols=true;
 
     
@@ -201,10 +208,12 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    @ManagedOperation
     public void setMultiplexerConfig(String properties) throws Exception {
         setMultiplexerConfig(properties, true);
     }
 
+    @ManagedOperation
     public void setMultiplexerConfig(String properties, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
         if(input == null)
@@ -225,6 +234,7 @@ public class JChannelFactory implements ChannelFactory {
      * if the stack_name is not found. One of the setMultiplexerConfig() methods had to be called beforehand
      * @return The protocol stack config as a plain string
      */
+    @ManagedOperation
     public String getConfig(String stack_name) throws Exception {
         String cfg=stacks.get(stack_name);
         if(cfg == null)
@@ -235,6 +245,7 @@ public class JChannelFactory implements ChannelFactory {
     /**
      * @return Returns all configurations
      */
+    @ManagedOperation(description="Returns all configurations")
     public String getMultiplexerConfig() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<String,String> entry: stacks.entrySet()) {
@@ -244,6 +255,7 @@ public class JChannelFactory implements ChannelFactory {
     }
 
     /** Removes all configurations */
+    @ManagedOperation(description="Removes all configurations")
     public void clearConfigurations() {
         stacks.clear();
     }
@@ -324,10 +336,12 @@ public class JChannelFactory implements ChannelFactory {
         return new JChannel(props);
     }
 
+    @ManagedOperation(description="Create multiplexed channel")
     public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
         return createMultiplexerChannel(stack_name, id, false, null);
     }
 
+    @ManagedOperation(description="Create multiplexed channel with state transfer reguistration")
     public Channel createMultiplexerChannel(final String stack_name,
                                             String id,
                                             boolean register_for_state_transfer,
@@ -388,14 +402,17 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    @ManagedOperation    
     public void start() throws Exception {
 
     }
 
+    @ManagedOperation
     public void stop() {
 
     }
 
+    @ManagedOperation
     public void destroy() {        
         synchronized (channels) {
             for(Map.Entry<String,Multiplexer> entry: channels.entrySet()){                
@@ -411,10 +428,12 @@ public class JChannelFactory implements ChannelFactory {
     }
 
 
+    @ManagedOperation
     public String dumpConfiguration() {
         return stacks.keySet().toString();
     }
 
+    @ManagedOperation
     public String dumpChannels() {
         StringBuilder sb = new StringBuilder();
         synchronized (channels) {
