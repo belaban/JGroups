@@ -4,6 +4,9 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -31,13 +34,20 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.63 2008/01/22 16:15:50 belaban Exp $
+ * @version $Id: FD.java,v 1.64 2008/03/06 06:41:33 vlada Exp $
  */
+@MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     Address               local_addr=null;
+    
+    @ManagedAttribute(description="Number of milliseconds after which a " + 
+                      "node P is suspected if neither a heartbeat nor data were received from P",
+                      readable=true,writable=true)
     long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
+    @ManagedAttribute(description="Number of times to send a are-you-alive msg",
+                      readable=true,writable=true)
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
 
     protected final Lock  lock=new ReentrantLock();
@@ -56,11 +66,12 @@ public class FD extends Protocol {
     @GuardedBy("lock")
     final Map<Address,Integer>  invalid_pingers=new HashMap<Address,Integer>(7);
 
+    @ManagedAttribute(description="Shun switch",readable=true,writable=true)
     boolean               shun=true;
     TimeScheduler         timer=null;
 
     @GuardedBy("lock")
-    private Future        monitor_future=null;  // task that performs the actual monitoring for failure detection
+    private Future<?>        monitor_future=null;  // task that performs the actual monitoring for failure detection
 
     protected int         num_heartbeats=0;
     protected int         num_suspect_events=0;
@@ -76,11 +87,17 @@ public class FD extends Protocol {
 
 
     public String getName() {return name;}
+    @ManagedAttribute(description="Member address")
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    @ManagedAttribute(description="List of cluster members")
     public String getMembers() {return members != null? members.toString() : "null";}
+    @ManagedAttribute(description="List of pingable members of a cluster")
     public String getPingableMembers() {return pingable_mbrs != null? pingable_mbrs.toString() : "null";}
+    @ManagedAttribute(description="Ping destination")
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
+    @ManagedAttribute(description="Number of heartbeats sent")    
     public int getNumberOfHeartbeatsSent() {return num_heartbeats;}
+    @ManagedAttribute(description="Number of suspect events received")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
     public long getTimeout() {return timeout;}
     public void setTimeout(long timeout) {this.timeout=timeout;}
@@ -89,6 +106,7 @@ public class FD extends Protocol {
     public int getCurrentNumTries() {return num_tries;}
     public boolean isShun() {return shun;}
     public void setShun(boolean flag) {this.shun=flag;}
+    @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
         for(Address addr: suspect_history) {
@@ -448,8 +466,8 @@ public class FD extends Protocol {
             else {
                 out.writeBoolean(true);
                 out.writeInt(mbrs.size());
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     out.writeObject(addr);
                 }
             }
@@ -568,12 +586,12 @@ public class FD extends Protocol {
         final Vector<Address> suspected_mbrs=new Vector<Address>(7);
         final Lock bcast_lock=new ReentrantLock();
         @GuardedBy("bcast_lock")
-        Future bcast_future=null;
+        Future<?> bcast_future=null;
         @GuardedBy("bcast_lock")
         BroadcastTask task;
 
 
-        Vector getSuspectedMembers() {
+        Vector<Address> getSuspectedMembers() {
             return suspected_mbrs;
         }
 
@@ -641,7 +659,7 @@ public class FD extends Protocol {
 
 
         /** Removes all elements from suspected_mbrs that are <em>not</em> in the new membership */
-        void adjustSuspectedMembers(List new_mbrship) {
+        void adjustSuspectedMembers(List<Address> new_mbrship) {
             if(new_mbrship == null || new_mbrship.isEmpty()) return;
             synchronized(suspected_mbrs) {
                 suspected_mbrs.retainAll(new_mbrship);
