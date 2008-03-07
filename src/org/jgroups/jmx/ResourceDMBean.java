@@ -1,17 +1,25 @@
 package org.jgroups.jmx;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.management.Attribute;
+import javax.management.AttributeList;
+import javax.management.DynamicMBean;
+import javax.management.MBeanAttributeInfo;
+import javax.management.MBeanException;
+import javax.management.MBeanInfo;
+import javax.management.MBeanOperationInfo;
+import javax.management.ReflectionException;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-
-import javax.management.*;
-
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.util.Vector;
 
 /**
  * 
@@ -19,7 +27,7 @@ import java.util.Vector;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.6 2008/03/06 09:07:44 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.7 2008/03/07 01:30:42 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -39,128 +47,58 @@ public class ResourceDMBean implements DynamicMBean {
    
     private final Log log=LogFactory.getLog(ResourceDMBean.class);
     private final Object obj;
-    private String description = "";
+    private String description = "";    
+    
+    private final MBeanAttributeInfo[] attrInfo;
+    private final MBeanOperationInfo[] opInfo;
 
-    public ResourceDMBean(Object obj) {
-        if(obj == null) throw new NullPointerException("Cannot make an MBean wrapper for null instance");
-        this.obj=obj;       
+    public ResourceDMBean(Object instance) {
+        
+        if(instance == null) throw new NullPointerException("Cannot make an MBean wrapper for null instance");
+        this.obj=instance;
+        
+        List<MBeanAttributeInfo> vctAttributes=new ArrayList<MBeanAttributeInfo>();
+        List<MBeanOperationInfo> vctOperations=new ArrayList<MBeanOperationInfo>();
+                
+        description = findDescription(vctAttributes);
+        findFields(vctAttributes);
+        findMethods(vctAttributes,vctOperations);
+        
+        attrInfo=new MBeanAttributeInfo[vctAttributes.size()];
+        vctAttributes.toArray(attrInfo);
+
+        opInfo=new MBeanOperationInfo[vctOperations.size()];
+        vctOperations.toArray(opInfo);
     }
 
-    public synchronized MBeanInfo getMBeanInfo() { 
-        
-        Vector<MBeanAttributeInfo> vctAttributes=new Vector<MBeanAttributeInfo>();
-        Vector<MBeanOperationInfo> vctOperations=new Vector<MBeanOperationInfo>();
-
-        //set a field to hold the description of the MBean
+    private String findDescription(List<MBeanAttributeInfo> vctAttributes) {
+        String result="";
         MBean mbean=obj.getClass().getAnnotation(MBean.class);
         if(mbean.description() != null && mbean.description().trim().length() > 0) {
             if(log.isDebugEnabled()) {
                 log.debug("@MBean description set - " + mbean.description());
-            }
-            this.description=mbean.description();
+            }            
             vctAttributes.add(new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
                                                      "java.lang.String",
                                                      "@MBean description",
                                                      true,
                                                      false,
                                                      false));
-        }           
-        
-        //walk annotated class hierarchy and find all fields
-        for(Class<?> clazz=obj.getClass();
-            clazz != null && clazz.isAnnotationPresent(MBean.class);
-            clazz=clazz.getSuperclass()) {
-            
-            Field[] fields=clazz.getDeclaredFields();
-            for(Field field:fields) {
-                ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
-                if(attr != null) {
-                    if(Modifier.isFinal(field.getModifiers())) {
-                        //field is declared final - no changes allowed
-                        if(log.isWarnEnabled() && attr.writable()) {
-                            log.warn(field.getName() + " declared final, so cannot be marked as writable - writable is ignored");
-                        }
-                        vctAttributes.add(new MBeanAttributeInfo(field.getName(),
-                                                                 field.getType().getCanonicalName(),
-                                                                 attr.description(),
-                                                                 attr.readable(),
-                                                                 false,
-                                                                 false));
-                    }
-                    else {
-                        vctAttributes.add(new MBeanAttributeInfo(field.getName(),
-                                                                 field.getType().getCanonicalName(),
-                                                                 attr.description(),
-                                                                 attr.readable(),
-                                                                 attr.writable(),
-                                                                 false));
-                    }
-                    if(log.isInfoEnabled()) {
-                        log.info("@Attr found for field " + field.getName());
-                    }
-                }
-            }
-        }
+            result=mbean.description();
+        }        
+        return result;
+    }
 
-        //find all methods
-        Method[] methods=obj.getClass().getMethods();
-        for(Method method:methods) {
-            ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
-            if(attr != null) {
-                String methodName=method.getName();
-                if(!methodName.startsWith("get") && !methodName.startsWith("set") && !methodName.startsWith("is")) {
-                    if(log.isWarnEnabled())
-                        log.warn("method name " + methodName + " doesn't start with \"get\", \"set\", or \"is\"" +
-                                ", but is annotated with @ManagedAttribute: will be ignored");
-                }
-                else {
-                    if(methodName.startsWith("set")) { // setter
-                        
-                    }
-                    else { // getter
-                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
-                            vctAttributes.add(new MBeanAttributeInfo(method.getName() + "()",
-                                                                     method.getReturnType().getCanonicalName(),
-                                                                     attr.description(),
-                                                                     attr.readable(),
-                                                                     false,
-                                                                     false));
-                            if(log.isInfoEnabled()) {
-                                log.info("@Attr found for method " + method.getName());
-                            }
-                        }
-                        else {
-                            if(log.isWarnEnabled()) {
-                                log.warn("Method " + method.getName()
-                                        + " must have a valid return type and zero parameters");
-                            }
-                        }
-                    }
-                }
-            }
-            ManagedOperation op=method.getAnnotation(ManagedOperation.class);
-            if(op != null) {
-                vctOperations.add(new MBeanOperationInfo(op.description(), method));
-                if(log.isInfoEnabled()) {
-                    log.info("@Operation found for method " + method.getName());
-                }
-            }
-        }
-
-        MBeanAttributeInfo[] attrInfo=new MBeanAttributeInfo[vctAttributes.size()];
-        vctAttributes.toArray(attrInfo);
-
-        MBeanOperationInfo[] opInfo=new MBeanOperationInfo[vctOperations.size()];
-        vctOperations.toArray(opInfo);
+    public synchronized MBeanInfo getMBeanInfo() {                                                      
 
         return new MBeanInfo(obj.getClass().getCanonicalName(),
-                             this.description,
+                             description,
                              attrInfo,
                              null,
                              opInfo,
                              null);     
     }
-
+   
     public synchronized Object getAttribute(String name) {
         if(log.isDebugEnabled()) {
             log.debug("getAttribute called for " + name);
@@ -262,6 +200,98 @@ public class ResourceDMBean implements DynamicMBean {
         }
         throw new ClassNotFoundException("Class " + name + " cannot be found");
     }
+    
+    private void findMethods(List<MBeanAttributeInfo> vctAttributes, List<MBeanOperationInfo> vctOperations) {
+        //find all methods 
+        Method[] methods=obj.getClass().getMethods();
+        for(Method method:methods) {
+            ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
+            if(attr != null) {
+                String methodName=method.getName();
+                String attributeName = null;
+                if(!methodName.startsWith("get") && !methodName.startsWith("set") && !methodName.startsWith("is")) {
+                    if(log.isWarnEnabled())
+                        log.warn("method name " + methodName + " doesn't start with \"get\", \"set\", or \"is\"" +
+                                ", but is annotated with @ManagedAttribute: will be ignored");
+                }
+                else {
+                    if(methodName.startsWith("set") && method.getReturnType() == java.lang.Void.TYPE) { // setter
+                        attributeName = methodName.substring(3);
+                        vctAttributes.add(new MBeanAttributeInfo(attributeName,
+                                                                 method.getReturnType().getCanonicalName(),
+                                                                 attr.description(),
+                                                                 attr.readable(),
+                                                                 true,
+                                                                 false));
+                    }
+                    else { // getter
+                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {                            
+                            if(methodName.startsWith("is")){
+                                attributeName = methodName.substring(2);
+                                vctAttributes.add(new MBeanAttributeInfo(attributeName,
+                                                                         method.getReturnType().getCanonicalName(),
+                                                                         attr.description(),
+                                                                         attr.readable(),
+                                                                         false,
+                                                                         true));
+                            }
+                            else {
+                                //this has to be get
+                                attributeName = methodName.substring(3);
+                                vctAttributes.add(new MBeanAttributeInfo(attributeName,
+                                                                         method.getReturnType().getCanonicalName(),
+                                                                         attr.description(),
+                                                                         attr.readable(),
+                                                                         false,
+                                                                         false));
+                            }                            
+                            if(log.isInfoEnabled()) {
+                                log.info("@Attr found for method " + method.getName());
+                            }
+                        }
+                        else {
+                            if(log.isWarnEnabled()) {
+                                log.warn("Method " + method.getName()
+                                        + " must have a valid return type and zero parameters");
+                            }
+                        }
+                    }
+                }
+            }
+            ManagedOperation op=method.getAnnotation(ManagedOperation.class);
+            if(op != null) {
+                vctOperations.add(new MBeanOperationInfo(op.description(), method));
+                if(log.isInfoEnabled()) {
+                    log.info("@Operation found for method " + method.getName());
+                }
+            }
+        }
+    }
+
+    private void findFields(List<MBeanAttributeInfo> vctAttributes) {
+        //walk annotated class hierarchy and find all fields
+        for(Class<?> clazz=obj.getClass();
+            clazz != null && clazz.isAnnotationPresent(MBean.class);
+            clazz=clazz.getSuperclass()) {
+            
+            Field[] fields=clazz.getDeclaredFields();
+            for(Field field:fields) {
+                ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
+                if(attr != null) {                                     
+                    vctAttributes.add(new MBeanAttributeInfo(field.getName(),
+                                                             field.getType().getCanonicalName(),
+                                                             attr.description(),
+                                                             attr.readable(),
+                                                             Modifier.isFinal(field.getModifiers())?false:attr.writable(),
+                                                             false));                    
+                    if(log.isInfoEnabled()) {
+                        log.info("@Attr found for field " + field.getName());
+                    }
+                }
+            }
+        }       
+    }
+
 
     private Attribute getNamedAttribute(String name) {
         try {
