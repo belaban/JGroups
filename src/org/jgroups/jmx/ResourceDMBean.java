@@ -28,7 +28,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.12 2008/03/07 09:29:09 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.13 2008/03/07 09:53:27 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -250,14 +250,18 @@ public class ResourceDMBean implements DynamicMBean {
                     String attributeName=null;
                     boolean writeAttribute=false;
                     if(methodName.startsWith("set") && method.getReturnType() == java.lang.Void.TYPE) { // setter
-                        attributeName=methodName.substring(3);
-                        info=new MBeanAttributeInfo(attributeName,
-                                                    method.getReturnType().getCanonicalName(),
-                                                    attr.description(),
-                                                    true,
-                                                    true,
-                                                    false);
-                        writeAttribute=true;
+                    	Class<?> params [] = method.getParameterTypes();
+                    	if(params.length == 1){
+                    		attributeName=methodName.substring(3);
+                            info=new MBeanAttributeInfo(attributeName,
+                                                        params[0].getCanonicalName(),
+                                                        attr.description(),
+                                                        true,
+                                                        true,
+                                                        false);
+                            writeAttribute=true;
+                    		
+                    	}                        
                     }
                     else { // getter
                         if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
@@ -438,7 +442,7 @@ public class ResourceDMBean implements DynamicMBean {
             if(a == null && isOrGetmethod != null)
                 return isOrGetmethod.invoke(getObject(), new Object[] {});
             else if(a != null && setMethod != null)
-                return setMethod.invoke(getObject(), new Object[] { a });
+                return setMethod.invoke(getObject(), new Object[] { a.getValue() });
             else
                 return null;
         }
