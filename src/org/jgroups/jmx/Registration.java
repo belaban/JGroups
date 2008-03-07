@@ -12,7 +12,7 @@ import org.jgroups.annotations.ManagedOperation;
  * Registers annotated object instances with with MBeanServer. 
  * 
  * @author Chris Mills
- * @version $Id: Registration.java,v 1.3 2008/03/06 01:28:13 vlada Exp $
+ * @version $Id: Registration.java,v 1.4 2008/03/07 01:30:42 vlada Exp $
  * 
  * @see ManagedAttribute
  * @see ManagedOperation
@@ -87,10 +87,7 @@ public class Registration {
     }
 
     private static void internalUnregister(Object obj, MBeanServer server, String name) throws MBeanRegistrationException {
-        try {
-            if(log.isDebugEnabled()) {
-                log.debug("unregister MBean");
-            }
+        try {           
             if(name != null && name.length() > 0) {
                 server.unregisterMBean(new ObjectName(name));
             }
