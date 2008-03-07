@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.133 2008/03/06 12:41:19 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.134 2008/03/07 08:12:16 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -922,7 +922,7 @@
 
     <!-- =============================== TestNG ======================================== -->
 
-    <target name="functional" depends="prepare">
+    <target name="functional" depends="compile, prepare">
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
