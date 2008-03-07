@@ -28,7 +28,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.9 2008/03/07 08:38:03 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.10 2008/03/07 09:07:22 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -66,12 +66,24 @@ public class ResourceDMBean implements DynamicMBean {
         
         attrInfo=new MBeanAttributeInfo[atts.size()];
         int i=0;
-        for(AttributeEntry entry:atts.values()){        	
-        	attrInfo[i++]=entry.getInfo();           	
+        log.info("Processing class " + instance.getClass());
+        log.info("Attributes are:");
+        MBeanAttributeInfo info = null;
+        for(AttributeEntry entry:atts.values()){
+        	info = entry.getInfo();
+        	attrInfo[i++]=info;
+        	log.info("Attribute " + info.getName() + "[r=" + info.isReadable()
+					+ ",w=" + info.isWritable() + ",is=" + info.isIs() + "]");
         }
 
         opInfo=new MBeanOperationInfo[ops.size()];
         ops.toArray(opInfo);
+        
+        if(ops.size()>0)log.info("Operations are:");
+        for (MBeanOperationInfo op : opInfo) {
+			log.info("Operation " + op.getReturnType() + " " + op.getName());
+		}
+        
     }
     
     Object getObject(){
@@ -132,23 +144,18 @@ public class ResourceDMBean implements DynamicMBean {
 
     public synchronized AttributeList getAttributes(String[] names) {
         if(log.isDebugEnabled()) {
-            log.debug("getAttributes called");
-            for(String name:names) {
-                log.debug("Attribute name " + name);
-            }
+            log.debug("getAttributes called");          
         }
         AttributeList al=new AttributeList();
 
         for(String name:names) {
             Attribute attr=getNamedAttribute(name);
-            if(attr != null) {
-                if(log.isDebugEnabled()) {
-                    log.debug("Attribute " + name + " found with value " + attr.getValue());
-                }
+            if(attr != null) {                
                 al.add(attr);
+            }else{
+            	log.warn("Did not find attribute " + name);
             }
         }
-
         return al;
     }
 
@@ -269,8 +276,8 @@ public class ResourceDMBean implements DynamicMBean {
                             continue;
                         }
                     }
-                    if(log.isInfoEnabled()) {
-                        log.info("@Attr found for method " + method.getName());
+                    if(log.isDebugEnabled()) {
+                        log.debug("@Attr found for method " + method.getName());
                     }
                     
                     AttributeEntry ae = atts.get(attributeName);
@@ -310,8 +317,8 @@ public class ResourceDMBean implements DynamicMBean {
             ManagedOperation op=method.getAnnotation(ManagedOperation.class);
             if(op != null) {
                 ops.add(new MBeanOperationInfo(op.description(), method));
-                if(log.isInfoEnabled()) {
-                    log.info("@Operation found for method " + method.getName());
+                if(log.isDebugEnabled()) {
+                    log.debug("@Operation found for method " + method.getName());
                 }
             }
         }
@@ -336,8 +343,8 @@ public class ResourceDMBean implements DynamicMBean {
                 													
                     
                     atts.put(field.getName(),new FieldAttributeEntry(info,field));
-                    if(log.isInfoEnabled()) {
-                        log.info("@Attr found for field " + field.getName());
+                    if(log.isDebugEnabled()) {
+                        log.debug("@Attr found for field " + field.getName());
                     }
                 }
             }
@@ -353,8 +360,15 @@ public class ResourceDMBean implements DynamicMBean {
             }
             else {
             	AttributeEntry entry = atts.get(name);
-            	if(entry != null)
-            		result=new Attribute(name, entry.invoke(null));	
+            	if(entry != null){
+            		MBeanAttributeInfo i = entry.getInfo();            	
+            		result=new Attribute(name, entry.invoke(null));
+            		log.debug("Attribute " + name + " has r=" + i.isReadable()
+							+ ",w=" + i.isWritable() + ",is=" + i.isIs()
+							+ " and value " + result.getValue());
+            	}else{
+            		log.warn("Did not find attribute " + name);
+            	}
             }                                   
         }
         catch(Exception e) {
