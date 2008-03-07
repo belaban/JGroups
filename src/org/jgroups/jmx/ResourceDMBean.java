@@ -4,6 +4,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.management.Attribute;
@@ -27,7 +28,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.7 2008/03/07 01:30:42 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.8 2008/03/07 06:57:50 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -51,42 +52,52 @@ public class ResourceDMBean implements DynamicMBean {
     
     private final MBeanAttributeInfo[] attrInfo;
     private final MBeanOperationInfo[] opInfo;
+    
+    private final HashMap<String,AttributeEntry> atts = new HashMap<String,AttributeEntry>();
+    private final List<MBeanOperationInfo> ops = new ArrayList<MBeanOperationInfo>(); 
 
     public ResourceDMBean(Object instance) {
         
         if(instance == null) throw new NullPointerException("Cannot make an MBean wrapper for null instance");
-        this.obj=instance;
+        this.obj=instance;                      
+        findDescription();
+        findFields();
+        findMethods();
         
-        List<MBeanAttributeInfo> vctAttributes=new ArrayList<MBeanAttributeInfo>();
-        List<MBeanOperationInfo> vctOperations=new ArrayList<MBeanOperationInfo>();
-                
-        description = findDescription(vctAttributes);
-        findFields(vctAttributes);
-        findMethods(vctAttributes,vctOperations);
-        
-        attrInfo=new MBeanAttributeInfo[vctAttributes.size()];
-        vctAttributes.toArray(attrInfo);
+        attrInfo=new MBeanAttributeInfo[atts.size()];
+        int i=0;
+        for(AttributeEntry entry:atts.values()){
+        	attrInfo[i++]=entry.getInfo();
+        }
 
-        opInfo=new MBeanOperationInfo[vctOperations.size()];
-        vctOperations.toArray(opInfo);
+        opInfo=new MBeanOperationInfo[ops.size()];
+        ops.toArray(opInfo);
+    }
+    
+    Object getObject(){
+    	return obj;
     }
 
-    private String findDescription(List<MBeanAttributeInfo> vctAttributes) {
-        String result="";
+    private void findDescription() {        
         MBean mbean=obj.getClass().getAnnotation(MBean.class);
         if(mbean.description() != null && mbean.description().trim().length() > 0) {
+        	description = mbean.description();
             if(log.isDebugEnabled()) {
                 log.debug("@MBean description set - " + mbean.description());
-            }            
-            vctAttributes.add(new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
-                                                     "java.lang.String",
-                                                     "@MBean description",
-                                                     true,
-                                                     false,
-                                                     false));
-            result=mbean.description();
-        }        
-        return result;
+            }        
+            MBeanAttributeInfo info =new MBeanAttributeInfo(ResourceDMBean.MBEAN_DESCRITION,
+            												"java.lang.String",
+            												"@MBean description",
+                                                            true,
+                                                            false,
+                                                            false);
+            try {
+				atts.put(ResourceDMBean.MBEAN_DESCRITION,new FieldAttributeEntry(info,this.getClass().getDeclaredField("description")));
+			} catch (NoSuchFieldException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}            
+        }                
     }
 
     public synchronized MBeanInfo getMBeanInfo() {                                                      
@@ -201,49 +212,52 @@ public class ResourceDMBean implements DynamicMBean {
         throw new ClassNotFoundException("Class " + name + " cannot be found");
     }
     
-    private void findMethods(List<MBeanAttributeInfo> vctAttributes, List<MBeanOperationInfo> vctOperations) {
+    private void findMethods() {
         //find all methods 
         Method[] methods=obj.getClass().getMethods();
         for(Method method:methods) {
             ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
             if(attr != null) {
-                String methodName=method.getName();
-                String attributeName = null;
+                String methodName=method.getName();                
                 if(!methodName.startsWith("get") && !methodName.startsWith("set") && !methodName.startsWith("is")) {
                     if(log.isWarnEnabled())
                         log.warn("method name " + methodName + " doesn't start with \"get\", \"set\", or \"is\"" +
                                 ", but is annotated with @ManagedAttribute: will be ignored");
                 }
                 else {
+                	MBeanAttributeInfo info = null;
+                	String attributeName = null;
                     if(methodName.startsWith("set") && method.getReturnType() == java.lang.Void.TYPE) { // setter
                         attributeName = methodName.substring(3);
-                        vctAttributes.add(new MBeanAttributeInfo(attributeName,
-                                                                 method.getReturnType().getCanonicalName(),
-                                                                 attr.description(),
-                                                                 attr.readable(),
-                                                                 true,
-                                                                 false));
+                        info = new MBeanAttributeInfo(attributeName,
+                        							  method.getReturnType().getCanonicalName(),
+                        							  attr.description(),
+                        							  attr.readable(),
+                        							  true,
+                        							  false);                        
+                        
                     }
                     else { // getter
-                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {                            
+                        if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) { 
+                        	boolean hasSetter = atts.containsKey(attributeName);
                             if(methodName.startsWith("is")){
-                                attributeName = methodName.substring(2);
-                                vctAttributes.add(new MBeanAttributeInfo(attributeName,
-                                                                         method.getReturnType().getCanonicalName(),
-                                                                         attr.description(),
-                                                                         attr.readable(),
-                                                                         false,
-                                                                         true));
+                                attributeName = methodName.substring(2);                                
+                                info = new MBeanAttributeInfo(attributeName,
+                                                              method.getReturnType().getCanonicalName(),
+                                                              attr.description(),
+                                                              attr.readable(),
+                                                              hasSetter,
+                                                              true);                               
                             }
                             else {
                                 //this has to be get
                                 attributeName = methodName.substring(3);
-                                vctAttributes.add(new MBeanAttributeInfo(attributeName,
-                                                                         method.getReturnType().getCanonicalName(),
-                                                                         attr.description(),
-                                                                         attr.readable(),
-                                                                         false,
-                                                                         false));
+                                info = new MBeanAttributeInfo(attributeName,
+                                							  method.getReturnType().getCanonicalName(),
+                                							  attr.description(),
+                                							  attr.readable(),
+                                							  hasSetter,
+                                							  false);                                
                             }                            
                             if(log.isInfoEnabled()) {
                                 log.info("@Attr found for method " + method.getName());
@@ -256,11 +270,12 @@ public class ResourceDMBean implements DynamicMBean {
                             }
                         }
                     }
+                    atts.put(attributeName, new MethodAttributeEntry(info,method));
                 }
             }
             ManagedOperation op=method.getAnnotation(ManagedOperation.class);
             if(op != null) {
-                vctOperations.add(new MBeanOperationInfo(op.description(), method));
+                ops.add(new MBeanOperationInfo(op.description(), method));
                 if(log.isInfoEnabled()) {
                     log.info("@Operation found for method " + method.getName());
                 }
@@ -268,7 +283,7 @@ public class ResourceDMBean implements DynamicMBean {
         }
     }
 
-    private void findFields(List<MBeanAttributeInfo> vctAttributes) {
+    private void findFields() {
         //walk annotated class hierarchy and find all fields
         for(Class<?> clazz=obj.getClass();
             clazz != null && clazz.isAnnotationPresent(MBean.class);
@@ -278,12 +293,15 @@ public class ResourceDMBean implements DynamicMBean {
             for(Field field:fields) {
                 ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
                 if(attr != null) {                                     
-                    vctAttributes.add(new MBeanAttributeInfo(field.getName(),
-                                                             field.getType().getCanonicalName(),
-                                                             attr.description(),
-                                                             attr.readable(),
-                                                             Modifier.isFinal(field.getModifiers())?false:attr.writable(),
-                                                             false));                    
+                	MBeanAttributeInfo info =new MBeanAttributeInfo(field.getName(),
+                													field.getType().getCanonicalName(),
+                													attr.description(),
+                													attr.readable(),
+                													Modifier.isFinal(field.getModifiers())?false:attr.writable(),
+                													false);
+                													
+                    
+                    atts.put(field.getName(),new FieldAttributeEntry(info,field));
                     if(log.isInfoEnabled()) {
                         log.info("@Attr found for field " + field.getName());
                     }
@@ -294,65 +312,88 @@ public class ResourceDMBean implements DynamicMBean {
 
 
     private Attribute getNamedAttribute(String name) {
-        try {
-            if(name.endsWith("()")) {
-                Method method=this.obj.getClass().getMethod(name.substring(0, name.length() - 2),new Class[] {});
-                return new Attribute(name, method.invoke(this.obj, new Object[] {}));
+    	Attribute result=null;
+        try {           
+            if(name.equals(ResourceDMBean.MBEAN_DESCRITION)) {
+            	result=new Attribute(ResourceDMBean.MBEAN_DESCRITION, this.description);
             }
             else {
-                if(name.equals(ResourceDMBean.MBEAN_DESCRITION)) {
-                    return new Attribute(ResourceDMBean.MBEAN_DESCRITION, this.description);
-                }
-                else {
-                    Field field=getFieldInHierarchy(obj.getClass(), name);
-                    if(field != null) {
-                        if(!field.isAccessible()) {
-                            field.setAccessible(true);
-                        }
-                        return new Attribute(name, field.get(this.obj));
-                    }
-                }
-            }
+            	AttributeEntry entry = atts.get(name);
+            	if(entry != null)
+            		result=new Attribute(name, entry.invoke());	
+            }                                   
         }
         catch(Exception e) {
             e.printStackTrace();
         }
-        return null;
+        return result;
     }
 
     private boolean setNamedAttribute(Attribute attribute) {
+    	boolean result = false;
         try {
-            Field field=getFieldInHierarchy(obj.getClass(), attribute.getName());
-            if(field != null) {
-                if(!field.isAccessible()) {
-                    field.setAccessible(true);
-                }
-                field.set(this.obj, attribute.getValue());
-                return true;
-            }
-            return false;
+        	AttributeEntry entry = atts.get(attribute.getName());
+        	if(entry != null){
+        		entry.invoke();
+        		result = true;
+        	}        
         }
         catch(Exception e) {
-            e.printStackTrace();
-            return false;
+            e.printStackTrace();            
         }
-    }
+        return result;
+    }   
+    
+    private class MethodAttributeEntry implements AttributeEntry{
+    
+    	private final MBeanAttributeInfo info;
+    	
+    	private final Method method;
+    	
+    	public MethodAttributeEntry(final MBeanAttributeInfo info, final Method method) {
+			super();
+			this.info = info;
+			this.method = method;
+		}
 
-    private Field getFieldInHierarchy(Class<?> clazz, String name) {
-        try {
-            return clazz.getDeclaredField(name);
-        }
-        catch(SecurityException e) {
-            return null;
-        }
-        catch(NoSuchFieldException e) {
-            Class<?> superClazz=clazz.getSuperclass();
-            if(superClazz != null && superClazz.isAnnotationPresent(MBean.class)) {
-                return getFieldInHierarchy(superClazz, name);
+		public Object invoke() throws Exception{
+    		return method.invoke(getObject(), new Object[] {});
+    	}
+		
+		public MBeanAttributeInfo getInfo(){
+			return info;
+		}
+    	
+    }   
+    
+    private class FieldAttributeEntry implements AttributeEntry{
+        
+    	private final MBeanAttributeInfo info;
+    	
+    	private final Field field;
+    	
+    	public FieldAttributeEntry(final MBeanAttributeInfo info, final Field field) {
+			super();
+			this.info = info;
+			this.field = field;
+			if(!field.isAccessible()) {
+                field.setAccessible(true);
             }
-            else {
-                return null;
-            }
-        }
+		}
+
+		public Object invoke() throws Exception{
+    		return field.get(getObject());
+    	}
+		
+		public MBeanAttributeInfo getInfo(){
+			return info;
+		}
+    	
+    } 
+    
+    private interface AttributeEntry{
+    	public Object invoke() throws Exception;
+    	public MBeanAttributeInfo getInfo();
     }
+       
 }
