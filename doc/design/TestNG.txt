@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.13 2008/03/06 13:16:13 belaban Exp $
+Version: $Id: TestNG.txt,v 1.14 2008/03/07 15:02:25 belaban Exp $
 
 Goals
 -----
@@ -36,6 +36,7 @@ Goals
      processing even faster (as we don't need sequential processing for methods inside a test), we should do it
      in a second stage. This would allow us to use parallel="tests" or even "methods"
    - Use @Test(sequential=true) at the *class level*, so all methods within a class are executed on the same thread
+   - Move instance variables into methods (unless they are channels)
 
 x. Different stack configs (udp, tcp, mux-udp, mux-tcp etc)
    - As data providers ?
