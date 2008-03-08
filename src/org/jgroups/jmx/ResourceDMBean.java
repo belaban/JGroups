@@ -28,7 +28,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.13 2008/03/07 09:53:27 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.14 2008/03/08 05:56:06 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -235,6 +235,7 @@ public class ResourceDMBean implements DynamicMBean {
         //find all methods 
         Method[] methods=obj.getClass().getMethods();
         for(Method method:methods) {
+            //does method have @ManagedAttribute annotation?
             ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
             if(attr != null) {
                 String methodName=method.getName();
@@ -249,19 +250,16 @@ public class ResourceDMBean implements DynamicMBean {
                     MBeanAttributeInfo info=null;
                     String attributeName=null;
                     boolean writeAttribute=false;
-                    if(methodName.startsWith("set") && method.getReturnType() == java.lang.Void.TYPE) { // setter
-                    	Class<?> params [] = method.getParameterTypes();
-                    	if(params.length == 1){
-                    		attributeName=methodName.substring(3);
-                            info=new MBeanAttributeInfo(attributeName,
-                                                        params[0].getCanonicalName(),
-                                                        attr.description(),
-                                                        true,
-                                                        true,
-                                                        false);
-                            writeAttribute=true;
-                    		
-                    	}                        
+                    if(methodName.startsWith("set") && method.getParameterTypes().length == 1
+                       && method.getReturnType() == java.lang.Void.TYPE) { // setter
+                        attributeName=methodName.substring(3);
+                        info=new MBeanAttributeInfo(attributeName,
+                                                    method.getParameterTypes()[0].getCanonicalName(),
+                                                    attr.description(),
+                                                    true,
+                                                    true,
+                                                    false);
+                        writeAttribute=true;
                     }
                     else { // getter
                         if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
@@ -272,7 +270,7 @@ public class ResourceDMBean implements DynamicMBean {
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
                                                             attr.readable(),
-                                                            true,
+                                                            hasSetter,
                                                             true);
                             }
                             else {
@@ -321,7 +319,7 @@ public class ResourceDMBean implements DynamicMBean {
                         //we already have annotated field as write
                         if(ae instanceof FieldAttributeEntry && ae.getInfo().isWritable()) {
                             log.warn("Not adding annotated method " + methodName
-                                     + " since we already have read attribute");
+                                     + " since we already have writable attribute");
                         }
                         //we already have annotated getOrIs method
                         else if(ae instanceof MethodAttributeEntry) {
@@ -339,6 +337,8 @@ public class ResourceDMBean implements DynamicMBean {
                     }
                 }
             }
+            
+            //does method have @ManagedOPeration annotation?
             ManagedOperation op=method.getAnnotation(ManagedOperation.class);
             if(op != null) {
                 ops.add(new MBeanOperationInfo(op.description(), method));
@@ -410,7 +410,9 @@ public class ResourceDMBean implements DynamicMBean {
         try {
             AttributeEntry entry=atts.get(attribute.getName());
             if(entry != null) {
-                log.debug("Invoking set on attribute " + attribute.getName());
+                log.debug("Invoking set on attribute " + attribute.getName()
+                          + " with value "
+                          + attribute.getValue());
                 entry.invoke(attribute);
                 result=true;
             }
