@@ -3,6 +3,9 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -27,8 +30,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.86 2008/01/22 10:44:34 belaban Exp $
+ * @version $Id: STABLE.java,v 1.87 2008/03/08 09:46:47 vlada Exp $
  */
+@MBean(description="Computes the broadcast messages that are stable")
 public class STABLE extends Protocol {
     private Address               local_addr=null;
     private final Set<Address>    mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
@@ -46,6 +50,7 @@ public class STABLE extends Protocol {
     private final Lock            lock=new ReentrantLock();
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
+    @ManagedAttribute(readable=true,writable=true)
     private long                  desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
@@ -53,11 +58,11 @@ public class STABLE extends Protocol {
     private long                  stability_delay=6000;
 
     @GuardedBy("stability_lock")
-    private Future                stability_task_future=null;
+    private Future<?>                stability_task_future=null;
     private final Lock            stability_lock=new ReentrantLock();   // to synchronize on stability_task
 
     @GuardedBy("stable_task_lock")
-    private Future                stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
+    private Future<?>                stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
     private final Lock            stable_task_lock=new ReentrantLock(); // to sync on stable_task
 
 
@@ -67,6 +72,7 @@ public class STABLE extends Protocol {
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
+    @ManagedAttribute(readable=true,writable=true)
     private long                  max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
@@ -81,7 +87,7 @@ public class STABLE extends Protocol {
 
     private boolean               initialized=false;
 
-    private Future                resume_task_future=null;
+    private Future<?>                resume_task_future=null;
     private final Object          resume_task_mutex=new Object();
 
     private int num_stable_msgs_sent=0;
@@ -112,10 +118,15 @@ public class STABLE extends Protocol {
         this.max_bytes=max_bytes;
     }
 
+    @ManagedAttribute
     public long getBytes() {return num_bytes_received;}
+    @ManagedAttribute
     public int getStableSent() {return num_stable_msgs_sent;}
+    @ManagedAttribute
     public int getStableReceived() {return num_stable_msgs_received;}
+    @ManagedAttribute
     public int getStabilitySent() {return num_stability_msgs_sent;}
+    @ManagedAttribute
     public int getStabilityReceived() {return num_stability_msgs_received;}
 
 
@@ -271,7 +282,7 @@ public class STABLE extends Protocol {
             received.lock();
             boolean locked=true;
             try {
-                num_bytes_received+=(long)msg.getLength();
+                num_bytes_received+=msg.getLength();
                 if(num_bytes_received >= max_bytes) {
                     if(log.isTraceEnabled()) {
                         log.trace(new StringBuilder("max_bytes has been reached (").append(max_bytes).
@@ -318,6 +329,7 @@ public class STABLE extends Protocol {
     }
 
 
+    @ManagedOperation
     public void runMessageGarbageCollection() {
         Digest copy=getDigest();
         sendStableMessage(copy);

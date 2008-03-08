@@ -3,6 +3,8 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
@@ -19,7 +21,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.31 2008/01/25 07:48:59 belaban Exp $
+ * @version $Id: MPING.java,v 1.32 2008/03/08 09:46:46 vlada Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -27,9 +29,13 @@ public class MPING extends PING implements Runnable {
     /** If we have multiple mcast send sockets, e.g. send_interfaces or send_on_all_interfaces enabled */
     MulticastSocket[]      mcast_send_sockets=null;
     Thread                 receiver=null;
+    @ManagedAttribute(description="Bind address for multicast socket",readable=true,writable=true)
     InetAddress            bind_addr=null;
+    @ManagedAttribute(description="Time to live for discovery packets",readable=true,writable=true)
     int                    ip_ttl=8;
+    @ManagedAttribute(description="Multicast address for discovery packets",readable=true,writable=true)
     InetAddress            mcast_addr=null;
+    @ManagedAttribute(description="Multicast port for discovery packets",readable=true,writable=true)
     int                    mcast_port=7555;
 
      /** If true, the transport should use all available interfaces to receive multicast messages */
@@ -70,18 +76,22 @@ public class MPING extends PING implements Runnable {
         this.bind_addr=bind_addr;
     }
 
+    @ManagedAttribute(description="Receive interfaces")
     public List<NetworkInterface> getReceiveInterfaces() {
         return receive_interfaces;
     }
 
+    @ManagedAttribute(description="Send interfaces")
     public List<NetworkInterface> getSendInterfaces() {
         return send_interfaces;
     }
 
+    @ManagedAttribute
     public boolean isReceiveOnAllInterfaces() {
         return receive_on_all_interfaces;
     }
 
+    @ManagedAttribute
     public boolean isSendOnAllInterfaces() {
         return send_on_all_interfaces;
     }

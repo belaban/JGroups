@@ -2,6 +2,9 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.SeqnoTable;
 import org.jgroups.util.Streamable;
@@ -14,8 +17,9 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.20 2007/10/24 09:01:11 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.21 2008/03/08 09:46:46 vlada Exp $
  */
+@MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
     static final String       name="SEQUENCER";
@@ -33,19 +37,26 @@ public class SEQUENCER extends Protocol {
     private long received_forwards=0;
     private long received_bcasts=0;
 
+    @ManagedAttribute
     public boolean isCoordinator() {return is_coord;}
     public Address getCoordinator() {return coord;}
     public Address getLocalAddress() {return local_addr;}
     public String getName() {return name;}
+    @ManagedAttribute
     public long getForwarded() {return forwarded_msgs;}
+    @ManagedAttribute
     public long getBroadcast() {return bcast_msgs;}
+    @ManagedAttribute
     public long getReceivedForwards() {return received_forwards;}
+    @ManagedAttribute
     public long getReceivedBroadcasts() {return received_bcasts;}
 
+    @ManagedOperation
     public void resetStats() {
         forwarded_msgs=bcast_msgs=received_forwards=received_bcasts=0L;
     }
 
+    @ManagedOperation
     public Map<String,Object> dumpStats() {
         Map<String,Object> m=super.dumpStats();
         if(m == null)
@@ -57,6 +68,7 @@ public class SEQUENCER extends Protocol {
         return m;
     }
 
+    @ManagedOperation
     public String printStats() {
         return dumpStats().toString();
     }

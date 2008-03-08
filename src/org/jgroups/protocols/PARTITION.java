@@ -4,6 +4,9 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 
 
@@ -13,9 +16,11 @@ import org.jgroups.stack.Protocol;
  * methods startPartition() or stopPartition() directly. This can also be done via JMX.<p/>
  * A partition simply discards all messages, but let's other events pass.
  * @author Bela Ban
- * @version $Id: PARTITION.java,v 1.3 2007/08/27 11:05:32 belaban Exp $
+ * @version $Id: PARTITION.java,v 1.4 2008/03/08 09:46:46 vlada Exp $
  */
+@MBean(description="Protocol to simulate a partition")
 public class PARTITION extends Protocol {
+    @ManagedAttribute
     protected boolean partition_on=false;
     protected Address local_address=null;
 
@@ -27,10 +32,12 @@ public class PARTITION extends Protocol {
         return partition_on;
     }
 
+    @ManagedOperation
     public void startPartition() {
         partition_on=true;
     }
 
+    @ManagedOperation
     public void stopPartition() {
         partition_on=false;
     }

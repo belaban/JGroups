@@ -1,8 +1,11 @@
-// $Id: UNICAST.java,v 1.95 2008/02/06 12:27:59 belaban Exp $
+// $Id: UNICAST.java,v 1.96 2008/03/08 09:46:46 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
@@ -35,6 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
  */
+@MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
     private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);
@@ -75,8 +79,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /** All protocol names have to be unique ! */
     public String  getName() {return name;}
 
+    @ManagedAttribute
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
+    @ManagedAttribute
     public String getMembers() {return members != null? members.toString() : "[]";}
+    @ManagedOperation
     public String printConnections() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<Address,Entry> entry: connections.entrySet()) {
@@ -85,36 +92,43 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return sb.toString();
     }
 
-
+    @ManagedAttribute
     public long getNumMessagesSent() {
         return num_msgs_sent;
     }
 
+    @ManagedAttribute
     public long getNumMessagesReceived() {
         return num_msgs_received;
     }
 
+    @ManagedAttribute
     public long getNumBytesSent() {
         return num_bytes_sent;
     }
 
+    @ManagedAttribute
     public long getNumBytesReceived() {
         return num_bytes_received;
     }
-
+    
+    @ManagedAttribute
     public long getNumAcksSent() {
         return num_acks_sent;
     }
 
+    @ManagedAttribute
     public long getNumAcksReceived() {
         return num_acks_received;
     }
 
+    @ManagedAttribute
     public long getNumberOfRetransmitRequestsReceived() {
         return num_xmit_requests_received;
     }
 
     /** The number of messages in all Entry.sent_msgs tables (haven't received an ACK yet) */
+    @ManagedAttribute
     public int getNumberOfUnackedMessages() {
         int num=0;
         synchronized(connections) {
@@ -126,7 +140,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return num;
     }
 
-
+    @ManagedAttribute
     public String getUnackedMessages() {
         StringBuilder sb=new StringBuilder();
         Entry e;
@@ -144,6 +158,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
 
+    @ManagedAttribute
     public int getNumberOfMessagesInReceiveWindows() {
         int num=0;
         synchronized(connections) {

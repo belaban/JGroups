@@ -2,6 +2,9 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
@@ -40,6 +43,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @version $Id$
  * @since 2.4
  */
+@MBean(description="Flushes the cluster")
 public class FLUSH extends Protocol {
     public static final String NAME = "FLUSH";
 
@@ -173,22 +177,26 @@ public class FLUSH extends Protocol {
 
     /* -------------------JMX attributes and operations --------------------- */
 
+    @ManagedAttribute
     public double getAverageFlushDuration() {
         return averageFlushDuration;
     }
 
+    @ManagedAttribute
     public long getTotalTimeInFlush() {
         return totalTimeInFlush;
     }
 
+    @ManagedAttribute
     public int getNumberOfFlushes() {
         return numberOfFlushes;
     }
 
+    @ManagedOperation(description="Request cluster flush")
     public boolean startFlush() {        
         return startFlush(new Event(Event.SUSPEND));
     }
-    
+        
     private boolean startFlush(Event evt){        
         return startFlush(evt, flush_retry_count);
     }
@@ -227,6 +235,7 @@ public class FLUSH extends Protocol {
         return successfulFlush;
     }
 
+    @ManagedOperation(description="Request end of flush in a cluster")
     public void stopFlush() {
         down(new Event(Event.RESUME));
     }
