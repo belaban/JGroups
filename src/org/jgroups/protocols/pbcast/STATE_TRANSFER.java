@@ -2,6 +2,8 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.Streamable;
@@ -13,16 +15,16 @@ import java.util.*;
 
 
 /**
- * New STATE_TRANSFER protocol based on PBCAST. Compared to the one in
- * ./protocols, it doesn't need a QUEUE layer above it. A state request is sent
+ * STATE_TRANSFER protocol based on byte array transfer. A state request is sent
  * to a chosen member (coordinator if null). That member makes a copy D of its
  * current digest and asks the application for a copy of its current state S.
  * Then the member returns both S and D to the requester. The requester first
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.77 2008/02/13 02:13:29 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.78 2008/03/08 09:46:46 vlada Exp $
  */
+@MBean(description="State trasnfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
     final Vector<Address>   members=new Vector<Address>();
@@ -48,8 +50,11 @@ public class STATE_TRANSFER extends Protocol {
         return name;
     }
 
+    @ManagedAttribute
     public int getNumberOfStateRequests() {return num_state_reqs;}
+    @ManagedAttribute
     public long getNumberOfStateBytesSent() {return num_bytes_sent;}
+    @ManagedAttribute
     public double getAverageStateSize() {return avg_state_size;}
 
     public Vector<Integer> requiredDownServices() {
@@ -305,7 +310,7 @@ public class STATE_TRANSFER extends Protocol {
             if(members != null && members.size() > 1) {
                 for(int i=0; i < members.size(); i++)
                     if(!local_addr.equals(members.elementAt(i)))
-                        return (Address)members.elementAt(i);
+                        return members.elementAt(i);
             }
         }
         return ret;

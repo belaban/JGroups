@@ -2,6 +2,8 @@ package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -62,6 +64,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @version $Id$
  * 
  */
+@MBean(description="State trasnfer protocol based on streaming state transfer")
 public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private final static String NAME = "STREAMING_STATE_TRANSFER";
@@ -114,14 +117,17 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         return NAME;
     }
 
+    @ManagedAttribute
     public int getNumberOfStateRequests() {
         return num_state_reqs.get();
     }
 
+    @ManagedAttribute
     public long getNumberOfStateBytesSent() {
         return num_bytes_sent.get();
     }
 
+    @ManagedAttribute
     public double getAverageStateSize() {
         return avg_state_size;
     }

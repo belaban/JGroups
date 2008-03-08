@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -31,9 +32,13 @@ public abstract class BasicTCP extends TP {
      */
     final BoundedList<Address>  suspected_mbrs=new BoundedList<Address>(20);
     protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
+    @ManagedAttribute(description="Find first available port starting at this port",readable=true,writable=true)
     protected int          start_port=7800;    // find first available port starting at this port
+    @ManagedAttribute(description="Maximum port to bind to",readable=true,writable=true)
     protected int	       end_port=0;         // maximum port to bind to
+    @ManagedAttribute(description="Reaper interval",readable=true,writable=true)
     protected long         reaper_interval=0;  // time in msecs between connection reaps
+    @ManagedAttribute(description="Connection expiration time",readable=true,writable=true)
     protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
     /** Use separate send queues for each connection */
     boolean                use_send_queues=true;

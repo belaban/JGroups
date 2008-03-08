@@ -2,6 +2,9 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
@@ -21,8 +24,9 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.19 2007/09/07 11:42:44 belaban Exp $
+ * @version $Id: SFC.java,v 1.20 2008/03/08 09:46:46 vlada Exp $
  */
+@MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
     static final String name="SFC";
 
@@ -93,18 +97,29 @@ public class SFC extends Protocol {
         blockings.clear();
     }
 
+    @ManagedAttribute
     public long getMaxCredits() {return max_credits;}
+    @ManagedAttribute
     public long getCredits() {return curr_credits_available;}
+    @ManagedAttribute
     public long getBytesSent() {return num_bytes_sent;}
+    @ManagedAttribute
     public long getBlockings() {return num_blockings;}
+    @ManagedAttribute
     public long getCreditRequestsSent() {return num_credit_requests_sent;}
+    @ManagedAttribute
     public long getCreditRequestsReceived() {return num_credit_requests_received;}
+    @ManagedAttribute
     public long getReplenishmentsReceived() {return num_replenishments_received;}
+    @ManagedAttribute
     public long getReplenishmentsSent() {return num_replenishments_sent;}
+    @ManagedAttribute
     public long getTotalBlockingTime() {return total_block_time;}
+    @ManagedAttribute
     public double getAverageBlockingTime() {return num_blockings == 0? 0 : total_block_time / num_blockings;}
 
 
+    @ManagedOperation
     public Map<String,Object> dumpStats() {
         Map<String,Object> retval=super.dumpStats();
         if(retval == null)
@@ -112,10 +127,12 @@ public class SFC extends Protocol {
         return retval;
     }
 
+    @ManagedOperation
     public String printBlockingTimes() {
         return blockings.toString();
     }
 
+    @ManagedOperation
     public String printReceived() {
         received_lock.lock();
         try {
@@ -125,7 +142,7 @@ public class SFC extends Protocol {
             received_lock.unlock();
         }
     }
-
+    @ManagedOperation
     public String printPendingCreditors() {
         lock.lock();
         try {
@@ -135,7 +152,7 @@ public class SFC extends Protocol {
             lock.unlock();
         }
     }
-
+    @ManagedOperation
     public String printPendingRequesters() {
         received_lock.lock();
         try {
@@ -145,7 +162,8 @@ public class SFC extends Protocol {
             received_lock.unlock();
         }
     }
-
+    
+    @ManagedOperation
     public void unblock() {
         lock.lock();
         try {

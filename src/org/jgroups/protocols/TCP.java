@@ -1,9 +1,11 @@
-// $Id: TCP.java,v 1.46 2007/11/27 15:05:23 belaban Exp $
+// $Id: TCP.java,v 1.47 2008/03/08 09:46:46 vlada Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.blocks.ConnectionTable;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.PortsManager;
@@ -37,7 +39,9 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
     }
 
 
+    @ManagedAttribute
     public int getOpenConnections()      {return ct.getNumConnections();}
+    @ManagedOperation
     public String printConnections()     {return ct.toString();}
 
 

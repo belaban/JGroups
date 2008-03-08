@@ -4,6 +4,9 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
@@ -22,8 +25,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.24 2007/08/31 11:53:23 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.25 2008/03/08 09:46:46 vlada Exp $
  */
+@MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
     Address               local_addr=null;
     final Vector<Address> mbrs=new Vector<Address>();
@@ -31,13 +35,14 @@ public class VIEW_SYNC extends Protocol {
     ViewId                my_vid=null;
 
     /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
+    @ManagedAttribute(description="Sends a VIEW_SYNC message to the group every 20 seconds on average",readable=true,writable=true)
     long                 avg_send_interval=60000;
 
     private int          num_views_sent=0;
     private int          num_views_adjusted=0;
 
     @GuardedBy("view_task_lock")
-    private Future       view_send_task_future=null;       // bcasts periodic view sync message (added to timer below)
+    private Future<?>       view_send_task_future=null;       // bcasts periodic view sync message (added to timer below)
 
     private final Lock   view_task_lock=new ReentrantLock();
 
@@ -58,14 +63,17 @@ public class VIEW_SYNC extends Protocol {
         avg_send_interval=gossip_interval;
     }
 
+    @ManagedAttribute
     public int getNumViewsSent() {
         return num_views_sent;
     }
 
+    @ManagedAttribute
     public int getNumViewsAdjusted() {
         return num_views_adjusted;
     }
 
+    @ManagedOperation
     public void resetStats() {
         super.resetStats();
         num_views_adjusted=num_views_sent=0;
@@ -104,6 +112,7 @@ public class VIEW_SYNC extends Protocol {
     }
 
     /** Sends a VIEW_SYNC_REQ to all members, every member replies with a VIEW multicast */
+    @ManagedOperation(description="Sends a VIEW_SYNC_REQ to all members")
     public void sendViewRequest() {
         Message msg=new Message(null);
         msg.setFlag(Message.OOB);
@@ -178,7 +187,7 @@ public class VIEW_SYNC extends Protocol {
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
     private void handleView(View v, Address sender) {
-        Vector members=v.getMembers();
+        Vector<Address> members=v.getMembers();
         if(!members.contains(local_addr)) {
             if(log.isWarnEnabled())
                 log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
@@ -354,7 +363,7 @@ public class VIEW_SYNC extends Protocol {
         public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
             type=in.readInt();
             byte b=in.readByte();
-            Class clazz=b == 2? MergeView.class : View.class;
+            Class<?> clazz=b == 2? MergeView.class : View.class;
             view=(View)Util.readStreamable(clazz, in);
         }
 
