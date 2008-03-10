@@ -12,7 +12,7 @@ import org.jgroups.annotations.ManagedOperation;
  * Registers annotated object instances with with MBeanServer. 
  * 
  * @author Chris Mills
- * @version $Id: Registration.java,v 1.4 2008/03/07 01:30:42 vlada Exp $
+ * @version $Id: Registration.java,v 1.5 2008/03/10 09:01:19 vlada Exp $
  * 
  * @see ManagedAttribute
  * @see ManagedOperation
@@ -50,13 +50,13 @@ public class Registration {
         if(server == null)
             throw new IllegalArgumentException("MBean server used for registeration cannot be null");
 
-        if(!obj.getClass().isAnnotationPresent(MBean.class)) {
+        /*if(!obj.getClass().isAnnotationPresent(MBean.class)) {
             throw new MBeanRegistrationException(null,
                                                  "Instance " + obj
                                                          + " of a class "
                                                          + obj.getClass()
                                                          + " is not annotated with the @MBean annotation");
-        }
+        }*/
 
         try {
             ObjectName objName=getObjectName(obj, name);
@@ -78,11 +78,7 @@ public class Registration {
                 log.error("register MBean failed " + e.getMessage());
             }
             throw new MBeanRegistrationException(e);
-        }
-        finally {
-            MBean resource=obj.getClass().getAnnotation(MBean.class);
-            resource.objectName();
-        }
+        }        
 
     }
 
