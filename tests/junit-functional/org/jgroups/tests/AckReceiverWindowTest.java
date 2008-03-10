@@ -1,105 +1,86 @@
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.stack.AckReceiverWindow;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
  */
-public class AckReceiverWindowTest extends TestCase {
-    AckReceiverWindow win;
+public class AckReceiverWindowTest {
 
 
-    public AckReceiverWindowTest(String name) {
-        super(name);
-    }
-
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
-
-    public void test1() {
+    @Test(groups=Global.FUNCTIONAL)
+    public static void test1() {
         Message m;
-        win=new AckReceiverWindow(10);
-        assertEquals(0, win.size());
+        AckReceiverWindow win=new AckReceiverWindow(10);
+        Assert.assertEquals(0, win.size());
         win.add(9, msg());
-        assertEquals(0, win.size());
+        Assert.assertEquals(0, win.size());
 
         win.add(10, msg());
-        assertEquals(1, win.size());
+        Assert.assertEquals(1, win.size());
 
         win.add(13, msg());
-        assertEquals(2, win.size());
+        Assert.assertEquals(2, win.size());
 
         m=win.remove();
-        assertNotNull(m);
-        assertEquals(1, win.size());
+        assert m != null;
+        Assert.assertEquals(1, win.size());
 
         m=win.remove();
-        assertNull(m);
-        assertEquals(1, win.size());
+        assert m == null;
+        Assert.assertEquals(1, win.size());
 
         win.add(11, msg());
         win.add(12, msg());
-        assertEquals(3, win.size());
+        Assert.assertEquals(3, win.size());
 
         m=win.remove();
-        assertNotNull(m);
+        assert m != null;
         m=win.remove();
-        assertNotNull(m);
+        assert m != null;
         m=win.remove();
-        assertNotNull(m);
-        assertEquals(0, win.size());
+        assert m != null;
+        Assert.assertEquals(0, win.size());
         m=win.remove();
-        assertNull(m);
+        assert m == null;
     }
 
 
-    public void testDuplicates() {
+    @Test(groups=Global.FUNCTIONAL)
+    public static void testDuplicates() {
         boolean rc;
-        win=new AckReceiverWindow(2);
-        assertEquals(0, win.size());
+        AckReceiverWindow win=new AckReceiverWindow(2);
+        Assert.assertEquals(0, win.size());
         rc=win.add(9, msg());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(1, msg());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(2, msg());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(2, msg());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(0, msg());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(3, msg());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(4, msg());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(4, msg());
-        assertFalse(rc);
+        assert !(rc);
     }
 
-    private Message msg() {
+    private static Message msg() {
         return new Message();
     }
 
 
-    public static Test suite() {
-        return new TestSuite(AckReceiverWindowTest.class);
-    }
 
-
-    public static void main(String[] args) {
-        String[] testCaseName={AckReceiverWindowTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }

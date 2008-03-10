@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.8 2008/03/10 09:31:26 belaban Exp $
+ * @version $Id: JmxDemo.java,v 1.9 2008/03/10 15:39:26 belaban Exp $
  */
 @MBean
 public class JmxDemo {
@@ -38,7 +38,7 @@ public class JmxDemo {
     public void setNumber(int num) {number=num;}
 
     @ManagedAttribute
-    public int getMyFoo() {return 22;} // exposed as 'myFoo' *not* 'getMyFoo()' !!
+    public static int getMyFoo() {return 22;} // exposed as 'myFoo' *not* 'getMyFoo()' !!
 
     @ManagedAttribute(writable=true)
     private static int my_other_number_is_here=999; // exposed as writable myOtherNumberIsHere
@@ -53,7 +53,7 @@ public class JmxDemo {
     public void foobar() {} // doesn't start with setXXX() or getXXX(), ignored
 
     @ManagedAttribute
-    public boolean isFlag() {return true;} // exposed as Flag, *not* 'isFlag()' !!
+    public static boolean isFlag() {return true;} // exposed as Flag, *not* 'isFlag()' !!
 
     @ManagedAttribute(description="my number attribute")
     private long my_number=322649L;

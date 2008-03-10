@@ -1,28 +1,33 @@
-// $Id: ViewTest.java,v 1.2 2007/08/08 10:14:00 belaban Exp $
+// $Id: ViewTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.View;
 import org.jgroups.ViewId;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.util.Vector;
 
 
-public class ViewTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL)
+public class ViewTest {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
     View view;
     Vector members;
     
 
     public ViewTest(String Name_) {
-        super(Name_);
     }
 
+    @BeforeClass
     public void setUp() throws Exception {
-        super.setUp();
         a=new IpAddress("localhost", 5555);
         b=new IpAddress("localhost", 5555);
         c=b;
@@ -46,57 +51,40 @@ public class ViewTest extends TestCase {
     }
 
     public void testContainsMember() {
-        assertTrue("Member should be in view", view.containsMember(a));
-        assertTrue("Member should be in view", view.containsMember(b));
-        assertTrue("Member should be in view", view.containsMember(c));
-        assertTrue("Member should be in view", view.containsMember(d));
-        assertTrue("Member should be in view", view.containsMember(e));
-        assertTrue("Member should be in view", view.containsMember(f));
-        assertTrue("Member should not be in view", !view.containsMember(i));
+        assert view.containsMember(a) : "Member should be in view";
+        assert view.containsMember(b) : "Member should be in view";
+        assert view.containsMember(c) : "Member should be in view";
+        assert view.containsMember(d) : "Member should be in view";
+        assert view.containsMember(e) : "Member should be in view";
+        assert view.containsMember(f) : "Member should be in view";
+        assert !view.containsMember(i) : "Member should not be in view";
     }
 
     public void testEqualsCreator() {
-        assertEquals("Creator should be a:", view.getCreator(), a);
-        assertTrue("Creator should not be d", !view.getCreator().equals(d));
+        Assert.assertEquals(a, view.getCreator(), "Creator should be a:");
+        assert !view.getCreator().equals(d) : "Creator should not be d";
     }
 
     public void testEquals() {
-        assertEquals(view, view);
+        Assert.assertEquals(view, view);
     }
 
     public void testEquals2() {
         View v1=new View(new ViewId(a, 12345), (Vector)members.clone());
         View v2=new View(a, 12345, (Vector)members.clone());
-        assertEquals(v1, v2);
+        Assert.assertEquals(v1, v2);
         View v3=new View(a, 12543, (Vector)members.clone());
-        assertFalse(v1.equals(v3));
+        assert !(v1.equals(v3));
     }
 
 
-    public void testEquals3() {
+    public static void testEquals3() {
         View v1, v2;
         v1=new View();
         v2=new View();
-        assertEquals(v1, v2);
+        Assert.assertEquals(v1, v2);
     }
 
-    public void tearDown() throws Exception {
-        a=null;
-        b=null;
-        c=null;
-        d=null;
-        e=null;
-        f=null;
-        g=null;
-        h=null;
-        i=null;
-        view=null;
-        super.tearDown();
-    }
 
-    public static void main(String[] args) {
-        String[] testCaseName={ViewTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    } //public static void main(String[] args)
 
-} //public class ViewTest extends TestCase
+}

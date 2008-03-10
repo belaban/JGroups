@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.4 2008/03/10 15:39:25 belaban Exp $
  */
 public class NAKACK_OOB_Test extends TestCase {
     JChannel ch1, ch2, ch3;

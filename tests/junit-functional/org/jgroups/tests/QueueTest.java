@@ -1,252 +1,232 @@
-// $Id: QueueTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: QueueTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
+import org.jgroups.Global;
 import org.jgroups.TimeoutException;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
-import java.util.LinkedList;
 import java.util.ArrayList;
+import java.util.LinkedList;
 
 
-public class QueueTest extends TestCase {
-    private Queue queue=null;
-
-    public QueueTest(String Name_) {
-        super(Name_);
-    }
-
-    public void setUp() throws Exception {
-        super.setUp();
-        queue=new Queue();
-    }
+@Test(groups=Global.FUNCTIONAL)
+public class QueueTest {
 
 
-    public void tearDown() throws Exception {
-        super.tearDown();
-        if(queue != null) {
-            queue.reset();
-        }
-    }
 
+    public static void testQueue() throws QueueClosedException {
+        final Queue queue=new Queue();
+        queue.add("Q1");
+        queue.add("Q2");
+        queue.add("Q3");
 
-    public void testQueue() {
-        try {
-            queue.add("Q1");
-            queue.add("Q2");
-            queue.add("Q3");
+        Assert.assertEquals("Q1", queue.peek());
+        Assert.assertEquals("Q1", queue.remove());
 
-            assertEquals("Q1", queue.peek());
-            assertEquals("Q1", queue.remove());
+        Assert.assertEquals("Q2", queue.peek());
+        Assert.assertEquals("Q2", queue.remove());
 
-            assertEquals("Q2", queue.peek());
-            assertEquals("Q2", queue.remove());
+        queue.addAtHead("Q4");
+        queue.add("Q5");
+        Assert.assertEquals("Q4", queue.peek());
+        Assert.assertEquals("Q4", queue.remove());
 
-            queue.addAtHead("Q4");
-            queue.add("Q5");
-            assertEquals("Q4", queue.peek());
-            assertEquals("Q4", queue.remove());
-
-            queue.close(true);
-
-            try {
-                queue.add("Q6");
-                fail("should not get here");
-            }
-            catch(org.jgroups.util.QueueClosedException qc) {
-                assertTrue(true);
-            }
-
-            int size=queue.size();
-            queue.removeElement("Q5");
-            assertEquals((size - 1), queue.size());
-
-            assertEquals("Q3", queue.peek());
-            assertEquals("Q3", queue.remove());
-            assertTrue(queue.closed());
-            System.out.println("Everything is ok");
-        }
-        catch(Exception x) {
-            System.out.println(x);
-            fail();
-        }
-    }
-
-
-    public void testCloseWithoutFlush() {
-        queue.close(false);
-        try {
-            queue.remove();
-            fail("we should have gotten a QueueClosedException trying to remove an element from a closed queue");
-        }
-        catch(QueueClosedException e) {
-            assertTrue("queue is closed, this is okay", queue.closed());
-        }
-    }
-
-
-    public void testCloseWithFlush() {
         queue.close(true);
+
         try {
-            queue.remove();
-            fail("we should have gotten a QueueClosedException trying to remove an element from a closed queue");
+            queue.add("Q6");
+            assert false : "should not get here";
         }
-        catch(QueueClosedException e) {
-            assertTrue("queue is closed, this is okay", queue.closed());
+        catch(org.jgroups.util.QueueClosedException qc) {
+            assert true;
         }
+
+        int size=queue.size();
+        queue.removeElement("Q5");
+        Assert.assertEquals((size - 1), queue.size());
+
+        Assert.assertEquals("Q3", queue.peek());
+        Assert.assertEquals("Q3", queue.remove());
+        assert queue.closed();
     }
 
 
-    public void testCloseWithFlush2() throws QueueClosedException {
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testCloseWithoutFlush() throws QueueClosedException {
+        final Queue queue=new Queue();
+        queue.close(false);
+        queue.remove();
+    }
+
+
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testCloseWithFlush() throws QueueClosedException {
+        final Queue queue=new Queue();
+        queue.close(true);
+        queue.remove();
+    }
+
+
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testCloseWithFlush2() throws QueueClosedException {
+        final Queue queue=new Queue();
         queue.add(new Integer(1));
         queue.add(new Integer(2));
         queue.add(new Integer(3));
         queue.close(true);
-        try {
-            for(int i=1; i <= 3; i++) {
-                Object obj=queue.remove();
-                assertNotNull(obj);
-                assertEquals(obj, new Integer(i));
-            }
-            queue.remove();
-            fail("we should have gotten a QueueClosedException trying to remove an element from a closed queue");
+        for(int i=1; i <= 3; i++) {
+            Object obj=queue.remove();
+            assert obj != null;
+            Assert.assertEquals(obj, new Integer(i));
         }
-        catch(QueueClosedException e) {
-            assertTrue("queue is closed, this is okay", queue.closed());
-        }
+        queue.remove();
     }
 
 
-    public void testValues() throws QueueClosedException {
+
+    public static void testValues() throws QueueClosedException {
+        final Queue queue=new Queue();
         queue.add(new Integer(1));
         queue.add(new Integer(3));
         queue.add(new Integer(99));
         queue.add(new Integer(8));
         System.out.println("queue: " + Util.dumpQueue(queue));
         int size=queue.size();
-        assertEquals(4, size);
+        Assert.assertEquals(4, size);
         LinkedList values=queue.values();
-        assertEquals(size, values.size());
+        Assert.assertEquals(size, values.size());
     }
 
 
-    public void testLargeInsertion() {
+
+    public static void testLargeInsertion() throws QueueClosedException {
         String element="MyElement";
         long start, stop;
+        final Queue queue=new Queue();
 
-        try {
-            System.out.println("Inserting 100000 elements");
-            start=System.currentTimeMillis();
-            for(int i=0; i < 100000; i++)
-                queue.add(element);
-            stop=System.currentTimeMillis();
-            System.out.println("Took " + (stop - start) + " msecs");
+        System.out.println("Inserting 100000 elements");
+        start=System.currentTimeMillis();
+        for(int i=0; i < 100000; i++)
+            queue.add(element);
+        stop=System.currentTimeMillis();
+        System.out.println("Took " + (stop - start) + " msecs");
 
-            System.out.println("Removing 100000 elements");
-            start=System.currentTimeMillis();
-            while(queue.size() > 0)
-                queue.remove();
-            stop=System.currentTimeMillis();
-            System.out.println("Took " + (stop - start) + " msecs");
-        }
-        catch(Exception ex) {
-            System.err.println(ex);
-            fail();
-        }
+        System.out.println("Removing 100000 elements");
+        start=System.currentTimeMillis();
+        while(queue.size() > 0)
+            queue.remove();
+        stop=System.currentTimeMillis();
+        System.out.println("Took " + (stop - start) + " msecs");
     }
 
 
-    public void testEmptyQueue() {
-        assertNull(queue.getFirst());
-        assertNull(queue.getLast());
-        assertEquals(queue.getFirst(), queue.getLast()); // both are null; they're equal
+
+    public static void testEmptyQueue() {
+        final Queue queue=new Queue();
+        assert queue.getFirst() == null;
+        assert queue.getLast() == null;
+        Assert.assertEquals(queue.getFirst(), queue.getLast());
     }
 
-    public void testAddAll() throws QueueClosedException {
+
+    public static void testAddAll() throws QueueClosedException {
+        final Queue queue=new Queue();
         ArrayList l=new ArrayList();
         l.add("one");
         l.add("two");
         l.add("three");
         queue.addAll(l);
         System.out.println("queue is " + queue);
-        assertEquals(3, queue.size());
-        assertEquals("one", queue.remove());
-        assertEquals(2, queue.size());
-        assertEquals("two", queue.remove());
-        assertEquals(1, queue.size());
-        assertEquals("three", queue.remove());
-        assertEquals(0, queue.size());
+        Assert.assertEquals(3, queue.size());
+        Assert.assertEquals("one", queue.remove());
+        Assert.assertEquals(2, queue.size());
+        Assert.assertEquals("two", queue.remove());
+        Assert.assertEquals(1, queue.size());
+        Assert.assertEquals("three", queue.remove());
+        Assert.assertEquals(0, queue.size());
     }
 
-    public void testInsertionAndRemoval() throws Exception {
+
+    public static void testInsertionAndRemoval() throws Exception {
+        final Queue queue=new Queue();
         String s1="Q1", s2="Q2";
 
         queue.add(s1);
-        assertTrue(queue.getFirst() != null);
-        assertTrue(queue.getLast() != null);
-        assertEquals(queue.getFirst(), queue.getLast());
+        assert queue.getFirst() != null;
+        assert queue.getLast() != null;
+        Assert.assertEquals(queue.getFirst(), queue.getLast());
 
         queue.add(s2);
-        assertTrue(queue.getFirst() != queue.getLast());
+        assert queue.getFirst() != queue.getLast();
 
         Object o1=queue.peek();
         Object o2=queue.getFirst();
 
         System.out.println("o1=" + o1 + ", o2=" + o2 + ", o1.equals(o2)=" + o1.equals(o2));
 
-        assertEquals(queue.peek(), queue.getFirst());
+        Assert.assertEquals(queue.peek(), queue.getFirst());
         queue.remove();
 
-        assertEquals(1, queue.size());
-        assertEquals(queue.getFirst(), queue.getLast());
+        Assert.assertEquals(1, queue.size());
+        Assert.assertEquals(queue.getFirst(), queue.getLast());
         queue.remove();
 
-        assertEquals(0, queue.size());
-        assertTrue(queue.getFirst() == null);
-        assertTrue(queue.getLast() == null);
+        Assert.assertEquals(0, queue.size());
+        assert queue.getFirst() == null;
+        assert queue.getLast() == null;
     }
 
 
-    public void testWaitUntilClosed() {
+
+    public static void testWaitUntilClosed() {
+        final Queue queue=new Queue();
         queue.close(true);
         queue.waitUntilClosed(0);
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
     }
 
-    public void testWaitUntilClosed2() {
+
+    public static void testWaitUntilClosed2() {
+        final Queue queue=new Queue();
         queue.close(true);
         try {
             queue.peek();
-            fail("peek() should throw a QueueClosedException");
+            assert false : "peek() should throw a QueueClosedException";
         }
         catch(QueueClosedException e) {
-            assertTrue(e != null);
+            assert e != null;
         }
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
     }
 
-    public void testWaitUntilClosed3() throws QueueClosedException {
+
+    public static void testWaitUntilClosed3() throws QueueClosedException {
+        final Queue queue=new Queue();
         queue.add("one");
         queue.close(true);
         Object obj=queue.peek();
-        assertEquals("one", obj);
-        assertEquals(1, queue.size());
+        Assert.assertEquals("one", obj);
+        Assert.assertEquals(1, queue.size());
         queue.remove();
         try {
             queue.peek();
-            fail("peek() should throw a QueueClosedException");
+            assert false : "peek() should throw a QueueClosedException";
         }
         catch(QueueClosedException e) {
-            assertTrue(e != null);
+            assert e != null;
         }
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
     }
 
-    public void testWaitUntilClosed4() throws QueueClosedException {
+
+    public static void testWaitUntilClosed4() throws QueueClosedException {
+        final Queue queue=new Queue();
         for(int i=0; i < 10; i++)
             queue.add(new Integer(i));
         new Thread() {
@@ -264,11 +244,13 @@ public class QueueTest extends TestCase {
         }.start();
         queue.close(true);
         queue.waitUntilClosed(0);
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
     }
 
 
-    public void testWaitUntilClosed5() throws QueueClosedException {
+
+    public static void testWaitUntilClosed5() throws QueueClosedException {
+        final Queue queue=new Queue();
         for(int i=0; i < 10; i++)
             queue.add(new Integer(i));
         new Thread() {
@@ -289,179 +271,178 @@ public class QueueTest extends TestCase {
         Util.sleep(600);
         queue.close(false);
         queue.waitUntilClosed(0);
-        assertTrue(queue.size() > 0);
+        assert queue.size() > 0;
     }
 
 
 
-    public void testRemoveElementNoElement() {
+
+    public static void testRemoveElementNoElement() {
+        final Queue queue=new Queue();
         String s1="Q1";
 
         try {
             queue.removeElement(s1);
-            assertFalse(queue.closed());
-            assertEquals(0, queue.size());
+            assert !(queue.closed());
+            Assert.assertEquals(0, queue.size());
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
 
-    public void testRemoveElementOneElement() {
+
+    public static void testRemoveElementOneElement() {
+        final Queue queue=new Queue();
         String s1="Q1";
 
         try {
             queue.add(s1);
             queue.removeElement(s1);
-            assertEquals(0, queue.size());
-            assertTrue(queue.getFirst() == null);
-            assertTrue(queue.getLast() == null);
+            Assert.assertEquals(0, queue.size());
+            assert queue.getFirst() == null;
+            assert queue.getLast() == null;
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
-    public void testRemoveElementTwoElementsFirstFound() {
+
+    public static void testRemoveElementTwoElementsFirstFound() {
         String s1="Q1", s2="Q2";
+        final Queue queue=new Queue();
 
         try {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s1);
-            assertEquals(1, queue.size());
-            assertEquals(queue.getFirst(), s2);
-            assertEquals(queue.getLast(), s2);
-            assertEquals(queue.getFirst(), queue.getLast());
+            Assert.assertEquals(1, queue.size());
+            Assert.assertEquals(queue.getFirst(), s2);
+            Assert.assertEquals(queue.getLast(), s2);
+            Assert.assertEquals(queue.getFirst(), queue.getLast());
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
-    public void testRemoveElementTwoElementsSecondFound() {
+
+    public static void testRemoveElementTwoElementsSecondFound() {
         String s1="Q1", s2="Q2";
+        final Queue queue=new Queue();
 
         try {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s2);
-            assertEquals(1, queue.size());
-            assertEquals(queue.getFirst(), s1);
-            assertEquals(queue.getLast(), s1);
-            assertEquals(queue.getFirst(), queue.getLast());
+            Assert.assertEquals(1, queue.size());
+            Assert.assertEquals(queue.getFirst(), s1);
+            Assert.assertEquals(queue.getLast(), s1);
+            Assert.assertEquals(queue.getFirst(), queue.getLast());
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
-    public void testRemoveElementThreeElementsFirstFound() {
+
+    public static void testRemoveElementThreeElementsFirstFound() {
         String s1="Q1", s2="Q2", s3="Q3";
+        final Queue queue=new Queue();
 
         try {
             queue.add(s1);
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s1);
-            assertEquals(2, queue.size());
-            assertEquals(queue.getFirst(), s2);
-            assertEquals(queue.getLast(), s3);
+            Assert.assertEquals(2, queue.size());
+            Assert.assertEquals(queue.getFirst(), s2);
+            Assert.assertEquals(queue.getLast(), s3);
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
-    public void testRemoveElementThreeElementsSecondFound() {
+
+    public static void testRemoveElementThreeElementsSecondFound() {
         String s1="Q1", s2="Q2", s3="Q3";
+        final Queue queue=new Queue();
 
         try {
             queue.add(s1);
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s2);
-            assertEquals(2, queue.size());
-            assertEquals(queue.getFirst(), s1);
-            assertEquals(queue.getLast(), s3);
+            Assert.assertEquals(2, queue.size());
+            Assert.assertEquals(queue.getFirst(), s1);
+            Assert.assertEquals(queue.getLast(), s3);
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
-    public void testRemoveElementThreeElementsThirdFound() {
+
+    public static void testRemoveElementThreeElementsThirdFound() {
         String s1="Q1", s2="Q2", s3="Q3";
+        final Queue queue=new Queue();
 
         try {
             queue.add(s1);
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s3);
-            assertEquals(2, queue.size());
-            assertEquals(queue.getFirst(), s1);
-            assertEquals(queue.getLast(), s2);
+            Assert.assertEquals(2, queue.size());
+            Assert.assertEquals(queue.getFirst(), s1);
+            Assert.assertEquals(queue.getLast(), s2);
         }
         catch(QueueClosedException ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
     }
 
 
-    public void testRemoveAndClose() {
-        try {
-            new Thread() {
-                public void run() {
-                    Util.sleep(1000);
-                    queue.close(true); // close gracefully
-                }
-            }.start();
-
-            queue.remove();
-            fail("we should not be able to remove an object from a closed queue");
-        }
-        catch(QueueClosedException ex) {
-            assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
-        }
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testRemoveAndClose() throws QueueClosedException {
+        final Queue queue=new Queue();
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                queue.close(true); // close gracefully
+            }
+        }.start();
+        queue.remove();
     }
 
 
-    public void testRemoveAndCloseWithTimeout() throws TimeoutException {
-        try {
-            new Thread() {
-                public void run() {
-                    Util.sleep(1000);
-                    queue.close(true); // close gracefully
-                }
-            }.start();
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testRemoveAndCloseWithTimeout() throws QueueClosedException, TimeoutException {
+        final Queue queue=new Queue();
+        new Thread() {
+            public void run() {
+                Util.sleep(1000);
+                queue.close(true); // close gracefully
+            }
+        }.start();
 
-            queue.remove(5000);
-            fail("we should not be able to remove an object from a closed queue");
-        }
-        catch(QueueClosedException ex) {
-            assertTrue(ex instanceof QueueClosedException); // of course, stupid comparison...
-        }
-        catch(TimeoutException timeout) {
-            fail("we should not get a TimeoutException, but a QueueClosedException here");
-        }
+        queue.remove(5000);
     }
 
 
-    public void testInterruptAndRemove() throws QueueClosedException {
+    @Test(expectedExceptions=TimeoutException.class)
+    public static void testInterruptAndRemove() throws QueueClosedException, TimeoutException {
+        final Queue queue=new Queue();
         Thread.currentThread().interrupt();
-        Object el=null;
-        try {
-            el=queue.remove(2000);
-            fail("we should not get here");
-        }
-        catch(TimeoutException e) {
-            assertNull(el);
-        }
+        queue.remove(2000);
     }
 
 
-    public void testRemoveAndInterrupt() {
+    @Test(expectedExceptions=QueueClosedException.class)
+    public static void testRemoveAndInterrupt() throws QueueClosedException {
+        final Queue queue=new Queue();
 
         Thread closer=new Thread() {
             public void run() {
@@ -473,34 +454,29 @@ public class QueueTest extends TestCase {
         closer.start();
 
         System.out.println("-- removing element");
-        try {
-            queue.remove();
-            fail("we should not get here, as the queue is closed");
-        }
-        catch(QueueClosedException e) {
-            System.out.println("-- received queue closed exception - as expected");
-        }
-
+        queue.remove();
     }
 
-    public void testClear() throws QueueClosedException {
+
+    public static void testClear() throws QueueClosedException {
+        Queue queue=new Queue();
         queue.add("one");
         queue.add("two");
-        assertEquals(2, queue.size());
+        Assert.assertEquals(2, queue.size());
         queue.close(true);
-        assertEquals(2, queue.size());
+        Assert.assertEquals(2, queue.size());
         queue.clear();
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
         queue=new Queue();
         queue.add("one");
         queue.add("two");
         queue.clear();
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
         queue.add("one");
         queue.add("two");
-        assertEquals(2, queue.size());
+        Assert.assertEquals(2, queue.size());
         queue.clear();
-        assertEquals(0, queue.size());
+        Assert.assertEquals(0, queue.size());
     }
 
 
@@ -598,36 +574,24 @@ public class QueueTest extends TestCase {
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
      * (the one that has the element) */
-    public void testBarrier() {
+    public static void testBarrier() throws QueueClosedException {
         RemoveOneItem[] removers=new RemoveOneItem[10];
+        final Queue queue=new Queue();
         int num_dead=0;
 
         for(int i=0; i < removers.length; i++) {
-            removers[i]=new RemoveOneItem(i);
+            removers[i]=new RemoveOneItem(i, queue);
             removers[i].start();
         }
 
-        Util.sleep(1000);
+        Util.sleep(200);
 
         System.out.println("-- adding element 99");
-        try {
-            queue.add(new Long(99));
-        }
-        catch(Exception ex) {
-            System.err.println(ex);
-        }
-
-        Util.sleep(5000);
+        queue.add(new Long(99));
         System.out.println("-- adding element 100");
-        try {
-            queue.add(new Long(100));
-        }
-        catch(Exception ex) {
-            System.err.println(ex);
-        }
+        queue.add(new Long(100));
 
-        Util.sleep(1000);
-
+        Util.sleep(500);
         for(int i=0; i < removers.length; i++) {
             System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
             if(!removers[i].isAlive()) {
@@ -635,117 +599,84 @@ public class QueueTest extends TestCase {
             }
         }
 
-        assertEquals(2, num_dead);
+        Assert.assertEquals(2, num_dead);
     }
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
      * (the one that has the element) */
-    public void testBarrierWithTimeOut()
-    {
-        RemoveOneItemWithTimeout[] removers = new RemoveOneItemWithTimeout[10];
-        int num_dead = 0;
 
-        for (int i = 0; i < removers.length; i++)
-        {
-            removers[i] = new RemoveOneItemWithTimeout(i, 1000);
+    public static void testBarrierWithTimeOut() throws QueueClosedException {
+        final Queue queue=new Queue();
+        RemoveOneItemWithTimeout[] removers=new RemoveOneItemWithTimeout[10];
+        int num_dead=0;
+
+        for(int i=0; i < removers.length; i++) {
+            removers[i]=new RemoveOneItemWithTimeout(i, 1000, queue);
             removers[i].start();
         }
 
-        Util.sleep(5000);
-
         System.out.println("-- adding element 99");
-        try
-        {
-            queue.add(new Long(99));
-        }
-        catch (Exception ex)
-        {
-            System.err.println(ex);
-        }
-
-        Util.sleep(5000);
+        queue.add(new Long(99));
         System.out.println("-- adding element 100");
-        try
-        {
-            queue.add(new Long(100));
-        }
-        catch (Exception ex)
-        {
-            System.err.println(ex);
-        }
+        queue.add(new Long(100));
 
-        Util.sleep(1000);
+        Util.sleep(500);
 
-        for (int i = 0; i < removers.length; i++)
-        {
-            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
-            if (!removers[i].isAlive())
-            {
+        for(int i=0; i < removers.length; i++) {
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive()? "alive" : "terminated"));
+            if(!removers[i].isAlive()) {
                 num_dead++;
             }
         }
 
-        assertEquals(2, num_dead);
+        Assert.assertEquals(2, num_dead);
 
+        System.out.println("closing queue - causing all remaining threads to terminate");
         queue.close(false); // will cause all threads still blocking on peek() to return
 
-        Util.sleep(2000);
+        Util.sleep(500);
 
-        num_dead = 0;
-        for (int i = 0; i < removers.length; i++)
-        {
-            System.out.println("remover #" + i + " is " + (removers[i].isAlive() ? "alive" : "terminated"));
-            if (!removers[i].isAlive())
-            {
+        num_dead=0;
+        for(int i=0; i < removers.length; i++) {
+            System.out.println("remover #" + i + " is " + (removers[i].isAlive()? "alive" : "terminated"));
+            if(!removers[i].isAlive()) {
                 num_dead++;
             }
         }
-        assertEquals(10, num_dead);
-
+        Assert.assertEquals(10, num_dead);
     }
 
 
     /** Multiple threads add one element, one thread read them all.
      * (the one that has the element) */
-    public void testMultipleWriterOneReader()
-    {
-        AddOneItem[] adders = new AddOneItem[10];
-        int num_dead = 0;
-        int num_items = 0;
-        int items = 1000;
 
-        for (int i = 0; i < adders.length; i++)
-        {
-            adders[i] = new AddOneItem(i, items);
+    public static void testMultipleWriterOneReader() throws QueueClosedException {
+        final Queue queue=new Queue();
+        AddOneItem[] adders=new AddOneItem[10];
+        int num_dead=0;
+        int num_items=0;
+        int items=1000;
+
+        for(int i=0; i < adders.length; i++) {
+            adders[i]=new AddOneItem(i, items, queue);
             adders[i].start();
         }
 
-        while (num_items < (adders.length*items))
-        {
-            try
-            {
-                queue.remove();
-                num_items++;
-            }
-            catch (Exception ex)
-            {
-                System.err.println(ex);
-            }
+        while(num_items < (adders.length * items)) {
+            queue.remove();
+            num_items++;
         }
 
         Util.sleep(1000);
 
-        for (int i = 0; i < adders.length; i++)
-        {
-            System.out.println("adder #" + i + " is " + (adders[i].isAlive() ? "alive" : "terminated"));
-            if (!adders[i].isAlive())
-            {
+        for(int i=0; i < adders.length; i++) {
+            System.out.println("adder #" + i + " is " + (adders[i].isAlive()? "alive" : "terminated"));
+            if(!adders[i].isAlive()) {
                 num_dead++;
             }
         }
 
-        assertEquals(10, num_dead);
-
+        Assert.assertEquals(10, num_dead);
         queue.close(false); // will cause all threads still blocking on peek() to return
     }
 
@@ -753,7 +684,9 @@ public class QueueTest extends TestCase {
     /**
      * Times how long it takes to add and remove 1000000 elements concurrently (1 reader, 1 writer)
      */
-    public void testConcurrentAddRemove() {
+
+    public static void testConcurrentAddRemove() throws QueueClosedException {
+        final Queue queue=new Queue();
         final long   NUM=1000000;
         long         num_received=0;
         Object       ret;
@@ -774,17 +707,11 @@ public class QueueTest extends TestCase {
         }.start();
 
         while(num_received < NUM) {
-            try {
-                ret=queue.remove();
-                if(ret != null)
-                    num_received++;
-            }
-            catch(QueueClosedException e) {
-                e.printStackTrace();
-                fail();
-            }
+            ret=queue.remove();
+            if(ret != null)
+                num_received++;
         }
-        assertEquals(NUM, num_received);
+        Assert.assertEquals(NUM, num_received);
         stop=System.currentTimeMillis();
         System.out.println("time to add/remove " + NUM + " elements: " + (stop-start));
     }
@@ -792,9 +719,11 @@ public class QueueTest extends TestCase {
 
 
     /** Has multiple threads add(), remove() and peek() elements to/from the queue */
-    public void testConcurrentAccess() {
+
+    public static void testConcurrentAccess() {
+        final Queue queue=new Queue();
         final int NUM_THREADS=10;
-        final int INTERVAL=20000;
+        final int INTERVAL=5000;
 
         Writer[] writers=new Writer[NUM_THREADS];
         Reader[] readers=new Reader[NUM_THREADS];
@@ -804,9 +733,9 @@ public class QueueTest extends TestCase {
 
 
         for(int i=0; i < writers.length; i++) {
-            readers[i]=new Reader(i, reads);
+            readers[i]=new Reader(i, reads, queue);
             readers[i].start();
-            writers[i]=new Writer(i, writes);
+            writers[i]=new Writer(i, writes, queue);
             writers[i].start();
         }
 
@@ -846,47 +775,45 @@ public class QueueTest extends TestCase {
                 ", diff=" + Math.abs(total_writes - total_reads));
     }
 
-    class AddOneItem extends Thread
-    {
-        Long retval = null;
-        int rank = 0;
-        int iteration = 0;
+    static class AddOneItem extends Thread {
+        Long retval=null;
+        int rank=0;
+        int iteration=0;
+        Queue queue;
 
-        AddOneItem(int rank, int iteration)
-        {
+        AddOneItem(int rank, int iteration, Queue queue) {
             super("AddOneItem thread #" + rank);
-            this.rank = rank;
-            this.iteration = iteration;
+            this.rank=rank;
+            this.iteration=iteration;
             setDaemon(true);
+            this.queue=queue;
         }
 
-        public void run()
-        {
-            try
-            {
-                for (int i = 0; i < iteration; i++)
-                {
+        public void run() {
+            try {
+                for(int i=0; i < iteration; i++) {
                     queue.add(new Long(rank));
                     // Util.sleepRandom(1);
                     // System.out.println("Thread #" + rank + " added element (" + rank + ")");
                 }
             }
-            catch (QueueClosedException closed)
-            {
+            catch(QueueClosedException closed) {
                 System.err.println("Thread #" + rank + ": queue was closed");
             }
         }
 
     }
 
-    class RemoveOneItem extends Thread {
+    static class RemoveOneItem extends Thread {
         Long retval=null;
         int rank=0;
+        Queue queue;
 
 
-        RemoveOneItem(int rank) {
+        RemoveOneItem(int rank, Queue queue) {
             super("RemoveOneItem thread #" + rank);
             this.rank=rank;
+            this.queue=queue;
             setDaemon(true);
         }
 
@@ -905,44 +832,38 @@ public class QueueTest extends TestCase {
         }
     }
 
-    class RemoveOneItemWithTimeout extends Thread
-    {
-        Long retval = null;
-        int rank = 0;
-        long timeout = 0;
+    static class RemoveOneItemWithTimeout extends Thread {
+        Long retval=null;
+        int rank=0;
+        long timeout=0;
+        Queue queue;
 
-        RemoveOneItemWithTimeout(int rank, long timeout)
-        {
+        RemoveOneItemWithTimeout(int rank, long timeout, Queue queue) {
             super("RemoveOneItem thread #" + rank);
-            this.rank = rank;
+            this.rank=rank;
             this.timeout=timeout;
+            this.queue=queue;
             setDaemon(true);
         }
 
-        public void run()
-        {
-            boolean finished = false;
-            while (!finished)
-            {
-                try
-                {
-                    retval = (Long) queue.remove(timeout);
+        public void run() {
+            boolean finished=false;
+            while(!finished) {
+                try {
+                    retval=(Long)queue.remove(timeout);
                     // System.out.println("Thread #" + rank + " removed element (" + retval + ")");
-                    finished = true;
+                    finished=true;
                 }
-                catch (QueueClosedException closed)
-                {
+                catch(QueueClosedException closed) {
                     System.err.println("Thread #" + rank + ": queue was closed");
-                    finished = true;
+                    finished=true;
                 }
-                catch (TimeoutException e)
-                {
+                catch(TimeoutException e) {
                 }
             }
         }
 
-        Long getRetval()
-        {
+        Long getRetval() {
             return retval;
         }
     }
@@ -950,16 +871,18 @@ public class QueueTest extends TestCase {
 
 
 
-    class Writer extends Thread {
+    static class Writer extends Thread {
         int rank=0;
         int num_writes=0;
         boolean running=true;
         int[] writes=null;
+        Queue queue;
 
-        Writer(int i, int[] writes) {
+        Writer(int i, int[] writes, Queue queue) {
             super("WriterThread");
             rank=i;
             this.writes=writes;
+            this.queue=queue;
             setDaemon(true);
         }
 
@@ -986,17 +909,19 @@ public class QueueTest extends TestCase {
     }
 
 
-    class Reader extends Thread {
+    static class Reader extends Thread {
         int rank;
         int num_reads=0;
         int[] reads=null;
         boolean running=true;
+        Queue queue;
 
 
-        Reader(int i, int[] reads) {
+        Reader(int i, int[] reads, Queue queue) {
             super("ReaderThread");
             rank=i;
             this.reads=reads;
+            this.queue=queue;
             setDaemon(true);
         }
 
@@ -1011,7 +936,7 @@ public class QueueTest extends TestCase {
                         System.out.println("QueueTest.Reader.run(): peek() returned null element. " +
                                 "queue.size()=" + queue.size() + ", queue.closed()=" + queue.closed());
                     }
-                    assertNotNull(el);
+                    assert el != null;
                     num_reads++;
                 }
                 catch(QueueClosedException closed) {
@@ -1032,9 +957,5 @@ public class QueueTest extends TestCase {
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={QueueTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }

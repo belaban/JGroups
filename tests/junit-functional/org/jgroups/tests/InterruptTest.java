@@ -1,15 +1,16 @@
-// $Id: InterruptTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: InterruptTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetAddress;
+
+import org.jgroups.Global;
 
 
 /**
@@ -17,7 +18,7 @@ import java.net.InetAddress;
  *
  * @author Bela Ban Oct 5 2001
  */
-public class InterruptTest extends TestCase {
+public class InterruptTest {
     static final long TIMEOUT=3000;
     static final int SLEEP=1;
     static final int WAIT=2;
@@ -26,7 +27,6 @@ public class InterruptTest extends TestCase {
 
 
     public InterruptTest(String name) {
-        super(name);
     }
 
 
@@ -50,12 +50,14 @@ public class InterruptTest extends TestCase {
      * Starts the Interruptible and interrupts after TIMEOUT milliseconds. Then joins thread
      * (waiting for TIMEOUT msecs). PASS if thread dead, FAIL if still alive
      */
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSleepInterrupt() {
         SleeperThread thread=new SleeperThread(SLEEP);
         runTest(thread);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testWaitInterrupt() {
         SleeperThread thread=new SleeperThread(WAIT);
         runTest(thread);
@@ -97,7 +99,7 @@ public class InterruptTest extends TestCase {
         System.out.println("InterruptTest.runTest(" + modeToString(thread.getMode()) + "): joining other thread -- done");
 
         System.out.println("InterruptTest.runTest(" + modeToString(thread.getMode()) + "): thread.isAlive()=" + thread.isAlive());
-        assertTrue(!thread.isAlive());
+        assert !thread.isAlive();
     }
 
 

@@ -1,15 +1,17 @@
-// $Id: AckMcastSenderWindowTest.java,v 1.3 2007/08/13 12:48:56 belaban Exp $
+// $Id: AckMcastSenderWindowTest.java,v 1.4 2008/03/10 15:39:20 belaban Exp $
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.StaticInterval;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.net.UnknownHostException;
 import java.util.*;
@@ -29,20 +31,8 @@ import java.util.*;
  * Since <code>AckMcastSenderWindow</code> does not export its state, keep
  * track of seqnos and address lists in a hashtable.
  */
-public class AckMcastSenderWindowTest extends TestCase {
-    private class Cmd
-            implements AckMcastSenderWindow.RetransmitCommand {
-        public void retransmit(long seqno, Message msg, Address addr) {
-            _retransmit(seqno, msg, addr);
-        }
-    }
-
-    private class Acker extends Thread {
-        public void run() {
-            _ackerRun();
-        }
-    }
-
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class AckMcastSenderWindowTest {
 
     /**
      * A list of destination addresses
@@ -67,6 +57,102 @@ public class AckMcastSenderWindowTest extends TestCase {
      * seqNo -> list of destinations
      */
     private final Hashtable _tbl=new Hashtable();
+
+
+    @BeforeMethod
+    void setUp() throws Exception {
+        _cmd=new Cmd();
+        _win=new AckMcastSenderWindow(_cmd);
+
+    }
+
+    @AfterMethod
+    void tearDown() throws Exception {
+        _win.stop();
+    }
+
+
+
+    /**
+     * Add 2 messages to 3 destinations
+     * <p/>
+     * Start acknowledging messages while checking the validity of
+     * retransmissions
+     */
+    public void test1() {
+        Vector dests=new Vector();
+        Message msg=new Message();
+        Acker acker=new Acker();
+        long seqno;
+
+        dests.addAll(Arrays.asList(_RECVS));
+
+        // seqno/1
+        seqno=1;
+        for(int i=0; i < _RECVS.length; ++i) _put(seqno, _RECVS[i]);
+        _win.add(seqno, msg, dests);
+
+        // seqno/2
+        seqno=2;
+        for(int i=0; i < _RECVS.length; ++i) _put(seqno, _RECVS[i]);
+        _win.add(seqno, msg, dests);
+
+        // start
+        acker.start();
+        try {
+            acker.join();
+        }
+        catch(InterruptedException ex) {
+            ex.printStackTrace();
+        }
+
+        _win.stop();
+    } // testAck()
+
+
+    public void testRemove() throws UnknownHostException {
+        AckMcastSenderWindow mywin=new AckMcastSenderWindow(new MyCommand(), new StaticInterval(1000, 2000, 3000));
+        Address sender1=new IpAddress("127.0.0.1", 10000);
+        Address sender2=new IpAddress("127.0.0.1", 10001);
+        Address sender3=new IpAddress("127.0.0.1", 10002);
+        Vector senders=new Vector();
+        Message msg=new Message();
+        long seqno=322649;
+
+        senders.addElement(sender1);
+        senders.addElement(sender2);
+        senders.addElement(sender3);
+
+        mywin.add(seqno, msg, (Vector)senders.clone()); // clone() for the fun of it...
+
+        mywin.ack(seqno, sender1);
+        mywin.ack(seqno, sender2);
+
+        System.out.println("entry is " + mywin.printDetails(seqno));
+        Assert.assertEquals(3, mywin.getNumberOfResponsesExpected(seqno));
+        Assert.assertEquals(2, mywin.getNumberOfResponsesReceived(seqno));
+        mywin.waitUntilAllAcksReceived(4000);
+        mywin.suspect(sender3);
+        Assert.assertEquals(0, mywin.size());
+    }
+
+
+
+
+
+    private class Cmd implements AckMcastSenderWindow.RetransmitCommand {
+
+        public void retransmit(long seqno, Message msg, Address addr) {
+            _retransmit(seqno, msg, addr);
+        }
+    }
+
+    private class Acker extends Thread {
+        public void run() {
+            _ackerRun();
+        }
+    }
+
 
 
     /**
@@ -171,92 +257,13 @@ public class AckMcastSenderWindowTest extends TestCase {
      */
     private void _retransmit(long seqno, Message msg, Address addr) {
         if(!_contains(seqno, addr))
-            fail("Acknowledging a non-existent msg, great!");
+            assert false : "Acknowledging a non-existent msg, great!";
         else
             System.out.println("retransmitting " + seqno + ", msg=" + msg);
     }
 
 
-    /**
-     * Add 2 messages to 3 destinations
-     * <p/>
-     * Start acknowledging messages while checking the validity of
-     * retransmissions
-     */
-    public void test1() {
-        Vector dests=new Vector();
-        Message msg=new Message();
-        Acker acker=new Acker();
-        long seqno;
 
-        dests.addAll(Arrays.asList(_RECVS));
-
-        // seqno/1
-        seqno=1;
-        for(int i=0; i < _RECVS.length; ++i) _put(seqno, _RECVS[i]);
-        _win.add(seqno, msg, dests);
-
-        // seqno/2
-        seqno=2;
-        for(int i=0; i < _RECVS.length; ++i) _put(seqno, _RECVS[i]);
-        _win.add(seqno, msg, dests);
-
-        // start
-        acker.start();
-        try {
-            acker.join();
-        }
-        catch(InterruptedException ex) {
-            ex.printStackTrace();
-        }
-
-        _win.stop();
-    } // testAck()
-
-
-    public void testRemove() throws UnknownHostException {
-        AckMcastSenderWindow mywin=new AckMcastSenderWindow(new MyCommand(), new StaticInterval(1000, 2000, 3000));
-        Address sender1=new IpAddress("127.0.0.1", 10000);
-        Address sender2=new IpAddress("127.0.0.1", 10001);
-        Address sender3=new IpAddress("127.0.0.1", 10002);
-        Vector senders=new Vector();
-        Message msg=new Message();
-        long seqno=322649;
-
-        senders.addElement(sender1);
-        senders.addElement(sender2);
-        senders.addElement(sender3);
-
-        mywin.add(seqno, msg, (Vector)senders.clone()); // clone() for the fun of it...
-
-        mywin.ack(seqno, sender1);
-        mywin.ack(seqno, sender2);
-
-        System.out.println("entry is " + mywin.printDetails(seqno));
-        assertEquals(3, mywin.getNumberOfResponsesExpected(seqno));
-        assertEquals(2, mywin.getNumberOfResponsesReceived(seqno));
-        mywin.waitUntilAllAcksReceived(4000);
-        mywin.suspect(sender3);
-        assertEquals(0, mywin.size()); // because suspect() removed that entry
-    }
-
-
-    public AckMcastSenderWindowTest(String name) {
-        super(name);
-    }
-
-
-    public void setUp() throws Exception {
-        super.setUp();
-        _cmd=new Cmd();
-        _win=new AckMcastSenderWindow(_cmd);
-
-    }
-
-    public void tearDown() throws Exception {
-        _win.stop();
-        super.tearDown();
-    }
 
 
     static class MyCommand implements AckMcastSenderWindow.RetransmitCommand {
@@ -267,14 +274,5 @@ public class AckMcastSenderWindowTest extends TestCase {
     }
 
 
-    public static Test suite() {
-        TestSuite suite;
-        suite=new TestSuite(AckMcastSenderWindowTest.class);
-        return (suite);
-    }
 
-    public static void main(String[] args) {
-        String[] name={AckMcastSenderWindowTest.class.getName()};
-        junit.textui.TestRunner.main(name);
-    }
 }

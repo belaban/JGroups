@@ -1,19 +1,16 @@
-// $Id: StreamableTest.java,v 1.2 2008/02/25 16:24:19 belaban Exp $
+// $Id: StreamableTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Address;
-import org.jgroups.MergeView;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingRsp;
 import org.jgroups.protocols.UdpHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -22,17 +19,17 @@ import java.io.DataOutputStream;
 import java.util.Vector;
 
 
-public class StreamableTest extends TestCase {
+public class StreamableTest {
     Message m1, m2;
 
 
     public StreamableTest(String name) {
-        super(name);
     }
 
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamable() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         byte[] tmp;
@@ -54,10 +51,10 @@ public class StreamableTest extends TestCase {
         m3=new Message(false);
         m3.readFrom(in);
 
-        assertEquals(4, m3.getLength());
-        assertEquals(4, m3.getRawBuffer().length);
-        assertEquals(4, m3.getBuffer().length);
-        assertEquals(0, m3.getOffset());
+        Assert.assertEquals(4, m3.getLength());
+        Assert.assertEquals(4, m3.getRawBuffer().length);
+        Assert.assertEquals(4, m3.getBuffer().length);
+        Assert.assertEquals(0, m3.getOffset());
 
         output=new ByteArrayOutputStream();
         out=new DataOutputStream(output);
@@ -77,38 +74,43 @@ public class StreamableTest extends TestCase {
         m4.readFrom(in);
 
 
-        assertEquals(3, m4.getLength());
-        assertEquals(3, m4.getBuffer().length);
-        assertEquals(3, m4.getRawBuffer().length);
-        assertEquals(0, m4.getOffset());
+        Assert.assertEquals(3, m4.getLength());
+        Assert.assertEquals(3, m4.getBuffer().length);
+        Assert.assertEquals(3, m4.getRawBuffer().length);
+        Assert.assertEquals(0, m4.getOffset());
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamable2() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 0, 4);
         stream(msg);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamable3() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 4, 3);
         stream(msg);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNullBuffer() throws Exception {
         Message msg=new Message();
         stream(msg);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNonNullBuffer() throws Exception {
         Message msg=new Message(null, null, "Hello world".getBytes());
         stream(msg);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNonNullAddress() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -117,6 +119,7 @@ public class StreamableTest extends TestCase {
         stream(msg);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHeaders() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -130,6 +133,7 @@ public class StreamableTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAdditionalData() throws Exception {
         IpAddress dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -146,6 +150,7 @@ public class StreamableTest extends TestCase {
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMergeView() throws Exception {
         Vector tmp_m1, tmp_m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -178,25 +183,25 @@ public class StreamableTest extends TestCase {
         view_all=new MergeView(a, 5, all, subgroups);
         System.out.println("MergeView: " + view_all);
         Vector sub=((MergeView)view_all).getSubgroups();
-        assertTrue(sub.get(0) instanceof View);
-        assertTrue(sub.get(1) instanceof MergeView);
-        assertTrue(sub.get(2) instanceof View);
-        assertTrue(sub.get(3) instanceof MergeView);
-        assertTrue(sub.get(4) instanceof View);
+        assert sub.get(0) instanceof View;
+        assert sub.get(1) instanceof MergeView;
+        assert sub.get(2) instanceof View;
+        assert sub.get(3) instanceof MergeView;
+        assert sub.get(4) instanceof View;
 
         byte[] buf=Util.streamableToByteBuffer(view_all);
-        assertNotNull(buf);
-        assertTrue(buf.length > 0);
+        assert buf != null;
+        assert buf.length > 0;
 
         MergeView merge_view=(MergeView)Util.streamableFromByteBuffer(MergeView.class, buf);
-        assertNotNull(merge_view);
+        assert merge_view != null;
         System.out.println("MergeView: " + merge_view);
         sub=merge_view.getSubgroups();
-        assertTrue(sub.get(0) instanceof View);
-        assertTrue(sub.get(1) instanceof MergeView);
-        assertTrue(sub.get(2) instanceof View);
-        assertTrue(sub.get(3) instanceof MergeView);
-        assertTrue(sub.get(4) instanceof View);
+        assert sub.get(0) instanceof View;
+        assert sub.get(1) instanceof MergeView;
+        assert sub.get(2) instanceof View;
+        assert sub.get(3) instanceof MergeView;
+        assert sub.get(4) instanceof View;
     }
 
     private void stream(Message msg) throws Exception {
@@ -225,12 +230,12 @@ public class StreamableTest extends TestCase {
         msg2=new Message();
         msg2.readFrom(in);
 
-        assertEquals(length, msg2.getLength());
-        assertEquals(bufLength, getBufLength(msg2));
+        Assert.assertEquals(length, msg2.getLength());
+        Assert.assertEquals(bufLength, getBufLength(msg2));
         // assertTrue(match(dest, msg2.getDest()));
-        assertNull(msg2.getDest()); // we don't marshal the destination address
-        assertTrue(match(src, msg2.getSrc()));
-        assertEquals(num_headers, getNumHeaders(msg2));
+        assert msg2.getDest() == null;
+        assert match(src, msg2.getSrc());
+        Assert.assertEquals(num_headers, getNumHeaders(msg2));
     }
 
     private int getNumHeaders(Message msg) {

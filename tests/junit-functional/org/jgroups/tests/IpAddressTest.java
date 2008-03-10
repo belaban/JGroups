@@ -1,12 +1,13 @@
-// $Id: IpAddressTest.java,v 1.2 2007/09/14 11:05:26 belaban Exp $
+// $Id: IpAddressTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.jgroups.Global;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -14,19 +15,18 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.HashSet;
 
-
-public class IpAddressTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class IpAddressTest {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
 
     
     
     public IpAddressTest(String name) {
-        super(name);
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         a=new IpAddress("localhost", 5555);
         b=new IpAddress("localhost", 5555);
         c=b;
@@ -39,22 +39,25 @@ public class IpAddressTest extends TestCase {
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
-            fail("should throw an UnknownHostException for " + tmp);
+            assert false : "should throw an UnknownHostException for " + tmp;
         }
         catch(UnknownHostException e1) {
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testEquality() throws Exception {
-        assertEquals(a, b);
-        assertEquals(c, b);
-        assertEquals(a, e);
-        assertEquals(c, e);
+        Assert.assertEquals(a, b);
+        Assert.assertEquals(c, b);
+        Assert.assertEquals(a, e);
+        Assert.assertEquals(c, e);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testEqualityWithDnsRoundRobin() throws UnknownHostException {
         IpAddress x1, x2, x3;
 
@@ -64,74 +67,80 @@ public class IpAddressTest extends TestCase {
         InetAddress inet1=InetAddress.getByAddress("MyHost1", rawAddr);
         InetAddress inet2=InetAddress.getByAddress("MyHost2", rawAddr);
         InetAddress inet3=InetAddress.getByAddress("MyHost3", rawAddr);
-        assertEquals(inet1, inet2);
+        Assert.assertEquals(inet1, inet2);
 
         x1=new IpAddress(inet1, 5555);
         x2=new IpAddress(inet2, 5555);
         x3=new IpAddress(inet3, 5555);
 
-        assertEquals(x1, x2);
-        assertEquals(x3, x1);
+        Assert.assertEquals(x1, x2);
+        Assert.assertEquals(x3, x1);
 
         HashSet s=new HashSet();
         s.add(x1);
         s.add(x2);
         s.add(x3);
         System.out.println("s=" + s);
-        assertEquals(1, s.size());
+        Assert.assertEquals(1, s.size());
 
         HashMap m=new HashMap();
         m.put(x1, "Bela");
         m.put(x2, "Michelle");
         m.put(x3, "Nicole");
-        assertEquals(1, m.size());
-        assertEquals("Nicole", m.get(x1));
+        Assert.assertEquals(1, m.size());
+        Assert.assertEquals("Nicole", m.get(x1));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testInequality() throws Exception {
         IpAddress tmp=null;
-        assertTrue(!a.equals(d));
-        assertTrue(!c.equals(d));
-        assertTrue(!a.equals(f));
-        assertTrue(!e.equals(f));
-        assertTrue(!f.equals(g));
-        assertFalse(a.equals(tmp));
+        assert !a.equals(d);
+        assert !c.equals(d);
+        assert !a.equals(f);
+        assert !e.equals(f);
+        assert !f.equals(g);
+        assert !(a.equals(tmp));
     }
 
 
-    public void testSameHost() throws Exception {        
-        assertTrue(Util.sameHost(a, b));
-        assertTrue(Util.sameHost(a, c));
-        assertTrue(Util.sameHost(a, d));
-        assertTrue(Util.sameHost(a, e));
-        assertTrue(Util.sameHost(f, g));
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    public void testSameHost() throws Exception {
+        assert Util.sameHost(a, b);
+        assert Util.sameHost(a, c);
+        assert Util.sameHost(a, d);
+        assert Util.sameHost(a, e);
+        assert Util.sameHost(f, g);
     }
 
 
-    public void testNotSameHost() throws Exception {        
-        assertTrue(!Util.sameHost(a, f));
-        assertTrue(!Util.sameHost(e, f));
-        assertTrue(!Util.sameHost(e, null));
-        assertTrue(!Util.sameHost(null, null));
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    public void testNotSameHost() throws Exception {
+        assert !Util.sameHost(a, f);
+        assert !Util.sameHost(e, f);
+        assert !Util.sameHost(e, null);
+        assert !Util.sameHost(null, null);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMcast() {
-        assertTrue(h.isMulticastAddress());
-        assertTrue(!a.isMulticastAddress());
-        assertTrue(!e.isMulticastAddress());
-        assertTrue(!g.isMulticastAddress());
+        assert h.isMulticastAddress();
+        assert !a.isMulticastAddress();
+        assert !e.isMulticastAddress();
+        assert !g.isMulticastAddress();
 
     }
 
     
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCompareTo() {
-        assertEquals(0, a.compareTo(b));
-        assertTrue(a.compareTo(d) < 0);
-        assertTrue(d.compareTo(a) > 0);
+        Assert.assertEquals(0, a.compareTo(b));
+        assert a.compareTo(d) < 0;
+        assert d.compareTo(a) > 0;
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCompareTime() {
         final int NUM=1000000;
         _testCompareTime(a, a, NUM);
@@ -154,13 +163,15 @@ public class IpAddressTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHashcode() {
         int hcode_a=a.hashCode();
         int hcode_b=b.hashCode();
-        assertEquals(hcode_a, hcode_b);
+        Assert.assertEquals(hcode_a, hcode_b);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHashcodeTime() {
         int hash=-1;
         final int NUM=10000000;
@@ -175,6 +186,7 @@ public class IpAddressTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -192,11 +204,12 @@ public class IpAddressTest extends TestCase {
         bis=new ByteArrayInputStream(buf);
         ois=new ObjectInputStream(bis);
         IpAddress ip2=(IpAddress)ois.readObject();
-        assertEquals(ip, ip2);
+        Assert.assertEquals(ip, ip2);
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -215,9 +228,10 @@ public class IpAddressTest extends TestCase {
         dis=new DataInputStream(bis);
         IpAddress ip2=new IpAddress();
         ip2.readFrom(dis);
-        assertEquals(ip, ip2);
+        Assert.assertEquals(ip, ip2);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testExternalization() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -238,15 +252,16 @@ public class IpAddressTest extends TestCase {
         a2=(IpAddress)ois.readObject();
         b2=(IpAddress)ois.readObject();
 
-        assertEquals(a, a2);
-        assertEquals(b, b2);
+        Assert.assertEquals(a, a2);
+        Assert.assertEquals(b, b2);
 
-        assertNull(a2.getAdditionalData());
-        assertEquals("Bela Ban", new String(b2.getAdditionalData()));
+        assert a2.getAdditionalData() == null;
+        Assert.assertEquals("Bela Ban", new String(b2.getAdditionalData()));
     }
 
     
     
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testExternalizationAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -277,18 +292,19 @@ public class IpAddressTest extends TestCase {
         g2=(IpAddress)ois.readObject();
         h2=(IpAddress)ois.readObject();
 
-        assertEquals(b2, c2);
-        assertEquals(a, a2);
-        assertEquals(b, b2);
-        assertEquals(c, c2);
-        assertEquals(d, d2);
-        assertEquals(e, e2);
-        assertEquals(f, f2);
-        assertEquals(g, g2);
-        assertEquals(h, h2);
+        Assert.assertEquals(b2, c2);
+        Assert.assertEquals(a, a2);
+        Assert.assertEquals(b, b2);
+        Assert.assertEquals(c, c2);
+        Assert.assertEquals(d, d2);
+        Assert.assertEquals(e, e2);
+        Assert.assertEquals(f, f2);
+        Assert.assertEquals(g, g2);
+        Assert.assertEquals(h, h2);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamable() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -322,23 +338,24 @@ public class IpAddressTest extends TestCase {
         y2=new IpAddress();
         y2.readFrom(ois);
 
-        assertEquals(a, a2);
-        assertEquals(b, b2);
+        Assert.assertEquals(a, a2);
+        Assert.assertEquals(b, b2);
 
-        assertNull(a2.getAdditionalData());
-        assertEquals("Bela Ban", new String(b2.getAdditionalData()));
+        assert a2.getAdditionalData() == null;
+        Assert.assertEquals("Bela Ban", new String(b2.getAdditionalData()));
 
-        assertNotNull(x2.getAdditionalData());
-        assertEquals(4, x2.getAdditionalData().length);
+        assert x2.getAdditionalData() != null;
+        Assert.assertEquals(4, x2.getAdditionalData().length);
 
-        assertNull(y2.getIpAddress());
-        assertEquals(0, y2.getPort());
-        assertNotNull(y2.getAdditionalData());
-        assertEquals(4, y2.getAdditionalData().length);
+        assert y2.getIpAddress() == null;
+        Assert.assertEquals(0, y2.getPort());
+        assert y2.getAdditionalData() != null;
+        Assert.assertEquals(4, y2.getAdditionalData().length);
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamableWithHighPort() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -358,12 +375,13 @@ public class IpAddressTest extends TestCase {
         x2.readFrom(dis);
         System.out.println("x: " + x + ", x2: " + x2);
 
-        assertTrue(x2.getPort() > 0);
-        assertEquals(x.getPort(), x2.getPort());
+        assert x2.getPort() > 0;
+        Assert.assertEquals(x.getPort(), x2.getPort());
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamableAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -402,24 +420,18 @@ public class IpAddressTest extends TestCase {
         h2=new IpAddress();
         h2.readFrom(ois);
 
-        assertEquals(b2, c2);
-        assertEquals(a, a2);
-        assertEquals(b, b2);
-        assertEquals(c, c2);
-        assertEquals(d, d2);
-        assertEquals(e, e2);
-        assertEquals(f, f2);
-        assertEquals(g, g2);
-        assertEquals(h, h2);
+        Assert.assertEquals(b2, c2);
+        Assert.assertEquals(a, a2);
+        Assert.assertEquals(b, b2);
+        Assert.assertEquals(c, c2);
+        Assert.assertEquals(d, d2);
+        Assert.assertEquals(e, e2);
+        Assert.assertEquals(f, f2);
+        Assert.assertEquals(g, g2);
+        Assert.assertEquals(h, h2);
     }
 
 
 
-    public static Test suite() {
-        return new TestSuite(IpAddressTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

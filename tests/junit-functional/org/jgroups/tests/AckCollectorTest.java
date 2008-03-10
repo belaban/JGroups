@@ -1,56 +1,36 @@
-// $Id: AckCollectorTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: AckCollectorTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.TimeoutException;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.AckCollector;
 import org.jgroups.util.Util;
-import org.jgroups.TimeoutException;
-import org.jgroups.Address;
-import org.jgroups.stack.IpAddress;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
-import java.util.ArrayList;
-import java.util.List;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
+@Test(groups=Global.FUNCTIONAL)
+public class AckCollectorTest {
+    final List list=Arrays.asList("one", "two", "three", "four", "five");
 
-public class AckCollectorTest extends TestCase {
-    List l=new ArrayList(5);
-    AckCollector ac;
-    private List new_list=new ArrayList(3);
-
-    public AckCollectorTest(String name) {
-        super(name);
-    }
-
-    public void setUp() throws Exception {
-        super.setUp();
-        l.add("one");
-        l.add("two");
-        l.add("three");
-        l.add("four");
-        l.add("five");
-        ac=new AckCollector(null, l);
-        new_list.add("six");
-        new_list.add("seven");
-        new_list.add("eight");
-    }
-
-
-    public void tearDown() throws Exception {
-        super.tearDown();
-        l.clear();
-        new_list.clear();
-    }
 
     public void testConstructor() {
+        AckCollector ac=new AckCollector(null, list);
         System.out.println("AckCollector is " + ac);
-        assertEquals(5, ac.size());
+        Assert.assertEquals(5, ac.size());
     }
 
 
     public void testWaitForAllAcksNoTimeout() {
+        final AckCollector ac=new AckCollector(null, list);
         new Thread() {
             public void run() {
                 ac.ack("one");
@@ -70,21 +50,17 @@ public class AckCollectorTest extends TestCase {
             }
         }.start();
         ac.waitForAllAcks();
-        assertEquals(0, ac.size());
+        Assert.assertEquals(0, ac.size());
     }
 
-    public void testWaitForAllAcksWithTimeoutException() {
-        try {
-            ac.waitForAllAcks(200);
-            fail("we should get a timeout exception here");
-        }
-        catch(TimeoutException e) {
-            System.out.println("received timeout exception, as expected");
-        }
+    @Test(expectedExceptions=TimeoutException.class)
+    public void testWaitForAllAcksWithTimeoutException() throws TimeoutException {
+        AckCollector ac=new AckCollector(null, list);
+        ac.waitForAllAcks(200);
     }
-
 
     public void testWaitForAllAcksWithTimeout() {
+        final AckCollector ac=new AckCollector(null, list);
         new Thread() {
             public void run() {
                 ac.ack("one");
@@ -105,15 +81,18 @@ public class AckCollectorTest extends TestCase {
         }.start();
         try {
             ac.waitForAllAcks(1000);
-            assertTrue("we should not get a timeout exception here", true);
+            assert true : "we should not get a timeout exception here";
         }
         catch(TimeoutException e) {
-            fail("we should not get a timeout exception here");
+            assert false : "we should not get a timeout exception here";
         }
-        assertEquals(0, ac.size());
+        Assert.assertEquals(0, ac.size());
     }
 
-    public void testWaitForAllAcksWithTimeoutException2() {
+
+    @Test(expectedExceptions=TimeoutException.class)
+    public void testWaitForAllAcksWithTimeoutException2() throws TimeoutException {
+        final AckCollector ac=new AckCollector(null, list);
         new Thread() {
             public void run() {
                 ac.ack("one");
@@ -132,17 +111,13 @@ public class AckCollectorTest extends TestCase {
                 System.out.println("AckCollector: " + ac);
             }
         }.start();
-        try {
-            ac.waitForAllAcks(300);
-            fail("we should get a timeout exception here");
-        }
-        catch(TimeoutException e) {
-            assertTrue("we should get a timeout exception here", true);
-        }
+        ac.waitForAllAcks(300);
     }
 
-
-    public void testReset() {
+    @Test(expectedExceptions=TimeoutException.class)
+    public void testReset() throws TimeoutException {
+        final AckCollector ac=new AckCollector(null, list);
+        final List new_list=Arrays.asList("six", "seven", "eight");
         new Thread() {
             public void run() {
                 Util.sleep(500);
@@ -152,18 +127,15 @@ public class AckCollectorTest extends TestCase {
             }
         }.start();
         System.out.println("initial AckCollector: " + ac);
-        try {
-            ac.waitForAllAcks(1000);
-            fail("needs to throw TimeoutException");
-        }
-        catch(TimeoutException e) {
-            assertTrue("expected TimeoutException", e != null);
-        }
+        ac.waitForAllAcks(1000);
         System.out.println("new AckCollector: " + ac);
     }
 
 
     public void testReset2() throws TimeoutException {
+        final AckCollector ac=new AckCollector(null, list);
+        final List new_list=Arrays.asList("six", "seven", "eight");
+
         new Thread() {
             public void run() {
                 Util.sleep(500);
@@ -186,12 +158,12 @@ public class AckCollectorTest extends TestCase {
         System.out.println("new AckCollector: " + ac);
     }
 
-    public void testNullList() throws TimeoutException {
+    public static void testNullList() throws TimeoutException {
         AckCollector coll=new AckCollector();
         coll.waitForAllAcks(1000);
     }
 
-    public void testOneList() throws TimeoutException, UnknownHostException {
+    public static void testOneList() throws TimeoutException, UnknownHostException {
         List tmp=new ArrayList();
         Address addr=new IpAddress("127.0.0.1", 5555);
         tmp.add(addr);
@@ -201,9 +173,6 @@ public class AckCollectorTest extends TestCase {
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={AckCollectorTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+
 
 }

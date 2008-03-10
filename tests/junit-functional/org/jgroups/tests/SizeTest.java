@@ -1,9 +1,8 @@
-// $Id: SizeTest.java,v 1.5 2008/02/25 16:24:18 belaban Exp $$
+// $Id: SizeTest.java,v 1.6 2008/03/10 15:39:21 belaban Exp $$
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.blocks.RequestCorrelator;
@@ -16,6 +15,7 @@ import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -27,22 +27,24 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  */
-public class SizeTest extends TestCase {
+public class SizeTest {
 
 
     public SizeTest(String name) {
-        super(name);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testUdpHeader() throws Exception {
         _testSize(new UdpHeader("DemoChannel"));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTpHeader() throws Exception {
         _testSize(new TpHeader("DemoChannel"));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testPingHeader() throws Exception {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp()));
@@ -54,6 +56,7 @@ public class SizeTest extends TestCase {
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNakackHeader() throws Exception {
         _testSize(new NakAckHeader(NakAckHeader.MSG, 322649));
         _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, new IpAddress("127.0.0.1", 5655)));
@@ -61,6 +64,7 @@ public class SizeTest extends TestCase {
         _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 322649));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testFdHeaders() throws Exception {
         FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
         _testSize(hdr);
@@ -94,6 +98,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testFdSockHeaders() throws Exception {
         FD_SOCK.FdHeader hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(hdr);
@@ -118,11 +123,13 @@ public class SizeTest extends TestCase {
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testUnicastHeader() throws Exception {
         UNICAST.UnicastHeader hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649);
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -136,6 +143,7 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStableHeader2() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -148,6 +156,7 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSequencerHeader() throws Exception {
         org.jgroups.protocols.SEQUENCER.SequencerHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -157,6 +166,7 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddressVector() throws Exception {
         Vector v=new Vector();
         _testSize(v);
@@ -166,6 +176,7 @@ public class SizeTest extends TestCase {
         _testSize(v);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testViewId() throws Exception {
         ViewId vid=new ViewId();
         _testSize(vid);
@@ -177,6 +188,7 @@ public class SizeTest extends TestCase {
         _testSize(vid);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testView() throws Exception {
         View v=new View();
         _testSize(v);
@@ -191,6 +203,7 @@ public class SizeTest extends TestCase {
         _testSize(v);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testViewPayload() throws Exception {
         View v=new View();
         v.addPayload("name", "Bela Ban");
@@ -208,6 +221,7 @@ public class SizeTest extends TestCase {
         _testSize(v);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMergeView() throws Exception {
         View v=new MergeView();
         _testSize(v);
@@ -223,6 +237,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMergeView2() throws Exception {
         Vector m1, m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -254,6 +269,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMergeView3() throws Exception {
         Vector m1, m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -287,6 +303,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testViewSyncHeader() throws Exception {
         Address creator=new IpAddress("localhost", 12345);
         Vector members=new Vector();
@@ -308,6 +325,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testJoinRsp() throws Exception {
         JoinRsp rsp;
         Vector members=new Vector();
@@ -326,6 +344,7 @@ public class SizeTest extends TestCase {
         _testSize(rsp);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGmsHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
@@ -340,22 +359,26 @@ public class SizeTest extends TestCase {
 
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testFCHeader() throws Exception {
         FC.FcHeader hdr=new FC.FcHeader(FC.FcHeader.REPLENISH);
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testFragHeader() throws Exception {
         FragHeader hdr=new FragHeader(322649, 1, 10);
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCompressHeader() throws Exception {
         COMPRESS.CompressHeader hdr=new COMPRESS.CompressHeader(2002);
         _testSize(hdr);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStateHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         STATE_TRANSFER.StateHeader hdr;
@@ -377,6 +400,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testEncryptHeader() throws Exception {
         ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((short)1, null);
         _testSize(hdr);
@@ -384,31 +408,37 @@ public class SizeTest extends TestCase {
         _testSize(hdr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddress() throws Exception {
         IpAddress addr=new IpAddress();
         _testSize(addr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddress1() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         _testSize(addr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddressWithHighPort() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 65535);
         _testSize(addr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddress2() throws Exception {
         IpAddress addr=new IpAddress(3456);
         _testSize(addr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddress3() throws Exception {
         IpAddress addr=new IpAddress(5555, false);
         _testSize(addr);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIpAddressWithAdditionalData() throws Exception {
         IpAddress addr=new IpAddress(5555, false);
         addr.setAdditionalData("bela".getBytes());
@@ -416,6 +446,7 @@ public class SizeTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
@@ -453,22 +484,24 @@ public class SizeTest extends TestCase {
         System.out.println("call stack is " + hdr.callStack);
 
         Address tmp=hdr.callStack.pop();
-        assertEquals(tmp, new IpAddress(3333));
+        Assert.assertEquals(tmp, new IpAddress(3333));
         tmp=hdr.callStack.pop();
-        assertEquals(tmp, new IpAddress(2222));
-        assertEquals(322649, hdr.id);
-        assertTrue(hdr.rsp_expected);
-        assertEquals("bla", hdr.corrName);
-        assertEquals(RequestCorrelator.Header.RSP, hdr.type);
+        Assert.assertEquals(tmp, new IpAddress(2222));
+        Assert.assertEquals(322649, hdr.id);
+        assert hdr.rsp_expected;
+        Assert.assertEquals("bla", hdr.corrName);
+        Assert.assertEquals(RequestCorrelator.Header.RSP, hdr.type);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testServiceInfo() throws Exception {
         ServiceInfo si=new ServiceInfo();
         _testSize(si);     
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMuxHeader() throws Exception {
         MuxHeader hdr=new MuxHeader();
         _testSize(hdr);
@@ -487,7 +520,7 @@ public class SizeTest extends TestCase {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer((Streamable)hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
 
@@ -495,7 +528,7 @@ public class SizeTest extends TestCase {
         long size=hdr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(hdr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
 
         VIEW_SYNC.ViewSyncHeader hdr2=(VIEW_SYNC.ViewSyncHeader)Util.streamableFromByteBuffer(VIEW_SYNC.ViewSyncHeader.class, serialized_form);
 
@@ -503,8 +536,8 @@ public class SizeTest extends TestCase {
         View my_view=hdr.getView(), other_view=hdr2.getView();
         System.out.println("my_type=" + my_type + ", other_type=" + other_type);
         System.out.println("my_view=" + my_view + ", other_view=" + other_view);
-        assertEquals(my_type, other_type);
-        assertEquals(my_view, other_view);
+        Assert.assertEquals(my_type, other_type);
+        Assert.assertEquals(my_view, other_view);
     }
 
 
@@ -512,7 +545,7 @@ public class SizeTest extends TestCase {
         long size=addr.size();
         byte[] serialized_form=Util.streamableToByteBuffer(addr);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+         Assert.assertEquals(serialized_form.length, size);
     }
 
 
@@ -520,35 +553,35 @@ public class SizeTest extends TestCase {
         long size=vid.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(vid);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
     private static void _testSize(View v) throws Exception {
         long size=v.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(v);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
     private static void _testSize(Collection coll) throws Exception {
         long size=Util.size(coll);
         byte[] serialized_form=Util.collectionToByteBuffer(coll);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
     private static void _testSize(JoinRsp rsp) throws Exception {
         long size=rsp.serializedSize();
         byte[] serialized_form=Util.streamableToByteBuffer(rsp);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
     private static void _testSize(ServiceInfo si) throws Exception {
         long size=si.size();
         byte[] serialized_form=Util.streamableToByteBuffer(si);
         System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-        assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
     }
 
 
@@ -556,7 +589,7 @@ public class SizeTest extends TestCase {
          long size=hdr.size();
          byte[] serialized_form=Util.streamableToByteBuffer(hdr);
          System.out.println("size=" + size + ", serialized size=" + serialized_form.length);
-         assertEquals(serialized_form.length, size);
+        Assert.assertEquals(serialized_form.length, size);
      }
 
 

@@ -1,24 +1,30 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.8 2007/11/22 18:43:31 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.9 2008/03/10 15:39:24 belaban Exp $
  */
-public class ConnectionTableTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class ConnectionTableTest {
     private BasicConnectionTable ct1, ct2;
     static InetAddress loopback_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
@@ -37,13 +43,10 @@ public class ConnectionTableTest extends TestCase {
     }
 
 
-    public ConnectionTableTest(String testName) {
-        super(testName);
-    }
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
         active_threads=Thread.activeCount();
         System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
         addr1=new IpAddress(loopback_addr, PORT1);
@@ -51,6 +54,7 @@ public class ConnectionTableTest extends TestCase {
     }
 
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(ct2 != null) {
             ct2.stop();
@@ -60,7 +64,6 @@ public class ConnectionTableTest extends TestCase {
             ct1.stop();
             ct1=null;
         }
-        super.tearDown();
     }
 
     /**
@@ -90,9 +93,9 @@ public class ConnectionTableTest extends TestCase {
         int num_conns;
         System.out.println("ct1: " + ct1 + "ct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        assertEquals(0, num_conns);
+        Assert.assertEquals(0, num_conns);
         num_conns=ct2.getNumConnections();
-        assertEquals(0, num_conns);              
+        Assert.assertEquals(0, num_conns);
 
         barrier.await(10000, TimeUnit.MILLISECONDS);
         sender1.join();
@@ -101,22 +104,23 @@ public class ConnectionTableTest extends TestCase {
         
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        assertEquals(1, num_conns);
+        Assert.assertEquals(1, num_conns);
         num_conns=ct2.getNumConnections();
-        assertEquals(1, num_conns);
+        Assert.assertEquals(1, num_conns);
         
         Util.sleep(500);
         
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        assertEquals(1, num_conns);
+        Assert.assertEquals(1, num_conns);
         num_conns=ct2.getNumConnections();
-        assertEquals(1, num_conns);         
+        Assert.assertEquals(1, num_conns);
         
         Connection connection = ct1.getConnection(addr2);
-        assertFalse("valid connection to peer",connection.isSocketClosed());
+        assert !(connection.isSocketClosed()) : "valid connection to peer";
         connection = ct2.getConnection(addr1);
-        assertFalse("valid connection to peer",connection.isSocketClosed());;      
+        assert !(connection.isSocketClosed()) : "valid connection to peer";
+        ;
                
     }
 
@@ -147,7 +151,7 @@ public class ConnectionTableTest extends TestCase {
     }
 
 
-    public void testBlockingQueue() {
+    public static void testBlockingQueue() {
         final BlockingQueue queue=new LinkedBlockingQueue();
 
         Thread taker=new Thread() {
@@ -168,7 +172,7 @@ public class ConnectionTableTest extends TestCase {
 
         queue.clear(); // does this release the taker thread ?
         Util.interruptAndWaitToDie(taker);
-        assertFalse("taker: " + taker, taker.isAlive());
+        assert !(taker.isAlive()) : "taker: " + taker;
     }
 
 
@@ -213,7 +217,7 @@ public class ConnectionTableTest extends TestCase {
 
     private void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
         table1.send(addr1, data, 0, data.length); // send to self
-        assertEquals(0, table1.getNumConnections()); // sending to self should not create a connection
+        Assert.assertEquals(0, table1.getNumConnections());
         table1.send(addr2, data, 0, data.length); // send to other
 
         table2.send(addr2, data, 0, data.length); // send to self
@@ -222,28 +226,20 @@ public class ConnectionTableTest extends TestCase {
 
         System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
 
-        assertEquals(1, table1.getNumConnections());
-        assertEquals(1, table2.getNumConnections());
+        Assert.assertEquals(1, table1.getNumConnections());
+        Assert.assertEquals(1, table2.getNumConnections());
 
         table2.stop();
         table1.stop();
-        assertEquals(0, table1.getNumConnections());
-        assertEquals(0, table2.getNumConnections());
+        Assert.assertEquals(0, table1.getNumConnections());
+        Assert.assertEquals(0, table2.getNumConnections());
         int current_active_threads=Thread.activeCount();
         System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        assertEquals("threads:\n" + Util.dumpThreads(), active_threads, current_active_threads);
+        Assert.assertEquals(current_active_threads, active_threads, "threads:\n" + Util.dumpThreads());
     }
 
 
 
-    public static Test suite() {
-        return new TestSuite(ConnectionTableTest.class);
-    }
-
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(ConnectionTableTest.suite());
-    }
 
     static class DummyReceiver implements ConnectionTable.Receiver {
         public void receive(Address sender, byte[] data, int offset, int length) {

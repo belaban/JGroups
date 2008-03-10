@@ -1,102 +1,104 @@
-// $Id: RetransmitterTest.java,v 1.2 2007/08/10 12:32:14 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.stack.StaticInterval;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 
-public class RetransmitterTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL)
+public class RetransmitterTest {
     private final Address sender=new org.jgroups.stack.IpAddress(5555);
-    Retransmitter xmitter;
 
-    protected void setUp() throws Exception {
-        super.setUp();
-        xmitter=new Retransmitter(sender, new MyXmitter());
-        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
-    }
-
-
-    public static void main(String[] args) {
-        String[] testCaseName={RetransmitterTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 
     public void testNoEntry() {
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(0, size);
+        Assert.assertEquals(0, size);
     }
 
+
     public void testSingleEntry() {
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 1);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(1, size);
+        Assert.assertEquals(1, size);
     }
+
 
     public void testEntry() {
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(10, size);
+        Assert.assertEquals(10, size);
     }
 
+
     public void testMultipleEntries() {
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(10, size);
+        Assert.assertEquals(10, size);
 
         xmitter.add(12,13);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(12, size);
+        Assert.assertEquals(12, size);
 
         xmitter.remove(5);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(11, size);
+        Assert.assertEquals(11, size);
 
         xmitter.remove(13);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(10, size);
+        Assert.assertEquals(10, size);
 
         xmitter.remove(1);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(9, size);
+        Assert.assertEquals(9, size);
 
         xmitter.remove(13);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(9, size);
+        Assert.assertEquals(9, size);
 
         xmitter.remove(12);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(8, size);
+        Assert.assertEquals(8, size);
 
         for(int i=8; i >= 0; i--)
             xmitter.remove(i);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(2, size);
+        Assert.assertEquals(2, size);
 
         xmitter.remove(10);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(1, size);
+        Assert.assertEquals(1, size);
 
         xmitter.remove(9);
         size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
-        assertEquals(0, size);
+        Assert.assertEquals(0, size);
     }
 
 

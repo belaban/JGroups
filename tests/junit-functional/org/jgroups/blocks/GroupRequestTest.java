@@ -1,28 +1,26 @@
-// $Id: GroupRequestTest.java,v 1.6 2007/07/30 10:53:23 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.7 2008/03/10 15:39:24 belaban Exp $$
 
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Vector;
 
-public class GroupRequestTest extends TestCase {
-    // GroupRequest req;
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class GroupRequestTest {
     Address a1, a2, a3;
     Vector<Address> dests=null;
 
-    public GroupRequestTest(String testName) {
-        super(testName);
-    }
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
         a1=new IpAddress("127.0.0.1", 1111);
         a2=new IpAddress("127.0.0.1", 2222);
         a3=new IpAddress("127.0.0.1", 3333);
@@ -31,38 +29,44 @@ public class GroupRequestTest extends TestCase {
         dests.add(a2);
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         dests.clear();
-        super.tearDown();
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMessageTimeout() throws Exception {
         _testMessageTimeout(true);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMessageReception() throws Exception {
         _testMessageReception(true);
         _testMessageReception(false);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithSuspect() throws Exception {
         _testMessageReceptionWithSuspect(true);
         _testMessageReceptionWithSuspect(false);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChange() throws Exception {
         _testMessageReceptionWithViewChange(true);
         _testMessageReceptionWithViewChange(false);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChangeMemberLeft() throws Exception {
         _testMessageReceptionWithViewChangeMemberLeft(true);
         _testMessageReceptionWithViewChangeMemberLeft(false);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGetFirstWithResponseFilter() throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
@@ -88,15 +92,16 @@ public class GroupRequestTest extends TestCase {
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
-        assertTrue(rc);
-        assertEquals(0, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(0, req.getSuspects().size());
+        assert req.isDone();
         RspList results=req.getResults();
-        assertEquals(3, results.size());
-        assertEquals(1, results.numReceived());
+        Assert.assertEquals(3, results.size());
+        Assert.assertEquals(1, results.numReceived());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGetAllWithResponseFilter() throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
@@ -123,12 +128,12 @@ public class GroupRequestTest extends TestCase {
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
-        assertTrue(rc);
-        assertEquals(0, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(0, req.getSuspects().size());
+        assert req.isDone();
         RspList results=req.getResults();
-        assertEquals(3, results.size());
-        assertEquals(2, results.numReceived());
+        Assert.assertEquals(3, results.size());
+        Assert.assertEquals(2, results.numReceived());
     }
 
 
@@ -168,11 +173,11 @@ public class GroupRequestTest extends TestCase {
         tp.setGroupRequest(req);
         boolean rc = req.execute();
         System.out.println("group request is " + req);
-        assertTrue(rc);
-        assertEquals(0, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(0, req.getSuspects().size());
+        assert req.isDone();
         RspList results = req.getResults();
-        assertEquals(dests.size(), results.size());
+        Assert.assertEquals(dests.size(), results.size());
     }
 
 
@@ -184,11 +189,11 @@ public class GroupRequestTest extends TestCase {
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
-        assertTrue(rc);
-        assertEquals(0, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(0, req.getSuspects().size());
+        assert req.isDone();
         RspList results=req.getResults();
-        assertEquals(2, results.size());
+        Assert.assertEquals(2, results.size());
     }
 
     private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
@@ -198,11 +203,11 @@ public class GroupRequestTest extends TestCase {
          transport.setGroupRequest(req);
          boolean rc=req.execute();
          System.out.println("group request is " + req);
-         assertTrue(rc);
-         assertEquals(1, req.getSuspects().size());
-         assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(1, req.getSuspects().size());
+        assert req.isDone();
          RspList results=req.getResults();
-         assertEquals(2, results.size());
+        Assert.assertEquals(2, results.size());
      }
 
 
@@ -219,11 +224,11 @@ public class GroupRequestTest extends TestCase {
         transport.setGroupRequest(req);
         boolean rc=req.execute();
         System.out.println("group request is " + req);
-        assertTrue(rc);
-        assertEquals("suspects are " + req.getSuspects(), 0, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(req.getSuspects().size(), 0, "suspects are " + req.getSuspects());
+        assert req.isDone();
         RspList results=req.getResults();
-        assertEquals(2, results.size());
+        Assert.assertEquals(2, results.size());
     }
 
 
@@ -239,23 +244,16 @@ public class GroupRequestTest extends TestCase {
         System.out.println("group request before execution: " + req);
         boolean rc=req.execute();
         System.out.println("group request after execution: " + req);
-        assertTrue(rc);
-        assertEquals("suspects are " + req.getSuspects(), 1, req.getSuspects().size());
-        assertTrue(req.isDone());
+        assert rc;
+        Assert.assertEquals(req.getSuspects().size(), 1, "suspects are " + req.getSuspects());
+        assert req.isDone();
         RspList results=req.getResults();
-        assertEquals(2, results.size());
+        Assert.assertEquals(2, results.size());
     }
 
 
 
-    public static Test suite() {
-        return new TestSuite(GroupRequestTest.class);
-    }
 
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
     protected static class MyTransport implements Transport {
         GroupRequest request;

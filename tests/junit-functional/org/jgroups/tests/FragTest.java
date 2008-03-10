@@ -1,14 +1,14 @@
-// $Id: FragTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: FragTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.debug.ProtocolTester;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -22,14 +22,13 @@ import org.jgroups.util.Util;
  *
  * @author Bela Ban
  */
-public class FragTest extends TestCase {
+public class FragTest {
     public static final long NUM_MSGS=10;
     public static final int MSG_SIZE=100000;
     public static final int FRAG_SIZE=24000;
 
 
     public FragTest(String name) {
-        super(name);
     }
 
 
@@ -42,6 +41,7 @@ public class FragTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test0() throws Exception {
         Object mutex=new Object();
         FragReceiver frag_receiver=new FragReceiver(this, mutex);

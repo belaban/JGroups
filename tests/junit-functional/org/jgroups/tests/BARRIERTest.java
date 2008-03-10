@@ -1,10 +1,6 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
-import org.jgroups.Address;
-import org.jgroups.Event;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.BARRIER;
 import org.jgroups.protocols.PING;
@@ -12,15 +8,20 @@ import org.jgroups.protocols.VIEW_SYNC;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Vector;
 
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.2 2008/02/28 13:28:12 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
  */
-public class BARRIERTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL, sequential=true)
+public class BARRIERTest {
     IpAddress a1;
     Vector<Address> members;
     View v;
@@ -29,13 +30,8 @@ public class BARRIERTest extends TestCase {
     PING bottom_prot;
 
 
-    public BARRIERTest(String name) {
-        super(name);
-    }
-
-
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         a1=new IpAddress(1111);
         members=new Vector<Address>();
         members.add(a1);
@@ -50,21 +46,23 @@ public class BARRIERTest extends TestCase {
         s.start();
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        super.tearDown();
         s.stop();
     }
 
 
+    @Test
     public void testBlocking() {
-        assertFalse(barrier_prot.isClosed());
+        assert !(barrier_prot.isClosed());
         s.send(new Event(Event.CLOSE_BARRIER));
-        assertTrue(barrier_prot.isClosed());
+        assert barrier_prot.isClosed();
         s.send(new Event(Event.OPEN_BARRIER));
-        assertFalse(barrier_prot.isClosed());
+        assert !(barrier_prot.isClosed());
     }
 
 
+    @Test
     public void testThreadsBlockedOnBarrier() {
         MyReceiver receiver=new MyReceiver();
         s.setReceiver(receiver);
@@ -79,16 +77,17 @@ public class BARRIERTest extends TestCase {
 
         Util.sleep(500);
         int num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
-        assertEquals(0, num_in_flight_threads);
+        Assert.assertEquals(0, num_in_flight_threads);
 
         s.send(new Event(Event.OPEN_BARRIER));
         Util.sleep(500);
         num_in_flight_threads=barrier_prot.getNumberOfInFlightThreads();
-        assertEquals(0, num_in_flight_threads);
-        assertEquals(5, receiver.getNumberOfReceivedMessages());
+        Assert.assertEquals(0, num_in_flight_threads);
+        Assert.assertEquals(5, receiver.getNumberOfReceivedMessages());
     }
 
 
+    @Test
     public void testThreadsBlockedOnMutex() throws InterruptedException {
         BlockingReceiver receiver=new BlockingReceiver();
         s.setReceiver(receiver);

@@ -1,74 +1,76 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import org.jgroups.Version;
+import org.jgroups.Global;
+import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban April 4 2003
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  */
-public class VersionTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL)
+public class VersionTest {
 
-    public VersionTest(String s) {
-        super(s);
-    }
 
-    public void testVersionPrint() {
+
+    public static void testVersionPrint() {
         System.out.println("version is " +Version.printVersion());
-        assertTrue(true);
+        assert true;
     }
 
-    public void testNullVersion() {
-        assertFalse(Version.isSame((short)0));
+
+    public static void testNullVersion() {
+        assert !(Version.isSame((short)0));
     }
 
-    public void testDifferentLengthVersion1() {
+
+    public static void testDifferentLengthVersion1() {
         short version2=Version.encode(2,0,7);
-        assertFalse(Version.isSame(version2));
+        assert !(Version.isSame(version2));
     }
 
 
-    public void testDifferentVersion() {
+
+    public static void testDifferentVersion() {
         short version1=Version.encode(2,0,7), version2=Version.encode(2,0,6);
-        assertFalse(version1 == version2);
-    }
-
-    public void testSameVersion() {
-        assertTrue(match(0,0,1, 0,0,1));
-        assertTrue(match(1,0,0, 1,0,0));
-        assertTrue(match(10,2,60, 10,2,60));
-        assertFalse(match(1,2,3, 1,2,0));
-        assertFalse(match(0,0,0, 0,0,1));
-        assertFalse(match(2,5,0, 2,5,1));
+        assert !(version1 == version2);
     }
 
 
-    public void testBinaryCompatibility() {
-        assertTrue(isBinaryCompatible(0,0,0, 0,0,0));
-        assertTrue(isBinaryCompatible(1,2,0, 1,2,1));
-        assertTrue(isBinaryCompatible(1,2,0, 1,2,60));
-        assertFalse(isBinaryCompatible(2,5,0, 2,4,1));
-        assertFalse(isBinaryCompatible(2,5,0, 2,6,0));
+    public static void testSameVersion() {
+        assert match(0,0,1, 0,0,1);
+        assert match(1,0,0, 1,0,0);
+        assert match(10,2,60, 10,2,60);
+        assert !(match(1, 2, 3, 1, 2, 0));
+        assert !(match(0, 0, 0, 0, 0, 1));
+        assert !(match(2, 5, 0, 2, 5, 1));
     }
 
 
-    private boolean match(int major_1, int minor_1, int micro_1, int major_2, int minor_2, int micro_2) {
+    
+    public static void testBinaryCompatibility() {
+        assert isBinaryCompatible(0,0,0, 0,0,0);
+        assert isBinaryCompatible(1,2,0, 1,2,1);
+        assert isBinaryCompatible(1,2,0, 1,2,60);
+        assert !(isBinaryCompatible(2, 5, 0, 2, 4, 1));
+        assert !(isBinaryCompatible(2, 5, 0, 2, 6, 0));
+    }
+
+
+    private static boolean match(int major_1, int minor_1, int micro_1, int major_2, int minor_2, int micro_2) {
         short version1=Version.encode(major_1, minor_1, micro_1);
         short version2=Version.encode(major_2, minor_2, micro_2);
         return version1 == version2;
     }
 
-    private boolean isBinaryCompatible(int major_1, int minor_1, int micro_1, int major_2, int minor_2, int micro_2) {
+    private static boolean isBinaryCompatible(int major_1, int minor_1, int micro_1, int major_2, int minor_2, int micro_2) {
         short version1=Version.encode(major_1, minor_1, micro_1);
         short version2=Version.encode(major_2, minor_2, micro_2);
         boolean retval=Version.isBinaryCompatible(version1, version2);
-        System.out.println(Version.print(version1) + " binary compatibel to " + Version.print(version2) + (retval? " OK" : " FAIL"));
+        System.out.println(Version.print(version1) + " binary compatible to " + Version.print(version2) + (retval? " OK" : " FAIL"));
         return Version.isBinaryCompatible(version1, version2);
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName = {VersionTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+   
 }
