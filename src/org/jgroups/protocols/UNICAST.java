@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.96 2008/03/08 09:46:46 vlada Exp $
+// $Id: UNICAST.java,v 1.97 2008/03/10 07:24:14 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -140,8 +140,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return num;
     }
 
-    @ManagedAttribute
-    public String getUnackedMessages() {
+    @ManagedOperation
+    public String printUnackedMessages() {
         StringBuilder sb=new StringBuilder();
         Entry e;
         Object member;
@@ -186,7 +186,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         m.put("num_acks_received", new Long(num_acks_received));
         m.put("num_xmit_requests_received", new Long(num_xmit_requests_received));
         m.put("num_unacked_msgs", new Long(getNumberOfUnackedMessages()));
-        m.put("unacked_msgs", getUnackedMessages());
+        m.put("unacked_msgs", printUnackedMessages());
         m.put("num_msgs_in_recv_windows", new Long(getNumberOfMessagesInReceiveWindows()));
         return m;
     }
