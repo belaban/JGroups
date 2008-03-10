@@ -30,7 +30,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.17 2008/03/10 06:37:39 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.18 2008/03/10 09:00:48 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -82,6 +82,8 @@ public class ResourceDMBean implements DynamicMBean {
                      + info.isWritable()
                      + ",is="
                      + info.isIs()
+                     + ",type="
+                     + info.getType()
                      + "]");
         }
 
@@ -102,7 +104,7 @@ public class ResourceDMBean implements DynamicMBean {
 
     private void findDescription() {
         MBean mbean=obj.getClass().getAnnotation(MBean.class);
-        if(mbean.description() != null && mbean.description().trim().length() > 0) {
+        if(mbean != null && mbean.description() != null && mbean.description().trim().length() > 0) {
             description=mbean.description();
             if(log.isDebugEnabled()) {
                 log.debug("@MBean description set - " + mbean.description());
@@ -252,8 +254,7 @@ public class ResourceDMBean implements DynamicMBean {
                     MBeanAttributeInfo info=null;
                     String attributeName=null;
                     boolean writeAttribute=false;
-                    if(methodName.startsWith("set") && method.getParameterTypes().length == 1
-                       && method.getReturnType() == java.lang.Void.TYPE) { // setter
+                    if(isSetMethod(method)) { // setter
                         attributeName=firstCharacterToLowerCase(methodName.substring(3));
                         info=new MBeanAttributeInfo(attributeName,
                                                     method.getParameterTypes()[0].getCanonicalName(),
@@ -313,7 +314,7 @@ public class ResourceDMBean implements DynamicMBean {
                             MethodAttributeEntry mae=(MethodAttributeEntry)ae;
                             if(mae.hasSetMethod()) {
                                 atts.put(attributeName,
-                                         new MethodAttributeEntry(info, mae.getSetMethod(), method));
+                                         new MethodAttributeEntry(mae.getInfo(), mae.getSetMethod(), method));
                             }
                         } //we don't have such entry 
                         else {
@@ -359,18 +360,47 @@ public class ResourceDMBean implements DynamicMBean {
             
             //does method have @ManagedOPeration annotation?
             ManagedOperation op=method.getAnnotation(ManagedOperation.class);
-            if(op != null) {
-                ops.add(new MBeanOperationInfo(op.description(), method));
-                if(log.isDebugEnabled()) {
-                    log.debug("@Operation found for method " + method.getName());
-                }
+            boolean expose = op != null || isMBeanAnnotationPresent();
+            if(expose) {            
+            	//unless we already exposed attribute field
+            	String attName = method.getName();
+        		if(isSetMethod(method) || isGetMethod(method)){
+        			attName = firstCharacterToLowerCase(attName.substring(3));
+        		} else if (isIsMethod(method)){
+        			attName = firstCharacterToLowerCase(attName.substring(2));
+        		}
+        		boolean isAlreadyExposed = atts.containsKey(attName);
+            	if(!isAlreadyExposed){
+	                ops.add(new MBeanOperationInfo(op!=null?op.description():"", method));
+	                if(log.isDebugEnabled()) {
+	                    log.debug("@Operation found for method " + method.getName());
+	                }
+            	}
             }
         }
     }
+    
+    private boolean isSetMethod(Method method) {
+		return (method.getName().startsWith("set")
+				&& method.getParameterTypes().length == 1 
+				&& method.getReturnType() == java.lang.Void.TYPE);
+	}
+
+	private boolean isGetMethod(Method method) {
+		return (method.getParameterTypes().length == 0
+				&& method.getReturnType() != java.lang.Void.TYPE 
+				&& method.getName().startsWith("get"));
+	}
+	
+	private boolean isIsMethod(Method method) {
+		return (method.getParameterTypes().length == 0
+				&& (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class)
+				&& method.getName().startsWith("is"));
+	}
 
     private void findFields() {
         //walk annotated class hierarchy and find all fields
-        for(Class<?> clazz=obj.getClass();clazz != null && clazz.isAnnotationPresent(MBean.class);clazz=clazz.getSuperclass()) {
+        for(Class<?> clazz=obj.getClass();clazz != null; clazz=clazz.getSuperclass()) {
 
             Field[] fields=clazz.getDeclaredFields();
             for(Field field:fields) {
@@ -458,6 +488,10 @@ public class ResourceDMBean implements DynamicMBean {
         else{
             return fieldName;   
         }        
+    }
+    
+    private boolean isMBeanAnnotationPresent(){
+    	return getObject().getClass().isAnnotationPresent(MBean.class);
     }
     
     private String firstCharacterToLowerCase(String name) {
