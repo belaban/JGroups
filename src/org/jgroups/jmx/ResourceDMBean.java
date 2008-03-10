@@ -30,7 +30,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.18 2008/03/10 09:00:48 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.19 2008/03/10 09:28:07 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -360,43 +360,44 @@ public class ResourceDMBean implements DynamicMBean {
             
             //does method have @ManagedOPeration annotation?
             ManagedOperation op=method.getAnnotation(ManagedOperation.class);
-            boolean expose = op != null || isMBeanAnnotationPresent();
-            if(expose) {            
-            	//unless we already exposed attribute field
-            	String attName = method.getName();
-        		if(isSetMethod(method) || isGetMethod(method)){
-        			attName = firstCharacterToLowerCase(attName.substring(3));
-        		} else if (isIsMethod(method)){
-        			attName = firstCharacterToLowerCase(attName.substring(2));
-        		}
-        		boolean isAlreadyExposed = atts.containsKey(attName);
-            	if(!isAlreadyExposed){
-	                ops.add(new MBeanOperationInfo(op!=null?op.description():"", method));
-	                if(log.isDebugEnabled()) {
-	                    log.debug("@Operation found for method " + method.getName());
-	                }
-            	}
+            boolean expose=op != null || isMBeanAnnotationPresent();
+            if(expose) {
+                //unless we already exposed attribute field
+                String attName=method.getName();
+                if(isSetMethod(method) || isGetMethod(method)) {
+                    attName=firstCharacterToLowerCase(attName.substring(3));
+                }
+                else if(isIsMethod(method)) {
+                    attName=firstCharacterToLowerCase(attName.substring(2));
+                }
+                boolean isAlreadyExposed=atts.containsKey(attName);
+                if(!isAlreadyExposed) {
+                    ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
+                    if(log.isDebugEnabled()) {
+                        log.debug("@Operation found for method " + method.getName());
+                    }
+                }
             }
         }
     }
     
     private boolean isSetMethod(Method method) {
-		return (method.getName().startsWith("set")
-				&& method.getParameterTypes().length == 1 
-				&& method.getReturnType() == java.lang.Void.TYPE);
-	}
+        return(method.getName().startsWith("set") && 
+               method.getParameterTypes().length == 1 && 
+               method.getReturnType() == java.lang.Void.TYPE);
+    }
 
-	private boolean isGetMethod(Method method) {
-		return (method.getParameterTypes().length == 0
-				&& method.getReturnType() != java.lang.Void.TYPE 
-				&& method.getName().startsWith("get"));
-	}
-	
-	private boolean isIsMethod(Method method) {
-		return (method.getParameterTypes().length == 0
-				&& (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class)
-				&& method.getName().startsWith("is"));
-	}
+    private boolean isGetMethod(Method method) {
+        return(method.getParameterTypes().length == 0 && 
+               method.getReturnType() != java.lang.Void.TYPE && 
+               method.getName().startsWith("get"));
+    }
+
+    private boolean isIsMethod(Method method) {
+        return(method.getParameterTypes().length == 0 && 
+              (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) && 
+               method.getName().startsWith("is"));
+    }
 
     private void findFields() {
         //walk annotated class hierarchy and find all fields
