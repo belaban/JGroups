@@ -30,7 +30,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.15 2008/03/10 02:35:57 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.16 2008/03/10 05:41:00 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -254,7 +254,7 @@ public class ResourceDMBean implements DynamicMBean {
                     boolean writeAttribute=false;
                     if(methodName.startsWith("set") && method.getParameterTypes().length == 1
                        && method.getReturnType() == java.lang.Void.TYPE) { // setter
-                        attributeName=firstCharachterToLowerCase(methodName.substring(3));
+                        attributeName=firstCharacterToLowerCase(methodName.substring(3));
                         info=new MBeanAttributeInfo(attributeName,
                                                     method.getParameterTypes()[0].getCanonicalName(),
                                                     attr.description(),
@@ -267,7 +267,7 @@ public class ResourceDMBean implements DynamicMBean {
                         if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
                             boolean hasSetter=atts.containsKey(attributeName);
                             if(methodName.startsWith("is")) {
-                                attributeName=firstCharachterToLowerCase(methodName.substring(2));
+                                attributeName=firstCharacterToLowerCase(methodName.substring(2));
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -277,7 +277,7 @@ public class ResourceDMBean implements DynamicMBean {
                             }
                             else {
                                 //this has to be get
-                                attributeName=firstCharachterToLowerCase(methodName.substring(3));
+                                attributeName=firstCharacterToLowerCase(methodName.substring(3));
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -445,7 +445,7 @@ public class ResourceDMBean implements DynamicMBean {
         }        
     }
     
-    private String firstCharachterToLowerCase(String name) {
+    private String firstCharacterToLowerCase(String name) {
         return name.substring(0, 1).toLowerCase() + name.substring(1);        
     }
 
