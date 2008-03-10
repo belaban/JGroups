@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.135 2008/03/10 15:39:23 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.136 2008/03/10 16:34:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -964,6 +964,9 @@
 
             <report format="frames"  todir="${tmp.dir}/test-results/html/report"/>
         </junitreport>
+        <echo message="********************************************************************"/>
+        <echo message="The unit test report is available in ${tmp.dir}/test-results/html/report/index.html"/>
+        <echo message="********************************************************************"/>
     </target>
 
 
