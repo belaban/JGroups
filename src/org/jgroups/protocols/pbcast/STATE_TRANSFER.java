@@ -22,9 +22,9 @@ import java.util.*;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.78 2008/03/08 09:46:46 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.79 2008/03/10 07:22:04 belaban Exp $
  */
-@MBean(description="State trasnfer protocol based on byte array transfer")
+@MBean(description="State transfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
     final Vector<Address>   members=new Vector<Address>();
