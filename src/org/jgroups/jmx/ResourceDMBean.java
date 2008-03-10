@@ -6,6 +6,8 @@ import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.management.Attribute;
 import javax.management.AttributeList;
@@ -28,7 +30,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.14 2008/03/08 05:56:06 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.15 2008/03/10 02:35:57 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -252,7 +254,7 @@ public class ResourceDMBean implements DynamicMBean {
                     boolean writeAttribute=false;
                     if(methodName.startsWith("set") && method.getParameterTypes().length == 1
                        && method.getReturnType() == java.lang.Void.TYPE) { // setter
-                        attributeName=methodName.substring(3);
+                        attributeName=firstCharachterToLowerCase(methodName.substring(3));
                         info=new MBeanAttributeInfo(attributeName,
                                                     method.getParameterTypes()[0].getCanonicalName(),
                                                     attr.description(),
@@ -265,7 +267,7 @@ public class ResourceDMBean implements DynamicMBean {
                         if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
                             boolean hasSetter=atts.containsKey(attributeName);
                             if(methodName.startsWith("is")) {
-                                attributeName=methodName.substring(2);
+                                attributeName=firstCharachterToLowerCase(methodName.substring(2));
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -275,7 +277,7 @@ public class ResourceDMBean implements DynamicMBean {
                             }
                             else {
                                 //this has to be get
-                                attributeName=methodName.substring(3);
+                                attributeName=firstCharachterToLowerCase(methodName.substring(3));
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -293,7 +295,9 @@ public class ResourceDMBean implements DynamicMBean {
                         }
                     }
                     if(log.isDebugEnabled()) {
-                        log.debug("@Attr found for method " + method.getName());
+                        log.debug("@Attr found for method " + method.getName()
+                                  + " and registered as "
+                                  + attributeName);
                     }
 
                     AttributeEntry ae=atts.get(attributeName);
@@ -357,14 +361,15 @@ public class ResourceDMBean implements DynamicMBean {
             for(Field field:fields) {
                 ManagedAttribute attr=field.getAnnotation(ManagedAttribute.class);
                 if(attr != null) {
-                    MBeanAttributeInfo info=new MBeanAttributeInfo(field.getName(),
+                    String fieldName = renameToJavaCodingConvention(field.getName());
+                    MBeanAttributeInfo info=new MBeanAttributeInfo(fieldName,
                                                                    field.getType().getCanonicalName(),
                                                                    attr.description(),
                                                                    attr.readable(),
                                                                    Modifier.isFinal(field.getModifiers())? false: attr.writable(),
                                                                    false);
 
-                    atts.put(field.getName(), new FieldAttributeEntry(info, field));
+                    atts.put(fieldName, new FieldAttributeEntry(info, field));
                     if(log.isDebugEnabled()) {
                         log.debug("@Attr found for field " + field.getName());
                     }
@@ -421,6 +426,27 @@ public class ResourceDMBean implements DynamicMBean {
             e.printStackTrace();
         }
         return result;
+    }
+    
+    
+    private String renameToJavaCodingConvention(String fieldName) {
+        if(fieldName.contains("_")) {
+            Pattern p=Pattern.compile("_.");
+            Matcher m=p.matcher(fieldName);
+            StringBuffer sb=new StringBuffer();
+            while(m.find()) {
+                m.appendReplacement(sb, fieldName.substring(m.end() - 1, m.end()).toUpperCase());
+            }
+            m.appendTail(sb);
+            return sb.toString();
+        }
+        else{
+            return fieldName;   
+        }        
+    }
+    
+    private String firstCharachterToLowerCase(String name) {
+        return name.substring(0, 1).toLowerCase() + name.substring(1);        
     }
 
     private class MethodAttributeEntry implements AttributeEntry {
