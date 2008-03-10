@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.27 2008/02/21 13:43:26 belaban Exp $
+ * @version $Id: Global.java,v 1.28 2008/03/10 09:31:45 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -62,6 +62,9 @@ public class Global {
     public static final long THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long THREAD_SHUTDOWN_WAIT_TIME=300;
     public static final String DUMMY="dummy-";
+
+    // for TestNG
+    public static final String FUNCTIONAL="functional";
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
 	boolean result = defaultValue;
