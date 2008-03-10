@@ -1,8 +1,10 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+import org.jgroups.Global;
 
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -10,54 +12,53 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests the ReentrantLock
  * @author Bela Ban
- * @version $Id: ReentrantLockTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+ * @version $Id: ReentrantLockTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
  */
-public class ReentrantLockTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class ReentrantLockTest {
     ReentrantLock lock;
 
-    public ReentrantLockTest(String name) {
-        super(name);
-    }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         lock=new ReentrantLock();
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         releaseAll(lock);
         lock=null;
-        super.tearDown();
     }
 
 
-
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAcquireLock() {
         lock.lock();
-        assertEquals(1, lock.getHoldCount());
+        Assert.assertEquals(1, lock.getHoldCount());
         lock.lock();
-        assertEquals(2, lock.getHoldCount());
+        Assert.assertEquals(2, lock.getHoldCount());
         release(lock);
-        assertEquals(1, lock.getHoldCount());
+        Assert.assertEquals(1, lock.getHoldCount());
         release(lock);
-        assertEquals(0, lock.getHoldCount());
+        Assert.assertEquals(0, lock.getHoldCount());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAcquireLock2() {
         lock.lock();
-        assertEquals(1, lock.getHoldCount());
+        Assert.assertEquals(1, lock.getHoldCount());
         lock.lock();
-        assertEquals(2, lock.getHoldCount());
+        Assert.assertEquals(2, lock.getHoldCount());
         releaseAll(lock);
-        assertEquals(0, lock.getHoldCount());
+        Assert.assertEquals(0, lock.getHoldCount());
     }
 
-    private void release(ReentrantLock lock) {
+    private static void release(ReentrantLock lock) {
         if(lock != null && lock.getHoldCount() > 0)
             lock.unlock();
     }
 
-    private void releaseAll(ReentrantLock lock) {
+    private static void releaseAll(ReentrantLock lock) {
         if(lock != null) {
             long holds=lock.getHoldCount();
             if(holds > 0) {
@@ -67,13 +68,4 @@ public class ReentrantLockTest extends TestCase {
         }
     }
 
-
-
-    public static Test suite() {
-        return new TestSuite(ReentrantLockTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(ReentrantLockTest.suite());
-    }
 }

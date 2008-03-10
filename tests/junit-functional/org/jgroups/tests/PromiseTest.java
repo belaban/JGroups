@@ -1,76 +1,67 @@
-// $Id: PromiseTest.java,v 1.3 2007/11/19 10:32:17 belaban Exp $
+// $Id: PromiseTest.java,v 1.4 2008/03/10 15:39:19 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
+import org.jgroups.Global;
 import org.jgroups.TimeoutException;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 
 /**
  * Various test cases for Promise
  * @author Bela Ban
  */
-public class PromiseTest extends TestCase {
-    Promise p;
+@Test(groups=Global.FUNCTIONAL)
+public class PromiseTest {
 
-    public PromiseTest(String name) {
-        super(name);
-    }
-
-    public void setUp() throws Exception {
-        super.setUp();
-        p=new Promise();
-    }
-
-
-    public void tearDown() throws Exception {
-        p.reset();
-        super.tearDown();
-    }
-
-
-    public void testGetResultNoTimeout() {
+    public static void testGetResultNoTimeout() {
+        final Promise p=new Promise();
         Object result;
         new ResultSetter(p, 500).start();
         result=p.getResult(0);
-        assertEquals(Boolean.TRUE, result);
+        Assert.assertEquals(Boolean.TRUE, result);
     }
 
-    public void testGetResultNoTimeout_ResultAlreadySet() {
+
+    public static void testGetResultNoTimeout_ResultAlreadySet() {
+        final Promise p=new Promise();
         Object result;
         new ResultSetter(p, 1).start();
         Util.sleep(100);
         result=p.getResult(0);
-        assertEquals(Boolean.TRUE, result);
+        Assert.assertEquals(Boolean.TRUE, result);
     }
 
-    public void testGetResultWithTimeout() {
-        try {
-            p.getResultWithTimeout(500);
-            fail("this should throw a TimeoutException");
-        }
-        catch(TimeoutException e) {
-            assertNotNull(e);
-        }
+    @Test(expectedExceptions=TimeoutException.class)
+    public static void testGetResultWithTimeout() throws TimeoutException {
+        final Promise p=new Promise();
+        p.getResultWithTimeout(500);
     }
 
 
-    public void testGetResultWithTimeoutNoException() {
+
+    public static void testGetResultWithTimeoutNoException() {
+        final Promise p=new Promise();
         Object ret=p.getResult(500);
-        assertNull(ret);
+        assert ret == null;
     }
 
-    public void testGetResultWithTimeoutAndInterrupt() {
+
+    public static void testGetResultWithTimeoutAndInterrupt() {
+        final Promise p=new Promise();
         new Interrupter(Thread.currentThread(), 100).start();
         Object result=p.getResult(500);
-        assertNull(result);
+        assert result == null;
     }
 
 
-    public void testGetResultWithTimeoutAndResultSetter() {
+
+    public static void testGetResultWithTimeoutAndResultSetter() {
+        final Promise p=new Promise();
         Thread t=new Thread() {
             public void run() {
                 Util.sleep(500);
@@ -83,9 +74,9 @@ public class PromiseTest extends TestCase {
         Object result=p.getResult(100000);
         stop=System.currentTimeMillis();
         System.out.println("-- waited for " + (stop-start) + "ms, result is " + result);
-        assertNotNull(result);
-        assertEquals("Bela", result);
-        assertFalse("promise was reset after getResult()", p.hasResult());
+        assert result != null;
+        Assert.assertEquals("Bela", result);
+        assert !(p.hasResult()) : "promise was reset after getResult()";
     }
 
 

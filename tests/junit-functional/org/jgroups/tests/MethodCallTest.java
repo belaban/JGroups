@@ -1,12 +1,13 @@
-// $Id: MethodCallTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: MethodCallTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.util.Util;
+import org.jgroups.Global;
+import org.testng.Assert;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -18,15 +19,14 @@ import java.lang.reflect.Method;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Revision: 1.1 $
+ * @version $Revision: 1.2 $
  **/
 
-public class MethodCallTest extends TestCase {
+public class MethodCallTest {
 
     Class cl=MethodCallTest.class;
 
     public MethodCallTest(String name) {
-        super(name);
     }
 
 
@@ -59,26 +59,29 @@ public class MethodCallTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOld() {
         try {
             MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"});
-            assertEquals(mc.invoke(this), Boolean.TRUE);
+            Assert.assertEquals(mc.invoke(this), Boolean.TRUE);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOld2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"});
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testWithNull() {
         try {
             MethodCall mc=new MethodCall("foobar", null, (Class[])null);
@@ -86,77 +89,84 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null});
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"});
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull3() {
         try {
             MethodCall mc=new MethodCall("foobar", null);
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull4() {
         try {
             MethodCall mc=new MethodCall("foobar", new Object[0]);
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMethod() {
         Method m;
         try {
             m=cl.getMethod("foo", new Class[]{int.class, String.class});
             MethodCall mc=new MethodCall(m, new Object[]{new Integer(22), "Bela"});
-            assertEquals(mc.invoke(this), Boolean.TRUE);
+            Assert.assertEquals(mc.invoke(this), Boolean.TRUE);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypes() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"}, new Class[]{int.class, String.class});
         try {
-            assertEquals(mc.invoke(this), Boolean.TRUE);
+            Assert.assertEquals(mc.invoke(this), Boolean.TRUE);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithArray() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
@@ -165,10 +175,11 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
@@ -177,10 +188,11 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument2() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
@@ -189,13 +201,14 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(IllegalArgumentException ex) {
-            assertTrue("this was expected", true);
+            assert true : "this was expected";
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument3() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[]{}, new Class[]{});
@@ -203,13 +216,14 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(IllegalArgumentException ex) {
-            assertTrue("this was expected", true);
+            assert true : "this was expected";
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument4() {
         MethodCall mc;
         mc=new MethodCall("foobar", (Object[])null, (Class[])null);
@@ -217,13 +231,14 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(IllegalArgumentException ex) {
-            assertTrue("this was expected", true);
+            assert true : "this was expected";
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument5() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[0], new Class[0]);
@@ -231,27 +246,29 @@ public class MethodCallTest extends TestCase {
             mc.invoke(this);
         }
         catch(IllegalArgumentException ex) {
-            assertTrue("this was expected", true);
+            assert true : "this was expected";
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSignature() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
                           new String[]{int.class.getName(), String.class.getName()});
         try {
-            assertEquals(mc.invoke(this), Boolean.TRUE);
+            Assert.assertEquals(mc.invoke(this), Boolean.TRUE);
         }
         catch(Throwable t) {
-            fail(t.toString());
+            assert false : t.toString();
         }
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testBufferSize() throws Exception {
         int a=10;
         String b="Bela";
@@ -274,28 +291,31 @@ public class MethodCallTest extends TestCase {
     // OLD
     //
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testInheritanceOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
     //
     // METHOD
     //
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
@@ -303,9 +323,10 @@ public class MethodCallTest extends TestCase {
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testInheritanceMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
@@ -313,13 +334,14 @@ public class MethodCallTest extends TestCase {
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
     //
     // TYPES
     //
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -328,9 +350,10 @@ public class MethodCallTest extends TestCase {
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testInheritanceTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -339,12 +362,13 @@ public class MethodCallTest extends TestCase {
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
     /**
      * This tests whether overriden methods are correctly identified and invoked.
      */
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testOverriddenForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("overriddenMethod",
@@ -353,17 +377,18 @@ public class MethodCallTest extends TestCase {
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("TargetSubclassABC", result);
+        Assert.assertEquals("TargetSubclassABC", result);
 
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNoArgumentMethodForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("noArgumentMethod", new Object[0], new Class[0]);
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("noArgumentMethodResult", result);
+        Assert.assertEquals("noArgumentMethodResult", result);
 
     }
 
@@ -372,6 +397,7 @@ public class MethodCallTest extends TestCase {
     // SIGNATURE
     //
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSIGNATURE() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -380,9 +406,10 @@ public class MethodCallTest extends TestCase {
 
         Target target = new Target();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testInheritanceSIGNATURE() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -391,10 +418,11 @@ public class MethodCallTest extends TestCase {
 
         TargetSubclass target = new TargetSubclass();
         Object result = methodCall.invoke(target);
-        assertEquals("ABC", result);
+        Assert.assertEquals("ABC", result);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMarshalling() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
@@ -406,8 +434,8 @@ public class MethodCallTest extends TestCase {
 
         MethodCall m=marshalAndUnmarshal(methodCall);
         System.out.println("m: " + m);
-        assertEquals(m.get("name"), "Bela");
-        assertEquals(m.get("id"), new Integer(322649));
+        Assert.assertEquals(m.get("name"), "Bela");
+        Assert.assertEquals(m.get("id"), new Integer(322649));
     }
 
 

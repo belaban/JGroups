@@ -1,27 +1,26 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.*;
 
-public class RspListTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class RspListTest {
     RspList rl;
     Address a1, a2, a3, a4, a5;
     Rsp rsp1, rsp2, rsp3, rsp4, rsp5;
 
-    public RspListTest(String name) {
-        super(name);
-    }
 
-
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         rl=new RspList();
         a1=new IpAddress(1111);
         a2=new IpAddress(2222);
@@ -40,120 +39,136 @@ public class RspListTest extends TestCase {
         rl.put(a5, rsp5);
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         rl.clear();
-        super.tearDown();
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConstructor() {
         Collection c=new LinkedList();
         c.add(rsp1); c.add(rsp2); c.add(rsp3);
         RspList tmp=new RspList(c);
-        assertEquals(c.size(), tmp.size());
-        assertTrue(tmp.containsKey(a1));
-        assertTrue(tmp.containsKey(a2));
-        assertTrue(tmp.containsKey(a3));
-        assertTrue(tmp.containsValue(rsp1));
-        assertTrue(tmp.containsValue(rsp2));
-        assertTrue(tmp.containsValue(rsp3));
+        Assert.assertEquals(c.size(), tmp.size());
+        assert tmp.containsKey(a1);
+        assert tmp.containsKey(a2);
+        assert tmp.containsKey(a3);
+        assert tmp.containsValue(rsp1);
+        assert tmp.containsValue(rsp2);
+        assert tmp.containsValue(rsp3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIsEmpty() {
         RspList tmp=new RspList();
-        assertTrue(tmp.isEmpty());
+        assert tmp.isEmpty();
         tmp.addRsp(a1, rsp1);
-        assertFalse(tmp.isEmpty());
+        assert !(tmp.isEmpty());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testContainsKey() {
-        assertTrue(rl.containsKey(a1));
-        assertTrue(rl.containsKey(a3));
+        assert rl.containsKey(a1);
+        assert rl.containsKey(a3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testContainsValue() {
-        assertTrue(rl.containsValue(rsp1));
-        assertTrue(rl.containsValue(rsp3));
+        assert rl.containsValue(rsp1);
+        assert rl.containsValue(rsp3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGet() {
         Rsp rsp=(Rsp)rl.get(a1);
-        assertEquals(rsp, rsp1);
+        Assert.assertEquals(rsp, rsp1);
         rsp=(Rsp)rl.get(a3);
-        assertEquals(rsp, rsp3);
+        Assert.assertEquals(rsp, rsp3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testPut() {
         Rsp rsp;
         rsp=(Rsp)rl.put(new IpAddress(6666), new Rsp(new IpAddress(6666), true));
-        assertNull(rsp);
+        assert rsp == null;
         rsp=(Rsp)rl.put(a2, rsp2);
-        assertEquals(rsp, rsp2);
-        assertEquals(6, rl.size());
+        Assert.assertEquals(rsp, rsp2);
+        Assert.assertEquals(6, rl.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testRemove() {
         Rsp rsp;
         rsp=(Rsp)rl.remove(new IpAddress(6666));
-        assertNull(rsp);
+        assert rsp == null;
         rsp=(Rsp)rl.remove(a2);
-        assertEquals(rsp, rsp2);
-        assertEquals(4, rl.size());
+        Assert.assertEquals(rsp, rsp2);
+        Assert.assertEquals(4, rl.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testClear() {
         rl.clear();
-        assertEquals(0, rl.size());
+        Assert.assertEquals(0, rl.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testKeySet() {
         RspList tmp=new RspList();
         Set keys=tmp.keySet();
-        assertNotNull(keys);
-        assertEquals(0, keys.size());
+        assert keys != null;
+        Assert.assertEquals(0, keys.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testKeySet2() {
         Set keys=rl.keySet();
-        assertNotNull(keys);
-        assertEquals(rl.size(), keys.size());
+        assert keys != null;
+        Assert.assertEquals(rl.size(), keys.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddRsp() {
         rl.addRsp(new IpAddress(6666), new Integer(322649));
-        assertEquals(6, rl.size());
+        Assert.assertEquals(6, rl.size());
         Rsp rsp=(Rsp)rl.get(new IpAddress(6666));
-        assertNotNull(rsp);
-        assertTrue(rsp.wasReceived());
-        assertFalse(rsp.wasSuspected());
-        assertEquals(new Integer(322649), rsp.getValue());
+        assert rsp != null;
+        assert rsp.wasReceived();
+        assert !(rsp.wasSuspected());
+        Assert.assertEquals(new Integer(322649), rsp.getValue());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddRsp2() {
         rl.addRsp(a1, new Integer(322649));
-        assertEquals(5, rl.size());
+        Assert.assertEquals(5, rl.size());
         Rsp rsp=(Rsp)rl.get(a1);
-        assertNotNull(rsp);
-        assertTrue(rsp.wasReceived());
-        assertFalse(rsp.wasSuspected());
-        assertEquals(new Integer(322649), rsp.getValue());
+        assert rsp != null;
+        assert rsp.wasReceived();
+        assert !(rsp.wasSuspected());
+        Assert.assertEquals(new Integer(322649), rsp.getValue());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNumSuspectedMembers() {
-        assertEquals(2, rl.numSuspectedMembers());
+        Assert.assertEquals(2, rl.numSuspectedMembers());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGetFirst() {
         Object obj=rl.getFirst();
         System.out.println("-- first (non-null) value is " + obj);
-        assertNotNull(obj);
+        assert obj != null;
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGetResults() {
         Vector v=rl.getResults();
-        assertNotNull(v);
-        assertEquals(2, v.size());
+        assert v != null;
+        Assert.assertEquals(2, v.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testElementAt() {
         Rsp rsp;
         Set s=new HashSet();
@@ -162,24 +177,18 @@ public class RspListTest extends TestCase {
             s.add(rsp.getSender());
         }
         System.out.println("-- set is " + s);
-        assertEquals(rl.size(), s.size());
+        Assert.assertEquals(rl.size(), s.size());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testElementAtWithOOBEx() {
         try {
             rl.elementAt(6);
-            fail("this should have thrown an ArrayIndexOutOfBoundsException");
+            assert false : "this should have thrown an ArrayIndexOutOfBoundsException";
         }
         catch(ArrayIndexOutOfBoundsException ex) {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(RspListTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(RspListTest.suite());
-    }
 }

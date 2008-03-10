@@ -1,59 +1,45 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
+import org.jgroups.Global;
 import org.jgroups.util.UnmodifiableVector;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.ListIterator;
 import java.util.Vector;
 
-public class UnmodifiableVectorTest extends TestCase {
-    Vector v;
-    UnmodifiableVector uv;
 
-    public UnmodifiableVectorTest(String name) {
-        super(name);
+@Test(groups=Global.FUNCTIONAL)
+public class UnmodifiableVectorTest {
+
+
+    public static void testCreation() {
+        Vector v=new Vector(Arrays.asList("one", "two"));
+        UnmodifiableVector uv=new UnmodifiableVector(v);
+        Assert.assertEquals(v.size(), uv.size());
+        assert uv.contains("two");
     }
 
-    public void setUp() throws Exception {
-        super.setUp();
-        v=new Vector();
-        v.add("one"); v.add("two");
-        uv=new UnmodifiableVector(v);
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public static void testAddition() {
+        Vector v=new Vector(Arrays.asList("one", "two"));
+        UnmodifiableVector uv=new UnmodifiableVector(v);
+        uv.add("three");
     }
 
-
-    public void tearDown() throws Exception {
-        super.tearDown();
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public static void testRemoval() {
+        Vector v=new Vector(Arrays.asList("one", "two"));
+        UnmodifiableVector uv=new UnmodifiableVector(v);
+        uv.add("two");
     }
 
-
-    public void testCreation() {
-        assertEquals(v.size(), uv.size());
-        assertTrue(uv.contains("two"));
-    }
-
-    public void testAddition() {
-        try {
-            uv.add("three");
-            fail("should throw an exception");
-        }
-        catch(UnsupportedOperationException ex) {
-            // expected
-        }
-    }
-
-    public void testRemoval() {
-        try {
-            uv.add("two");
-            fail("should throw an exception");
-        }
-        catch(UnsupportedOperationException ex) {
-            // expected
-        }
-    }
-
-    public void testIteration() {
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public static void testIteration() {
+        Vector v=new Vector(Arrays.asList("one", "two"));
+        UnmodifiableVector uv=new UnmodifiableVector(v);
         Object el;
         for(Iterator it=uv.iterator(); it.hasNext();) {
             el=it.next();
@@ -62,17 +48,14 @@ public class UnmodifiableVectorTest extends TestCase {
 
         for(Iterator it=uv.iterator(); it.hasNext();) {
             el=it.next();
-            try {
-                it.remove();
-                fail("should throw exception");
-            }
-            catch(UnsupportedOperationException ex) {
-                // expected
-            }
+            it.remove();
         }
     }
 
-    public void testListIteration() {
+    @Test(expectedExceptions=UnsupportedOperationException.class)
+    public static void testListIteration() {
+        Vector v=new Vector(Arrays.asList("one", "two"));
+        UnmodifiableVector uv=new UnmodifiableVector(v);
         Object el;
         for(ListIterator it=uv.listIterator(); it.hasNext();) {
             el=it.next();
@@ -81,19 +64,9 @@ public class UnmodifiableVectorTest extends TestCase {
 
         for(ListIterator it=uv.listIterator(); it.hasNext();) {
             el=it.next();
-             try {
-                 it.remove();
-                 fail("should throw exception");
-             }
-             catch(UnsupportedOperationException ex) {
-                 // expected
-             }
+            it.remove();
         }
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={UnmodifiableVectorTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }

@@ -1,18 +1,19 @@
-// $Id: UNICAST_Test.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: UNICAST_Test.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
 import java.util.Properties;
@@ -23,27 +24,23 @@ import java.util.Vector;
  * Tests the UNICAST protocol
  * @author Bela Ban
  */
-public class UNICAST_Test extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class UNICAST_Test {
     IpAddress a1, a2;
     Vector members;
     View v;
     Simulator simulator;
 
-    final int SIZE=1000; // bytes
-    final int NUM_MSGS=10000;
+    static final int SIZE=1000; // bytes
+    static final int NUM_MSGS=10000;
 
 
     public UNICAST_Test(String name) {
-        super(name);
     }
 
 
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-    public void tearDown() throws Exception {
-        super.tearDown();
+    @AfterMethod
+    void tearDown() throws Exception {
         if(simulator != null)
             simulator.stop();
     }
@@ -86,7 +83,7 @@ public class UNICAST_Test extends TestCase {
 
 
     /** Checks that messages 1 - NUM_MSGS are received in order */
-    class Receiver implements Simulator.Receiver {
+    static class Receiver implements Simulator.Receiver {
         int num_mgs_received=0, next=1;
         Throwable exception=null;
         boolean received_all=false;
@@ -149,7 +146,7 @@ public class UNICAST_Test extends TestCase {
             num_tries--;
         }
         printStats(num_received);
-        assertEquals(num_received, NUM_MSGS);
+        Assert.assertEquals(num_received, NUM_MSGS);
     }
 
     private void createStack(Protocol[] stack) throws Exception {
@@ -170,11 +167,5 @@ public class UNICAST_Test extends TestCase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(UNICAST_Test.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

@@ -1,28 +1,30 @@
-// $Id: ConnectionTableUnitTest.java,v 1.2 2007/11/22 18:58:13 vlada Exp $
+// $Id: ConnectionTableUnitTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.blocks.ConnectionTable;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 /**
  */
-public class ConnectionTableUnitTest extends TestCase {
-    ConnectionTable ct1, ct2;
-    final int       port1=5555, port2=6666;
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class ConnectionTableUnitTest {
+    ConnectionTable  ct1, ct2;
+    static final int port1=5555, port2=6666;
 
 
 
-    public ConnectionTableUnitTest(String name) {
-        super(name);
-    }
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
-        ct1=new ConnectionTable(port1);        
+        ct1=new ConnectionTable(port1);
         ct1.setUseSendQueues(false);
         ct1.start();
         log("address of ct1: " + ct1.getLocalAddress());
@@ -32,8 +34,8 @@ public class ConnectionTableUnitTest extends TestCase {
         log("address of ct2: " + ct2.getLocalAddress());
     }
 
-    public void tearDown() throws Exception {
-        super.tearDown();
+    @AfterMethod
+    void tearDown() throws Exception {
         if(ct1 != null) {
             ct1.stop();
             ct1=null;
@@ -44,27 +46,32 @@ public class ConnectionTableUnitTest extends TestCase {
         }
     }
 
+    @Test
     public void testSetup() {
-        assertNotSame(ct1.getLocalAddress(), ct2.getLocalAddress());
+        Assert.assertNotSame(ct1.getLocalAddress(), ct2.getLocalAddress());
     }
 
+    @Test
     public void testSendToNullReceiver() throws Exception {
         byte[]  data=new byte[0];
         ct1.send(null, data, 0, data.length);
     }
 
+    @Test
     public void testSendEmptyData() throws Exception {
         byte[]  data=new byte[0];
         Address myself=ct1.getLocalAddress();
         ct1.send(myself, data, 0, data.length);
     }
 
+    @Test
     public void testSendNullData() throws Exception {
         Address myself=ct1.getLocalAddress();
         ct1.send(myself, null, 0, 0);
     }
 
 
+    @Test
     public void testSendToSelf() throws Exception {
         long       NUM=1000, total_time;
         Address    myself=ct1.getLocalAddress();
@@ -82,9 +89,10 @@ public class ConnectionTableUnitTest extends TestCase {
         log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived()  + " ms/msg)");
 
-        assertEquals(r.getNumExpected(), r.getNumReceived());
+        Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
     }
 
+    @Test
     public void testSendToOther() throws Exception {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
@@ -102,10 +110,11 @@ public class ConnectionTableUnitTest extends TestCase {
         log("number expected=" + r.getNumExpected() + ", number received=" + r.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r.getNumReceived()  + " ms/msg)");
 
-        assertEquals(r.getNumExpected(), r.getNumReceived());
+        Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
     }
 
 
+    @Test
     public void testSendToOtherGetResponse() throws Exception {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
@@ -125,19 +134,15 @@ public class ConnectionTableUnitTest extends TestCase {
         log("number expected=" + r1.getNumExpected() + ", number received=" + r1.getNumReceived() +
             ", total time=" + total_time + " (" + (double)total_time / r1.getNumReceived()  + " ms/msg)");
 
-        assertEquals(r1.getNumExpected(), r1.getNumReceived());
+        Assert.assertEquals(r1.getNumExpected(), r1.getNumReceived());
     }
 
 
-    void log(String msg) {
+    static void log(String msg) {
         System.out.println("-- [" + Thread.currentThread() + "]: " + msg);
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={ConnectionTableUnitTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 
 

@@ -1,18 +1,19 @@
-// $Id: FCTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: FCTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.FC;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Properties;
 import java.util.Vector;
@@ -22,27 +23,21 @@ import java.util.Vector;
  * Tests the flow control (FC) protocol
  * @author Bela Ban
  */
-public class FCTest extends TestCase {
-    IpAddress a1;
-    Vector members;
-    View v;
-    Simulator s;
-
-    final int SIZE=1000; // bytes
-    final int NUM_MSGS=100000;
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class FCTest {
+    Simulator s=null;
+    static final int SIZE=1000; // bytes
+    static final int NUM_MSGS=100000;
+    static final int PRINT=NUM_MSGS / 10;
 
 
-    public FCTest(String name) {
-        super(name);
-    }
 
-
-    public void setUp() throws Exception {
-        super.setUp();
-        a1=new IpAddress(1111);
-        members=new Vector();
+    @BeforeMethod
+    void setUp() throws Exception {
+        IpAddress a1=new IpAddress(1111);
+        Vector members=new Vector();
         members.add(a1);
-        v=new View(a1, 1, members);
+        View v=new View(a1, 1, members);
         s=new Simulator();
         s.setLocalAddress(a1);
         s.setView(v);
@@ -58,12 +53,13 @@ public class FCTest extends TestCase {
         s.start();
     }
 
-    public void tearDown() throws Exception {
-        super.tearDown();
+    @AfterMethod
+    void tearDown() throws Exception {
         s.stop();
     }
 
 
+    @Test(groups=Global.FUNCTIONAL)
     public void testReceptionOfAllMessages() {
         int num_received=0;
         Receiver r=new Receiver();
@@ -72,7 +68,7 @@ public class FCTest extends TestCase {
             Message msg=new Message(null, null, createPayload(SIZE));
             Event evt=new Event(Event.MSG, msg);
             s.send(evt);
-            if(i % 1000 == 0)
+            if(i % PRINT == 0)
                 System.out.println("==> " + i);
         }
         int num_tries=10;
@@ -84,7 +80,7 @@ public class FCTest extends TestCase {
                 break;
             num_tries--;
         }
-        assertEquals(num_received, NUM_MSGS);
+        assert num_received == NUM_MSGS;
     }
 
 
@@ -103,7 +99,7 @@ public class FCTest extends TestCase {
         public void receive(Event evt) {
             if(evt.getType() == Event.MSG) {
                 num_mgs_received++;
-                if(num_mgs_received % 1000 == 0)
+                if(num_mgs_received % PRINT == 0)
                     System.out.println("<== " + num_mgs_received);
             }
         }
@@ -115,11 +111,4 @@ public class FCTest extends TestCase {
     
    
 
-    public static Test suite() {
-        return new TestSuite(FCTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

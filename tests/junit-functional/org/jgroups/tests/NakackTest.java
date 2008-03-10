@@ -1,20 +1,21 @@
-// $Id: NakackTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: NakackTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.debug.ProtocolTester;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.Hashtable;
 import java.util.Vector;
 
 
-public class NakackTest extends TestCase {
+public class NakackTest {
     static final long WAIT_TIME=5000;
     public static final long NUM_MSGS=10000;
     long num_msgs_received=0;
@@ -22,18 +23,18 @@ public class NakackTest extends TestCase {
 
 
     public NakackTest(String name) {
-        super(name);
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         num_msgs_received=0;
         num_msgs_sent=0;
     }
     
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test0() throws Exception {
         Object mutex=new Object();
         CheckNoGaps check=new CheckNoGaps(1, this, mutex);
@@ -65,7 +66,7 @@ public class NakackTest extends TestCase {
                 mutex.wait(WAIT_TIME);
         }
         System.out.println("\nMessages sent: " + num_msgs_sent + ", messages received: " + num_msgs_received);
-        assertEquals(num_msgs_received, num_msgs_sent);
+        Assert.assertEquals(num_msgs_received, num_msgs_sent);
         t.stop();
     }
 
@@ -152,7 +153,7 @@ public class NakackTest extends TestCase {
                 }
                 else {
                     // error, terminate test
-                    fail("FAIL: received msg #" + received_seqno + ", expected " + highest_seqno);
+                    throw new IllegalStateException("FAIL: received msg #" + received_seqno + ", expected " + highest_seqno);
                 }
             }
             catch(Exception ex) {

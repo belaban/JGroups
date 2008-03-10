@@ -1,44 +1,45 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import org.jgroups.util.Tuple;
+import org.jgroups.Global;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: TupleTest.java,v 1.1 2007/11/23 12:50:06 belaban Exp $
+ * @version $Id: TupleTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
  */
-public class TupleTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL)
+public class TupleTest {
 
-
-    public void testCreation() {
+    public static void testCreation() {
         Tuple<String,Integer> tuple=new Tuple<String,Integer>("Bela", 322649);
         System.out.println("tuple: " + tuple);
-        assertEquals("Bela", tuple.getVal1());
-        assertEquals(322649, tuple.getVal2().intValue());
+        Assert.assertEquals("Bela", tuple.getVal1());
+        Assert.assertEquals(322649, tuple.getVal2().intValue());
     }
 
-
-    public void testSet() {
+    public static void testSet() {
         Tuple<String,Integer> tuple=new Tuple<String,Integer>("Bela", 322649);
         System.out.println("tuple: " + tuple);
         tuple.setVal1("Michelle");
         tuple.setVal2(7);
-        assertEquals("Michelle", tuple.getVal1());
-        assertEquals(7, tuple.getVal2().intValue());
+        Assert.assertEquals("Michelle", tuple.getVal1());
+        Assert.assertEquals(7, tuple.getVal2().intValue());
     }
 
-    public void testHashMap() {
+    public static void testHashMap() {
         Map<Integer,Tuple<String,Integer>> map=new HashMap<Integer,Tuple<String,Integer>>();
 
         map.put(1, new Tuple<String,Integer>("one",1));
         map.put(2, new Tuple<String,Integer>("two", 2));
         System.out.println("map: " + map);
-        assertEquals("one", map.get(1).getVal1());
-        assertEquals(1, map.get(1).getVal2().intValue());
-        assertEquals("two", map.get(2).getVal1());
-        assertEquals(2, map.get(2).getVal2().intValue());
+        Assert.assertEquals("one", map.get(1).getVal1());
+        Assert.assertEquals(1, map.get(1).getVal2().intValue());
+        Assert.assertEquals("two", map.get(2).getVal1());
+        Assert.assertEquals(2, map.get(2).getVal2().intValue());
     }
 }

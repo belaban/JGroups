@@ -1,74 +1,57 @@
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.stack.ExponentialInterval;
+import org.jgroups.Global;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 
 /**
  * @author Bela Ban
- * @version $Id: ExponentialIntervalTest.java,v 1.2 2007/08/21 07:18:12 belaban Exp $
+ * @version $Id: ExponentialIntervalTest.java,v 1.3 2008/03/10 15:39:21 belaban Exp $
  */
-public class ExponentialIntervalTest extends TestCase {
-    ExponentialInterval interval;
+public class ExponentialIntervalTest {
 
-    public ExponentialIntervalTest(String name) {
-        super(name);
-    }
-
-
-    public void setUp() throws Exception {
-        super.setUp();
-    }
-
-
-    public void tearDown() throws Exception {
-        super.tearDown();
-    }
-
-    public void testInitialization() {
-        interval=new ExponentialInterval(10);
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    public static void testInitialization() {
+        ExponentialInterval interval=new ExponentialInterval(10);
         System.out.println("interval=" + interval);
         long value=interval.next();
         System.out.println("interval=" + interval);
-        assertEquals(10, value);
+        Assert.assertEquals(10, value);
         value=interval.next();
         System.out.println("interval=" + interval);
-        assertEquals(20, value);
+        Assert.assertEquals(20, value);
     }
 
-    public void testNoargConstructor() {
-        interval=new ExponentialInterval();
-        assertEquals(30, interval.next());
-        assertEquals(60, interval.next());
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    public static void testNoargConstructor() {
+        ExponentialInterval interval=new ExponentialInterval();
+        Assert.assertEquals(30, interval.next());
+        Assert.assertEquals(60, interval.next());
     }
 
 
-    public void testMax() {
-        interval=new ExponentialInterval(1000);
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    public static void testMax() {
+        ExponentialInterval interval=new ExponentialInterval(1000);
         System.out.println("interval=" + interval);
-        assertEquals(1000, interval.next());
+        Assert.assertEquals(1000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(2000, interval.next());
+        Assert.assertEquals(2000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(4000, interval.next());
+        Assert.assertEquals(4000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(8000, interval.next());
+        Assert.assertEquals(8000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(15000, interval.next());
+        Assert.assertEquals(15000, interval.next());
         System.out.println("interval=" + interval);
-        assertEquals(15000, interval.next());
+        Assert.assertEquals(15000, interval.next());
         System.out.println("interval=" + interval);
 
-    }
-
-    public static Test suite() {
-        return new TestSuite(ExponentialIntervalTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
     }
 
 

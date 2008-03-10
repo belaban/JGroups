@@ -1,64 +1,70 @@
-// $Id: NakReceiverWindowTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
-import org.jgroups.Message;
 import org.jgroups.Address;
-import org.jgroups.stack.NakReceiverWindow;
+import org.jgroups.Message;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
 
 
-public class NakReceiverWindowTest extends TestCase {
+public class NakReceiverWindowTest {
 
     private Address sender;
     private MyRetransmitCommand cmd=new MyRetransmitCommand();
 
     public NakReceiverWindowTest(String name) {
-        super(name);
     }
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
         sender=new IpAddress("127.0.0.1", 5555);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test1() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
         check(win, 0, 1, 1);
-        assertNull(win.get(23));
+        assert win.get(23) == null;
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         check(win, 0, 100, 100);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test3() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
-        assertNotNull(win.get(1));
+        assert win.get(1) != null;
         check(win, 0, 1, 0);
         win.add(2, new Message());
         check(win, 0, 2, 0);
-        assertNotNull(win.get(2));
+        assert win.get(2) != null;
         win.remove();
         check(win, 0, 2, 1);
         win.remove();
         check(win, 0, 2, 2);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
         win.add(2, new Message());
         check(win, 0, 2, 1);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test5() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -66,6 +72,7 @@ public class NakReceiverWindowTest extends TestCase {
         check(win, 0, 101, 100);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test6() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -81,6 +88,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testLowerBounds() {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
         win.add(101, new Message());
@@ -95,6 +103,7 @@ public class NakReceiverWindowTest extends TestCase {
         check(win, 50, 101, 101);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test7() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -112,6 +121,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testLowerBounds2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
         win.add(100, new Message());
@@ -130,6 +140,7 @@ public class NakReceiverWindowTest extends TestCase {
         check(win, 103, 103, 103);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test8() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -153,6 +164,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAdd() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         check(win, 0, 0, 0);
@@ -177,6 +189,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test9() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -188,7 +201,7 @@ public class NakReceiverWindowTest extends TestCase {
         while((win.remove()) != null) ;
         win.stable(6); // 6 is ignore as it is >= highest delivered message
         System.out.println("win: " + win);
-        assertNotNull(win.get(2));
+        assert win.get(2) != null;
         check(win, 0, 6, 4);
         win.add(5, new Message());
         check(win, 0, 6, 4);
@@ -199,6 +212,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHighestDelivered() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -227,6 +241,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -238,6 +253,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -251,6 +267,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages3() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -278,6 +295,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -305,6 +323,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages5() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -332,6 +351,7 @@ public class NakReceiverWindowTest extends TestCase {
         System.out.println("win: " + win);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test10() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -342,6 +362,7 @@ public class NakReceiverWindowTest extends TestCase {
         check(win, 0, 4, 4);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test10a() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -354,6 +375,7 @@ public class NakReceiverWindowTest extends TestCase {
 
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test11() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -366,6 +388,7 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test12() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
 
@@ -373,12 +396,13 @@ public class NakReceiverWindowTest extends TestCase {
         win.add(2, new Message(null, null, new Integer(2)));
         win.add(3, new Message(null, null, new Integer(3)));
 
-        assertEquals(1, ((Integer)win.remove().getObject()).intValue());
-        assertEquals(2, ((Integer)win.remove().getObject()).intValue());
-        assertEquals(3, ((Integer)win.remove().getObject()).intValue());
+        Assert.assertEquals(1, ((Integer)win.remove().getObject()).intValue());
+        Assert.assertEquals(2, ((Integer)win.remove().getObject()).intValue());
+        Assert.assertEquals(3, ((Integer)win.remove().getObject()).intValue());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test13() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -397,50 +421,54 @@ public class NakReceiverWindowTest extends TestCase {
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddOOBAtHead() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(0, oob());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(1, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(1, oob());
-        assertFalse(rc);
+        assert !(rc);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddOOBAtTail() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(1, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(2, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(2, oob());
-        assertFalse(rc);
+        assert !(rc);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddOOBInTheMiddle() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
         rc=win.add(3, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(3, oob());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(1, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(1, oob());
-        assertFalse(rc);
+        assert !(rc);
         rc=win.add(2, oob());
-        assertTrue(rc);
+        assert rc;
         rc=win.add(2, oob());
-        assertFalse(rc);
+        assert !(rc);
     }
 
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testUpdateHighestSeen() {
         add(1000);
         add(2000);
@@ -453,10 +481,12 @@ public class NakReceiverWindowTest extends TestCase {
         add(30000);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test1000() {
         add(1000);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void test10000() {
         add(10000);
     }
@@ -484,11 +514,9 @@ public class NakReceiverWindowTest extends TestCase {
 
 
     private void check(NakReceiverWindow win, long lowest, long highest_received, long highest_delivered) {
-        assertEquals("lowest=" + lowest + ", win.lowest=" + win.getLowestSeen(), lowest, win.getLowestSeen());
-        assertEquals("highest_received=" + highest_received + ", win.highest_received=" + win.getHighestReceived(),
-                     highest_received, win.getHighestReceived());
-        assertEquals("highest_delivered=" + highest_delivered + ", win.highest_delivered=" + win.getHighestDelivered(), 
-                     highest_delivered, win.getHighestDelivered());
+        Assert.assertEquals(win.getLowestSeen(), lowest, "lowest=" + lowest + ", win.lowest=" + win.getLowestSeen());
+        Assert.assertEquals(win.getHighestReceived(), highest_received, "highest_received=" + highest_received + ", win.highest_received=" + win.getHighestReceived());
+        Assert.assertEquals(win.getHighestDelivered(), highest_delivered, "highest_delivered=" + highest_delivered + ", win.highest_delivered=" + win.getHighestDelivered());
     }
 
 

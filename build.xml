@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.134 2008/03/07 08:12:16 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.135 2008/03/10 15:39:23 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -316,6 +316,7 @@
         <delete dir="${tmp.dir}" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
         <delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
+        <delete file="${root.dir}/velocity.log" failonerror="false"/>
         <delete>
             <fileset dir="${root.dir}" defaultexcludes="no">
                 <include name="**/*~"/>
@@ -457,7 +458,6 @@
                 <batchtest todir="${tmp.dir}/tests-results">
                     <fileset dir="${junit-functional.dir}">
                         <patternset refid="@{set}"/>
-                        <patternset refid="${junit.excludes}"/>
                     </fileset>
                 </batchtest>
             </junit>
@@ -498,7 +498,6 @@
             test.verbose=${test.verbose}
             testname.ext=${testname.ext}
             formatter.class=${formatter.class}
-        	junit.excludes=${junit.excludes}
         </testrunner-functional>
     </target>
 	
@@ -926,18 +925,50 @@
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
-                listeners="org.uncommons.reportng.HTMLReporter"
-                threadcount="1"
+                listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                threadcount="20"
                 parallel="methods"
                 >
             <xmlfileset dir="${tests.dir}" includes="functional.xml"/>
             <!--<classfileset dir="${basedir}/classes" includes="**/*.class" excludes="**/MySuperClass*.class"/>-->
-            <sysproperty key="org.uncommons.reportng.title" value="My Test Report"/>
+            <sysproperty key="org.uncommons.reportng.title" value="Functional tests"/>
         </testng>
+    </target>
 
+    <target name="udp-tests" depends="compile, prepare">
+        <testng classpathref="jg.classpath"
+                usedefaultlisteners="false"
+                outputdir="${tmp.dir}/test-results"
+                listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                >
+            <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
+            <!--<classfileset dir="${basedir}/classes" includes="**/*.class" excludes="**/MySuperClass*.class"/>-->
+            <sysproperty key="org.uncommons.reportng.title" value="UDP tests"/>
+            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+
+        </testng>
+    </target>
+
+
+
+    <target name="reports">
+        <mkdir dir="${tmp.dir}/test-results/html"/>
+        <mkdir dir="${tmp.dir}/test-results/html/report"/>
+        <junitreport todir="${tmp.dir}/test-results/html/report">
+            <fileset dir="${tmp.dir}/test-results/xml">
+                <include name="*.xml"/>
+            </fileset>
+
+            <report format="frames"  todir="${tmp.dir}/test-results/html/report"/>
+        </junitreport>
     </target>
 
 
     <!-- =============================== TestNG ======================================== -->
 
 </project>
+
+        

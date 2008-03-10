@@ -1,10 +1,7 @@
-// $Id: UtilTest.java,v 1.5 2008/02/25 16:24:18 belaban Exp $
+// $Id: UtilTest.java,v 1.6 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
@@ -12,6 +9,8 @@ import org.jgroups.ViewId;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -20,15 +19,13 @@ import java.util.Properties;
 import java.util.Vector;
 
 
-public class UtilTest extends TestCase {
+
+@Test(groups=Global.FUNCTIONAL)
+public class UtilTest {
 
 
-    public UtilTest(String name) {
-        super(name);
-    }
 
-
-    public void testGetProperty() {
+    public static void testGetProperty() {
         Properties props=new Properties();
         props.setProperty("name", "Bela");
         props.setProperty("key", "val");
@@ -38,143 +35,143 @@ public class UtilTest extends TestCase {
         String retval;
 
         retval=Util.getProperty(new String[]{"name", "name2"}, props, "name", false, "Jeannette");
-        assertEquals("Michelle", retval);
+        Assert.assertEquals("Michelle", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", false, "Jeannette");
-        assertEquals("Nicole", retval);
+        Assert.assertEquals("Nicole", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name3", "name"}, props, "name", false, "Jeannette");
-        assertEquals("Michelle", retval);
+        Assert.assertEquals("Michelle", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name3", "name4"}, props, "name", false, "Jeannette");
-        assertEquals("Bela", retval);
+        Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name", true, "Jeannette");
-        assertEquals("Bela", retval);
+        Assert.assertEquals("Bela", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, "Jeannette");
-        assertEquals("Jeannette", retval);
+        Assert.assertEquals("Jeannette", retval);
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
 
         retval=Util.getProperty(new String[]{"name2", "name"}, props, "name2", true, null);
-        assertNull(retval);
+        assert retval == null;
         props.setProperty("name", "Bela"); props.setProperty("key", "val");
     }
 
 
-    public void testIgnoreBindAddress() {
+    public static void testIgnoreBindAddress() {
         boolean retval;
 
         retval=Util.isBindAddressPropertyIgnored();
-        assertFalse(retval);
+        assert !(retval);
 
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
         retval=Util.isBindAddressPropertyIgnored();
-        assertTrue(retval);
+        assert retval;
 
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true2");
         retval=Util.isBindAddressPropertyIgnored();
-        assertFalse(retval);
+        assert !(retval);
 
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "false");
         retval=Util.isBindAddressPropertyIgnored();
-        assertFalse(retval);
+        assert !(retval);
 
         System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "false");
         retval=Util.isBindAddressPropertyIgnored();
-        assertFalse(retval);
+        assert !(retval);
 
         System.getProperties().remove(Global.IGNORE_BIND_ADDRESS_PROPERTY);
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
-        assertTrue(retval);
+        assert retval;
 
 
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY, "true");
         System.setProperty(Global.IGNORE_BIND_ADDRESS_PROPERTY_OLD, "true");
         retval=Util.isBindAddressPropertyIgnored();
-        assertTrue(retval);
+        assert retval;
     }
 
 
-    public void testPrintBytes() {
+    public static void testPrintBytes() {
         long num;
         String s;
 
         num=1;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1b", s);
+        Assert.assertEquals("1b", s);
 
         num=999;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("999b", s);
+        Assert.assertEquals("999b", s);
 
         num=1000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1KB", s);
+        Assert.assertEquals("1KB", s);
 
         num=1001;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1KB", s);
+        Assert.assertEquals("1KB", s);
 
         num=1010;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1.01KB", s);
+        Assert.assertEquals("1.01KB", s);
 
         num=1543;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1.54KB", s);
+        Assert.assertEquals("1.54KB", s);
 
         num=10000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("10KB", s);
+        Assert.assertEquals("10KB", s);
 
         num=150000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("150KB", s);
+        Assert.assertEquals("150KB", s);
 
         num=150023;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("150.02KB", s);
+        Assert.assertEquals("150.02KB", s);
 
         num=1200000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1.2MB", s);
+        Assert.assertEquals("1.2MB", s);
 
         num=150000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("150MB", s);
+        Assert.assertEquals("150MB", s);
 
         num=150030000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("150.03MB", s);
+        Assert.assertEquals("150.03MB", s);
 
         num=1200000000;
         s=Util.printBytes(num);
         System.out.println(num + " is " + s);
-        assertEquals("1.2GB", s);
+        Assert.assertEquals("1.2GB", s);
     }
 
 
-    public void testObjectToFromByteBuffer() throws Exception {
+    public static void testObjectToFromByteBuffer() throws Exception {
         byte[] buf;
         IpAddress addr=new IpAddress("localhost", 5000), addr2;
         List<String> list=new ArrayList<String>(), list2;
@@ -184,19 +181,19 @@ public class UtilTest extends TestCase {
         buf=Util.objectToByteBuffer(addr);
         addr2=(IpAddress)Util.objectFromByteBuffer(buf);
         System.out.println("addr=" + addr + ", addr2=" + addr2);
-        assertEquals(addr, addr2);
+        Assert.assertEquals(addr, addr2);
 
         buf=Util.objectToByteBuffer(list);
         list2=(List)Util.objectFromByteBuffer(buf);
         System.out.println("list=" + list + ", list2=" + list2);
-        assertEquals(list, list2);
+        Assert.assertEquals(list, list2);
 
         Object obj=null;
         buf=Util.objectToByteBuffer(obj);
-        assertNotNull(buf);
-        assertTrue(buf.length > 0);
+        assert buf != null;
+        assert buf.length > 0;
         obj=Util.objectFromByteBuffer(buf);
-        assertNull(obj);
+        assert obj == null;
 
         Object[] values=new Object[]{
                 Boolean.TRUE,
@@ -218,7 +215,7 @@ public class UtilTest extends TestCase {
     }
 
 
-    public void testMessageToByteBuffer() throws Exception {
+    public static void testMessageToByteBuffer() throws Exception {
         _testMessage(new Message());
         _testMessage(new Message(null, null, "hello world"));
         _testMessage(new Message(null, new IpAddress("localhost", 5000), null));
@@ -229,31 +226,31 @@ public class UtilTest extends TestCase {
     private static void _testMessage(Message msg) throws Exception {
         Buffer buf=Util.messageToByteBuffer(msg);
         Message msg2=Util.byteBufferToMessage(buf.getBuf(), buf.getOffset(), buf.getLength());
-        assertEquals(msg.getSrc(), msg2.getSrc());
-        assertEquals(msg.getDest(), msg2.getDest());
-        assertEquals(msg.getLength(), msg2.getLength());
+        Assert.assertEquals(msg.getSrc(), msg2.getSrc());
+        Assert.assertEquals(msg.getDest(), msg2.getDest());
+        Assert.assertEquals(msg.getLength(), msg2.getLength());
     }
 
 
-    public void testObjectToByteArrayWithLargeString() throws Exception {
+    public static void testObjectToByteArrayWithLargeString() throws Exception {
         marshalString(Short.MAX_VALUE );
     }
 
 
-     public void testObjectToByteArrayWithLargeString2() throws Exception {
+     public static void testObjectToByteArrayWithLargeString2() throws Exception {
         marshalString(Short.MAX_VALUE - 100);
     }
 
 
-    public void testObjectToByteArrayWithLargeString3() throws Exception {
+    public static void testObjectToByteArrayWithLargeString3() throws Exception {
         marshalString(Short.MAX_VALUE + 1);
     }
 
-    public void testObjectToByteArrayWithLargeString4() throws Exception {
+    public static void testObjectToByteArrayWithLargeString4() throws Exception {
         marshalString(Short.MAX_VALUE + 100);
     }
 
-     public void testObjectToByteArrayWithLargeString5() throws Exception {
+     public static void testObjectToByteArrayWithLargeString5() throws Exception {
         marshalString(Short.MAX_VALUE + 100000);
     }
 
@@ -271,15 +268,15 @@ public class UtilTest extends TestCase {
 
     static void marshal(Object obj) throws Exception {
         byte[] buf=Util.objectToByteBuffer(obj);
-        assertNotNull(buf);
-        assertTrue(buf.length > 0);
+        assert buf != null;
+        assert buf.length > 0;
         Object obj2=Util.objectFromByteBuffer(buf);
         System.out.println("obj=" + obj + ", obj2=" + obj2 + " (type=" + obj.getClass().getName() + ", length=" + buf.length + " bytes)");
-        assertEquals(obj, obj2);
+        Assert.assertEquals(obj, obj2);
     }
 
 
-    public void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteStreamable() throws IOException, IllegalAccessException, InstantiationException {
         Message m=new Message(null, null, "Hello");
         ViewId vid=new ViewId(null, 12345);
         ViewId vid2=new ViewId(new IpAddress("127.0.0.1", 5555), 35623);
@@ -295,15 +292,15 @@ public class UtilTest extends TestCase {
         Message m2=(Message)Util.readGenericStreamable(dis);
         ViewId v3=(ViewId)Util.readGenericStreamable(dis);
         ViewId v4=(ViewId)Util.readGenericStreamable(dis);
-        assertNotNull(m2.getBuffer());
-        assertEquals(m.getLength(), m2.getLength());
-        assertNotNull(v3);
-        assertEquals(vid, v3);
-        assertNotNull(v4);
-        assertEquals(vid2, v4);
+        assert m2.getBuffer() != null;
+        Assert.assertEquals(m.getLength(), m2.getLength());
+        assert v3 != null;
+        Assert.assertEquals(vid, v3);
+        assert v4 != null;
+        Assert.assertEquals(vid2, v4);
     }
 
-    public void testWriteViewIdWithNullCoordinator() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteViewIdWithNullCoordinator() throws IOException, IllegalAccessException, InstantiationException {
         ViewId vid=new ViewId(null, 12345);
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -313,11 +310,11 @@ public class UtilTest extends TestCase {
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
         ViewId v4=(ViewId)Util.readGenericStreamable(dis);
-        assertEquals(vid, v4);
+        Assert.assertEquals(vid, v4);
     }
 
 
-    public void testWriteView() throws IOException, IllegalAccessException, InstantiationException {
+    public static void testWriteView() throws IOException, IllegalAccessException, InstantiationException {
         ViewId vid=new ViewId(null, 12345);
         Vector members=new Vector();
         View v;
@@ -338,13 +335,13 @@ public class UtilTest extends TestCase {
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
         View v2=(View)Util.readGenericStreamable(dis);
-        assertEquals(v, v2);
+        Assert.assertEquals(v, v2);
         v2=(View)Util.readStreamable(View.class, dis);
-        assertEquals(v, v2);
+        Assert.assertEquals(v, v2);
     }
 
 
-    public void testWriteString() throws IOException {
+    public static void testWriteString() throws IOException {
         String s1="Bela Ban", s2="Michelle Ban";
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -356,31 +353,28 @@ public class UtilTest extends TestCase {
         DataInputStream dis=new DataInputStream(instream);
         String s3=Util.readString(dis);
         String s4=Util.readString(dis);
-        assertEquals(s1, s3);
-        assertEquals(s2, s4);
+        Assert.assertEquals(s1, s3);
+        Assert.assertEquals(s2, s4);
     }
 
     public static void writeAddress() throws IOException, IllegalAccessException, InstantiationException {
         IpAddress a1=new IpAddress("localhost", 1234);
         IpAddress a2=new IpAddress("127.0.0.1", 4444);
-        IpAddress a3=new IpAddress("thishostdoesnexist", 6666);
         IpAddress a4=new IpAddress("127.0.0.1", 7777);
 
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
         Util.writeAddress(a1, dos);
         Util.writeAddress(a2, dos);
-        Util.writeAddress(a3, dos);
         Util.writeAddress(a4, dos);
         dos.close();
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
 
-        assertEquals(a1, Util.readAddress(dis));
-        assertEquals(a2, Util.readAddress(dis));
-        assertEquals(a3, Util.readAddress(dis));
-        assertEquals(a4, Util.readAddress(dis));
+        Assert.assertEquals(a1, Util.readAddress(dis));
+        Assert.assertEquals(a2, Util.readAddress(dis));
+        Assert.assertEquals(a4, Util.readAddress(dis));
     }
 
     public static void writeNullAddress() throws IOException, IllegalAccessException, InstantiationException {
@@ -392,11 +386,11 @@ public class UtilTest extends TestCase {
         byte[] buf=outstream.toByteArray();
         ByteArrayInputStream instream=new ByteArrayInputStream(buf);
         DataInputStream dis=new DataInputStream(instream);
-        assertNull(Util.readAddress(dis));
+        assert Util.readAddress(dis) == null;
     }
 
 
-    public void testWriteByteBuffer() throws IOException {
+    public static void testWriteByteBuffer() throws IOException {
         byte[] buf=new byte[1024], tmp;
         for(int i=0; i < buf.length; i++)
             buf[i]=0;
@@ -408,29 +402,29 @@ public class UtilTest extends TestCase {
         ByteArrayInputStream instream=new ByteArrayInputStream(tmp);
         DataInputStream dis=new DataInputStream(instream);
         byte[] buf2=Util.readByteBuffer(dis);
-        assertNotNull(buf2);
-        assertEquals(buf.length, buf2.length);
+        assert buf2 != null;
+        Assert.assertEquals(buf.length, buf2.length);
     }
 
 
-    public void testMatch() {
+    public static void testMatch() {
         long[] a={1,2,3};
         long[] b={2,3,4};
         long[] c=null;
         long[] d={1,2,3,4};
         long[] e={1,2,3};
 
-        assertTrue(Util.match(a,a));
-        assertFalse(Util.match(a,b));
-        assertFalse(Util.match(a,c));
-        assertFalse(Util.match(a,d));
-        assertTrue(Util.match(a,e));
-        assertTrue(Util.match(c,c));
-        assertFalse(Util.match(c, a));
+        assert Util.match(a,a);
+        assert !(Util.match(a, b));
+        assert !(Util.match(a, c));
+        assert !(Util.match(a, d));
+        assert Util.match(a,e);
+        assert Util.match(c,c);
+        assert !(Util.match(c, a));
     }
 
 
-    public void testPickRandomElement() {
+    public static void testPickRandomElement() {
         Vector v=new Vector();
         for(int i=0; i < 10; i++) {
             v.add(new Integer(i));
@@ -439,95 +433,89 @@ public class UtilTest extends TestCase {
         Integer el;
         for(int i=0; i < 10000; i++) {
             el=(Integer)Util.pickRandomElement(v);
-            assertTrue(el.intValue() >= 0 && el.intValue() < 10);
+            assert el.intValue() >= 0 && el.intValue() < 10;
         }
     }
 
-    public void testAll() {
+    public static void testAll() {
         ArrayList l=new ArrayList();
         l.add("one"); l.add("two"); l.add("one");
         System.out.println("-- list is " + l);
-        assertFalse(Util.all(l, "one"));
+        assert !(Util.all(l, "one"));
         l.remove("two");
         System.out.println("-- list is " + l);
-        assertTrue(Util.all(l, "one"));
+        assert Util.all(l, "one");
     }
 
 
-    public void testParseCommaDelimitedString() {
+    public static void testParseCommaDelimitedString() {
         String input="1,2,3,4,5,6,7,8,9,10 , 11, 12 ,13";
 
         List list=Util.parseCommaDelimitedStrings(input);
         System.out.println("list: " + list);
-        assertEquals(13, list.size());
-        assertEquals("1", list.get(0));
-        assertEquals("13", list.get(list.size() -1));
+        Assert.assertEquals(13, list.size());
+        Assert.assertEquals("1", list.get(0));
+        Assert.assertEquals("13", list.get(list.size() - 1));
     }
 
 
-    public void testParseSemicolonDelimitedString() {
+    public static void testParseSemicolonDelimitedString() {
         String input="one;two ; three; four ; five;six";
         List list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
-        assertEquals(6, list.size());
-        assertEquals("one", list.get(0));
-        assertEquals("six", list.get(list.size() -1));
+        Assert.assertEquals(6, list.size());
+        Assert.assertEquals("one", list.get(0));
+        Assert.assertEquals("six", list.get(list.size() - 1));
     }
 
 
-    public void testParseSemicolonDelimitedString2() {
+    public static void testParseSemicolonDelimitedString2() {
         String input="  myID1::subID1 ; myID2::mySubID2; myID3 ;myID4::blaSubID4";
         List list=Util.parseStringList(input, ";");
         System.out.println("list: " + list);
-        assertEquals(4, list.size());
-        assertEquals("myID1::subID1", list.get(0));
-        assertEquals("myID4::blaSubID4", list.get(list.size() -1));
+        Assert.assertEquals(4, list.size());
+        Assert.assertEquals("myID1::subID1", list.get(0));
+        Assert.assertEquals("myID4::blaSubID4", list.get(list.size() - 1));
     }
 
 
-    public void testVariableSubstitution() {
+    public static void testVariableSubstitution() {
         String val="hello world", replacement;
         replacement=Util.substituteVariable(val);
-        assertEquals(val, replacement); // no substitution
+        Assert.assertEquals(val, replacement);
 
         val="my name is ${user.name}";
         replacement=Util.substituteVariable(val);
-        assertNotSame(val, replacement);
-        assertFalse(val.equals(replacement));
+        Assert.assertNotSame(val, replacement);
+        assert !(val.equals(replacement));
 
         val="my name is ${user.name} and ${user.name}";
         replacement=Util.substituteVariable(val);
-        assertFalse(val.equals(replacement));
-        assertEquals(-1, replacement.indexOf("${"));
+        assert !(val.equals(replacement));
+        Assert.assertEquals(-1, replacement.indexOf("${"));
 
         val="my name is ${unknown.var:Bela Ban}";
         replacement=Util.substituteVariable(val);
-        assertTrue(replacement.contains("Bela Ban"));
-        assertEquals(-1, replacement.indexOf("${"));
+        assert replacement.contains("Bela Ban");
+        Assert.assertEquals(-1, replacement.indexOf("${"));
 
         val="my name is ${unknown.var}";
         replacement=Util.substituteVariable(val);
-        assertTrue(replacement.contains("${"));
+        assert replacement.contains("${");
 
         val="here is an invalid ${argument because it doesn't contains a closing bracket";
         try {
             replacement=Util.substituteVariable(val);
-            fail("should be an IllegalArgumentException");
+            assert false : "should be an IllegalArgumentException";
         }
         catch(Throwable t) {
-            assertEquals(IllegalArgumentException.class, t.getClass());
+            Assert.assertEquals(IllegalArgumentException.class, t.getClass());
         }
     }
 
 
 
-    public static Test suite() {
-        return new TestSuite(UtilTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }
 
 

@@ -1,17 +1,18 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="Functional tests"
-       parallel="methods"
-       thread-count="20" >
+       parallel="tests"
+       thread-count="1" >
 
-    <test name="all-functional-tests" junit="false">
+    <test name="all-stack-dependent-tests" junit="true">
         <groups>
             <run>
-                <include name="functional"/>
+                <exclude name="functional"/>
             </run>
         </groups>
         <packages>
             <package name="org.jgroups.tests.*"/>
             <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
         </packages>
     </test>
 </suite>

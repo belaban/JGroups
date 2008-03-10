@@ -1,28 +1,30 @@
-// $Id: MembershipTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: MembershipTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.Membership;
+import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Vector;
 
-
-public class MembershipTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL,sequential=true)
+public class MembershipTest {
     Membership m1, m2;
     Vector v1, v2;
     Address a1, a2, a3, a4, a5;
 
 
     public MembershipTest(String name) {
-        super(name);
     }
 
 
+    @BeforeMethod
     public void setUp() {
         a1=new IpAddress(5555);
         a2=new IpAddress(6666);
@@ -32,23 +34,26 @@ public class MembershipTest extends TestCase {
         m1=new Membership();
     }
 
+    @AfterMethod
     public void tearDown() {
 
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConstructor() {
         v1=new Vector();
         v1.addElement(a1);
         v1.addElement(a2);
         v1.addElement(a3);
         m2=new Membership(v1);
-        assertTrue(m2.size() == 2);
-        assertTrue(m2.contains(a1));
-        assertTrue(m2.contains(a2));
-        assertTrue(m2.contains(a3));
+        assert m2.size() == 2;
+        assert m2.contains(a1);
+        assert m2.contains(a2);
+        assert m2.contains(a3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testClone() {
         v1=new Vector();
         v1.addElement(a1);
@@ -56,14 +61,15 @@ public class MembershipTest extends TestCase {
         v1.addElement(a3);
         m2=new Membership(v1);
         m1=(Membership)m2.clone();
-        assertEquals(m1.size(), m2.size());
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
-        assertTrue(m2.contains(a1));
-        assertTrue(m2.contains(a2));
+        Assert.assertEquals(m1.size(), m2.size());
+        assert m1.contains(a1);
+        assert m1.contains(a2);
+        assert m2.contains(a1);
+        assert m2.contains(a2);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCopy() {
         v1=new Vector();
         v1.addElement(a1);
@@ -71,36 +77,39 @@ public class MembershipTest extends TestCase {
         v1.addElement(a3);
         m2=new Membership(v1);
         m1=m2.copy();
-        assertEquals(m1.size(), m2.size());
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
-        assertTrue(m2.contains(a1));
-        assertTrue(m2.contains(a2));
+        Assert.assertEquals(m1.size(), m2.size());
+        assert m1.contains(a1);
+        assert m1.contains(a2);
+        assert m2.contains(a1);
+        assert m2.contains(a2);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAdd() {
         m1.add(a1);
         m1.add(a2);
         m1.add(a3);
-        assertTrue(m1.size() == 2); // a3 was *not* added because already present (a2)
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
-        assertTrue(m1.contains(a3));  // a3 is not present, but is equal to a2 !
+        assert m1.size() == 2;
+        assert m1.contains(a1);
+        assert m1.contains(a2);
+        assert m1.contains(a3);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddVector() {
         v1=new Vector();
         v1.addElement(a1);
         v1.addElement(a2);
         v1.addElement(a3);
         m1.add(v1);
-        assertTrue(m1.size() == 2);
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
+        assert m1.size() == 2;
+        assert m1.contains(a1);
+        assert m1.contains(a2);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddVectorDupl() {
         v1=new Vector();
         v1.addElement(a1);
@@ -112,14 +121,15 @@ public class MembershipTest extends TestCase {
         m1.add(a5);
         m1.add(a1);
         m1.add(v1);
-        assertTrue(m1.size() == 4);
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
-        assertTrue(m1.contains(a4));
-        assertTrue(m1.contains(a5));
+        assert m1.size() == 4;
+        assert m1.contains(a1);
+        assert m1.contains(a2);
+        assert m1.contains(a4);
+        assert m1.contains(a5);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testRemove() {
         m1.add(a1);
         m1.add(a2);
@@ -127,17 +137,19 @@ public class MembershipTest extends TestCase {
         m1.add(a4);
         m1.add(a5);
         m1.remove(a2);
-        assertTrue(m1.size() == 3);
+        assert m1.size() == 3;
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGetMembers() {
         testAdd();
         Vector v=m1.getMembers();
-        assertTrue(v.size() == 2);
+        assert v.size() == 2;
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSet() {
         v1=new Vector();
         v1.addElement(a1);
@@ -147,12 +159,13 @@ public class MembershipTest extends TestCase {
         m1.add(a4);
         m1.add(a5);
         m1.set(v1);
-        assertTrue(m1.size() == 2);
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a2));
+        assert m1.size() == 2;
+        assert m1.contains(a1);
+        assert m1.contains(a2);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSet2() {
         m1=new Membership();
         m2=new Membership();
@@ -161,14 +174,15 @@ public class MembershipTest extends TestCase {
         m1.add(a4);
         m2.add(a5);
         m2.set(m1);
-        assertTrue(m2.size() == 3);
-        assertTrue(m2.contains(a1));
-        assertTrue(m2.contains(a2));
-        assertTrue(m2.contains(a4));
-        assertTrue(!m2.contains(a5));
+        assert m2.size() == 3;
+        assert m2.contains(a1);
+        assert m2.contains(a2);
+        assert m2.contains(a4);
+        assert !m2.contains(a5);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMerge() {
         v1=new Vector();
         v2=new Vector();
@@ -183,12 +197,13 @@ public class MembershipTest extends TestCase {
         v2.addElement(a3);
 
         m1.merge(v1, v2);
-        assertTrue(m1.size() == 3);
-        assertTrue(m1.contains(a1));
-        assertTrue(m1.contains(a4));
-        assertTrue(m1.contains(a5));
+        assert m1.size() == 3;
+        assert m1.contains(a1);
+        assert m1.contains(a4);
+        assert m1.contains(a5);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSort() {
         m1.add(a3);
         m1.add(a4);
@@ -197,27 +212,20 @@ public class MembershipTest extends TestCase {
         m1.add(a5);
         m1.add(a2); // dupl
         System.out.println("membership: " + m1);
-        assertEquals(4, m1.size());
-        assertEquals(a3, m1.elementAt(0));
-        assertEquals(a4, m1.elementAt(1));
-        assertEquals(a1, m1.elementAt(2));
-        assertEquals(a5, m1.elementAt(3));
+        Assert.assertEquals(4, m1.size());
+        Assert.assertEquals(a3, m1.elementAt(0));
+        Assert.assertEquals(a4, m1.elementAt(1));
+        Assert.assertEquals(a1, m1.elementAt(2));
+        Assert.assertEquals(a5, m1.elementAt(3));
         m1.sort();
         System.out.println("sorted: " + m1);
-        assertEquals(4, m1.size());
-        assertEquals(a1, m1.elementAt(0));
-        assertEquals(a2, m1.elementAt(1));
-        assertEquals(a4, m1.elementAt(2));
-        assertEquals(a5, m1.elementAt(3));
+        Assert.assertEquals(4, m1.size());
+        Assert.assertEquals(a1, m1.elementAt(0));
+        Assert.assertEquals(a2, m1.elementAt(1));
+        Assert.assertEquals(a4, m1.elementAt(2));
+        Assert.assertEquals(a5, m1.elementAt(3));
     }
 
 
-    public static Test suite() {
-        TestSuite s=new TestSuite(MembershipTest.class);
-        return s;
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

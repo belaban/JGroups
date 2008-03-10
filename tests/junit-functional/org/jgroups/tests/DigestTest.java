@@ -1,38 +1,40 @@
-// $Id: DigestTest.java,v 1.1 2007/07/04 07:29:34 belaban Exp $
+// $Id: DigestTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
-import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
-import org.jgroups.Address;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.*;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 
-
-public class DigestTest extends TestCase {
+@Test(groups=Global.FUNCTIONAL, sequential=true)
+public class DigestTest {
     Digest         d, d2;
     MutableDigest  md;
     IpAddress      a1, a2, a3;
 
-    public DigestTest(String name) {
-        super(name);
-    }
 
-
-    public void setUp() throws Exception {
-        super.setUp();
-        Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
+    @BeforeClass
+    void beforeClass() throws Exception {
         a1=new IpAddress(5555);
         a2=new IpAddress(6666);
         a3=new IpAddress(7777);
+    }
+
+    @BeforeMethod
+    void beforeMethod() {
+        Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(4, 500, 501));
         map.put(a2, new Digest.Entry(25, 26, 26));
         map.put(a3, new Digest.Entry(20, 25, 33));
@@ -40,24 +42,24 @@ public class DigestTest extends TestCase {
         md=new MutableDigest(map);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSize() {
         d2=new Digest(3);
-        assertEquals(0, d2.size());
+        Assert.assertEquals(0, d2.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testEquals() {
         d2=d.copy();
         System.out.println("d: " + d + "\nd2= " + d2);
-        assertEquals(d, d);
-        assertEquals(d, d2);                                               
+        Assert.assertEquals(d, d);
+        Assert.assertEquals(d, d2);
     }
     
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testDifference(){
     	
 		Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
-	    a1=new IpAddress(5555);
-	    a2=new IpAddress(6666);
-	    a3=new IpAddress(7777);
 	    map.put(a1, new Digest.Entry(4, 500, 501));
 	    map.put(a2, new Digest.Entry(25, 26, 26));
 	    map.put(a3, new Digest.Entry(20, 25, 33));
@@ -68,13 +70,13 @@ public class DigestTest extends TestCase {
 	    map2.put(a2, new Digest.Entry(25, 26, 26));
 	    map2.put(a3, new Digest.Entry(20, 37, 33));
 	    Digest digest2 =new Digest(map2);
-	     
-	    assertNotSame(digest, digest2);
+
+        Assert.assertNotSame(digest, digest2);
 	    
 	    Digest diff = digest2.difference(digest);
 	    System.out.println(diff);
-	    assertTrue(diff.contains(a3));
-        assertEquals(1, diff.size());
+        assert diff.contains(a3);
+        Assert.assertEquals(1, diff.size());
 	    
 	    
 	    Map<Address, Digest.Entry> map3=new HashMap<Address, Digest.Entry>();
@@ -86,20 +88,21 @@ public class DigestTest extends TestCase {
 	    
 	    diff = digest3.difference(digest);
 	    System.out.println(diff);
-        assertEquals(2, diff.size());
+        Assert.assertEquals(2, diff.size());
 	    
 	    diff = digest3.difference(digest2);
 	    System.out.println(diff);
-        assertEquals(1, diff.size());
+        Assert.assertEquals(1, diff.size());
 	    
 	    Digest diff2 = digest2.difference(digest3);
 	    System.out.println(diff2);
-        assertEquals(1, diff2.size());
-        assertEquals(diff, diff2);
+        Assert.assertEquals(1, diff2.size());
+        Assert.assertEquals(diff, diff2);
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIsGreaterThanOrEqual() {
         Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(4, 500, 501));
@@ -108,86 +111,94 @@ public class DigestTest extends TestCase {
         Digest my=new Digest(map);
 
         System.out.println("\nd: " + d + "\nmy: " + my);
-        assertTrue(my.isGreaterThanOrEqual(d));
+        assert my.isGreaterThanOrEqual(d);
 
         map.remove(a3);
         map.put(a3, new Digest.Entry(20, 26, 33));
         my=new Digest(map);
         System.out.println("\nd: " + d + "\nmy: " + my);
-        assertTrue(my.isGreaterThanOrEqual(d));
+        assert my.isGreaterThanOrEqual(d);
 
         map.remove(a3);
         map.put(a3, new Digest.Entry(20, 22, 32));
         my=new Digest(map);
         System.out.println("\nd: " + d + "\nmy: " + my);
-        assertFalse(my.isGreaterThanOrEqual(d));
+        assert !(my.isGreaterThanOrEqual(d));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testEquals2() {
         md=new MutableDigest(d);
         System.out.println("d: " + d + "\nmd= " + md);
-        assertEquals(d, d);
-        assertEquals(d, md);
+        Assert.assertEquals(d, d);
+        Assert.assertEquals(d, md);
         md.incrementHighestDeliveredSeqno(a1);
         System.out.println("d: " + d + "\nmd= " + md);
-        assertFalse(d.equals(md));
+        assert !(d.equals(md));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMutability() {
         Digest md2=md;
-        assertEquals(md, md2);
+        Assert.assertEquals(md, md2);
         md.incrementHighestDeliveredSeqno(a2);
-        assertEquals(md, md2);
+        Assert.assertEquals(md, md2);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testImmutability() {
         MutableDigest tmp=new MutableDigest(d);
-        assertEquals(d, tmp);
+        Assert.assertEquals(d, tmp);
         tmp.incrementHighestDeliveredSeqno(a2);
-        assertFalse(d.equals(tmp));
+        assert !(d.equals(tmp));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testImmutability2() {
         Digest tmp=d.copy();
-        assertEquals(d, tmp);
+        Assert.assertEquals(d, tmp);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testImmutability3() {
         Digest tmp=new Digest(d);
-        assertEquals(tmp, d);
+        Assert.assertEquals(tmp, d);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testImmutability4() {
         Digest copy=md.copy();
-        assertEquals(copy, md);
+        Assert.assertEquals(copy, md);
         md.incrementHighestDeliveredSeqno(a1);
-        assertFalse(copy.equals(md));
+        assert !(copy.equals(md));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSeal() {
         MutableDigest tmp=new MutableDigest(3);
         tmp.add(a2, 1,2,3);
-        assertEquals(1, tmp.size());
+        Assert.assertEquals(1, tmp.size());
         tmp.seal();
         try {
             tmp.add(a2, 4,5,6);
-            fail("should run into an exception");
+            assert false : "should run into an exception";
         }
         catch(IllegalAccessError e) {
             System.out.println("received exception \"" + e.toString() + "\" - as expected");
         }
-        assertEquals(1, tmp.size());
+        Assert.assertEquals(1, tmp.size());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSeal2() {
         md.incrementHighestDeliveredSeqno(a1);
         md.seal();
         try {
             md.incrementHighestDeliveredSeqno(a3);
-            fail("should run into an exception");
+            assert false : "should run into an exception";
         }
         catch(IllegalAccessError e) {
             System.out.println("received exception \"" + e.toString() + "\" - as expected");
@@ -197,20 +208,23 @@ public class DigestTest extends TestCase {
         tmp.incrementHighestDeliveredSeqno(a3);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAdd() {
-        assertEquals(3, md.size());
+        Assert.assertEquals(3, md.size());
         md.add(a1, 100, 200, 201);
-        assertEquals(3, md.size());
+        Assert.assertEquals(3, md.size());
         md.add(new IpAddress(14526), 1,2,3);
-        assertEquals(4, md.size());
+        Assert.assertEquals(4, md.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddDigest() {
         Digest tmp=md.copy();
         md.add(tmp);
-        assertEquals(3, md.size());
+        Assert.assertEquals(3, md.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testAddDigest2() {
         MutableDigest tmp=new MutableDigest(4);
         tmp.add(new IpAddress(1111), 1,2,3);
@@ -218,19 +232,21 @@ public class DigestTest extends TestCase {
         tmp.add(new IpAddress(5555), 1,2,3);
         tmp.add(new IpAddress(6666), 1,2,3);
         md.add(tmp);
-        assertEquals(5, md.size());
+        Assert.assertEquals(5, md.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testGet() {
         Digest.Entry entry;
         entry=d.get(a1);
-        assertEquals(entry, new Digest.Entry(4,500,501));
+        Assert.assertEquals(entry, new Digest.Entry(4, 500, 501));
         entry=d.get(a2);
-        assertEquals(entry, new Digest.Entry(25,26,26));
+        Assert.assertEquals(entry, new Digest.Entry(25, 26, 26));
         entry=d.get(a3);
-        assertEquals(entry, new Digest.Entry(20,25,33));
+        Assert.assertEquals(entry, new Digest.Entry(20, 25, 33));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testIncrementHighSeqno() {
         md=new MutableDigest(3);
         md.add(a1, 1, 100);
@@ -239,65 +255,72 @@ public class DigestTest extends TestCase {
 
         long tmp=md.highestDeliveredSeqnoAt(a1);
         md.incrementHighestDeliveredSeqno(a1);
-        assertEquals(md.highestDeliveredSeqnoAt(a1), tmp+1);
+        Assert.assertEquals(md.highestDeliveredSeqnoAt(a1), tmp + 1);
 
         tmp=md.highestDeliveredSeqnoAt(a2);
         md.incrementHighestDeliveredSeqno(a2);
-        assertEquals(md.highestDeliveredSeqnoAt(a2), tmp+1);
+        Assert.assertEquals(md.highestDeliveredSeqnoAt(a2), tmp + 1);
 
         tmp=md.highestDeliveredSeqnoAt(a3);
         md.incrementHighestDeliveredSeqno(a3);
-        assertEquals(md.highestDeliveredSeqnoAt(a3), tmp+1);
+        Assert.assertEquals(md.highestDeliveredSeqnoAt(a3), tmp + 1);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConstructor() {
-        assertEquals(3, md.size());
+        Assert.assertEquals(3, md.size());
         md.clear();
-        assertEquals(0, md.size());
+        Assert.assertEquals(0, md.size());
         md.clear();
-        assertEquals(0, md.size());
+        Assert.assertEquals(0, md.size());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConstructor2() {
         Digest dd=new Digest(3);
-        assertEquals(0, dd.size());
+        Assert.assertEquals(0, dd.size());
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConstructor3() {
         Digest dd=new MutableDigest(3);
-        assertEquals(0, dd.size());
+        Assert.assertEquals(0, dd.size());
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testContains() {
-        assertTrue(d.contains(a1));
-        assertTrue(d.contains(a2));
-        assertTrue(d.contains(a3));
+        assert d.contains(a1);
+        assert d.contains(a2);
+        assert d.contains(a3);
     }
 
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testResetAt() {
         md.resetAt(a1);
-        assertEquals(0, md.lowSeqnoAt(a1));
-        assertEquals(0, md.highestDeliveredSeqnoAt(a1));
-        assertEquals(0, md.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(0, md.lowSeqnoAt(a1));
+        Assert.assertEquals(0, md.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(0, md.highestReceivedSeqnoAt(a1));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testLowSeqnoAt() {
-        assertEquals(4, d.lowSeqnoAt(a1));
-        assertEquals(25, d.lowSeqnoAt(a2));
-        assertEquals(20, d.lowSeqnoAt(a3));
+        Assert.assertEquals(4, d.lowSeqnoAt(a1));
+        Assert.assertEquals(25, d.lowSeqnoAt(a2));
+        Assert.assertEquals(20, d.lowSeqnoAt(a3));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHighSeqnoAt() {
-        assertEquals(500, d.highestDeliveredSeqnoAt(a1));
-        assertEquals(26, d.highestDeliveredSeqnoAt(a2));
-        assertEquals(25, d.highestDeliveredSeqnoAt(a3));
+        Assert.assertEquals(500, d.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(26, d.highestDeliveredSeqnoAt(a2));
+        Assert.assertEquals(25, d.highestDeliveredSeqnoAt(a3));
     }
 
 //    public void testSetHighSeqnoAt() {
@@ -306,10 +329,11 @@ public class DigestTest extends TestCase {
 //        assertEquals(555, md.highSeqnoAt(a1));
 //    }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testHighSeqnoSeenAt() {
-        assertEquals(501, d.highestReceivedSeqnoAt(a1));
-        assertEquals(26, d.highestReceivedSeqnoAt(a2));
-        assertEquals(33, d.highestReceivedSeqnoAt(a3));
+        Assert.assertEquals(501, d.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(26, d.highestReceivedSeqnoAt(a2));
+        Assert.assertEquals(33, d.highestReceivedSeqnoAt(a3));
     }
 
 //    public void testSetHighSeenSeqnoAt() {
@@ -318,16 +342,18 @@ public class DigestTest extends TestCase {
 //        assertEquals(100, md.highSeqnoSeenAt(a2));
 //    }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSetHighestDeliveredAndSeenSeqnoAt() {
-        assertEquals(4, d.lowSeqnoAt(a1));
-        assertEquals(500, d.highestDeliveredSeqnoAt(a1));
-        assertEquals(501, md.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(4, d.lowSeqnoAt(a1));
+        Assert.assertEquals(500, d.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(501, md.highestReceivedSeqnoAt(a1));
         md.setHighestDeliveredAndSeenSeqnos(a1, 2, 10, 20);
-        assertEquals(2, md.lowSeqnoAt(a1));
-        assertEquals(10, md.highestDeliveredSeqnoAt(a1));
-        assertEquals(20, md.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(2, md.lowSeqnoAt(a1));
+        Assert.assertEquals(10, md.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(20, md.highestReceivedSeqnoAt(a1));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCopy() {
         d=d.copy();
         testLowSeqnoAt();
@@ -338,22 +364,25 @@ public class DigestTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testCopy2() {
         Digest tmp=d.copy();
-        assertEquals(tmp, d);
+        Assert.assertEquals(tmp, d);
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMutableCopy() {
         Digest copy=md.copy();
         System.out.println("md=" + md + "\ncopy=" + copy);
-        assertEquals(md, copy);
+        Assert.assertEquals(md, copy);
         md.add(a1, 4, 500, 1000);
         System.out.println("md=" + md + "\ncopy=" + copy);
-        assertFalse(md.equals(copy));
+        assert !(md.equals(copy));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testMerge() {
         Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(3, 499, 502));
@@ -367,22 +396,23 @@ public class DigestTest extends TestCase {
         digest.merge(d);
         System.out.println("merged digest: " + digest);
 
-        assertEquals(3, d.size());
-        assertEquals(3, digest.size());
+        Assert.assertEquals(3, d.size());
+        Assert.assertEquals(3, digest.size());
 
-        assertEquals(3, digest.lowSeqnoAt(a1));
-        assertEquals(500, digest.highestDeliveredSeqnoAt(a1));
-        assertEquals(502, digest.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(3, digest.lowSeqnoAt(a1));
+        Assert.assertEquals(500, digest.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(502, digest.highestReceivedSeqnoAt(a1));
 
-        assertEquals(20, digest.lowSeqnoAt(a2));
-        assertEquals(26, digest.highestDeliveredSeqnoAt(a2));
-        assertEquals(27, digest.highestReceivedSeqnoAt(a2));
+        Assert.assertEquals(20, digest.lowSeqnoAt(a2));
+        Assert.assertEquals(26, digest.highestDeliveredSeqnoAt(a2));
+        Assert.assertEquals(27, digest.highestReceivedSeqnoAt(a2));
 
-        assertEquals(20, digest.lowSeqnoAt(a3));
-        assertEquals(26, digest.highestDeliveredSeqnoAt(a3));
-        assertEquals(35, digest.highestReceivedSeqnoAt(a3));
+        Assert.assertEquals(20, digest.lowSeqnoAt(a3));
+        Assert.assertEquals(26, digest.highestDeliveredSeqnoAt(a3));
+        Assert.assertEquals(35, digest.highestReceivedSeqnoAt(a3));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testNonConflictingMerge() {
         MutableDigest cons_d=new  MutableDigest(5);
         IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
@@ -392,28 +422,29 @@ public class DigestTest extends TestCase {
         // System.out.println("\ncons_d before: " + cons_d);
         cons_d.merge(d);
 
-        assertEquals(5, cons_d.size());
+        Assert.assertEquals(5, cons_d.size());
         //System.out.println("\ncons_d after: " + cons_d);
-        assertEquals(1, cons_d.lowSeqnoAt(ip1));
-        assertEquals(2, cons_d.lowSeqnoAt(ip2));
-        assertEquals(4, cons_d.lowSeqnoAt(a1));
-        assertEquals(25, cons_d.lowSeqnoAt(a2));
-        assertEquals(20, cons_d.lowSeqnoAt(a3));
+        Assert.assertEquals(1, cons_d.lowSeqnoAt(ip1));
+        Assert.assertEquals(2, cons_d.lowSeqnoAt(ip2));
+        Assert.assertEquals(4, cons_d.lowSeqnoAt(a1));
+        Assert.assertEquals(25, cons_d.lowSeqnoAt(a2));
+        Assert.assertEquals(20, cons_d.lowSeqnoAt(a3));
 
-        assertEquals(10, cons_d.highestDeliveredSeqnoAt(ip1));
-        assertEquals(20, cons_d.highestDeliveredSeqnoAt(ip2));
-        assertEquals(500, cons_d.highestDeliveredSeqnoAt(a1));
-        assertEquals(26, cons_d.highestDeliveredSeqnoAt(a2));
-        assertEquals(25, cons_d.highestDeliveredSeqnoAt(a3));
+        Assert.assertEquals(10, cons_d.highestDeliveredSeqnoAt(ip1));
+        Assert.assertEquals(20, cons_d.highestDeliveredSeqnoAt(ip2));
+        Assert.assertEquals(500, cons_d.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(26, cons_d.highestDeliveredSeqnoAt(a2));
+        Assert.assertEquals(25, cons_d.highestDeliveredSeqnoAt(a3));
 
-        assertEquals(10, cons_d.highestReceivedSeqnoAt(ip1));
-        assertEquals(20, cons_d.highestReceivedSeqnoAt(ip2));
-        assertEquals(501, cons_d.highestReceivedSeqnoAt(a1));
-        assertEquals(26, cons_d.highestReceivedSeqnoAt(a2));
-        assertEquals(33, cons_d.highestReceivedSeqnoAt(a3));
+        Assert.assertEquals(10, cons_d.highestReceivedSeqnoAt(ip1));
+        Assert.assertEquals(20, cons_d.highestReceivedSeqnoAt(ip2));
+        Assert.assertEquals(501, cons_d.highestReceivedSeqnoAt(a1));
+        Assert.assertEquals(26, cons_d.highestReceivedSeqnoAt(a2));
+        Assert.assertEquals(33, cons_d.highestReceivedSeqnoAt(a3));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testConflictingMerge() {
         MutableDigest new_d=new MutableDigest(2);
         new_d.add(a1, 5, 450, 501);
@@ -422,59 +453,66 @@ public class DigestTest extends TestCase {
         //System.out.println("new_: " + new_d);
         md.merge(new_d);
 
-        assertEquals(3, md.size());
+        Assert.assertEquals(3, md.size());
         //System.out.println("d after: " + d);
 
-        assertEquals(4, md.lowSeqnoAt(a1));  // low_seqno should *not* have changed
-        assertEquals(500, md.highestDeliveredSeqnoAt(a1));  // high_seqno should *not* have changed
-        assertEquals(501, md.highestReceivedSeqnoAt(a1));  // high_seqno_seen should *not* have changed
+        Assert.assertEquals(4, md.lowSeqnoAt(a1));
+        Assert.assertEquals(500, md.highestDeliveredSeqnoAt(a1));
+        Assert.assertEquals(501, md.highestReceivedSeqnoAt(a1));
 
-        assertEquals(25, md.lowSeqnoAt(a2));  // low_seqno should *not* have changed
-        assertEquals(26, md.highestDeliveredSeqnoAt(a2));  // high_seqno should *not* have changed
-        assertEquals(26, md.highestReceivedSeqnoAt(a2));  // high_seqno_seen should *not* have changed
+        Assert.assertEquals(25, md.lowSeqnoAt(a2));
+        Assert.assertEquals(26, md.highestDeliveredSeqnoAt(a2));
+        Assert.assertEquals(26, md.highestReceivedSeqnoAt(a2));
 
-        assertEquals(18, md.lowSeqnoAt(a3));  // low_seqno should *not* have changed
-        assertEquals(28, md.highestDeliveredSeqnoAt(a3));  // high_seqno should *not* have changed
-        assertEquals(35, md.highestReceivedSeqnoAt(a3));  // high_seqno_seen should *not* have changed
+        Assert.assertEquals(18, md.lowSeqnoAt(a3));
+        Assert.assertEquals(28, md.highestDeliveredSeqnoAt(a3));
+        Assert.assertEquals(35, md.highestReceivedSeqnoAt(a3));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSendersOtherIsNull() {
-        assertFalse(d.sameSenders(null));
+        assert !(d.sameSenders(null));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSenders1MNullDifferentLenth() {
         d2=new Digest(1);
-        assertFalse(d2.sameSenders(d));
+        assert !(d2.sameSenders(d));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSenders1MNullSameLength() {
         d2=new Digest(3);
-        assertFalse(d2.sameSenders(d));
+        assert !(d2.sameSenders(d));
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSendersIdentical() {
         d2=d.copy();
-        assertTrue(d.sameSenders(d2));
+        assert d.sameSenders(d2);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSendersNotIdentical() {
         MutableDigest tmp=new MutableDigest(3);
         tmp.add(a1, 4, 500, 501);
         tmp.add(a3, 20, 25, 33);
         tmp.add(a2, 25, 26, 26);
-        assertTrue(md.sameSenders(tmp));
-        assertTrue(d.sameSenders(tmp));
+        assert md.sameSenders(tmp);
+        assert d.sameSenders(tmp);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSameSendersNotSameLength() {
         md=new MutableDigest(3);
         md.add(a1, 4, 500, 501);
         md.add(a2, 25, 26, 26);
-        assertFalse(d.sameSenders(md));
+        assert !(d.sameSenders(md));
     }
 
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testStreamable() throws IOException, IllegalAccessException, InstantiationException {
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -485,21 +523,16 @@ public class DigestTest extends TestCase {
         DataInputStream dis=new DataInputStream(instream);
         Digest tmp=new Digest();
         tmp.readFrom(dis);
-        assertEquals(d, tmp);
+        Assert.assertEquals(d, tmp);
     }
 
+    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testSerializedSize() throws Exception {
         long len=d.serializedSize();
         byte[] buf=Util.streamableToByteBuffer(d);
-        assertEquals(len, buf.length);
+        Assert.assertEquals(len, buf.length);
     }
 
 
-    public static Test suite() {
-        return new TestSuite(DigestTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }
