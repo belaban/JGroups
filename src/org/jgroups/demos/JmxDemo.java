@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.5 2008/03/10 07:02:20 belaban Exp $
+ * @version $Id: JmxDemo.java,v 1.6 2008/03/10 07:06:21 belaban Exp $
  */
 @MBean
 public class JmxDemo {
@@ -64,6 +64,15 @@ public class JmxDemo {
 
     @ManagedAttribute
     public int getAccountNumber() {return accountNumber;}
+
+    int max_age=100;
+
+    @ManagedAttribute
+    public void setMaxAge(int age) {max_age=age;}
+
+    @ManagedAttribute
+    public int getMaxAge() {return max_age;}
+    
 
 
     @ManagedOperation
