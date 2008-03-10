@@ -30,7 +30,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.16 2008/03/10 05:41:00 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.17 2008/03/10 06:37:39 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -301,6 +301,7 @@ public class ResourceDMBean implements DynamicMBean {
                     }
 
                     AttributeEntry ae=atts.get(attributeName);
+                    //is it a read method?
                     if(!writeAttribute) {
                         //we already have annotated field as read
                         if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
@@ -318,12 +319,26 @@ public class ResourceDMBean implements DynamicMBean {
                         else {
                             atts.put(attributeName, new MethodAttributeEntry(info, null, method));
                         }
-                    }
-                    else {
-                        //we already have annotated field as write
-                        if(ae instanceof FieldAttributeEntry && ae.getInfo().isWritable()) {
-                            log.warn("Not adding annotated method " + methodName
-                                     + " since we already have writable attribute");
+                    }//is it a set method?
+                    else {                        
+                        if(ae instanceof FieldAttributeEntry) {
+                            //we already have annotated field as write
+                            if(ae.getInfo().isWritable()) {
+                                log.warn("Not adding annotated method " + methodName
+                                         + " since we already have writable attribute");
+                            }
+                            else {
+                                //we already have annotated field as read
+                                //lets make the field writable
+                                Field f = ((FieldAttributeEntry)ae).getField();
+                                MBeanAttributeInfo i=new MBeanAttributeInfo(ae.getInfo().getName(),
+                                                                            f.getType().getCanonicalName(),
+                                                                            attr.description(),
+                                                                            true,
+                                                                            Modifier.isFinal(f.getModifiers())? false: true,
+                                                                            false);                               
+                                atts.put(attributeName,new FieldAttributeEntry(i,f));
+                            }
                         }
                         //we already have annotated getOrIs method
                         else if(ae instanceof MethodAttributeEntry) {
@@ -509,6 +524,10 @@ public class ResourceDMBean implements DynamicMBean {
             if(!field.isAccessible()) {
                 field.setAccessible(true);
             }
+        }
+        
+        public Field getField(){
+            return field;
         }
 
         public Object invoke(Attribute a) throws Exception {
