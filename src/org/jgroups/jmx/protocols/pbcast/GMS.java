@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.4 2007/11/19 16:06:48 belaban Exp $
+ * @version $Id: GMS.java,v 1.5 2008/03/10 07:12:08 belaban Exp $
  */
 public class GMS extends Protocol implements GMSMBean {
     org.jgroups.protocols.pbcast.GMS p;
@@ -80,7 +80,7 @@ public class GMS extends Protocol implements GMSMBean {
     }
 
     public int getViewHandlerQueue() {
-        return p.viewHandlerSize();
+        return p.getViewHandlerSize();
     }
 
     public boolean isViewHandlerSuspended() {
