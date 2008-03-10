@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.4 2008/03/10 16:25:09 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TimeSchedulerTest {
@@ -73,7 +73,8 @@ public class TimeSchedulerTest {
 
             Util.sleep(200); // wait until task has executed
             future.cancel(true);
-            assert timer.size() == 1;
+            int size=timer.size();
+            assert size == 1 : " timer size should be 1, but is " + size;
 
             int num_executions=task.getNumExecutions();
             System.out.println("number of task executions=" + num_executions);
@@ -102,7 +103,7 @@ public class TimeSchedulerTest {
             Util.sleep(1000);
             int num=task.getNum();
             System.out.println("task executed " + num + " times");
-            assert num >= 9 && num <= 11;
+            assert num >= 9 && num <= 11 : "number of executions is " + num + ", but should be >= 9 and <= 11";
         }
         finally {
             timer.stop();
