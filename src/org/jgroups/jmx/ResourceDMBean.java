@@ -4,8 +4,10 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -30,7 +32,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.19 2008/03/10 09:28:07 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.20 2008/03/10 09:42:33 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -236,8 +238,12 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     private void findMethods() {
-        //find all methods 
-        Method[] methods=obj.getClass().getMethods();
+        //find all methods         
+        
+        List<Method> methods = new ArrayList<Method>(Arrays.asList(obj.getClass().getMethods()));
+        List<Method> objectMethods = new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));
+        methods.removeAll(objectMethods);
+               
         for(Method method:methods) {
             //does method have @ManagedAttribute annotation?
             ManagedAttribute attr=method.getAnnotation(ManagedAttribute.class);
