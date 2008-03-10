@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.4 2008/03/06 09:17:58 belaban Exp $
+ * @version $Id: JmxDemo.java,v 1.5 2008/03/10 07:02:20 belaban Exp $
  */
 @MBean
 public class JmxDemo {
@@ -49,6 +49,22 @@ public class JmxDemo {
 
     @ManagedAttribute
     public boolean isFlag() {return true;} // exposed as Flag, *not* 'isFlag()' !!
+
+    @ManagedAttribute(description="my number attribute")
+    private long my_number=322649L;
+
+    public void setMyNumber(long new_number) {
+        my_number=new_number;
+    }
+
+    private int accountNumber=10;
+
+    @ManagedAttribute
+    public void setAccountNumber(int num) {accountNumber=num;} // exposes accountNumber as writable
+
+    @ManagedAttribute
+    public int getAccountNumber() {return accountNumber;}
+
 
     @ManagedOperation
     public String sayName() {
