@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.9 2008/03/10 15:39:24 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.10 2008/03/10 16:34:00 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
@@ -120,8 +120,6 @@ public class ConnectionTableTest {
         assert !(connection.isSocketClosed()) : "valid connection to peer";
         connection = ct2.getConnection(addr1);
         assert !(connection.isSocketClosed()) : "valid connection to peer";
-        ;
-               
     }
 
 
@@ -233,9 +231,6 @@ public class ConnectionTableTest {
         table1.stop();
         Assert.assertEquals(0, table1.getNumConnections());
         Assert.assertEquals(0, table2.getNumConnections());
-        int current_active_threads=Thread.activeCount();
-        System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        Assert.assertEquals(current_active_threads, active_threads, "threads:\n" + Util.dumpThreads());
     }
 
 
