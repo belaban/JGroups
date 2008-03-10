@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.7 2008/03/10 08:57:57 vlada Exp $
+ * @version $Id: JmxDemo.java,v 1.8 2008/03/10 09:31:26 belaban Exp $
  */
 @MBean
 public class JmxDemo {
@@ -34,14 +34,19 @@ public class JmxDemo {
     @ManagedAttribute
     private int number=10; // writeable because we have the (non-annnotated) setter below !!
 
+    @ManagedAttribute
     public void setNumber(int num) {number=num;}
 
     @ManagedAttribute
-    public int getMyFoo() {return 22;} // exposed as 'MyFoo' *not* 'getMyFoo()' !! 
+    public int getMyFoo() {return 22;} // exposed as 'myFoo' *not* 'getMyFoo()' !!
+
+    @ManagedAttribute(writable=true)
+    private static int my_other_number_is_here=999; // exposed as writable myOtherNumberIsHere
 
     @ManagedAttribute
     private int other_number=20;  // exposed as 'otherNumber' ?
-    public int getOtherNumber() {return other_number;}   // this should show up as 'otherNumber'
+
+    @ManagedAttribute
     public void setOtherNumber(int num) {other_number=num;}
 
     @ManagedAttribute
@@ -53,6 +58,7 @@ public class JmxDemo {
     @ManagedAttribute(description="my number attribute")
     private long my_number=322649L;
 
+    @ManagedAttribute
     public void setMyNumber(long new_number) {
         my_number=new_number;
     }
