@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.20 2008/03/10 09:42:33 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.21 2008/03/11 02:08:03 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -105,7 +104,7 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     private void findDescription() {
-        MBean mbean=obj.getClass().getAnnotation(MBean.class);
+        MBean mbean=getObject().getClass().getAnnotation(MBean.class);
         if(mbean != null && mbean.description() != null && mbean.description().trim().length() > 0) {
             description=mbean.description();
             if(log.isDebugEnabled()) {
@@ -119,19 +118,18 @@ public class ResourceDMBean implements DynamicMBean {
                                                            false);
             try {
                 atts.put(ResourceDMBean.MBEAN_DESCRITION,
-                         new FieldAttributeEntry(info, this.getClass()
-                                                           .getDeclaredField("description")));
+                         new FieldAttributeEntry(info,getClass().getDeclaredField("description")));
             }
             catch(NoSuchFieldException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
+               //this should not happen unless somebody removes description field 
+               log.warn("Could not reflect field description of this class. Was it removed?");               
             }
         }
     }
 
     public synchronized MBeanInfo getMBeanInfo() {
 
-        return new MBeanInfo(obj.getClass().getCanonicalName(),
+        return new MBeanInfo(getObject().getClass().getCanonicalName(),
                              description,
                              attrInfo,
                              null,
@@ -140,6 +138,9 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     public synchronized Object getAttribute(String name) {
+        if(name == null || name.length() == 0)
+            throw new NullPointerException("Invalid attribute requested " + name);
+        
         if(log.isDebugEnabled()) {
             log.debug("getAttribute called for " + name);
         }
@@ -151,6 +152,9 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     public synchronized void setAttribute(Attribute attribute) {
+        if(attribute == null || attribute.getName() == null)
+            throw new NullPointerException("Invalid attribute requested " + attribute);
+        
         if(log.isDebugEnabled()) {
             log.debug("setAttribute called for " + attribute.getName()
                       + " value "
@@ -213,8 +217,8 @@ public class ResourceDMBean implements DynamicMBean {
             for(int i=0;i < classes.length;i++) {
                 classes[i]=getClassForName(sig[i]);
             }
-            Method method=this.obj.getClass().getMethod(name, classes);
-            return method.invoke(this.obj, args);
+            Method method=getObject().getClass().getMethod(name, classes);
+            return method.invoke(getObject(), args);
         }
         catch(Exception e) {
             throw new MBeanException(e);
@@ -227,7 +231,7 @@ public class ResourceDMBean implements DynamicMBean {
             return c;
         }
         catch(ClassNotFoundException cnfe) {
-            //Could be a primative - let's check
+            //Could be a primitive - let's check
             for(int i=0;i < primitives.length;i++) {
                 if(name.equals(primitives[i].getName())) {
                     return primitives[i];
@@ -238,9 +242,8 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     private void findMethods() {
-        //find all methods         
-        
-        List<Method> methods = new ArrayList<Method>(Arrays.asList(obj.getClass().getMethods()));
+        //find all methods but don't include methods from Object class               
+        List<Method> methods = new ArrayList<Method>(Arrays.asList(getObject().getClass().getMethods()));
         List<Method> objectMethods = new ArrayList<Method>(Arrays.asList(Object.class.getMethods()));
         methods.removeAll(objectMethods);
                
@@ -273,6 +276,7 @@ public class ResourceDMBean implements DynamicMBean {
                     else { // getter
                         if(method.getParameterTypes().length == 0 && method.getReturnType() != java.lang.Void.TYPE) {
                             boolean hasSetter=atts.containsKey(attributeName);
+                            //we found is method
                             if(methodName.startsWith("is")) {
                                 attributeName=firstCharacterToLowerCase(methodName.substring(2));
                                 info=new MBeanAttributeInfo(attributeName,
@@ -363,12 +367,8 @@ public class ResourceDMBean implements DynamicMBean {
                     }
                 }
             }
-            
-            //does method have @ManagedOPeration annotation?
-            ManagedOperation op=method.getAnnotation(ManagedOperation.class);
-            boolean expose=op != null || isMBeanAnnotationPresent();
-            if(expose) {
-                //unless we already exposed attribute field
+            else if (method.isAnnotationPresent(ManagedOperation.class) ||isMBeanAnnotationPresent()){
+                ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
                 String attName=method.getName();
                 if(isSetMethod(method) || isGetMethod(method)) {
                     attName=firstCharacterToLowerCase(attName.substring(3));
@@ -376,14 +376,15 @@ public class ResourceDMBean implements DynamicMBean {
                 else if(isIsMethod(method)) {
                     attName=firstCharacterToLowerCase(attName.substring(2));
                 }
+                //expose unless we already exposed matching attribute field
                 boolean isAlreadyExposed=atts.containsKey(attName);
                 if(!isAlreadyExposed) {
                     ops.add(new MBeanOperationInfo(op != null? op.description() : "", method));
                     if(log.isDebugEnabled()) {
                         log.debug("@Operation found for method " + method.getName());
                     }
-                }
-            }
+                }                
+            }                     
         }
     }
     
@@ -406,8 +407,8 @@ public class ResourceDMBean implements DynamicMBean {
     }
 
     private void findFields() {
-        //walk annotated class hierarchy and find all fields
-        for(Class<?> clazz=obj.getClass();clazz != null; clazz=clazz.getSuperclass()) {
+        //traverse class hierarchy and find all annotated fields
+        for(Class<?> clazz=getObject().getClass();clazz != null; clazz=clazz.getSuperclass()) {
 
             Field[] fields=clazz.getDeclaredFields();
             for(Field field:fields) {
@@ -452,12 +453,12 @@ public class ResourceDMBean implements DynamicMBean {
                               + result.getValue());
                 }
                 else {
-                    log.warn("Did not find attribute " + name);
+                    log.warn("Did not find queried attribute with name " + name);
                 }
             }
         }
         catch(Exception e) {
-            e.printStackTrace();
+            log.warn("Exception while reading value of attribute " + name,e);
         }
         return result;
     }
@@ -475,7 +476,7 @@ public class ResourceDMBean implements DynamicMBean {
             }
         }
         catch(Exception e) {
-            e.printStackTrace();
+            log.warn("Exception while writing value for attribute " + attribute.getName(),e);
         }
         return result;
     }
