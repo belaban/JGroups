@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.136 2008/03/10 16:34:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.137 2008/03/11 08:09:41 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -935,7 +935,7 @@
         </testng>
     </target>
 
-    <target name="udp-tests" depends="compile, prepare">
+    <target name="udp-tests" depends="compile, prepare, makeKeystore, copy-build-properties">
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
