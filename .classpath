@@ -15,5 +15,6 @@
 	<classpathentry kind="lib" path="lib/log4j.jar"/>
 	<classpathentry kind="lib" path="lib/xalan.jar"/>
 	<classpathentry kind="lib" path="conf"/>
+	<classpathentry kind="lib" path="lib/testng.jar"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
