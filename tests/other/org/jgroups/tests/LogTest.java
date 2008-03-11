@@ -1,4 +1,4 @@
-// $Id: LogTest.java,v 1.4 2008/03/10 15:39:26 belaban Exp $
+// $Id: LogTest.java,v 1.5 2008/03/11 11:31:49 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,17 +10,15 @@ import org.testng.annotations.Test;
 /**
  * Computes cost of logging
  */
+@Test
 public class LogTest {
     static final Log log=LogFactory.getLog(LogTest.class);
     final boolean trace=log.isTraceEnabled();
     final int NUM=10000;
     long start, stop, diff;
 
-    public LogTest(String name) {
-    }
 
 
-    @Test
     public void testSpeedWithSingleTraceStatement() {
         start=System.currentTimeMillis();
         for(int i=0; i < NUM; i++) {
@@ -32,7 +30,6 @@ public class LogTest {
         System.out.println("took " + (stop-start) + "ms for " + NUM + " log statements");
     }
 
-    @Test
     public void testSpeedWithSingleTraceStatementLogIsTracePreset() {
         start=System.currentTimeMillis();
         for(int i=0; i < NUM; i++) {
@@ -44,7 +41,6 @@ public class LogTest {
         System.out.println("took " + (stop-start) + "ms for " + NUM + " log statements");
     }
 
-    @Test
     public void testSpeedWithTwoTraceStatements() {
         start=System.currentTimeMillis();
         for(int i=0; i < NUM; i++) {
@@ -58,9 +54,5 @@ public class LogTest {
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={LogTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }
