@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.5 2008/03/10 16:44:53 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.6 2008/03/11 08:29:24 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TimeSchedulerTest {
@@ -291,7 +291,7 @@ public class TimeSchedulerTest {
             timer.execute(task);
             try {
                 long start=System.currentTimeMillis(), stop;
-                p.getResultWithTimeout(5);
+                p.getResultWithTimeout(500);
                 stop=System.currentTimeMillis();
                 System.out.println("task took " + (stop-start) + "ms");
             }
