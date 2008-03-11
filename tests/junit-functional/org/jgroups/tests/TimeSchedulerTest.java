@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.6 2008/03/11 08:29:24 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.7 2008/03/11 08:58:26 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TimeSchedulerTest {
@@ -105,7 +105,7 @@ public class TimeSchedulerTest {
             int num=task.getNum();
             System.out.println("task executed " + num + " times");
             
-            assert num >= 9 && num <= 11 : "number of executions is " + num + ", but should be >= 9 and <= 11\n" +
+            assert num >= 8 && num <= 11 : "number of executions is " + num + ", but should be >= 8 and <= 11\n" +
                     "Execution times: " + printExecutionTimes(task);
         }
         finally {
@@ -119,7 +119,7 @@ public class TimeSchedulerTest {
         long base=times.get(0);
         int cnt=1;
         for(Long time: times) {
-            sb.append("#" + cnt + ": ").append(time - base).append("\n");
+            sb.append("#" + cnt++ + ": ").append(time - base).append("\n");
         }
         return sb.toString();
     }
