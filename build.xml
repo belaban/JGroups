@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.137 2008/03/11 08:09:41 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.138 2008/03/11 10:49:43 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -561,12 +561,12 @@
     <target name="all-tests-cc" depends="makeKeystore,downloadFormatter"
             description="Runs entire testsuite for nightly Cruise Control builds">
 
-        <antcall target="runtests-functional">
+       <!-- <antcall target="runtests-functional">
             <param name="testset" value="all.tests"/>
             <param name="testname.ext" value="functional"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         	<param name="junit.excludes" value="junit.excludes"/>
-        </antcall>
+        </antcall>-->
 
         <antcall target="runtests">
             <param name="testset" value="all.tests"/>
