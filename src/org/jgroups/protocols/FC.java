@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.90.2.1 2007/12/18 07:56:21 belaban Exp $
+ * @version $Id: FC.java,v 1.90.2.2 2008/03/12 15:15:49 belaban Exp $
  */
 public class FC extends Protocol {
 
@@ -366,6 +366,9 @@ public class FC extends Protocol {
             case Event.INFO:
                 handleInfo((Map<String,Object>)evt.getArg());
                 return null;
+            case Event.VIEW_CHANGE:
+                handleViewChange(((View)evt.getArg()).getMembers());
+                break;
         }
         return down_prot.down(evt); // this could potentially use the lower protocol's thread which may block
     }
@@ -578,6 +581,9 @@ public class FC extends Protocol {
                 lowest=val;
                 lowest-=credits;
                 m.put(dest, lowest);
+                if(log.isTraceEnabled())
+                	log.trace("sender " + dest + " minus " + credits
+							+ " credits, " + lowest + " remaining");
                 return lowest;
             }
         }
@@ -649,6 +655,9 @@ public class FC extends Protocol {
         lock.lock();
         try {
             long remaining_cred=decrementCredit(map, sender, length);
+            if(log.isTraceEnabled())
+                log.trace("sender " + sender + " minus " + length
+						+ " credits, " + remaining_cred + " remaining");
             if(remaining_cred == -1)
                 return 0;
             long credit_response=max_credits - remaining_cred;
@@ -717,6 +726,9 @@ public class FC extends Protocol {
 
 
     private void sendCredit(Address dest, long credit) {
+        if(log.isTraceEnabled())
+            log.trace("replentished " + dest + " with " + credit
+					+ " credits");
         Number number;
         if(credit < Integer.MAX_VALUE)
             number=(int)credit;
@@ -745,7 +757,7 @@ public class FC extends Protocol {
     }
 
 
-    private void handleViewChange(Vector mbrs) {
+    private void handleViewChange(Vector<Address> mbrs) {
         Address addr;
         if(mbrs == null) return;
         if(log.isTraceEnabled()) log.trace("new membership: " + mbrs);
@@ -762,15 +774,15 @@ public class FC extends Protocol {
                     sent.put(addr, max_credits);
             }
             // remove members that left
-            for(Iterator it=received.keySet().iterator(); it.hasNext();) {
-                addr=(Address)it.next();
+            for(Iterator<Address> it=received.keySet().iterator(); it.hasNext();) {
+                addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove();
             }
 
             // remove members that left
-            for(Iterator it=sent.keySet().iterator(); it.hasNext();) {
-                addr=(Address)it.next();
+            for(Iterator<Address> it=sent.keySet().iterator(); it.hasNext();) {
+                addr=it.next();
                 if(!mbrs.contains(addr))
                     it.remove(); // modified the underlying map
             }
