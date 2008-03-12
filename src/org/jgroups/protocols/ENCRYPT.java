@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.38 2007/06/21 11:41:31 belaban Exp $
+// $Id: ENCRYPT.java,v 1.39 2008/03/12 07:30:29 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -139,7 +139,7 @@ public class ENCRYPT extends Protocol {
     SecretKey secretKey = null;
 
     // map to hold previous keys so we can decrypt some earlier messages if we need to
-    final Map keyMap = new WeakHashMap();
+    final Map<String,Cipher> keyMap = new WeakHashMap<String,Cipher>();
 
     // queues to buffer data while we are swapping shared key
     // or obtsining key for first time
@@ -149,10 +149,10 @@ public class ENCRYPT extends Protocol {
     private boolean queue_down = false;
 
     // queue to hold upcoming messages while key negotiation is happening
-    private BlockingQueue upMessageQueue = new LinkedBlockingQueue();
+    private BlockingQueue<Event> upMessageQueue = new LinkedBlockingQueue<Event>();
 
 //	 queue to hold downcoming messages while key negotiation is happening
-    private BlockingQueue downMessageQueue = new LinkedBlockingQueue();
+    private BlockingQueue<Event> downMessageQueue = new LinkedBlockingQueue<Event>();
     // decrypting cypher for secret key requests
     private Cipher asymCipher;
 
@@ -521,9 +521,19 @@ public class ENCRYPT extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if (log.isInfoEnabled())
-                    log.info("handling view: " + view);
+                    log.info("handling view-change up: " + view);
                 if (!suppliedKey){
-                    handleViewChange(view);
+                    handleViewChange(view, false);
+                }
+                break;
+            case Event.TMP_VIEW:
+                view=(View)evt.getArg();
+                if (log.isInfoEnabled())
+                    log.info("handling tmp-view up: " + view);
+                if (!suppliedKey){
+                    // if a tmp_view then we are trying to become coordinator so
+                    // make us keyserver
+                    handleViewChange(view, true);
                 }
                 break;
             // we try and decrypt all messages
@@ -549,7 +559,7 @@ public class ENCRYPT extends Protocol {
     }
 
 
-    private synchronized void handleViewChange(View view){
+    private synchronized void handleViewChange(View view, boolean makeServer){
 
         // if view is a bit broken set me as keyserver
         if (view.getMembers() == null || view.getMembers().get(0) == null){
@@ -561,7 +571,8 @@ public class ENCRYPT extends Protocol {
 
         //I am new keyserver - either first member of group or old key server is no more and
         // I have been voted new controller
-        if (tmpKeyServer.equals(local_addr) && (keyServerAddr == null || (! tmpKeyServer.equals(keyServerAddr)))){
+        if (makeServer
+				|| (tmpKeyServer.equals(local_addr) && (keyServerAddr == null || (!tmpKeyServer.equals(keyServerAddr))))) {
             becomeKeyServer(tmpKeyServer);
             // a new keyserver has been set and it is not me
         }else if (keyServerAddr == null || (! tmpKeyServer.equals(keyServerAddr))){
@@ -992,9 +1003,19 @@ public class ENCRYPT extends Protocol {
             case Event.VIEW_CHANGE:
                 View view=(View)evt.getArg();
                 if (log.isInfoEnabled())
-                    log.info("handling view: " + view);
+                    log.info("handling view-change down: " + view);
                 if (!suppliedKey){
-                    handleViewChange(view);
+                    handleViewChange(view, false);
+                }
+                break;
+            case Event.TMP_VIEW:
+                view=(View)evt.getArg();
+                if (log.isInfoEnabled())
+                    log.info("handling tmp-view down: " + view);
+                if (!suppliedKey){
+                    // if a tmp_view then we are trying to become coordinator so
+                    // make us keyserver
+                    handleViewChange(view, true);
                 }
                 break;
             default :
