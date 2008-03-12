@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74.2.1 2007/11/20 11:08:29 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74.2.2 2008/03/12 15:11:26 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -574,7 +574,7 @@ public class MessageDispatcher implements RequestHandler {
             throw new SuspectedException(dest);
         }
         if(!rsp.wasReceived()) {
-            throw new TimeoutException();
+            throw new TimeoutException("timeout sending message to " + dest);
         }
         return rsp.getValue();
     }
