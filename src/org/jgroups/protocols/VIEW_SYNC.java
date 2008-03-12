@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.25 2008/03/08 09:46:46 vlada Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.26 2008/03/12 09:31:01 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -39,7 +39,20 @@ public class VIEW_SYNC extends Protocol {
     long                 avg_send_interval=60000;
 
     private int          num_views_sent=0;
+    @ManagedAttribute
+    private int          num_view_requests_sent=0;
+    @ManagedAttribute
+    private int          num_view_responses_seen=0;
+    @ManagedAttribute
+    private int          num_views_non_local=0;
+    @ManagedAttribute
+    private int          num_views_equal=0;
+    @ManagedAttribute
+    private int          num_views_less=0;
+    @ManagedAttribute
     private int          num_views_adjusted=0;
+    @ManagedAttribute
+    private long         last_view_request_sent=0;
 
     @GuardedBy("view_task_lock")
     private Future<?>       view_send_task_future=null;       // bcasts periodic view sync message (added to timer below)
@@ -119,6 +132,8 @@ public class VIEW_SYNC extends Protocol {
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
         msg.putHeader(name, hdr);
         down_prot.down(new Event(Event.MSG, msg));
+        num_view_requests_sent++;
+        last_view_request_sent=System.currentTimeMillis();
     }
 
 //    public void sendFakeViewForTestingOnly() {
@@ -187,10 +202,12 @@ public class VIEW_SYNC extends Protocol {
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
     private void handleView(View v, Address sender) {
+    	num_view_responses_seen++;
         Vector<Address> members=v.getMembers();
         if(!members.contains(local_addr)) {
             if(log.isWarnEnabled())
                 log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
+            num_views_non_local++;
             return;
         }
 
@@ -207,6 +224,14 @@ public class VIEW_SYNC extends Protocol {
             view_change.putHeader(GMS.name, hdr);
             up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
+        } else if (rc == 0) {
+        	if (log.isTraceEnabled())
+        		log.trace("view from "  + sender + " (" + vid + ") is same as my own view; ignoring");
+            num_views_equal++;
+       } else {
+    	   if (log.isTraceEnabled())
+    		   log.trace("view from "  + sender + " (" + vid + ") is less than my own view (" + my_vid + "); ignoring");
+    	   num_views_less++;
         }
     }
 
