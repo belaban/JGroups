@@ -40,7 +40,7 @@ public class PersistenceFactory
      * @return PersistenceFactory;
      */
     public static PersistenceFactory getInstance() {
-        log.error(" getting factory instance ");
+        log.debug(" getting factory instance ");
         if (_factory == null)
             _factory = new PersistenceFactory();
         return _factory;
