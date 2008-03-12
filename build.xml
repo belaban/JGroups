@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.138 2008/03/11 10:49:43 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.139 2008/03/12 07:24:55 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -922,6 +922,7 @@
     <!-- =============================== TestNG ======================================== -->
 
     <target name="functional" depends="compile, prepare">
+        <mkdir dir="${tmp.dir}/test-results/functional"/>
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
@@ -942,7 +943,7 @@
                 listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
                 >
             <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
-            <!--<classfileset dir="${basedir}/classes" includes="**/*.class" excludes="**/MySuperClass*.class"/>-->
+            <!--<classfileset dir="${basedir}/classes" includJues="**/*.class" excludes="**/MySuperClass*.class"/>-->
             <sysproperty key="org.uncommons.reportng.title" value="UDP tests"/>
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
@@ -961,13 +962,55 @@
             <fileset dir="${tmp.dir}/test-results/xml">
                 <include name="*.xml"/>
             </fileset>
-
             <report format="frames"  todir="${tmp.dir}/test-results/html/report"/>
         </junitreport>
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${tmp.dir}/test-results/html/report/index.html"/>
         <echo message="********************************************************************"/>
     </target>
+
+    <macrodef name="replace-name">
+        <attribute name="dir"/>
+        <attribute name="suffix" default="udp"/>
+        <sequential>
+            <replaceregexp match="testsuite name=" replace="bela">
+                <fileset dir="@{dir}" includes="*.xml"/>
+            </replaceregexp>
+
+        </sequential>
+    </macrodef>
+
+    <target name="replace">
+        <replace-name dir="${tmp.dir}/test-results/xml2" suffix="-bela"/>
+    </target>
+
+
+    <macrodef name="runtest" description="Runs a configuration-dependent test suite">
+        <attribute name="channel.conf" default="udp.xml"/>
+        <attribute name="outputdir" default="${tmp.dir}/test-results"/>
+        <attribute name="channel.conf.flush"/>
+        <attribute name="mux.on" default="false"/>
+        <attribute name="mux.conf"/>
+        <attribute name="mux.conf.stack"/>
+        <attribute name="mux.factorycount"/>
+        <attribute name="testname.ext" default="udp"/>
+        <sequential>
+            <testng classpathref="jg.classpath"
+                    usedefaultlisteners="false"
+                    outputdir="@{outputdir}"
+                    listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                    >
+                <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
+                <sysproperty key="org.uncommons.reportng.title" value="UDP tests"/>
+                <sysproperty key="channel.conf" value="@{channel.conf}"/>
+                <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
+                <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
+                <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
+                <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+            </testng>
+        </sequential>
+    </macrodef>
+
 
 
     <!-- =============================== TestNG ======================================== -->
