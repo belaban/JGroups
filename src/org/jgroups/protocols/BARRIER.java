@@ -1,6 +1,8 @@
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.MBean;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 
@@ -25,10 +27,12 @@ import java.util.concurrent.locks.ReentrantLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.8 2008/02/28 13:28:50 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.9 2008/03/12 07:58:02 belaban Exp $
  */
-
+@MBean
 public class BARRIER extends Protocol {
+    @ManagedAttribute(writable=true,description="max time (in ms) a barrier can be closed. If exceeded, the barrier is" +
+            "opened no matter what")
     long max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
     final Lock lock=new ReentrantLock();
     final AtomicBoolean barrier_closed=new AtomicBoolean(false);
@@ -63,13 +67,23 @@ public class BARRIER extends Protocol {
         return true;
     }
 
+    @ManagedAttribute
     public boolean isClosed() {
         return barrier_closed.get();
     }
 
-
     public int getNumberOfInFlightThreads() {
         return in_flight_threads.size();
+    }
+
+    @ManagedAttribute
+    public int getInFlightThreadsCount() {
+        return getNumberOfInFlightThreads();
+    }
+
+    @ManagedAttribute
+    public boolean isOpenerScheduled() {
+        return barrier_opener_future != null && !barrier_opener_future.isDone() && !barrier_opener_future.isCancelled();
     }
 
     public void init() throws Exception {
