@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.6 2008/02/27 16:40:25 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.7 2008/03/12 10:08:22 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -902,7 +902,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             XmitTimeStat stat=xmit_time_stats.get(key);
             if(stat == null) {
                 stat=new XmitTimeStat();
-                xmit_time_stats.putIfAbsent(key, stat);
+                XmitTimeStat stat2=xmit_time_stats.putIfAbsent(key, stat);
+                if(stat2 != null)
+                    stat=stat2;
             }
             stat.xmit_reqs_received.addAndGet((int)(last_seqno - first_seqno +1));
             stat.xmit_rsps_sent.addAndGet((int)(last_seqno - first_seqno +1));
@@ -1020,7 +1022,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 XmitTimeStat stat=xmit_time_stats.get(key);
                 if(stat == null) {
                     stat=new XmitTimeStat();
-                    xmit_time_stats.putIfAbsent(key, stat);
+                    XmitTimeStat stat2=xmit_time_stats.putIfAbsent(key, stat);
+                    if(stat2 != null)
+                        stat=stat2;
                 }
                 stat.xmit_rsps_received.incrementAndGet();
             }
@@ -1484,7 +1488,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         ConcurrentMap<Long,Long> tmp=xmit_stats.get(sender);
         if(tmp == null) {
             tmp=new ConcurrentHashMap<Long,Long>();
-            xmit_stats.putIfAbsent(sender, tmp);
+            ConcurrentMap<Long,Long> tmp2=xmit_stats.putIfAbsent(sender, tmp);
+            if(tmp2 != null)
+                tmp=tmp2;
         }
         for(long seq=first_seqno; seq < last_seqno; seq++) {
             tmp.putIfAbsent(seq, System.currentTimeMillis());
@@ -1495,7 +1501,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             XmitTimeStat stat=xmit_time_stats.get(key);
             if(stat == null) {
                 stat=new XmitTimeStat();
-                xmit_time_stats.putIfAbsent(key, stat);
+                XmitTimeStat stat2=xmit_time_stats.putIfAbsent(key, stat);
+                if(stat2 != null)
+                    stat=stat2;
             }
             stat.xmit_reqs_sent.addAndGet((int)(last_seqno - first_seqno +1));
         }
@@ -1523,7 +1531,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 BoundedList<Long> list=xmit_times_history.get(original_sender);
                 if(list == null) {
                     list=new BoundedList<Long>(xmit_history_max_size);
-                    xmit_times_history.putIfAbsent(original_sender, list);
+                    BoundedList<Long> list2=xmit_times_history.putIfAbsent(original_sender, list);
+                    if(list2 != null)
+                        list=list2;
                 }
                 list.add(diff);
 
@@ -1546,7 +1556,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             XmitTimeStat stat=xmit_time_stats.get(key);
             if(stat == null) {
                 stat=new XmitTimeStat();
-                xmit_time_stats.putIfAbsent(key, stat);
+                XmitTimeStat stat2=xmit_time_stats.putIfAbsent(key, stat);
+                if(stat2 != null)
+                    stat=stat2;
             }
             stat.missing_msgs_received.incrementAndGet();
         }
@@ -1566,7 +1578,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             XmitTimeStat stat=xmit_time_stats.get(key);
             if(stat == null) {
                 stat=new XmitTimeStat();
-                xmit_time_stats.putIfAbsent(key, stat);
+                XmitTimeStat stat2=xmit_time_stats.putIfAbsent(key, stat);
+                if(stat2 != null)
+                    stat=stat2;
             }
             stat.gaps_detected.addAndGet((int)(to - from +1));
         }
