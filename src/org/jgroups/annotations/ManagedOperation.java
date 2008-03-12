@@ -1,5 +1,7 @@
 package org.jgroups.annotations;
 
+import java.lang.annotation.*;
+
 /**
  * Indicates that a method in an MBean class defines an MBean 
  * operation. @ManagedOperation annotation can be applied to a 
@@ -8,10 +10,9 @@ package org.jgroups.annotations;
  * annotation from a superclass.
  * 
  * @author Chris Mills
- * @version $Id: ManagedOperation.java,v 1.3 2008/03/11 02:26:20 vlada Exp $
+ * @version $Id: ManagedOperation.java,v 1.4 2008/03/12 00:26:42 vlada Exp $
  */
 
-import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target( { ElementType.METHOD })
