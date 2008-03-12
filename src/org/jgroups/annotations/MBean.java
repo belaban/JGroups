@@ -5,21 +5,13 @@ import java.lang.annotation.*;
  * hierarchy (excluding Object) as MBean operations.
  * <p>
  * 
- * Furthermore, class fields (any visibility) along with public getter 
- * and setter methods in a class hierarchy of a class annotated with @MBean 
- * annotation can be annotated with @ManagedAttribute to indicate that 
- * they define MBean attributes. If such methods and fields are discovered 
- * they will be exposed as MBean attributes.
- * <p> 
- * 
  * If a more fine grained MBean attribute and operation exposure is needed 
  * do not use @MBean annotation but annotate fields and public methods directly 
  * using @ManagedOperation and @ManagedAttribute annotations.
- *  
  * 
  * 
  * @author Chris Mills
- * @version $Id: MBean.java,v 1.4 2008/03/12 00:26:42 vlada Exp $
+ * @version $Id: MBean.java,v 1.5 2008/03/12 04:48:15 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
