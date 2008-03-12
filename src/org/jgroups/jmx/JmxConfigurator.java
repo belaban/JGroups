@@ -17,7 +17,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.11 2008/03/10 03:21:14 vlada Exp $
+ * @version $Id: JmxConfigurator.java,v 1.12 2008/03/12 08:01:50 vlada Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -50,12 +50,10 @@ public class JmxConfigurator {
         if(register_protocols) {
             ProtocolStack stack=channel.getProtocolStack();
             Vector<Protocol> protocols=stack.getProtocols();
-            for(Protocol p:protocols) {
-                if(p.getClass().isAnnotationPresent(MBean.class)) {
-                    Registration.register(p,
-                                          ManagementFactory.getPlatformMBeanServer(),
-                                          getProtocolRegistrationName(cluster_name, domain, p));
-                }
+            for(Protocol p:protocols) {                
+                Registration.register(p,
+                                      ManagementFactory.getPlatformMBeanServer(),
+                                      getProtocolRegistrationName(cluster_name, domain, p));               
             }
         }
         Registration.register(channel, server, getChannelRegistrationName(channel,
