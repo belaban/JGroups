@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.178 2008/03/12 07:32:00 vlada Exp $
+ * @version $Id: JChannel.java,v 1.179 2008/03/12 09:30:33 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -746,13 +746,13 @@ public class JChannel extends Channel {
         return closed || !connected ? null : my_view;
     }
     
-    @ManagedOperation
+    @ManagedAttribute
     public String getViewAsString() {
         View v=getView();
         return v != null ? v.toString() : "n/a";
     }
     
-    @ManagedOperation
+    @ManagedAttribute
     public String getVersion() {
         return Version.printDescription();
     }  
@@ -765,6 +765,10 @@ public class JChannel extends Channel {
         return closed ? null : local_addr;
     }
 
+    @ManagedAttribute
+    public String getLocalAddressAsString() {
+        return local_addr != null? local_addr.toString() : "n/a";
+    }
 
     /**
      * returns the name of the channel
@@ -775,7 +779,7 @@ public class JChannel extends Channel {
         return closed ? null : !connected ? null : cluster_name;
     }
 
-    @ManagedOperation(description="Returns cluster name this channel is connected to")
+    @ManagedAttribute(description="Returns cluster name this channel is connected to")
     public String getClusterName() {
         return closed ? null : !connected ? null : cluster_name;
     }
