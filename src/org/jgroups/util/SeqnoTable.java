@@ -11,7 +11,7 @@ import java.util.concurrent.ConcurrentMap;
 /**
  * Maintains the highest received and highest delivered seqno per member
  * @author Bela Ban
- * @version $Id: SeqnoTable.java,v 1.1 2007/10/24 08:49:40 belaban Exp $
+ * @version $Id: SeqnoTable.java,v 1.2 2008/03/12 09:57:20 belaban Exp $
  */
 public class SeqnoTable {
     private long next_to_receive=0;
@@ -36,7 +36,9 @@ public class SeqnoTable {
         Entry entry=map.get(member);
         if(entry == null) {
             entry=new Entry(next_to_receive);
-            map.putIfAbsent(member, entry);
+            Entry entry2=map.putIfAbsent(member, entry);
+            if(entry2 != null)
+                entry=entry2;
         }
         // now entry is not null
         return entry.add(seqno);
