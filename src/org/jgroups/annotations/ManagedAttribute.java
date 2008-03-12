@@ -1,4 +1,5 @@
 package org.jgroups.annotations;
+import java.lang.annotation.*;
 
 /**
  * Indicates that a public method or a field (any visibility) in 
@@ -9,9 +10,8 @@ package org.jgroups.annotations;
  * a superclass.
  * 
  * @author Chris Mills
- * @version $Id: ManagedAttribute.java,v 1.3 2008/03/11 02:26:20 vlada Exp $
+ * @version $Id: ManagedAttribute.java,v 1.4 2008/03/12 00:26:42 vlada Exp $
  */
-import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target( { ElementType.METHOD, ElementType.FIELD })
