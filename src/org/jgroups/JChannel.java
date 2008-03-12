@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.177 2008/03/06 00:17:58 vlada Exp $
+ * @version $Id: JChannel.java,v 1.178 2008/03/12 07:32:00 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -121,16 +121,29 @@ public class JChannel extends Channel {
     private static final long GET_STATE_DEFAULT_TIMEOUT=5000;
     /*if FLUSH is used channel waits for UNBLOCK event, this is the default timeout, 5 secs*/
     private static final long FLUSH_UNBLOCK_TIMEOUT=5000;
+    
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
+    @ManagedAttribute(description="Flag indicating whether to receive blocks",
+                      readable=true,writable=true)
     private boolean receive_blocks=false;
+    
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
+    @ManagedAttribute(description="Flag indicating whether to receive this channel's own messages",
+                      readable=true,writable=true)
     private boolean receive_local_msgs=true;
+    
     /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
+    @ManagedAttribute(description="Toggles whether the channel will reconnect after shun",
+                      readable=true,writable=true)
     private boolean auto_reconnect=true;
+    
     /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
      *setting this to true, automatically forces auto_reconnect to true*/
+    @ManagedAttribute(description="Toggles whether state should to be retrieved after reconnect",
+                      readable=true,writable=true)
     private boolean auto_getstate=false;
+    
     /*channel connected flag*/
     protected volatile boolean connected=false;
 
@@ -732,7 +745,17 @@ public class JChannel extends Channel {
     public View getView() {
         return closed || !connected ? null : my_view;
     }
-
+    
+    @ManagedOperation
+    public String getViewAsString() {
+        View v=getView();
+        return v != null ? v.toString() : "n/a";
+    }
+    
+    @ManagedOperation
+    public String getVersion() {
+        return Version.printDescription();
+    }  
 
     /**
      * returns the local address of the channel
