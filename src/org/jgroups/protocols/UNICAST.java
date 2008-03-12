@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.97 2008/03/10 07:24:14 belaban Exp $
+// $Id: UNICAST.java,v 1.98 2008/03/12 11:35:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -51,6 +51,9 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     // default is true
     private boolean          use_gms=true;
     private boolean          started=false;
+
+    // ack a message before it is processed by the application to limit unnecessary retransmits
+    private boolean          immediate_ack=false;
 
     /** whether to loop back messages sent to self (will be removed in the future, default=false) */
     private boolean          loopback=false;
@@ -222,6 +225,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("use_gms");
         }
 
+        str=props.getProperty("immediate_ack");
+        if(str != null) {
+        	immediate_ack=Boolean.valueOf(str).booleanValue();
+            props.remove("immediate_ack");
+        }
+
         str=props.getProperty("loopback");
         if(str != null) {
             loopback=Boolean.valueOf(str).booleanValue();
@@ -277,8 +286,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             src=msg.getSrc();
             switch(hdr.type) {
             case UnicastHeader.DATA:      // received regular message
-                if(handleDataReceived(src, hdr.seqno, msg))
-                    sendAck(src, hdr.seqno); // only send an ACK if added to the received_msgs table (bela Aug 2006)
+                // only send an ACK if added to the received_msgs table (bela Aug 2006)
+                // if in immediate_ack mode, send ack inside handleDataReceived
+            	if(handleDataReceived(src, hdr.seqno, msg) && (!immediate_ack))
+                    sendAck(src, hdr.seqno);
                 return null; // we pass the deliverable message up in handleDataReceived()
             case UnicastHeader.ACK:  // received ACK for previously sent message
                 handleAckReceived(src, hdr.seqno);
@@ -579,6 +590,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         boolean added=win.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
+
+        // http://jira.jboss.com/jira/browse/JGRP-713: // send the ack back *before* we process the message
+        // to limit unnecessary retransmits
+        if(immediate_ack)
+            sendAck(sender, seqno);
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
