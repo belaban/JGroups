@@ -19,7 +19,7 @@ import java.util.*;
  * its current state S. Then the member returns both S and D to the requester. The requester
  * first sets its digest to D and then returns the state to the application.
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.44.2.4 2008/03/12 07:40:25 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.44.2.5 2008/03/12 13:26:25 belaban Exp $
  */
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
@@ -249,7 +249,7 @@ public class STATE_TRANSFER extends Protocol {
                             hdr=new StateHeader(StateHeader.STATE_RSP, local_addr, 0, digest, id);
                             state_rsp.putHeader(name, hdr);
                             if(log.isTraceEnabled())
-                                log.trace("sending state for ID=" + id + " to " + requester + " (" + state!=null?state.length:0 + " bytes)");
+                                log.trace("sending state for ID=" + id + " to " + requester + " (" + (state!=null?state.length:0) + " bytes)");
 
                             // This has to be done in a separate thread, so we don't block on FC
                             // (see http://jira.jboss.com/jira/browse/JGRP-225 for details). This will be reverted once
