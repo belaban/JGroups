@@ -696,6 +696,25 @@
                                 </para>
                             </entry>
                         </row>
+                        <row>
+                            <entry>immediate_ack (default: false)</entry>
+                            <entry>
+                                By default, we ack a message only aftre it has been delivered to the application. However,
+                                because UNICAST gets a lock per sender and only passes up a single message per sender at
+                                any time, we might have received a message (i.e, added to the received table), but not
+                                yet sent an ack because the message has not yet been processed. This leads to
+                                unnecessary retransmissison requests from the sender.
+                                <para>
+                                    Setting immediate_ack="true" sends an ack as soon as the message has been added to
+                                    the received table.
+                                </para>
+                                <para>
+                                    Note that the sender cannot really overwhelm the receiver because flow control (FC)
+                                    will throttle the sender should it send too many messages for the receiver to keep
+                                    up with.
+                                </para>
+                            </entry>
+                        </row>
 
                     </tbody>
                 </tgroup>
