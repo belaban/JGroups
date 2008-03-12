@@ -1,5 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Functional tests"
+<suite name="functional"
        parallel="methods"
        thread-count="20" >
 

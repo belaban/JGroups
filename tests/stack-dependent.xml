@@ -3,7 +3,7 @@
        parallel="tests"
        thread-count="1" >
 
-    <test name="all-stack-dependent-tests" junit="true">
+    <test name="all-stack-dependent-tests" junit="false">
         <groups>
             <run>
                 <exclude name="functional"/>
