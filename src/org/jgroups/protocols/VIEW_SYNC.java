@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.24 2007/08/31 11:53:23 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.24.2.1 2008/03/12 09:01:42 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol {
     Address               local_addr=null;
@@ -34,7 +34,13 @@ public class VIEW_SYNC extends Protocol {
     long                 avg_send_interval=60000;
 
     private int          num_views_sent=0;
+    private int          num_view_requests_sent=0;
+    private int          num_view_responses_seen=0;
+    private int          num_views_non_local=0;
+    private int          num_views_equal=0;
+    private int          num_views_less=0;
     private int          num_views_adjusted=0;
+    private long         last_view_request_sent=0;
 
     @GuardedBy("view_task_lock")
     private Future       view_send_task_future=null;       // bcasts periodic view sync message (added to timer below)
@@ -62,6 +68,30 @@ public class VIEW_SYNC extends Protocol {
         return num_views_sent;
     }
 
+    public int getNumViewRequestsSent() {
+        return num_view_requests_sent;
+    }
+
+    public int getNumViewResponsesSeen() {
+        return num_view_requests_sent;
+    }
+
+    public int getNumViewsNonLocal() {
+        return num_views_non_local;
+    }
+    
+    public int getNumViewsLess() {
+        return num_views_less;
+    }
+    
+    public int getNumViewsEqual() {
+        return num_views_equal;
+    }
+    
+    public long getLastViewRequestSent() {
+        return last_view_request_sent;
+    }
+    
     public int getNumViewsAdjusted() {
         return num_views_adjusted;
     }
@@ -110,6 +140,8 @@ public class VIEW_SYNC extends Protocol {
         ViewSyncHeader hdr=new ViewSyncHeader(ViewSyncHeader.VIEW_SYNC_REQ, null);
         msg.putHeader(name, hdr);
         down_prot.down(new Event(Event.MSG, msg));
+        num_view_requests_sent++;
+        last_view_request_sent=System.currentTimeMillis();
     }
 
 //    public void sendFakeViewForTestingOnly() {
@@ -178,10 +210,12 @@ public class VIEW_SYNC extends Protocol {
     /* --------------------------------------- Private Methods ---------------------------------------- */
 
     private void handleView(View v, Address sender) {
-        Vector members=v.getMembers();
+    	num_view_responses_seen++;
+        Vector<Address> members=v.getMembers();
         if(!members.contains(local_addr)) {
             if(log.isWarnEnabled())
                 log.warn("discarding view as I (" + local_addr + ") am not member of view (" + v + ")");
+            num_views_non_local++;
             return;
         }
 
@@ -198,7 +232,15 @@ public class VIEW_SYNC extends Protocol {
             view_change.putHeader(GMS.name, hdr);
             up_prot.up(new Event(Event.MSG, view_change));
             num_views_adjusted++;
-        }
+        } else if (rc == 0) {
+        	if (log.isTraceEnabled())
+        		log.trace("view from "  + sender + " (" + vid + ") is same as my own view; ignoring");
+            num_views_equal++;
+       } else {
+    	   if (log.isTraceEnabled())
+    		   log.trace("view from "  + sender + " (" + vid + ") is less than my own view (" + my_vid + "); ignoring");
+    	   num_views_less++;
+       } 
     }
 
     private void handleViewChange(View view) {

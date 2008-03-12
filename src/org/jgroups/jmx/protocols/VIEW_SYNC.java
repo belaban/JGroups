@@ -4,7 +4,7 @@ import org.jgroups.jmx.Protocol;
 
 /**
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.2 2005/10/27 08:30:14 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.2.14.1 2008/03/12 09:01:42 belaban Exp $
  */
 public class VIEW_SYNC extends Protocol implements VIEW_SYNCMBean {
     org.jgroups.protocols.VIEW_SYNC p;
@@ -37,6 +37,30 @@ public class VIEW_SYNC extends Protocol implements VIEW_SYNCMBean {
     public int getNumViewsAdjusted() {
         return p.getNumViewsAdjusted();
     }
+
+	public long getLastViewRequestSent() {
+		return p.getLastViewRequestSent();
+	}
+
+	public int getNumViewRequestsSent() {
+		return p.getNumViewRequestsSent();
+	}
+
+	public int getNumViewResponsesSeen() {
+		return p.getNumViewRequestsSent();
+	}
+
+	public int getNumViewsLess() {
+		return p.getNumViewsLess();
+	}
+
+	public int getNumViewsEqual() {
+		return p.getNumViewsEqual();
+	}
+
+	public int getNumViewsNonLocal() {
+		return p.getNumViewsNonLocal();
+	}
 
     public void sendViewRequest() {
         p.sendViewRequest();
