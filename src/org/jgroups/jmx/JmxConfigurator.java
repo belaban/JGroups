@@ -2,9 +2,7 @@ package org.jgroups.jmx;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.JChannel;
 import org.jgroups.annotations.MBean;
-import org.jgroups.jmx.Registration;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 
@@ -17,7 +15,7 @@ import java.util.Iterator;
 
 /**
  * @author Bela Ban
- * @version $Id: JmxConfigurator.java,v 1.12 2008/03/12 08:01:50 vlada Exp $
+ * @version $Id: JmxConfigurator.java,v 1.13 2008/03/13 02:42:57 vlada Exp $
  */
 public class JmxConfigurator {
     static final Log log=LogFactory.getLog(JmxConfigurator.class);
@@ -50,31 +48,30 @@ public class JmxConfigurator {
         if(register_protocols) {
             ProtocolStack stack=channel.getProtocolStack();
             Vector<Protocol> protocols=stack.getProtocols();
-            for(Protocol p:protocols) {                
-                Registration.register(p,
-                                      ManagementFactory.getPlatformMBeanServer(),
-                                      getProtocolRegistrationName(cluster_name, domain, p));               
+            for(Protocol p:protocols) {
+                register(p,
+                         ManagementFactory.getPlatformMBeanServer(),
+                         getProtocolRegistrationName(cluster_name, domain, p));
             }
         }
-        Registration.register(channel, server, getChannelRegistrationName(channel,
-                                                                          domain,
-                                                                          cluster_name));
+        register(channel, server, getChannelRegistrationName(channel, domain, cluster_name));
     }
+
     /**
-     * Registers an already created channel with the MBeanServer. Creates an org.jgroups.jmx.JChannel which
-     * delegates to the org.jgroups.JChannel and registers it.
+     * Registers an already created channel with the MBeanServer. Creates an
+     * org.jgroups.jmx.JChannel which delegates to the org.jgroups.JChannel and
+     * registers it.
+     * 
      * @param channel
      * @param server
-     * @param name The JMX ObjectName 
+     * @param name
+     *                The JMX ObjectName
      * @return org.jgroups.jmx.JChannel for the specified org.jgroups.JChannel
      */
-    public static void registerChannel(org.jgroups.JChannel channel,
-                                                           MBeanServer server, String name) throws Exception {
-        registerChannel(channel,server,"jgroups",name,true);
+    public static void registerChannel(org.jgroups.JChannel channel, MBeanServer server, String name) throws Exception {
+        registerChannel(channel, server, "jgroups", name, true);
     }
-    
-    
-    
+
     public static void unregisterChannel(MBeanServer server, ObjectName name) throws Exception {
         if(server != null)
             server.unregisterMBean(name);
@@ -85,20 +82,18 @@ public class JmxConfigurator {
             server.unregisterMBean(new ObjectName(name));
     }
 
-
     public static void unregisterChannel(org.jgroups.JChannel c,
                                          MBeanServer server,
-                                         String clusterName) throws Exception {        
-  
-        
+                                         String clusterName) throws Exception {
+
         ProtocolStack stack=c.getProtocolStack();
         Vector<Protocol> protocols=stack.getProtocols();
         for(Protocol p:protocols) {
             if(p.getClass().isAnnotationPresent(MBean.class)) {
                 try {
-                    Registration.unregister(p,
-                                            ManagementFactory.getPlatformMBeanServer(),
-                                            getProtocolRegistrationName(clusterName, "jgroups", p));
+                    unregister(p,
+                               ManagementFactory.getPlatformMBeanServer(),
+                               getProtocolRegistrationName(clusterName, "jgroups", p));
                 }
                 catch(MBeanRegistrationException e) {
                     if(log.isWarnEnabled()) {
@@ -107,27 +102,107 @@ public class JmxConfigurator {
                 }
             }
         }
-        Registration.unregister(c, server, getChannelRegistrationName(clusterName));
+        unregister(c, server, getChannelRegistrationName(clusterName));
     }
 
     public static void registerChannelFactory(org.jgroups.JChannelFactory factory,
                                               MBeanServer server,
                                               String name) throws Exception {
-        Registration.register(factory, server, name);
+        register(factory, server, name);
     }
 
     public static void unRegisterChannelFactory(org.jgroups.JChannelFactory factory,
                                                 MBeanServer server,
                                                 String name) throws Exception {
-        Registration.unregister(factory, server, name);
-    }
+        unregister(factory, server, name);
+    } 
+
+    public static void register(Object obj, MBeanServer server, String name) throws MBeanRegistrationException,
+                                                                            MalformedObjectNameException {
+        internalRegister(obj, server, name);
+    }   
     
-    public static void registerProtocols(MBeanServer server, JChannel channel, String objectName) {
-        //TODO remove once parallel jmx hierarchy is removed       
+    public static void unregister(Object obj, MBeanServer server, String name) throws MBeanRegistrationException,
+                                                                              MalformedObjectNameException {
+        internalUnregister(obj, server, name);
     }
 
-    public static void unregisterProtocols(MBeanServer server, JChannel channel, String objectName) {
-        //TODO remove once parallel jmx hierarchy is removed       
+    private static void internalRegister(Object obj, MBeanServer server, String name) throws MalformedObjectNameException,
+                                                                                     MBeanRegistrationException {
+
+        if(obj == null)
+            throw new IllegalArgumentException("Object being registered cannot be null");
+        if(server == null)
+            throw new IllegalArgumentException("MBean server used for registeration cannot be null");       
+        
+        try {
+            ObjectName objName=getObjectName(obj, name);
+            ResourceDMBean res=new ResourceDMBean(obj);
+            server.registerMBean(res, objName);
+
+            if(log.isDebugEnabled()) {
+                log.debug("register MBean " + objName + " completed");
+            }
+        }
+        catch(InstanceAlreadyExistsException e) {
+            if(log.isErrorEnabled()) {
+                log.error("register MBean failed " + e.getMessage());
+            }
+            throw new MBeanRegistrationException(e, "The @MBean objectName is not unique");
+        }
+        catch(NotCompliantMBeanException e) {
+            if(log.isErrorEnabled()) {
+                log.error("register MBean failed " + e.getMessage());
+            }
+            throw new MBeanRegistrationException(e);
+        }
+
+    }
+
+    private static void internalUnregister(Object obj, MBeanServer server, String name) throws MBeanRegistrationException {
+        try {
+            if(name != null && name.length() > 0) {
+                server.unregisterMBean(new ObjectName(name));
+            }
+            else if(obj != null) {
+                server.unregisterMBean(getObjectName(obj, null));
+            }
+            else {
+                throw new MBeanRegistrationException(null,
+                                                     "Cannot find MBean name from @MBean or passed in value");
+            }
+            if(log.isDebugEnabled()) {
+                log.debug("unregister MBean" + name + " completed");
+            }
+        }
+        catch(InstanceNotFoundException infe) {
+            if(log.isErrorEnabled()) {
+                log.error("unregister MBean failed " + infe.getMessage());
+            }
+            throw new MBeanRegistrationException(infe);
+        }
+        catch(MalformedObjectNameException e) {
+            if(log.isErrorEnabled()) {
+                log.error("unregister MBean failed " + e.getMessage());
+            }
+            throw new MBeanRegistrationException(e);
+        }
+    }
+
+    private static ObjectName getObjectName(Object obj, String name) throws MalformedObjectNameException {
+        MBean resource=obj.getClass().getAnnotation(MBean.class);
+        if(name != null && name.length() > 0) {
+            return new ObjectName(name);
+        }
+        else if(resource.objectName() != null && resource.objectName().length() > 0) {
+            return new ObjectName(resource.objectName());
+        }
+        else {
+            throw new MalformedObjectNameException("Instance " + obj
+                                                   + " of a class "
+                                                   + obj.getClass()
+                                                   + " does not have a valid object name");
+        }
     }
 
     /**
@@ -158,5 +233,5 @@ public class JmxConfigurator {
 
     private static String getChannelRegistrationName(String clusterName) {
         return "jgroups:type=channel,cluster=" + clusterName;
-    }    
+    }
 }
