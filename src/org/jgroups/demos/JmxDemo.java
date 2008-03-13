@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.10 2008/03/13 02:42:57 vlada Exp $
+ * @version $Id: JmxDemo.java,v 1.11 2008/03/13 15:21:46 belaban Exp $
  */
 @MBean
 public class JmxDemo {
@@ -36,6 +36,11 @@ public class JmxDemo {
 
     @ManagedAttribute
     public void setNumber(int num) {number=num;}
+
+    @ManagedAttribute(name="NumberAsString")
+    public String getNumberAsString() {
+        return String.valueOf(number);
+    }
 
     @ManagedAttribute
     public static int getMyFoo() {return 22;} // exposed as 'myFoo' *not* 'getMyFoo()' !!
