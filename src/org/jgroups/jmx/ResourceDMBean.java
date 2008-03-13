@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.24 2008/03/13 02:28:20 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.25 2008/03/13 05:46:41 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -63,6 +63,7 @@ public class ResourceDMBean implements DynamicMBean {
 
         if(instance == null)
             throw new NullPointerException("Cannot make an MBean wrapper for null instance");
+        
         this.obj=instance;
         findDescription();
         findFields();
@@ -154,21 +155,12 @@ public class ResourceDMBean implements DynamicMBean {
     public synchronized void setAttribute(Attribute attribute) {
         if(attribute == null || attribute.getName() == null)
             throw new NullPointerException("Invalid attribute requested " + attribute);
-        
-        if(log.isDebugEnabled()) {
-            log.debug("setAttribute called for " + attribute.getName()
-                      + " value "
-                      + attribute.getValue());
-        }
+                
         setNamedAttribute(attribute);
     }
 
-    public synchronized AttributeList getAttributes(String[] names) {
-        if(log.isDebugEnabled()) {
-            log.debug("getAttributes called");
-        }
+    public synchronized AttributeList getAttributes(String[] names) {       
         AttributeList al=new AttributeList();
-
         for(String name:names) {
             Attribute attr=getNamedAttribute(name);
             if(attr != null) {
@@ -181,10 +173,7 @@ public class ResourceDMBean implements DynamicMBean {
         return al;
     }
 
-    public synchronized AttributeList setAttributes(AttributeList list) {
-        if(log.isDebugEnabled()) {
-            log.debug("setAttributes called");
-        }
+    public synchronized AttributeList setAttributes(AttributeList list) {        
         AttributeList results=new AttributeList();
         for(int i=0;i < list.size();i++) {
             Attribute attr=(Attribute)list.get(i);
@@ -435,50 +424,58 @@ public class ResourceDMBean implements DynamicMBean {
 
     private Attribute getNamedAttribute(String name) {
         Attribute result=null;
-        try {
-            if(name.equals(ResourceDMBean.MBEAN_DESCRITION)) {
-                result=new Attribute(ResourceDMBean.MBEAN_DESCRITION, this.description);
+        if(name.equals(ResourceDMBean.MBEAN_DESCRITION)) {
+            result=new Attribute(ResourceDMBean.MBEAN_DESCRITION, this.description);
+        }
+        else {
+            AttributeEntry entry=atts.get(name);
+            if(entry != null) {
+                MBeanAttributeInfo i=entry.getInfo();
+                try {
+                    result=new Attribute(name, entry.invoke(null));
+                    if(log.isDebugEnabled())
+                        log.debug("Attribute " + name
+                                  + " has r="
+                                  + i.isReadable()
+                                  + ",w="
+                                  + i.isWritable()
+                                  + ",is="
+                                  + i.isIs()
+                                  + " and value "
+                                  + result.getValue());
+                }
+                catch(Exception e) {
+                    log.warn("Exception while reading value of attribute " + name, e);
+                }
             }
             else {
-                AttributeEntry entry=atts.get(name);
-                if(entry != null) {
-                    MBeanAttributeInfo i=entry.getInfo();
-                    result=new Attribute(name, entry.invoke(null));
-                    log.debug("Attribute " + name
-                              + " has r="
-                              + i.isReadable()
-                              + ",w="
-                              + i.isWritable()
-                              + ",is="
-                              + i.isIs()
-                              + " and value "
-                              + result.getValue());
-                }
-                else {
-                    log.warn("Did not find queried attribute with name " + name);
-                }
+                log.warn("Did not find queried attribute with name " + name);
             }
-        }
-        catch(Exception e) {
-            log.warn("Exception while reading value of attribute " + name,e);
         }
         return result;
     }
 
     private boolean setNamedAttribute(Attribute attribute) {
         boolean result=false;
-        try {
-            AttributeEntry entry=atts.get(attribute.getName());
-            if(entry != null) {
-                log.debug("Invoking set on attribute " + attribute.getName()
-                          + " with value "
-                          + attribute.getValue());
+        if(log.isDebugEnabled())
+            log.debug("Invoking set on attribute " + attribute.getName()
+                      + " with value "
+                      + attribute.getValue());
+
+        AttributeEntry entry=atts.get(attribute.getName());
+        if(entry != null) {
+            try {
                 entry.invoke(attribute);
                 result=true;
             }
+            catch(Exception e) {
+                log.warn("Exception while writing value for attribute " + attribute.getName(), e);
+            }            
         }
-        catch(Exception e) {
-            log.warn("Exception while writing value for attribute " + attribute.getName(),e);
+        else {
+            log.warn("Could not invoke set on attribute " + attribute.getName()
+                     + " with value "
+                     + attribute.getValue());
         }
         return result;
     }
@@ -494,20 +491,19 @@ public class ResourceDMBean implements DynamicMBean {
             }
             m.appendTail(sb);
             char first=sb.charAt(0);
-            if(Character.isLowerCase(first)){
+            if(Character.isLowerCase(first)) {
                 sb.setCharAt(0, Character.toUpperCase(first));
             }
             return sb.toString();
         }
-        else{
-        	
-        	if(Character.isLowerCase(fieldName.charAt(0))){
+        else {
+            if(Character.isLowerCase(fieldName.charAt(0))) {
                 return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
             }
-        	else{
-        		return fieldName;	
-        	}             
-        }        
+            else {
+                return fieldName;
+            }
+        }
     }
     
     private boolean isMBeanAnnotationPresent(){
