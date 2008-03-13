@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.21 2008/03/11 02:08:03 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.22 2008/03/13 01:43:51 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -261,10 +261,11 @@ public class ResourceDMBean implements DynamicMBean {
                 }
                 else {
                     MBeanAttributeInfo info=null;
-                    String attributeName=null;
+                    //Is name field of @ManagedAttributed used?
+                    String attributeName=attr.name().length()>0?attr.name().trim():null;
                     boolean writeAttribute=false;
                     if(isSetMethod(method)) { // setter
-                        attributeName=firstCharacterToLowerCase(methodName.substring(3));
+                        attributeName=(attributeName==null)?methodName.substring(3):attributeName;
                         info=new MBeanAttributeInfo(attributeName,
                                                     method.getParameterTypes()[0].getCanonicalName(),
                                                     attr.description(),
@@ -278,7 +279,7 @@ public class ResourceDMBean implements DynamicMBean {
                             boolean hasSetter=atts.containsKey(attributeName);
                             //we found is method
                             if(methodName.startsWith("is")) {
-                                attributeName=firstCharacterToLowerCase(methodName.substring(2));
+                                attributeName=(attributeName==null)?methodName.substring(2):attributeName;
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -288,7 +289,7 @@ public class ResourceDMBean implements DynamicMBean {
                             }
                             else {
                                 //this has to be get
-                                attributeName=firstCharacterToLowerCase(methodName.substring(3));
+                                attributeName=(attributeName==null)?methodName.substring(3):attributeName;
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
@@ -304,7 +305,8 @@ public class ResourceDMBean implements DynamicMBean {
                             }
                             continue;
                         }
-                    }
+                    }                                      
+                    
                     if(log.isDebugEnabled()) {
                         log.debug("@Attr found for method " + method.getName()
                                   + " and registered as "
@@ -371,10 +373,10 @@ public class ResourceDMBean implements DynamicMBean {
                 ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
                 String attName=method.getName();
                 if(isSetMethod(method) || isGetMethod(method)) {
-                    attName=firstCharacterToLowerCase(attName.substring(3));
+                    attName=attName.substring(3);
                 }
                 else if(isIsMethod(method)) {
-                    attName=firstCharacterToLowerCase(attName.substring(2));
+                    attName=attName.substring(2);
                 }
                 //expose unless we already exposed matching attribute field
                 boolean isAlreadyExposed=atts.containsKey(attName);
@@ -491,6 +493,10 @@ public class ResourceDMBean implements DynamicMBean {
                 m.appendReplacement(sb, fieldName.substring(m.end() - 1, m.end()).toUpperCase());
             }
             m.appendTail(sb);
+            char first=sb.charAt(0);
+            if(Character.isLowerCase(first)){
+                sb.setCharAt(0, Character.toUpperCase(first));
+            }
             return sb.toString();
         }
         else{
@@ -502,8 +508,8 @@ public class ResourceDMBean implements DynamicMBean {
     	return getObject().getClass().isAnnotationPresent(MBean.class);
     }
     
-    private String firstCharacterToLowerCase(String name) {
-        return name.substring(0, 1).toLowerCase() + name.substring(1);        
+    private String firstCharacterToUpperCase(String name) {
+        return name.substring(0, 1).toUpperCase() + name.substring(1);        
     }
 
     private class MethodAttributeEntry implements AttributeEntry {
