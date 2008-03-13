@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.23 2008/03/13 02:00:26 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.24 2008/03/13 02:28:20 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -500,18 +500,20 @@ public class ResourceDMBean implements DynamicMBean {
             return sb.toString();
         }
         else{
-            return fieldName;   
+        	
+        	if(Character.isLowerCase(fieldName.charAt(0))){
+                return fieldName.substring(0, 1).toUpperCase() + fieldName.substring(1);
+            }
+        	else{
+        		return fieldName;	
+        	}             
         }        
     }
     
     private boolean isMBeanAnnotationPresent(){
     	return getObject().getClass().isAnnotationPresent(MBean.class);
     }
-    
-    private String firstCharacterToUpperCase(String name) {
-        return name.substring(0, 1).toUpperCase() + name.substring(1);        
-    }
-
+       
     private class MethodAttributeEntry implements AttributeEntry {
 
         final MBeanAttributeInfo info;
