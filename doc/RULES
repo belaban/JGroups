@@ -1,5 +1,5 @@
 
-# $Id: RULES,v 1.6 2004/06/30 17:12:49 belaban Exp $
+# $Id: RULES,v 1.7 2008/03/13 08:11:32 belaban Exp $
 
 		  Rules developers should adhere to
 		  ---------------------------------
@@ -13,11 +13,8 @@
   minor relases this is usually not a big deal and I'll do it
   immediately.
 
-- Do not modify core functionality (e.g. Protocol, Scheduler, CoordGmsImpl etc)
+- Do not modify core functionality (e.g. Protocol, GMS, FC, UNICAST, NAKACK, STABLE, CoordGmsImpl etc)
   before consulting with one of the project administrators.
-
-- The history file should be updated if someone made a
-  modification/contribution. Not every detail, just a short note.
 
 - New tarballs are done by the project administrator. I may delegate
   this in the future (to a number of people), but I decide when to add
@@ -38,7 +35,7 @@
   the ownership you can change the file if you want to.
 
 - Try to write test drivers for your module(s) and add them to
-  JGroups/tests. We use JUnit (www.junit.org) for regression
+  JGroups/tests. We use TestNG (www.testng.org) for regression
   testing. It is pretty simple to add a new test to the directory,
   e.g. by just copying an existing test driver and modifying it.
 
