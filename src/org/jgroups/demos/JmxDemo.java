@@ -3,7 +3,7 @@ package org.jgroups.demos;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.jmx.Registration;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -11,7 +11,7 @@ import javax.management.MBeanServer;
 /**
  * Shows how annotations can be used to expose attributes and operations
  * @author Bela Ban
- * @version $Id: JmxDemo.java,v 1.9 2008/03/10 15:39:26 belaban Exp $
+ * @version $Id: JmxDemo.java,v 1.10 2008/03/13 02:42:57 vlada Exp $
  */
 @MBean
 public class JmxDemo {
@@ -95,7 +95,7 @@ public class JmxDemo {
         MBeanServer server=Util.getMBeanServer();
         if(server != null) {
             try {
-                Registration.register(demo, server, "demo:name=DemoObject");
+                JmxConfigurator.register(demo, server, "demo:name=DemoObject");
                 while(true) {
                     Util.sleep(10000);
                 }
