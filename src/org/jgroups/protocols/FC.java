@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.93 2008/03/12 15:20:14 belaban Exp $
+ * @version $Id: FC.java,v 1.94 2008/03/13 02:00:22 vlada Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -75,8 +75,7 @@ public class FC extends Protocol {
      * be received before continuing sending
      */
     @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
-                                   "be received before continuing sending",
-                      readable=true,writable=true)
+                                   "be received before continuing sending",writable=true)
     private long max_credits=500000;
 
     /**
@@ -84,24 +83,21 @@ public class FC extends Protocol {
      * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
      * wait forever.
      */
-    @ManagedAttribute(description="Max time (in milliseconds) to block",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
     private long max_block_time=5000;
 
     /**
      * If credits fall below this limit, we send more credits to the sender. (We also send when
      * credits are exhausted (0 credits left))
      */
-    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",writable=true)
     private double min_threshold=0.25;
 
     /**
      * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
      * override the above computation
      */
-    @ManagedAttribute(description="Computed as max_credits x min_theshold",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Computed as max_credits x min_theshold",writable=true)
     private long min_credits=0;
 
     /**

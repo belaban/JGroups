@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.133 2008/03/10 07:12:16 belaban Exp $
+ * @version $Id: GMS.java,v 1.134 2008/03/13 02:00:26 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -42,13 +42,13 @@ public class GMS extends Protocol {
     View                      view=null;
     ViewId                    view_id=null;
     private long              ltime=0;
-    @ManagedAttribute(description="Join timeout",readable=true,writable=true)
+    @ManagedAttribute(description="Join timeout",writable=true)
     long                      join_timeout=5000;
     long                      leave_timeout=5000;
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Hashtable<String,GmsImpl>   impls=new Hashtable<String,GmsImpl>(3);
-    @ManagedAttribute(description="Shunning toggle",readable=true,writable=true)
+    @ManagedAttribute(description="Shunning toggle",writable=true)
     private boolean           shun=false;
     boolean                   merge_leader=false;         // can I initiate a merge ?
     private boolean           print_local_addr=true;
@@ -59,7 +59,7 @@ public class GMS extends Protocol {
     /** Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
      * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time */
-    @ManagedAttribute(description="View bundling toggle",readable=true,writable=true)
+    @ManagedAttribute(description="View bundling toggle",writable=true)
     private boolean           view_bundling=true;
     private long              max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
     static final String       CLIENT="Client";
@@ -1225,7 +1225,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.133 2008/03/10 07:12:16 belaban Exp $
+     * @version $Id: GMS.java,v 1.134 2008/03/13 02:00:26 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

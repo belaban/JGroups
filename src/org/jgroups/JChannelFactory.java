@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.53 2008/03/06 00:17:58 vlada Exp $
+// $Id: JChannelFactory.java,v 1.54 2008/03/13 02:00:12 vlada Exp $
 
 package org.jgroups;
 
@@ -38,36 +38,36 @@ public class JChannelFactory implements ChannelFactory {
     private Log log=LogFactory.getLog(getClass());
 
     /**
-	 * Map<String,String>. Hashmap which maps stack names to JGroups
-	 * configurations. Keys are stack names, values are plain JGroups stack
-	 * configs. This is (re-)populated whenever a setMultiplexerConfig() method
-	 * is called
-	 */
-	private final Map<String,String> stacks = Collections.synchronizedMap(new HashMap<String, String>());
-
-    /** 
-     * Map<String,Multiplexer>, maintains mapping between stack names (e.g. "udp") and Multiplexer(es)
-     * 
-     */    
-    private final Map<String,Multiplexer> channels = Collections.synchronizedMap(new HashMap<String,Multiplexer>());
-
+     * Map<String,String>. Hashmap which maps stack names to JGroups
+     * configurations. Keys are stack names, values are plain JGroups stack
+     * configs. This is (re-)populated whenever a setMultiplexerConfig() method
+     * is called
+     */
+    private final Map<String,String> stacks=Collections.synchronizedMap(new HashMap<String,String>());
 
     /**
-	 * The MBeanServer to expose JMX management data with (no management data
-	 * will be available if null)
-	 */
-	private MBeanServer server = null;
+     * Map<String,Multiplexer>, maintains mapping between stack names (e.g.
+     * "udp") and Multiplexer(es)
+     * 
+     */
+    private final Map<String,Multiplexer> channels=Collections.synchronizedMap(new HashMap<String,Multiplexer>());
+
+    /**
+     * The MBeanServer to expose JMX management data with (no management data
+     * will be available if null)
+     */
+    private MBeanServer server=null;
 
     /** To expose the channels and protocols */
-	@ManagedAttribute(readable=true,writable=true)
-	private String domain = "jgroups";
+    @ManagedAttribute(writable=true)
+    private String domain="jgroups";
 
     /** Whether or not to expose channels via JMX */
-	@ManagedAttribute(description="Expose channels via JMX",readable=true,writable=true)
+    @ManagedAttribute(description="Expose channels via JMX", writable=true)
     private boolean expose_channels=true;
 
     /** Whether to expose the factory only, or all protocols as well */
-	@ManagedAttribute(description="Expose protocols via JMX",readable=true,writable=true)
+    @ManagedAttribute(description="Expose protocols via JMX", writable=true)
     private boolean expose_protocols=true;
 
     

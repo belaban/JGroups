@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.177 2008/03/10 07:21:14 belaban Exp $
+ * @version $Id: TP.java,v 1.178 2008/03/13 02:00:20 vlada Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -111,13 +111,13 @@ public abstract class TP extends Protocol {
      * looped back immediately, multicast messages get a local copy first and -
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
-    @ManagedAttribute(description = "", readable = true, writable = true)
+    @ManagedAttribute(description = "", writable = true)
 	boolean loopback = false;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
-    @ManagedAttribute(description="Discard packets with a different version",readable=true,writable=true)
+    @ManagedAttribute(description="Discard packets with a different version",writable=true)
     protected boolean discard_incompatible_packets=false;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
@@ -127,7 +127,7 @@ public abstract class TP extends Protocol {
     @ManagedAttribute(description="Sometimes receivers are overloaded (they have to handle de-serialization etc) + " +
     		"Packet handler is a separate thread taking care of de-serialization, receiver " +
             "thread(s) simply put packet in queue and return immediately. Setting this to " + 
-            "true adds one more thread",readable=true,writable=true)
+            "true adds one more thread",writable=true)
     boolean         use_incoming_packet_handler=true;
 
     /** Used by packet handler to store incoming DatagramPackets */
@@ -232,17 +232,17 @@ public abstract class TP extends Protocol {
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest datagram packet size in case of UDP */
     
-    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent", readable=true, writable=true)
+    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent", writable=true)
     int max_bundle_size=65535;
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
      */
-    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", readable=true, writable=true)
+    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", writable=true)
     long max_bundle_timeout=20;
 
     /** Enable bundling of smaller messages into bigger ones */
-    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", readable=true, writable=true)
+    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
     boolean enable_bundling=false;
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */

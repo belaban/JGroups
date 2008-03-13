@@ -35,12 +35,12 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.40 2008/03/06 07:12:20 vlada Exp $
+ * @version $Id: FRAG.java,v 1.41 2008/03/13 02:00:18 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
     
-    @ManagedAttribute(description="Fragmentation size",readable=true,writable=true)
+    @ManagedAttribute(description="Fragmentation size",writable=true)
     private int frag_size=8192;  // conservative value
 
     /*the fragmentation list contains a fragmentation table per sender
@@ -52,13 +52,13 @@ public class FRAG extends Protocol {
     private final Vector<Address>       members=new Vector<Address>(11);
     private final static String         name="FRAG";
 
-    @ManagedAttribute(description="Number of sent messages",readable=true)
+    @ManagedAttribute(description="Number of sent messages")
     long num_sent_msgs=0;
-    @ManagedAttribute(description="Number of sent fragments",readable=true)
+    @ManagedAttribute(description="Number of sent fragments")
     long num_sent_frags=0;
-    @ManagedAttribute(description="Number of received messages",readable=true)
+    @ManagedAttribute(description="Number of received messages")
     long num_received_msgs=0;
-    @ManagedAttribute(description="Number of received fragments",readable=true)
+    @ManagedAttribute(description="Number of received fragments")
     long num_received_frags=0;
 
 
