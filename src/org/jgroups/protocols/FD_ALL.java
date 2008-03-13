@@ -25,20 +25,18 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.16 2008/03/06 07:12:20 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.17 2008/03/13 02:00:16 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
     Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
 
-    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster",writable=true)
     long                       interval=3000;
 
     @ManagedAttribute(description="Number of milliseconds after which a " + 
-                      "node P is suspected if neither a heartbeat nor data were received from P",
-                      readable=true,writable=true)
+                      "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
     long                       timeout=5000;
 
     /** when a message is received from P, this is treated as if P sent a heartbeat */
@@ -47,7 +45,7 @@ public class FD_ALL extends Protocol {
     Address                    local_addr=null;
     final List<Address>        members=new ArrayList<Address>();
 
-    @ManagedAttribute(description="Shun switch",readable=true,writable=true)
+    @ManagedAttribute(description="Shun switch",writable=true)
     boolean                    shun=true;
     
     TimeScheduler              timer=null;

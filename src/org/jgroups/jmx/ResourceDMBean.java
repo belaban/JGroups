@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.22 2008/03/13 01:43:51 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.23 2008/03/13 02:00:26 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -283,7 +283,7 @@ public class ResourceDMBean implements DynamicMBean {
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
-                                                            attr.readable(),
+                                                            true,
                                                             hasSetter,
                                                             true);
                             }
@@ -293,7 +293,7 @@ public class ResourceDMBean implements DynamicMBean {
                                 info=new MBeanAttributeInfo(attributeName,
                                                             method.getReturnType().getCanonicalName(),
                                                             attr.description(),
-                                                            attr.readable(),
+                                                            true,
                                                             hasSetter,
                                                             false);
                             }
@@ -420,7 +420,7 @@ public class ResourceDMBean implements DynamicMBean {
                     MBeanAttributeInfo info=new MBeanAttributeInfo(fieldName,
                                                                    field.getType().getCanonicalName(),
                                                                    attr.description(),
-                                                                   attr.readable(),
+                                                                   true,
                                                                    Modifier.isFinal(field.getModifiers())? false: attr.writable(),
                                                                    false);
 

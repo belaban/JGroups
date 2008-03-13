@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.41 2008/03/06 02:19:27 vlada Exp $
+ * @version $Id: Discovery.java,v 1.42 2008/03/13 02:00:19 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {
@@ -38,19 +38,16 @@ public abstract class Discovery extends Protocol {
     Address					local_addr=null;
     String					group_addr=null;
     
-    @ManagedAttribute(description="Timeout (ms) to wait for the initial members",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Timeout (ms) to wait for the initial members",writable=true)
     long					timeout=3000;
     
-    @ManagedAttribute(description="Minimum number of initial members to get a response from",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Minimum number of initial members to get a response from",writable=true)
     int						num_initial_members=2;
     boolean					is_server=false;
     TimeScheduler			timer=null;
     
     @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " +
-                      "distributed over timeout ms",
-                      readable=true,writable=true)
+                      "distributed over timeout ms",writable=true)
     int                     num_ping_requests=2;
     
     @ManagedAttribute(description="Total number of discovery requests sent ")

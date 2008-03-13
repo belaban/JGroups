@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.179 2008/03/12 09:30:33 belaban Exp $
+ * @version $Id: JChannel.java,v 1.180 2008/03/13 02:00:12 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -123,25 +123,21 @@ public class JChannel extends Channel {
     private static final long FLUSH_UNBLOCK_TIMEOUT=5000;
     
     /*flag to indicate whether to receive blocks, if this is set to true, receive_views is set to true*/
-    @ManagedAttribute(description="Flag indicating whether to receive blocks",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Flag indicating whether to receive blocks",writable=true)
     private boolean receive_blocks=false;
     
     /*flag to indicate whether to receive local messages
      *if this is set to false, the JChannel will not receive messages sent by itself*/
-    @ManagedAttribute(description="Flag indicating whether to receive this channel's own messages",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Flag indicating whether to receive this channel's own messages",writable=true)
     private boolean receive_local_msgs=true;
     
     /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
-    @ManagedAttribute(description="Toggles whether the channel will reconnect after shun",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Toggles whether the channel will reconnect after shun",writable=true)
     private boolean auto_reconnect=true;
     
     /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
      *setting this to true, automatically forces auto_reconnect to true*/
-    @ManagedAttribute(description="Toggles whether state should to be retrieved after reconnect",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Toggles whether state should to be retrieved after reconnect",writable=true)
     private boolean auto_getstate=false;
     
     /*channel connected flag*/
@@ -167,7 +163,7 @@ public class JChannel extends Channel {
     protected final Log log=LogFactory.getLog(getClass());
 
     /** Collect statistics */
-    @ManagedAttribute(description="Collect channel statistics",readable=true, writable=true)
+    @ManagedAttribute(description="Collect channel statistics",writable=true)
     protected boolean stats=true;
 
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
@@ -746,7 +742,7 @@ public class JChannel extends Channel {
         return closed || !connected ? null : my_view;
     }
     
-    @ManagedAttribute
+    @ManagedAttribute(name="View")
     public String getViewAsString() {
         View v=getView();
         return v != null ? v.toString() : "n/a";
@@ -765,7 +761,7 @@ public class JChannel extends Channel {
         return closed ? null : local_addr;
     }
 
-    @ManagedAttribute
+    @ManagedAttribute(name="LocalAddress")
     public String getLocalAddressAsString() {
         return local_addr != null? local_addr.toString() : "n/a";
     }

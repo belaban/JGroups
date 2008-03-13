@@ -34,20 +34,18 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.64 2008/03/06 06:41:33 vlada Exp $
+ * @version $Id: FD.java,v 1.65 2008/03/13 02:00:20 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     Address               local_addr=null;
     
     @ManagedAttribute(description="Number of milliseconds after which a " + 
-                      "node P is suspected if neither a heartbeat nor data were received from P",
-                      readable=true,writable=true)
+                      "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
     long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
-    @ManagedAttribute(description="Number of times to send a are-you-alive msg",
-                      readable=true,writable=true)
+    @ManagedAttribute(description="Number of times to send a are-you-alive msg",writable=true)
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
 
     protected final Lock  lock=new ReentrantLock();
@@ -66,7 +64,7 @@ public class FD extends Protocol {
     @GuardedBy("lock")
     final Map<Address,Integer>  invalid_pingers=new HashMap<Address,Integer>(7);
 
-    @ManagedAttribute(description="Shun switch",readable=true,writable=true)
+    @ManagedAttribute(description="Shun switch",writable=true)
     boolean               shun=true;
     TimeScheduler         timer=null;
 

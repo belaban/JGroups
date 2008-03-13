@@ -35,18 +35,18 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.37 2008/03/06 07:12:20 vlada Exp $
+ * @version $Id: FRAG2.java,v 1.38 2008/03/13 02:00:18 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
 
     /** The max number of bytes in a message. If a message's buffer is bigger, it will be fragmented */
-    @ManagedAttribute(description="Fragmentation size",readable=true,writable=true)
+    @ManagedAttribute(description="Fragmentation size",writable=true)
     int frag_size=1500;
 
     /** Number of bytes that we think the headers plus src and dest will take up when
         message is serialized by transport. This will be subtracted from frag_size */
-    @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ",readable=true,writable=true)
+    @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ",writable=true)
     int overhead=200;
 
     /*the fragmentation list contains a fragmentation table per sender
@@ -57,13 +57,13 @@ public class FRAG2 extends Protocol {
     private final Vector<Address>      members=new Vector<Address>(11);
     private static final String        name="FRAG2";
 
-    @ManagedAttribute(description="Number of sent messages",readable=true)
+    @ManagedAttribute(description="Number of sent messages")
     AtomicLong num_sent_msgs=new AtomicLong(0);
-    @ManagedAttribute(description="Number of received messages",readable=true)
+    @ManagedAttribute(description="Number of received messages")
     AtomicLong num_received_msgs=new AtomicLong(0);
-    @ManagedAttribute(description="Number of sent fragments",readable=true)
+    @ManagedAttribute(description="Number of sent fragments")
     AtomicLong num_sent_frags=new AtomicLong(0);
-    @ManagedAttribute(description="Number of received fragments",readable=true)
+    @ManagedAttribute(description="Number of received fragments")
     AtomicLong num_received_frags=new AtomicLong(0);
 
 

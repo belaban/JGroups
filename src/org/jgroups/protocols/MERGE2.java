@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.44 2008/03/06 07:16:59 vlada Exp $
+// $Id: MERGE2.java,v 1.45 2008/03/13 02:00:20 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -49,9 +49,9 @@ import java.util.concurrent.TimeUnit;
 public class MERGE2 extends Protocol {
     private Address					local_addr=null;   
     private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator
-    @ManagedAttribute(description="Minimum time between runs to discover other clusters",readable=true,writable=true)
+    @ManagedAttribute(description="Minimum time between runs to discover other clusters",writable=true)
     private long					min_interval=5000;     // minimum time between executions of the FindSubgroups task
-    @ManagedAttribute(description="Maximum time between runs to discover other clusters",readable=true,writable=true)
+    @ManagedAttribute(description="Maximum time between runs to discover other clusters",writable=true)
     private long					max_interval=20000;    // maximum time between executions of the FindSubgroups task
     private volatile boolean		is_coord=false;  
     private volatile boolean		use_separate_thread=false; // Use a new thread to send the MERGE event up the stack    

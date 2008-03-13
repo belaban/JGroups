@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.87 2008/03/08 09:46:47 vlada Exp $
+ * @version $Id: STABLE.java,v 1.88 2008/03/13 02:00:25 vlada Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 public class STABLE extends Protocol {
@@ -50,7 +50,7 @@ public class STABLE extends Protocol {
     private final Lock            lock=new ReentrantLock();
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
-    @ManagedAttribute(readable=true,writable=true)
+    @ManagedAttribute(writable=true)
     private long                  desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
@@ -72,7 +72,7 @@ public class STABLE extends Protocol {
     /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
-    @ManagedAttribute(readable=true,writable=true)
+    @ManagedAttribute(writable=true)
     private long                  max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */

@@ -10,7 +10,7 @@ import java.lang.annotation.*;
  * a superclass.
  * 
  * @author Chris Mills
- * @version $Id: ManagedAttribute.java,v 1.5 2008/03/13 01:43:51 vlada Exp $
+ * @version $Id: ManagedAttribute.java,v 1.6 2008/03/13 02:00:23 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -20,7 +20,5 @@ public @interface ManagedAttribute {
 
     String name() default "";
     
-    boolean readable() default true;
-
     boolean writable() default false;
 }
