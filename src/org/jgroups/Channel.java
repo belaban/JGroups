@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.41 2008/03/06 00:17:58 vlada Exp $
+// $Id: Channel.java,v 1.42 2008/03/14 02:09:24 vlada Exp $
 
 package org.jgroups;
 
@@ -168,7 +168,7 @@ public abstract class Channel implements Transport {
      * @return Map<String,Map>. A map where the keys are the protocols ("channel" pseudo key is
      * used for the channel itself") and the values are property maps.
      */
-    public abstract Map dumpStats();
+    public abstract Map<String,Object> dumpStats();
 
     /** Sends a message to a (unicast) destination. The message contains
      <ol>

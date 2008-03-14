@@ -19,6 +19,7 @@ import java.io.IOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
+import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -47,7 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.178 2008/03/13 02:00:20 vlada Exp $
+ * @version $Id: TP.java,v 1.179 2008/03/14 02:09:25 vlada Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -335,9 +336,9 @@ public abstract class TP extends Protocol {
     public void setBindToAllInterfaces(boolean flag) {this.receive_on_all_interfaces=flag;}
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
-    public java.util.List getReceiveInterfaces() {return receive_interfaces;}
+    public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
     public boolean isSendOnAllInterfaces() {return send_on_all_interfaces;}
-    public java.util.List getSendInterfaces() {return send_interfaces;}
+    public List<NetworkInterface> getSendInterfaces() {return send_interfaces;}
     public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
@@ -541,10 +542,10 @@ public abstract class TP extends Protocol {
                 if(l.contains("jmx")) {
                     Channel ch=stack.getChannel();
                     if(ch != null) {
-                        Map m=ch.dumpStats();
+                        Map<String,Object> m=ch.dumpStats();
                         StringBuilder sb=new StringBuilder();
                         sb.append("stats:\n");
-                        for(Iterator it=m.entrySet().iterator(); it.hasNext();) {
+                        for(Iterator<Entry<String,Object>> it=m.entrySet().iterator(); it.hasNext();) {
                             sb.append(it.next()).append("\n");
                         }
                         info.append(sb);
@@ -1323,8 +1324,8 @@ public abstract class TP extends Protocol {
             }
 
             Address src;
-            for(Iterator it=msgs.iterator(); it.hasNext();) {
-                msg=(Message)it.next();
+            for(Iterator<Message> it=msgs.iterator(); it.hasNext();) {
+                msg=it.next();
                 src=msg.getSrc();
                 if(loopback) {
                     if(multicast && src != null && local_addr.equals(src)) { // discard own loopback multicast packets
@@ -1975,7 +1976,7 @@ public abstract class TP extends Protocol {
         void start() throws IOException {
             diag_sock=new MulticastSocket(diagnostics_port);
             // diag_sock=Util.createMulticastSocket(null, diagnostics_port, log);
-            java.util.List interfaces=Util.getAllAvailableInterfaces();
+            List<NetworkInterface> interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
 
             if(thread == null || !thread.isAlive()) {
@@ -2013,10 +2014,10 @@ public abstract class TP extends Protocol {
             }
         }
 
-        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) {
+        private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s) {
             SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
-            for(Iterator it=interfaces.iterator(); it.hasNext();) {
-                NetworkInterface i=(NetworkInterface)it.next();
+            for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
+                NetworkInterface i=it.next();
                 try {
                     if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);
