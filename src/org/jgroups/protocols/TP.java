@@ -48,7 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.179 2008/03/14 02:09:25 vlada Exp $
+ * @version $Id: TP.java,v 1.180 2008/03/14 05:00:17 vlada Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -232,14 +232,12 @@ public abstract class TP extends Protocol {
 
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest datagram packet size in case of UDP */
-    
-    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent", writable=true)
+        
     int max_bundle_size=65535;
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
-     */
-    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", writable=true)
+     */    
     long max_bundle_timeout=20;
 
     /** Enable bundling of smaller messages into bigger ones */
@@ -352,10 +350,41 @@ public abstract class TP extends Protocol {
         this.enable_unicast_bundling=enable_unicast_bundling;
     }
 
+    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent")
     public int getMaxBundleSize() {return max_bundle_size;}
-    public void setMaxBundleSize(int size) {max_bundle_size=size;}
+
+    @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent",writable=true)
+    public void setMaxBundleSize(int size) {
+        if(size > max_bundle_size) {
+            throw new IllegalArgumentException("max_bundle_size (" + size
+                                               + ") is greater than largest TP fragmentation size ("
+                                               + max_bundle_size
+                                               + ')');
+        }
+        if(size <= 0) {
+            throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
+        }
+        if(!enable_bundling)
+            throw new IllegalStateException("Bundling not enabled");
+            
+        max_bundle_size=size;
+    }
+    
+    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent")
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
-    public void setMaxBundleTimeout(long timeout) {max_bundle_timeout=timeout;}
+    
+    @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", writable=true)
+    public void setMaxBundleTimeout(long timeout) {
+        if(timeout <= 0) {
+            throw new IllegalArgumentException("max_bundle_timeout of " + timeout
+                                               + " is invalid");
+        }
+        if(!enable_bundling)
+            throw new IllegalStateException("Bundling not enabled");
+        
+        max_bundle_timeout=timeout;
+    }
+    
     public Address getLocalAddress() {return local_addr;}
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
@@ -956,38 +985,43 @@ public abstract class TP extends Protocol {
             log.warn("Attribute \"use_outgoing_queue_max_size\" has been deprecated and is ignored");
             props.remove("outgoing_queue_max_size");
         }
-
-        str=props.getProperty("max_bundle_size");
-        if(str != null) {
-            int bundle_size=Integer.parseInt(str);
-            if(bundle_size > max_bundle_size) {
-                if(log.isErrorEnabled()) log.error("max_bundle_size (" + bundle_size +
-                        ") is greater than largest TP fragmentation size (" + max_bundle_size + ')');
-                return false;
-            }
-            if(bundle_size <= 0) {
-                if(log.isErrorEnabled()) log.error("max_bundle_size (" + bundle_size + ") is <= 0");
-                return false;
-            }
-            max_bundle_size=bundle_size;
-            props.remove("max_bundle_size");
-        }
-
-        str=props.getProperty("max_bundle_timeout");
-        if(str != null) {
-            max_bundle_timeout=Long.parseLong(str);
-            if(max_bundle_timeout <= 0) {
-                if(log.isErrorEnabled()) log.error("max_bundle_timeout of " + max_bundle_timeout + " is invalid");
-                return false;
-            }
-            props.remove("max_bundle_timeout");
-        }
-
+        
         str=props.getProperty("enable_bundling");
         if(str != null) {
             enable_bundling=Boolean.valueOf(str).booleanValue();
             props.remove("enable_bundling");
         }
+
+        str=props.getProperty("max_bundle_size");
+        if(str != null) {
+            int bundle_size=Integer.parseInt(str);            
+            try {
+                if(enable_bundling)
+                    setMaxBundleSize(bundle_size);
+            }
+            catch(Exception e) {
+                log.error("Could not set max_bundle_size", e);
+                return false;
+            }
+            finally {
+                props.remove("max_bundle_size");
+            }
+        }
+
+        str=props.getProperty("max_bundle_timeout");
+        if(str != null) {            
+            try {
+                if(enable_bundling)
+                    setMaxBundleTimeout(Long.parseLong(str));
+            }
+            catch(Exception e) {
+                log.error("Could not set max_bundle_timeout", e);
+                return false;
+            }
+            finally {
+                props.remove("max_bundle_timeout");
+            }            
+        }       
 
         str=props.getProperty("enable_unicast_bundling");
         if(str != null) {
