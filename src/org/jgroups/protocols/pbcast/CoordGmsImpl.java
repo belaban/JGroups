@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.84 2008/01/10 06:52:10 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.85 2008/03/14 02:09:24 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -30,7 +30,7 @@ public class CoordGmsImpl extends GmsImpl {
     private Address                 merge_leader=null;
 
     @GuardedBy("merge_canceller_lock")
-    private Future                  merge_canceller_future=null;
+    private Future<?>                  merge_canceller_future=null;
 
     private final Lock              merge_canceller_lock=new ReentrantLock();
 
@@ -153,8 +153,7 @@ public class CoordGmsImpl extends GmsImpl {
         /* Establish deterministic order, so that coords can elect leader */
         tmp=new Membership(other_coords);
         tmp.sort();
-        merge_leader=(Address)tmp.elementAt(0);
-        // if(log.isDebugEnabled()) log.debug("coordinators in merge protocol are: " + tmp);
+        merge_leader=tmp.elementAt(0);        
         if(merge_leader.equals(gms.local_addr) || gms.merge_leader) {
             if(log.isTraceEnabled())
                 log.trace("I (" + gms.local_addr + ") will be the leader. Starting the merge task");
