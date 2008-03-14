@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.6 2008/03/10 15:39:20 belaban Exp $
+// $Id: MessageTest.java,v 1.7 2008/03/14 12:10:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -100,7 +100,7 @@ public class MessageTest {
     public static void testInvalidLength() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message m1=new Message(null, null, buf, 3, 6);
-        System.out.println("we should nto get here with " + m1);
+        System.out.println("we should not get here with " + m1);
     }
 
     @Test(groups=Global.FUNCTIONAL)
