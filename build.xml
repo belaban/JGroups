@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.139 2008/03/12 07:24:55 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.140 2008/03/14 13:59:43 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -926,13 +926,12 @@
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
-                listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                listeners="org.jgroups.util.JUnitXMLReporter"
                 threadcount="20"
                 parallel="methods"
                 >
             <xmlfileset dir="${tests.dir}" includes="functional.xml"/>
-            <!--<classfileset dir="${basedir}/classes" includes="**/*.class" excludes="**/MySuperClass*.class"/>-->
-            <sysproperty key="org.uncommons.reportng.title" value="Functional tests"/>
+            <!--<sysproperty key="test.suffix" value="tcp"/>-->
         </testng>
     </target>
 
@@ -940,16 +939,14 @@
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results"
-                listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                listeners="org.jgroups.util.JUnitXMLReporter"
                 >
             <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
-            <!--<classfileset dir="${basedir}/classes" includJues="**/*.class" excludes="**/MySuperClass*.class"/>-->
-            <sysproperty key="org.uncommons.reportng.title" value="UDP tests"/>
+            <sysproperty key="test.suffix" value="tcp"/>
             <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
             <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
             <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
             <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
-
         </testng>
     </target>
 
@@ -967,21 +964,6 @@
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${tmp.dir}/test-results/html/report/index.html"/>
         <echo message="********************************************************************"/>
-    </target>
-
-    <macrodef name="replace-name">
-        <attribute name="dir"/>
-        <attribute name="suffix" default="udp"/>
-        <sequential>
-            <replaceregexp match="testsuite name=" replace="bela">
-                <fileset dir="@{dir}" includes="*.xml"/>
-            </replaceregexp>
-
-        </sequential>
-    </macrodef>
-
-    <target name="replace">
-        <replace-name dir="${tmp.dir}/test-results/xml2" suffix="-bela"/>
     </target>
 
 
