@@ -76,27 +76,12 @@
         description='Java logging framework (runtime)'>
         <jar name='log4j.jar' />
     </module>
-
-    <module name='ReportNG'
-            licenseType='apache-2.0'
-            version='0.9.4'
-            projectHome='https://reportng.dev.java.net/'
-            description='Used for reporting (for TestNG)'>
-        <jar name='report.jar' />
-	</module>
     <module name='TestNG'
             licenseType='apache-2.0'
             version='5.7'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
         <jar name='testng.jar' />
-	</module>
-    <module name='Velocity'
-            licenseType='apache-2.0'
-            version='1.4'
-            projectHome='http://velocity.apache.org'
-            description='Shipped with ReportNG (dont know what they use it for)'>
-        <jar name='velocity.jar' />
 	</module>
     <module name='apache-xalan'
             licenseType='apache-2.0'
