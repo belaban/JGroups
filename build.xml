@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.140 2008/03/14 13:59:43 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.141 2008/03/18 08:50:11 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -91,6 +91,12 @@
         <mkdir dir="${compile.dir}"/>
         <mkdir dir="${dist.dir}"/>
         <mkdir dir="${javadoc.dir}"/>
+    </target>
+
+    <target name="prepare.test">
+        <mkdir dir="${tmp.dir}"/>
+        <mkdir dir="${tmp.dir}/test-results"/>
+        <mkdir dir="${tmp.dir}/test-results/xml"/>
     </target>
 
 
@@ -921,11 +927,11 @@
 
     <!-- =============================== TestNG ======================================== -->
 
-    <target name="functional" depends="compile, prepare">
-        <mkdir dir="${tmp.dir}/test-results/functional"/>
+    <target name="functional" depends="compile, prepare,prepare.test">
+        <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
-                outputdir="${tmp.dir}/test-results"
+                outputdir="${tmp.dir}/test-results/xml"
                 listeners="org.jgroups.util.JUnitXMLReporter"
                 threadcount="20"
                 parallel="methods"
@@ -935,56 +941,69 @@
         </testng>
     </target>
 
-    <target name="udp-tests" depends="compile, prepare, makeKeystore, copy-build-properties">
-        <testng classpathref="jg.classpath"
-                usedefaultlisteners="false"
-                outputdir="${tmp.dir}/test-results"
-                listeners="org.jgroups.util.JUnitXMLReporter"
-                >
-            <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
-            <sysproperty key="test.suffix" value="tcp"/>
-            <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
-            <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-            <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
-            <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
-        </testng>
+    <target name="all-new-tests">
+        <sequential>
+            <antcall target="udp-tests"/>
+            <antcall target="tcp-tests"/>
+        </sequential>
     </target>
 
+    <target name="udp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+        <runtest channel.conf="udp.xml"
+                 testname.ext="udp"
+                 threadcount="1"
+                 />
+    </target>
+
+    <target name="tcp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+        <runtest channel.conf="tcp.xml"
+                 testname.ext="tcp"
+                 threadcount="1"
+                 />
+    </target>
 
 
     <target name="reports">
         <mkdir dir="${tmp.dir}/test-results/html"/>
-        <mkdir dir="${tmp.dir}/test-results/html/report"/>
-        <junitreport todir="${tmp.dir}/test-results/html/report">
+        <junitreport todir="${tmp.dir}/test-results/html">
             <fileset dir="${tmp.dir}/test-results/xml">
-                <include name="*.xml"/>
+                <include name="**/*.xml"/>
             </fileset>
-            <report format="frames"  todir="${tmp.dir}/test-results/html/report"/>
+            <report format="frames"  todir="${tmp.dir}/test-results/html"/>
         </junitreport>
-        <echo message="********************************************************************"/>
-        <echo message="The unit test report is available in ${tmp.dir}/test-results/html/report/index.html"/>
-        <echo message="********************************************************************"/>
+        <echo message="******************************************************************"/>
+        <echo message="The test report is ${tmp.dir}/test-results/html/index.html"/>
+        <echo message="******************************************************************"/>
     </target>
 
 
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
         <attribute name="channel.conf" default="udp.xml"/>
-        <attribute name="outputdir" default="${tmp.dir}/test-results"/>
-        <attribute name="channel.conf.flush"/>
+        <attribute name="outputdir" default="${tmp.dir}/test-results/xml"/>
+        <attribute name="channel.conf.flush" default="flush-udp.xml"/>
         <attribute name="mux.on" default="false"/>
-        <attribute name="mux.conf"/>
-        <attribute name="mux.conf.stack"/>
-        <attribute name="mux.factorycount"/>
+        <attribute name="mux.conf" default="stacks.xml"/>
+        <attribute name="mux.conf.stack" default="udp"/>
+        <attribute name="mux.factorycount" default="4"/>
         <attribute name="testname.ext" default="udp"/>
+        <attribute name="threadcount" default="1"/>
         <sequential>
+            <mkdir dir="${tmp.dir}/test-results/xml/stack-dependent"/>
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
-                    listeners="org.uncommons.reportng.HTMLReporter,org.uncommons.reportng.JUnitXMLReporter"
+                    listeners="org.jgroups.util.JUnitXMLReporter"
+                    threadcount="@{threadcount}"
+                    parallel="tests"
                     >
                 <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
-                <sysproperty key="org.uncommons.reportng.title" value="UDP tests"/>
                 <sysproperty key="channel.conf" value="@{channel.conf}"/>
+                <sysproperty key="channel.conf.flush" value="@{channel.conf.flush}"/>
+                <sysproperty key="mux.on" value="@{mux.on}"/>
+                <sysproperty key="mux.conf" value="@{mux.conf}"/>
+                <sysproperty key="mux.conf.stack" value="@{mux.conf.stack}"/>
+                <sysproperty key="mux.factorycount" value="@{mux.factorycount}"/>
+                <sysproperty key="test.suffix" value="@{testname.ext}"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
