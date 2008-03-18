@@ -1,9 +1,9 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="Functional tests"
+<suite name="stack-dependent"
        parallel="tests"
        thread-count="1" >
 
-    <test name="all-stack-dependent-tests" junit="false">
+    <test name="stack-dependent" junit="false">
         <groups>
             <run>
                 <exclude name="functional"/>
