@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.14 2008/03/07 15:02:25 belaban Exp $
+Version: $Id: TestNG.txt,v 1.15 2008/03/20 13:39:15 belaban Exp $
 
 Goals
 -----
@@ -112,4 +112,35 @@ Questions, issues
 - How do we generate mcast addresses and ports such that traffic doesn't overlap ?
   --> Possibly a @BeforeTest annotation which modifies the stack config ?
 
+- We're using system properties (mux.on, channel.conf etc) to configure stacks. This means we *cannot* run 2
+  different stacks at the same time because the system properties are singleton wrt the JVM !
+  --> Change from system properties to TestNG parameters ? Or DataProviders ?
+  Solution: parameters:
+
+  ChannelTestBase:
+
+  public class ChannelTestBase {
+    String channel_conf=null;
+
+    @BeforeClass @Parameters(value="channel.conf")
+    public void initialize(String channel_conf) {
+        this.channel_conf=channel_conf;
+    }
+
+    protected Channel createChannel() throws ChannelException {
+        return new JChannel(channel_conf);
+    }
+
+
+    Test (subclass of ChannelTestBase):
+
+    @BeforeClass
+    public void setUp() throws ChannelException {
+        ch=createChannel();
+        ch.connect("demo");
+    }
+
+    @AfterClass public void destroy() {
+        ch.close();
+    }
   
