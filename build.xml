@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.141 2008/03/18 08:50:11 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.142 2008/03/20 13:46:24 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -82,7 +82,7 @@
     <patternset id="junit.mux.excludes">
     	<exclude name="**/DistributedQueueTest*"/>
     	<exclude name="**/ChannelTestBase*"/>
-        <exclude name="**/SharedTransportTest*"/>        
+        <exclude name="**/SharedTransportTest*"/>
     </patternset>
 
 
@@ -335,7 +335,7 @@
 	<target name="clean-docs" if="docbook.support.present">
         <ant dir="${root.dir}/doc/manual" antfile="build.xml" target="clean"/>
 	</target>
-	
+
 
     <target name="version"
             depends="compile"
@@ -345,7 +345,7 @@
         <java classname="org.jgroups.Version" classpathref="jg.classpath"/>
     </target>
 
-    
+
     <target name="makeKeystore"
             depends="compile"
             description="Generates an appropraite temporary keystore file for the unit tests and the JVM in use">
@@ -362,9 +362,9 @@
         </java>
     </target>
 
-	<target name="downloadFormatter" 
+	<target name="downloadFormatter"
 			description="Download jboss-test.jar containing the class org.jboss.ant.taskdefs.XMLFormatter">
-		
+
         <get usetimestamp="true"
              src="http://repository.jboss.com/maven2/jboss/jboss-test/1.0.1.GA/jboss-test-1.0.1.GA.jar"
              dest="${lib.dir}/jboss-test.jar"/>
@@ -406,10 +406,10 @@
             <junit printsummary="yes" timeout="${unittest.timeout.low}" fork="yes" showoutput="${test.verbose}">
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
-                <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/> 
+                <jvmarg value="-Djgroups.udp.mcast_addr=${jgroups.udp.mcast_addr}"/>
                 <jvmarg value="-Djgroups.udp.mcast_port=${jgroups.udp.mcast_port}"/>
                 <jvmarg value="-Djgroups.udp.ip_ttl=${jgroups.udp.ip_ttl}"/>
-                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>                
+                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
                 <sysproperty key="cfg" value="${conf.dir}/stacks.xml"/>
                 <sysproperty key="log4j.configuration" value="file:${conf.dir}/log4j.properties"/>
                 <sysproperty key="tests.tmp.dir" value="${tmp.dir}"/>
@@ -472,8 +472,8 @@
 
 
     <!--
-		 Target wrapping macro definition for test running. All test targets 
-		 use this target. 
+		 Target wrapping macro definition for test running. All test targets
+		 use this target.
 	-->
     <target name="runtests" depends="compile, copy-build-properties">
         <testrunner set="${testset}">Tests running with parameters:
@@ -506,14 +506,14 @@
             formatter.class=${formatter.class}
         </testrunner-functional>
     </target>
-	
+
 	<!--
           Runs flush tests in various channel modes
-                    
+
 	     -->
     <target name="all-flush-tests" depends="makeKeystore,downloadFormatter"
             description="Runs flush tests in various channel modes">
-    	             	
+
     	<antcall target="runtests">
             <param name="testset" value="flush.tests"/>
             <param name="mux.on" value="false"/>
@@ -521,11 +521,11 @@
     		<param name="channel.conf" value="udp.xml"/>
     		<param name="channel.conf.flush" value="flush-udp.xml"/>
     		<param name="test.verbose" value="false"/>
-    		<param name="testname.ext" value="udp"/>    		
+    		<param name="testname.ext" value="udp"/>
     		<param name="junit.excludes" value="junit.excludes"/>
     		<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-    	
+
         <antcall target="runtests">
             <param name="testset" value="flush.tests"/>
             <param name="mux.on" value="false"/>
@@ -536,7 +536,7 @@
         	<param name="junit.excludes" value="junit.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-    	
+
         <antcall target="runtests">
             <param name="testset" value="flush.tests"/>
             <param name="mux.on" value="true"/>
@@ -546,7 +546,7 @@
         	<param name="junit.excludes" value="junit.mux.excludes"/>
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-    	
+
         <antcall target="runtests">
             <param name="testset" value="flush.tests"/>
             <param name="mux.on" value="true"/>
@@ -557,8 +557,8 @@
         	<param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
     </target>
-	
-	
+
+
 
 
     <!--
@@ -601,7 +601,7 @@
         	<param name="junit.excludes" value="junit.mux.excludes"/>
             <param name="formatter.class" value="org.jboss.ant.taskdefs.XMLJUnitMultipleResultFormatter"/>
         </antcall>
-    	
+
     	<antcall target="runtests">
             <param name="testset" value="all.tests"/>
             <param name="mux.on" value="true"/>
@@ -616,7 +616,7 @@
     <!--
 			 Runs entire testsuite.
 			 Note: report generated will NOT contain results for all stacks.
-			 See all-tests-cc. 		 
+			 See all-tests-cc.
 	-->
     <target name="all-tests" depends="makeKeystore"
             description="Runs entire testsuite">
@@ -716,7 +716,7 @@
             <param name="test.verbose" value="true"/>
         </antcall>
     </target>
-	
+
     <!--
           Runs entire testsuite with default tcp-nio confguration specified by tcp-nio.xml.
           Other valid parameters that can additionally be specified are:
@@ -733,7 +733,7 @@
         	<param name="junit.excludes" value="junit.excludes"/>
         </antcall>
     </target>
-	
+
 
     <!--
           Runs entire testsuite in multiplexer mode with default stacks.xml
@@ -775,8 +775,8 @@
         	<param name="junit.excludes" value="junit.mux.excludes"/>
         </antcall>
     </target>
-	
-	
+
+
     <!--
           Runs a single junit test indicated by -Dtest=<testname> parameter.
           Note that indication of full class name is not necessary to invoke
@@ -1018,4 +1018,3 @@
 
 </project>
 
-        
