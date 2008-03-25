@@ -74,7 +74,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.14 2008/02/25 12:50:35 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.15 2008/03/25 09:09:11 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1800,7 +1800,7 @@ public class JChannel extends Channel {
                     }
                 }
 
-                if(auto_getstate) {
+                if(auto_getstate && state_transfer_supported) {
                     if(log.isDebugEnabled())
                         log.debug("fetching the state (auto_getstate=true)");
                     boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
