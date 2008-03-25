@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.3 2008/01/22 10:01:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.32.2.4 2008/03/25 02:42:08 vlada Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -44,7 +44,7 @@ public abstract class Discovery extends Protocol {
 
 
     private final Set<Responses> ping_responses=new HashSet<Responses>();
-    private final PingSenderTask sender=new PingSenderTask(timeout, num_ping_requests);
+    private final PingSenderTask sender=new PingSenderTask();
     
 
     
@@ -369,15 +369,13 @@ public abstract class Discovery extends Protocol {
 
     
 
-    class PingSenderTask {
-        private double          interval;
+    class PingSenderTask {        
         private Future<?>	senderFuture;
 
-        public PingSenderTask(long timeout, int num_requests) {
-            interval=timeout / (double)num_requests;
-        }
+        public PingSenderTask() {}
 
         public synchronized void start() {
+            long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
@@ -389,7 +387,7 @@ public abstract class Discovery extends Protocol {
                                 log.error("failed sending discovery request", ex);
                         }
                     }
-                }, 0, (long)interval, TimeUnit.MILLISECONDS);
+                }, 0, delay, TimeUnit.MILLISECONDS);
             }
         }
 
