@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.42 2008/03/13 02:00:19 vlada Exp $
+ * @version $Id: Discovery.java,v 1.43 2008/03/25 02:42:06 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {
@@ -55,7 +55,7 @@ public abstract class Discovery extends Protocol {
 
 
     private final Set<Responses> ping_responses=new HashSet<Responses>();
-    private final PingSenderTask sender=new PingSenderTask(timeout, num_ping_requests);
+    private final PingSenderTask sender=new PingSenderTask();
     
 
     
@@ -149,8 +149,7 @@ public abstract class Discovery extends Protocol {
             num_ping_requests=Integer.parseInt(str);
             props.remove("num_ping_requests");
             if(num_ping_requests < 1)
-                num_ping_requests=1;
-            sender.setNumPingRequests(num_ping_requests);
+                num_ping_requests=1;            
         }
 
         if(!props.isEmpty()) {
@@ -398,15 +397,13 @@ public abstract class Discovery extends Protocol {
 
     
 
-    class PingSenderTask {
-        private double		interval;
-	private Future<?>		senderFuture;
+    class PingSenderTask {        
+	private Future<?>      senderFuture;
 
-        public PingSenderTask(long timeout, int num_requests) {
-            interval=timeout / (double)num_requests;
-        }
+        public PingSenderTask() {}
 
         public synchronized void start(final String cluster_name) {
+            long delay = (long)(timeout / (double)num_ping_requests);
             if(senderFuture == null || senderFuture.isDone()) {
                 senderFuture=timer.scheduleWithFixedDelay(new Runnable() {
                     public void run() {
@@ -418,7 +415,7 @@ public abstract class Discovery extends Protocol {
                                 log.error("failed sending discovery request", ex);
                         }
                     }
-                }, 0, (long)interval, TimeUnit.MILLISECONDS);
+                }, 0, delay, TimeUnit.MILLISECONDS);
             }
         }
 
@@ -427,11 +424,7 @@ public abstract class Discovery extends Protocol {
                 senderFuture.cancel(true);
                 senderFuture=null;
             }
-        }
-
-        public void setNumPingRequests(int num_ping_requests) {
-            interval=timeout / (double)num_ping_requests;
-        }
+        }      
     }
 
 
