@@ -32,10 +32,7 @@ public abstract class BasicTCP extends TP {
      */
     final BoundedList<Address>  suspected_mbrs=new BoundedList<Address>(20);
     protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
-    @ManagedAttribute(description="Find first available port starting at this port",writable=true)
-    protected int          start_port=7800;    // find first available port starting at this port
-    @ManagedAttribute(description="Maximum port to bind to",writable=true)
-    protected int	       end_port=0;         // maximum port to bind to
+        
     @ManagedAttribute(description="Reaper interval",writable=true)
     protected long         reaper_interval=0;  // time in msecs between connection reaps
     @ManagedAttribute(description="Connection expiration time",writable=true)
@@ -49,13 +46,7 @@ public abstract class BasicTCP extends TP {
     int                    peer_addr_read_timeout=1000; // max time to block on reading of peer address
     boolean                tcp_nodelay=false;
     int                    linger=-1; // SO_LINGER (number of ms, -1 disables it)
-
-
-
-    public int getStartPort() {return start_port;}
-    public void setStartPort(int start_port) {this.start_port=start_port;}
-    public int getEndPort() {return end_port;}
-    public void setEndPort(int end_port) {this.end_port=end_port;}
+  
     public long getReaperInterval() {return reaper_interval;}
     public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
     public long getConnExpireTime() {return conn_expire_time;}
@@ -68,14 +59,16 @@ public abstract class BasicTCP extends TP {
 
         str=props.getProperty("start_port");
         if(str != null) {
-            start_port=Integer.parseInt(str);
+            bind_port=Integer.parseInt(str);
             props.remove("start_port");
+            if(log.isWarnEnabled()) log.warn("\"start_port\" is deprecated; use \"bind_port\" instead");
         }
 
         str=props.getProperty("end_port");
         if(str != null) {
-            end_port=Integer.parseInt(str);
+            port_range=Integer.parseInt(str) - bind_port;
             props.remove("end_port");
+            if(log.isWarnEnabled()) log.warn("\"end_port\" is deprecated; use \"port_range\" instead");
         }
 
         str=props.getProperty("external_addr");
@@ -171,17 +164,17 @@ public abstract class BasicTCP extends TP {
 
     public void init() throws Exception {
         super.init();
-        if(start_port <= 0) {
+        if(bind_port <= 0) {
             Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
             if(dynamic_discovery_prot == null)
                 dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");
 
             if(dynamic_discovery_prot != null) {
                 if(log.isDebugEnabled())
-                    log.debug("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + start_port + " is okay");
+                    log.debug("dynamic discovery is present (" + dynamic_discovery_prot + "), so start_port=" + bind_port + " is okay");
             }
             else {
-                throw new IllegalArgumentException("start_port cannot be set to " + start_port +
+                throw new IllegalArgumentException("start_port cannot be set to " + bind_port +
                         ", as no dynamic discovery protocol (e.g. MPING or TCPGOSSIP) has been detected.");
             }
         }

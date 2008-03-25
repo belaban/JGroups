@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.47 2008/03/08 09:46:46 vlada Exp $
+// $Id: TCP.java,v 1.48 2008/03/25 02:13:31 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -64,7 +64,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
     }
 
     public void start() throws Exception {
-        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port,pm);
+        ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,bind_port,bind_port+port_range,pm);
         // ct.addConnectionListener(this);
         ct.setUseSendQueues(use_send_queues);
         ct.setSendQueueSize(send_queue_size);

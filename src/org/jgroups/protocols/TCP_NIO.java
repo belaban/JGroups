@@ -16,7 +16,7 @@ import java.util.Properties;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.19 2008/03/08 09:46:46 vlada Exp $
+ * @version $Id: TCP_NIO.java,v 1.20 2008/03/25 02:13:31 vlada Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -61,7 +61,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
    }
 
    public void start() throws Exception {
-       ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,start_port,end_port,pm);
+       ct=getConnectionTable(reaper_interval,conn_expire_time,bind_addr,external_addr,bind_port,bind_port+port_range,pm);
        ct.setUseSendQueues(use_send_queues);
        // ct.addConnectionListener(this);
        ct.setReceiveBufferSize(recv_buf_size);
