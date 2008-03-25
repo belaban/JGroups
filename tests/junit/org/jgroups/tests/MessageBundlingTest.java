@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.10 2008/02/21 06:32:12 vlada Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.11 2008/03/25 09:01:22 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -164,8 +164,10 @@ public class MessageBundlingTest extends ChannelTestBase {
         Vector<Protocol> prots=stack.getProtocols();
         TP transport=(TP)prots.lastElement();
         transport.setEnableBundling(enabled);
-        transport.setMaxBundleSize(max_bytes);
-        transport.setMaxBundleTimeout(timeout);
+        if(enabled) {
+            transport.setMaxBundleSize(max_bytes);
+            transport.setMaxBundleTimeout(timeout);
+        }
         transport.setEnable_unicast_bundling(false);
         if(enabled) {
             GMS gms=(GMS)stack.findProtocol("GMS");
