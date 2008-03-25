@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.106.2.4 2008/01/23 11:13:14 belaban Exp $
+ * @version $Id: JChannel.java,v 1.106.2.5 2008/03/25 09:08:35 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1654,7 +1654,7 @@ public class JChannel extends Channel {
                     }
                 }
 
-                if(auto_getstate) {
+                if(auto_getstate && state_transfer_supported) {
                     if(log.isInfoEnabled())
                         log.info("fetching the state (auto_getstate=true)");
                     boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
