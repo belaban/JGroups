@@ -67,7 +67,7 @@ import java.util.Vector;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.106.2.5 2008/03/25 09:08:35 belaban Exp $
+ * @version $Id: JChannel.java,v 1.106.2.6 2008/03/26 08:17:02 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -142,10 +142,10 @@ public class JChannel extends Channel {
      *if this is set to false, the JChannel will not receive messages sent by itself*/
     private boolean receive_local_msgs=true;
     /*flag to indicate whether the channel will reconnect (reopen) when the exit message is received*/
-    private boolean auto_reconnect=true;
+    private boolean auto_reconnect=false;
     /*flag t indicate whether the state is supposed to be retrieved after the channel is reconnected
      *setting this to true, automatically forces auto_reconnect to true*/
-    private boolean auto_getstate=true;
+    private boolean auto_getstate=false;
     /*channel connected flag*/
     protected boolean connected=false;
 
