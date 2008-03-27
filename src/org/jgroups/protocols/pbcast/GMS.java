@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.134 2008/03/13 02:00:26 vlada Exp $
+ * @version $Id: GMS.java,v 1.135 2008/03/27 09:02:53 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -89,6 +89,10 @@ public class GMS extends Protocol {
 
     /** To collect VIEW_ACKs from all members */
     final AckCollector        ack_collector=new AckCollector();
+      
+    //[JGRP-700] - FLUSH: flushing should span merge
+    final AckCollector        merge_ack_collector=new AckCollector();
+
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
     long                      view_ack_collection_timeout=2000;
@@ -315,12 +319,11 @@ public class GMS extends Protocol {
      * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
-    public View getNextView(Collection new_mbrs, Collection old_mbrs, Collection suspected_mbrs) {
+    public View getNextView(Collection<Address> new_mbrs, Collection<Address> old_mbrs, Collection<Address> suspected_mbrs) {
         Vector<Address> mbrs;
         long vid;
         View v;
-        Membership tmp_mbrs;
-        Address tmp_mbr;
+        Membership tmp_mbrs;       
 
         synchronized(members) {
             if(view_id == null) {
@@ -341,8 +344,8 @@ public class GMS extends Protocol {
 
             // Update joining list (see DESIGN for explanation)
             if(new_mbrs != null) {
-                for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
-                    tmp_mbr=(Address)it.next();
+                for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
+                    Address tmp_mbr=it.next();
                     if(!joining.contains(tmp_mbr))
                         joining.addElement(tmp_mbr);
                 }
@@ -350,15 +353,15 @@ public class GMS extends Protocol {
 
             // Update leaving list (see DESIGN for explanations)
             if(old_mbrs != null) {
-                for(Iterator it=old_mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=old_mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
             }
             if(suspected_mbrs != null) {
-                for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=suspected_mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
@@ -397,7 +400,7 @@ public class GMS extends Protocol {
      members (old members are still part of the current view).
      </ol>
      */
-    public void castViewChange(Vector new_mbrs, Vector old_mbrs, Vector suspected_mbrs) {
+    public void castViewChange(Vector<Address> new_mbrs, Vector<Address> old_mbrs, Vector<Address> suspected_mbrs) {
         View new_view;
 
         // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
@@ -454,7 +457,7 @@ public class GMS extends Protocol {
                 log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
+            log.warn("At " + local_addr + " failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
                     "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
                     "), local_addr=" + local_addr);
         }
@@ -474,7 +477,7 @@ public class GMS extends Protocol {
         Address coord;
         int rc;
         ViewId vid=new_view.getVid();
-        Vector mbrs=new_view.getMembers();
+        Vector<Address> mbrs=new_view.getMembers();
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -497,6 +500,7 @@ public class GMS extends Protocol {
         }
 
         ack_collector.handleView(new_view);
+        merge_ack_collector.handleView(new_view);
 
         ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
 
@@ -542,8 +546,8 @@ public class GMS extends Protocol {
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!prev_members.contains(addr))
                         prev_members.add(addr);
                 }
@@ -593,7 +597,7 @@ public class GMS extends Protocol {
 
 
     /** Returns true if local_addr is member of mbrs, else false */
-    protected boolean checkSelfInclusion(Vector mbrs) {
+    protected boolean checkSelfInclusion(Vector<Address> mbrs) {
         Object mbr;
         if(mbrs == null)
             return false;
@@ -756,6 +760,11 @@ public class GMS extends Protocol {
                         impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
+                        
+                    case GmsHeader.INSTALL_MERGE_VIEW_OK:                        
+                        //[JGRP-700] - FLUSH: flushing should span merge
+                        merge_ack_collector.ack(msg.getSrc());                   
+                        break;    
 
                     case GmsHeader.CANCEL_MERGE:
                         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
@@ -784,6 +793,7 @@ public class GMS extends Protocol {
                 Address suspected=(Address)evt.getArg();
                 view_handler.add(new Request(Request.SUSPECT, suspected, true, null));
                 ack_collector.suspect(suspected);
+                merge_ack_collector.suspect(suspected);
                 break;                               // pass up
 
             case Event.UNSUSPECT:
@@ -1031,6 +1041,7 @@ public class GMS extends Protocol {
         public static final byte CANCEL_MERGE=9;
         public static final byte VIEW_ACK=10;
         public static final byte JOIN_REQ_WITH_STATE_TRANSFER = 11;
+        public static final byte INSTALL_MERGE_VIEW_OK=12;
 
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
@@ -1225,7 +1236,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.134 2008/03/13 02:00:26 vlada Exp $
+     * @version $Id: GMS.java,v 1.135 2008/03/27 09:02:53 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1297,8 +1308,8 @@ public class GMS extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("suspended ViewHandler");
             Resumer resumer=new Resumer(merge_id, resume_tasks, this);
-            Future future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
-            Future old_future=resume_tasks.put(merge_id, future);
+            Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
+            Future<?> old_future=resume_tasks.put(merge_id, future);
             if(old_future != null)
                 old_future.cancel(true);
 
@@ -1408,20 +1419,7 @@ public class GMS extends Protocol {
                     if(requests.size() > 1)
                         log.error("more than one MERGE request to process, ignoring the others");
                     impl.merge(firstReq.coordinators);
-                    break;
-                case Request.VIEW:
-                    if(requests.size() > 1)
-                        log.error("more than one VIEW request to process, ignoring the others");
-                    
-                    try {                       
-                        castViewChangeWithDest(firstReq.view, firstReq.digest, firstReq.target_members);
-                    }
-                    finally {
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack)
-                            stopFlush(firstReq.target_members);
-                    }
-                    break;
+                    break;                
                 default:
                     log.error("request " + firstReq.type + " is unknown; discarded");
             }
