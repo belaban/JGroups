@@ -27,10 +27,12 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.39 2007/09/07 11:42:44 belaban Exp $
+ * @version $Id: FRAG.java,v 1.39.2.1 2008/03/27 16:33:39 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
+
+    private int max_retained_buffer=70000;
 
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
@@ -38,7 +40,7 @@ public class FRAG extends Protocol {
     private final FragmentationList     fragment_list=new FragmentationList();
     private int                         curr_id=1;
     private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(1024);
-    private final Vector                members=new Vector(11);
+    private final Vector<Address>       members=new Vector<Address>(11);
     private final static String         name="FRAG";
 
     long num_sent_msgs=0;
@@ -71,8 +73,14 @@ public class FRAG extends Protocol {
             props.remove("frag_size");
         }
 
+        str=props.getProperty("max_retained_buffer");
+        if(str != null) {
+            max_retained_buffer=Integer.parseInt(str);
+            props.remove("max_retained_buffer");
+        }
+
         if(!props.isEmpty()) {
-            log.error("FRAG.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -203,7 +211,7 @@ public class FRAG extends Protocol {
             // Write message into a byte buffer and fragment it
             // Synchronization around bos is needed for concurrent access (http://jira.jboss.com/jira/browse/JGRP-215)
             synchronized(bos) {
-                bos.reset();
+                bos.reset(this.max_retained_buffer);
                 out=new DataOutputStream(bos);
                 msg.writeTo(out);
                 out.flush();
