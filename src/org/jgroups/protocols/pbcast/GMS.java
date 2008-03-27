@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.135 2008/03/27 09:02:53 vlada Exp $
+ * @version $Id: GMS.java,v 1.136 2008/03/27 11:13:56 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -457,7 +457,7 @@ public class GMS extends Protocol {
                 log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
         catch(TimeoutException e) {
-            log.warn("At " + local_addr + " failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
+            log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
                     "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
                     "), local_addr=" + local_addr);
         }
@@ -1236,7 +1236,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.135 2008/03/27 09:02:53 vlada Exp $
+     * @version $Id: GMS.java,v 1.136 2008/03/27 11:13:56 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
