@@ -1,11 +1,11 @@
 package org.jgroups.tests;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -21,7 +21,7 @@ import org.jgroups.util.Util;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.16 2008/02/27 11:32:50 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.17 2008/03/27 09:02:54 vlada Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -135,9 +135,10 @@ public class MergeTest extends ChannelTestBase {
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail(ex.getLocalizedMessage());
-        }finally{
-            
-            for(MergeApplication channel:channels){
+        }finally{            
+            List<MergeApplication> channelsReversed = Arrays.asList(channels);
+            Collections.reverse(channelsReversed);            
+            for(MergeApplication channel:channelsReversed){
                 channel.cleanup();
                 Util.sleep(2000);
             }
@@ -210,9 +211,6 @@ public class MergeTest extends ChannelTestBase {
         if(merge != null) {
             merge.setMinInterval(5000);
             merge.setMaxInterval(10000);
-        }      
+        }
     }
-
-
-
-    }
+}

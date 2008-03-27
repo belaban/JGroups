@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.85 2008/03/14 02:09:24 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.86 2008/03/27 09:02:53 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -232,24 +232,36 @@ public class CoordGmsImpl extends GmsImpl {
      * If merge_id is not equal to this.merge_id then discard.
      * Else cast the view/digest to all members of this group.
      */
-    public void handleMergeView(MergeData data, ViewId merge_id) {
+    public void handleMergeView(final MergeData data, ViewId merge_id) {
         if(merge_id == null
                 || this.merge_id == null
                 || !this.merge_id.equals(merge_id)) {
             if(log.isErrorEnabled()) log.error("merge_ids don't match (or are null); merge view discarded");
             return;
         }
-        List<Address> my_members=gms.view != null? gms.view.getMembers() : null;
+        final List<Address> my_members=gms.view != null? gms.view.getMembers() : null;
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
-
-        Request req=new Request(Request.VIEW);
-        req.view=data.view;
-        req.digest=data.digest;
-        req.target_members=my_members;
-        gms.getViewHandler().add(req, true, // at head so it is processed next
-                                 true);     // un-suspend the queue
+        
+        //[JGRP-700] - FLUSH: flushing should span merge
+        gms.timer.execute(new Runnable() {
+            public void run() {
+                
+                gms.castViewChangeWithDest(data.view, data.digest, my_members);                
+                /*
+                 * if we have flush in stack send ack back to merge coordinator                 
+                 * */
+                if(gms.flushProtocolInStack) {
+                    Message ack=new Message(data.getSender(), null, null);
+                    GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
+                    ack.putHeader(gms.getName(), ack_hdr);
+                    gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, data.getSender()));
+                    gms.getDownProtocol().down(new Event(Event.MSG, ack));                   
+                }
+            }
+        });
+        
         merging=false;
     }
 
@@ -674,6 +686,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isTraceEnabled())
             log.trace("sending merge view " + v.getVid() + " to coordinators " + coords);
 
+        long start = System.currentTimeMillis();
         for(Address coord:coords) {            
             Message msg=new Message(coord, null, null);
             GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW);
@@ -682,6 +695,38 @@ public class CoordGmsImpl extends GmsImpl {
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
+        }
+        
+        //[JGRP-700] - FLUSH: flushing should span merge
+        //if flush is in stack wait for acks from separated island coordinators
+        if(gms.flushProtocolInStack) {
+            gms.merge_ack_collector.reset(v.getVid(), coords);
+            int size=gms.merge_ack_collector.size();
+            long timeout=gms.merge_timeout;
+            try {
+                gms.merge_ack_collector.waitForAllAcks(timeout);
+                long stop=System.currentTimeMillis();
+                if(log.isTraceEnabled())
+                    log.trace("received all ACKs (" + size
+                              + ") for merged view "
+                              + v
+                              + " in "
+                              + (stop - start)
+                              + "ms");
+            }
+            catch(TimeoutException e) {
+                log.warn("failed to collect all ACKs for merge(" + size
+                         + ") for view "
+                         + v
+                         + " after "
+                         + timeout
+                         + "ms, missing ACKs from "
+                         + gms.merge_ack_collector.printMissing()
+                         + " (received="
+                         + gms.merge_ack_collector.printReceived()
+                         + "), local_addr="
+                         + gms.local_addr);
+            }
         }
     }
 
@@ -770,7 +815,7 @@ public class CoordGmsImpl extends GmsImpl {
          * Runs the merge protocol as a leader
          */
         public void run() {
-            if(merging == true) {
+            if(merging) {
                 if(log.isWarnEnabled()) log.warn("merge is already in progress, terminating");
                 return;
             }
@@ -814,12 +859,8 @@ public class CoordGmsImpl extends GmsImpl {
                     sendMergeCancelledMessage(coords, merge_id);
                     return;
                 }
-
-                /* 5. Don't allow JOINs or LEAVEs until we are done with the merge. Suspend() will clear the
-                      view handler queue, so no requests beyond this current MERGE request will be processed */
-                gms.getViewHandler().suspend(merge_id);
-
-                /* 6. Send the new View/Digest to all coordinators (including myself). On reception, they will
+             
+                /* 5. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */
                 sendMergeView(coords, combined_merge_data);
             }
@@ -827,12 +868,21 @@ public class CoordGmsImpl extends GmsImpl {
                 if(log.isErrorEnabled()) log.error("exception while merging", ex);
                 sendMergeCancelledMessage(coords, merge_id);
             }
-            finally {               
+            finally {       
+                gms.getViewHandler().resume(merge_id);
                 stopMergeCanceller(); // this is probably not necessary
+                
+                /*6. if flush is stack stop the flush for entire cluster 
+                 *[JGRP-700] - FLUSH: flushing should span merge
+                 * 
+                 * */
+                if(gms.flushProtocolInStack)
+                    gms.stopFlush();
+                
                 merging=false;
                 merge_leader=null;
                 if(log.isDebugEnabled()) log.debug("merge task terminated");
-                t=null;
+                t=null;                
             }
         }
     }
