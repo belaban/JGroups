@@ -35,13 +35,17 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.41 2008/03/13 02:00:18 vlada Exp $
+ * @version $Id: FRAG.java,v 1.42 2008/03/27 11:16:52 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
     
     @ManagedAttribute(description="Fragmentation size",writable=true)
     private int frag_size=8192;  // conservative value
+
+    @ManagedAttribute(description="The max size in bytes the byte array output buffer should be, " +
+            "otherwise we keep memory occupied unnecessarily", writable=true)
+    private int max_retained_buffer=70000;
 
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
@@ -86,8 +90,14 @@ public class FRAG extends Protocol {
             props.remove("frag_size");
         }
 
+        str=props.getProperty("max_retained_buffer");
+        if(str != null) {
+            max_retained_buffer=Integer.parseInt(str);
+            props.remove("max_retained_buffer");
+        }
+
         if(!props.isEmpty()) {
-            log.error("FRAG.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
@@ -215,7 +225,7 @@ public class FRAG extends Protocol {
             // Write message into a byte buffer and fragment it
             // Synchronization around bos is needed for concurrent access (http://jira.jboss.com/jira/browse/JGRP-215)
             synchronized(bos) {
-                bos.reset();
+                bos.reset(this.max_retained_buffer);
                 out=new DataOutputStream(bos);
                 msg.writeTo(out);
                 out.flush();
