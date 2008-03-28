@@ -1,13 +1,16 @@
-// $Id: GossipRouter.java,v 1.28 2008/02/25 16:24:09 belaban Exp $
 
 package org.jgroups.stack;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
+import org.jgroups.jmx.JmxConfigurator;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServer;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -37,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
+ * @version $Id: GossipRouter.java,v 1.29 2008/03/28 06:12:23 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -55,44 +59,46 @@ public class GossipRouter {
     public static final long GOSSIP_REQUEST_TIMEOUT=1000;
     public static final long ROUTING_CLIENT_REPLY_TIMEOUT=120000;
 
+    @ManagedAttribute(description="server port on which the GossipRouter accepts client connections", writable=true)
     private int port;
+
+    @ManagedAttribute(description="address to which the GossipRouter should bind", writable=true, name="bindAddress")
     private String bindAddressString;
 
-    // time (in msecs) until a cached 'gossip' member entry expires
+    @ManagedAttribute(description="time (in msecs) until a cached 'gossip' member entry expires", writable=true)
     private long expiryTime;
 
-    // number of millisecs the main thread waits to receive a gossip request
-    // after connection was established; upon expiration, the router initiates
-    // the routing protocol on the connection. Don't set the interval too big, 
-    // otherwise the router will appear slow in answering routing requests.
+    @ManagedAttribute(description="number of millisecs the main thread waits to receive a gossip request " +
+            "after connection was established; upon expiration, the router initiates " +
+            "the routing protocol on the connection. Don't set the interval too big, " +
+            "otherwise the router will appear slow in answering routing requests.", writable=true)
     private long gossipRequestTimeout;
 
-    // time (in ms) main thread waits for a router client to send the routing 
-    // request type and the group afiliation before it declares the request
-    // failed.
+    @ManagedAttribute(description="time (in ms) main thread waits for a router client to send the routing " +
+            "request type and the group afiliation before it declares the request " +
+            "failed.", writable=true)
     private long routingClientReplyTimeout;
 
-    // HashMap<String, Map<Address,AddressEntry> >. Maintains associations between groups and their members. Keys=group
-    // names, values = maps of logical address / AddressEntry associations
+    // Maintains associations between groups and their members
     private final ConcurrentMap<String,ConcurrentMap<Address,AddressEntry>> routingTable=new ConcurrentHashMap<String,ConcurrentMap<Address,AddressEntry>>();
 
     private ServerSocket srvSock=null;
     private InetAddress bindAddress=null;
 
+    @ManagedAttribute(description="operational status", name="running")
     private boolean up=true;
 
-    /** whether to discard message sent to self */
+    @ManagedAttribute(description="whether to discard message sent to self", writable=true)
     private boolean discard_loopbacks=false;
 
 
     // the cache sweeper
-    Timer timer=null;
+    protected Timer timer=null;
 
     protected final Log log=LogFactory.getLog(this.getClass());
 
-    //
-    // JMX INSTRUMENTATION - MANAGEMENT INTERFACE
-    //
+    private boolean jmx=false;
+
 
     public GossipRouter() {
         this(PORT);
@@ -106,11 +112,8 @@ public class GossipRouter {
         this(port, bindAddressString, EXPIRY_TIME);
     }
 
-    public GossipRouter(int port, String bindAddressString,
-                        long expiryTime) {
-        this(port, bindAddressString, expiryTime,
-             GOSSIP_REQUEST_TIMEOUT,
-             ROUTING_CLIENT_REPLY_TIMEOUT);
+    public GossipRouter(int port, String bindAddressString, long expiryTime) {
+        this(port, bindAddressString, expiryTime, GOSSIP_REQUEST_TIMEOUT, ROUTING_CLIENT_REPLY_TIMEOUT);
     }
 
     public GossipRouter(int port, String bindAddressString,
@@ -123,9 +126,13 @@ public class GossipRouter {
         this.routingClientReplyTimeout=routingClientReplyTimeout;
     }
 
-    //
-    // MANAGED ATTRIBUTES
-    //
+    public GossipRouter(int port, String bindAddressString,
+                        long expiryTime, long gossipRequestTimeout,
+                        long routingClientReplyTimeout, boolean jmx) {
+        this(port, bindAddressString, expiryTime, gossipRequestTimeout, routingClientReplyTimeout);
+        this.jmx=jmx;
+    }
+
 
     public void setPort(int port) {
         this.port=port;
@@ -167,6 +174,7 @@ public class GossipRouter {
         return routingClientReplyTimeout;
     }
 
+    @ManagedAttribute(description="status")
     public boolean isStarted() {
         return srvSock != null;
     }
@@ -205,26 +213,24 @@ public class GossipRouter {
         }
     }
 
-    //
-    // JBoss MBean LIFECYCLE OPERATIONS
-    //
 
-
-    /**
-     * JBoss MBean lifecycle operation.
-     */
     public void create() throws Exception {
-        // not used
     }
 
     /**
-     * JBoss MBean lifecycle operation. Called after create(). When this method
-     * is called, the managed attributes have already been set.<br>
-     * Brings the Router in fully functional state.
+     * Lifecycle operation. Called after create(). When this method is called, the managed attributes have already
+     * been set.<br> Brings the Router into a fully functional state.
      */
+    @ManagedOperation(description="Lifecycle operation. Called after create(). When this method is called, " +
+            "the managed attributes have already been set. Brings the Router into a fully functional state.")
     public void start() throws Exception {
         if(srvSock != null) {
             throw new Exception("Router already started.");
+        }
+
+        if(jmx) {
+            MBeanServer server=Util.getMBeanServer();
+            JmxConfigurator.register(this, server, "jgroups:name=GossipRouter");
         }
 
         if(bindAddressString != null) {
@@ -256,9 +262,9 @@ public class GossipRouter {
     }
 
     /**
-     * JBoss MBean lifecycle operation. The JMX agent allways calls this method
-     * before destroy(). Close connections and frees resources.
+     * Always called before destroy(). Close connections and frees resources.
      */
+    @ManagedOperation(description="Always called before destroy(). Closes connections and frees resources")
     public void stop() {
         up=false;
 
@@ -280,19 +286,12 @@ public class GossipRouter {
         if(log.isInfoEnabled()) log.info("router stopped");
     }
 
-    /**
-     * JBoss MBean lifecycle operation.
-     */
     public void destroy() {
-        // not used
     }
 
-    //
-    // ORDINARY OPERATIONS
-    //
 
 
-
+    @ManagedOperation(description="dumps the contents of the routing table")
     public String dumpRoutingTable() {
         String label="routing";
         StringBuilder sb=new StringBuilder();
@@ -874,6 +873,7 @@ public class GossipRouter {
         long routingTimeout=GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT;
         GossipRouter router=null;
         String bind_addr=null;
+        boolean jmx=false;
 
         for(int i=0; i < args.length; i++) {
             arg=args[i];
@@ -897,13 +897,17 @@ public class GossipRouter {
                 routingTimeout=Long.parseLong(args[++i]);
                 continue;
             }
+             if("-jmx".equals(arg)) {
+                jmx=true;
+                continue;
+            }
             help();
             return;
         }
         System.out.println("GossipRouter is starting...");
 
         try {
-            router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout);
+            router=new GossipRouter(port, bind_addr, expiry, timeout, routingTimeout, jmx);
             router.start();
         }
         catch(Exception e) {
@@ -921,6 +925,7 @@ public class GossipRouter {
         System.out.println("                            upon expiration, the router initiates the routing");
         System.out.println("                            protocol on the connection.");
         System.out.println("        -rtimeout  <mcsec> - Routing timeout");
+        System.out.println("        -jmx               - Expose attrs and operations via JMX");
     }
 
 
