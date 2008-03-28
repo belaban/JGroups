@@ -25,7 +25,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.22 2008/03/28 07:13:02 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.23 2008/03/28 07:13:55 belaban Exp $
  */
 public class GossipClient {
     TimeScheduler timer=null;
@@ -99,6 +99,9 @@ public class GossipClient {
             }
         }
         groups.clear();
+    }
+
+    public void stopTimer() {
         if(timer != null) {
             try {timer.stop();} catch(InterruptedException e) {}
         }
