@@ -16,7 +16,6 @@ import java.net.Socket;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 
@@ -25,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.23 2008/03/28 07:13:55 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.24 2008/03/28 12:15:44 belaban Exp $
  */
 public class GossipClient {
     TimeScheduler timer=null;
@@ -565,8 +564,10 @@ public class GossipClient {
         catch(Exception ex) {
             System.err.println(ex);
         }
-        if(!keep_running)
+        if(!keep_running) {
             gossip_client.stop();
+            gossip_client.stopTimer();
+        }
     }
 
 
