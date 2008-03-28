@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.144 2008/02/29 12:20:14 belaban Exp $
+ * @version $Id: Util.java,v 1.145 2008/03/28 12:10:59 belaban Exp $
  */
 public class Util {
 
@@ -871,6 +871,18 @@ public class Util {
 
         while(stop > start) {
             start=System.currentTimeMillis();
+        }
+    }
+
+
+    public static int keyPress(String msg) {
+        System.out.println(msg);
+        
+        try {
+            return System.in.read();
+        }
+        catch(IOException e) {
+            return 0;
         }
     }
 
