@@ -4,10 +4,9 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -18,8 +17,8 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Router for TCP based group comunication (using layer TCP instead of UDP).
@@ -40,7 +39,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.29 2008/03/28 06:12:23 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.30 2008/03/28 07:53:55 belaban Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -243,12 +242,19 @@ public class GossipRouter {
 
         up=true;
 
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                cleanup();
+                GossipRouter.this.stop();
+            }
+        });
+
         // start the main server thread
         new Thread(new Runnable() {
             public void run() {
-                mainLoop();
-                cleanup();
-            }
+                    mainLoop();
+                    cleanup();
+                }
         }, "GossipRouter").start();
 
         // starts the cache sweeper as daemon thread, so we won't block on it
