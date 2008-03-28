@@ -190,12 +190,12 @@ public class FLUSH extends Protocol {
     }
     
     private boolean startFlush(Event evt){        
-        return startFlush(evt, flush_retry_count);
+        return startFlush(evt, flush_retry_count, false);
     }
     
-    private boolean startFlush(Event evt, int numberOfAttempts) {
+    private boolean startFlush(Event evt, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
-        if(!flushInProgress.get()){
+        if(!flushInProgress.get() || force){
             flush_promise.reset();                                 
             if(log.isDebugEnabled())
                 log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
@@ -222,7 +222,7 @@ public class FLUSH extends Protocol {
                           + ". Attempts left "
                           + numberOfAttempts);
             }
-            successfulFlush = startFlush(evt, --numberOfAttempts);
+            successfulFlush = startFlush(evt, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
