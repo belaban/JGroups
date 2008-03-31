@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.7 2008/03/14 12:10:21 belaban Exp $
+// $Id: MessageTest.java,v 1.8 2008/03/31 06:15:20 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -6,7 +6,6 @@ import org.jgroups.Message;
 import org.jgroups.Global;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.TpHeader;
-import org.jgroups.protocols.UdpHeader;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Range;
@@ -308,9 +307,7 @@ public class MessageTest {
         _testSize(msg);
     }
 
-    private static void addHeaders(Message msg) {
-        UdpHeader udp_hdr=new UdpHeader("DemoChannel");
-        msg.putHeader("UDP", udp_hdr);
+    private static void addHeaders(Message msg) {       
         TpHeader tp_hdr=new TpHeader("DemoChannel2");
         msg.putHeader("TP", tp_hdr);
         PingHeader ping_hdr=new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster");

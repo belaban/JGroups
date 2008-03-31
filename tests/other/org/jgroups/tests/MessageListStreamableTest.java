@@ -1,10 +1,10 @@
-// $Id: MessageListStreamableTest.java,v 1.5 2008/02/25 16:24:21 belaban Exp $
+// $Id: MessageListStreamableTest.java,v 1.6 2008/03/31 06:15:22 vlada Exp $
 
 package org.jgroups.tests;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageListStreamableTest.java,v 1.5 2008/02/25 16:24:21 belaban Exp $
+ * @version $Id: MessageListStreamableTest.java,v 1.6 2008/03/31 06:15:22 vlada Exp $
  */
 
 import org.apache.commons.logging.Log;
@@ -72,7 +72,7 @@ public class MessageListStreamableTest {
      * Adds some dummy headers to the message
      */
     static void addHeaders(Message msg) {
-        msg.putHeader("UDP", new UdpHeader("MyGroup"));
+        msg.putHeader("UDP", new TpHeader("MyGroup"));
         msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "demo-cluster"));
         msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
         msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());

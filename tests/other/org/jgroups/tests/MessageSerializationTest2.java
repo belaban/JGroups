@@ -12,7 +12,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.18 2008/02/25 16:24:22 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.19 2008/03/31 06:15:22 vlada Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -64,7 +64,7 @@ public class MessageSerializationTest2 {
 
 
      static void addHeaders(Message msg) {
-        msg.putHeader("UDP", new UdpHeader("MyGroup"));
+        msg.putHeader("UDP", new TpHeader("MyGroup"));
         msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
         msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
         msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());

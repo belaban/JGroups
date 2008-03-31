@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.6 2008/03/10 15:39:21 belaban Exp $$
+// $Id: SizeTest.java,v 1.7 2008/03/31 06:15:20 vlada Exp $$
 
 package org.jgroups.tests;
 
@@ -32,13 +32,7 @@ public class SizeTest {
 
     public SizeTest(String name) {
     }
-
-
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
-    public void testUdpHeader() throws Exception {
-        _testSize(new UdpHeader("DemoChannel"));
-    }
-
+   
     @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
     public void testTpHeader() throws Exception {
         _testSize(new TpHeader("DemoChannel"));
