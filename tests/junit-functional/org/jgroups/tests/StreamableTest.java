@@ -1,4 +1,4 @@
-// $Id: StreamableTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
+// $Id: StreamableTest.java,v 1.4 2008/03/31 06:15:20 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -7,7 +7,7 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingRsp;
-import org.jgroups.protocols.UdpHeader;
+import org.jgroups.protocols.TpHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -127,7 +127,7 @@ public class StreamableTest {
         Message msg=new Message(dest, src, "Hello world".getBytes());
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, true));
         msg.putHeader("ping-header", hdr);
-        UdpHeader udp_hdr=new UdpHeader("bla");
+        TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
         stream(msg);
     }
@@ -143,7 +143,7 @@ public class StreamableTest {
         Message msg=new Message(dest, src, "Hello world".getBytes());
         PingHeader hdr=new PingHeader(PingHeader.GET_MBRS_REQ, new PingRsp(src, src, false));
         msg.putHeader("ping-header", hdr);
-        UdpHeader udp_hdr=new UdpHeader("bla");
+        TpHeader udp_hdr=new TpHeader("bla");
         msg.putHeader("udp-header", udp_hdr);
         stream(msg);
     }

@@ -1,4 +1,4 @@
-// $Id: MessageSerializationTest.java,v 1.14 2008/02/25 16:24:21 belaban Exp $
+// $Id: MessageSerializationTest.java,v 1.15 2008/03/31 06:15:21 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -78,7 +78,7 @@ public class MessageSerializationTest {
      * Adds some dummy headers to the message
      */
     static void addHeaders(Message msg) {
-        msg.putHeader("UDP", new UdpHeader("MyGroup"));
+        msg.putHeader("UDP", new TpHeader("MyGroup"));
         msg.putHeader("PING", new PingHeader(PingHeader.GET_MBRS_REQ, "x"));
         msg.putHeader("FD_SOCK", new FD_SOCK.FdHeader());
         msg.putHeader("VERIFY_SUSPECT", new VERIFY_SUSPECT.VerifyHeader());
