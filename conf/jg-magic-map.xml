@@ -7,9 +7,6 @@
     <class id="6" name="org.jgroups.protocols.FD_SOCK$FdHeader"/>
     <class id="7" name="org.jgroups.protocols.FragHeader"/>
     <class id="13" name="org.jgroups.protocols.PingHeader"/>
-    <class id="14" name="org.jgroups.protocols.TcpHeader"/>
-    <class id="19" name="org.jgroups.protocols.TunnelHeader"/>
-    <class id="20" name="org.jgroups.protocols.UdpHeader"/>
     <class id="21" name="org.jgroups.protocols.UNICAST$UnicastHeader"/>
     <class id="22" name="org.jgroups.protocols.VERIFY_SUSPECT$VerifyHeader"/>
     <class id="24" name="org.jgroups.protocols.pbcast.GMS$GmsHeader"/>
