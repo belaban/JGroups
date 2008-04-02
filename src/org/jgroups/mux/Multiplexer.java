@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.99 2008/02/14 06:41:14 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.100 2008/04/02 01:12:06 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -63,6 +63,8 @@ public class Multiplexer implements UpHandler {
 
     /** To collect service acks from Multiplexers */
     private final AckCollector service_ack_collector=new AckCollector();
+    
+    protected long service_ack_timeout = 2000;
 
     /** Cluster view */
     private volatile View view=null;
@@ -134,6 +136,15 @@ public class Multiplexer implements UpHandler {
 
     public void setServicesResponseTimeout(long services_rsp_timeout) {
         this.service_response_timeout=services_rsp_timeout;
+    }
+    
+
+    public long getServiceAckTimeout() {
+        return service_ack_timeout;
+    }
+
+    public void setServiceAckTimeout(long service_ack_timeout) {
+        this.service_ack_timeout=service_ack_timeout;
     }
 
     /**
@@ -629,14 +640,13 @@ public class Multiplexer implements UpHandler {
 
             //initialize collector and ...
             service_ack_collector.reset(null, muxChannels);
-            int size=service_ack_collector.size();
-            long service_ack_collection_timeout=2000;
+            int size=service_ack_collector.size();            
 
             //then send a message
             channel.send(service_msg);
             long start=System.currentTimeMillis();
             try {
-                service_ack_collector.waitForAllAcks(service_ack_collection_timeout);
+                service_ack_collector.waitForAllAcks(service_ack_timeout);
                 if(log.isTraceEnabled())
                     log.trace("received all service ACKs (" + size
                               + ")  in "
@@ -648,7 +658,7 @@ public class Multiplexer implements UpHandler {
                          + ") for "
                          + service_msg
                          + " after "
-                         + service_ack_collection_timeout
+                         + service_ack_timeout
                          + "ms, missing ACKs from "
                          + service_ack_collector.printMissing()
                          + " (received="
