@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.25 2008/03/13 05:46:41 vlada Exp $
+ * @version $Id: ResourceDMBean.java,v 1.26 2008/04/03 14:43:38 belaban Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -307,7 +307,7 @@ public class ResourceDMBean implements DynamicMBean {
                     if(!writeAttribute) {
                         //we already have annotated field as read
                         if(ae instanceof FieldAttributeEntry && ae.getInfo().isReadable()) {
-                            log.warn("Not adding annotated method " + methodName
+                            log.warn("not adding annotated method " + method
                                      + " since we already have read attribute");
                         }
                         //we already have annotated set method
