@@ -183,7 +183,11 @@ public abstract class BasicTCP extends TP {
 
 
     public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
-        Set<Address> mbrs=(Set<Address>)members.clone();
+        Set<Address> mbrs;
+
+        synchronized(members) {
+            mbrs=(Set<Address>)members.clone();
+        }
         for(Address dest: mbrs) {
             sendToSingleMember(dest, data, offset, length);
         }
