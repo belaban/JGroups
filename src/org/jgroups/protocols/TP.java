@@ -2,16 +2,15 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
-
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -48,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.180 2008/03/14 05:00:17 vlada Exp $
+ * @version $Id: TP.java,v 1.181 2008/04/03 14:46:24 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -1584,7 +1583,7 @@ public abstract class TP extends Protocol {
                                                BlockingQueue<Runnable> queue, final String thread_name) {
 
         ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
-        pool.setThreadFactory(ProtocolStack.newThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
+        pool.setThreadFactory(ProtocolStack.newIDThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
 
         if(rejection_policy != null) {
             if(rejection_policy.equals("abort"))
