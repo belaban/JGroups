@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59.2.4 2008/02/15 01:05:11 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.59.2.5 2008/04/03 14:58:01 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -61,7 +61,7 @@ public class ProtocolStack extends Protocol implements Transport {
         this.setup_string=setup_string;
         this.channel=channel;
         ClassConfigurator.getInstance(true); // will create the singleton
-        this.timer_thread_factory=new PatternedThreadFactory(
+        this.timer_thread_factory=new IdThreadFactory(
                 newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
                 null);
         timer= new TimeScheduler(timer_thread_factory);
@@ -302,6 +302,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return null;
     }
         
+
     public Protocol findProtocol(Class<?> clazz) {
         Protocol tmp=top_prot;       
         while(tmp != null) {
@@ -313,6 +314,7 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return null;
     }
+
 
 
     public void destroy() {
@@ -424,6 +426,11 @@ public class ProtocolStack extends Protocol implements Transport {
         return new PatternedThreadFactory(new DefaultThreadFactory(group,baseName, createDaemons),pattern);
     }
     
+    public static ThreadFactory newIDThreadFactory(ThreadNamingPattern pattern,ThreadGroup group,String baseName, boolean createDaemons) {
+        return new IdThreadFactory(new DefaultThreadFactory(group,baseName, createDaemons),pattern);
+    }
+
+
     static class DefaultThreadFactory implements ThreadFactory{
         
         private final ThreadGroup group;
@@ -451,11 +458,10 @@ public class ProtocolStack extends Protocol implements Transport {
         }
     }
     
-    static class PatternedThreadFactory implements ThreadFactory{
+    protected static class PatternedThreadFactory implements ThreadFactory {
+        protected final ThreadFactory f;
+        protected ThreadNamingPattern pattern;
 
-        private final ThreadFactory f;
-        private ThreadNamingPattern pattern;
-        
         public PatternedThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern){
             f = factory;
             this.pattern = pattern;           
@@ -467,27 +473,44 @@ public class ProtocolStack extends Protocol implements Transport {
 
         public Thread newThread(Runnable r, String name) {
             Thread newThread = f.newThread(r, name);
-            if(pattern!=null)
-                pattern.renameThread(newThread);
-                
+            renameThread(newThread);
             return newThread;
         }
 
         public Thread newThread(Runnable r) {
             Thread newThread = f.newThread(r);
-            if(pattern!=null)
-                pattern.renameThread(newThread);
-                
+            renameThread(newThread);
             return newThread;
         }        
         
         public Thread newThread(ThreadGroup group, Runnable r, String name) {
             Thread newThread = f.newThread(group, r, name);
-            if(pattern!=null)
-                pattern.renameThread(newThread);
-                
+            renameThread(newThread);
             return newThread;
+        }
+
+        protected void renameThread(Thread new_thread) {
+            if(pattern!=null)
+                pattern.renameThread(new_thread);
+        }
+    }
+                
+    private static class IdThreadFactory extends PatternedThreadFactory {
+        short current_id=0;
+
+        public IdThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern) {
+            super(factory, pattern);
         }              
+
+        protected void renameThread(Thread new_thread) {
+            if(pattern != null) {
+                short id;
+                synchronized(this) {
+                    id=++current_id;
+    }
+                pattern.renameThread(new_thread.getName() + "-" + id, new_thread);
+}
+        }
     }
 }
 
