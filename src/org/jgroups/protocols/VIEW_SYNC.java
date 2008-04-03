@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.27 2008/03/13 02:00:16 vlada Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.28 2008/04/03 14:38:48 belaban Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -81,7 +81,6 @@ public class VIEW_SYNC extends Protocol {
         return num_views_sent;
     }
 
-    @ManagedAttribute
     public int getNumViewsAdjusted() {
         return num_views_adjusted;
     }
