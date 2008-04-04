@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.8 2007/11/19 16:13:17 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.9 2008/04/04 05:15:27 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,8 +15,8 @@ import org.jgroups.Message;
  */
 public class SendAndReceiveTest extends TestCase {
     JChannel channel;
-    final int NUM_MSGS=1000;
-    final long TIMEOUT=30000;
+    static final int NUM_MSGS=1000;
+    static final long TIMEOUT=30000;
 
     String props1="UDP(loopback=true;mcast_addr=228.8.8.8;mcast_port=27000;ip_ttl=1;" +
             "mcast_send_buf_size=64000;mcast_recv_buf_size=64000):" +
