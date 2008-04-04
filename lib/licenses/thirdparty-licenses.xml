@@ -78,7 +78,7 @@
     </module>
     <module name='TestNG'
             licenseType='apache-2.0'
-            version='5.7'
+            version='5.8'
             projectHome='http://www.testng.org'
             description='Used for unit testing'>
         <jar name='testng.jar' />
