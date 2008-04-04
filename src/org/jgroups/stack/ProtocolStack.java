@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.66 2008/04/04 04:04:16 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.67 2008/04/04 04:43:01 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -477,10 +477,8 @@ public class ProtocolStack extends Protocol implements Transport {
                 throw new IllegalArgumentException("ThreadFactory cannot be null");
             
             f=factory;
-            
             if(pattern == null) {
-                // use default
-                this.pattern=new ThreadNamingPattern();
+                this.pattern=new ThreadNamingPattern(); // use default
             }
             else {
                 this.pattern=pattern;
@@ -517,14 +515,18 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     private static class IdThreadFactory extends PatternedThreadFactory {
-        private final AtomicInteger counter=new AtomicInteger();
+        private short counter=0;
 
         public IdThreadFactory(ThreadFactory factory,ThreadNamingPattern pattern) {
             super(factory, pattern);
         }
 
         protected void renameThread(Thread new_thread) {
-            pattern.renameThread(new_thread.getName() + "-" + counter.incrementAndGet(), new_thread);
+            short id;
+            synchronized(this) {
+                id=++counter;
+            }
+            pattern.renameThread(new_thread.getName() + "-" + id, new_thread);
         }
     }
 }
