@@ -40,7 +40,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.14 2008/03/26 01:49:21 vlada Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.15 2008/04/04 09:36:41 vlada Exp $
  */
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
@@ -110,7 +110,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      * Determines when the updates have to be sent across the network, avoids
      * sending unnecessary messages when there are no member in the group
      */
-    private transient boolean send_message=false;
+    private volatile transient boolean send_message=false;
 
     protected final transient Promise<Boolean> state_promise=new Promise<Boolean>();
 
@@ -217,6 +217,11 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      * Constructs a new ReplicatedHashMap using provided map instance.
      */
     public ReplicatedHashMap(ConcurrentMap<K,V> map,Channel channel,boolean persistent) {
+        if(channel == null)
+            throw new IllegalArgumentException("Cannot create ReplicatedHashMap with null channel");
+        if(map == null)
+            throw new IllegalArgumentException("Cannot create ReplicatedHashMap with null map");
+        
         this.map=map;
         this.cluster_name=channel.getClusterName();
         this.channel=channel;
@@ -278,6 +283,11 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      */
     public final void start(long state_timeout) throws ChannelClosedException,
                                                ChannelNotConnectedException {
+        
+        if(!channel.isConnected()) throw new ChannelNotConnectedException();
+        if(!channel.isOpen()) throw new ChannelClosedException();
+        send_message = channel.getView().size()>1;
+        
         boolean rc;
         if(persistent) {
             if(log.isInfoEnabled())
@@ -403,7 +413,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     public V put(K key, V value) {
         V prev_val=get(key);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(PUT, new Object[] { key, value });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -429,7 +439,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     public V putIfAbsent(K key, V value) {
         V prev_val=get(key);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(PUT_IF_ABSENT, new Object[] { key, value });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -453,7 +463,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
      *                mappings to be stored in this map
      */
     public void putAll(Map<? extends K,? extends V> m) {
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(PUT_ALL, new Object[] { m });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -473,7 +483,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     public void clear() {
         //Changes done by <aos>
         //if true, propagate action to the group
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(CLEAR, null);
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -501,7 +511,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     public V remove(Object key) {
         V retval=get(key);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(REMOVE, new Object[] { key });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -526,7 +536,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         Object val=get(key);
         boolean removed=val != null && value != null && val.equals(value);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(REMOVE_IF_EQUALS, new Object[] { key, value });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
@@ -551,7 +561,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         Object val=get(key);
         boolean replaced=val != null && oldValue != null && val.equals(oldValue);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(REPLACE_IF_EQUALS, new Object[] { key,
                                                                                 oldValue,
@@ -584,7 +594,7 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
     public V replace(K key, V value) {
         V retval=get(key);
 
-        if(send_message == true) {
+        if(send_message) {
             try {
                 MethodCall call=new MethodCall(REPLACE_IF_EXISTS, new Object[] { key, value });
                 disp.callRemoteMethods(null, call, update_mode, timeout);
