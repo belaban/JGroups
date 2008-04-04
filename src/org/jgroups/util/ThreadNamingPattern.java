@@ -9,6 +9,22 @@ public class ThreadNamingPattern {
     private String clusterName;
     private Address address; 
 
+    
+    /**
+     * Creates a default ThreadNamingPattern that 
+     * does not rename threads.   
+     * 
+     */
+    public ThreadNamingPattern() {
+        includeClusterName=false;
+        includeLocalAddress=false;
+    }
+    
+    /**
+     * Creates a ThreadNamingPattern that renames  
+     * threads according to specified pattern
+     * 
+     */
     public ThreadNamingPattern(String pattern) {
         includeClusterName=pattern.contains("c");
         includeLocalAddress=pattern.contains("l");

@@ -9,6 +9,7 @@ import org.jgroups.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -20,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.65 2008/04/03 14:45:51 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.66 2008/04/04 04:04:16 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -471,13 +472,25 @@ public class ProtocolStack extends Protocol implements Transport {
         protected final ThreadFactory f;
         protected ThreadNamingPattern pattern;
         
-        public PatternedThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern) {
-            f = factory;
-            this.pattern = pattern;           
+        public PatternedThreadFactory(ThreadFactory factory,ThreadNamingPattern pattern) {
+            if(factory == null)
+                throw new IllegalArgumentException("ThreadFactory cannot be null");
+            
+            f=factory;
+            
+            if(pattern == null) {
+                // use default
+                this.pattern=new ThreadNamingPattern();
+            }
+            else {
+                this.pattern=pattern;
+            }                                                         
         }
         
         public void setThreadNamingPattern(ThreadNamingPattern pattern) {
-            this.pattern = pattern;           
+            if(pattern != null) {
+                this.pattern = pattern;
+            }
         }
 
         public Thread newThread(Runnable r, String name) {
@@ -499,26 +512,19 @@ public class ProtocolStack extends Protocol implements Transport {
         }
 
         protected void renameThread(Thread new_thread) {
-            if(pattern!=null)
-                pattern.renameThread(new_thread);
+            pattern.renameThread(new_thread);
         }
     }
 
     private static class IdThreadFactory extends PatternedThreadFactory {
-        short current_id=0;
+        private final AtomicInteger counter=new AtomicInteger();
 
-        public IdThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern) {
+        public IdThreadFactory(ThreadFactory factory,ThreadNamingPattern pattern) {
             super(factory, pattern);
         }
 
         protected void renameThread(Thread new_thread) {
-            if(pattern != null) {
-                short id;
-                synchronized(this) {
-                    id=++current_id;
-                }
-                pattern.renameThread(new_thread.getName() + "-" + id, new_thread);
-            }
+            pattern.renameThread(new_thread.getName() + "-" + counter.incrementAndGet(), new_thread);
         }
     }
 }
