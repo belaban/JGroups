@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.181 2008/03/25 09:08:12 belaban Exp $
+ * @version $Id: JChannel.java,v 1.182 2008/04/07 06:00:54 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -382,10 +382,14 @@ public class JChannel extends Channel {
      */
     @ManagedOperation(description="Connects the channel to a group")
     public synchronized void connect(String cluster_name) throws ChannelException {
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            return;
+        }
+
         startStack(cluster_name);
 
-        // only connect if we are not a unicast channel
-        if(cluster_name != null) {            
+        if(cluster_name != null) {    // only connect if we are not a unicast channel
             
             Event connect_event=new Event(Event.CONNECT, cluster_name);
             Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
@@ -441,6 +445,11 @@ public class JChannel extends Channel {
                                      Address target,
                                      String state_id,
                                      long timeout) throws ChannelException {
+
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            return;
+        }
 
         startStack(cluster_name);
 
@@ -1470,12 +1479,6 @@ public class JChannel extends Channel {
     private void startStack(String cluster_name) throws ChannelException {
         /*make sure the channel is not closed*/
         checkClosed();
-
-        /*if we already are connected, then ignore this*/
-        if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
-            return;
-        }
 
         /*make sure we have a valid channel name*/
         if(cluster_name == null) {
