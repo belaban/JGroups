@@ -1,4 +1,3 @@
-
 package org.jgroups;
 
 import org.apache.commons.logging.Log;
@@ -74,7 +73,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.15 2008/03/25 09:09:11 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.16 2008/04/07 06:03:56 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -359,11 +358,15 @@ public class JChannel extends Channel {
      *                                   A new channel has to be created first.
      */
     public synchronized void connect(String cluster_name) throws ChannelException {
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            return;
+        }
+
         startStack(cluster_name);
 
-        // only connect if we are not a unicast channel
-        if(cluster_name != null) {            
-            
+        if(cluster_name != null) {    // only connect if we are not a unicast channel
+
             Event connect_event=new Event(Event.CONNECT, cluster_name);
             Object res=downcall(connect_event);  // waits forever until connected (or channel is closed)
             if(res != null && res instanceof Exception) { // the JOIN was rejected by the coordinator
@@ -418,6 +421,11 @@ public class JChannel extends Channel {
                                      Address target,
                                      String state_id,
                                      long timeout) throws ChannelException {
+
+        if(connected) {
+            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
+            return;
+        }
 
         startStack(cluster_name);
 
@@ -1084,11 +1092,13 @@ public class JChannel extends Channel {
                     }else{
                         try{
                             mq.add(new Event(Event.STATE_RECEIVED, state_info));
-                        }catch(Exception e){
                         }
+                        catch(Exception e) {
                     }
                 }
-            }finally{
+                }
+            }
+            finally {
                 state_promise.setResult(state != null ? Boolean.TRUE : Boolean.FALSE);
             }
             break;
@@ -1419,12 +1429,6 @@ public class JChannel extends Channel {
     private void startStack(String cluster_name) throws ChannelException {
         /*make sure the channel is not closed*/
         checkClosed();
-
-        /*if we already are connected, then ignore this*/
-        if(connected) {
-            if(log.isTraceEnabled()) log.trace("already connected to " + cluster_name);
-            return;
-        }
 
         /*make sure we have a valid channel name*/
         if(cluster_name == null) {
