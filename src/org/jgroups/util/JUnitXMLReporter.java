@@ -15,7 +15,7 @@ import java.util.*;
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.2 2008/03/18 08:50:52 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.3 2008/04/07 14:03:40 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -209,7 +209,7 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     }
 
     private static String escape(String message) {
-        return message.replaceAll("<", LT).replaceAll(">", GT);
+        return message != null? message.replaceAll("<", LT).replaceAll(">", GT) : message;
     }
 
     private static long getTotalTime(List<ITestResult> results) {
