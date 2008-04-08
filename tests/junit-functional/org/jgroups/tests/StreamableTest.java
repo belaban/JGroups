@@ -1,4 +1,3 @@
-// $Id: StreamableTest.java,v 1.5 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,22 +18,14 @@ import java.io.DataOutputStream;
 import java.util.Vector;
 
 
+@Test(groups=Global.FUNCTIONAL)
 public class StreamableTest {
-    Message m1, m2;
 
-
-    public StreamableTest(String name) {
-    }
-
-
-
-
-    @Test(groups=Global.FUNCTIONAL)
-    public void testStreamable() throws Exception {
+    public static void testStreamable() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         byte[] tmp;
-        m1=new Message(null, null, buf, 0, 4);
-        m2=new Message(null, null, buf, 4, 3);
+        Message m1=new Message(null, null, buf, 0, 4);
+        Message m2=new Message(null, null, buf, 4, 3);
 
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
@@ -69,7 +60,6 @@ public class StreamableTest {
         input=new ByteArrayInputStream(tmp);
         in=new DataInputStream(input);
 
-        // m4=(Message)in.readObject();
         m4=new Message();
         m4.readFrom(in);
 
@@ -82,36 +72,36 @@ public class StreamableTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testStreamable2() throws Exception {
+
+    public static void testStreamable2() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 0, 4);
         stream(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testStreamable3() throws Exception {
+
+    public static void testStreamable3() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 4, 3);
         stream(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testNullBuffer() throws Exception {
+
+    public static void testNullBuffer() throws Exception {
         Message msg=new Message();
         stream(msg);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testNonNullBuffer() throws Exception {
+
+    public static void testNonNullBuffer() throws Exception {
         Message msg=new Message(null, null, "Hello world".getBytes());
         stream(msg);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testNonNullAddress() throws Exception {
+
+    public static void testNonNullAddress() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
         src=new IpAddress("127.0.0.1", 6666);
@@ -119,8 +109,8 @@ public class StreamableTest {
         stream(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testHeaders() throws Exception {
+
+    public static void testHeaders() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
         src=new IpAddress("127.0.0.1", 6666);
@@ -133,8 +123,8 @@ public class StreamableTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testAdditionalData() throws Exception {
+
+    public static void testAdditionalData() throws Exception {
         IpAddress dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
         dest.setAdditionalData("foo".getBytes());
@@ -150,8 +140,8 @@ public class StreamableTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testMergeView() throws Exception {
+
+    public static void testMergeView() throws Exception {
         Vector tmp_m1, tmp_m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
         View v1, v2, v3, v4, v5, view_all;
@@ -204,7 +194,7 @@ public class StreamableTest {
         assert sub.get(4) instanceof View;
     }
 
-    private void stream(Message msg) throws Exception {
+    private static void stream(Message msg) throws Exception {
         int length, bufLength;
         byte[] tmp;
         Message msg2;
@@ -238,12 +228,12 @@ public class StreamableTest {
         Assert.assertEquals(num_headers, getNumHeaders(msg2));
     }
 
-    private int getNumHeaders(Message msg) {
+    private static int getNumHeaders(Message msg) {
         return msg.getNumHeaders();
     }
 
 
-    private boolean match(Address a1, Address a2) {
+    private static boolean match(Address a1, Address a2) {
         if(a1 == null && a2 == null)
             return true;
         if(a1 != null)
@@ -256,7 +246,7 @@ public class StreamableTest {
 //        return msg.getRawBuffer() != null? msg.getRawBuffer().length : 0;
 //    }
 
-    private int getBufLength(Message msg) {
+    private static int getBufLength(Message msg) {
         return msg.getBuffer() != null? msg.getBuffer().length : 0;
     }
 

@@ -8,24 +8,22 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.SeqnoTable;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.net.UnknownHostException;
 
 
-public class SeqnoTableTest {
-    private static Address MBR;
 
-    static {
-        try {
-            MBR=new IpAddress("127.0.0.1", 5555);
-        }
-        catch(UnknownHostException e) {
-            throw new RuntimeException(e);
-        }
+@Test(groups=Global.FUNCTIONAL)
+public class SeqnoTableTest {
+    private static Address MBR=null;
+
+    @BeforeClass
+    private static void init() throws UnknownHostException {
+        MBR=new IpAddress("127.0.0.1", 5555);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public static void testInit() {
         SeqnoTable tab=new SeqnoTable(0);
         tab.add(MBR, 0);
@@ -39,7 +37,7 @@ public class SeqnoTableTest {
         Assert.assertEquals(51, tab.getNextToReceive(MBR));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testAdd() {
         SeqnoTable tab=new SeqnoTable(0);
         tab.add(MBR, 0);
@@ -49,7 +47,7 @@ public class SeqnoTableTest {
         Assert.assertEquals(3, tab.getNextToReceive(MBR));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testAddWithGaps() {
         SeqnoTable tab=new SeqnoTable(0);
         boolean rc=tab.add(MBR, 0);
@@ -73,7 +71,7 @@ public class SeqnoTableTest {
         Assert.assertEquals(6, tab.getNextToReceive(MBR));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testAddWithGaps2() {
         SeqnoTable tab=new SeqnoTable(0);
         boolean rc=tab.add(MBR, 5);
@@ -114,7 +112,7 @@ public class SeqnoTableTest {
 
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+    
     public static void testInsertionOfDuplicates() {
         SeqnoTable tab=new SeqnoTable(0);
         boolean rc=tab.add(MBR, 0);
@@ -133,13 +131,13 @@ public class SeqnoTableTest {
         System.out.println("tab: " + tab);
 
         rc=tab.add(MBR, 2);
-        assert !(rc);
+        assert !rc;
 
         rc=tab.add(MBR, 3);
         assert rc;
 
         rc=tab.add(MBR, 3);
-        assert !(rc);
+        assert !rc;
     }
 
     

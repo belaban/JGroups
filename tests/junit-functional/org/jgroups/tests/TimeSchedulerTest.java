@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.7 2008/03/11 08:58:26 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.8 2008/04/08 12:51:17 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TimeSchedulerTest {
@@ -129,7 +129,7 @@ public class TimeSchedulerTest {
     public static void testStress() throws InterruptedException {
         StressTask t;
         TimeScheduler timer=new TimeScheduler();
-        final int NUM_A=1000, NUM_B=1000;
+        final int NUM_A=500, NUM_B=1000;
         int cnt=0, print=NUM_A * NUM_B / 10;
         try {
             System.out.println("-- adding "+ (NUM_A * NUM_B) + " tasks...");
