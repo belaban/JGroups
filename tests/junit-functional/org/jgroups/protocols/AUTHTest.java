@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.auth.MD5Token;
 import org.jgroups.auth.SimpleToken;
 import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.Global;
 import org.testng.annotations.Test;
 
 import java.util.Properties;
@@ -12,8 +13,8 @@ import java.util.Properties;
  * A set of JUnit tests for the AUTH protocol
  * @author Chris Mills
  */
-@Test(sequential=false)
-public class AUTHTest extends ChannelTestBase {
+@Test(groups=Global.FUNCTIONAL,sequential=false)
+public class AUTHTest {
 
     /**
      * Creates two SimpleToken objects with identical auth_values and authenticates one against the other
