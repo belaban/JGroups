@@ -8,9 +8,10 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Elements annotated with this annotation are unsupported and may get removed from the distribution at any time
  * @author Bela Ban
- * @version $Id: Unsupported.java,v 1.1 2008/04/08 14:36:33 belaban Exp $
+ * @version $Id: Unsupported.java,v 1.2 2008/04/08 14:41:21 belaban Exp $
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.PACKAGE})
 @Retention(RetentionPolicy.SOURCE)
 public @interface Unsupported {
+    String comment() default "";
 }

@@ -1,10 +1,11 @@
-// $Id: DistributedHashtable.java,v 1.34 2008/02/28 07:30:24 belaban Exp $
+// $Id: DistributedHashtable.java,v 1.35 2008/04/08 14:41:22 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.persistence.CannotPersistException;
 import org.jgroups.persistence.CannotRemoveException;
 import org.jgroups.persistence.PersistenceFactory;
@@ -32,9 +33,10 @@ import java.util.*;
  * initial state (using the state exchange funclet <code>StateExchangeFunclet</code>.
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
- * @version $Id: DistributedHashtable.java,v 1.34 2008/02/28 07:30:24 belaban Exp $
+ * @version $Id: DistributedHashtable.java,v 1.35 2008/04/08 14:41:22 belaban Exp $
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
+@Unsupported
 public class DistributedHashtable extends Hashtable implements ExtendedMessageListener, ExtendedMembershipListener {
     private static final long serialVersionUID=7910133360803785134L;
 

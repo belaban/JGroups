@@ -1,10 +1,11 @@
-// $Id: ReplicatedHashtable.java,v 1.17 2008/02/28 07:32:28 belaban Exp $
+// $Id: ReplicatedHashtable.java,v 1.18 2008/04/08 14:41:22 belaban Exp $
 
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.Util;
 
 import java.io.Serializable;
@@ -30,6 +31,7 @@ import java.util.*;
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  * @deprecated Use {@link org.jgroups.blocks.ReplicatedHashMap} instead
  */
+@Unsupported
 public class ReplicatedHashtable extends Hashtable implements MessageListener, MembershipListener {
 
     public interface Notification {

@@ -1,9 +1,10 @@
-// $Id: DistributedQueue.java,v 1.20 2008/02/28 07:30:24 belaban Exp $
+// $Id: DistributedQueue.java,v 1.21 2008/04/08 14:41:22 belaban Exp $
 package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
@@ -24,6 +25,7 @@ import java.util.*;
  * order on all replicas.
  * @author Romuald du Song
  */
+@Unsupported
 public class DistributedQueue implements MessageListener, MembershipListener, Cloneable
 {
     public interface Notification

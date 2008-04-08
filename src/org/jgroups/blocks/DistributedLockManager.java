@@ -6,6 +6,7 @@ import org.jgroups.ChannelException;
 import org.jgroups.MembershipListener;
 import org.jgroups.View;
 import org.jgroups.Address;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.blocks.VotingAdapter.FailureVoteResult;
 import org.jgroups.blocks.VotingAdapter.VoteResult;
 import org.jgroups.util.Rsp;
@@ -20,8 +21,9 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.10 2008/01/06 06:05:17 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.11 2008/04/08 14:41:21 belaban Exp $
  */
+@Unsupported
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
      * Definitions for the implementation of the VoteResponseProcessor

@@ -1,4 +1,4 @@
-// $Id: ReplicatedTree.java,v 1.17 2008/01/22 10:44:31 belaban Exp $
+// $Id: ReplicatedTree.java,v 1.18 2008/04/08 14:41:22 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,6 +6,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
@@ -24,6 +25,7 @@ import java.util.*;
  * @author Bela Ban Jan 17 2002
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
+@Unsupported
 public class ReplicatedTree implements Runnable, MessageListener, MembershipListener {
     public static final String SEPARATOR="/";
     final static int INDENT=4;

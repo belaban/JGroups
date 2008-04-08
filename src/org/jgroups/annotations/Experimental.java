@@ -8,9 +8,10 @@ import java.lang.annotation.RetentionPolicy;
 /**
  * Elements annotated with this annotation are experimental and may get removed from the distribution at any time
  * @author Bela Ban
- * @version $Id: Experimental.java,v 1.1 2008/04/08 14:36:32 belaban Exp $
+ * @version $Id: Experimental.java,v 1.2 2008/04/08 14:41:21 belaban Exp $
  */
 @Target({ElementType.TYPE, ElementType.METHOD, ElementType.PACKAGE})
 @Retention(RetentionPolicy.SOURCE)
 public @interface Experimental {
+    String comment() default "";
 }
