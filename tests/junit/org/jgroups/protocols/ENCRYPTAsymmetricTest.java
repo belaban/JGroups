@@ -10,7 +10,6 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
-import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
@@ -24,12 +23,9 @@ import java.util.Vector;
 
 /**
  * @author xenephon
- *         <p/>
- *         To change the template for this generated type comment go to
- *         Window - Preferences - Java - Code Generation - Code and Comments
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=false)
-public class ENCRYPTAsymmetricTest extends ChannelTestBase {
+@Test(groups=Global.FUNCTIONAL, sequential=false)
+public class ENCRYPTAsymmetricTest {
 
     static {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());

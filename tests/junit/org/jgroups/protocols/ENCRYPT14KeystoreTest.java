@@ -1,8 +1,5 @@
 /*
  * Created on 04-Jul-2004
- *
- * To change the template for this generated file go to
- * Window - Preferences - Java - Code Generation - Code and Comments
  */
 package org.jgroups.protocols;
 
@@ -12,7 +9,6 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.stack.Protocol;
-import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.Test;
 
 import javax.crypto.Cipher;
@@ -24,12 +20,9 @@ import java.util.Properties;
 
 /**
  * @author xenephon
- *         <p/>
- *         To change the template for this generated type comment go to
- *         Window - Preferences - Java - Code Generation - Code and Comments
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=false)
-public class ENCRYPT14KeystoreTest extends ChannelTestBase {
+@Test(groups=Global.FUNCTIONAL, sequential=false)
+public class ENCRYPT14KeystoreTest {
 
 
     public static void testInitWrongKeystoreProperties() {
@@ -43,7 +36,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         }
         catch(Exception e) {
             System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
-            assertEquals("Unable to load keystore " + defaultKeystore + " ensure file is on classpath", e.getMessage());
+            assert e.getMessage().equals("Unable to load keystore " + defaultKeystore + " ensure file is on classpath");
         }
     }
 
@@ -57,8 +50,8 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.setProperties(props);
         encrypt.init();
-        assertNotNull(encrypt.getSymDecodingCipher());
-        assertNotNull(encrypt.getSymEncodingCipher());
+        assert encrypt.getSymDecodingCipher() != null;
+        assert encrypt.getSymEncodingCipher() != null;
 
     }
 
@@ -97,7 +90,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         byte[] decodedBytes=cipher.doFinal(sentMsg.getBuffer());
         String temp=new String(decodedBytes);
         System.out.println("decoded text:" + temp);
-        assertEquals(temp, messageText);
+        assert temp.equals(messageText);
 
     }
 
@@ -141,7 +134,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         Message rcvdMsg=(Message)((Event)observer.getUpMessages().get("message0")).getArg();
         String decText=new String(rcvdMsg.getBuffer());
 
-        assertEquals(decText, messageText);
+        assert decText.equals(messageText);
 
     }
 
@@ -184,7 +177,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         msg.putHeader(ENCRYPT.EncryptHeader.KEY, new ENCRYPT.EncryptHeader(ENCRYPT.EncryptHeader.ENCRYPT, symVersion));
         Event event=new Event(Event.MSG, msg);
         encrypt.up(event);
-        assertEquals(0, observer.getUpMessages().size());
+        assert observer.getUpMessages().isEmpty();
 
     }
 
@@ -219,7 +212,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         Message msg=new Message(null, null, encodedBytes);
         Event event=new Event(Event.MSG, msg);
         encrypt.up(event);
-        assertEquals(0, observer.getUpMessages().size());
+        assert observer.getUpMessages().isEmpty();
 
 
     }
@@ -241,7 +234,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
 
         Event event=new Event(Event.MSG, null);
         encrypt.up(event);
-        assertEquals(1, observer.getUpMessages().size());
+        assert observer.getUpMessages().size() == 1;
 
 
     }
@@ -263,7 +256,7 @@ public class ENCRYPT14KeystoreTest extends ChannelTestBase {
         Message msg=new Message(null, null, null);
         Event event=new Event(Event.MSG, msg);
         encrypt.up(event);
-        assertEquals(1, observer.getUpMessages().size());
+        assert observer.getUpMessages().size() == 1;
     }
 
     static class MockObserver implements ENCRYPT.Observer {
