@@ -81,10 +81,9 @@ public class ENCRYPTAsymmetricTest {
 
     }
 
-    public static void XtestInitRSABlockAsymProperties() throws Exception {
+   /* public static void XtestInitRSABlockAsymProperties() throws Exception {
         Properties props=new Properties();
         props.put("asym_algorithm", "RSA/ECB/OAEPPadding");
-        //javax.
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.setProperties(props);
         encrypt.init();
@@ -100,7 +99,7 @@ public class ENCRYPTAsymmetricTest {
         //test the resulting ciphers
         Util.assertNotNull(encrypt.getAsymCipher());
 
-    }
+    }*/
 
 
     public static void testInitIDEAProperties() throws Exception {
