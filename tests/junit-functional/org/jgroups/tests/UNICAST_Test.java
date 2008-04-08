@@ -1,4 +1,3 @@
-// $Id: UNICAST_Test.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,6 +22,7 @@ import java.util.Vector;
 /**
  * Tests the UNICAST protocol
  * @author Bela Ban
+ * @version $id$
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class UNICAST_Test {
@@ -33,10 +33,6 @@ public class UNICAST_Test {
 
     static final int SIZE=1000; // bytes
     static final int NUM_MSGS=10000;
-
-
-    public UNICAST_Test(String name) {
-    }
 
 
     @AfterMethod

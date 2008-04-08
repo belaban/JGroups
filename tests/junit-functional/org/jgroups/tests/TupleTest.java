@@ -10,7 +10,7 @@ import java.util.Map;
 
 /**
  * @author Bela Ban
- * @version $Id: TupleTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
+ * @version $Id: TupleTest.java,v 1.3 2008/04/08 13:25:25 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TupleTest {
@@ -33,7 +33,6 @@ public class TupleTest {
 
     public static void testHashMap() {
         Map<Integer,Tuple<String,Integer>> map=new HashMap<Integer,Tuple<String,Integer>>();
-
         map.put(1, new Tuple<String,Integer>("one",1));
         map.put(2, new Tuple<String,Integer>("two", 2));
         System.out.println("map: " + map);
