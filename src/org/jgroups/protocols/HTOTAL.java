@@ -1,8 +1,9 @@
-// $Id: HTOTAL.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
+// $Id: HTOTAL.java,v 1.9 2008/04/08 14:51:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -18,8 +19,9 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.8 2007/04/27 07:59:19 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.9 2008/04/08 14:51:21 belaban Exp $
  */
+@Experimental
 public class HTOTAL extends Protocol {
     Address coord=null;
     Address neighbor=null; // to whom do we forward the message (member to the right, or null if we're at the tail)

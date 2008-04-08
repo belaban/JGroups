@@ -1,7 +1,10 @@
-// $Id: Proxy.java,v 1.5 2008/02/04 13:43:14 belaban Exp $
+// $Id: Proxy.java,v 1.6 2008/04/08 14:49:05 belaban Exp $
 
 package org.jgroups.util;
 
+
+import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.Experimental;
 
 import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -66,6 +69,7 @@ import java.util.concurrent.TimeUnit;
  * @todo Check whether SSLSocket.getChannel() or SSLServerSocket.getChannel() works.
  * @author Bela Ban
  */
+@Unsupported @Experimental
 public class Proxy {
     InetAddress           local=null, remote=null;
     int                   local_port=0, remote_port=0;

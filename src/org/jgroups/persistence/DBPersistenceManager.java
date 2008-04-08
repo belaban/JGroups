@@ -13,6 +13,7 @@ package org.jgroups.persistence;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.annotations.Unsupported;
 
 import java.io.*;
 import java.sql.*;
@@ -22,6 +23,7 @@ import java.util.*;
 /**
  * Class will be utilized
  */
+@Unsupported
 public class DBPersistenceManager implements PersistenceManager {
 
     protected final Log log=LogFactory.getLog(this.getClass());
