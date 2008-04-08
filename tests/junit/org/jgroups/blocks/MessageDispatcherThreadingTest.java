@@ -15,7 +15,7 @@ import java.util.Set;
 
 /**
  * @author BConlon
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  */
 public class MessageDispatcherThreadingTest extends ChannelTestBase {
 
@@ -23,7 +23,7 @@ public class MessageDispatcherThreadingTest extends ChannelTestBase {
     //~ Methods ----------------------------------------------------------------------------------------------
 
     public void setUp() throws Exception {
-        super.setUp();      
+        ;      
         channel = createChannel();
     }
     
@@ -32,7 +32,7 @@ public class MessageDispatcherThreadingTest extends ChannelTestBase {
             channel.close();
         }
 
-        super.tearDown();
+        ;
     }
     
     public void testAllThreadsAreStopped() throws Exception {

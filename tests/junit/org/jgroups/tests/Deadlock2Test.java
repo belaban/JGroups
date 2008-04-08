@@ -1,19 +1,19 @@
-// $Id: Deadlock2Test.java,v 1.12 2007/07/02 15:48:41 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.13 2008/04/08 07:18:58 belaban Exp $
 
 package org.jgroups.tests;
 
-import java.util.Enumeration;
-import java.util.Vector;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.RspList;
+import org.testng.Assert;
+
+import java.util.Enumeration;
+import java.util.Vector;
 
 /**
  * Test the distributed RPC deadlock detection mechanism, using one or two channels.
@@ -21,7 +21,7 @@ import org.jgroups.util.RspList;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  */
 public class Deadlock2Test extends ChannelTestBase {
 
@@ -42,6 +42,7 @@ public class Deadlock2Test extends ChannelTestBase {
      *
      * @throws Exception
      */
+    @org.testng.annotations.Test
     public void testOneChannel() throws Exception {
         Channel channel = createChannel();
         ServerObject serverObject = new ServerObject("obj1");
@@ -56,7 +57,7 @@ public class Deadlock2Test extends ChannelTestBase {
         RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
         log("results of outerMethod(): " + rspList);
 
-        assertEquals(1, rspList.size());
+        Assert.assertEquals(1, rspList.size());
         assertEquals("outerMethod[innerMethod]", rspList.getValue(localAddress));
         assertTrue(rspList.isReceived(localAddress));
         assertFalse(rspList.isSuspected(localAddress));
@@ -85,6 +86,7 @@ public class Deadlock2Test extends ChannelTestBase {
      * If there is a deadlock, JUnit will timeout and fail the test.
      *
      */
+    @org.testng.annotations.Test
     public void testTwoChannels() throws Throwable {
         ServerObject obj1, obj2 = null;
 
@@ -115,6 +117,7 @@ public class Deadlock2Test extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testTwoChannelsWithInitialMulticast() throws Exception {
         ServerObject obj1, obj2 = null;
 
@@ -140,7 +143,7 @@ public class Deadlock2Test extends ChannelTestBase {
             log("calling outerMethod() on all members");
             RspList rsps = disp1.callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
             log("results of outerMethod():\n" + rsps);
-            assertEquals(2, rsps.size());
+            Assert.assertEquals(2, rsps.size());
         }
         finally {
             c2.close();

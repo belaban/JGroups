@@ -1,13 +1,13 @@
-// $Id: MergeStressTest.java,v 1.7 2007/11/19 16:08:27 belaban Exp $
+// $Id: MergeStressTest.java,v 1.8 2008/04/08 07:18:57 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 
 import java.util.concurrent.CyclicBarrier;
 
@@ -16,9 +16,9 @@ import java.util.concurrent.CyclicBarrier;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.7 2007/11/19 16:08:27 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.8 2008/04/08 07:18:57 belaban Exp $
  */
-public class MergeStressTest extends TestCase {
+public class MergeStressTest {
     static CyclicBarrier start_connecting=null;
     static CyclicBarrier    received_all_views=null;
     static CyclicBarrier    start_disconnecting=null;
@@ -46,7 +46,6 @@ public class MergeStressTest extends TestCase {
 
 
     public MergeStressTest(String name) {
-        super(name);
     }
 
 
@@ -55,6 +54,7 @@ public class MergeStressTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test
     public void testConcurrentStartupAndMerging() throws Exception {
         start_connecting=new CyclicBarrier(NUM+1);
         received_all_views=new CyclicBarrier(NUM+1);
@@ -84,12 +84,12 @@ public class MergeStressTest extends TestCase {
             for(int i=0; i < threads.length; i++) {
                 t=threads[i];
                 num_members=t.numMembers();
-                assertEquals(num_members, NUM);
+                Assert.assertEquals(num_members, NUM);
             }
             System.out.println("SUCCESSFUL");
         }
         catch(Exception ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
         finally {
             start_disconnecting.await();

@@ -39,7 +39,7 @@ public class FRAG_Test extends TestCase {
 
 
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         a1=new IpAddress(1111);
         members=new Vector();
         members.add(a1);
@@ -66,7 +66,7 @@ public class FRAG_Test extends TestCase {
     }
 
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         s.stop();
     }
 

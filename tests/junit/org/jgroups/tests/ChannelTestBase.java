@@ -24,7 +24,7 @@ import junit.framework.TestCase;
  * @version $Revision$
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
-public class ChannelTestBase extends TestCase {
+public class ChannelTestBase {
 
     protected final static Random RANDOM=new Random();
 
@@ -65,10 +65,6 @@ public class ChannelTestBase extends TestCase {
 
     public ChannelTestBase() {
         super();
-    }
-
-    public ChannelTestBase(String name) {
-        super(name);
     }
 
 
@@ -163,22 +159,22 @@ public class ChannelTestBase extends TestCase {
         }
     }
 
-    public static void assertTrue(boolean condition) {
+    protected final static void assertTrue(boolean condition) {
         assert condition : null;
     }
 
-    public static void assertTrue(String message, boolean condition) {
+    protected final static void assertTrue(String message, boolean condition) {
         if(message != null)
             assert condition : message;
         else
             assert condition;
     }
 
-    public static void assertFalse(boolean condition) {
+    protected final static void assertFalse(boolean condition) {
         assert condition;
     }
 
-    public static void assertFalse(String message, boolean condition) {
+    protected final static void assertFalse(String message, boolean condition) {
         if(message != null)
             assert !condition : message;
         else
@@ -186,7 +182,7 @@ public class ChannelTestBase extends TestCase {
     }
 
 
-    public static void assertEquals(String message, Object val1, Object val2) {
+    protected final static void assertEquals(String message, Object val1, Object val2) {
         if(message != null) {
             assert val1.equals(val2) : message;
         }
@@ -195,11 +191,11 @@ public class ChannelTestBase extends TestCase {
         }
     }
 
-    public static void assertEquals(Object val1, Object val2) {
+    protected final static void assertEquals(Object val1, Object val2) {
         assertEquals(null, val1, val2);
     }
 
-    public static void assertNotNull(String message, Object val) {
+    protected final static void assertNotNull(String message, Object val) {
         if(message != null)
             assert val != null : message;
         else
@@ -207,7 +203,7 @@ public class ChannelTestBase extends TestCase {
     }
 
 
-    public static void assertNotNull(Object val) {
+    protected final static void assertNotNull(Object val) {
         assertNotNull(null, val);
     }
 

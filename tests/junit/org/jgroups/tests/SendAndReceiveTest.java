@@ -1,11 +1,12 @@
-// $Id: SendAndReceiveTest.java,v 1.9 2008/04/04 05:15:27 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.10 2008/04/08 07:18:56 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 
 /**
@@ -13,7 +14,7 @@ import org.jgroups.Message;
  * and expects reception of N messages within a given time. Fails otherwise.
  * @author Bela Ban
  */
-public class SendAndReceiveTest extends TestCase {
+public class SendAndReceiveTest {
     JChannel channel;
     static final int NUM_MSGS=1000;
     static final long TIMEOUT=30000;
@@ -60,7 +61,6 @@ public class SendAndReceiveTest extends TestCase {
 
 
     public SendAndReceiveTest(String n) {
-        super(n);
 
     }
 
@@ -71,11 +71,12 @@ public class SendAndReceiveTest extends TestCase {
         }
         catch(Throwable t) {
             t.printStackTrace(System.err);
-            fail("channel could not be created");
+            assert false : "channel could not be created";
         }
     }
 
 
+    @AfterMethod
     public void tearDown() {
         if(channel != null) {
             channel.close();
@@ -88,25 +89,28 @@ public class SendAndReceiveTest extends TestCase {
      * Sends NUM messages and expects NUM messages to be received. If
      * NUM messages have not been received after 20 seconds, the test failed.
      */
+    @Test
     public void testSendAndReceiveWithDefaultUDP_Loopback() {
         setUp(props1);
         sendMessages(NUM_MSGS);
         int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
-        assertTrue(received_msgs >= NUM_MSGS);
+        assert received_msgs >= NUM_MSGS;
     }
 
+    @Test
     public void testSendAndReceiveWithDefaultUDP_NoLoopback() {
         setUp(props2);
         sendMessages(NUM_MSGS);
         int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
-        assertTrue(received_msgs >= NUM_MSGS);
+        assert received_msgs >= NUM_MSGS;
     }
 
+    @Test
     public void testSendAndReceiveWithLoopback() {
         setUp(props3);
         sendMessages(NUM_MSGS);
         int received_msgs=receiveMessages(NUM_MSGS, TIMEOUT);
-        assertTrue(received_msgs >= NUM_MSGS);
+        assert received_msgs >= NUM_MSGS;
     }
 
     private void sendMessages(int num) {
@@ -118,7 +122,7 @@ public class SendAndReceiveTest extends TestCase {
                 System.out.print(i + " ");
             }
             catch(Throwable t) {
-                fail("could not send message #" + i);
+                assert false : "could not send message #" + i;
             }
         }
     }
@@ -153,7 +157,7 @@ public class SendAndReceiveTest extends TestCase {
                     break;
             }
             catch(Throwable t) {
-                fail("failed receiving message");
+                assert false : "failed receiving message";
             }
         }
         return received;

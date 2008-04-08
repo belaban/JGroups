@@ -1,25 +1,17 @@
 package org.jgroups.tests;
 
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.*;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.BlockEvent;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.ChannelNotConnectedException;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.TimeoutException;
-import org.jgroups.View;
-import org.jgroups.ViewId;
-import org.jgroups.util.Util;
 
 /**
  * Virtual Synchrony guarantees that views in a group are observed 
@@ -43,7 +35,7 @@ import org.jgroups.util.Util;
  * @version $Id$ 
  *
  */
-public class VirtualSynchronyTest extends TestCase {
+public class VirtualSynchronyTest {
 
 	private final static String CHANNEL_PROPS="flush-udp.xml";
 	private final static int INITIAL_NUMBER_OF_MEMBERS=5;
@@ -52,10 +44,10 @@ public class VirtualSynchronyTest extends TestCase {
 	
 	
 	public VirtualSynchronyTest(String arg0) {
-		super(arg0);
-	}
+    }
 	
-	public void testVSynch() throws Exception
+	@org.testng.annotations.Test
+    public void testVSynch() throws Exception
 	{
 		long start = System.currentTimeMillis();
 		boolean running=true;
@@ -99,12 +91,14 @@ public class VirtualSynchronyTest extends TestCase {
 		return from + r.nextInt(to-from);
 	}
 
-	protected void setUp() throws Exception {
-		super.setUp();
+	@BeforeMethod
+    protected void setUp() throws Exception {
+		;
 	}
 
-	protected void tearDown() throws Exception {
-		super.tearDown();
+	@AfterMethod
+    protected void tearDown() throws Exception {
+		;
 	}
 	
 	public static Test suite() {
@@ -204,9 +198,7 @@ public class VirtualSynchronyTest extends TestCase {
 						VSynchPayload first=(VSynchPayload) payloads.get(0);
 						for (Iterator i = payloads.listIterator(1); i.hasNext();) {
 							VSynchPayload p = (VSynchPayload) i.next();
-							assertEquals("Member " + p + " and " + first
-									+ " failed VS", first.msgViewCount,
-									p.msgViewCount);
+							assert first.msgViewCount == p.msgViewCount : "Member " + p + " and " + first + " failed VS";
 						}
 						System.out.println("VS ok, all " + payloads.size()
 								+ " members in " + prevView.getVid()
@@ -217,10 +209,9 @@ public class VirtualSynchronyTest extends TestCase {
 					}
 				}
 			} else if (m instanceof String) {
-				assertEquals("Member " + ch.getLocalAddress()
-							+ " received message from the wrong view. Message sender was "
-							+ msg.getSrc(), currentView.getVid().getId(), Long.parseLong((String) m));
-				numberOfMessagesInView++;
+                assert currentView.getVid().getId() == Long.parseLong((String)m) : ch.getLocalAddress()
+                        + " received message from the wrong view. Message sender was " + msg.getSrc();
+                numberOfMessagesInView++;
 			}
 		}
 

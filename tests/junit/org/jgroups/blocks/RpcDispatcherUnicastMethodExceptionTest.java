@@ -10,21 +10,21 @@ import org.jgroups.tests.ChannelTestBase;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.4 2007/01/22 23:21:26 vlada Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.5 2008/04/08 07:19:09 belaban Exp $
  */
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
 
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         channel=createChannel("A");
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("demo");
     }
 
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
         disp.stop();
         channel.close();
     }

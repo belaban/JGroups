@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -10,6 +9,9 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -17,35 +19,38 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.4 2006/12/13 12:02:42 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.5 2008/04/08 07:18:54 belaban Exp $
  */
-public class UNICAST_OOB_Test extends TestCase {
+public class UNICAST_OOB_Test {
     JChannel ch1, ch2;
     final String props="udp.xml";
 
     public UNICAST_OOB_Test(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1=new JChannel(props);
         ch2=new JChannel(props);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         if(ch1 != null)
             ch1.close();
         if(ch2 != null)
             ch2.close();
-        super.tearDown();
+        ;
     }
 
 
+    @org.testng.annotations.Test
     public void testRegularMessages() throws Exception {
         sendMessages(false);
     }
 
+    @org.testng.annotations.Test
     public void testOutOfBandMessages() throws Exception {
         sendMessages(true);
     }
@@ -63,7 +68,7 @@ public class UNICAST_OOB_Test extends TestCase {
 
         ch1.connect("x");
         ch2.connect("x");
-        assertEquals(2, ch2.getView().getMembers().size());
+        Assert.assertEquals(2, ch2.getView().getMembers().size());
 
         Address dest=ch2.getLocalAddress();
         for(int i=1; i <=5; i++) {
@@ -87,7 +92,7 @@ public class UNICAST_OOB_Test extends TestCase {
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
             Long received_seqno=(Long)seqnos.get(i);
-            assertEquals(expected_seqno,  received_seqno);
+            Assert.assertEquals(expected_seqno, received_seqno);
         }
     }
 

@@ -14,14 +14,14 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.1 2007/06/18 08:42:16 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.2 2008/04/08 07:19:10 belaban Exp $
  */
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     RpcDispatcher disp, disp2;
     Channel ch, ch2;
 
     public void setUp() throws Exception {
-        super.setUp();
+        ;
 
         ch=createChannel("A");
         ServerObject obj=new ServerObject();
@@ -35,7 +35,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     }
 
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         ch2.close();
         disp2.stop();
         ch.close();

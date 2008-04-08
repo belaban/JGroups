@@ -1,14 +1,18 @@
-// $Id: CloseTest.java,v 1.14 2007/10/31 14:07:34 vlada Exp $
+// $Id: CloseTest.java,v 1.15 2008/04/08 07:18:59 belaban Exp $
 
 package org.jgroups.tests;
-
-import java.util.Vector;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import java.util.Vector;
 
 
 /**
@@ -18,12 +22,14 @@ import org.jgroups.util.Util;
 public class CloseTest extends ChannelTestBase {
     Channel channel, channel1, channel2, c1, c2, c3;  
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();                
+        ;
     }
 
 
-    public void tearDown() throws Exception {        
+    @AfterMethod
+    public void tearDown() throws Exception {
         closeChannel(channel);
         closeChannel(channel1);
         closeChannel(channel2);
@@ -31,7 +37,7 @@ public class CloseTest extends ChannelTestBase {
         closeChannel(c2);
         closeChannel(c3);
 
-        super.tearDown();
+        ;
     }
     
     protected boolean useBlocking()
@@ -47,6 +53,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testDoubleClose() throws Exception {
         System.out.println("-- creating channel1 --");
         channel1=createChannel();
@@ -65,6 +72,7 @@ public class CloseTest extends ChannelTestBase {
         Util.printThreads();
     }
 
+    @Test
     public void testCreationAndClose() throws Exception {
         System.out.println("-- creating channel1 --");
         Channel c = null;
@@ -77,6 +85,7 @@ public class CloseTest extends ChannelTestBase {
         c.close();
     }
     
+    @Test
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
         Address  a1, a2;
         Vector members;
@@ -100,7 +109,7 @@ public class CloseTest extends ChannelTestBase {
         View v=(View)obj;
         members=v.getMembers();
         System.out.println("-- first view of c1: " + v);
-        assertEquals(2, members.size());
+        Assert.assertEquals(2, members.size());
         assertTrue(members.contains(a1));
         assertTrue(members.contains(a2));
 
@@ -109,11 +118,12 @@ public class CloseTest extends ChannelTestBase {
         v=(View)obj;
         members=v.getMembers();
         System.out.println("-- second view of c1: " + v);
-        assertEquals(1, members.size());
+        Assert.assertEquals(1, members.size());
         assertTrue(members.contains(a1));
         assertFalse(members.contains(a2));
     }
 
+    @Test
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
         Address  a1, a2;
         Vector members;
@@ -130,7 +140,7 @@ public class CloseTest extends ChannelTestBase {
         a2=c2.getLocalAddress();
         v=(View)c2.receive(1);
         members=v.getMembers();
-        assertEquals(2, members.size());
+        Assert.assertEquals(2, members.size());
         assertTrue(members.contains(a2));
 
         c1.close();
@@ -142,11 +152,11 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(obj instanceof View);
         v=(View)obj;
         members=v.getMembers();
-        assertEquals(1, members.size());
+        Assert.assertEquals(1, members.size());
         assertFalse(members.contains(a1));
         assertTrue(members.contains(a2));
 
-        assertEquals(0, c2.getNumMessages());
+        Assert.assertEquals(0, c2.getNumMessages());
     }
 
     private void dumpMessages(String msg, Channel ch) throws Exception {
@@ -157,6 +167,7 @@ public class CloseTest extends ChannelTestBase {
         }
     }
 
+    @Test
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
         System.out.println("-- creating channel --");
         channel=createChannel();
@@ -175,6 +186,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testConnectCloseSequenceWith2Members() throws Exception {
         System.out.println("-- creating channel --");
         channel=createChannel("A");
@@ -197,6 +209,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testCreationAndClose2() throws Exception {
         System.out.println("-- creating channel2 --");
         channel2=createChannel();
@@ -209,6 +222,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testChannelClosedException() throws Exception {
         System.out.println("-- creating channel --");
         channel=createChannel();
@@ -220,13 +234,14 @@ public class CloseTest extends ChannelTestBase {
 
         try {
             channel.connect("newGroup");
-            fail(); // cannot connect to a closed channel
+            assert false;
         }
         catch(ChannelClosedException ex) {
             assertTrue(true);
         }
     }
 
+    @Test
     public void testCreationAndCloseLoop() throws Exception {
         System.out.println("-- creating channel --");
         channel=createChannel();
@@ -244,6 +259,7 @@ public class CloseTest extends ChannelTestBase {
     }   
 
 
+    @Test
     public void testMultipleConnectsAndDisconnects() throws Exception {
         c1=createChannel("A");
         assertTrue(c1.isOpen());
@@ -312,7 +328,7 @@ public class CloseTest extends ChannelTestBase {
         View view=ch.getView();
         String msg="view=" + view;
         assertNotNull(view);
-        assertEquals(msg, num, view.size());
+        Assert.assertEquals(view.size(), num, msg);
     }
 
     public static void main(String[] args) {

@@ -6,6 +6,9 @@ import org.jgroups.conf.ProtocolData;
 import org.jgroups.conf.ProtocolParameter;
 import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -14,7 +17,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.15 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.16 2008/04/08 07:19:02 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -22,6 +25,7 @@ public class SharedTransportTest extends ChannelTestBase {
     static final String SINGLETON_1="singleton-1", SINGLETON_2="singleton-2";
 
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(c != null)
             c.close();
@@ -30,31 +34,34 @@ public class SharedTransportTest extends ChannelTestBase {
         if(a != null)
             a.close();
         r1=r2=r3=null;
-        super.tearDown();
+        ;
     }
 
 
+    @Test
     public void testCreationNonSharedTransport() throws Exception {
         a=createChannel();
         a.connect("x");
         View view=a.getView();
         System.out.println("view = " + view);
-        assertEquals(1, view.size());
+        Assert.assertEquals(1, view.size());
     }
 
+    @Test
     public void testCreationOfDuplicateCluster() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
         a.connect("x");
         try {
             b.connect("x");
-            fail("b should not be able to join cluster 'x' as a has already joined it");
+            assert false : "b should not be able to join cluster 'x' as a has already joined it";
         }
         catch(Exception ex) {
             System.out.println("b was not able to join the same cluster (\"x\") as expected");
         }
     }
 
+    @Test
     public void testView() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_2);
@@ -65,11 +72,12 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("x");
 
         View view=a.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
         view=b.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
     }
 
+    @Test
     public void testView2() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
@@ -80,9 +88,9 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("y");
 
         View view=a.getView();
-        assertEquals(1, view.size());
+        Assert.assertEquals(1, view.size());
         view=b.getView();
-        assertEquals(1, view.size());
+        Assert.assertEquals(1, view.size());
     }
 
     /** Tests http://jira.jboss.com/jira/browse/JGRP-689: with TCP or UDP.ip_mcast=false, the transport iterates through
@@ -91,6 +99,7 @@ public class SharedTransportTest extends ChannelTestBase {
      *
      * @throws Exception
      */
+    @Test
     public void testView3() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_1);
@@ -104,18 +113,18 @@ public class SharedTransportTest extends ChannelTestBase {
         c.connect("a");
 
         View view=a.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
         view=c.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
 
         a.send(new Message(null, null, "msg-1"));
         c.send(new Message(null, null, "msg-2"));
 
         Util.sleep(1000); // async sending - wait a little
         List<Message> list=r1.getList();
-        assertEquals(2, list.size());
+        Assert.assertEquals(2, list.size());
         list=r3.getList();
-        assertEquals(2, list.size());
+        Assert.assertEquals(2, list.size());
 
         r1.clear(); r2.clear(); r3.clear();
         b.connect("b");
@@ -127,11 +136,11 @@ public class SharedTransportTest extends ChannelTestBase {
 
         // printLists(r1, r2, r3);
         list=r1.getList();
-        assertEquals(2, list.size());
+        Assert.assertEquals(2, list.size());
         list=r2.getList();
-        assertEquals(1, list.size());
+        Assert.assertEquals(1, list.size());
         list=r3.getList();
-        assertEquals(2, list.size());
+        Assert.assertEquals(2, list.size());
     }
 
     private static void  printLists(MyReceiver... receivers) {
@@ -148,6 +157,7 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testSharedTransportAndNonsharedTransport() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createChannel();
@@ -158,11 +168,12 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("x");
 
         View view=a.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
         view=b.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
     }
 
+    @Test
     public void testCreationOfDifferentCluster() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         b=createSharedChannel(SINGLETON_2);
@@ -170,10 +181,11 @@ public class SharedTransportTest extends ChannelTestBase {
         b.connect("x");
         View view=b.getView();
         System.out.println("b's view is " + view);
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
     }
 
 
+    @Test
     public void testReferenceCounting() throws ChannelException {
         a=createSharedChannel(SINGLETON_1);
         r1=new MyReceiver("a");
@@ -195,9 +207,9 @@ public class SharedTransportTest extends ChannelTestBase {
         b.send(null, null, "message from b");
         c.send(null, null, "message from c");
         Util.sleep(500);
-        assertEquals(1, r1.size());
-        assertEquals(1, r2.size());
-        assertEquals(1, r3.size());
+        Assert.assertEquals(1, r1.size());
+        Assert.assertEquals(1, r2.size());
+        Assert.assertEquals(1, r3.size());
         r1.clear(); r2.clear(); r3.clear();
 
         b.disconnect();
@@ -205,15 +217,15 @@ public class SharedTransportTest extends ChannelTestBase {
         a.send(null, null, "message from a");
         c.send(null, null, "message from c");
         Util.sleep(500);
-        assertEquals(1, r1.size());
-        assertEquals(1, r3.size());
+        Assert.assertEquals(1, r1.size());
+        Assert.assertEquals(1, r3.size());
         r1.clear(); r3.clear();
 
         c.disconnect();
         System.out.println("\n");
         a.send(null, null, "message from a");
         Util.sleep(500);
-        assertEquals(1, r1.size());
+        Assert.assertEquals(1, r1.size());
     }
     
     /**
@@ -222,6 +234,7 @@ public class SharedTransportTest extends ChannelTestBase {
      * 
      * @throws Exception
      */
+    @Test
     public void testSimpleReCreation() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         a.setReceiver(new MyReceiver("A"));
@@ -240,6 +253,7 @@ public class SharedTransportTest extends ChannelTestBase {
      * 
      * @throws Exception
      */
+    @Test
     public void testCreationFollowedByDeletion() throws Exception {
         a=createSharedChannel(SINGLETON_1);
         a.setReceiver(new MyReceiver("A"));
@@ -254,6 +268,7 @@ public class SharedTransportTest extends ChannelTestBase {
     }
 
 
+     @Test
      public void test2ChannelsCreationFollowedByDeletion() throws Exception {
          a=createSharedChannel(SINGLETON_1);
          a.setReceiver(new MyReceiver("A"));
@@ -272,6 +287,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
 
+     @Test
      public void testReCreationWithSurvivingChannel() throws Exception {
 
         // Create 2 channels sharing a transport

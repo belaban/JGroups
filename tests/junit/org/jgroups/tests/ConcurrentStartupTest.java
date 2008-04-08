@@ -1,10 +1,15 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -13,26 +18,19 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.util.Util;
-
 /**
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.37 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.38 2008/04/08 07:19:01 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
     private AtomicInteger mod = new AtomicInteger(1);
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         mod.set(1);
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
@@ -41,10 +39,12 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         return true;
     }
 
+    @org.testng.annotations.Test
     public void testConcurrentStartupLargeState() {
         concurrentStartupHelper(true, false);
     }
 
+    @org.testng.annotations.Test
     public void testConcurrentStartupSmallState() {
         concurrentStartupHelper(false, true);
     }
@@ -131,11 +131,11 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             
             
             for (ConcurrentStartupChannel channel : channels) {
-                assertEquals(channel.getName() + " should have " + count + " elements", count, channel.getList().size());
+                Assert.assertEquals(channel.getList().size(), count, channel.getName() + " should have " + count + " elements");
             }
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
+            assert false : ex.getLocalizedMessage();
         }finally{
             for(ConcurrentStartupChannel channel:channels){
                 channel.cleanup();

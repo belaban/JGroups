@@ -1,29 +1,33 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import org.jgroups.*;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.7 2005/01/28 22:08:07 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.8 2008/04/08 07:18:59 belaban Exp $
  */
-public class UnicastLoopbackTest extends TestCase {
+public class UnicastLoopbackTest {
     JChannel channel=null;
 
 
     public UnicastLoopbackTest(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         channel=new JChannel();
         channel.connect("demo-group");
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
         if(channel != null) {
             channel.close();
             channel=null;
@@ -31,6 +35,7 @@ public class UnicastLoopbackTest extends TestCase {
     }
 
 
+    @Test
     public void testUnicastMsgs() throws ChannelClosedException, ChannelNotConnectedException, TimeoutException {
         int NUM=1000;
         Address local_addr=channel.getLocalAddress();
@@ -56,7 +61,7 @@ public class UnicastLoopbackTest extends TestCase {
                     System.out.println("-- received " + num);
             }
         }
-        assertEquals(NUM, received);
+        Assert.assertEquals(NUM, received);
     }
 
     public static void main(String[] args) {

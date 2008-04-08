@@ -1,33 +1,35 @@
 package org.jgroups.tests;
 
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Vector;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelException;
 import org.jgroups.View;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
 
 /**
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.2 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.3 2008/04/08 07:19:03 belaban Exp $
  */
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
     private static final int FACTORY_COUNT = 8;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         channel_conf= System.getProperty("channel.conf.flush",
                 "flush-udp.xml");
     }
@@ -40,10 +42,12 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         return true;
     }
 
+    @org.testng.annotations.Test
     public void testConcurrentStartup4Members() {
         concurrentStartupHelper(4);
     }
 
+    @org.testng.annotations.Test
     public void testConcurrentStartup8Members() {
         concurrentStartupHelper(8);
     }
@@ -79,7 +83,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         
         //verify all view are correct
         for (ReplicatedHashMap<Address, Integer> map : channels) {
-            assertEquals("Correct view", channelCount, map.getChannel().getView().size());
+            Assert.assertEquals(map.getChannel().getView().size(), channelCount, "Correct view");
         }
                
         for (ReplicatedHashMap<Address, Integer> map : channels) {
@@ -88,7 +92,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         
         //verify all maps have all elements
         for (ReplicatedHashMap<Address, Integer> map : channels) {
-            assertEquals("Correct size", channelCount, map.size());
+            Assert.assertEquals(map.size(), channelCount, "Correct size");
         }
        
         System.out.println("stopping");

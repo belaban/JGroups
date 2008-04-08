@@ -1,16 +1,16 @@
-// $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.23 2008/04/08 07:18:58 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.Assert;
 
 import java.util.Vector;
 import java.util.concurrent.BrokenBarrierException;
@@ -20,9 +20,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.22 2007/11/09 15:25:07 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.23 2008/04/08 07:18:58 belaban Exp $
  */
-public class ConnectStressTest extends TestCase {
+public class ConnectStressTest {
     static CyclicBarrier start_connecting=null;
     static CyclicBarrier  connected=null;
     static CyclicBarrier  received_all_views=null;
@@ -39,7 +39,6 @@ public class ConnectStressTest extends TestCase {
 
 
     public ConnectStressTest(String name) {
-        super(name);
 
     }
 
@@ -49,6 +48,7 @@ public class ConnectStressTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test
     public void testConcurrentJoinsAndLeaves() throws Exception {
         start_connecting=new CyclicBarrier(NUM +1);
         connected=new CyclicBarrier(NUM +1);
@@ -67,7 +67,7 @@ public class ConnectStressTest extends TestCase {
         stop=System.currentTimeMillis();
         log(channel.getLocalAddress() + " connected in " + (stop-start) + " msecs (" +
                     channel.getView().getMembers().size() + " members). VID=" + channel.getView().getVid());
-        assertEquals("view should have size == 1 after initial connect ", 1, channel.getView().getMembers().size());
+        Assert.assertEquals(channel.getView().getMembers().size(), 1, "view should have size == 1 after initial connect ");
 
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(i);
@@ -95,14 +95,14 @@ public class ConnectStressTest extends TestCase {
                     break;
                 Util.sleep(5*1000);
             }
-            assertEquals("coordinator unable to obtain complete view", (NUM+1), num_members);
+            Assert.assertEquals(num_members, (NUM + 1), "coordinator unable to obtain complete view");
             
             received_all_views.await();
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
         }
         catch(Exception ex) {
-            fail(ex.toString());
+            assert false : ex.toString();
         }
         
         // test split to avoid dependency and resulting timeout
@@ -128,7 +128,7 @@ public class ConnectStressTest extends TestCase {
             }
             Util.sleep(3000);
         }
-        assertEquals("view should have size == 1 after disconnect ", 1, num_members);
+        Assert.assertEquals(num_members, 1, "view should have size == 1 after disconnect ");
         log("closing all channels");
         for(int i=0; i < threads.length; i++) {
             MyThread t=threads[i];
@@ -233,19 +233,7 @@ public class ConnectStressTest extends TestCase {
         }
     }
 
-    public static Test suite() {
-        TestSuite s=new TestSuite();
-        s.addTest(new ConnectStressTest("testConcurrentJoinsAndLeaves"));
-        // we're adding the tests manually, because they need to be run in *this exact order*
-        // s.addTest(new ConnectStressTest("testConcurrentJoins"));
-        // s.addTest(new ConnectStressTest("testConcurrentLeaves"));
-        return s;
-    }
-
-    public static void main(String[] args) {
-        String[] testCaseName={ConnectStressTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+  
 
 
 }

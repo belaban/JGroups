@@ -1,18 +1,20 @@
-// $Id: DisconnectTest.java,v 1.13 2007/11/19 16:07:53 belaban Exp $
+// $Id: DisconnectTest.java,v 1.14 2008/04/08 07:18:55 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.View;
-import org.jgroups.tests.stack.Utilities;
 import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 
 /**
@@ -21,23 +23,24 @@ import org.jgroups.util.Promise;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  **/
-public class DisconnectTest extends TestCase {
+public class DisconnectTest {
 
     private JChannel channel;
     private int routerPort;
 
     public DisconnectTest(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         if(channel != null) {
             channel.close();
             channel=null;
@@ -65,15 +68,16 @@ public class DisconnectTest extends TestCase {
      * getLocalAddress() on a disconnected channel.
      *
      **/
+    @org.testng.annotations.Test
     public void testNullLocalAddress_TUNNEL() throws Exception {
         try {
             routerPort=Utilities.startGossipRouter();
             String props = getTUNNELProps(routerPort, routerPort);
             channel = new JChannel(props);
             channel.connect("testgroup");
-            assertNotNull(channel.getLocalAddress());
+            assert channel.getLocalAddress() != null;
             channel.disconnect();
-            assertNull(channel.getLocalAddress());
+            assert channel.getLocalAddress() == null;
         }
         finally {
             Utilities.stopGossipRouter();
@@ -85,14 +89,15 @@ public class DisconnectTest extends TestCase {
      * Tests connect-disconnect-connect sequence for a group with one member
      * (using default configuration).
      **/
+    @org.testng.annotations.Test
     public void testDisconnectConnectOne_Default() throws Exception {
         channel=new JChannel();
         channel.connect("testgroup1");
         channel.disconnect();
         channel.connect("testgroup2");
         View view=channel.getView();
-        assertEquals(1, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
+        Assert.assertEquals(1, view.size());
+        assert view.containsMember(channel.getLocalAddress());
     }
 
 
@@ -100,6 +105,7 @@ public class DisconnectTest extends TestCase {
      * Tests connect-disconnect-connect sequence for a group with two members
      * (using default configuration).
      **/
+    @org.testng.annotations.Test
     public void testDisconnectConnectTwo_Default() throws Exception {
         JChannel coordinator=new JChannel();
         coordinator.connect("testgroup");
@@ -108,9 +114,9 @@ public class DisconnectTest extends TestCase {
         channel.disconnect();
         channel.connect("testgroup");
         View view=channel.getView();
-        assertEquals(2, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
-        assertTrue(view.containsMember(coordinator.getLocalAddress()));
+        Assert.assertEquals(2, view.size());
+        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getLocalAddress());
 
         coordinator.close();
     }
@@ -124,6 +130,7 @@ public class DisconnectTest extends TestCase {
      * after DISCONNECT. Because of this problem, the channel couldn't be used
      * to multicast messages.
      **/
+    @org.testng.annotations.Test
     public void testDisconnectConnectSendTwo_Default() throws Exception {
 
         final Promise msgPromise=new Promise();
@@ -141,8 +148,8 @@ public class DisconnectTest extends TestCase {
         channel.send(new Message(null, null, "payload"));
 
         Message msg=(Message)msgPromise.getResult(20000);
-        assertNotNull(msg);
-        assertEquals("payload", msg.getObject());
+        assert msg != null;
+        Assert.assertEquals("payload", msg.getObject());
 
         ppa.stop();
         coordinator.close();
@@ -153,6 +160,7 @@ public class DisconnectTest extends TestCase {
       * Tests connect-disconnect-connect sequence for a group with one member
       * (using TUNNEL).
       **/
+     @org.testng.annotations.Test
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
         try {
             routerPort = Utilities.startGossipRouter();
@@ -162,8 +170,8 @@ public class DisconnectTest extends TestCase {
             channel.disconnect();
             channel.connect("testgroup2");
             View view=channel.getView();
-            assertEquals(1, view.size());
-            assertTrue(view.containsMember(channel.getLocalAddress()));
+            Assert.assertEquals(1, view.size());
+            assert view.containsMember(channel.getLocalAddress());
         }
         finally {
             Utilities.stopGossipRouter();
@@ -175,6 +183,7 @@ public class DisconnectTest extends TestCase {
       * Tests connect-disconnect-connect sequence for a group with two members
       * (using TUNNEL).
       **/
+     @org.testng.annotations.Test
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
          try {
              routerPort = Utilities.startGossipRouter();
@@ -190,9 +199,9 @@ public class DisconnectTest extends TestCase {
              Thread.sleep(1000);
 
              View view=channel.getView();
-             assertEquals(2, view.size());
-             assertTrue(view.containsMember(channel.getLocalAddress()));
-             assertTrue(view.containsMember(coordinator.getLocalAddress()));
+             Assert.assertEquals(2, view.size());
+             assert view.containsMember(channel.getLocalAddress());
+             assert view.containsMember(coordinator.getLocalAddress());
 
              coordinator.close();
          }
@@ -209,6 +218,7 @@ public class DisconnectTest extends TestCase {
       * DISCONNECT. Because of this problem, the channel couldn't be used to
       * multicast messages.
       **/
+     @org.testng.annotations.Test
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
         try {
             routerPort = Utilities.startGossipRouter();
@@ -230,8 +240,8 @@ public class DisconnectTest extends TestCase {
             channel.send(new Message(null, null, "payload"));
 
             Message msg=(Message)msgPromise.getResult(20000);
-            assertNotNull(msg);
-            assertEquals("payload", msg.getObject());
+            assert msg != null;
+            Assert.assertEquals("payload", msg.getObject());
 
             ppa.stop();
             coordinator.close();

@@ -10,21 +10,21 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.3 2007/01/22 23:21:26 vlada Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.4 2008/04/08 07:19:10 belaban Exp $
  */
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
 
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         channel=createChannel("A");
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("demo");
     }
 
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         disp.stop();
         channel.close();
     }

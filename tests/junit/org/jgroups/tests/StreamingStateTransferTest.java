@@ -1,23 +1,21 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Message;
+import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
-
-import org.jgroups.*;
-import org.jgroups.util.Util;
 
 /**
  * Tests streaming state transfer.
@@ -29,8 +27,9 @@ import org.jgroups.util.Util;
  */
 public class StreamingStateTransferTest extends ChannelTestBase {
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
@@ -38,6 +37,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         return true;
     }
 
+    @org.testng.annotations.Test
     public void testTransfer() {
         String channelNames[] = null;
         // mux applications on top of same channel have to have unique name
@@ -49,6 +49,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         transferHelper(channelNames, false);
     }
 
+    @org.testng.annotations.Test
     public void testRpcChannelTransfer() {
         // do this test for regular channels only
         if(!isMuxChannelUsed()){
@@ -57,6 +58,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         }
     }
 
+    @org.testng.annotations.Test
     public void testMultipleServiceMuxChannel() {
         String channelNames[] = null;
         // mux applications on top of same channel have to have unique name
@@ -145,36 +147,20 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                     StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(j);
                     List l = (List) map.get(app.getLocalAddress());
                     int size = l != null ? l.size() : 0;
-                    assertEquals("Correct element count in map ",
-                                 StreamingStateTransferApplication.COUNT,
-                                 size);
+                    Assert.assertEquals(size, StreamingStateTransferApplication.COUNT, "Correct element count in map ");
                 }
             }
             if(isMuxChannelUsed()){
                 int factor = channelCount / getMuxFactoryCount();
-                assertEquals("Correct invocation count of getState ",
-                             1 * factor,
-                             getStateInvokedCount);
-                assertEquals("Correct invocation count of setState ",
-                             (channelCount / factor) - 1,
-                             setStateInvokedCount / factor);
-                assertEquals("Correct invocation count of partial getState ",
-                             1 * factor,
-                             partialGetStateInvokedCount);
-                assertEquals("Correct invocation count of partial setState ",
-                             (channelCount / factor) - 1,
-                             partialSetStateInvokedCount / factor);
+                Assert.assertEquals(getStateInvokedCount, 1 * factor, "Correct invocation count of getState ");
+                Assert.assertEquals(setStateInvokedCount / factor, (channelCount / factor) - 1, "Correct invocation count of setState ");
+                Assert.assertEquals(partialGetStateInvokedCount, 1 * factor, "Correct invocation count of partial getState ");
+                Assert.assertEquals(partialSetStateInvokedCount / factor, (channelCount / factor) - 1, "Correct invocation count of partial setState ");
             }else{
-                assertEquals("Correct invocation count of getState ", 1, getStateInvokedCount);
-                assertEquals("Correct invocation count of setState ",
-                             channelCount - 1,
-                             setStateInvokedCount);
-                assertEquals("Correct invocation count of partial getState ",
-                             1,
-                             partialGetStateInvokedCount);
-                assertEquals("Correct invocation count of partial setState ",
-                             channelCount - 1,
-                             partialSetStateInvokedCount);
+                Assert.assertEquals(getStateInvokedCount, 1, "Correct invocation count of getState ");
+                Assert.assertEquals(setStateInvokedCount, channelCount - 1, "Correct invocation count of setState ");
+                Assert.assertEquals(partialGetStateInvokedCount, 1, "Correct invocation count of partial getState ");
+                Assert.assertEquals(partialSetStateInvokedCount, channelCount - 1, "Correct invocation count of partial setState ");
             }
 
         }catch(Exception ex){

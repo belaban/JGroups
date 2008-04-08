@@ -1,17 +1,23 @@
 package org.jgroups.tests;
+
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.2 2008/02/15 01:06:15 vlada Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.3 2008/04/08 07:19:00 belaban Exp $
  */
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
@@ -19,32 +25,33 @@ public class ConcurrentStackTest extends ChannelTestBase {
     final static long SLEEPTIME=100;
     CyclicBarrier barrier;
 
-    public ConcurrentStackTest(String name) {
-        super(name);
-    }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         barrier=new CyclicBarrier(4);
         ch1=createChannel();
         ch2=createChannel();
         ch3=createChannel();
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(ch3 != null) ch3.close();
         if(ch2 != null) ch2.close();
         if(ch1 != null) ch1.close();
         barrier.reset();
-        super.tearDown();
+        ;
     }
 
 
 
+    @Test
     public void testSequentialDelivery() throws Exception {
         doIt(false);
     }
 
+    @Test
     public void testConcurrentDelivery() throws Exception {
         doIt(true);
     }
@@ -63,7 +70,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
         ch2.connect("test");
         ch3.connect("test");
         View v=ch3.getView();
-        assertEquals(3, v.size());
+        Assert.assertEquals(3, v.size());
 
         new Thread(new Sender(ch1)) {}.start();
         new Thread(new Sender(ch2)) {}.start();
@@ -127,7 +134,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
         System.out.print("\n");
 
         if(!fifo)
-            fail("The following receivers didn't receive all messages in FIFO order: " + incorrect_receivers);
+            assert false : "The following receivers didn't receive all messages in FIFO order: " + incorrect_receivers;
     }
 
 

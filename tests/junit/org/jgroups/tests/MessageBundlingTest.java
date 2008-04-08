@@ -7,13 +7,17 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.*;
 
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.11 2008/03/25 09:01:22 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.12 2008/04/08 07:19:00 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -23,14 +27,16 @@ public class MessageBundlingTest extends ChannelTestBase {
     private static final boolean BUNDLING=true;
     private static final int MAX_BYTES=20000;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();         
+        ;
     }
     
+    @AfterMethod
     public void tearDown() throws Exception {
         closeChannel(ch2);
         closeChannel(ch1);
-        super.tearDown();
+        ;
     }
 
 
@@ -52,10 +58,11 @@ public class MessageBundlingTest extends ChannelTestBase {
         ch2.connect("x");
 
         View view=ch2.getView();
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
     }
 
 
+    @Test
     public void testLatencyWithoutMessageBundling() throws Exception {
         prepareChannels();
         Message tmp=new Message();
@@ -68,7 +75,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         System.out.println(">>> sent message at " + new Date());
         promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
-        assertEquals(1, list.size());
+        Assert.assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
@@ -76,6 +83,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testLatencyWithMessageBundling() throws Exception {
         prepareChannels();
         Message tmp=new Message();
@@ -87,7 +95,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         System.out.println(">>> sent message at " + new Date());
         promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
-        assertEquals(1, list.size());
+        Assert.assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
@@ -97,6 +105,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
 
+    @Test
     public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
         prepareChannels();
         Message tmp=new Message();
@@ -110,7 +119,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         ch1.send(tmp);
         promise.getResult(SLEEP);
         List<Long> list=r2.getTimes();
-        assertEquals(1, list.size());
+        Assert.assertEquals(1, list.size());
         Long time2=list.get(0);
         long diff=time2 - time;
         System.out.println("latency: " + diff + " ms");
@@ -119,6 +128,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
         prepareChannels();
         setLoopback(ch1, true);
@@ -133,7 +143,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
         promise.getResult(SLEEP); // we should get the messages immediately because max_bundle_size has been exceeded by the 20 messages
         List<Long> list=r2.getTimes();
-        assertEquals(10, list.size());
+        Assert.assertEquals(10, list.size());
 
         for(Iterator<Long> it=list.iterator(); it.hasNext();) {
             Long val=it.next();
@@ -142,6 +152,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testSimple() throws Exception {
         prepareChannels();
         Message tmp=new Message();

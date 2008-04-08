@@ -1,17 +1,21 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.util.Util;
+import junit.framework.TestSuite;
+import org.jgroups.Channel;
+import org.jgroups.JChannelFactory;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.mux.MuxChannel;
-
-import junit.framework.*;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.*;
 
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.4 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.5 2008/04/08 07:18:54 belaban Exp $
  */
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
@@ -26,8 +30,9 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -35,6 +40,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(mux_conf);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         if(s1 != null)
             s1.close();
@@ -58,13 +64,14 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
             assertFalse(((MuxChannel)s2).getChannel().isConnected());
         }
         s1=s2=null;
-        super.tearDown();
+        ;
     }
 
 
     /** Use case #1 in http://jira.jboss.com/jira/browse/JGRP-426:<br/>
      * Sender A sends M1 to S1 and M2 to S1. M2 should wait until M1 is done
      */
+    @org.testng.annotations.Test
     public void testTwoMessagesFromSameSenderToSameService() throws Exception {
         final MyReceiver receiver=new MyReceiver();
         s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
@@ -88,7 +95,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
         time=entry.getKey();
         msg=entry.getValue();
         String mode=(String)msg.getObject();
-        assertEquals("the slow message needs to be delivered before the fast one", "slow", mode);
+        org.testng.Assert.assertEquals(mode, "slow", "the slow message needs to be delivered before the fast one");
         entry=it.next();
         long time2=entry.getKey();
         long diff=Math.abs(time2-time);
@@ -101,6 +108,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
       * Sender A sends M1 to S1 and M2 to S2. M2 should get processed immediately and not
      * have to wait for M1 to complete
       */
+     @org.testng.annotations.Test
      public void testTwoMessagesFromSameSenderToDifferentServices() throws Exception {
         final MyReceiver receiver=new MyReceiver();
         s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
@@ -140,6 +148,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      * Sender A sends M1 to S1 and sender B sends M2 to S1. M2 should get processed concurrently to M1
      * and should not have to wait for M1's completion
      */
+    @org.testng.annotations.Test
     public void  testTwoMessagesFromDifferentSendersToSameService() throws Exception {
         final MyReceiver receiver=new MyReceiver();
         s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
@@ -174,6 +183,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      * Use case #4 in http://jira.jboss.com/jira/browse/JGRP-426:<br/>
      * Sender A sends M1 to S1 and sender B sends M2 to S2. M1 and M2 should get processed concurrently
      */
+    @org.testng.annotations.Test
     public void testTwoMessagesFromDifferentSendersToDifferentServices() throws Exception {
         final MyReceiver receiver=new MyReceiver();
         s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");

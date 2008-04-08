@@ -38,7 +38,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
 
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         channel=createChannel("A");
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
@@ -52,7 +52,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
 
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
         channel2.close();
         disp2.stop();
 

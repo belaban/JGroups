@@ -1,26 +1,24 @@
 package org.jgroups.tests;
 
-import java.util.Properties;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
+import java.util.Properties;
 
 /**
  * Tests the NAKACK (retransmission) and STABLE (garbage collection) protocols
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.15 2008/02/14 01:49:37 vlada Exp $
+ * @version $Id: DiscardTest.java,v 1.16 2008/04/08 07:18:54 belaban Exp $
  */
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
@@ -34,22 +32,26 @@ public class DiscardTest extends ChannelTestBase {
         super(name);
     }
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1_all_received.reset();
         ch2_all_received.reset();
     }
     
+    @AfterMethod
     protected void tearDown() throws Exception{
         ch2.close();
         ch1.close();
-        super.tearDown();
+        ;
     }
 
+    @org.testng.annotations.Test
     public void testDiscardProperties() throws Exception {
         _testLosslessReception(true);
     }
 
+    @org.testng.annotations.Test
     public void testFastProperties() throws Exception {
         _testLosslessReception(false);
     }
@@ -83,7 +85,7 @@ public class DiscardTest extends ChannelTestBase {
         Util.sleep(2000);
         View v=ch2.getView();
         System.out.println("**** ch2's view: " + v);
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
         assertTrue(v.getMembers().contains(ch1_addr));
         assertTrue(v.getMembers().contains(ch2_addr));
 

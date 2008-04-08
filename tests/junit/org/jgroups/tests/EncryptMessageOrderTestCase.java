@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Header;
@@ -8,6 +7,10 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -25,9 +28,9 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.7 2008/03/10 15:39:25 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.8 2008/04/08 07:18:56 belaban Exp $
  */
-public class EncryptMessageOrderTestCase extends TestCase {
+public class EncryptMessageOrderTestCase {
 
     public static int MESSAGE_NUMBER=5 * 100;
 
@@ -48,7 +51,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
      * Constructor to create test case.
      */
     public EncryptMessageOrderTestCase(String string) {
-        super(string);
     }
 
     protected JChannel channel1;
@@ -74,12 +76,10 @@ public class EncryptMessageOrderTestCase extends TestCase {
      * Set up unit test. It might add protocol
      * stack debuggers if such option was selected at startup.
      */
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         printSelectedOptions();
-
-        
- 
 
         channel1=new JChannel(properties);
         System.out.print("Connecting to channel...");
@@ -113,8 +113,9 @@ public class EncryptMessageOrderTestCase extends TestCase {
     /**
      * Tears down test case. This method closes all opened channels.
      */
+    @AfterMethod
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
         
         adapter2.stop();
         channel2.close();
@@ -138,6 +139,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
      * Also we calculate how much memory
      * was allocated before excuting a test and after executing a test.
      */
+    @Test
     public void testLoad() {
         try {
             final String startMessage="start";
@@ -183,7 +185,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
                         Long travelTime=new Long(System.currentTimeMillis() - ((Long)message).longValue());
 
                         try {
-                        	assertEquals(counter, ((EncryptOrderTestHeader)((Message)jgMessage).getHeader("EncryptOrderTest")).seqno);
+                            Assert.assertEquals(counter, ((EncryptOrderTestHeader)((Message)jgMessage).getHeader("EncryptOrderTest")).seqno);
                         	counter++;
                         } catch (Exception e){
                         	log.warn(e);
@@ -312,7 +314,7 @@ public class EncryptMessageOrderTestCase extends TestCase {
         System.out.println("Free memory: " + Runtime.getRuntime().freeMemory());
         System.out.println("Total memory: " + Runtime.getRuntime().totalMemory());
 
-        assertTrue("Message ordering is incorrect - check log output",(!orderCounterFailure));
+        assert (!orderCounterFailure) : "Message ordering is incorrect - check log output";
     }
     
     

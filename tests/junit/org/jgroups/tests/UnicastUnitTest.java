@@ -1,14 +1,17 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.2 2007/07/21 06:09:21 belaban Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.3 2008/04/08 07:19:02 belaban Exp $
  */
 public class UnicastUnitTest extends ChannelTestBase {
     JChannel ch1, ch2=null;
@@ -16,14 +19,16 @@ public class UnicastUnitTest extends ChannelTestBase {
 
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1=createChannel();
         ch2=createChannel();
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
         if(ch2 != null)
             ch2.close();
         if(ch1 != null)
@@ -32,6 +37,7 @@ public class UnicastUnitTest extends ChannelTestBase {
 
 
 
+    @Test
     public void testUnicastMessageInCallbackExistingMember() throws Exception {
         ch1.connect("x");
         MyReceiver receiver=new MyReceiver(ch1);

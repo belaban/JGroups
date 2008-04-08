@@ -1,12 +1,5 @@
 package org.jgroups.tests;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
-
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.DISCARD;
@@ -16,12 +9,20 @@ import org.jgroups.protocols.MPING;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.Test;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.Semaphore;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.17 2008/03/27 09:02:54 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.18 2008/04/08 07:18:59 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -29,6 +30,7 @@ public class MergeTest extends ChannelTestBase {
         return false;
     }
    
+    @Test
     public void testMerging2Members() {
         String[] names = null;
         if(isMuxChannelUsed()){           
@@ -39,6 +41,7 @@ public class MergeTest extends ChannelTestBase {
         mergeHelper(names);
     }
     
+    @Test
     public void testMerging4Members() {
         String[] names = null;
         if(isMuxChannelUsed()){            
@@ -134,7 +137,7 @@ public class MergeTest extends ChannelTestBase {
             Util.sleep(1000);
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
+            assert false : ex.getLocalizedMessage();
         }finally{            
             List<MergeApplication> channelsReversed = Arrays.asList(channels);
             Collections.reverse(channelsReversed);            

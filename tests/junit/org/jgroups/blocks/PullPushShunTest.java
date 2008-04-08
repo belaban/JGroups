@@ -8,7 +8,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.4 2007/10/01 07:59:44 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.5 2008/04/08 07:19:10 belaban Exp $
  */
 public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener, ChannelListener {
     private JChannel channel;
@@ -24,11 +24,11 @@ public class PullPushShunTest extends TestCase implements MessageListener, Membe
     }
 
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
     }
 
     protected void tearDown() throws Exception {
-        super.tearDown();
+        ;
     }
 
     public void testShunningandReconnect() throws Exception {

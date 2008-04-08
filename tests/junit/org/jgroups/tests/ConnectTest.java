@@ -9,12 +9,13 @@ import org.jgroups.View;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.11 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.12 2008/04/08 07:18:56 belaban Exp $
  */
 @Test(sequential=true)
 public class ConnectTest extends ChannelTestBase {
@@ -22,6 +23,7 @@ public class ConnectTest extends ChannelTestBase {
     static final int TIMES=10;
 
 
+    @AfterMethod
     @AfterClass
     public void tearDown() throws Exception {        
         if(channel != null) {
@@ -49,6 +51,7 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testConnectAndDisconnect() throws Exception {
         System.out.print("Creating channel: ");
         channel=createChannel();
@@ -61,6 +64,7 @@ public class ConnectTest extends ChannelTestBase {
         Util.printThreads();
     }
 
+    @Test
     public void testDisconnectConnectOne() throws Exception {
         channel=createChannel();
         channel.connect("testgroup1");
@@ -78,6 +82,7 @@ public class ConnectTest extends ChannelTestBase {
     /**
      * Tests connect-disconnect-connect sequence for a group with two members
      **/
+    @Test
     public void testDisconnectConnectTwo() throws Exception {
         View     view;
         Channel coordinator=createChannel("A");
@@ -113,6 +118,7 @@ public class ConnectTest extends ChannelTestBase {
      * DISCONNECT. Because of this problem, the channel couldn't be used to
      * multicast messages.
      **/
+    @Test
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
         Channel coordinator=createChannel("A");

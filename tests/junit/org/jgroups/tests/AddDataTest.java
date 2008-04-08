@@ -1,34 +1,35 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
-import org.jgroups.util.Util;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.util.HashMap;
-import java.util.Map;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.13 2008/02/25 12:05:30 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.14 2008/04/08 07:18:56 belaban Exp $
  */
 public class AddDataTest extends ChannelTestBase {
     JChannel ch1, ch2;
 
-    public AddDataTest(String name) {
-        super(name);
-    }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
-        super.tearDown();
         if(ch2 != null)
             ch2.close();
         if(ch1 != null)
             ch1.close();
     }
 
+    @Test
     public void testAdditionalData() throws Exception {
         try {
             for(int i=1;i <= 5;i++) {
@@ -41,28 +42,32 @@ public class AddDataTest extends ChannelTestBase {
                 IpAddress addr=(IpAddress)c.getLocalAddress();
                 System.out.println("address is " + addr);
                 assertNotNull(addr.getAdditionalData());
-                assertEquals('b', addr.getAdditionalData()[0]);
+                Assert.assertEquals('b', addr.getAdditionalData()[0]);
                 c.close();
             }
         }
         catch(ChannelException e) {
             e.printStackTrace();
-            fail(e.toString());
+            assert false : e.toString();
         }
     }
 
+    @Test
     public void testBetweenTwoChannelsMcast() throws Exception {
         _testWithProps(true);
     }
 
+    @Test
     public void testBetweenTwoChannelsUnicast() throws Exception {
         _testWithProps(false);
     }
 
+    @Test
     public void testBetweenTwoChannelsWithBundlingMcast() throws Exception {
         _testWithProps(true);
     }
 
+    @Test
     public void testBetweenTwoChannelsWithBundlingUnicast() throws Exception {
         _testWithProps(false);
     }
@@ -96,7 +101,7 @@ public class AddDataTest extends ChannelTestBase {
         IpAddress src=(IpAddress)msg.getSrc();
         assertNotNull(src);
         assertNotNull(src.getAdditionalData());
-        assertEquals(4, src.getAdditionalData().length);
+        Assert.assertEquals(4, src.getAdditionalData().length);
     }
 
 
