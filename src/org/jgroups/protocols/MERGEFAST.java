@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 
 import java.io.IOException;
@@ -14,6 +15,7 @@ import java.util.Vector;
  * event up the stack.
  * @author Bela Ban, Aug 25 2003
  */
+@Experimental
 public class MERGEFAST extends Protocol {
     Address       local_addr=null;
     boolean       is_coord=false;

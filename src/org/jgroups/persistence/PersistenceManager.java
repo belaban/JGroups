@@ -8,10 +8,12 @@ package org.jgroups.persistence;
  */
 
 
+import org.jgroups.annotations.Unsupported;
+
 import java.io.Serializable;
 import java.util.Map;
 
-
+@Unsupported
 public interface PersistenceManager
 {
 

@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
@@ -20,8 +21,9 @@ import java.util.Properties;
  * and see whether it works ! This is obviously done in JDK 5, so unless an echo service is configured to run, this
  * won't work...
  * @author Bela Ban
- * @version $Id: FD_ICMP.java,v 1.9 2007/08/27 08:09:19 belaban Exp $
+ * @version $Id: FD_ICMP.java,v 1.10 2008/04/08 14:51:21 belaban Exp $
  */
+@Experimental
 public class FD_ICMP extends FD {
 
     /** network interface to be used to send the ICMP packets */

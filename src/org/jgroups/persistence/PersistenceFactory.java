@@ -11,6 +11,7 @@ package org.jgroups.persistence;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.util.Util;
+import org.jgroups.annotations.Unsupported;
 
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -18,6 +19,7 @@ import java.lang.reflect.Constructor;
 import java.util.Properties;
 
 
+@Unsupported
 public class PersistenceFactory
 {
 

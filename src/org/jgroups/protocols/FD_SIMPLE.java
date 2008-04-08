@@ -1,9 +1,10 @@
-// $Id: FD_SIMPLE.java,v 1.19 2007/08/30 10:18:03 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.20 2008/04/08 14:51:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
@@ -27,8 +28,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
+@Unsupported
 public class FD_SIMPLE extends Protocol {
     Address local_addr=null;
     TimeScheduler timer=null;

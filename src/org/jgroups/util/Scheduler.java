@@ -1,4 +1,4 @@
-// $Id: Scheduler.java,v 1.18 2008/02/12 05:47:28 vlada Exp $
+// $Id: Scheduler.java,v 1.19 2008/04/08 14:49:05 belaban Exp $
 
 package org.jgroups.util;
 
@@ -6,6 +6,7 @@ package org.jgroups.util;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Global;
+import org.jgroups.annotations.Unsupported;
 
 
 /**
@@ -20,6 +21,7 @@ import org.jgroups.Global;
  * @deprecated This class will be removed in 3.0
  * @author Bela Ban
  */
+@Unsupported
 public class Scheduler implements Runnable {
     final Queue              queue=new Queue();
     Thread             sched_thread=null;

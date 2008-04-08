@@ -1,4 +1,4 @@
-// $Id: NotificationBus.java,v 1.16 2007/08/30 10:07:37 belaban Exp $
+// $Id: NotificationBus.java,v 1.17 2008/04/08 14:49:06 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,6 +6,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 
@@ -24,6 +25,7 @@ import java.util.Vector;
  *
  * @author Bela Ban
  */
+@Unsupported(comment="provided as an example, use at your own risk")
 public class NotificationBus implements Receiver {
     final Vector members=new Vector();
     Channel channel=null;

@@ -1,9 +1,10 @@
-// $Id: MERGE3.java,v 1.17 2007/02/12 13:28:11 belaban Exp $
+// $Id: MERGE3.java,v 1.18 2008/04/08 14:51:21 belaban Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -31,6 +32,7 @@ import java.util.concurrent.Future;
  * Provides: sends MERGE event with list of coordinators up the stack<br>
  * @author Bela Ban, Oct 16 2001
  */
+@Experimental
 public class MERGE3 extends Protocol {
     Address local_addr=null;
     long min_interval=5000;     // minimum time between executions of the FindSubgroups task

@@ -1,10 +1,11 @@
-// $Id: ReusableThread.java,v 1.8 2008/02/04 13:43:14 belaban Exp $
+// $Id: ReusableThread.java,v 1.9 2008/04/08 14:49:05 belaban Exp $
 
 package org.jgroups.util;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.annotations.Unsupported;
 
 
 /**
@@ -27,6 +28,7 @@ import org.apache.commons.logging.LogFactory;
  * @deprecated This class will be removed in 3.0
  * @author Bela Ban
  */
+@Unsupported
 public class ReusableThread implements Runnable {
     volatile Thread thread=null;  // thread that works on the task
     Runnable task=null;    // task assigned to thread

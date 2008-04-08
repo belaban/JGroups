@@ -1,10 +1,11 @@
-// $Id: ThreadPool.java,v 1.10 2008/01/22 10:44:33 belaban Exp $
+// $Id: ThreadPool.java,v 1.11 2008/04/08 14:49:05 belaban Exp $
 
 package org.jgroups.util;
 
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.annotations.Unsupported;
 
 
 /**
@@ -16,6 +17,7 @@ import org.apache.commons.logging.LogFactory;
  * @todo Shrink thread pool if threads are unused after some configurable time.
  * @author Bela Ban
  */
+@Unsupported
 public class ThreadPool {
     int              MAX_NUM=255;
     int              current_index=0;   /// next available thread

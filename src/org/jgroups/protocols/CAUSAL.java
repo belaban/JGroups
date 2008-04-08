@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 
@@ -56,11 +57,11 @@ import java.util.*;
  *</p>
  * <em>Note that this protocol is experimental and has never been tested extensively !</em>
  *  @author Vladimir Blagojevic vladimir@cs.yorku.ca
- *  @version $Id: CAUSAL.java,v 1.19 2008/02/04 13:43:14 belaban Exp $
+ *  @version $Id: CAUSAL.java,v 1.20 2008/04/08 14:51:21 belaban Exp $
  *
  **/
 
-
+@Experimental
 public class CAUSAL extends Protocol
 {
 

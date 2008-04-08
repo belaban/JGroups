@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.TimeoutException;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
@@ -35,8 +36,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.100 2008/04/02 01:12:06 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.101 2008/04/08 14:49:05 belaban Exp $
  */
+@Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
+        "in the future. The replacement would be a shared transport (see the documentation for details)")
 public class Multiplexer implements UpHandler {
 
     private static final Log log=LogFactory.getLog(Multiplexer.class);

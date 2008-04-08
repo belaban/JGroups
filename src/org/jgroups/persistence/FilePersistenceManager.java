@@ -9,9 +9,12 @@ package  org.jgroups.persistence;
  */
 
 
+import org.jgroups.annotations.Unsupported;
+
 import java.io.*;
 import java.util.*;
 
+@Unsupported
 public class FilePersistenceManager implements PersistenceManager
 {
     private final File file;
