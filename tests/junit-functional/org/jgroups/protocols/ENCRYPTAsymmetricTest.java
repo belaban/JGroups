@@ -8,6 +8,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.util.Util;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
@@ -37,29 +38,28 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default asymetric key
-        assertEquals("RSA", encrypt.getAsymAlgorithm());
-        assertEquals(512, encrypt.getAsymInit());
-        assertEquals("RSA", encrypt.getKpair().getPublic().getAlgorithm());
-        assertEquals("X.509", encrypt.getKpair().getPublic().getFormat());
+        assert "RSA".equals(encrypt.getAsymAlgorithm());
+        assert encrypt.getAsymInit() == 512;
+        assert "RSA".equals(encrypt.getKpair().getPublic().getAlgorithm());
+        assert "X.509".equals(encrypt.getKpair().getPublic().getFormat());
 
-        assertNotNull(encrypt.getKpair().getPublic().getEncoded());
+        assert encrypt.getKpair().getPublic().getEncoded() != null;
 
         // test the default symetric key
-        assertEquals("Blowfish", encrypt.getSymAlgorithm());
-        assertEquals(56, encrypt.getSymInit());
-        assertEquals("Blowfish", encrypt.getDesKey().getAlgorithm());
-        assertEquals("RAW", encrypt.getDesKey().getFormat());
-        assertNotNull(encrypt.getDesKey().getEncoded());
+        assert "Blowfish".equals(encrypt.getSymAlgorithm());
+        assert encrypt.getSymInit() == 56;
+        assert "Blowfish".equals(encrypt.getDesKey().getAlgorithm());
+        assert "RAW".equals(encrypt.getDesKey().getFormat());
+        assert encrypt.getDesKey().getEncoded() != null;
 
         //test the resulting ciphers
         System.out.println("Provider:" + encrypt.getAsymCipher().getProvider());
-        assertNotNull(encrypt.getAsymCipher());
-        assertNotNull(encrypt.getSymDecodingCipher());
-        assertNotNull(encrypt.getSymEncodingCipher());
+        assert encrypt.getAsymCipher() != null;
+        assert encrypt.getSymDecodingCipher() != null;
+        assert encrypt.getSymEncodingCipher() != null;
     }
 
     public static void testInitBCAsymProperties() throws Exception {
-
         Properties props=new Properties();
         props.put("asym_provider", "BC");
         props.put("asym_algorithm", "RSA");
@@ -69,20 +69,19 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default asymetric key
-        assertEquals("RSA", encrypt.getAsymAlgorithm());
-        assertEquals(512, encrypt.getAsymInit());
-        assertEquals("RSA", encrypt.getKpair().getPublic().getAlgorithm());
+        assert "RSA".equals(encrypt.getAsymAlgorithm());
+        assert encrypt.getAsymInit() == 512;
+        assert "RSA".equals(encrypt.getKpair().getPublic().getAlgorithm());
         //Strangely this returns differently from the default provider for RSA which is also BC!
-        assertEquals("X.509", encrypt.getKpair().getPublic().getFormat());
-        assertNotNull(encrypt.getKpair().getPublic().getEncoded());
+        assert "X.509".equals(encrypt.getKpair().getPublic().getFormat());
+        assert encrypt.getKpair().getPublic().getEncoded() != null;
 
         //test the resulting ciphers
-        assertNotNull(encrypt.getAsymCipher());
+        assert encrypt.getAsymCipher() != null;
 
     }
 
     public static void XtestInitRSABlockAsymProperties() throws Exception {
-
         Properties props=new Properties();
         props.put("asym_algorithm", "RSA/ECB/OAEPPadding");
         //javax.
@@ -91,15 +90,15 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default asymetric key
-        assertEquals("RSA/ECB/OAEPPadding", encrypt.getAsymAlgorithm());
-        assertEquals(512, encrypt.getAsymInit());
-        assertEquals("RSA", encrypt.getKpair().getPublic().getAlgorithm());
+        Util.assertEquals("RSA/ECB/OAEPPadding", encrypt.getAsymAlgorithm());
+        Util.assertEquals(512, encrypt.getAsymInit());
+        Util.assertEquals("RSA", encrypt.getKpair().getPublic().getAlgorithm());
         //Strangely this returns differently from the default provider for RSA which is also BC!
-        assertEquals("X509", encrypt.getKpair().getPublic().getFormat());
-        assertNotNull(encrypt.getKpair().getPublic().getEncoded());
+        Util.assertEquals("X509", encrypt.getKpair().getPublic().getFormat());
+        Util.assertNotNull(encrypt.getKpair().getPublic().getEncoded());
 
         //test the resulting ciphers
-        assertNotNull(encrypt.getAsymCipher());
+        Util.assertNotNull(encrypt.getAsymCipher());
 
     }
 
@@ -114,16 +113,16 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default symetric key
-        assertEquals("IDEA", encrypt.getSymAlgorithm());
-        assertEquals(128, encrypt.getSymInit());
-        assertEquals("IDEA", encrypt.getDesKey().getAlgorithm());
-        assertEquals("RAW", encrypt.getDesKey().getFormat());
-        assertNotNull(encrypt.getDesKey().getEncoded());
+        Util.assertEquals("IDEA", encrypt.getSymAlgorithm());
+        Util.assertEquals(128, encrypt.getSymInit());
+        Util.assertEquals("IDEA", encrypt.getDesKey().getAlgorithm());
+        Util.assertEquals("RAW", encrypt.getDesKey().getFormat());
+        Util.assertNotNull(encrypt.getDesKey().getEncoded());
 
         //test the resulting ciphers
 
-        assertNotNull(encrypt.getSymDecodingCipher());
-        assertNotNull(encrypt.getSymEncodingCipher());
+        Util.assertNotNull(encrypt.getSymDecodingCipher());
+        Util.assertNotNull(encrypt.getSymEncodingCipher());
     }
 
 
@@ -136,16 +135,16 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default symetric key
-        assertEquals("AES", encrypt.getSymAlgorithm());
-        assertEquals(128, encrypt.getSymInit());
-        assertEquals("AES", encrypt.getDesKey().getAlgorithm());
-        assertEquals("RAW", encrypt.getDesKey().getFormat());
-        assertNotNull(encrypt.getDesKey().getEncoded());
+        Util.assertEquals("AES", encrypt.getSymAlgorithm());
+        Util.assertEquals(128, encrypt.getSymInit());
+        Util.assertEquals("AES", encrypt.getDesKey().getAlgorithm());
+        Util.assertEquals("RAW", encrypt.getDesKey().getFormat());
+        Util.assertNotNull(encrypt.getDesKey().getEncoded());
 
         //test the resulting ciphers
 
-        assertNotNull(encrypt.getSymDecodingCipher());
-        assertNotNull(encrypt.getSymEncodingCipher());
+        Util.assertNotNull(encrypt.getSymDecodingCipher());
+        Util.assertNotNull(encrypt.getSymEncodingCipher());
     }
 
     public static void testViewChangeBecomeKeyserver() throws Exception {
@@ -181,7 +180,7 @@ public class ENCRYPTAsymmetricTest {
         encrypt.up(evt);
 
         // assert that message is queued as we have no key
-        assertTrue(observer.getUpMessages().isEmpty());
+        Util.assertTrue(observer.getUpMessages().isEmpty());
 
         // send a view change to trigger the become key server
         // we use the fact that our address is now the controller one
@@ -204,17 +203,17 @@ public class ENCRYPTAsymmetricTest {
         Event evt2=new Event(Event.MSG, msg2);
 
         encrypt.up(evt2);
-        assertEquals(3, observer.getUpMessages().size());
+        Util.assertEquals(3, observer.getUpMessages().size());
 
 
         Event sent=(Event)observer.getUpMessages().get("message1");
 
 
-        assertEquals("hello", new String(((Message)sent.getArg()).getBuffer()));
+        Util.assertEquals("hello", new String(((Message)sent.getArg()).getBuffer()));
 
         sent=(Event)observer.getUpMessages().get("message2");
 
-        assertEquals("hello2", new String(((Message)sent.getArg()).getBuffer()));
+        Util.assertEquals("hello2", new String(((Message)sent.getArg()).getBuffer()));
 
 
     }
@@ -267,21 +266,21 @@ public class ENCRYPTAsymmetricTest {
 
         peer.up(evt);
         //assert that message is queued as we have no key from server
-        assertTrue(peerObserver.getUpMessages().isEmpty());
+        Util.assertTrue(peerObserver.getUpMessages().isEmpty());
 
         // send a view change where we are not the controller
 
         // send to peer - which should have peer2 as its key server
         peer.up(serverEvent);
         // assert that peer\ keyserver address is now set
-        assertEquals(serverAddress, peer.getKeyServerAddr());
+        Util.assertEquals(serverAddress, peer.getKeyServerAddr());
 
         // get the resulting message from the peer - should be a key request
 
         Event sent=(Event)peerObserver.getDownMessages().get("message0");
 
-        assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
-        assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
+        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
         // send this event to server
         server.up(sent);
@@ -289,7 +288,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=(Event)serverObserver.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(server.getDesKey());
@@ -297,7 +296,7 @@ public class ENCRYPTAsymmetricTest {
         peer.up(reply);
 
         // assert that both now have same key
-        assertEquals(peer.getDesKey(), server.getDesKey());
+        Util.assertEquals(peer.getDesKey(), server.getDesKey());
 
         // send another encrypted message to peer to test queue
         Message msg2=new Message();
@@ -310,16 +309,16 @@ public class ENCRYPTAsymmetricTest {
         peer.up(evt2);
 
         // make sure we have the events now in the up layers
-        assertEquals(3, peerObserver.getUpMessages().size());
+        Util.assertEquals(3, peerObserver.getUpMessages().size());
 
         Event tempEvt=(Event)peerObserver.getUpMessages().get("message2");
 
 
-        assertEquals("hello", new String(((Message)tempEvt.getArg()).getBuffer()));
+        Util.assertEquals("hello", new String(((Message)tempEvt.getArg()).getBuffer()));
 
         tempEvt=(Event)peerObserver.getUpMessages().get("message3");
 
-        assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
+        Util.assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
 
 
     }
@@ -383,7 +382,7 @@ public class ENCRYPTAsymmetricTest {
         peer.up(encEvt);
 
         //assert that message is queued as we have no key from server
-        assertTrue(peerObserver.getUpMessages().isEmpty());
+        Util.assertTrue(peerObserver.getUpMessages().isEmpty());
 
         // send a view change to peer where peer2 is  controller
         Vector peerVector=new Vector();
@@ -395,14 +394,14 @@ public class ENCRYPTAsymmetricTest {
         peer.up(event);
 
         // assert that peer\ keyserver address is now set
-        assertEquals(peer2Address, peer.getKeyServerAddr());
+        Util.assertEquals(peer2Address, peer.getKeyServerAddr());
 
         // get the resulting message from the peer - should be a key request to peer2
         Event sent=(Event)peerObserver.getDownMessages().get("message0");
 
         // ensure type and that request contains peers pub key
-        assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
-        assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
+        Util.assertEquals(((EncryptHeader)((Message)sent.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.KEY_REQUEST);
+        Util.assertEquals(new String(((Message)sent.getArg()).getBuffer()), new String(peer.getKpair().getPublic().getEncoded()));
 
         //assume that server is no longer available and peer2 is new server
         // but did not get the key from server before assuming role
@@ -422,7 +421,7 @@ public class ENCRYPTAsymmetricTest {
         Event reply=(Event)peer2Observer.getDownMessages().get("message1");
 
         //assert that reply is the session key encrypted with peer's public key
-        assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
+        Util.assertEquals(((EncryptHeader)((Message)reply.getArg()).getHeader(EncryptHeader.KEY)).getType(), EncryptHeader.SECRETKEY);
 
 
         assert !peer.getDesKey().equals(peer2.getDesKey());
@@ -432,7 +431,7 @@ public class ENCRYPTAsymmetricTest {
         peer.up(reply);
 
         // assert that both now have same key
-        assertEquals(peer.getDesKey(), peer2.getDesKey());
+        Util.assertEquals(peer.getDesKey(), peer2.getDesKey());
         assert !server.getDesKey().equals(peer.getDesKey());
 
         // send another encrypted message to peer to test queue
@@ -448,12 +447,12 @@ public class ENCRYPTAsymmetricTest {
 
         peer.up(Evt2);
         // make sure we have the events now in the up layers
-        assertEquals(2, peerObserver.getUpMessages().size());
+        Util.assertEquals(2, peerObserver.getUpMessages().size());
 
         Event tempEvt=(Event)peerObserver.getUpMessages().get("message2");
 
 
-        assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
+        Util.assertEquals("hello2", new String(((Message)tempEvt.getArg()).getBuffer()));
 
 
     }

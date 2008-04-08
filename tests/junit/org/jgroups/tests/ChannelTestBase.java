@@ -162,64 +162,47 @@ public class ChannelTestBase {
     }
 
     protected final static void assertTrue(boolean condition) {
-        assert condition : null;
+        Util.assertTrue(condition);
     }
 
     protected final static void assertTrue(String message, boolean condition) {
-        if(message != null)
-            assert condition : message;
-        else
-            assert condition;
+        Util.assertTrue(message, condition);
     }
 
     protected final static void assertFalse(boolean condition) {
-        assert condition;
+        Util.assertFalse(condition);
     }
 
     protected final static void assertFalse(String message, boolean condition) {
-        if(message != null)
-            assert !condition : message;
-        else
-            assert !condition;
+        Util.assertFalse(message, condition);
     }
 
 
     protected final static void assertEquals(String message, Object val1, Object val2) {
-        if(message != null) {
-            assert val1.equals(val2) : message;
-        }
-        else {
-            assert val1.equals(val2);
-        }
+        Util.assertEquals(message, val1, val2);
     }
 
     protected final static void assertEquals(Object val1, Object val2) {
-        assertEquals(null, val1, val2);
+        Util.assertEquals(null, val1, val2);
     }
 
     protected final static void assertNotNull(String message, Object val) {
-        if(message != null)
-            assert val != null : message;
-        else
-            assert val != null;
+        Util.assertNotNull(message, val);
     }
 
 
     protected final static void assertNotNull(Object val) {
-        assertNotNull(null, val);
+        Util.assertNotNull(null, val);
     }
 
 
     protected final static void assertNull(String message, Object val) {
-        if(message != null)
-            assert val == null : message;
-        else
-            assert val == null;
+       Util.assertNull(message, val);
     }
 
 
     protected final static void assertNull(Object val) {
-        assertNotNull(null, val);
+        Util.assertNotNull(null, val);
     }
 
 
