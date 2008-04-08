@@ -13,15 +13,15 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.5 2008/04/08 08:29:43 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.6 2008/04/08 15:25:26 belaban Exp $
  */
+@Test
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
     Channel ch, ch2, ch3;  
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        ;
-
         ch=createChannel("A");
         ServerObject obj=new ServerObject(null);
         disp=new RpcDispatcher(ch, null, null, obj);
@@ -41,10 +41,8 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         obj3.setAddress(ch3.getLocalAddress());
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        ;
-
-
         ch3.close();
         disp3.stop();
         ch2.close();

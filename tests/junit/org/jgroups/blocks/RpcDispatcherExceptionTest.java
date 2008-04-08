@@ -11,8 +11,9 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.6 2008/04/08 15:25:26 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.7 2008/04/08 15:29:13 belaban Exp $
  */
+@Test
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
@@ -32,8 +33,6 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
     }
 
 
-
-    @Test
     public void testUnserializableValue() {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new Pojo()}, new Class[]{Pojo.class}, GroupRequest.GET_ALL, 5000);
