@@ -19,12 +19,8 @@ import java.nio.ByteBuffer;
  * Tests the fragmentation (FRAG2) protocol for http://jira.jboss.com/jira/browse/JGRP-216
  * @author Bela Ban
  */
+@Test
 public class FRAG2_Test extends FRAG_Test {
-
-    public FRAG2_Test(String name) {
-        super(name);
-    }
-
 
     protected Protocol createProtocol() {
         return new FRAG2();
