@@ -1,4 +1,4 @@
-// $Id: MembershipTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
+// $Id: MembershipTest.java,v 1.4 2008/04/08 12:36:46 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,10 +20,6 @@ public class MembershipTest {
     Address a1, a2, a3, a4, a5;
 
 
-    public MembershipTest(String name) {
-    }
-
-
     @BeforeMethod
     public void setUp() {
         a1=new IpAddress(5555);
@@ -40,7 +36,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testConstructor() {
         v1=new Vector();
         v1.addElement(a1);
@@ -53,7 +49,7 @@ public class MembershipTest {
         assert m2.contains(a3);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testClone() {
         v1=new Vector();
         v1.addElement(a1);
@@ -69,7 +65,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testCopy() {
         v1=new Vector();
         v1.addElement(a1);
@@ -85,7 +81,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAdd() {
         m1.add(a1);
         m1.add(a2);
@@ -97,7 +93,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAddVector() {
         v1=new Vector();
         v1.addElement(a1);
@@ -109,7 +105,7 @@ public class MembershipTest {
         assert m1.contains(a2);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAddVectorDupl() {
         v1=new Vector();
         v1.addElement(a1);
@@ -129,7 +125,6 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testRemove() {
         m1.add(a1);
         m1.add(a2);
@@ -141,7 +136,6 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testGetMembers() {
         testAdd();
         Vector v=m1.getMembers();
@@ -149,7 +143,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSet() {
         v1=new Vector();
         v1.addElement(a1);
@@ -165,7 +159,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSet2() {
         m1=new Membership();
         m2=new Membership();
@@ -182,7 +176,7 @@ public class MembershipTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMerge() {
         v1=new Vector();
         v2=new Vector();
@@ -203,7 +197,7 @@ public class MembershipTest {
         assert m1.contains(a5);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSort() {
         m1.add(a3);
         m1.add(a4);

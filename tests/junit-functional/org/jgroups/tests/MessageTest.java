@@ -1,4 +1,3 @@
-// $Id: MessageTest.java,v 1.8 2008/03/31 06:15:20 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -13,11 +12,14 @@ import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.Test;
 
-
+/**
+ * @author Bela Ban
+ * @version $Id: MessageTest.java,v 1.9 2008/04/08 12:36:46 belaban Exp $
+ */
+@Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public static void testFlags() {
         Message m1=new Message();
         assert !(m1.isFlagSet(Message.OOB));
@@ -30,7 +32,7 @@ public class MessageTest {
         Assert.assertEquals(0, m1.getFlags());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testFlags2() {
         Message m1=new Message();
         m1.setFlag(Message.OOB);
@@ -41,7 +43,7 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testBufferSize() throws Exception {
         Message m1=new Message(null, null, "bela");
         assert m1.getRawBuffer() != null;
@@ -55,7 +57,7 @@ public class MessageTest {
         Assert.assertEquals(m1.getBuffer().length, m1.getLength());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testBufferOffset() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message m1=new Message(null, null, buf, 0, 4);
@@ -74,7 +76,7 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSetBufferWithNullBuffer() {
         byte[] buf={'b', 'e', 'l', 'a'};
         Message m1=new Message();
@@ -102,7 +104,7 @@ public class MessageTest {
         System.out.println("we should not get here with " + m1);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testGetRawBuffer() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message m1=new Message(null, null, buf, 0, 4);
@@ -118,7 +120,7 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSetObject() {
         String s1="Bela Ban";
         Message m1=new Message(null, null, s1);
@@ -130,7 +132,7 @@ public class MessageTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testCopy() {
         Message m1=new Message(null, null, "Bela Ban");
         Message m2=m1.copy();
@@ -139,7 +141,7 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testCopyWithOffset() {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message m1=new Message(null, null, buf, 0, 4);
@@ -158,7 +160,7 @@ public class MessageTest {
         Assert.assertEquals(3, m4.getBuffer().length);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testComputeFragOffsets() {
         Range r;
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
@@ -179,7 +181,7 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testComputeFragOffsetsWithOffsets() {
         Range r;
         // byte[] buf={'p', 'a', 'd', 0,1,2,3,4,5,6,7,8,9, 'p', 'a', 'd', 'd', 'i', 'e'};
@@ -199,7 +201,7 @@ public class MessageTest {
         Assert.assertEquals(2, r.high);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testComputeFragOffsets2() {
         Range r;
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
@@ -211,7 +213,7 @@ public class MessageTest {
         Assert.assertEquals(10, r.high);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testComputeFragOffsets3() {
         Range r;
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
@@ -223,7 +225,7 @@ public class MessageTest {
         Assert.assertEquals(10, r.high);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testComputeFragOffsets4() {
         Range r;
         byte[] buf={0,1,2,3,4,5,6,7,8,9};
@@ -240,32 +242,32 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeNullMessage() throws Exception {
         Message msg=new Message();
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithDest() throws Exception {
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), null, null);
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithSrc() throws Exception {
         Message msg=new Message(null, new IpAddress("127.0.0.1", 4444), null);
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithDestAndSrc() throws Exception {
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
         _testSize(msg);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithDestAndSrcAndFlags() throws Exception {
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), null);
         msg.setFlag(Message.OOB);
@@ -273,25 +275,25 @@ public class MessageTest {
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithBuffer() throws Exception {
         Message msg=new Message(null, null, "bela".getBytes());
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithBuffer2() throws Exception {
         Message msg=new Message(null, null, new byte[]{'b', 'e', 'l', 'a'});
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithBuffer3() throws Exception {
         Message msg=new Message(null, null, "bela");
         _testSize(msg);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testSizeMessageWithAdditionalData() throws Exception {
         IpAddress dest=new IpAddress("127.0.0.1", 5555);
         dest.setAdditionalData("bela".getBytes());
@@ -300,7 +302,6 @@ public class MessageTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public static void testSizeMessageWithDestAndSrcAndHeaders() throws Exception {
         Message msg=new Message(new IpAddress("127.0.0.1", 3333), new IpAddress("127.0.0.1", 4444), "bela".getBytes());
         addHeaders(msg);

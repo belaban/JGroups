@@ -12,7 +12,7 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Tests the ReentrantLock
  * @author Bela Ban
- * @version $Id: ReentrantLockTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
+ * @version $Id: ReentrantLockTest.java,v 1.4 2008/04/08 12:41:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ReentrantLockTest {
@@ -31,7 +31,6 @@ public class ReentrantLockTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testAcquireLock() {
         lock.lock();
         Assert.assertEquals(1, lock.getHoldCount());
@@ -43,7 +42,7 @@ public class ReentrantLockTest {
         Assert.assertEquals(0, lock.getHoldCount());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAcquireLock2() {
         lock.lock();
         Assert.assertEquals(1, lock.getHoldCount());

@@ -1,4 +1,3 @@
-// $Id: MethodCallTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -19,47 +18,24 @@ import java.lang.reflect.Method;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Revision: 1.3 $
+ * @version $Id: MethodCallTest.java,v 1.4 2008/04/08 12:36:46 belaban Exp $
  **/
-
+@Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {
-
-    Class cl=MethodCallTest.class;
-
-    public MethodCallTest(String name) {
-    }
+    final Class cl=MethodCallTest.class;
 
 
-
-
-    public boolean foo(int a, String b) {
+    public static boolean foo(int a, String b) {
         System.out.println("test(" + a + ", " + b + ')');
         return true;
     }
 
 
-    public void bar(String[] a, String b) {
-        if(a != null) {
-            for(int i=0; i < a.length; i++) {
-                String s=a[i];
-                System.out.print(s + ' ');
-            }
-        }
-        else
-            System.out.println("a=null");
-        if(b != null)
-            System.out.println("b=" + b);
-        else
-            System.out.println("b=null");
-    }
-
-
-    public void foobar() {
+    public static void foobar() {
         System.out.println("foobar()");
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testOld() {
         try {
             MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"});
@@ -70,7 +46,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testOld2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"});
@@ -81,7 +57,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testWithNull() {
         try {
             MethodCall mc=new MethodCall("foobar", null, (Class[])null);
@@ -93,7 +69,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testOldWithNull() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null});
@@ -104,7 +80,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testOldWithNull2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"});
@@ -115,7 +91,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testOldWithNull3() {
         try {
             MethodCall mc=new MethodCall("foobar", null);
@@ -126,7 +102,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testOldWithNull4() {
         try {
             MethodCall mc=new MethodCall("foobar", new Object[0]);
@@ -140,7 +116,7 @@ public class MethodCallTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMethod() {
         Method m;
         try {
@@ -153,7 +129,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypes() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"}, new Class[]{int.class, String.class});
@@ -166,7 +142,7 @@ public class MethodCallTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithArray() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
@@ -179,7 +155,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithNullArgument() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
@@ -192,7 +168,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithNullArgument2() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
@@ -208,7 +184,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithNullArgument3() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[]{}, new Class[]{});
@@ -223,7 +199,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithNullArgument4() {
         MethodCall mc;
         mc=new MethodCall("foobar", (Object[])null, (Class[])null);
@@ -238,7 +214,7 @@ public class MethodCallTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testTypesWithNullArgument5() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[0], new Class[0]);
@@ -254,7 +230,7 @@ public class MethodCallTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSignature() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
@@ -268,8 +244,8 @@ public class MethodCallTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testBufferSize() throws Exception {
+
+    public static void testBufferSize() throws Exception {
         int a=10;
         String b="Bela";
         MethodCall m=new MethodCall("foo", new Object[]{new Integer(a),b}, new Class[]{int.class, String.class});
@@ -291,8 +267,8 @@ public class MethodCallTest {
     // OLD
     //
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testOLD() throws Throwable {
+
+    public static void testOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
 
@@ -301,8 +277,8 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testInheritanceOLD() throws Throwable {
+
+    public static void testInheritanceOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
 
@@ -315,8 +291,8 @@ public class MethodCallTest {
     // METHOD
     //
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testMETHOD() throws Throwable {
+
+    public static void testMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
         MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
@@ -326,8 +302,8 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testInheritanceMETHOD() throws Throwable {
+
+    public static void testInheritanceMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
         MethodCall methodCall = new MethodCall(method, new Object[] {"abc"});
@@ -341,8 +317,8 @@ public class MethodCallTest {
     // TYPES
     //
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testTYPES() throws Throwable {
+
+    public static void testTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
@@ -353,8 +329,8 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testInheritanceTYPES() throws Throwable {
+
+    public static void testInheritanceTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
@@ -368,8 +344,8 @@ public class MethodCallTest {
     /**
      * This tests whether overriden methods are correctly identified and invoked.
      */
-    @Test(groups=Global.FUNCTIONAL)
-    public void testOverriddenForTYPES() throws Throwable  {
+
+    public static void testOverriddenForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("overriddenMethod",
                                                new Object[] { "abc" },
@@ -381,8 +357,8 @@ public class MethodCallTest {
 
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testNoArgumentMethodForTYPES() throws Throwable  {
+
+    public static void testNoArgumentMethodForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("noArgumentMethod", new Object[0], new Class[0]);
 
@@ -397,8 +373,8 @@ public class MethodCallTest {
     // SIGNATURE
     //
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testSIGNATURE() throws Throwable {
+
+    public static void testSIGNATURE() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
@@ -409,9 +385,8 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testInheritanceSIGNATURE() throws Throwable {
 
+    public static void testInheritanceSIGNATURE() throws Throwable {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
                                                new String[] { "java.lang.String" });
@@ -422,8 +397,8 @@ public class MethodCallTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testMarshalling() throws Exception {
+
+    public static void testMarshalling() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
                                                new String[] { "java.lang.String" });
@@ -439,16 +414,15 @@ public class MethodCallTest {
     }
 
 
-    private MethodCall marshalAndUnmarshal(MethodCall m) throws Exception {
+    private static MethodCall marshalAndUnmarshal(MethodCall m) throws Exception {
         byte[] buf=Util.objectToByteBuffer(m);
-        MethodCall retval=(MethodCall)Util.objectFromByteBuffer(buf);
-        return retval;
+        return (MethodCall)Util.objectFromByteBuffer(buf);
     }
 
 
-    public class Target {
+    public static class Target {
 
-        public String someMethod(String arg) {
+        public static String someMethod(String arg) {
             return arg.toUpperCase();
         }
 
@@ -456,12 +430,12 @@ public class MethodCallTest {
             return "Target" + arg.toUpperCase();
         }
 
-        public String noArgumentMethod() {
+        public static String noArgumentMethod() {
             return "noArgumentMethodResult";
         }
     }
 
-    public class TargetSubclass extends Target {
+    public static class TargetSubclass extends Target {
 
         public String overriddenMethod(String arg) {
             return "TargetSubclass" + arg.toUpperCase();

@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
+// $Id: NakackTest.java,v 1.4 2008/04/08 12:39:38 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -14,16 +14,13 @@ import org.testng.annotations.BeforeMethod;
 import java.util.Hashtable;
 import java.util.Vector;
 
-
+@Test(groups=Global.FUNCTIONAL)
 public class NakackTest {
     static final long WAIT_TIME=5000;
     public static final long NUM_MSGS=10000;
     long num_msgs_received=0;
     long num_msgs_sent=0;
 
-
-    public NakackTest(String name) {
-    }
 
 
     @BeforeMethod
@@ -34,7 +31,7 @@ public class NakackTest {
     
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void test0() throws Exception {
         Object mutex=new Object();
         CheckNoGaps check=new CheckNoGaps(1, this, mutex);
