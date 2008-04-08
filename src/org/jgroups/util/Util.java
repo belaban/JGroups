@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.145 2008/03/28 12:10:59 belaban Exp $
+ * @version $Id: Util.java,v 1.146 2008/04/08 08:54:55 belaban Exp $
  */
 public class Util {
 
@@ -98,6 +98,70 @@ public class Util {
         PRIMITIVE_TYPES.put(Short.class, new Byte(TYPE_SHORT));
         PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
     }
+
+
+
+    public static void assertTrue(boolean condition) {
+        assert condition : null;
+    }
+
+    public static void assertTrue(String message, boolean condition) {
+        if(message != null)
+            assert condition : message;
+        else
+            assert condition;
+    }
+
+    public static void assertFalse(boolean condition) {
+        assert condition;
+    }
+
+    public static void assertFalse(String message, boolean condition) {
+        if(message != null)
+            assert !condition : message;
+        else
+            assert !condition;
+    }
+
+
+    public static void assertEquals(String message, Object val1, Object val2) {
+        if(message != null) {
+            assert val1.equals(val2) : message;
+        }
+        else {
+            assert val1.equals(val2);
+        }
+    }
+
+    public static void assertEquals(Object val1, Object val2) {
+        assertEquals(null, val1, val2);
+    }
+
+    public static void assertNotNull(String message, Object val) {
+        if(message != null)
+            assert val != null : message;
+        else
+            assert val != null;
+    }
+
+
+    public static void assertNotNull(Object val) {
+        assertNotNull(null, val);
+    }
+
+
+    public static void assertNull(String message, Object val) {
+        if(message != null)
+            assert val == null : message;
+        else
+            assert val == null;
+    }
+
+
+    public static void assertNull(Object val) {
+        assertNotNull(null, val);
+    }
+
 
 
     /**
