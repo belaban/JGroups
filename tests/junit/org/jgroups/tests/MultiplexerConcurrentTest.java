@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.3 2007/03/02 08:44:38 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.4 2008/04/08 06:59:00 belaban Exp $
  */
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
@@ -29,10 +29,10 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
     public void setUp() throws Exception {
         super.setUp();
         factory=new JChannelFactory();
-        factory.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory.setMultiplexerConfig(mux_conf);
 
         factory2=new JChannelFactory();
-        factory2.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory2.setMultiplexerConfig(mux_conf);
     }
 
     public void tearDown() throws Exception {
@@ -67,7 +67,7 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      */
     public void testTwoMessagesFromSameSenderToSameService() throws Exception {
         final MyReceiver receiver=new MyReceiver();
-        s1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
+        s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
         s1.connect("bla");
         s1.setReceiver(receiver);
         s1.send(null, null, "slow");
@@ -103,11 +103,11 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
       */
      public void testTwoMessagesFromSameSenderToDifferentServices() throws Exception {
         final MyReceiver receiver=new MyReceiver();
-        s1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
+        s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
         s1.connect("bla");
         s1.setReceiver(receiver);
 
-        s2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s2");
+        s2=factory.createMultiplexerChannel(mux_conf_stack, "s2");
         s2.connect("bla");
         s2.setReceiver(receiver);
 
@@ -142,11 +142,11 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      */
     public void  testTwoMessagesFromDifferentSendersToSameService() throws Exception {
         final MyReceiver receiver=new MyReceiver();
-        s1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
+        s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
         s1.connect("bla");
         s1.setReceiver(receiver);
 
-        s2=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1"); // same service
+        s2=factory2.createMultiplexerChannel(mux_conf_stack, "s1"); // same service
         s2.connect("bla");
 
         s1.send(null, null, "slow");
@@ -176,18 +176,18 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
      */
     public void testTwoMessagesFromDifferentSendersToDifferentServices() throws Exception {
         final MyReceiver receiver=new MyReceiver();
-        s1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
+        s1=factory.createMultiplexerChannel(mux_conf_stack, "s1");
         s1.connect("bla");
         s1.setReceiver(receiver);
-        s11=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s2");
+        s11=factory.createMultiplexerChannel(mux_conf_stack, "s2");
         s11.connect("bla");
         s11.setReceiver(receiver);
 
 
-        s2=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s1");
+        s2=factory2.createMultiplexerChannel(mux_conf_stack, "s1");
         s2.connect("bla");
 
-        s21=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "s2");
+        s21=factory2.createMultiplexerChannel(mux_conf_stack, "s2");
         s21.connect("bla");
 
         s1.send(null, null, "slow");

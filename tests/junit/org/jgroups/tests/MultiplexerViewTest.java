@@ -12,7 +12,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.14 2007/06/25 07:38:16 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.15 2008/04/08 06:59:01 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -28,10 +28,10 @@ public class MultiplexerViewTest extends ChannelTestBase {
     public void setUp() throws Exception {
         super.setUp();       
         factory=new JChannelFactory();
-        factory.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory.setMultiplexerConfig(mux_conf);
 
         factory2=new JChannelFactory();
-        factory2.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory2.setMultiplexerConfig(mux_conf);
     }
 
     public void tearDown() throws Exception {  
@@ -46,7 +46,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
     public void testBasicLifeCycle() throws Exception {
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         System.out.println("c1: " + c1);
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
@@ -81,13 +81,13 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
 
     public void testBlockPush() throws Exception {
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver=new MyReceiver();
         c1.setReceiver(receiver);
         c1.connect("bla");
 
-        c2=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
+        c2=factory2.createMultiplexerChannel(mux_conf_stack, "service-1");
         c2.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver2=new MyReceiver();
         c2.setReceiver(receiver2);
@@ -120,28 +120,28 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
 
     public void testBlockPush2() throws Exception {
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver=new MyReceiver();
         c1.setReceiver(receiver);
         c1.connect("bla");
         // Util.sleep(500);
 
-        c2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-2");
+        c2=factory.createMultiplexerChannel(mux_conf_stack, "service-2");
         c2.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver2=new MyReceiver();
         c2.setReceiver(receiver2);
         c2.connect("bla");
         // Util.sleep(500);
 
-        c3=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-3");
+        c3=factory.createMultiplexerChannel(mux_conf_stack, "service-3");
         c3.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver3=new MyReceiver();
         c3.setReceiver(receiver3);
         c3.connect("bla");
         // Util.sleep(500);
 
-        c4=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-3");
+        c4=factory2.createMultiplexerChannel(mux_conf_stack, "service-3");
         c4.setOpt(Channel.BLOCK, Boolean.TRUE);
         MyReceiver receiver4=new MyReceiver();
         c4.setReceiver(receiver4);
@@ -213,8 +213,8 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
 
     public void testTwoServicesOneChannel() throws Exception {
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
-        c2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-2");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
+        c2=factory.createMultiplexerChannel(mux_conf_stack, "service-2");
         c1.connect("bla");
         c2.connect("blo");
 
@@ -238,13 +238,13 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
     public void testTwoServicesTwoChannels() throws Exception {
         View v, v2;
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
-        c2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-2");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
+        c2=factory.createMultiplexerChannel(mux_conf_stack, "service-2");
         c1.connect("bla");
         c2.connect("blo");
 
-        c3=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
-        c4=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-2");
+        c3=factory2.createMultiplexerChannel(mux_conf_stack, "service-1");
+        c4=factory2.createMultiplexerChannel(mux_conf_stack, "service-2");
         c3.connect("foo");
 
         Util.sleep(500);
@@ -293,11 +293,11 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
     public void testReconnect() throws Exception {
         View v;
-        c1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
+        c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.connect("bla");
 
-        c3=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-1");
-        c4=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "service-2");
+        c3=factory2.createMultiplexerChannel(mux_conf_stack, "service-1");
+        c4=factory2.createMultiplexerChannel(mux_conf_stack, "service-2");
         c3.connect("foo");
         c4.connect("bar");
 

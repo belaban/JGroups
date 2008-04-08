@@ -31,7 +31,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public boolean useBlocking() {

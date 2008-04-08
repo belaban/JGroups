@@ -7,7 +7,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.1 2007/11/30 16:07:19 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.2 2008/04/08 06:59:01 belaban Exp $
  */
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -15,7 +15,7 @@ public class ConcurrentCloseTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        CHANNEL_CONFIG=System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf=System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public void tearDown() throws Exception {

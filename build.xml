@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.142 2008/03/20 13:46:24 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.143 2008/04/08 06:59:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -559,12 +559,15 @@
     </target>
 
 
-
+    <target name="all-tests-cc" depends="makeKeystore,downloadFormatter"
+            description="Runs functional testsuite only, until stack-dependent testsuite has been converted from JUnit">
+        <antcall target="functional"/>
+    </target>
 
     <!--
               Runs entire testsuite for nightly Cruise Control builds.
      -->
-    <target name="all-tests-cc" depends="makeKeystore,downloadFormatter"
+    <target name="all-tests-cc-old" depends="makeKeystore,downloadFormatter"
             description="Runs entire testsuite for nightly Cruise Control builds">
 
        <!-- <antcall target="runtests-functional">
@@ -929,6 +932,7 @@
 
     <target name="functional" depends="compile, prepare,prepare.test">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
+        <!--<runtest parallel="methods" threadcount="20"/>-->
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results/xml"
@@ -937,7 +941,6 @@
                 parallel="methods"
                 >
             <xmlfileset dir="${tests.dir}" includes="functional.xml"/>
-            <!--<sysproperty key="test.suffix" value="tcp"/>-->
         </testng>
     </target>
 
@@ -949,17 +952,28 @@
     </target>
 
     <target name="udp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
-        <runtest channel.conf="udp.xml"
-                 testname.ext="udp"
+        <runtest testname.ext="udp"
                  threadcount="1"
-                 />
+                 parallel="tests"
+                 testng.xmlfile="testng-udp.xml"
+                />
     </target>
 
+    <target name="udp-tests-2" >
+            <runtest testname.ext="udp"
+                     threadcount="1"
+                     parallel="tests"
+                     testng.xmlfile="testng-udp.xml"
+                    />
+        </target>
+
+
     <target name="tcp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
-        <runtest channel.conf="tcp.xml"
-                 testname.ext="tcp"
+        <runtest testname.ext="tcp"
                  threadcount="1"
-                 />
+                 parallel="tests"
+                 testng.xmlfile="testng-tcp.xml"
+                />
     </target>
 
 
@@ -978,15 +992,11 @@
 
 
     <macrodef name="runtest" description="Runs a configuration-dependent test suite">
-        <attribute name="channel.conf" default="udp.xml"/>
         <attribute name="outputdir" default="${tmp.dir}/test-results/xml"/>
-        <attribute name="channel.conf.flush" default="flush-udp.xml"/>
-        <attribute name="mux.on" default="false"/>
-        <attribute name="mux.conf" default="stacks.xml"/>
-        <attribute name="mux.conf.stack" default="udp"/>
-        <attribute name="mux.factorycount" default="4"/>
+        <attribute name="parallel" default="methods"/>
         <attribute name="testname.ext" default="udp"/>
         <attribute name="threadcount" default="1"/>
+        <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
         <sequential>
             <mkdir dir="${tmp.dir}/test-results/xml/stack-dependent"/>
             <testng classpathref="jg.classpath"
@@ -996,13 +1006,7 @@
                     threadcount="@{threadcount}"
                     parallel="tests"
                     >
-                <xmlfileset dir="${tests.dir}" includes="stack-dependent.xml"/>
-                <sysproperty key="channel.conf" value="@{channel.conf}"/>
-                <sysproperty key="channel.conf.flush" value="@{channel.conf.flush}"/>
-                <sysproperty key="mux.on" value="@{mux.on}"/>
-                <sysproperty key="mux.conf" value="@{mux.conf}"/>
-                <sysproperty key="mux.conf.stack" value="@{mux.conf.stack}"/>
-                <sysproperty key="mux.factorycount" value="@{mux.factorycount}"/>
+                <xmlfileset dir="${tests.dir}" includes="@{testng.xmlfile}"/>
                 <sysproperty key="test.suffix" value="@{testname.ext}"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>

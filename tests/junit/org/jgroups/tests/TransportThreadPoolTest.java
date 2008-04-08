@@ -5,6 +5,8 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterTest;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,19 +15,19 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.2 2007/11/21 11:27:16 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.3 2008/04/08 06:59:00 belaban Exp $
  */
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 
+    @BeforeTest
     protected void setUp() throws Exception {
-        super.setUp();
         c1=createChannel();
         c2=createChannel();
     }
 
+    @AfterTest
     protected void tearDown() throws Exception {
-        super.tearDown();
         c2.close();
         c1.close();
     }
@@ -42,8 +44,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         c2.send(null, null, "bela");
 
         Util.sleep(500); // need to sleep because message sending is asynchronous
-        assertEquals(2, r1.getMsgs().size());
-        assertEquals(2, r2.getMsgs().size());
+        assert r1.getMsgs().size() == 2;
+        assert r2.getMsgs().size() == 2;
 
         TP transport=(TP)c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newCachedThreadPool();
@@ -58,8 +60,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         Util.sleep(500);
 
         System.out.println("messages c1: " + print(r1.getMsgs()) + "\nmessages c2: " + print(r2.getMsgs()));
-        assertEquals(4, r1.getMsgs().size());
-        assertEquals(4, r2.getMsgs().size());
+        assert r1.getMsgs().size() == 4;
+        assert r2.getMsgs().size() == 4;
     }
 
 

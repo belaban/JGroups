@@ -16,14 +16,12 @@ import junit.framework.TestSuite;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
-import org.jgroups.ChannelException;
 import org.jgroups.Event;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.protocols.DISCARD;
-import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
@@ -32,7 +30,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.5 2008/01/16 07:35:58 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.6 2008/04/08 06:59:01 belaban Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {
 
@@ -52,7 +50,7 @@ public class ReconciliationTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public void tearDown() throws Exception {

@@ -30,7 +30,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.62 2008/02/04 03:14:56 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.63 2008/04/08 06:59:00 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -45,7 +45,7 @@ public class FlushTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public void tearDown() throws Exception {
@@ -294,9 +294,10 @@ public class FlushTest extends ChannelTestBase {
                 Util.sleep(1000);
             }
 
-            if(isMuxChannelUsed()){
+            if(isMuxChannelUsed()) {
                 blockUntilViewsReceived(channels, muxFactoryCount, 10000);
-            }else{
+            }
+            else {
                 blockUntilViewsReceived(channels, 10000);
             }          
             // Sleep to ensure the threads get all the semaphore tickets

@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.14 2008/02/21 13:43:10 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.15 2008/04/08 06:59:01 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -297,8 +297,8 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
 
-    private static JChannel createSharedChannel(String singleton_name) throws ChannelException {
-        ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(CHANNEL_CONFIG);
+    private JChannel createSharedChannel(String singleton_name) throws ChannelException {
+        ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
         ProtocolData[] protocols=config.getProtocolStack();
         ProtocolData transport=protocols[0];
         transport.getParameters().put(Global.SINGLETON_NAME, new ProtocolParameter(Global.SINGLETON_NAME, singleton_name));
