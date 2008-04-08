@@ -1,9 +1,9 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.10 2008/04/08 07:19:12 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.11 2008/04/08 08:29:37 belaban Exp $
 package org.jgroups.protocols;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelClosedException;
@@ -15,6 +15,7 @@ import org.jgroups.GetStateEvent;
 import org.jgroups.JChannel;
 import org.jgroups.SetStateEvent;
 import org.jgroups.Message;
+import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
 
 /**
@@ -27,7 +28,7 @@ import org.jgroups.util.Util;
  * @author Wenbo Zhu
  * @version 1.0
  */
-public class STATE_TRANSFER_Test extends TestCase {
+public class STATE_TRANSFER_Test extends ChannelTestBase {
 
    public final static String CHANNEL_PROPS ="udp.xml";
 
@@ -193,12 +194,5 @@ public class STATE_TRANSFER_Test extends TestCase {
    }
 
 
-   public static Test suite() {
-      return new TestSuite(STATE_TRANSFER_Test.class);
-   }
-
-   public static void main(String[] args) {
-      junit.textui.TestRunner.run(suite());
-   }
 
 }

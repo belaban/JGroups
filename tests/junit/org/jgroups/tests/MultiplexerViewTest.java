@@ -1,13 +1,14 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -15,7 +16,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.16 2008/04/08 07:19:02 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.17 2008/04/08 08:29:34 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -50,7 +51,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
         ;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testBasicLifeCycle() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         System.out.println("c1: " + c1);
@@ -86,7 +87,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testBlockPush() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
@@ -126,7 +127,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testBlockPush2() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
@@ -220,7 +221,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testTwoServicesOneChannel() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c2=factory.createMultiplexerChannel(mux_conf_stack, "service-2");
@@ -245,7 +246,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testTwoServicesTwoChannels() throws Exception {
         View v, v2;
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
@@ -301,7 +302,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testReconnect() throws Exception {
         View v;
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
@@ -336,15 +337,6 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
-
-
-    public static Test suite() {
-        return new TestSuite(MultiplexerViewTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(MultiplexerViewTest.suite());
-    }
 
 
     private static class MyReceiver extends ExtendedReceiverAdapter {

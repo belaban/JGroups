@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -19,7 +19,7 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.5 2008/04/08 07:18:54 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.6 2008/04/08 08:29:34 belaban Exp $
  */
 public class UNICAST_OOB_Test {
     JChannel ch1, ch2;
@@ -45,12 +45,12 @@ public class UNICAST_OOB_Test {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testRegularMessages() throws Exception {
         sendMessages(false);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testOutOfBandMessages() throws Exception {
         sendMessages(true);
     }
@@ -118,11 +118,5 @@ public class UNICAST_OOB_Test {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(UNICAST_OOB_Test.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(UNICAST_OOB_Test.suite());
-    }
+  
 }

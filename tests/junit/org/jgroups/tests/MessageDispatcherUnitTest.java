@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-import junit.framework.TestSuite;
+import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -22,7 +22,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.7 2008/04/08 07:18:56 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.8 2008/04/08 08:29:34 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
@@ -195,14 +195,6 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         }
     }
 
-
-    public static junit.framework.Test suite() {
-        return new TestSuite(MessageDispatcherUnitTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
 
     private static class MyHandler implements RequestHandler {

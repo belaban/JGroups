@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.ProtocolStack;
@@ -18,7 +18,7 @@ import java.util.*;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.7 2008/04/08 07:19:04 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.8 2008/04/08 08:29:32 belaban Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {
 
@@ -67,7 +67,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * messages
      * </ul>
      */
-    @org.testng.annotations.Test
+    @Test
     public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -100,7 +100,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * received from C to B
      * </ul>
      */
-    @org.testng.annotations.Test
+    @Test
     public void testReconciliationFlushTriggeredByManualFlush() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -128,7 +128,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * received from C to B
      * </ul>
      */
-    @org.testng.annotations.Test
+    @Test
     public void testReconciliationFlushTriggeredByMemberCrashing() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -299,7 +299,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testVirtualSynchrony() throws Exception {
         c1 = createChannel();
         Cache cache_1 = new Cache(c1, "cache-1");
@@ -493,11 +493,5 @@ public class ReconciliationTest extends ChannelTestBase {
 
     }
 
-    public static Test suite() {
-        return new TestSuite(ReconciliationTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(ReconciliationTest.suite());
-    }
 }

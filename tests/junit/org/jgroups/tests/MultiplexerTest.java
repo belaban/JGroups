@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.IpAddress;
@@ -16,7 +16,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.49 2008/04/08 07:19:00 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.50 2008/04/08 08:29:35 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -77,7 +77,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testReplicationWithOneChannel() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -90,7 +90,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testLifecycle() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -135,7 +135,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testDisconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -172,7 +172,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertFalse(ch2.isConnected());
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testDisconnect2() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -202,7 +202,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testClose() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -213,7 +213,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testReplicationWithTwoChannels() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
@@ -280,7 +280,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testVirtualSynchrony() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
@@ -321,7 +321,7 @@ public class MultiplexerTest extends ChannelTestBase {
             Util.sleep(timeout);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testReplicationWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -345,7 +345,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testAdditionalData() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
@@ -368,7 +368,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertEquals(tmp, additional_data);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testAdditionalData2() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         byte[] additional_data2=new byte[]{'m', 'i', 'c', 'h', 'i'};
@@ -407,7 +407,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertFalse(Arrays.equals(tmp, additional_data));
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testOrdering() throws Exception {
         final int NUM=100;
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
@@ -473,14 +473,7 @@ public class MultiplexerTest extends ChannelTestBase {
         }
     }
 
-    
-    public static Test suite() {
-        return new TestSuite(MultiplexerTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(MultiplexerTest.suite());
-    }   
 
     private static class Cache extends ExtendedReceiverAdapter {
         protected final Map data ;

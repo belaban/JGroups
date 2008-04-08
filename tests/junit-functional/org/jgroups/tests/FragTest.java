@@ -1,10 +1,10 @@
-// $Id: FragTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
+// $Id: FragTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
@@ -41,7 +41,7 @@ public class FragTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test0() throws Exception {
         Object mutex=new Object();
         FragReceiver frag_receiver=new FragReceiver(this, mutex);
@@ -63,14 +63,6 @@ public class FragTest {
         t.stop();
     }
 
-
-    public static Test suite() {
-        return new TestSuite(FragTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
 
     private static class FragReceiver extends Protocol {

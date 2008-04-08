@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
@@ -19,7 +19,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.10 2008/04/08 07:18:57 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.11 2008/04/08 08:29:33 belaban Exp $
  */
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
@@ -53,22 +53,22 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransfer1() throws ChannelException {
         _testStateTransfer(SIZE_1);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransfer2() throws ChannelException {
         _testStateTransfer(SIZE_2);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransfer3() throws ChannelException {
         _testStateTransfer(SIZE_3);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransfer4() throws ChannelException {
         _testStateTransfer(SIZE_4);
     }
@@ -97,13 +97,6 @@ public class LargeStateTransferTest extends ChannelTestBase {
         System.out.println(Thread.currentThread() + " -- "+ msg);
     }
 
-    public static Test suite() {
-        return new TestSuite(LargeStateTransferTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(LargeStateTransferTest.suite());
-    }
 
 
     private static class Provider extends ExtendedReceiverAdapter {

@@ -1,10 +1,10 @@
-// $Id: DisconnectTest.java,v 1.14 2008/04/08 07:18:55 belaban Exp $
+// $Id: DisconnectTest.java,v 1.15 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
@@ -23,7 +23,7 @@ import org.testng.annotations.BeforeMethod;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  **/
 public class DisconnectTest {
 
@@ -68,7 +68,7 @@ public class DisconnectTest {
      * getLocalAddress() on a disconnected channel.
      *
      **/
-    @org.testng.annotations.Test
+    @Test
     public void testNullLocalAddress_TUNNEL() throws Exception {
         try {
             routerPort=Utilities.startGossipRouter();
@@ -89,7 +89,7 @@ public class DisconnectTest {
      * Tests connect-disconnect-connect sequence for a group with one member
      * (using default configuration).
      **/
-    @org.testng.annotations.Test
+    @Test
     public void testDisconnectConnectOne_Default() throws Exception {
         channel=new JChannel();
         channel.connect("testgroup1");
@@ -105,7 +105,7 @@ public class DisconnectTest {
      * Tests connect-disconnect-connect sequence for a group with two members
      * (using default configuration).
      **/
-    @org.testng.annotations.Test
+    @Test
     public void testDisconnectConnectTwo_Default() throws Exception {
         JChannel coordinator=new JChannel();
         coordinator.connect("testgroup");
@@ -130,7 +130,7 @@ public class DisconnectTest {
      * after DISCONNECT. Because of this problem, the channel couldn't be used
      * to multicast messages.
      **/
-    @org.testng.annotations.Test
+    @Test
     public void testDisconnectConnectSendTwo_Default() throws Exception {
 
         final Promise msgPromise=new Promise();
@@ -160,7 +160,7 @@ public class DisconnectTest {
       * Tests connect-disconnect-connect sequence for a group with one member
       * (using TUNNEL).
       **/
-     @org.testng.annotations.Test
+     @Test
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
         try {
             routerPort = Utilities.startGossipRouter();
@@ -183,7 +183,7 @@ public class DisconnectTest {
       * Tests connect-disconnect-connect sequence for a group with two members
       * (using TUNNEL).
       **/
-     @org.testng.annotations.Test
+     @Test
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
          try {
              routerPort = Utilities.startGossipRouter();
@@ -218,7 +218,7 @@ public class DisconnectTest {
       * DISCONNECT. Because of this problem, the channel couldn't be used to
       * multicast messages.
       **/
-     @org.testng.annotations.Test
+     @Test
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
         try {
             routerPort = Utilities.startGossipRouter();
@@ -252,14 +252,6 @@ public class DisconnectTest {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(DisconnectTest.class);
-    }
-
-    public static void main(String[] args) {
-        String[] testCaseName={DisconnectTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
     private static class PromisedMessageListener implements MessageListener {
 

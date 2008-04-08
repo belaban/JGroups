@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.2 2008/04/08 07:19:10 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.3 2008/04/08 08:29:42 belaban Exp $
  */
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     RpcDispatcher disp, disp2;
@@ -102,12 +102,5 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(RpcDispatcherAnycastTest.class);
-    }
-
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(RpcDispatcherAnycastTest.suite());
-    }
+  
 }

@@ -1,10 +1,10 @@
-// $Id: TUNNELDeadLockTest.java,v 1.13 2008/04/08 07:18:59 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.14 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
@@ -18,7 +18,7 @@ import org.testng.annotations.BeforeMethod;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  * @see TUNNELDeadLockTest#testStress
  */
 public class TUNNELDeadLockTest {
@@ -93,7 +93,7 @@ public class TUNNELDeadLockTest {
      * be controlled with mainTimeout. If this time passes and the test
      * doesn't see all the messages, it declares itself failed.
      */
-    @org.testng.annotations.Test
+    @Test
     public void testStress() throws Exception {
         String props=getTUNNELProps(routerPort);
         channel=new JChannel(props);
@@ -166,15 +166,6 @@ public class TUNNELDeadLockTest {
         channel.close();
     }
 
-
-    public static Test suite() {
-        return new TestSuite(TUNNELDeadLockTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-        System.exit(0);
-    }
 
 
 }

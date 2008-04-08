@@ -1,4 +1,4 @@
-// $Id: GroupRequestTest.java,v 1.7 2008/03/10 15:39:24 belaban Exp $$
+// $Id: GroupRequestTest.java,v 1.8 2008/04/08 08:29:44 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -34,39 +34,39 @@ public class GroupRequestTest {
         dests.clear();
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMessageTimeout() throws Exception {
         _testMessageTimeout(true);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReception() throws Exception {
         _testMessageReception(true);
         _testMessageReception(false);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithSuspect() throws Exception {
         _testMessageReceptionWithSuspect(true);
         _testMessageReceptionWithSuspect(false);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChange() throws Exception {
         _testMessageReceptionWithViewChange(true);
         _testMessageReceptionWithViewChange(false);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMessageReceptionWithViewChangeMemberLeft() throws Exception {
         _testMessageReceptionWithViewChangeMemberLeft(true);
         _testMessageReceptionWithViewChangeMemberLeft(false);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGetFirstWithResponseFilter() throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),
@@ -101,7 +101,7 @@ public class GroupRequestTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGetAllWithResponseFilter() throws Exception {
         Object[] responses=new Message[]{new Message(null, a1, new Long(1)),
                 new Message(null, a2, new Long(2)),

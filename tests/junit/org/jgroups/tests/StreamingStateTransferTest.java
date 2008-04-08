@@ -1,8 +1,8 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
@@ -37,7 +37,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         return true;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testTransfer() {
         String channelNames[] = null;
         // mux applications on top of same channel have to have unique name
@@ -49,7 +49,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         transferHelper(channelNames, false);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testRpcChannelTransfer() {
         // do this test for regular channels only
         if(!isMuxChannelUsed()){
@@ -58,7 +58,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         }
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testMultipleServiceMuxChannel() {
         String channelNames[] = null;
         // mux applications on top of same channel have to have unique name
@@ -307,7 +307,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             Object nameTransfer = null;
             try{
                 nameTransfer = Util.objectFromByteBuffer(state);
-                TestCase.assertEquals("Got partial state requested ", nameTransfer, name);
+                assertEquals("Got partial state requested ", nameTransfer, name);
             }catch(Exception e){
                 e.printStackTrace();
             }finally{
@@ -338,7 +338,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             ObjectInputStream ois = null;
             try{
                 ois = new ObjectInputStream(istream);
-                TestCase.assertEquals("Got partial state requested ", ois.readObject(), name);
+                assertEquals("Got partial state requested ", ois.readObject(), name);
             }catch(Exception e){
                 e.printStackTrace();
             }finally{
@@ -366,12 +366,5 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(StreamingStateTransferTest.class);
-    }
-
-    public static void main(String[] args) {
-        String[] testCaseName = { StreamingStateTransferTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
+ 
 }

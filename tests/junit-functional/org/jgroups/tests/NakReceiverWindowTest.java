@@ -1,10 +1,10 @@
-// $Id: NakReceiverWindowTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Global;
@@ -29,20 +29,20 @@ public class NakReceiverWindowTest {
         sender=new IpAddress("127.0.0.1", 5555);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test1() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
         check(win, 0, 1, 1);
         assert win.get(23) == null;
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         check(win, 0, 100, 100);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test3() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -57,14 +57,14 @@ public class NakReceiverWindowTest {
         check(win, 0, 2, 2);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
         win.add(2, new Message());
         check(win, 0, 2, 1);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test5() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -72,7 +72,7 @@ public class NakReceiverWindowTest {
         check(win, 0, 101, 100);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test6() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -88,7 +88,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testLowerBounds() {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
         win.add(101, new Message());
@@ -103,7 +103,7 @@ public class NakReceiverWindowTest {
         check(win, 50, 101, 101);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test7() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -121,7 +121,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testLowerBounds2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
         win.add(100, new Message());
@@ -140,7 +140,7 @@ public class NakReceiverWindowTest {
         check(win, 103, 103, 103);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test8() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -164,7 +164,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAdd() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         check(win, 0, 0, 0);
@@ -189,7 +189,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test9() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -212,7 +212,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testHighestDelivered() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -241,7 +241,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -253,7 +253,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages2() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -267,7 +267,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages3() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -295,7 +295,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages4() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -323,7 +323,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMissingMessages5() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
         win.add(101, new Message());
@@ -351,7 +351,7 @@ public class NakReceiverWindowTest {
         System.out.println("win: " + win);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test10() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -362,7 +362,7 @@ public class NakReceiverWindowTest {
         check(win, 0, 4, 4);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test10a() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -375,7 +375,7 @@ public class NakReceiverWindowTest {
 
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test11() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -388,7 +388,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test12() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
 
@@ -402,7 +402,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test13() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         win.add(1, new Message());
@@ -421,7 +421,7 @@ public class NakReceiverWindowTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddOOBAtHead() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
@@ -434,7 +434,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddOOBAtTail() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
@@ -447,7 +447,7 @@ public class NakReceiverWindowTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddOOBInTheMiddle() throws Exception {
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
         boolean rc;
@@ -468,7 +468,7 @@ public class NakReceiverWindowTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testUpdateHighestSeen() {
         add(1000);
         add(2000);
@@ -481,12 +481,12 @@ public class NakReceiverWindowTest {
         add(30000);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test1000() {
         add(1000);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test10000() {
         add(10000);
     }
@@ -527,11 +527,4 @@ public class NakReceiverWindowTest {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(NakReceiverWindowTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

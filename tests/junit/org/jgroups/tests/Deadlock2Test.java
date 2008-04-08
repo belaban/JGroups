@@ -1,9 +1,9 @@
-// $Id: Deadlock2Test.java,v 1.13 2008/04/08 07:18:58 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.14 2008/04/08 08:29:34 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.blocks.GroupRequest;
@@ -21,7 +21,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  */
 public class Deadlock2Test extends ChannelTestBase {
 
@@ -42,7 +42,7 @@ public class Deadlock2Test extends ChannelTestBase {
      *
      * @throws Exception
      */
-    @org.testng.annotations.Test
+    @Test
     public void testOneChannel() throws Exception {
         Channel channel = createChannel();
         ServerObject serverObject = new ServerObject("obj1");
@@ -86,7 +86,7 @@ public class Deadlock2Test extends ChannelTestBase {
      * If there is a deadlock, JUnit will timeout and fail the test.
      *
      */
-    @org.testng.annotations.Test
+    @Test
     public void testTwoChannels() throws Throwable {
         ServerObject obj1, obj2 = null;
 
@@ -117,7 +117,7 @@ public class Deadlock2Test extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testTwoChannelsWithInitialMulticast() throws Exception {
         ServerObject obj1, obj2 = null;
 
@@ -149,16 +149,6 @@ public class Deadlock2Test extends ChannelTestBase {
             c2.close();
             c1.close();
         }
-    }
-
-
-    public static Test suite() {
-        return new TestSuite(Deadlock2Test.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-        System.exit(0);
     }
 
 

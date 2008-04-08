@@ -6,10 +6,7 @@ import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.*;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -19,9 +16,9 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.16 2008/04/08 07:18:54 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.17 2008/04/08 08:29:34 belaban Exp $
  */
-@org.testng.annotations.Test(groups=Global.STACK_DEPENDENT, sequential=true)
+@Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
@@ -42,7 +39,7 @@ public class JoinTest extends ChannelTestBase {
             c1.close();
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testSingleJoin() throws ChannelException {
         c1.connect("X");
         View v=c1.getView();
@@ -55,7 +52,7 @@ public class JoinTest extends ChannelTestBase {
      * Tests that immediately after a connect(), a getView() returns the correct view
      * @throws ChannelException
      */
-    @org.testng.annotations.Test
+    @Test
     public void testJoinsOnTwoChannels() throws ChannelException {
         c1.connect("X");
         c2.connect("X");
@@ -72,7 +69,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testJoinsOnTwoChannelsAndSend() throws ChannelException {
         MyReceiver r1=new MyReceiver("c1");
         MyReceiver r2=new MyReceiver("c2");
@@ -109,7 +106,7 @@ public class JoinTest extends ChannelTestBase {
      * started another discovery. Tests whether the discovery process is cancelled correctly.
      * http://jira.jboss.com/jira/browse/JGRP-621
      */
-    @org.testng.annotations.Test
+    @Test
     public void testDelayedJoinResponse() throws Exception {
         final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
@@ -118,7 +115,7 @@ public class JoinTest extends ChannelTestBase {
         _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testDelayedJoinResponse2() throws Exception {
         final long JOIN_TIMEOUT=2000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
@@ -127,7 +124,7 @@ public class JoinTest extends ChannelTestBase {
         _testDelayedJoinResponse(DISCOVERY_TIMEOUT, JOIN_TIMEOUT, DELAY_JOIN_REQ, TOLERANCE);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testDelayedJoinResponse3() throws Exception {
         final long JOIN_TIMEOUT=5000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=5000;
@@ -137,7 +134,7 @@ public class JoinTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testDelayedJoinResponse4() throws Exception {
         final long JOIN_TIMEOUT=1000, DELAY_JOIN_REQ=4000;
         final long DISCOVERY_TIMEOUT=2000;

@@ -1,4 +1,4 @@
-// $Id: SendAndReceiveTest.java,v 1.10 2008/04/08 07:18:56 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.11 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -163,10 +163,5 @@ public class SendAndReceiveTest {
         return received;
     }
 
-
-    public static void main(String[] args) {
-        String[] testCaseName={SendAndReceiveTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    } //public static void main(String[] args)
 
 }

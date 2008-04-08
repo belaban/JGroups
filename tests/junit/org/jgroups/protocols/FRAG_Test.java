@@ -1,12 +1,13 @@
 package org.jgroups.protocols;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.debug.Simulator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -19,7 +20,7 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-public class FRAG_Test extends TestCase {
+public class FRAG_Test extends ChannelTestBase {
     IpAddress a1;
     Vector members;
     View v;
@@ -219,12 +220,4 @@ public class FRAG_Test extends TestCase {
     }
 
 
-
-    public static Test suite() {
-        return new TestSuite(FRAG_Test.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(FRAG_Test.suite());
-    }
 }

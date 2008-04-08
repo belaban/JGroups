@@ -196,10 +196,5 @@ public class SequencerOrderTest {
     }
 
 
-    public static void main(String[] args) {
-        String[] name={SequencerOrderTest.class.getName()};
-        junit.textui.TestRunner.main(name);
-    }
-
 
 }

@@ -1,10 +1,10 @@
-// $Id: MergeStressTest.java,v 1.8 2008/04/08 07:18:57 belaban Exp $
+// $Id: MergeStressTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -16,7 +16,7 @@ import java.util.concurrent.CyclicBarrier;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.8 2008/04/08 07:18:57 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
  */
 public class MergeStressTest {
     static CyclicBarrier start_connecting=null;
@@ -54,7 +54,7 @@ public class MergeStressTest {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentStartupAndMerging() throws Exception {
         start_connecting=new CyclicBarrier(NUM+1);
         received_all_views=new CyclicBarrier(NUM+1);
@@ -198,15 +198,6 @@ public class MergeStressTest {
 
     }
 
-
-    public static Test suite() {
-        return new TestSuite(MergeStressTest.class);
-    }
-
-    public static void main(String[] args) {
-        String[] testCaseName={MergeStressTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 
 }

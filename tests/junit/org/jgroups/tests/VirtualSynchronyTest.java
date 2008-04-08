@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -46,7 +46,7 @@ public class VirtualSynchronyTest {
 	public VirtualSynchronyTest(String arg0) {
     }
 	
-	@org.testng.annotations.Test
+	@Test
     public void testVSynch() throws Exception
 	{
 		long start = System.currentTimeMillis();
@@ -101,14 +101,7 @@ public class VirtualSynchronyTest {
 		;
 	}
 	
-	public static Test suite() {
-	      return new TestSuite(VirtualSynchronyTest.class);
-	}
-	 
-	public static void main(String[] args) {
-		 String[] testCaseName={VirtualSynchronyTest.class.getName()};
-	     junit.textui.TestRunner.main(testCaseName);
-	}
+
 	
 	private static class GroupMemberThread extends Thread {
 		JChannel ch = null;

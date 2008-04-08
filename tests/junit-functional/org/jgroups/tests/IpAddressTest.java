@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
+// $Id: IpAddressTest.java,v 1.4 2008/04/08 08:29:39 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -39,7 +39,7 @@ public class IpAddressTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
@@ -49,7 +49,7 @@ public class IpAddressTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testEquality() throws Exception {
         Assert.assertEquals(a, b);
         Assert.assertEquals(c, b);
@@ -57,7 +57,7 @@ public class IpAddressTest {
         Assert.assertEquals(c, e);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testEqualityWithDnsRoundRobin() throws UnknownHostException {
         IpAddress x1, x2, x3;
 
@@ -92,7 +92,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testInequality() throws Exception {
         IpAddress tmp=null;
         assert !a.equals(d);
@@ -104,7 +104,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSameHost() throws Exception {
         assert Util.sameHost(a, b);
         assert Util.sameHost(a, c);
@@ -114,7 +114,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNotSameHost() throws Exception {
         assert !Util.sameHost(a, f);
         assert !Util.sameHost(e, f);
@@ -122,7 +122,7 @@ public class IpAddressTest {
         assert !Util.sameHost(null, null);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMcast() {
         assert h.isMulticastAddress();
         assert !a.isMulticastAddress();
@@ -132,7 +132,7 @@ public class IpAddressTest {
     }
 
     
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testCompareTo() {
         Assert.assertEquals(0, a.compareTo(b));
         assert a.compareTo(d) < 0;
@@ -140,7 +140,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testCompareTime() {
         final int NUM=1000000;
         _testCompareTime(a, a, NUM);
@@ -163,7 +163,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testHashcode() {
         int hcode_a=a.hashCode();
         int hcode_b=b.hashCode();
@@ -171,7 +171,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testHashcodeTime() {
         int hash=-1;
         final int NUM=10000000;
@@ -186,7 +186,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -209,7 +209,7 @@ public class IpAddressTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -231,7 +231,7 @@ public class IpAddressTest {
         Assert.assertEquals(ip, ip2);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testExternalization() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -261,7 +261,7 @@ public class IpAddressTest {
 
     
     
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testExternalizationAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -304,7 +304,7 @@ public class IpAddressTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamable() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -355,7 +355,7 @@ public class IpAddressTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamableWithHighPort() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -381,7 +381,7 @@ public class IpAddressTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamableAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);

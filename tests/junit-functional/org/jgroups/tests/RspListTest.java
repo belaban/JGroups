@@ -44,7 +44,7 @@ public class RspListTest {
         rl.clear();
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testConstructor() {
         Collection c=new LinkedList();
         c.add(rsp1); c.add(rsp2); c.add(rsp3);
@@ -58,7 +58,7 @@ public class RspListTest {
         assert tmp.containsValue(rsp3);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIsEmpty() {
         RspList tmp=new RspList();
         assert tmp.isEmpty();
@@ -66,19 +66,19 @@ public class RspListTest {
         assert !(tmp.isEmpty());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testContainsKey() {
         assert rl.containsKey(a1);
         assert rl.containsKey(a3);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testContainsValue() {
         assert rl.containsValue(rsp1);
         assert rl.containsValue(rsp3);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGet() {
         Rsp rsp=(Rsp)rl.get(a1);
         Assert.assertEquals(rsp, rsp1);
@@ -86,7 +86,7 @@ public class RspListTest {
         Assert.assertEquals(rsp, rsp3);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testPut() {
         Rsp rsp;
         rsp=(Rsp)rl.put(new IpAddress(6666), new Rsp(new IpAddress(6666), true));
@@ -96,7 +96,7 @@ public class RspListTest {
         Assert.assertEquals(6, rl.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testRemove() {
         Rsp rsp;
         rsp=(Rsp)rl.remove(new IpAddress(6666));
@@ -106,13 +106,13 @@ public class RspListTest {
         Assert.assertEquals(4, rl.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testClear() {
         rl.clear();
         Assert.assertEquals(0, rl.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testKeySet() {
         RspList tmp=new RspList();
         Set keys=tmp.keySet();
@@ -120,14 +120,14 @@ public class RspListTest {
         Assert.assertEquals(0, keys.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testKeySet2() {
         Set keys=rl.keySet();
         assert keys != null;
         Assert.assertEquals(rl.size(), keys.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddRsp() {
         rl.addRsp(new IpAddress(6666), new Integer(322649));
         Assert.assertEquals(6, rl.size());
@@ -138,7 +138,7 @@ public class RspListTest {
         Assert.assertEquals(new Integer(322649), rsp.getValue());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddRsp2() {
         rl.addRsp(a1, new Integer(322649));
         Assert.assertEquals(5, rl.size());
@@ -149,26 +149,26 @@ public class RspListTest {
         Assert.assertEquals(new Integer(322649), rsp.getValue());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNumSuspectedMembers() {
         Assert.assertEquals(2, rl.numSuspectedMembers());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGetFirst() {
         Object obj=rl.getFirst();
         System.out.println("-- first (non-null) value is " + obj);
         assert obj != null;
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGetResults() {
         Vector v=rl.getResults();
         assert v != null;
         Assert.assertEquals(2, v.size());
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testElementAt() {
         Rsp rsp;
         Set s=new HashSet();
@@ -181,7 +181,7 @@ public class RspListTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testElementAtWithOOBEx() {
         try {
             rl.elementAt(6);

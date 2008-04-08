@@ -28,9 +28,9 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.8 2008/04/08 07:18:56 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.9 2008/04/08 08:29:34 belaban Exp $
  */
-public class EncryptMessageOrderTestCase {
+public class EncryptMessageOrderTestCase extends ChannelTestBase {
 
     public static int MESSAGE_NUMBER=5 * 100;
 
@@ -47,11 +47,6 @@ public class EncryptMessageOrderTestCase {
     public static final String properties ="EncryptNoKeyStore.xml";
 
 
-    /**
-     * Constructor to create test case.
-     */
-    public EncryptMessageOrderTestCase(String string) {
-    }
 
     protected JChannel channel1;
     protected PullPushAdapter adapter1;
@@ -78,7 +73,6 @@ public class EncryptMessageOrderTestCase {
      */
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         printSelectedOptions();
 
         channel1=new JChannel(properties);
@@ -95,18 +89,18 @@ public class EncryptMessageOrderTestCase {
         catch(InterruptedException ex) {
         }
 
-            channel2=new JChannel(properties);
-            channel2.connect(groupName);
-            System.out.println("channel2 connected, view is " + channel2.getView());
+        channel2=new JChannel(properties);
+        channel2.connect(groupName);
+        System.out.println("channel2 connected, view is " + channel2.getView());
 
-            adapter2=new PullPushAdapter(channel2);
+        adapter2=new PullPushAdapter(channel2);
 
-            // sleep one second before processing continues
-            try {
-                Thread.sleep(1000);
-            }
-            catch(InterruptedException ex) {
-            }
+        // sleep one second before processing continues
+        try {
+            Thread.sleep(1000);
+        }
+        catch(InterruptedException ex) {
+        }
 
     }
 
@@ -115,8 +109,6 @@ public class EncryptMessageOrderTestCase {
      */
     @AfterMethod
     protected void tearDown() throws Exception {
-        ;
-        
         adapter2.stop();
         channel2.close();
 
@@ -319,51 +311,6 @@ public class EncryptMessageOrderTestCase {
     
     
 
-    /**
-     * Main method to start a test case from the command line. Parameters are:
-     * <ul>
-     * <li><code>-sleep n</code> - means that after each message sending, sender
-     * thread will sleep for <code>n</code> milliseconds;
-     * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;;
-     * <li><code>-debug</code> - pop-up protocol debugger;
-     * </ul>
-     */
-    public static void main(String[] args) {
-        for(int i=0; i < args.length; i++) {
-            if("-sleep".equals(args[i])) {
-                SLEEP_BETWEEN_SENDING=true;
-                if(!(i < args.length - 1))
-                    throw new RuntimeException("You have to specify sleep time");
-
-                try {
-                    SLEEP_TIME=Integer.parseInt(args[++i]);
-                }
-                catch(NumberFormatException nfex) {
-                    throw new RuntimeException("Cannot parse sleep time");
-                }
-
-            }
-            else if("-msg_num".equals(args[i])) {
-                if(!(i < args.length - 1))
-                    throw new RuntimeException("You have to specify messages number");
-
-                try {
-                    MESSAGE_NUMBER=Integer.parseInt(args[++i]);
-                }
-                catch(NumberFormatException nfex) {
-                    throw new RuntimeException("Cannot parse messages number");
-                }
-
-            }
-           
-            else if("-help".equals(args[i])) {
-                help();
-                return;
-            }
-        }
-
-        junit.textui.TestRunner.run(EncryptMessageOrderTestCase.class);
-    }
 
     static void help() {
         System.out.println("EncryptOrderTest [-help] [-sleep <sleep time between sends (ms)>] " +

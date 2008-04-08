@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.3 2008/04/08 07:19:00 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.4 2008/04/08 08:29:33 belaban Exp $
  */
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
@@ -262,10 +262,5 @@ public class ConcurrentStackTest extends ChannelTestBase {
         }
     }
 
-
-    public static void main(String[] args) {
-        String[] testCaseName={ConcurrentStackTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 }

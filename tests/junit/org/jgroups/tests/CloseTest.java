@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.15 2008/04/08 07:18:59 belaban Exp $
+// $Id: CloseTest.java,v 1.16 2008/04/08 08:29:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -331,8 +331,5 @@ public class CloseTest extends ChannelTestBase {
         Assert.assertEquals(view.size(), num, msg);
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={CloseTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+ 
 }
