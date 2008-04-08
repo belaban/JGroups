@@ -14,15 +14,15 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.3 2008/04/08 08:29:42 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.4 2008/04/08 15:29:13 belaban Exp $
  */
+@Test
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     RpcDispatcher disp, disp2;
     Channel ch, ch2;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        ;
-
         ch=createChannel("A");
         ServerObject obj=new ServerObject();
         disp=new RpcDispatcher(ch, null, null, obj);
@@ -34,8 +34,8 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         ch2.connect("demo");
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        ;
         ch2.close();
         disp2.stop();
         ch.close();
@@ -81,7 +81,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
         return retval;
     }
 
-    private void checkResults(RspList rsps, int num, boolean received) {
+    private static void checkResults(RspList rsps, int num, boolean received) {
         assertEquals("responses: " + rsps, num, rsps.size());
         Map.Entry entry;
         for(Iterator it=rsps.entrySet().iterator(); it.hasNext();) {
@@ -94,7 +94,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
 
     static class ServerObject {
 
-        public void foo(long timeout) {
+        public static void foo(long timeout) {
             System.out.println("-- received foo(), blocking for " + timeout + " ms");
             Util.sleep(timeout);
             System.out.println("-- returning");

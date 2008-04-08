@@ -5,47 +5,34 @@ import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.io.*;
 import java.util.Iterator;
 import java.util.Vector;
 
-
+@Test
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
     private Channel channel, channel2;
     private RpcDispatcher disp, disp2;
+    private final Target target=new Target();
 
 
-    public void methodA(boolean b, long l) {
-        System.out.println("methodA(" + b + ", " + l + ") called");
-    }
 
-
-    public boolean methodB() {
-        return true;
-    }
-
-    public void methodC() {
-        throw new IllegalArgumentException("dummy exception - for testing only");
-    }
-
-    @BeforeClass
+    @BeforeMethod
     protected void setUp() throws Exception {
         channel=createChannel("A");
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-        disp=new RpcDispatcher(channel, null, null, this);
+        disp=new RpcDispatcher(channel, null, null, target);
         channel.connect("RpcDispatcherSerializationTestGroup");
 
         channel2=createChannel("A");
-        disp2=new RpcDispatcher(channel2, null, null, this);
+        disp2=new RpcDispatcher(channel2, null, null, target);
         channel2.connect("RpcDispatcherSerializationTestGroup");
     }
 
 
-    @AfterClass
+    @AfterMethod
     protected void tearDown() throws Exception {
         channel2.close();
         disp2.stop();
@@ -54,7 +41,6 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         channel.close();
     }
 
-    @Test
     public void testNonSerializableArgument() throws Throwable {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
@@ -71,7 +57,6 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
     }
 
-    @Test
     public void testTargetMethodNotFound() {
         Vector members=channel.getView().getMembers();
         System.out.println("members are: " + members);
@@ -85,7 +70,6 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
     }
 
-    @Test
     public void testMarshaller() {
         RpcDispatcher.Marshaller m=new MyMarshaller();
         disp.setRequestMarshaller(m);
@@ -178,7 +162,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                     case NULL:
                         return null;
                     case BOOL:
-                        return new Boolean(in.readBoolean());
+                        return Boolean.valueOf(in.readBoolean());
                     case LONG:
                         return new Long(in.readLong());
                     case OBJ:
@@ -193,7 +177,19 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
     }
 
+    static class Target {
+        public static void methodA(boolean b, long l) {
+            System.out.println("methodA(" + b + ", " + l + ") called");
+        }
 
+        public static boolean methodB() {
+            return true;
+        }
+
+        public static void methodC() {
+            throw new IllegalArgumentException("dummy exception - for testing only");
+        }
+    }
 
 
     static class NonSerializable {
