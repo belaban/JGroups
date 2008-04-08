@@ -15,4 +15,5 @@
             <package name="org.jgroups.protocols.*"/>
         </packages>
     </test>
+
 </suite>

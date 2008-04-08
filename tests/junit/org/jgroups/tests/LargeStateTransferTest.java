@@ -21,7 +21,7 @@ import org.jgroups.util.Util;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.8 2007/11/02 13:04:26 vlada Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.9 2008/04/08 06:59:01 belaban Exp $
  */
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
@@ -43,7 +43,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     protected void setUp() throws Exception {
         super.setUp();       
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
         provider=createChannel("A");
         requester=createChannel("A");
     }

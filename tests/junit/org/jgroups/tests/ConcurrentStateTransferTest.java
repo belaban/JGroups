@@ -21,21 +21,22 @@ import org.jgroups.Channel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeMethod;
 
 /**
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.5 2007/12/11 16:25:27 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.6 2008/04/08 06:59:00 belaban Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
     private final AtomicInteger mod = new AtomicInteger(1);
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         mod.set(1);
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public boolean useBlocking() {

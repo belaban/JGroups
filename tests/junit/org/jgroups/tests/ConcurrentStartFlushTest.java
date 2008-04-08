@@ -14,7 +14,7 @@ import org.jgroups.util.Util;
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.2 2008/01/09 04:33:31 vlada Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.3 2008/04/08 06:59:00 belaban Exp $
  */
 public class ConcurrentStartFlushTest extends ChannelTestBase {    
     private Receiver r1, r2, r3;
@@ -24,7 +24,7 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
 
     protected void setUp() throws Exception {
         super.setUp();      
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     protected void tearDown() throws Exception {       

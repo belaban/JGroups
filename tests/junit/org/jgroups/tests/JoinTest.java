@@ -8,6 +8,8 @@ import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterTest;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -17,36 +19,32 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.14 2008/02/15 01:06:15 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.15 2008/04/08 06:59:00 belaban Exp $
  */
+@org.testng.annotations.Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
-    public JoinTest(String name) {
-        super(name);
-    }
-
-
+    @BeforeTest
     public void setUp() throws Exception {
-        super.setUp();               
         c1=createChannel("A");
         c2=createChannel("A");
     }
 
 
+    @AfterTest
     public void tearDown() throws Exception {        
         if(c2 != null)
             c2.close();
         if(c1 != null)
             c1.close();
-        super.tearDown();
     }
 
     public void testSingleJoin() throws ChannelException {
         c1.connect("X");
         View v=c1.getView();
-        assertNotNull(v);
-        assertEquals(1, v.size());
+        assert v != null;
+        assert v.size() == 1;
     }
 
 
@@ -58,16 +56,15 @@ public class JoinTest extends ChannelTestBase {
         c1.connect("X");
         c2.connect("X");
         
-        //no blocking is used, let the view propagate
-        Util.sleep(2000);
+        Util.sleep(2000); //no blocking is used, let the view propagate
         
         View v1=c1.getView(), v2=c2.getView();
         System.out.println("v1=" + v1 + ", v2=" + v2);
-        assertNotNull(v1);
-        assertNotNull(v2);
-        assertEquals(2, v1.size());
-        assertEquals(2, v2.size());
-        assertEquals(v1, v2);
+        assert v1 != null;
+        assert v2 != null;
+        assert v1.size() == 2;
+        assert v2.size() == 2;
+        assert v1.equals(v2);
     }
 
 
@@ -79,13 +76,13 @@ public class JoinTest extends ChannelTestBase {
         Message m1=new Message(null, null, "message-1"), m2=new Message(null, null, "message-2");
         c1.connect("X");
         View view=c1.getView();
-        assertEquals("c1's view: " + view, 1, view.size());
+        assert view.size() == 2 : "c1's view: " + view;
         c2.connect("X");
         view=c2.getView();
-        assertEquals("c2's view: " + view, 2, view.size());
+        assert view.size() == 2 : "c2's view: " + view;
         Util.sleep(200);
         view=c1.getView();
-        assertEquals("c1's view: " + view, 2, view.size());
+        assert view.size() == 2 : "c1's view: " + view;
 
         c1.send(m1);
         c2.send(m2);
@@ -93,14 +90,12 @@ public class JoinTest extends ChannelTestBase {
         Util.sleep(1500);
         List c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
         System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
-        assertNotNull(c1_list);
-        assertNotNull(c2_list);
-        assertEquals("cl_list: " + c1_list, 2, c1_list.size());
-        assertEquals("c2_list: " + c2_list, 2, c2_list.size());
-        assertTrue(c1_list.contains("message-1"));
-        assertTrue(c2_list.contains("message-1"));
-        assertTrue(c1_list.contains("message-2"));
-        assertTrue(c2_list.contains("message-2"));
+        assert c1_list.size() == 2 : "cl_list: " + c1_list;
+        assert c2_list.size() == 2 : "c2_list: " + c2_list;
+        assert c1_list.contains("message-1");
+        assert c2_list.contains("message-1");
+        assert c1_list.contains("message-2");
+        assert c2_list.contains("message-2");
     }
 
 
@@ -144,7 +139,7 @@ public class JoinTest extends ChannelTestBase {
 
 
 
-    public void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
+    void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
                                          long delay_join_req, long tolerance) throws Exception {
         c1.connect("x");
 
@@ -172,12 +167,7 @@ public class JoinTest extends ChannelTestBase {
         long join_time=stop-start;
         long tolerated_join_time=discovery_timeout + delay_join_req + tolerance; // 1 sec more is okay (garbage collection etc)
         System.out.println(new Date() + ": joining of c2 took " + join_time + " ms (should have taken not more than "+tolerated_join_time +" ms)");
-        assertTrue("join time (" + join_time + ") was > tolerated join time (" + tolerated_join_time + ")", join_time <= tolerated_join_time);
-    }
-
-
-    public static Test suite() {
-        return new TestSuite(JoinTest.class);
+        assert join_time <= tolerated_join_time : "join time (" + join_time + ") was > tolerated join time (" + tolerated_join_time + ")";
     }
 
 

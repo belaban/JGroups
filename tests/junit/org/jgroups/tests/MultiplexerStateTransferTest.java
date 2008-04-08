@@ -7,6 +7,8 @@ import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterTest;
 
 import java.util.*;
 import java.io.*;
@@ -14,27 +16,23 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.4 2008/02/19 23:33:59 vlada Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.5 2008/04/08 06:59:01 belaban Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
     JChannelFactory factory, factory2;   
 
-    public MultiplexerStateTransferTest(String name) {
-        super(name);
-    }
-
-
+    @BeforeTest
     public void setUp() throws Exception {
-        super.setUp();            
         factory=new JChannelFactory();
-        factory.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory.setMultiplexerConfig(mux_conf);
 
         factory2=new JChannelFactory();
-        factory2.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory2.setMultiplexerConfig(mux_conf);
     }
 
+    @AfterTest
     public void tearDown() throws Exception {        
         if(ch1_repl != null)
             ch1_repl.close();
@@ -45,20 +43,20 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         if(ch2 != null)
             ch2.close();
         if(ch1 != null) {
-            assertFalse(((MuxChannel)ch1).getChannel().isOpen());
-            assertFalse(((MuxChannel)ch1).getChannel().isConnected());
+            assert !((MuxChannel)ch1).getChannel().isOpen();
+            assert !((MuxChannel)ch1).getChannel().isConnected();
         }
         if(ch2 != null) {
-            assertFalse(((MuxChannel)ch2).getChannel().isOpen());
-            assertFalse(((MuxChannel)ch2).getChannel().isConnected());
+            assert !((MuxChannel)ch2).getChannel().isOpen();
+            assert !((MuxChannel)ch2).getChannel().isConnected();
         }
         if(ch1_repl != null) {
-            assertFalse(((MuxChannel)ch1_repl).getChannel().isOpen());
-            assertFalse(((MuxChannel)ch1_repl).getChannel().isConnected());
+            assert !((MuxChannel)ch1_repl).getChannel().isOpen();
+            assert !((MuxChannel)ch1_repl).getChannel().isConnected();
         }
         if(ch2_repl != null) {
-            assertFalse(((MuxChannel)ch2_repl).getChannel().isOpen());
-            assertFalse(((MuxChannel)ch2_repl).getChannel().isConnected());
+            assert !((MuxChannel)ch2_repl).getChannel().isOpen();
+            assert !((MuxChannel)ch2_repl).getChannel().isConnected();
         }
 
         if(c1 != null) c1.clear();
@@ -68,8 +66,6 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
         ch1_repl=ch2_repl=ch1=ch2=null;
         c1=c2=c1_repl=c2_repl=null; 
-        
-        super.tearDown();
     }
     
     public void testStateTransfer() throws Exception {
@@ -81,7 +77,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
     
     private void regularStateTransfer(boolean joinAndFetch) throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
         if(joinAndFetch){
             ch1.connect("bla", null, null, 5000);
@@ -89,9 +85,9 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         else{
             ch1.connect("bla");
         }
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        assert c1.size() == 0 : "cache has to be empty initially";
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
 
         c1.put("name", "Bela");
@@ -111,16 +107,16 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         Util.sleep(500);
 
         System.out.println("c1_repl: " + c1_repl);
-        assertEquals("initial state should have been transferred", 4, c1_repl.size());
+        assert c1_repl.size() == 4 : "initial state should have been transferred";
 
-        assertEquals(new Long(322649), c1.get("id"));
-        assertEquals(new Long(322649), c1_repl.get("id"));
+        assert c1.get("id").equals(322649);
+        assert c1_repl.get("id").equals(322649);
 
-        assertEquals("biking", c1.get("hobbies"));
-        assertEquals("biking", c1_repl.get("hobbies"));
+        assert c1.get("hobbies").equals("biking");
+        assert c1_repl.get("hobbies").equals("biking");
 
-        assertEquals("Centurion", c1.get("bike"));
-        assertEquals("Centurion", c1_repl.get("bike"));
+        assert c1.get("bike").equals("Centurion");
+        assert c1_repl.get("bike").equals("Centurion");
     }
 
     public void testStateTransferWithTwoApplications() throws Exception {
@@ -132,7 +128,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
     private void stateTransferWithTwoApplications(boolean joinAndFetch) throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
         
         if(joinAndFetch){
@@ -141,29 +137,29 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
             ch1.connect("bla");
         }
         
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        assert c1.size() == 0 : "cache has to be empty initially";
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         c2=new Cache(ch2, "cache-2");
-        if(joinAndFetch){
+        if(joinAndFetch) {
             ch2.connect("bla", null, null, 5000);
-        }else{
+        } else {
             ch2.connect("bla");
         }
-        assertEquals("cache has to be empty initially", 0, c2.size());
+        assert c2.size() == 0 : "cache has to be empty initially";
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
 
-        ch2_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c2");
 
 
         c1.put("name", "cache-1");
         c2.put("name", "cache-2");
 
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        if(joinAndFetch){
+        if(joinAndFetch) {
             ch1_repl.connect("bla", null, null, 5000);
-        }else{
+        } else {
             ch1_repl.connect("bla");
             boolean rc=ch1_repl.getState(null, 5000);
             System.out.println("state transfer: " + rc);
@@ -185,40 +181,40 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         System.out.println("c2: " + c2);
         System.out.println("c2_repl: " + c2_repl);
 
-        assertEquals(1, c1.size());
-        assertEquals(1, c1_repl.size());
+        assert c1.size() == 1;
+        assert c1_repl.size() == 1;
 
-        assertEquals(1, c2.size());
-        assertEquals(1, c2_repl.size());
+        assert c2.size() == 1;
+        assert c2_repl.size() == 1;
 
-        assertEquals("cache-1", c1.get("name"));
-        assertEquals("cache-1", c1_repl.get("name"));
+        assert c1.get("name").equals("cache-1");
+        assert c1_repl.get("name").equals("cache-1");
 
-        assertEquals("cache-2", c2.get("name"));
-        assertEquals("cache-2", c2_repl.get("name"));
+        assert c2.get("name").equals("cache-2");
+        assert c2_repl.get("name").equals("cache-2");
     }
 
 
     public void testStateTransferWithRegistration() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1",true,null);
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1",true,null);
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         boolean rc = ch1.getState(null, 5000);
         System.out.println("state transfer: " + rc);
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        assert c1.size() == 0 : "cache has to be empty initially";
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2",true,null);
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2",true,null);
         ch2.connect("bla");
         c2=new Cache(ch2, "cache-2");
         rc = ch2.getState(null, 5000);
         System.out.println("state transfer: " + rc);
-        assertEquals("cache has to be empty initially", 0, c2.size());
+        assert c2.size() == 0 : "cache has to be empty initially";
         
         c1.put("name", "cache-1");
         c2.put("name", "cache-2");
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1", true, null); // register for state transfer
-        ch2_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2", true, null); // register for state transfer
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1", true, null); // register for state transfer
+        ch2_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c2", true, null); // register for state transfer
 
         ch1_repl.connect("bla");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
@@ -237,17 +233,17 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         System.out.println("c2: " + c2);
         System.out.println("c2_repl: " + c2_repl);
 
-        assertEquals(1, c1.size());
-        assertEquals(1, c1_repl.size());
+        assert c1.size() == 1;
+        assert c1_repl.size() == 1;
 
-        assertEquals(1, c2.size());
-        assertEquals(1, c2_repl.size());
+        assert c2.size() == 1;
+        assert c2_repl.size() == 1;
 
-        assertEquals("cache-1", c1.get("name"));
-        assertEquals("cache-1", c1_repl.get("name"));
+        assert c1.get("name").equals("cache-1");
+        assert c1_repl.get("name").equals("cache-1");
 
-        assertEquals("cache-2", c2.get("name"));
-        assertEquals("cache-2", c2_repl.get("name"));
+        assert c2.get("name").equals("cache-2");
+        assert c2_repl.get("name").equals("cache-2");
         c1.clear();
         c1_repl.clear();
         c2.clear();
@@ -255,7 +251,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-    private void setCorrectPortRange(Channel ch) {
+    private static void setCorrectPortRange(Channel ch) {
         ProtocolStack stack=((MuxChannel)ch).getProtocolStack();
         Protocol tcpping=stack.findProtocol("TCPPING");
         if(tcpping == null)
@@ -275,11 +271,11 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
     public void testStateTransferWithReconnect() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         setCorrectPortRange(ch1);
 
         assertTrue(ch1.isOpen());
-        assertFalse(ch1.isConnected());
+        assert !ch1.isConnected();
         ch1.connect("bla");
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
@@ -288,10 +284,10 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         setCorrectPortRange(ch1_repl);
         assertTrue(ch1_repl.isOpen());
-        assertFalse(ch1_repl.isConnected());
+        assert !ch1_repl.isConnected();
 
         c1.put("name", "Bela");
         c1.put("id", new Long(322649));
@@ -323,7 +319,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
         ch1_repl.disconnect();
         assertTrue(ch1_repl.isOpen());
-        assertFalse(ch1_repl.isConnected());
+        assert !ch1_repl.isConnected();
         Util.sleep(1000);
         assertServiceAndClusterView(ch1, 1, 1);
 
@@ -358,10 +354,10 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         // But first, add another MuxChannel on that JChannel
         // just so it remains coordinator (test that it doesn't
         // ask for state from itself)
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         setCorrectPortRange(ch2);
         assertTrue(ch2.isOpen());
-        assertFalse(ch2.isConnected());
+        assert !ch2.isConnected();
         assertServiceAndClusterView(ch1, 2, 2);
         assertServiceAndClusterView(ch1_repl, 2, 2);
 
@@ -370,10 +366,10 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         //sleep a bit and thus let asynch VIEW to propagate to other channel
         Util.sleep(500);
         assertTrue(ch1.isOpen());
-        assertFalse(ch1.isConnected());
+        assert !ch1.isConnected();
         assertServiceAndClusterView(ch1_repl, 1, 1);
         assertTrue(ch2.isOpen());
-        assertFalse(ch2.isConnected());
+        assert !ch2.isConnected();
 
         c1.clear();
 
@@ -384,7 +380,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         Util.sleep(500);
         assertServiceAndClusterView(ch1_repl, 2, 2);
         assertTrue(ch2.isOpen());
-        assertFalse(ch2.isConnected());
+        assert !ch2.isConnected();
 
         assertEquals("cache has to be empty initially", 0, c1.size());
 
@@ -406,7 +402,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-    private void assertServiceAndClusterView(Channel ch, int num_service_view_mbrs, int num_cluster_view_mbrs) {
+    private static void assertServiceAndClusterView(Channel ch, int num_service_view_mbrs, int num_cluster_view_mbrs) {
         View service_view, cluster_view;
         service_view=ch.getView();
         cluster_view=((MuxChannel)ch).getClusterView();
@@ -421,14 +417,14 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }   
 
     public void testStateTransferFromSelf() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         boolean rc=ch1.getState(null, 2000);
-        assertFalse("getState() on singleton should return false", rc);
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        assert !rc : "getState() on singleton should return false";
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("foo");
         rc=ch2.getState(null, 2000);
-        assertFalse("getState() on singleton should return false", rc);
+        assert !rc : "getState() on singleton should return false";
     }
 
 
@@ -441,7 +437,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
     
     private void getSubstates(boolean joinAndFetch) throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new ExtendedCache(ch1, "cache-1");
         if(joinAndFetch){
             ch1.connect("bla", null, null, 5000);
@@ -451,7 +447,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
                
         assertEquals("cache has to be empty initially", 0, c1.size());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         c2=new ExtendedCache(ch2, "cache-2");
         
         if(joinAndFetch){
@@ -467,8 +463,8 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
             c2.put(new Integer(i), new Integer(i));
         }
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        ch2_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
+        ch2_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c2");
         c1_repl=new ExtendedCache(ch1_repl, "cache-1-repl");
         
         if (joinAndFetch) {
@@ -503,18 +499,18 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         _testOddNumbersPresent(c2_repl);
     }
 
-    private void _testEvenNumbersPresent(Cache c) {
+    private static void _testEvenNumbersPresent(Cache c) {
         Integer[] evens=new Integer[]{new Integer(0), new Integer(2), new Integer(4), new Integer(6), new Integer(8)};
         _testNumbersPresent(c, evens);
 
     }
 
-    private void _testOddNumbersPresent(Cache c) {
+    private static void _testOddNumbersPresent(Cache c) {
         Integer[] odds=new Integer[]{new Integer(1), new Integer(3), new Integer(5), new Integer(7), new Integer(9)};
         _testNumbersPresent(c, odds);
     }
 
-    private void _testNumbersPresent(Cache c, Integer[] numbers) {
+    private static void _testNumbersPresent(Cache c, Integer[] numbers) {
         int len=numbers.length;
         assertEquals(len, c.size());
         for(int i=0; i < numbers.length; i++) {
@@ -526,12 +522,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
     public void testGetSubstatesMultipleTimes() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new ExtendedCache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("bla");
         c2=new ExtendedCache(ch2, "cache-2");
         assertEquals("cache has to be empty initially", 0, c2.size());
@@ -541,8 +537,8 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
             c2.put(new Integer(i), new Integer(i));
         }
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
-        ch2_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
+        ch2_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c2");
         ch1_repl.connect("bla");
         c1_repl=new ExtendedCache(ch1_repl, "cache-1-repl");
         boolean rc=ch1_repl.getState(null, "odd", 5000);

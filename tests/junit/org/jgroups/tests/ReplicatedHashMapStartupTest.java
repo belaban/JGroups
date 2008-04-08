@@ -20,7 +20,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.1 2007/11/23 18:07:06 vlada Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.2 2008/04/08 06:59:01 belaban Exp $
  */
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
@@ -28,7 +28,7 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
     public void setUp() throws Exception {
         super.setUp();
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush",
+        channel_conf= System.getProperty("channel.conf.flush",
                 "flush-udp.xml");
     }
 

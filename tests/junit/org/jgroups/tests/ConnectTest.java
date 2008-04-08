@@ -1,34 +1,33 @@
-// $Id: ConnectTest.java,v 1.10 2007/08/30 10:22:07 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Channel;
 import org.jgroups.Message;
-import org.jgroups.MessageListener;
+import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
-import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
 
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
+ * @version $Id: ConnectTest.java,v 1.11 2008/04/08 06:59:01 belaban Exp $
  */
+@Test(sequential=true)
 public class ConnectTest extends ChannelTestBase {
     Channel channel;
-    final int TIMES=10;    
+    static final int TIMES=10;
 
-    public ConnectTest(String name) {
-        super(name);
-    }
 
+    @AfterClass
     public void tearDown() throws Exception {        
         if(channel != null) {
             channel.close();
             channel = null;
         }
-        super.tearDown();
     }
 
     void doIt(int times) {
@@ -68,8 +67,8 @@ public class ConnectTest extends ChannelTestBase {
         channel.disconnect();
         channel.connect("testgroup2");
         View view=channel.getView();
-        assertEquals(1, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
+        assert view.size() == 1;
+        assert view.containsMember(channel.getLocalAddress());
         channel.close();
         System.out.println("Remaining threads are:");
         Util.printThreads();
@@ -97,9 +96,9 @@ public class ConnectTest extends ChannelTestBase {
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
 
-        assertEquals(2, view.size());
-        assertTrue(view.containsMember(channel.getLocalAddress()));
-        assertTrue(view.containsMember(coordinator.getLocalAddress()));
+        assert view.size() == 2;
+        assert view.containsMember(channel.getLocalAddress());
+        assert view.containsMember(coordinator.getLocalAddress());
         coordinator.close();
         channel.close();
         System.out.println("Remaining threads are:");
@@ -115,23 +114,19 @@ public class ConnectTest extends ChannelTestBase {
      * multicast messages.
      **/
     public void testDisconnectConnectSendTwo() throws Exception {
-        final Promise msgPromise=new Promise();
+        final Promise<Message> msgPromise=new Promise<Message>();
         Channel coordinator=createChannel("A");
+        coordinator.setReceiver(new PromisedMessageListener(msgPromise));
         coordinator.connect("testgroup");
-        PullPushAdapter ppa=
-                new PullPushAdapter(coordinator,
-                                    new PromisedMessageListener(msgPromise));
-        ppa.start();
 
         channel=createChannel("A");
         channel.connect("testgroup1");
         channel.disconnect();
         channel.connect("testgroup");
         channel.send(new Message(null, null, "payload"));
-        Message msg=(Message)msgPromise.getResult(20000);
-        assertTrue(msg != null);
-        assertEquals("payload", msg.getObject());
-        ppa.stop();
+        Message msg=msgPromise.getResult(20000);
+        assert msg != null;
+        assert msg.getObject().equals("payload");
         coordinator.close();
         channel.close();
         System.out.println("Remaining threads are:");
@@ -144,31 +139,19 @@ public class ConnectTest extends ChannelTestBase {
 
 
 
-    private static class PromisedMessageListener implements MessageListener {
-
-        private Promise<Message> promise;
+    private static class PromisedMessageListener extends ReceiverAdapter {
+        private final Promise<Message> promise;
 
         public PromisedMessageListener(Promise<Message> promise) {
             this.promise=promise;
         }
 
-        public byte[] getState() {
-            return null;
-        }
-
         public void receive(Message msg) {
             promise.setResult(msg);
         }
-
-        public void setState(byte[] state) {
-        }
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={ConnectTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 
 
 }

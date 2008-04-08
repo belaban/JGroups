@@ -13,7 +13,7 @@ import java.io.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.47 2007/09/27 16:19:51 vlada Exp $
+ * @version $Id: MultiplexerTest.java,v 1.48 2008/04/08 06:59:00 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -28,10 +28,10 @@ public class MultiplexerTest extends ChannelTestBase {
     public void setUp() throws Exception {
         super.setUp();            
         factory=new JChannelFactory();
-        factory.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory.setMultiplexerConfig(mux_conf);
 
         factory2=new JChannelFactory();
-        factory2.setMultiplexerConfig(MUX_CHANNEL_CONFIG);
+        factory2.setMultiplexerConfig(mux_conf);
     }
 
     public void tearDown() throws Exception {        
@@ -73,7 +73,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testReplicationWithOneChannel() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
@@ -85,7 +85,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testLifecycle() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
 
@@ -93,7 +93,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
@@ -117,7 +117,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertFalse(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("bla");
         assertTrue(ch2.isOpen());
         assertTrue(ch2.isConnected());
@@ -129,7 +129,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testDisconnect() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
         assertTrue(((MuxChannel)ch1).getChannel().isOpen());
@@ -141,7 +141,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertTrue(((MuxChannel)ch1).getChannel().isOpen());
         assertTrue(((MuxChannel)ch1).getChannel().isConnected());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
@@ -165,7 +165,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
     public void testDisconnect2() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
         assertFalse(ch1.isConnected());
 
@@ -173,7 +173,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertTrue(ch1.isOpen());
         assertTrue(ch1.isConnected());
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         assertTrue(ch2.isOpen());
         assertFalse(ch2.isConnected());
 
@@ -194,9 +194,9 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testClose() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("bla");
         ch1.close();
         ch2.close();
@@ -204,12 +204,12 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testReplicationWithTwoChannels() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
         ch1.connect("bla");
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         assertEquals("cache has to be empty initially", 0, c1_repl.size());
         ch1_repl.connect("bla");
@@ -270,11 +270,11 @@ public class MultiplexerTest extends ChannelTestBase {
 
 
     public void testVirtualSynchrony() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
         ch1.connect("bla");
 
-        ch1_repl=factory2.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         ch1_repl.connect("bla");
         assertEquals("view: " + ch1.getView(), 2, ch1.getView().size());
@@ -310,7 +310,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
     public void testReplicationWithReconnect() throws Exception {
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
         assertEquals("cache has to be empty initially", 0, c1.size());
@@ -334,7 +334,7 @@ public class MultiplexerTest extends ChannelTestBase {
     
     public void testAdditionalData() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         Map<String,Object> m=new HashMap<String,Object>(1);
         m.put("additional_data", additional_data);
         ch1.down(new Event(Event.CONFIG, m));
@@ -345,7 +345,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertNotNull(tmp);
         assertEquals(tmp, additional_data);
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("foo");
         local_addr=(IpAddress)ch2.getLocalAddress();
         assertNotNull(local_addr);
@@ -357,14 +357,14 @@ public class MultiplexerTest extends ChannelTestBase {
     public void testAdditionalData2() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         byte[] additional_data2=new byte[]{'m', 'i', 'c', 'h', 'i'};
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         IpAddress local_addr=(IpAddress)ch1.getLocalAddress();
         assertNotNull(local_addr);
         byte[] tmp=local_addr.getAdditionalData();
         assertNull(tmp);
 
-        ch2=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c2");
+        ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         Map<String,Object> m=new HashMap<String,Object>(1);
         m.put("additional_data", additional_data);
         ch2.down(new Event(Event.CONFIG, m));
@@ -394,7 +394,7 @@ public class MultiplexerTest extends ChannelTestBase {
 
     public void testOrdering() throws Exception {
         final int NUM=100;
-        ch1=factory.createMultiplexerChannel(MUX_CHANNEL_CONFIG_STACK_NAME, "c1");
+        ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         MyReceiver receiver=new MyReceiver(NUM);
         ch1.setReceiver(receiver);

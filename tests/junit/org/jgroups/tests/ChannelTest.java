@@ -1,13 +1,13 @@
-// $Id: ChannelTest.java,v 1.12 2008/02/06 07:01:59 vlada Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.util.List;
 import java.util.LinkedList;
@@ -16,8 +16,9 @@ import java.util.LinkedList;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.12 2008/02/06 07:01:59 vlada Exp $
+ * @version $Id: ChannelTest.java,v 1.13 2008/04/08 06:59:00 belaban Exp $
  */
+@Test(sequential=false)
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
 
@@ -25,125 +26,104 @@ public class ChannelTest extends ChannelTestBase {
     //used in testNoViewIsReceivedAferDisconnect()
     boolean receivedViewWhenDisconnected;
 
-
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         ch=createChannel();
         ch.connect(GROUP);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         ch.close();
-        super.tearDown();        
     }
     
-    public void testBasicOperations() throws Exception
-    {
-       String groupName = GROUP;
-       Channel c1 = createChannel("A");
-       c1.connect(groupName);
-       Util.sleep(1000);
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
+    public void testBasicOperations() throws Exception {
+        String groupName = GROUP;
+        Channel c1 = createChannel("A");
+        c1.connect(groupName);
+        Util.sleep(1000);
+        assert c1.isOpen();
+        assert c1.isConnected();
        
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
+        assert c1.getLocalAddress() != null;
+        assert c1.getView() != null;
+        assert c1.getView().getMembers().contains(c1.getLocalAddress());
        
-       try{
-         c1.connect(groupName);
-       }
-       catch (Exception e)
-       {
-         fail("Should have NOT generated exception");
-       }
+        c1.connect(groupName);
+
+        c1.disconnect();
        
-       c1.disconnect();
+        assert c1.isConnected() == false;
+        assert c1.isOpen();
+        assert c1.getLocalAddress() == null;
+        assert c1.getView() == null;
+        assert c1.getClusterName() == null;
        
-       assertFalse(c1.isConnected());
-       assertTrue(c1.isOpen());
-       assertNull(c1.getLocalAddress());
-       assertNull(c1.getView());
+        c1.connect(groupName);
+
+        c1.close();
        
-       assertNull(c1.getClusterName());
+        try {
+            c1.connect(groupName);
+            throw new IllegalStateException("Should generated exception, and it has NOT");
+        }
+        catch (Exception e) {
+            assert e instanceof ChannelClosedException;
+        }
        
-       try{
-          c1.connect(groupName);
-       }
-       catch (Exception e)
-       {
-         fail("Should have NOT generated exception");
-       }
+        assert c1.isConnected() == false;
+        assert c1.isOpen() == false;
+        assert c1.getLocalAddress() == null;
+        assert c1.getView() == null;
        
-       c1.close();
+        assert c1.getClusterName() == null;
        
-       try{
-          c1.connect(groupName);
-          fail("Should generated exception, and it has NOT");
-       }
-       catch (Exception e)
-       {
-         assertTrue(e instanceof ChannelClosedException);
-       }
+        c1 = createChannel("A");
+        c1.connect(groupName);
+        Channel c2 = createChannel("A");
+        c2.connect(groupName);
        
-       assertFalse(c1.isConnected());
-       assertFalse(c1.isOpen());
-       assertNull(c1.getLocalAddress());
-       assertNull(c1.getView());
+        Util.sleep(1000);
        
-       assertNull(c1.getClusterName());                       
+        assert c1.isOpen();
+        assert c1.isConnected();
        
-       c1 = createChannel("A");
-       c1.connect(groupName);
-       Channel c2 = createChannel("A");
-       c2.connect(groupName);
+        assert c1.getLocalAddress() != null;
+        assert c1.getView() != null;
+        assert c1.getView().getMembers().contains(c1.getLocalAddress());
+        assert c1.getView().getMembers().contains(c2.getLocalAddress());
        
-       Util.sleep(1000);
+        assert c2.isOpen();
+        assert c2.isConnected();
        
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
+        assert c2.getLocalAddress() != null;
+        assert c2.getView() != null;
+        assert c2.getView().getMembers().contains(c2.getLocalAddress());
+        assert c2.getView().getMembers().contains(c1.getLocalAddress());
        
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
-       assertTrue(c1.getView().getMembers().contains(c2.getLocalAddress()));
+        c2.close();
+        Util.sleep(1000);
        
-       assertTrue(c2.isOpen());
-       assertTrue(c2.isConnected());
+        assert c2.isOpen() == false;
+        assert c2.isConnected() == false;
        
-       assertNotNull(c2.getLocalAddress());
-       assertNotNull(c2.getView());
-       assertTrue(c2.getView().getMembers().contains(c2.getLocalAddress()));
-       assertTrue(c2.getView().getMembers().contains(c1.getLocalAddress()));
+        assert c2.getLocalAddress() == null;
+        assert c2.getView() == null;
        
-       c2.close();
-       Util.sleep(1000);
+        assert c1.isOpen();
+        assert c1.isConnected();
        
-       assertFalse(c2.isOpen());
-       assertFalse(c2.isConnected());
-       
-       assertNull(c2.getLocalAddress());
-       assertNull(c2.getView());
-       
-       assertTrue(c1.isOpen());
-       assertTrue(c1.isConnected());
-       
-       assertNotNull(c1.getLocalAddress());
-       assertNotNull(c1.getView());
-       assertTrue(c1.getView().getMembers().contains(c1.getLocalAddress()));
-       assertFalse(c1.getView().getMembers().contains(c2.getLocalAddress()));
-       
-       c1.close();       
+        assert c1.getLocalAddress() != null;
+        assert c1.getView() != null;
+        assert c1.getView().getMembers().contains(c1.getLocalAddress());
+        assert c1.getView().getMembers().contains(c2.getLocalAddress()) == false;
+        c1.close();
     }
 
     public void testFirstView() throws Exception {
         Object obj=ch.receive(5000);
-        if(!(obj instanceof View)) {
-            fail("first object returned needs to be a View (was " + obj + ")");
-        }
-        else {
-            System.out.println("view is " + obj);
-        }
+        System.out.println("view is " + obj);
+        assert obj instanceof View : "first object returned needs to be a View (was " + obj + ")";
     }
 
 
@@ -153,10 +133,10 @@ public class ChannelTest extends ChannelTestBase {
 
         Channel ch2=createChannel();
         ch2.connect(GROUP);
-        assertTrue(checker.getReason(), checker.isSuccess());
+        assert checker.isSuccess() : checker.getReason();
 
         ch2.close();
-        assertTrue(checker.getReason(), checker.isSuccess());
+        assert checker.isSuccess() : checker.getReason();
     }
 
 
@@ -166,15 +146,13 @@ public class ChannelTest extends ChannelTestBase {
         ch2.setReceiver(tmp);
         ch2.connect(GROUP);
 
-        assertFalse(tmp.isConnected());
+        assert tmp.isConnected() == false;
         ch2.close();
     }
     
     public void testNoViewIsReceivedAferDisconnect() throws Exception {
         final Channel ch2 = createChannel();
         ReceiverAdapter ra = new ReceiverAdapter() {
-
-            @Override
             public void viewAccepted(View new_view) {
                 receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
             }
@@ -185,16 +163,13 @@ public class ChannelTest extends ChannelTestBase {
         Util.sleep(1000);
         ch2.disconnect();
         Util.sleep(1000);
-        assertFalse("Received view where not member", receivedViewWhenDisconnected);
-
+        assert !receivedViewWhenDisconnected : "Received view where not member";
         ch2.close();
     }
     
     public void testNoViewIsReceivedAferClose() throws Exception {
         final Channel ch2 = createChannel();
         ReceiverAdapter ra = new ReceiverAdapter() {
-
-            @Override
             public void viewAccepted(View new_view) {
                 receivedViewWhenDisconnected = !new_view.containsMember(ch2.getLocalAddress());
             }
@@ -205,41 +180,21 @@ public class ChannelTest extends ChannelTestBase {
         Util.sleep(1000);
         ch2.close();
         Util.sleep(1000);
-        assertFalse("Received view where not member", receivedViewWhenDisconnected);
+        assert !receivedViewWhenDisconnected : "Received view where not member";
     }
 
-
+    @Test(expectedExceptions=TimeoutException.class)
     public void testReceiveTimeout() throws ChannelException, TimeoutException {
         ch.receive(1000); // this one works, because we're expecting a View
-
-        // .. but this one doesn't (no msg available) - needs to throw a TimeoutException
-        try {
-            ch.receive(2000);
-        }
-        catch(ChannelNotConnectedException e) {
-            fail("channel should be connected");
-        }
-        catch(ChannelClosedException e) {
-            fail("channel should not be closed");
-        }
-        catch(TimeoutException e) {
-            System.out.println("caught a TimeoutException - this is the expected behavior");
-        }
+        ch.receive(2000); // .. but this one doesn't (no msg available) - needs to throw a TimeoutException
     }
 
+    @Test(expectedExceptions={NullPointerException.class})
     public void testNullMessage() throws ChannelClosedException, ChannelNotConnectedException {
-        try {
-            ch.send(null);
-            fail("null message should throw an exception - we should not get here");
-        }
-        catch(NullPointerException e) {
-            System.out.println("caught NullPointerException - this is expected");
-        }
+        ch.send(null);
     }
 
-
-
-     public void testOrdering() throws Exception {
+    public void testOrdering() throws Exception {
         final int NUM=100;
         MyReceiver receiver=new MyReceiver(NUM);
         ch.setReceiver(receiver);
@@ -261,7 +216,7 @@ public class ChannelTest extends ChannelTestBase {
                 current=num;
             }
             else {
-                assertEquals("list is " + nums, ++current,  num);
+                assert ++current == num : "list is " + nums;
             }
         }
     }
@@ -288,7 +243,6 @@ public class ChannelTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            Util.sleepRandom(100);
             Integer num=(Integer)msg.getObject();
             synchronized(nums) {
                 System.out.println("-- received " + num);
@@ -297,7 +251,6 @@ public class ChannelTest extends ChannelTestBase {
                     nums.notifyAll();
                 }
             }
-            Util.sleepRandom(100);
         }
     }
 
@@ -350,13 +303,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(ChannelTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
 }
 

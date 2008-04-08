@@ -17,7 +17,6 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.jgroups.Address;
-import org.jgroups.Channel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
@@ -26,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.36 2007/12/11 16:25:27 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.37 2008/04/08 06:59:01 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -35,7 +34,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     public void setUp() throws Exception {
         super.setUp();
         mod.set(1);
-        CHANNEL_CONFIG = System.getProperty("channel.conf.flush", "flush-udp.xml");
+        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
     public boolean useBlocking() {
