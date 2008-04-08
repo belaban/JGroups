@@ -1,11 +1,5 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.jgroups.ChannelException;
@@ -13,6 +7,10 @@ import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
 
 /**
  * Tests transfer of large states (http://jira.jboss.com/jira/browse/JGRP-225).
@@ -21,7 +19,7 @@ import org.jgroups.util.Util;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.9 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.10 2008/04/08 07:18:57 belaban Exp $
  */
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
@@ -31,44 +29,46 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
 
 
-
-    public LargeStateTransferTest(String name) {
-        super(name);
-    }
        
     public boolean useBlocking() {
         return true;
     }
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();       
+        ;
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
         provider=createChannel("A");
         requester=createChannel("A");
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(provider != null)
             provider.close();
         if(requester != null)
             requester.close();
-        super.tearDown();
+        ;
     }
 
 
+    @org.testng.annotations.Test
     public void testStateTransfer1() throws ChannelException {
         _testStateTransfer(SIZE_1);
     }
 
+    @org.testng.annotations.Test
     public void testStateTransfer2() throws ChannelException {
         _testStateTransfer(SIZE_2);
     }
 
+    @org.testng.annotations.Test
     public void testStateTransfer3() throws ChannelException {
         _testStateTransfer(SIZE_3);
     }
 
+    @org.testng.annotations.Test
     public void testStateTransfer4() throws ChannelException {
         _testStateTransfer(SIZE_4);
     }

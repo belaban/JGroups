@@ -31,7 +31,7 @@ public class VotingAdapterTest extends ChannelTestBase {
     protected static boolean logConfigured=false;
 
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         listener1=new TestVoteChannelListener(true);
         listener2=new TestVoteChannelListener(true);
         listener3=new TestVoteChannelListener(false);
@@ -72,7 +72,7 @@ public class VotingAdapterTest extends ChannelTestBase {
 
 
         channel1.close();
-        super.tearDown();
+        ;
     }
 
     public void testVoteAll() throws Exception {

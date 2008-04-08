@@ -3,12 +3,15 @@
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,7 +22,7 @@ import java.util.List;
  * gets seqno, thread#2 gets seqno, thread#2 sends, thread#1 tries to send but
  * is out of order.
  */
-public class SequencerOrderTest extends TestCase {
+public class SequencerOrderTest {
     private JChannel ch1, ch2;
     private MyReceiver r1, r2;
     static final String GROUP="demo-group";
@@ -43,11 +46,11 @@ public class SequencerOrderTest extends TestCase {
 
 
     public SequencerOrderTest(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1=new JChannel(props);
         ch1.connect(GROUP);
 
@@ -55,8 +58,9 @@ public class SequencerOrderTest extends TestCase {
         ch2.connect(GROUP);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         if(ch2 != null) {
             ch2.close();
             ch2 = null;
@@ -67,6 +71,7 @@ public class SequencerOrderTest extends TestCase {
         }
     }
 
+    @Test
     public void testBroadcastSequence() throws Exception {
         r1=new MyReceiver(ch1.getLocalAddress());
         ch1.setReceiver(r1);
@@ -128,8 +133,8 @@ public class SequencerOrderTest extends TestCase {
         }
 
         System.out.println("l1.size()=" + l1.size() + ", l2.size()=" + l2.size());
-        assertEquals("list 1 should have " + num_msgs + " elements", num_msgs, l1.size());
-        assertEquals("list 2 should have " + num_msgs + " elements", num_msgs, l2.size());
+        Assert.assertEquals(l1.size(), num_msgs, "list 1 should have " + num_msgs + " elements");
+        Assert.assertEquals(l2.size(), num_msgs, "list 2 should have " + num_msgs + " elements");
     }
 
     private void verifyMessageOrder(List<Integer> list) throws Exception {

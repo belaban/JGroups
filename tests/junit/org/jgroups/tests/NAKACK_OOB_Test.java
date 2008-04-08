@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
@@ -9,6 +8,9 @@ import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -16,23 +18,24 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.4 2008/03/10 15:39:25 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.5 2008/04/08 07:18:57 belaban Exp $
  */
-public class NAKACK_OOB_Test extends TestCase {
+public class NAKACK_OOB_Test {
     JChannel ch1, ch2, ch3;
     final String props="udp.xml";
 
     public NAKACK_OOB_Test(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1=new JChannel(props);
         ch2=new JChannel(props);
         ch3=new JChannel(props);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         if(ch1 != null)
             ch1.close();
@@ -40,7 +43,7 @@ public class NAKACK_OOB_Test extends TestCase {
             ch2.close();
         if(ch3 != null)
             ch3.close();
-        super.tearDown();
+        ;
     }
 
 
@@ -52,6 +55,7 @@ public class NAKACK_OOB_Test extends TestCase {
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      * @throws Exception
      */
+    @org.testng.annotations.Test
     public void testOutOfBandMessages() throws Exception {
         NAKACK_OOB_Test.MyReceiver receiver1=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver2=new NAKACK_OOB_Test.MyReceiver();
@@ -69,7 +73,7 @@ public class NAKACK_OOB_Test extends TestCase {
         ch2.connect("x");
         ch3.connect("x");
 
-        assertEquals(3, ch3.getView().getMembers().size());
+        Assert.assertEquals(3, ch3.getView().getMembers().size());
 
         for(int i=1; i <=5; i++) {
             Message msg=new Message(null, null, new Long(i));
@@ -97,11 +101,11 @@ public class NAKACK_OOB_Test extends TestCase {
             Long expected_seqno=expected_seqnos[i];
 
             Long received_seqno=(Long)seqnos1.get(i);
-            assertEquals(expected_seqno,  received_seqno);
+            Assert.assertEquals(expected_seqno, received_seqno);
             received_seqno=(Long)seqnos2.get(i);
-            assertEquals(expected_seqno,  received_seqno);
+            Assert.assertEquals(expected_seqno, received_seqno);
             received_seqno=(Long)seqnos3.get(i);
-            assertEquals(expected_seqno,  received_seqno);
+            Assert.assertEquals(expected_seqno, received_seqno);
         }
     }
 

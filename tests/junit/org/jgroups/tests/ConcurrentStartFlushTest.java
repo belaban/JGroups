@@ -1,20 +1,19 @@
 package org.jgroups.tests;
 
+import org.jgroups.*;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.CyclicBarrier;
 
-import org.jgroups.BlockEvent;
-import org.jgroups.Channel;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.UnblockEvent;
-import org.jgroups.View;
-import org.jgroups.util.Util;
-
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.3 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.4 2008/04/08 07:18:59 belaban Exp $
  */
 public class ConcurrentStartFlushTest extends ChannelTestBase {    
     private Receiver r1, r2, r3;
@@ -22,13 +21,15 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     private static final long TIMEOUT=10000L;
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();      
+        ;
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
-    protected void tearDown() throws Exception {       
-        super.tearDown();
+    @AfterMethod
+    protected void tearDown() throws Exception {
+        ;
         c3.close();
         c2.close();
         c1.close();
@@ -38,6 +39,7 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
         return true;
     }
 
+    @Test
     public void testSimpleFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(2);
         c1 = createChannel();
@@ -78,6 +80,7 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testConcurrentFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(3);
         c1 = createChannel();
@@ -119,6 +122,7 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testFlushStartedByOneButCompletedByOther() throws Exception {
         c1 = createChannel();
         r1=new Receiver("C1", c1);

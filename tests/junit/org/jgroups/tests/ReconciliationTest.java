@@ -1,36 +1,24 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Event;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
+import java.util.*;
 
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.6 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.7 2008/04/08 07:19:04 belaban Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {
 
@@ -44,15 +32,13 @@ public class ReconciliationTest extends ChannelTestBase {
         super();
     }
 
-    public ReconciliationTest(String name){
-        super(name);
-    }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         if(channels != null){
             for(JChannel channel:channels){
@@ -61,7 +47,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
 
         Util.sleep(500);
-        super.tearDown();
+        ;
     }
 
     public boolean useBlocking() {
@@ -81,6 +67,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * messages
      * </ul>
      */
+    @org.testng.annotations.Test
     public void testReconciliationFlushTriggeredByNewMemberJoin() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -113,6 +100,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * received from C to B
      * </ul>
      */
+    @org.testng.annotations.Test
     public void testReconciliationFlushTriggeredByManualFlush() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -140,6 +128,7 @@ public class ReconciliationTest extends ChannelTestBase {
      * received from C to B
      * </ul>
      */
+    @org.testng.annotations.Test
     public void testReconciliationFlushTriggeredByMemberCrashing() throws Exception {
 
         FlushTrigger t = new FlushTrigger() {
@@ -194,27 +183,27 @@ public class ReconciliationTest extends ChannelTestBase {
 
         // check last (must have received its own messages)
         Map<Address, List<Integer>> map = lastReceiver.getMsgs();
-        assertEquals("we should have only 1 sender, namely C at this time", 1, map.size());
+        Assert.assertEquals(map.size(), 1, "we should have only 1 sender, namely C at this time");
         List<Integer> list = map.get(last.getLocalAddress());
         log.info(lastsName + ": messages received from " + lastsName + ",list=" + list);
-        assertEquals("correct msgs: " + list, 5, list.size());
+        Assert.assertEquals(list.size(), 5, "correct msgs: " + list);
 
         // check nextToLast (should have received none of last messages)
         map = nextToLastReceiver.getMsgs();
-        assertEquals("we should have no sender at this time", 0, map.size());
+        Assert.assertEquals(map.size(), 0, "we should have no sender at this time");
         list = map.get(last.getLocalAddress());
         log.info(nextToLastName + ": messages received from " + lastsName + " : " + list);
-        assertNull(list);
+        assert list == null;
 
         List<MyReceiver> otherReceivers = receivers.subList(0, receivers.size() - 2);
 
         // check other (should have received last's messages)
         for(MyReceiver receiver:otherReceivers){
             map = receiver.getMsgs();
-            assertEquals("we should have only 1 sender", 1, map.size());
+            Assert.assertEquals(map.size(), 1, "we should have only 1 sender");
             list = map.get(last.getLocalAddress());
             log.info(receiver.name + " messages received from " + lastsName + ":" + list);
-            assertEquals("correct msgs" + list, 5, list.size());
+            Assert.assertEquals(list.size(), 5, "correct msgs" + list);
         }
 
         removeDISCARD(nextToLast);
@@ -236,10 +225,10 @@ public class ReconciliationTest extends ChannelTestBase {
         // check that member with discard (should have received all missing
         // messages
         map = nextToLastReceiver.getMsgs();
-        assertEquals("we should have 1 sender at this time", 1, map.size());
+        Assert.assertEquals(map.size(), 1, "we should have 1 sender at this time");
         list = map.get(address);
         log.info(nextToLastName + ": messages received from " + lastsName + " : " + list);
-        assertEquals(5, list.size());
+        Assert.assertEquals(5, list.size());
     }
 
     private void printDigests(List<JChannel> channels, String message) {
@@ -310,6 +299,7 @@ public class ReconciliationTest extends ChannelTestBase {
         }
     }
 
+    @org.testng.annotations.Test
     public void testVirtualSynchrony() throws Exception {
         c1 = createChannel();
         Cache cache_1 = new Cache(c1, "cache-1");
@@ -318,7 +308,7 @@ public class ReconciliationTest extends ChannelTestBase {
         c2 = createChannel();
         Cache cache_2 = new Cache(c2, "cache-2");
         c2.connect("bla");
-        assertEquals("view: " + c1.getView(), 2, c2.getView().size());
+        Assert.assertEquals(c2.getView().size(), 2, "view: " + c1.getView());
 
         // start adding messages
         flush(c1, 5000); // flush all pending message out of the system so
@@ -340,8 +330,8 @@ public class ReconciliationTest extends ChannelTestBase {
                            + cache_2.size()
                            + " elements): "
                            + cache_2);
-        assertEquals(cache_1.size(), cache_2.size());
-        assertEquals(20, cache_1.size());
+        Assert.assertEquals(cache_1.size(), cache_2.size());
+        Assert.assertEquals(20, cache_1.size());
     }
 
     private static void flush(Channel channel, long timeout) {

@@ -5,6 +5,9 @@ import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -12,7 +15,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.15 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.16 2008/04/08 07:19:02 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -25,8 +28,9 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();       
+        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -34,7 +38,8 @@ public class MultiplexerViewTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(mux_conf);
     }
 
-    public void tearDown() throws Exception {  
+    @AfterMethod
+    public void tearDown() throws Exception {
         Util.sleep(1000);
         if(c2 != null)
             c2.close();
@@ -42,21 +47,22 @@ public class MultiplexerViewTest extends ChannelTestBase {
             c1.close();
         factory.destroy();
         factory2.destroy();
-        super.tearDown();
+        ;
     }
 
+    @org.testng.annotations.Test
     public void testBasicLifeCycle() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         System.out.println("c1: " + c1);
         assertTrue(c1.isOpen());
         assertFalse(c1.isConnected());
         View v=c1.getView();
-        assertNull(v);
+        assert v == null;
 
         ((MuxChannel)c1).getClusterView();
-        assertNull(v);
+        assert v == null;
         Address local_addr=c1.getLocalAddress();
-        assertNull(local_addr);
+        assert local_addr == null;
 
         c1.connect("bla");
         assertTrue(c1.isConnected());
@@ -64,22 +70,23 @@ public class MultiplexerViewTest extends ChannelTestBase {
         assertNotNull(local_addr);
         v=c1.getView();
         assertNotNull(v);
-        assertEquals(1, v.size());
+        Assert.assertEquals(1, v.size());
         v=((MuxChannel)c1).getClusterView();
         assertNotNull(v);
-        assertEquals(1, v.size());
+        Assert.assertEquals(1, v.size());
 
         c1.disconnect();
         assertFalse(c1.isConnected());
         assertTrue(c1.isOpen());
         local_addr=c1.getLocalAddress();
-        assertNull(local_addr);
+        assert local_addr == null;
         c1.close();
         assertFalse(c1.isOpen());
     }
 
 
 
+    @org.testng.annotations.Test
     public void testBlockPush() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
@@ -99,7 +106,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
         List events=receiver.getEvents();
         int num_events=events.size();
         System.out.println("-- receiver: " + events);
-        assertEquals("we should have a BLOCK, UNBLOCK, BLOCK, UNBLOCK,BLOCK, UNBLOCK, BLOCK, UNBLOCK sequence", 8, num_events);
+        Assert.assertEquals(num_events, 8, "we should have a BLOCK, UNBLOCK, BLOCK, UNBLOCK,BLOCK, UNBLOCK, BLOCK, UNBLOCK sequence");
         Object evt=events.remove(0);
         assertTrue("evt=" + evt, evt instanceof BlockEvent);
         evt=events.remove(0);
@@ -119,6 +126,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testBlockPush2() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c1.setOpt(Channel.BLOCK, Boolean.TRUE);
@@ -199,7 +207,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     private void checkBlockAndUnBlock(List events, String service_name, Object[] seq) {
         int num_events=events.size();
         System.out.println("-- [" + service_name + "] events: " + events);
-        assertEquals("[" + service_name + "] we should have the following sequence: " + Util.array2String(seq), seq.length, num_events);
+        Assert.assertEquals(num_events, seq.length, "[" + service_name + "] we should have the following sequence: " + Util.array2String(seq));
 
         Object expected_type;
         Object actual_type;
@@ -212,6 +220,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testTwoServicesOneChannel() throws Exception {
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
         c2=factory.createMultiplexerChannel(mux_conf_stack, "service-2");
@@ -222,20 +231,21 @@ public class MultiplexerViewTest extends ChannelTestBase {
         assertNotNull(v);
         assertNotNull(v2);
         assertEquals(v, v2);
-        assertEquals(1, v.size());
-        assertEquals(1, v2.size());
+        Assert.assertEquals(1, v.size());
+        Assert.assertEquals(1, v2.size());
 
         v=c1.getView();
         v2=c2.getView();
         assertNotNull(v);
         assertNotNull(v2);
         assertEquals(v, v2);
-        assertEquals(1, v.size());
-        assertEquals(1, v2.size());
+        Assert.assertEquals(1, v.size());
+        Assert.assertEquals(1, v2.size());
     }
 
 
 
+    @org.testng.annotations.Test
     public void testTwoServicesTwoChannels() throws Exception {
         View v, v2;
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
@@ -252,45 +262,46 @@ public class MultiplexerViewTest extends ChannelTestBase {
         v2=((MuxChannel)c3).getClusterView();
         assertNotNull(v);
         assertNotNull(v2);
-        assertEquals(2, v2.size());
+        Assert.assertEquals(2, v2.size());
         assertEquals(v, v2);
 
         v=c1.getView();
         v2=c3.getView();
         assertNotNull(v);
         assertNotNull(v2);
-        assertEquals(2, v2.size());
+        Assert.assertEquals(2, v2.size());
         assertEquals(v, v2);
 
         v=c2.getView();
-        assertEquals(1, v.size()); // c4 has not joined yet
+        Assert.assertEquals(1, v.size());
 
         c4.connect("bar");
 
         Util.sleep(500);
         v=c2.getView();
         v2=c4.getView();
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
         assertEquals(v, v2);
 
         c3.disconnect();
 
         Util.sleep(500);
         v=c1.getView();
-        assertEquals(1, v.size());
+        Assert.assertEquals(1, v.size());
         v=c2.getView();
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
         v=c4.getView();
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
 
         c3.close();
         c2.close();
         Util.sleep(500);
         v=c4.getView();
-        assertEquals(1, v.size());
+        Assert.assertEquals(1, v.size());
     }
 
 
+    @org.testng.annotations.Test
     public void testReconnect() throws Exception {
         View v;
         c1=factory.createMultiplexerChannel(mux_conf_stack, "service-1");
@@ -303,7 +314,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
         Util.sleep(500);
         v=c1.getView();
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
 
         c3.disconnect();
         boolean connected=c3.isConnected();
@@ -311,17 +322,17 @@ public class MultiplexerViewTest extends ChannelTestBase {
 
         Util.sleep(500);
         v=c1.getView();
-        assertEquals(1, v.size());
+        Assert.assertEquals(1, v.size());
 
         c3.connect("foobar");
         Util.sleep(2000);
         v=c1.getView();
-        assertEquals("v is " + v, 2, v.size());
+        Assert.assertEquals(v.size(), 2, "v is " + v);
 
         c4.close();
         Util.sleep(500);
         v=c1.getView();
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
     }
 
 

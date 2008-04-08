@@ -1,4 +1,4 @@
-// $Id: STATE_TRANSFER_Test.java,v 1.9 2007/01/16 12:40:04 belaban Exp $
+// $Id: STATE_TRANSFER_Test.java,v 1.10 2008/04/08 07:19:12 belaban Exp $
 package org.jgroups.protocols;
 
 import junit.framework.Test;
@@ -40,7 +40,7 @@ public class STATE_TRANSFER_Test extends TestCase {
    }
 
    protected void setUp() throws Exception {
-      super.setUp();
+      ;
 
       System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
       System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "error");
@@ -51,7 +51,7 @@ public class STATE_TRANSFER_Test extends TestCase {
    }
 
    protected void tearDown() throws Exception {
-      super.tearDown();
+      ;
 
       coord.stop();
       coord = null;

@@ -1,28 +1,22 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.Map;
-import java.util.TreeMap;
-
 import junit.framework.Test;
 import junit.framework.TestSuite;
-
-import org.jgroups.Channel;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.JChannelFactory;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Tests various intermixed combinations of regular connect and get state with connect-and-get-state 
  * @author Vladimir Blagojevic
- * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.2 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.3 2008/04/08 07:19:01 belaban Exp $
  */
 public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
     private Cache c1, c2,c3, c1_repl, c2_repl,c3_repl;
@@ -34,8 +28,9 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();            
+        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -43,7 +38,8 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(mux_conf);
     }
 
-    public void tearDown() throws Exception {        
+    @AfterMethod
+    public void tearDown() throws Exception {
         if(ch1_repl != null)
             ch1_repl.close();
         if(ch2_repl != null)
@@ -84,21 +80,25 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
         ch1_repl=ch2_repl=ch1=ch2=ch3=null;
         c1=c2=c1_repl=c2_repl=c3_repl=null; 
         
-        super.tearDown();
+        ;
     }
     
+    @org.testng.annotations.Test
     public void testConnectStateTransferMixing() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{true,false,true}); 
     }
     
+    @org.testng.annotations.Test
     public void testConnectStateTransferMixing2() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{true,true,false}); 
     }
     
+    @org.testng.annotations.Test
     public void testConnectStateTransferMixing3() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{false,true,false}); 
     }
     
+    @org.testng.annotations.Test
     public void testConnectStateTransferMixing4() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{false,false,true}); 
     }
@@ -116,8 +116,8 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
             boolean rc=ch1.getState(null, 5000);
             System.out.println("state transfer: " + rc);
         }
-        
-        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
 
         
         ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
@@ -132,8 +132,8 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
             boolean rc=ch2.getState(null, 5000);
             System.out.println("state transfer: " + rc);
         }
-        
-        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        Assert.assertEquals(c2.size(), 0, "cache has to be empty initially");
         
         ch3=factory.createMultiplexerChannel(mux_conf_stack, "c3");
         c3=new Cache(ch3, "cache-3");
@@ -147,8 +147,8 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
             boolean rc=ch3.getState(null, 5000);
             System.out.println("state transfer: " + rc);
         }
-        
-        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        Assert.assertEquals(c2.size(), 0, "cache has to be empty initially");
 
 
         ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
@@ -204,14 +204,14 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
         System.out.println("c3: " + c3);
         System.out.println("c3_repl: " + c3_repl);
 
-        assertEquals(1, c1.size());
-        assertEquals(1, c1_repl.size());
+        Assert.assertEquals(1, c1.size());
+        Assert.assertEquals(1, c1_repl.size());
 
-        assertEquals(1, c2.size());
-        assertEquals(1, c2_repl.size());
-        
-        assertEquals(1, c3.size());
-        assertEquals(1, c3_repl.size());
+        Assert.assertEquals(1, c2.size());
+        Assert.assertEquals(1, c2_repl.size());
+
+        Assert.assertEquals(1, c3.size());
+        Assert.assertEquals(1, c3_repl.size());
 
         assertEquals("cache-1", c1.get("name"));
         assertEquals("cache-1", c1_repl.get("name"));

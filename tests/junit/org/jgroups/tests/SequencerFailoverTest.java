@@ -3,12 +3,15 @@
 package org.jgroups.tests;
 
 
-import junit.framework.TestCase;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,9 +21,9 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.6 2007/10/02 12:01:27 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.7 2008/04/08 07:19:00 belaban Exp $
  */
-public class SequencerFailoverTest extends TestCase {
+public class SequencerFailoverTest {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
     static final String GROUP="demo-group";
     static final int NUM_MSGS=50;
@@ -31,11 +34,11 @@ public class SequencerFailoverTest extends TestCase {
 
 
     public SequencerFailoverTest(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         ch1=new JChannel(props);
         ch1.connect(GROUP);
 
@@ -46,8 +49,9 @@ public class SequencerFailoverTest extends TestCase {
         ch3.connect(GROUP);
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
-        super.tearDown();
+        ;
         if(ch3 != null) {
             ch3.close();
             ch3 = null;
@@ -58,13 +62,14 @@ public class SequencerFailoverTest extends TestCase {
         }
     }
 
+    @Test
     public void testBroadcastSequence() throws Exception {
         MyReceiver r2=new MyReceiver(), r3=new MyReceiver();
         ch2.setReceiver(r2); ch3.setReceiver(r3);
 
         View v2=ch2.getView(), v3=ch3.getView();
         System.out.println("ch2's view: " + v2 + "\nch3's view: " + v3);
-        assertEquals(v2, v3);
+        Assert.assertEquals(v2, v3);
 
         new Thread() {
             public void run() {
@@ -84,9 +89,9 @@ public class SequencerFailoverTest extends TestCase {
         v2=ch2.getView();
         v3=ch3.getView();
         System.out.println("ch2's view: " + v2 + "\nch3's view: " + v3);
-        assertEquals(v2, v3);
+        Assert.assertEquals(v2, v3);
 
-        assertEquals(2, v2.size());
+        Assert.assertEquals(2, v2.size());
         int s2, s3;
         for(int i=15000; i > 0; i-=1000) {
             s2=r2.size(); s3=r3.size();
@@ -105,7 +110,7 @@ public class SequencerFailoverTest extends TestCase {
     private static void verifyNumberOfMessages(int num_msgs, MyReceiver receiver) throws Exception {
         List<Integer> msgs=receiver.getList();
         System.out.println("list has " + msgs.size() + " msgs (should have " + NUM_MSGS + ")");
-        assertEquals(num_msgs, msgs.size());
+        Assert.assertEquals(num_msgs, msgs.size());
         int i=1;
         for(Integer tmp: msgs) {
             if(tmp != i)

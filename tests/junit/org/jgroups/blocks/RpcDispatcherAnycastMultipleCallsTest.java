@@ -14,7 +14,7 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase
            }
            targets=null;
        }
-       super.tearDown();
+       ;
    }
 
    public void test2InstancesAnycastIncludeSelf() throws Exception

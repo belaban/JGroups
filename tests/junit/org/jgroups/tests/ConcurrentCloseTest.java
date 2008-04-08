@@ -2,22 +2,27 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.2 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.3 2008/04/08 07:19:04 belaban Exp $
  */
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         channel_conf=System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         if(c2 != null) {
             c2.close();
@@ -29,12 +34,13 @@ public class ConcurrentCloseTest extends ChannelTestBase {
             c1=null;
         }
 
-        super.tearDown();
+        ;
     }
 
     /**
      * 2 channels, both call Channel.close() at exactly the same time
      */
+    @Test
     public void testConcurrentClose() throws Exception {
         System.setProperty("useBlocking", "true"); // enables reception of block() and unblock() callbacks
         c1=createChannel();

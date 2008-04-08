@@ -1,10 +1,16 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
+import junit.framework.Test;
+import junit.framework.TestSuite;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.Message;
+import org.jgroups.View;
+import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.BeforeMethod;
+
+import java.io.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -13,21 +19,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.util.Util;
-import org.testng.annotations.BeforeMethod;
-
 /**
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.6 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.7 2008/04/08 07:18:56 belaban Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -44,10 +40,12 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     }  
 
     
+    @org.testng.annotations.Test
     public void testConcurrentLargeStateTransfer() {
         concurrentStateTranferHelper(true, false);
     }
 
+    @org.testng.annotations.Test
     public void testConcurrentSmallStateTranfer() {
         concurrentStateTranferHelper(false, true);
     }
@@ -131,11 +129,11 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             
             
             for (ConcurrentStateTransfer channel : channels) {
-                assertEquals(channel.getName() + " should have " + count + " elements", count, channel.getList().size());
+                Assert.assertEquals(channel.getList().size(), count, channel.getName() + " should have " + count + " elements");
             }
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
+            assert false : ex.getLocalizedMessage();
         }finally{
             for(ConcurrentStateTransfer channel:channels){
                 channel.cleanup();

@@ -13,6 +13,9 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -24,17 +27,19 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.9 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.10 2008/04/08 07:18:55 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
     RpcDispatcher disp1, disp2;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();        
+        ;
         channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(disp2 != null)
             disp2.stop();
@@ -44,13 +49,14 @@ public class ShunTest extends ChannelTestBase {
             disp1.stop();
         if(c1 != null)
             c1.close();
-        super.tearDown();
+        ;
     }
 
     public boolean useBlocking() {
         return true;
     }
 
+    @org.testng.annotations.Test
     public void testShunning() {
         connectAndShun(2,false);
     }
@@ -65,6 +71,7 @@ public class ShunTest extends ChannelTestBase {
      * After B has rejoined, it invokes an RPC and it should get valid return values from both A and B.
      * @throws Exception
      */
+    @org.testng.annotations.Test
     public void testTwoMembersShun() throws Exception {
         View view;
         channel_conf= System.getProperty("channel.conf.flush", "udp.xml");
@@ -78,11 +85,11 @@ public class ShunTest extends ChannelTestBase {
         disp2=new RpcDispatcher(c2, null, new BelasReceiver("C2"), this);
         c1.connect("demo");
         c2.connect("demo");
-        assertEquals(2, c1.getView().size());
+        Assert.assertEquals(2, c1.getView().size());
         
         RspList rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
         System.out.println(">> rsps:\n" + rsps);
-        assertEquals(2, rsps.size());
+        Assert.assertEquals(2, rsps.size());
 
         ProtocolStack stack=c1.getProtocolStack();
         stack.removeProtocol("VERIFY_SUSPECT");
@@ -111,13 +118,13 @@ public class ShunTest extends ChannelTestBase {
         }
         view=c2.getView();
         System.out.println(">>> view is " + view + " <<<< (should have 2 members)");
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
 
         Util.sleep(1000);
         System.out.println("invoking RPC on shunned member");
         rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
         System.out.println(">> rsps:\n" + rsps);
-        assertEquals(2, rsps.size());
+        Assert.assertEquals(2, rsps.size());
         for(Map.Entry<Address, Rsp> entry: rsps.entrySet()) {
             Rsp rsp=entry.getValue();
             assertFalse(rsp.wasSuspected());
@@ -192,7 +199,7 @@ public class ShunTest extends ChannelTestBase {
             
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
+            assert false : ex.getLocalizedMessage();
         }finally{
             for(ShunChannel channel:channels){
                 channel.cleanup();

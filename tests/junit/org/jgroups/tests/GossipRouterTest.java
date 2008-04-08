@@ -1,32 +1,37 @@
 package org.jgroups.tests;
 
-import junit.framework.TestCase;
-import org.jgroups.stack.GossipRouter;
 import org.jgroups.JChannel;
-import org.jgroups.View;
 import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.3 2008/02/06 07:23:05 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.4 2008/04/08 07:18:54 belaban Exp $
  */
-public class GossipRouterTest extends TestCase {
+public class GossipRouterTest {
     final static String PROPS="tunnel.xml";
     GossipRouter router;
     JChannel c1, c2;
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
 
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         if(router != null) {
             router.stop();
@@ -38,7 +43,7 @@ public class GossipRouterTest extends TestCase {
         if(c1 != null) {
             c1.close();
         }
-        super.tearDown();
+        ;
     }
 
     /**
@@ -48,6 +53,7 @@ public class GossipRouterTest extends TestCase {
      * - Now first node should be able to connect and first and second node should be able to merge into a group
      * - SUCCESS: a view of 2
      */
+    @Test
     public void testLateStart() throws Exception {
         final Lock lock=new ReentrantLock();
         final Condition cond=lock.newCondition();
@@ -83,7 +89,7 @@ public class GossipRouterTest extends TestCase {
         Util.sleep(500);
         View view=c1.getView();
         System.out.println("view=" + view);
-        assertEquals(2, view.size());
+        Assert.assertEquals(2, view.size());
 
         c2.close();
         c1.close();

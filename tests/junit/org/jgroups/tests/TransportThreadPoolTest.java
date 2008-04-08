@@ -5,8 +5,7 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.AfterTest;
+import org.testng.annotations.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -15,17 +14,19 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.3 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.4 2008/04/08 07:19:00 belaban Exp $
  */
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 
+    @BeforeMethod
     @BeforeTest
     protected void setUp() throws Exception {
         c1=createChannel();
         c2=createChannel();
     }
 
+    @AfterMethod
     @AfterTest
     protected void tearDown() throws Exception {
         c2.close();
@@ -33,6 +34,7 @@ public class TransportThreadPoolTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testThreadPoolReplacement() throws Exception {
         Receiver r1=new Receiver(), r2=new Receiver();
         c1.setReceiver(r1);

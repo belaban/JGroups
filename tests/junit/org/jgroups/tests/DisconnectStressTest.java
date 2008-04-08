@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
@@ -15,9 +14,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.5 2007/11/19 16:07:53 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.6 2008/04/08 07:18:54 belaban Exp $
  */
-public class DisconnectStressTest extends TestCase {
+public class DisconnectStressTest {
     static CyclicBarrier all_disconnected=null;
     static CyclicBarrier    start_disconnecting=null;
     static final int        NUM=30;
@@ -43,7 +42,6 @@ public class DisconnectStressTest extends TestCase {
 
 
     public DisconnectStressTest(String name) {
-        super(name);
     }
 
 
@@ -52,6 +50,7 @@ public class DisconnectStressTest extends TestCase {
     }
 
 
+    @org.testng.annotations.Test
     public void testConcurrentStartupAndMerging() throws Exception {
         all_disconnected=new CyclicBarrier(NUM+1);
         start_disconnecting=new CyclicBarrier(NUM+1);

@@ -14,7 +14,7 @@ import org.jgroups.tests.ChannelTestBase;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.5 2007/03/16 13:40:57 vlada Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.6 2008/04/08 07:19:08 belaban Exp $
  */
 public class DistributedLockManagerTest extends ChannelTestBase {
 
@@ -39,7 +39,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
     protected static  boolean logConfigured;
 
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         channel1=createChannel("A");
         adapter1=new VotingAdapter(channel1);
         channel1.connect("voting");
@@ -68,7 +68,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
     }
 
     public void tearDown() throws Exception {
-    	super.tearDown();
+    	;
         channel2.close();
         
         try {

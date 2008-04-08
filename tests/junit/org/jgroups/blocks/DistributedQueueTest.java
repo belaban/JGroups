@@ -1,4 +1,4 @@
-// $Id: DistributedQueueTest.java,v 1.11 2007/11/19 16:07:54 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.12 2008/04/08 07:19:08 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -34,7 +34,7 @@ public class DistributedQueueTest extends TestCase
 	public void setUp() throws Exception
 	{
 
-        super.setUp();
+        ;
         props="UDP(mcast_recv_buf_size=80000;mcast_send_buf_size=150000;mcast_port=45566;" +
                 "mcast_addr=228.8.8.8;ip_ttl=32):" +
                 "PING(timeout=2000;num_initial_members=3):" +
@@ -86,7 +86,7 @@ public class DistributedQueueTest extends TestCase
 
 	public void tearDown() throws Exception
 	{
-        super.tearDown();
+        ;
         log("stopping queue1");
         queue1.stop();
         log("stopped queue1");

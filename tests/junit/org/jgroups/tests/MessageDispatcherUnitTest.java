@@ -11,6 +11,10 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Properties;
 
@@ -18,7 +22,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.6 2008/02/15 01:06:14 vlada Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.7 2008/04/08 07:18:56 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
@@ -30,8 +34,9 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     }
 
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        super.setUp();
+        ;
         ch=createChannel();
         disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
@@ -41,6 +46,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
 
 
+    @AfterMethod
     protected void tearDown() throws Exception {
         disp.stop();
         ch.close();
@@ -49,36 +55,41 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
             ch2.close();
         }
         Util.sleep(500);
-        super.tearDown();
+        ;
     }
 
 
+    @Test
     public void testNullMessageToSelf() {
         MyHandler handler=new MyHandler(null);
         disp.setRequestHandler(handler);
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         System.out.println("rsps:\n" + rsps);
         assertNotNull(rsps);
-        assertEquals(1, rsps.size());
+        Assert.assertEquals(1, rsps.size());
         Object obj=rsps.getFirst();
-        assertNull(obj);
+        assert obj == null;
     }
 
 
+    @Test
     public void test200ByteMessageToSelf() {
         sendMessage(200);
     }
 
 
+    @Test
     public void test2000ByteMessageToSelf() {
         sendMessage(2000);
     }
 
+    @Test
     public void test20000ByteMessageToSelf() {
         sendMessage(20000);
     }
 
 
+    @Test
     public void testNullMessageToAll() throws Exception {
         disp.setRequestHandler(new MyHandler(null));
 
@@ -88,7 +99,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
         stop=System.currentTimeMillis();
         ch2.connect("x");
-        assertEquals(2, ch2.getView().size());
+        Assert.assertEquals(2, ch2.getView().size());
         System.out.println("view: " + ch2.getView());
 
         System.out.println("casting message");
@@ -98,27 +109,30 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
-        assertEquals(2, rsps.size());
+        Assert.assertEquals(2, rsps.size());
         Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
-        assertNull(ret);
+        assert ret == null;
 
 
         rsp=(Rsp)rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
-        assertNull(ret);
+        assert ret == null;
     }
 
+    @Test
     public void test200ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(200);
     }
 
+    @Test
     public void test2000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(2000);
     }
 
+    @Test
     public void test20000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(20000);
     }
@@ -133,10 +147,10 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
-        assertEquals(1, rsps.size());
+        Assert.assertEquals(1, rsps.size());
         byte[] buf=(byte[])rsps.getFirst();
         assertNotNull(buf);
-        assertEquals(size, buf.length);
+        Assert.assertEquals(size, buf.length);
     }
 
 
@@ -149,7 +163,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         disableBundling(ch2);
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(new byte[size]));
         ch2.connect("x");
-        assertEquals(2, ch2.getView().size());
+        Assert.assertEquals(2, ch2.getView().size());
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
@@ -158,16 +172,16 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("rsps:\n" + rsps);
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
-        assertEquals(2, rsps.size());
+        Assert.assertEquals(2, rsps.size());
         Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         byte[] ret=(byte[])rsp.getValue();
-        assertEquals(size, ret.length);
+        Assert.assertEquals(size, ret.length);
 
         rsp=(Rsp)rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
-        assertEquals(size, ret.length);
+        Assert.assertEquals(size, ret.length);
     }
 
 

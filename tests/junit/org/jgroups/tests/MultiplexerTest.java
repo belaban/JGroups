@@ -6,14 +6,17 @@ import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
-import java.util.*;
 import java.io.*;
+import java.util.*;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.48 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.49 2008/04/08 07:19:00 belaban Exp $
  */
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -25,8 +28,9 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();            
+        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -34,7 +38,8 @@ public class MultiplexerTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(mux_conf);
     }
 
-    public void tearDown() throws Exception {        
+    @AfterMethod
+    public void tearDown() throws Exception {
         if(ch1_repl != null)
             ch1_repl.close();
         if(ch2_repl != null)
@@ -68,22 +73,24 @@ public class MultiplexerTest extends ChannelTestBase {
         ch1_repl=ch2_repl=ch1=ch2=null;
         c1=c2=c1_repl=c2_repl=null; 
         
-        super.tearDown();
+        ;
     }
 
 
+    @org.testng.annotations.Test
     public void testReplicationWithOneChannel() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
         c1.put("name", "Bela");
         Util.sleep(300); // we need to wait because replication is asynchronous here
-        assertEquals(1, c1.size());
+        Assert.assertEquals(1, c1.size());
         assertEquals("Bela", c1.get("name"));
     }
 
 
+    @org.testng.annotations.Test
     public void testLifecycle() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -128,6 +135,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testDisconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -164,6 +172,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertFalse(ch2.isConnected());
     }
 
+    @org.testng.annotations.Test
     public void testDisconnect2() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         assertTrue(ch1.isOpen());
@@ -193,6 +202,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testClose() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -203,25 +213,26 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testReplicationWithTwoChannels() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
         ch1.connect("bla");
 
         ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
-        assertEquals("cache has to be empty initially", 0, c1_repl.size());
+        Assert.assertEquals(c1_repl.size(), 0, "cache has to be empty initially");
         ch1_repl.connect("bla");
         Util.sleep(200);
 
         View v=ch1_repl.getView();
         assertNotNull(v);
-        assertEquals("view is " + v, 2, v.size());
+        Assert.assertEquals(v.size(), 2, "view is " + v);
         v=ch1.getView();
         assertNotNull(v);
         System.out.println("checking view " + v);
-        assertEquals(2, v.size());
+        Assert.assertEquals(2, v.size());
 
         // System.out.println("****** [c1] PUT(name, Bela) *******");
         c1.put("name", "Bela");
@@ -235,11 +246,11 @@ public class MultiplexerTest extends ChannelTestBase {
 
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
-        assertEquals(1, c1.size());
+        Assert.assertEquals(1, c1.size());
         assertEquals("Bela", c1.get("name"));
 
         Util.sleep(500); // async repl - wait until replicated to other member
-        assertEquals(1, c1_repl.size());
+        Assert.assertEquals(1, c1_repl.size());
         assertEquals("Bela", c1_repl.get("name"));
 
         c1.put("id", new Long(322649));
@@ -255,8 +266,8 @@ public class MultiplexerTest extends ChannelTestBase {
 
         System.out.println("c1: " + c1 + ", c1_repl: " + c1_repl);
 
-        assertEquals("c1: " + c1, 4, c1.size());
-        assertEquals("c1_repl: " + c1_repl, 4, c1_repl.size());
+        Assert.assertEquals(c1.size(), 4, "c1: " + c1);
+        Assert.assertEquals(c1_repl.size(), 4, "c1_repl: " + c1_repl);
 
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
@@ -269,6 +280,7 @@ public class MultiplexerTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testVirtualSynchrony() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         c1=new Cache(ch1, "cache-1");
@@ -277,7 +289,7 @@ public class MultiplexerTest extends ChannelTestBase {
         ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         c1_repl=new Cache(ch1_repl, "cache-1-repl");
         ch1_repl.connect("bla");
-        assertEquals("view: " + ch1.getView(), 2, ch1.getView().size());
+        Assert.assertEquals(ch1.getView().size(), 2, "view: " + ch1.getView());
 
         // start adding messages
         flush(ch1, 5000); // flush all pending message out of the system so everyone receives them
@@ -294,8 +306,8 @@ public class MultiplexerTest extends ChannelTestBase {
         flush(ch1, 5000);
         System.out.println("c1 (" + c1.size() + " elements):\n" + c1.printKeys() +
                 "\nc1_repl (" + c1_repl.size() + " elements):\n" + c1_repl.printKeys());
-        assertEquals(c1.size(), c1_repl.size());
-        assertEquals(20, c1.size());
+        Assert.assertEquals(c1.size(), c1_repl.size());
+        Assert.assertEquals(20, c1.size());
     }
 
 
@@ -309,14 +321,15 @@ public class MultiplexerTest extends ChannelTestBase {
             Util.sleep(timeout);
     }
 
+    @org.testng.annotations.Test
     public void testReplicationWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new Cache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
         c1.put("name", "Bela");
         Util.sleep(300); // we need to wait because replication is asynchronous here
-        assertEquals(1, c1.size());
+        Assert.assertEquals(1, c1.size());
         assertEquals("Bela", c1.get("name"));
 
         ch1.disconnect();
@@ -324,14 +337,15 @@ public class MultiplexerTest extends ChannelTestBase {
         ch1.connect("bla");
 
         c2=new Cache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c2.size());
+        Assert.assertEquals(c2.size(), 0, "cache has to be empty initially");
         c2.put("name", "Bela");
         Util.sleep(300); // we need to wait because replication is asynchronous here
-        assertEquals(1, c2.size());
+        Assert.assertEquals(1, c2.size());
         assertEquals("Bela", c2.get("name"));
 
     }
     
+    @org.testng.annotations.Test
     public void testAdditionalData() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
@@ -354,6 +368,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertEquals(tmp, additional_data);
     }
 
+    @org.testng.annotations.Test
     public void testAdditionalData2() throws Exception {
         byte[] additional_data=new byte[]{'b', 'e', 'l', 'a'};
         byte[] additional_data2=new byte[]{'m', 'i', 'c', 'h', 'i'};
@@ -362,7 +377,7 @@ public class MultiplexerTest extends ChannelTestBase {
         IpAddress local_addr=(IpAddress)ch1.getLocalAddress();
         assertNotNull(local_addr);
         byte[] tmp=local_addr.getAdditionalData();
-        assertNull(tmp);
+        assert tmp == null;
 
         ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         Map<String,Object> m=new HashMap<String,Object>(1);
@@ -392,6 +407,7 @@ public class MultiplexerTest extends ChannelTestBase {
         assertFalse(Arrays.equals(tmp, additional_data));
     }
 
+    @org.testng.annotations.Test
     public void testOrdering() throws Exception {
         final int NUM=100;
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
@@ -417,7 +433,7 @@ public class MultiplexerTest extends ChannelTestBase {
                 current=num;
             }
             else {
-                assertEquals("list is " + nums, ++current,  num);
+                Assert.assertEquals(num, ++current, "list is " + nums);
             }
         }
     }

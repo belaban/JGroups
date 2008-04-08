@@ -2,21 +2,20 @@
 package org.jgroups.tests;
 
 
-
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
-import java.util.List;
 import java.util.LinkedList;
+import java.util.List;
 
 
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.13 2008/04/08 06:59:00 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.14 2008/04/08 07:18:55 belaban Exp $
  */
 @Test(sequential=false)
 public class ChannelTest extends ChannelTestBase {
@@ -37,6 +36,7 @@ public class ChannelTest extends ChannelTestBase {
         ch.close();
     }
     
+    @Test
     public void testBasicOperations() throws Exception {
         String groupName = GROUP;
         Channel c1 = createChannel("A");
@@ -120,6 +120,7 @@ public class ChannelTest extends ChannelTestBase {
         c1.close();
     }
 
+    @Test
     public void testFirstView() throws Exception {
         Object obj=ch.receive(5000);
         System.out.println("view is " + obj);
@@ -127,6 +128,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testViewChange() throws Exception {
         ViewChecker checker=new ViewChecker(ch);
         ch.setReceiver(checker);
@@ -140,6 +142,7 @@ public class ChannelTest extends ChannelTestBase {
     }
 
 
+    @Test
     public void testIsConnectedOnFirstViewChange() throws Exception {
         Channel ch2=createChannel();
         ConnectedChecker tmp=new ConnectedChecker(ch2);
@@ -150,6 +153,7 @@ public class ChannelTest extends ChannelTestBase {
         ch2.close();
     }
     
+    @Test
     public void testNoViewIsReceivedAferDisconnect() throws Exception {
         final Channel ch2 = createChannel();
         ReceiverAdapter ra = new ReceiverAdapter() {
@@ -167,6 +171,7 @@ public class ChannelTest extends ChannelTestBase {
         ch2.close();
     }
     
+    @Test
     public void testNoViewIsReceivedAferClose() throws Exception {
         final Channel ch2 = createChannel();
         ReceiverAdapter ra = new ReceiverAdapter() {
@@ -194,6 +199,7 @@ public class ChannelTest extends ChannelTestBase {
         ch.send(null);
     }
 
+    @Test
     public void testOrdering() throws Exception {
         final int NUM=100;
         MyReceiver receiver=new MyReceiver(NUM);

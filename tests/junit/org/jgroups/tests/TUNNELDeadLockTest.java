@@ -1,26 +1,27 @@
-// $Id: TUNNELDeadLockTest.java,v 1.12 2007/11/19 16:08:27 belaban Exp $
+// $Id: TUNNELDeadLockTest.java,v 1.13 2008/04/08 07:18:59 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import junit.framework.Test;
-import junit.framework.TestCase;
 import junit.framework.TestSuite;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
 import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
 
 /**
  * Test designed to make sure the TUNNEL doesn't lock the client and the GossipRouter
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.12 $
+ * @version $Revision: 1.13 $
  * @see TUNNELDeadLockTest#testStress
  */
-public class TUNNELDeadLockTest extends TestCase {
+public class TUNNELDeadLockTest {
     private JChannel channel;
     private Promise promise;
     private int receivedCnt;
@@ -37,18 +38,19 @@ public class TUNNELDeadLockTest extends TestCase {
 
 
     public TUNNELDeadLockTest(String name) {
-        super(name);
     }
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        super.setUp();
+        ;
         promise=new Promise();
         routerPort=Utilities.startGossipRouter("127.0.0.1");
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
 
-        super.tearDown();
+        ;
 
         // I prefer to close down the channel inside the test itself, for the
         // reason that the channel might be brought in an uncloseable state by
@@ -91,6 +93,7 @@ public class TUNNELDeadLockTest extends TestCase {
      * be controlled with mainTimeout. If this time passes and the test
      * doesn't see all the messages, it declares itself failed.
      */
+    @org.testng.annotations.Test
     public void testStress() throws Exception {
         String props=getTUNNELProps(routerPort);
         channel=new JChannel(props);
@@ -155,7 +158,7 @@ public class TUNNELDeadLockTest extends TestCase {
                     "possibly because of the channel deadlock or too short " +
                     "timeout (currently " + mainTimeout + " ms). " + receivedCnt +
                     " messages received so far.";
-            fail(msg);
+            assert false : msg;
         }
 
         // don't close it in tearDown() because it hangs forever for a failed

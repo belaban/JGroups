@@ -4,25 +4,29 @@ import junit.framework.Test;
 import junit.framework.TestSuite;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.BeforeTest;
+import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.AfterTest;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeTest;
 
-import java.util.*;
 import java.io.*;
+import java.util.*;
 
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.5 2008/04/08 06:59:01 belaban Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.6 2008/04/08 07:19:03 belaban Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
     JChannelFactory factory, factory2;   
 
+    @BeforeMethod
     @BeforeTest
     public void setUp() throws Exception {
         factory=new JChannelFactory();
@@ -32,6 +36,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         factory2.setMultiplexerConfig(mux_conf);
     }
 
+    @AfterMethod
     @AfterTest
     public void tearDown() throws Exception {        
         if(ch1_repl != null)
@@ -68,10 +73,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         c1=c2=c1_repl=c2_repl=null; 
     }
     
+    @org.testng.annotations.Test
     public void testStateTransfer() throws Exception {
         regularStateTransfer(false); 
     }
     
+    @org.testng.annotations.Test
     public void testConnectAndStateTransfer() throws Exception {
         regularStateTransfer(true); 
     }
@@ -119,10 +126,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assert c1_repl.get("bike").equals("Centurion");
     }
 
+    @org.testng.annotations.Test
     public void testStateTransferWithTwoApplications() throws Exception {
         stateTransferWithTwoApplications(false);
     }
     
+    @org.testng.annotations.Test
     public void testConnectAndStateTransferWithTwoApplications() throws Exception {
         stateTransferWithTwoApplications(true);
     }
@@ -195,6 +204,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testStateTransferWithRegistration() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1",true,null);
         ch1.connect("bla");
@@ -270,6 +280,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testStateTransferWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         setCorrectPortRange(ch1);
@@ -282,7 +293,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assertServiceAndClusterView(ch1, 1, 1);
 
         c1=new Cache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
 
         ch1_repl=factory2.createMultiplexerChannel(mux_conf_stack, "c1");
         setCorrectPortRange(ch1_repl);
@@ -307,7 +318,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         Util.sleep(500);
 
         System.out.println("c1_repl: " + c1_repl);
-        assertEquals("initial state should have been transferred", 4, c1_repl.size());
+        Assert.assertEquals(c1_repl.size(), 4, "initial state should have been transferred");
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
 
@@ -332,14 +343,14 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         Util.sleep(300);
         assertServiceAndClusterView(ch1, 2, 2);
 
-        assertEquals("cache has to be empty initially", 0, c1_repl.size());
+        Assert.assertEquals(c1_repl.size(), 0, "cache has to be empty initially");
 
         rc=ch1_repl.getState(null, 5000);
         System.out.println("state transfer: " + rc);
         Util.sleep(500);
 
         System.out.println("c1_repl: " + c1_repl);
-        assertEquals("initial state should have been transferred", 4, c1_repl.size());
+        Assert.assertEquals(c1_repl.size(), 4, "initial state should have been transferred");
 
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
@@ -382,14 +393,14 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assertTrue(ch2.isOpen());
         assert !ch2.isConnected();
 
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
 
         rc=ch1.getState(null, 5000);
         System.out.println("state transfer: " + rc);
         Util.sleep(500);
 
         System.out.println("c1: " + c1);
-        assertEquals("initial state should have been transferred", 4, c1.size());
+        Assert.assertEquals(c1.size(), 4, "initial state should have been transferred");
 
         assertEquals(new Long(322649), c1.get("id"));
         assertEquals(new Long(322649), c1_repl.get("id"));
@@ -412,10 +423,11 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assertNotNull(service_view);
         assertNotNull(cluster_view);
 
-        assertEquals(msg, num_service_view_mbrs, service_view.size());
-        assertEquals(msg, num_cluster_view_mbrs, cluster_view.size());
+        Assert.assertEquals(service_view.size(), num_service_view_mbrs, msg);
+        Assert.assertEquals(cluster_view.size(), num_cluster_view_mbrs, msg);
     }   
 
+    @org.testng.annotations.Test
     public void testStateTransferFromSelf() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -428,10 +440,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
+    @org.testng.annotations.Test
     public void testGetSubstates() throws Exception {
         getSubstates(false);
     }
    
+    @org.testng.annotations.Test
     public void testConnectAndGetSubstates() throws Exception {
         getSubstates(true);
     }
@@ -444,8 +458,8 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         }else{
             ch1.connect("bla");
         }
-               
-        assertEquals("cache has to be empty initially", 0, c1.size());
+
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
 
         ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         c2=new ExtendedCache(ch2, "cache-2");
@@ -455,8 +469,8 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         }else{
             ch2.connect("bla");
         }
-        
-        assertEquals("cache has to be empty initially", 0, c2.size());
+
+        Assert.assertEquals(c2.size(), 0, "cache has to be empty initially");
 
         for(int i=0; i < 10; i++) {
             c1.put(new Integer(i), new Integer(i));
@@ -492,8 +506,8 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         System.out.println("c1_repl (removed odd substate): " + c1_repl);
         System.out.println("c2_repl (removed even substate): " + c2_repl);
 
-        assertEquals(5, c1_repl.size());
-        assertEquals(5, c2_repl.size());
+        Assert.assertEquals(5, c1_repl.size());
+        Assert.assertEquals(5, c2_repl.size());
 
         _testEvenNumbersPresent(c1_repl);
         _testOddNumbersPresent(c2_repl);
@@ -512,7 +526,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
     private static void _testNumbersPresent(Cache c, Integer[] numbers) {
         int len=numbers.length;
-        assertEquals(len, c.size());
+        Assert.assertEquals(len, c.size());
         for(int i=0; i < numbers.length; i++) {
             Integer number=numbers[i];
             assertEquals(number, c.get(number));
@@ -521,16 +535,17 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
 
+    @org.testng.annotations.Test
     public void testGetSubstatesMultipleTimes() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
         c1=new ExtendedCache(ch1, "cache-1");
-        assertEquals("cache has to be empty initially", 0, c1.size());
+        Assert.assertEquals(c1.size(), 0, "cache has to be empty initially");
 
         ch2=factory.createMultiplexerChannel(mux_conf_stack, "c2");
         ch2.connect("bla");
         c2=new ExtendedCache(ch2, "cache-2");
-        assertEquals("cache has to be empty initially", 0, c2.size());
+        Assert.assertEquals(c2.size(), 0, "cache has to be empty initially");
 
         for(int i=0; i < 10; i++) {
             c1.put(new Integer(i), new Integer(i));
@@ -557,19 +572,19 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         System.out.println("c1_repl (removed odd substate): " + c1_repl);
         System.out.println("c2_repl (removed even substate): " + c2_repl);
 
-        assertEquals(5, c2_repl.size());
+        Assert.assertEquals(5, c2_repl.size());
         rc=ch2_repl.getState(null, "odd", 5000);
         Util.sleep(500);
         System.out.println("c2_repl (removed odd substate): " + c2_repl);
         _testEvenNumbersPresent(c2_repl);
 
-        assertEquals(5, c2_repl.size());
+        Assert.assertEquals(5, c2_repl.size());
         rc=ch2_repl.getState(null, "even", 5000);
         Util.sleep(500);
         System.out.println("c2_repl (removed even substate): " + c2_repl);
         _testOddNumbersPresent(c2_repl);
 
-        assertEquals(5, c2_repl.size());
+        Assert.assertEquals(5, c2_repl.size());
         rc=ch2_repl.getState(null, "odd", 5000);
         Util.sleep(500);
         System.out.println("c2_repl (removed odd substate): " + c2_repl);
