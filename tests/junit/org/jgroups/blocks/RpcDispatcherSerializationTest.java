@@ -1,12 +1,13 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Iterator;
@@ -16,11 +17,6 @@ import java.util.Vector;
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
     private Channel channel, channel2;
     private RpcDispatcher disp, disp2;
-
-
-    public RpcDispatcherSerializationTest(String testName) {
-        super(testName);
-    }
 
 
     public void methodA(boolean b, long l) {
@@ -36,14 +32,12 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         throw new IllegalArgumentException("dummy exception - for testing only");
     }
 
-
+    @BeforeClass
     protected void setUp() throws Exception {
-        ;
         channel=createChannel("A");
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("RpcDispatcherSerializationTestGroup");
-
 
         channel2=createChannel("A");
         disp2=new RpcDispatcher(channel2, null, null, this);
@@ -51,8 +45,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     }
 
 
+    @AfterClass
     protected void tearDown() throws Exception {
-        ;
         channel2.close();
         disp2.stop();
 
@@ -60,12 +54,12 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         channel.close();
     }
 
-
-    public void testNonSerializableArgument() {
+    @Test
+    public void testNonSerializableArgument() throws Throwable {
         try {
             disp.callRemoteMethods(null, "foo", new Object[]{new NonSerializable()}, new Class[]{NonSerializable.class},
                                    GroupRequest.GET_ALL, 5000);
-            fail("should throw NotSerializableException");
+            throw new IllegalStateException("should throw NotSerializableException");
         }
         catch(Throwable t) {
             Throwable cause=t.getCause();
@@ -73,10 +67,11 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                 System.out.println("received RuntimeException with NotSerializableException as cause - this is expected");
             }
             else
-                fail("received " + t);
+                throw t;
         }
     }
 
+    @Test
     public void testTargetMethodNotFound() {
         Vector members=channel.getView().getMembers();
         System.out.println("members are: " + members);
@@ -90,7 +85,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         }
     }
 
-
+    @Test
     public void testMarshaller() {
         RpcDispatcher.Marshaller m=new MyMarshaller();
         disp.setRequestMarshaller(m);
@@ -105,7 +100,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         assertEquals(2, rsps.size());
         for(Iterator it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=(Rsp)it.next();
-            assertNull(rsp.getValue());
+            assert rsp.getValue() == null;
             assertTrue(rsp.wasReceived());
             assertFalse(rsp.wasSuspected());
         }
@@ -199,14 +194,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(RpcDispatcherSerializationTest.class);
-    }
 
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(RpcDispatcherSerializationTest.suite());
-    }
 
     static class NonSerializable {
         int i;

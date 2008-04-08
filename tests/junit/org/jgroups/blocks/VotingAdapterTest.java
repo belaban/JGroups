@@ -8,9 +8,6 @@ import org.jgroups.tests.ChannelTestBase;
 
 public class VotingAdapterTest extends ChannelTestBase {
 
-    public VotingAdapterTest(String testName) {
-            super(testName);
-    }
 
     public static Test suite() {
             return new TestSuite(VotingAdapterTest.class);

@@ -23,9 +23,7 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map2;
     private ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<String,String>();
 
-    public ReplicatedHashMapTest(String testName) {
-        super(testName);
-    }
+
 
     @BeforeMethod
     protected void setUp() throws Exception {
