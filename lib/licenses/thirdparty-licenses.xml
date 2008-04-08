@@ -32,7 +32,7 @@
             version='1.17'
             projectHome='http://www.bouncycastle.org'
             description='Encryption algorithms. Used by ENCRYPT and AUTH (runtime)'>
-        <jar name='bcprov-jdk14-117.har' />
+        <jar name='bouncycastle.jar' />
     </module>
     <module name='Beanshell'
             licenseType='lgpl (dual license, but LGPL may eb chosen)'
