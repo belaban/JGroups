@@ -35,7 +35,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.10 2008/04/08 07:19:08 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.11 2008/04/08 07:44:55 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -319,7 +319,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
     	// it's possible that an exception was raised
         if (retval instanceof java.lang.Throwable) {
-        	fail("exception was raised in processing resonably sized argument") ;
+        	throw (Throwable)retval;
         }
         
         byte[] val=(byte[])retval;

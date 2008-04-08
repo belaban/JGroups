@@ -15,8 +15,6 @@ import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
-import junit.framework.TestCase;
-
 /**
  * @author Bela Ban
  * @author Vladimir Blagojevic
@@ -65,6 +63,10 @@ public class ChannelTestBase {
 
     public ChannelTestBase() {
         super();
+    }
+
+    public ChannelTestBase(String name) {
+        ; // fixes compile errors for TestCase (until we've changed all occurrences)
     }
 
 
@@ -204,6 +206,19 @@ public class ChannelTestBase {
 
 
     protected final static void assertNotNull(Object val) {
+        assertNotNull(null, val);
+    }
+
+
+    protected final static void assertNull(String message, Object val) {
+        if(message != null)
+            assert val == null : message;
+        else
+            assert val == null;
+    }
+
+
+    protected final static void assertNull(Object val) {
         assertNotNull(null, val);
     }
 
