@@ -8,21 +8,17 @@ import java.util.HashMap;
 import org.testng.annotations.*;
 
 import org.jgroups.Channel;
+import org.jgroups.util.Util;
 import org.jgroups.tests.ChannelTestBase;
 
 /**
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.7 2008/04/08 08:29:42 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.8 2008/04/08 14:28:18 belaban Exp $
  */
+@Test(sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {
-
-    public DistributedLockManagerTest(String testName) {
-            super(testName);
-    }
-
-
     private Channel channel1;
     private Channel channel2;
 
@@ -32,23 +28,15 @@ public class DistributedLockManagerTest extends ChannelTestBase {
     protected LockManager lockManager1;
     protected LockManager lockManager2;
 
-    protected static  boolean logConfigured;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        ;
         channel1=createChannel("A");
         adapter1=new VotingAdapter(channel1);
         channel1.connect("voting");
 
-
         lockManager1=new DistributedLockManager(adapter1, "1");
-
-        // give some time for the channel to become a coordinator
-        try {
-            Thread.sleep(1000);
-        }
-        catch(Exception ex) {
-        }
+        Util.sleep(1000);  // give some time for the channel to become a coordinator
 
         channel2=createChannel("A");
         adapter2=new VotingAdapter(channel2);
@@ -56,53 +44,44 @@ public class DistributedLockManagerTest extends ChannelTestBase {
 
         channel2.connect("voting");
 
-        try {
-            Thread.sleep(1000);
-        }
-        catch(InterruptedException ex) {
-        }
+        Util.sleep(1000);
     }
 
+
+    @AfterMethod
     public void tearDown() throws Exception {
-    	;
         channel2.close();
-        
-        try {
-            Thread.sleep(1000);
-        }
-        catch (InterruptedException ex) {
-        }
-        
-        
+        Util.sleep(1000);
         channel1.close();
     }
+
 
     public void test() throws Exception {
         lockManager1.lock("obj1", "owner1", 10000);
         
         try {
             lockManager1.lock("obj1", "owner2", 10000);
-            assertTrue("obj1 should not be locked.", false);
-        } catch (LockNotGrantedException ex) {
+            throw new IllegalStateException("obj1 should not be locked");
+        }
+        catch (LockNotGrantedException ex) {
             // everything is ok
         }
         
         lockManager2.lock("obj2", "owner2", 1000);
-        
         lockManager1.unlock("obj1", "owner1");
         
         try {
             lockManager1.unlock("obj2", "owner1");
-            assertTrue("obj2 should not be released.", false);
+            throw new IllegalStateException("obj2 should not be released");
         }
         catch (LockNotReleasedException ex) {
             // everything is ok
         }
         
         lockManager1.unlock("obj2", "owner2");
-        
     }
 
+    
     public void testMultiLock() throws Exception {
         lockManager1.lock("obj1", "owner1", 10000);
         
@@ -111,7 +90,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
         Class acquireLockDecreeClass = Class.forName("org.jgroups.blocks.DistributedLockManager$AcquireLockDecree");
         Constructor acquireLockDecreeConstructor = acquireLockDecreeClass.getDeclaredConstructor(new Class[] {Object.class, Object.class, Object.class});
         acquireLockDecreeConstructor.setAccessible(true);
-        Object acquireLockDecree = acquireLockDecreeConstructor.newInstance(new Object[] {"obj1", "owner2", "2"});
+        Object acquireLockDecree = acquireLockDecreeConstructor.newInstance("obj1", "owner2", "2");
         
         Field heldLocksField = lockManager2.getClass().getDeclaredField("heldLocks");
         heldLocksField.setAccessible(true);
@@ -122,21 +101,21 @@ public class DistributedLockManagerTest extends ChannelTestBase {
 
         try {
             lockManager1.unlock("obj1", "owner1", true);
-            assertTrue("obj1 should throw a lockMultiLockedException upon release.", false);
+            throw new IllegalStateException("obj1 should throw a lockMultiLockedException upon release");
         } catch (LockMultiLockedException e) {
             // everything is ok
         }
         
         try {
             lockManager1.lock("obj1", "owner1", 10000);
-            assertTrue("obj1 should throw a LockNotGrantedException because it is still locked by lockManager2.", false);
+            throw new IllegalStateException("obj1 should throw a LockNotGrantedException because it is still locked by lockManager2");
         } catch (LockNotGrantedException e) {
             // everything is ok
         }
         
         try {
             lockManager2.unlock("obj1", "owner2", true);
-            assertTrue("obj1 should throw a lockMultiLockedException upon release.", false);
+            throw new IllegalStateException("obj1 should throw a lockMultiLockedException upon release");
         } catch (LockMultiLockedException e) {
             // everything is ok
         }
@@ -144,10 +123,10 @@ public class DistributedLockManagerTest extends ChannelTestBase {
         // Everything should be unlocked now
         try {
             lockManager1.lock("obj1", "owner1", 10000);
-        } catch (LockNotGrantedException e) {
-            assertTrue("obj1 should be unlocked", false);
         }
-
+        catch (LockNotGrantedException e) {
+            throw new IllegalStateException("obj1 should be unlocked");
+        }
         lockManager1.unlock("obj1", "owner1", true);
     }
 
