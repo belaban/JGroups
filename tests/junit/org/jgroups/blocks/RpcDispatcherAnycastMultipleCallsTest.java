@@ -1,11 +1,15 @@
 package org.jgroups.blocks;
 
 import org.jgroups.tests.ChannelTestBase;
+import org.testng.annotations.Test;
+import org.testng.annotations.AfterMethod;
 
+@Test
 public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase
 {
    private RpcDispatcherAnycastServerObject[] targets = null;
 
+   @AfterMethod
    protected void tearDown() throws Exception {
        if(targets != null) {
            for(int i=0; i < targets.length; i++) {

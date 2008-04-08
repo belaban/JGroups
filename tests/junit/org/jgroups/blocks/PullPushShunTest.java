@@ -9,12 +9,13 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.6 2008/04/08 08:29:43 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.7 2008/04/08 15:11:36 belaban Exp $
  */
-public class PullPushShunTest extends ChannelTestBase implements MessageListener, MembershipListener, ChannelListener {
+@Test
+public class PullPushShunTest extends ChannelTestBase {
     private JChannel channel;
-    PullPushAdapter adapter;
-
+    private PullPushAdapter adapter;
+    private final Handler handler=new Handler();
 
 
 
@@ -22,9 +23,30 @@ public class PullPushShunTest extends ChannelTestBase implements MessageListener
         Address old_local_addr, new_local_addr;
         channel=new JChannel();
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
-        channel.addChannelListener(this);
+        channel.addChannelListener(new ChannelListener() {
+
+            public void channelConnected(Channel channel) {
+                System.out.println("-- channelConnected()");
+            }
+
+            public void channelDisconnected(Channel channel) {
+                System.out.println("-- channelDisconnected()");
+            }
+
+            public void channelClosed(Channel channel) {
+                System.out.println("-- channelClosed()");
+            }
+
+            public void channelShunned() {
+                System.out.println("-- channelShunned()");
+            }
+
+            public void channelReconnected(Address addr) {
+                System.out.println("-- channelReconnected(" + addr + ")");
+            }
+        });
         channel.connect("PullPushTestShun");
-        adapter=new PullPushAdapter(channel, this, this);
+        adapter=new PullPushAdapter(channel, handler, handler);
         assertEquals(1, channel.getView().getMembers().size());
         old_local_addr=channel.getLocalAddress();
         assertNotNull(old_local_addr);
@@ -42,44 +64,20 @@ public class PullPushShunTest extends ChannelTestBase implements MessageListener
         channel.up(new Event(Event.EXIT));
     }
 
-    public void receive(Message msg) {
-        System.out.println("-- received " + msg);
+
+
+    private static class Handler extends ReceiverAdapter {
+
+        public void receive(Message msg) {
+            System.out.println("-- received " + msg);
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("-- view: " + new_view);
+        }
+
+
     }
 
-    public byte[] getState() {
-        return new byte[0];
-    }
 
-    public void setState(byte[] state) {
-    }
-
-    public void viewAccepted(View new_view) {
-        System.out.println("-- view: " + new_view);
-    }
-
-    public void suspect(Address suspected_mbr) {
-    }
-
-    public void block() {
-    }
-
-    public void channelConnected(Channel channel) {
-        System.out.println("-- channelConnected()");
-    }
-
-    public void channelDisconnected(Channel channel) {
-        System.out.println("-- channelDisconnected()");
-    }
-
-    public void channelClosed(Channel channel) {
-        System.out.println("-- channelClosed()");
-    }
-
-    public void channelShunned() {
-        System.out.println("-- channelShunned()");
-    }
-
-    public void channelReconnected(Address addr) {
-        System.out.println("-- channelReconnected(" + addr + ")");
-    }
 }
