@@ -30,7 +30,7 @@ public class AUTHTest extends ChannelTestBase {
 
         SimpleToken token2=new SimpleToken();
         token2.setValue(properties);
-        assertTrue(token1.authenticate(token2, null));
+        assert token1.authenticate(token2, null);
     }
 
     /**
@@ -50,7 +50,7 @@ public class AUTHTest extends ChannelTestBase {
         SimpleToken token2=new SimpleToken();
         token2.setValue(properties);
 
-        assertTrue(!token1.authenticate(token2, null));
+        assert !token1.authenticate(token2, null);
     }
 
     /**
@@ -74,7 +74,7 @@ public class AUTHTest extends ChannelTestBase {
         MD5Token token2=new MD5Token();
         token2.setValue(properties);
 
-        assertTrue(token1.authenticate(token2, null));
+        assert token1.authenticate(token2, null);
     }
 
     /**
@@ -98,7 +98,7 @@ public class AUTHTest extends ChannelTestBase {
         MD5Token token2=new MD5Token();
         token2.setValue(properties);
 
-        assertTrue(!token1.authenticate(token2, null));
+        assert !token1.authenticate(token2, null);
     }
 
     /**
@@ -122,7 +122,7 @@ public class AUTHTest extends ChannelTestBase {
         MD5Token token2=new MD5Token();
         token2.setValue(properties);
 
-        assertTrue(token1.authenticate(token2, null));
+        assert token1.authenticate(token2, null);
     }
 
     /**
@@ -146,7 +146,7 @@ public class AUTHTest extends ChannelTestBase {
         MD5Token token2=new MD5Token();
         token2.setValue(properties);
 
-        assertTrue(!token1.authenticate(token2, null));
+        assert !token1.authenticate(token2, null);
     }
 
     /**
@@ -164,7 +164,7 @@ public class AUTHTest extends ChannelTestBase {
         AuthHeader header=new AuthHeader();
         header.setToken(token1);
 
-        assertTrue(token1 == header.getToken());
+        assert token1 == header.getToken();
     }
 
     /**
@@ -187,7 +187,7 @@ public class AUTHTest extends ChannelTestBase {
         AuthHeader header=new AuthHeader();
         header.setToken(token1);
 
-        assertTrue(!(token2 == header.getToken()));
+        assert !(token2 == header.getToken());
     }
 
 
