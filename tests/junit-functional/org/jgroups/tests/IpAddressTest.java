@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.4 2008/04/08 08:29:39 belaban Exp $
+// $Id: IpAddressTest.java,v 1.5 2008/04/08 12:31:10 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,11 +20,6 @@ public class IpAddressTest {
     IpAddress a, b, c, d, e, f, g, h, i, j, k;
 
     
-    
-    public IpAddressTest(String name) {
-    }
-
-
     @BeforeMethod
     public void setUp() throws Exception {
         a=new IpAddress("localhost", 5555);
@@ -40,7 +35,7 @@ public class IpAddressTest {
 
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testUnknownAddress() {
+    public static void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
             assert false : "should throw an UnknownHostException for " + tmp;
@@ -58,7 +53,7 @@ public class IpAddressTest {
     }
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testEqualityWithDnsRoundRobin() throws UnknownHostException {
+    public static void testEqualityWithDnsRoundRobin() throws UnknownHostException {
         IpAddress x1, x2, x3;
 
         InetAddress addr=InetAddress.getByName("127.0.0.1");
@@ -187,7 +182,7 @@ public class IpAddressTest {
 
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
+    public static void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
 
@@ -210,7 +205,7 @@ public class IpAddressTest {
 
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
+    public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
 
@@ -356,7 +351,7 @@ public class IpAddressTest {
 
 
     @Test(groups=Global.FUNCTIONAL)
-    public void testStreamableWithHighPort() throws Exception {
+    public static void testStreamableWithHighPort() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
         byte[]                buf=null;

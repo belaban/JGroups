@@ -1,4 +1,4 @@
-// $Id: AckMcastSenderWindowTest.java,v 1.4 2008/03/10 15:39:20 belaban Exp $
+// $Id: AckMcastSenderWindowTest.java,v 1.5 2008/04/08 12:17:07 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -107,10 +107,10 @@ public class AckMcastSenderWindowTest {
         }
 
         _win.stop();
-    } // testAck()
+    }
 
 
-    public void testRemove() throws UnknownHostException {
+    public static void testRemove() throws UnknownHostException {
         AckMcastSenderWindow mywin=new AckMcastSenderWindow(new MyCommand(), new StaticInterval(1000, 2000, 3000));
         Address sender1=new IpAddress("127.0.0.1", 10000);
         Address sender2=new IpAddress("127.0.0.1", 10001);

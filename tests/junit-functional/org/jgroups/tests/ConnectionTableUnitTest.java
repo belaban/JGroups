@@ -1,4 +1,3 @@
-// $Id: ConnectionTableUnitTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -13,6 +12,8 @@ import org.testng.annotations.Test;
 
 
 /**
+ * @author Bela Ban
+ * @version $Id: ConnectionTableUnitTest.java,v 1.4 2008/04/08 12:25:28 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableUnitTest {
@@ -46,32 +47,27 @@ public class ConnectionTableUnitTest {
         }
     }
 
-    @Test
     public void testSetup() {
         Assert.assertNotSame(ct1.getLocalAddress(), ct2.getLocalAddress());
     }
 
-    @Test
     public void testSendToNullReceiver() throws Exception {
         byte[]  data=new byte[0];
         ct1.send(null, data, 0, data.length);
     }
 
-    @Test
     public void testSendEmptyData() throws Exception {
         byte[]  data=new byte[0];
         Address myself=ct1.getLocalAddress();
         ct1.send(myself, data, 0, data.length);
     }
 
-    @Test
     public void testSendNullData() throws Exception {
         Address myself=ct1.getLocalAddress();
         ct1.send(myself, null, 0, 0);
     }
 
 
-    @Test
     public void testSendToSelf() throws Exception {
         long       NUM=1000, total_time;
         Address    myself=ct1.getLocalAddress();
@@ -92,7 +88,6 @@ public class ConnectionTableUnitTest {
         Assert.assertEquals(r.getNumExpected(), r.getNumReceived());
     }
 
-    @Test
     public void testSendToOther() throws Exception {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
@@ -114,7 +109,6 @@ public class ConnectionTableUnitTest {
     }
 
 
-    @Test
     public void testSendToOtherGetResponse() throws Exception {
         long       NUM=1000, total_time;
         Address    other=ct2.getLocalAddress();
@@ -146,7 +140,7 @@ public class ConnectionTableUnitTest {
 
 
 
-    class MyReceiver implements ConnectionTable.Receiver {
+    static class MyReceiver implements ConnectionTable.Receiver {
         long            num_expected=0, num_received=0, start_time=0, stop_time=0;
         boolean         done=false, send_response=false;
         long            modulo;

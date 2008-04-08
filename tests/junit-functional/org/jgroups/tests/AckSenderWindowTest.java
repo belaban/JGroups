@@ -1,4 +1,3 @@
-// $Id: AckSenderWindowTest.java,v 1.4 2008/03/10 15:39:21 belaban Exp $
 package org.jgroups.tests;
 
 
@@ -16,7 +15,9 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
+ * @version  $Id: AckSenderWindowTest.java,v 1.5 2008/04/08 12:18:03 belaban Exp $
  */
+@Test(groups=Global.FUNCTIONAL)
 public class AckSenderWindowTest {
     AckSenderWindow           win=null;
     static final int          NUM_MSGS=100;

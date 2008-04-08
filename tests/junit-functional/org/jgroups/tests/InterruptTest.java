@@ -1,4 +1,3 @@
-// $Id: InterruptTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,9 +14,10 @@ import org.jgroups.Global;
 
 /**
  * Tests Thread.interrupt() against InputStream.read(), Object.wait() and Thread.sleep()
- *
  * @author Bela Ban Oct 5 2001
+ * @version $Id: InterruptTest.java,v 1.4 2008/04/08 12:31:10 belaban Exp $
  */
+@Test(groups=Global.FUNCTIONAL)
 public class InterruptTest {
     static final long TIMEOUT=3000;
     static final int SLEEP=1;
@@ -26,11 +26,7 @@ public class InterruptTest {
     static final int SOCKET_READ=4;
 
 
-    public InterruptTest(String name) {
-    }
-
-
-    String modeToString(int m) {
+    static String modeToString(int m) {
         switch(m) {
         case SLEEP:
             return "SLEEP";
@@ -50,15 +46,13 @@ public class InterruptTest {
      * Starts the Interruptible and interrupts after TIMEOUT milliseconds. Then joins thread
      * (waiting for TIMEOUT msecs). PASS if thread dead, FAIL if still alive
      */
-    @Test(groups=Global.FUNCTIONAL)
-    public void testSleepInterrupt() {
+    public static void testSleepInterrupt() {
         SleeperThread thread=new SleeperThread(SLEEP);
         runTest(thread);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
-    public void testWaitInterrupt() {
+    public static void testWaitInterrupt() {
         SleeperThread thread=new SleeperThread(WAIT);
         runTest(thread);
     }
@@ -75,7 +69,7 @@ public class InterruptTest {
     }*/
 
 
-    void runTest(SleeperThread thread) {
+    static void runTest(SleeperThread thread) {
         System.out.println();
         System.out.println("InterruptTest.runTest(" + modeToString(thread.getMode()) + "): starting other thread");
         thread.start();
@@ -103,7 +97,7 @@ public class InterruptTest {
     }
 
 
-    void sleep(long msecs) {
+    static void sleep(long msecs) {
         try {
             Thread.sleep(msecs);
         }
@@ -116,7 +110,7 @@ public class InterruptTest {
 
 
 
-    class SleeperThread extends Thread {
+    static class SleeperThread extends Thread {
         int mode;
         DatagramSocket sock=null;
 
@@ -151,7 +145,7 @@ public class InterruptTest {
         }
 
 
-        void runSleep() {
+        static void runSleep() {
             try {
                 Thread.sleep(TIMEOUT);
             }
@@ -160,7 +154,7 @@ public class InterruptTest {
             }
         }
 
-        void runWait() {
+        static void runWait() {
             Object mutex=new Object();
             synchronized(mutex) {
                 try {
@@ -172,7 +166,7 @@ public class InterruptTest {
             }
         }
 
-        void runRead() {
+        static void runRead() {
             try {
                 System.in.read();
             }

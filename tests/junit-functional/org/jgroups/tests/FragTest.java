@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
+// $Id: FragTest.java,v 1.4 2008/04/08 12:28:08 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -22,26 +22,21 @@ import org.jgroups.util.Util;
  *
  * @author Bela Ban
  */
+@Test(groups=Global.FUNCTIONAL)
 public class FragTest {
     public static final long NUM_MSGS=10;
     public static final int MSG_SIZE=100000;
     public static final int FRAG_SIZE=24000;
 
 
-    public FragTest(String name) {
-    }
-
-
-
-
-    private Message createBigMessage(int size) {
+    private static Message createBigMessage(int size) {
         byte[] buf=new byte[size];
         for(int i=0; i < buf.length; i++) buf[i]=(byte)'x';
         return new Message(null, null, buf);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void test0() throws Exception {
         Object mutex=new Object();
         FragReceiver frag_receiver=new FragReceiver(this, mutex);

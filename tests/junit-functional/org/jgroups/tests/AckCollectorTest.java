@@ -1,4 +1,3 @@
-// $Id: AckCollectorTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 

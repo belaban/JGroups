@@ -10,12 +10,12 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.3 2008/04/08 12:17:07 belaban Exp $
  */
+@Test(groups=Global.FUNCTIONAL,sequential=false)
 public class AckReceiverWindowTest {
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public static void test1() {
         Message m;
         AckReceiverWindow win=new AckReceiverWindow(10);
@@ -53,7 +53,6 @@ public class AckReceiverWindowTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
     public static void testDuplicates() {
         boolean rc;
         AckReceiverWindow win=new AckReceiverWindow(2);
