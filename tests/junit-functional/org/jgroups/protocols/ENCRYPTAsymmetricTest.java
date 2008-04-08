@@ -12,6 +12,7 @@ import org.jgroups.util.Util;
 import org.jgroups.protocols.ENCRYPT.EncryptHeader;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import javax.crypto.Cipher;
 import java.io.*;
@@ -28,7 +29,8 @@ import java.util.Vector;
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class ENCRYPTAsymmetricTest {
 
-    static {
+    @BeforeClass
+    public static void initProvider() {
         Security.addProvider(new org.bouncycastle.jce.provider.BouncyCastleProvider());
     }
 
