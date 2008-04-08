@@ -1,4 +1,3 @@
-// $Id: GroupRequestTest.java,v 1.8 2008/04/08 08:29:44 belaban Exp $$
 
 package org.jgroups.blocks;
 
@@ -10,21 +9,31 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.util.Vector;
+import java.util.Arrays;
+import java.net.UnknownHostException;
 
+/**
+ * @author Bela Ban
+ * @version $Id: GroupRequestTest.java,v 1.9 2008/04/08 12:11:46 belaban Exp $
+ */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class GroupRequestTest {
     Address a1, a2, a3;
     Vector<Address> dests=null;
 
-
-    @BeforeMethod
-    protected void setUp() throws Exception {
+    @BeforeClass
+    void init() throws UnknownHostException {
         a1=new IpAddress("127.0.0.1", 1111);
         a2=new IpAddress("127.0.0.1", 2222);
         a3=new IpAddress("127.0.0.1", 3333);
-        dests=new Vector<Address>(2);
+    }
+
+    @BeforeMethod
+    protected void setUp() throws Exception {
+        dests=new Vector<Address>(Arrays.asList(a1, a2));
         dests.add(a1);
         dests.add(a2);
     }
@@ -197,17 +206,17 @@ public class GroupRequestTest {
     }
 
     private void _testMessageReceptionWithSuspect(boolean async) throws Exception {
-         Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
-         MyTransport transport=new MyTransport(async, responses);
-         GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
-         transport.setGroupRequest(req);
-         boolean rc=req.execute();
-         System.out.println("group request is " + req);
+        Object[] responses=new Object[]{new Message(null, a1, new Long(1)), new SuspectEvent(a2)};
+        MyTransport transport=new MyTransport(async, responses);
+        GroupRequest req=new GroupRequest(new Message(), transport, dests, GroupRequest.GET_ALL, 0, 2);
+        transport.setGroupRequest(req);
+        boolean rc=req.execute();
+        System.out.println("group request is " + req);
         assert rc;
-        Assert.assertEquals(1, req.getSuspects().size());
+        assert req.getSuspects().size() == 1;
         assert req.isDone();
-         RspList results=req.getResults();
-        Assert.assertEquals(2, results.size());
+        RspList results=req.getResults();
+        assert results.size() == 2;
      }
 
 
