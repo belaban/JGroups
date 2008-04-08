@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.5 2008/04/08 07:18:57 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.6 2008/04/08 08:29:34 belaban Exp $
  */
 public class NAKACK_OOB_Test {
     JChannel ch1, ch2, ch3;
@@ -55,7 +55,7 @@ public class NAKACK_OOB_Test {
      * Note that OOB messages *destroys* FIFO ordering (or whatever ordering properties are set) !
      * @throws Exception
      */
-    @org.testng.annotations.Test
+    @Test
     public void testOutOfBandMessages() throws Exception {
         NAKACK_OOB_Test.MyReceiver receiver1=new NAKACK_OOB_Test.MyReceiver();
         NAKACK_OOB_Test.MyReceiver receiver2=new NAKACK_OOB_Test.MyReceiver();
@@ -129,11 +129,4 @@ public class NAKACK_OOB_Test {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(NAKACK_OOB_Test.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(NAKACK_OOB_Test.suite());
-    }
 }

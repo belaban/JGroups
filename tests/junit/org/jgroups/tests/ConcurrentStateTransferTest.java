@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.Message;
@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.7 2008/04/08 07:18:56 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.8 2008/04/08 08:29:32 belaban Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -40,12 +40,12 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     }  
 
     
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentLargeStateTransfer() {
         concurrentStateTranferHelper(true, false);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentSmallStateTranfer() {
         concurrentStateTranferHelper(false, true);
     }
@@ -303,12 +303,4 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         }
     }
     
-    public static Test suite() {
-        return new TestSuite(ConcurrentStateTransferTest.class);
-    }
-
-    public static void main(String[] args) {
-        String[] testCaseName = { ConcurrentStateTransferTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
 }

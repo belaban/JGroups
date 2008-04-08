@@ -1,10 +1,10 @@
-// $Id: ConnectStressTest.java,v 1.23 2008/04/08 07:18:58 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.24 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
@@ -20,7 +20,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.23 2008/04/08 07:18:58 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.24 2008/04/08 08:29:33 belaban Exp $
  */
 public class ConnectStressTest {
     static CyclicBarrier start_connecting=null;
@@ -48,7 +48,7 @@ public class ConnectStressTest {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentJoinsAndLeaves() throws Exception {
         start_connecting=new CyclicBarrier(NUM +1);
         connected=new CyclicBarrier(NUM +1);

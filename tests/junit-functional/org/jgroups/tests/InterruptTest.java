@@ -1,10 +1,10 @@
-// $Id: InterruptTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
+// $Id: InterruptTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -50,14 +50,14 @@ public class InterruptTest {
      * Starts the Interruptible and interrupts after TIMEOUT milliseconds. Then joins thread
      * (waiting for TIMEOUT msecs). PASS if thread dead, FAIL if still alive
      */
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSleepInterrupt() {
         SleeperThread thread=new SleeperThread(SLEEP);
         runTest(thread);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testWaitInterrupt() {
         SleeperThread thread=new SleeperThread(WAIT);
         runTest(thread);
@@ -201,14 +201,6 @@ public class InterruptTest {
     }
 
 
-    public static Test suite() {
-        TestSuite s=new TestSuite(InterruptTest.class);
-        return s;
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }
 
 

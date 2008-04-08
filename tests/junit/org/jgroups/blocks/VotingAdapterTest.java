@@ -1,19 +1,12 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
 
 public class VotingAdapterTest extends ChannelTestBase {
-
-
-    public static Test suite() {
-            return new TestSuite(VotingAdapterTest.class);
-    }
-
-    
     private Channel channel1;
     private Channel channel2;
 
@@ -106,9 +99,4 @@ public class VotingAdapterTest extends ChannelTestBase {
     }
 
 
-
-
-    public static void main(String[] args) {
-	junit.textui.TestRunner.run(suite());
-    }
 }

@@ -2,8 +2,8 @@ package org.jgroups.blocks;
 
 import java.util.Vector;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
@@ -13,7 +13,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.4 2008/04/08 07:19:09 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.5 2008/04/08 08:29:43 belaban Exp $
  */
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
@@ -91,12 +91,5 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(RpcDispatcherAnycastTest.class);
-    }
-
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(RpcDispatcherAnycastTest.suite());
-    }
+ 
 }

@@ -1,4 +1,4 @@
-// $Id: MembershipTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
+// $Id: MembershipTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -40,7 +40,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testConstructor() {
         v1=new Vector();
         v1.addElement(a1);
@@ -53,7 +53,7 @@ public class MembershipTest {
         assert m2.contains(a3);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testClone() {
         v1=new Vector();
         v1.addElement(a1);
@@ -69,7 +69,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testCopy() {
         v1=new Vector();
         v1.addElement(a1);
@@ -85,7 +85,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAdd() {
         m1.add(a1);
         m1.add(a2);
@@ -97,7 +97,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddVector() {
         v1=new Vector();
         v1.addElement(a1);
@@ -109,7 +109,7 @@ public class MembershipTest {
         assert m1.contains(a2);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddVectorDupl() {
         v1=new Vector();
         v1.addElement(a1);
@@ -129,7 +129,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testRemove() {
         m1.add(a1);
         m1.add(a2);
@@ -141,7 +141,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGetMembers() {
         testAdd();
         Vector v=m1.getMembers();
@@ -149,7 +149,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSet() {
         v1=new Vector();
         v1.addElement(a1);
@@ -165,7 +165,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSet2() {
         m1=new Membership();
         m2=new Membership();
@@ -182,7 +182,7 @@ public class MembershipTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMerge() {
         v1=new Vector();
         v2=new Vector();
@@ -203,7 +203,7 @@ public class MembershipTest {
         assert m1.contains(a5);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSort() {
         m1.add(a3);
         m1.add(a4);

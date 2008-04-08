@@ -1,8 +1,8 @@
 package org.jgroups.protocols;
 
-import junit.framework.TestCase;
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.View;
@@ -35,12 +35,5 @@ public class FRAG2_Test extends FRAG_Test {
         super.testFragmentation();
     }
 
-    public static Test suite() {
-        return new TestSuite(FRAG2_Test.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(FRAG2_Test.suite());
-    }
 
 }

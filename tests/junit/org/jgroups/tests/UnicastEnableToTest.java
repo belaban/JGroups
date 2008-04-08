@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.2 2008/04/08 07:19:00 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.3 2008/04/08 08:29:34 belaban Exp $
  */
 public class UnicastEnableToTest {
     JChannel channel=null, channel2=null;
@@ -121,8 +121,4 @@ public class UnicastEnableToTest {
     }
 
 
-    public static void main(String[] args) {
-        String[] testCaseName={UnicastEnableToTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
 }

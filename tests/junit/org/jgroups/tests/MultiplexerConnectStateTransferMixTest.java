@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
@@ -16,7 +16,7 @@ import java.util.TreeMap;
 /**
  * Tests various intermixed combinations of regular connect and get state with connect-and-get-state 
  * @author Vladimir Blagojevic
- * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.3 2008/04/08 07:19:01 belaban Exp $
+ * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.4 2008/04/08 08:29:33 belaban Exp $
  */
 public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
     private Cache c1, c2,c3, c1_repl, c2_repl,c3_repl;
@@ -83,22 +83,22 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
         ;
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectStateTransferMixing() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{true,false,true}); 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectStateTransferMixing2() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{true,true,false}); 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectStateTransferMixing3() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{false,true,false}); 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectStateTransferMixing4() throws Exception{
         stateTransferWithIntermixedTransferTypes(new boolean[]{false,false,true}); 
     }
@@ -223,13 +223,6 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
         assertEquals("cache-3", c3_repl.get("name"));
     }
     
-    public static Test suite() {
-        return new TestSuite(MultiplexerConnectStateTransferMixTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(MultiplexerConnectStateTransferMixTest.suite());
-    }   
 
     private static class Cache extends ExtendedReceiverAdapter {
         protected final Map data ;

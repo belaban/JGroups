@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.ProtocolStack;
@@ -18,7 +18,7 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.16 2008/04/08 07:18:54 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.17 2008/04/08 08:29:32 belaban Exp $
  */
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
@@ -46,12 +46,12 @@ public class DiscardTest extends ChannelTestBase {
         ;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testDiscardProperties() throws Exception {
         _testLosslessReception(true);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testFastProperties() throws Exception {
         _testLosslessReception(false);
     }
@@ -160,12 +160,5 @@ public class DiscardTest extends ChannelTestBase {
         return new Message(null, null, buf);
     }
 
-    public static Test suite() {
-        return new TestSuite(DiscardTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
 }

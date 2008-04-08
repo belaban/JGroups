@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.64 2008/04/08 07:18:54 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.65 2008/04/08 08:29:33 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -62,7 +62,7 @@ public class FlushTest extends ChannelTestBase {
         return true;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
         FlushTestReceiver receivers[] = new FlushTestReceiver[] { new FlushTestReceiver("c1",
@@ -92,7 +92,7 @@ public class FlushTest extends ChannelTestBase {
      * Tests issue #1 in http://jira.jboss.com/jira/browse/JGRP-335
      * @throws Exception 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testJoinFollowedByUnicast() throws Exception {
         c1 = createChannel();
         c1.setReceiver(new SimpleReplier(c1, true));
@@ -114,7 +114,7 @@ public class FlushTest extends ChannelTestBase {
      * Tests issue #2 in http://jira.jboss.com/jira/browse/JGRP-335
      * @throws Exception 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransferFollowedByUnicast() throws Exception {
         c1 = createChannel();
         c1.setReceiver(new SimpleReplier(c1, true));
@@ -137,7 +137,7 @@ public class FlushTest extends ChannelTestBase {
      * Tests http://jira.jboss.com/jira/browse/JGRP-661
      * @throws Exception 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testPartialFlush() throws Exception {
         c1 = createChannel();
         c1.setReceiver(new SimpleReplier(c1, true));
@@ -165,7 +165,7 @@ public class FlushTest extends ChannelTestBase {
      * bare channel mode 4 real channels are created.
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingNoStateTransfer() {
         String[] names = null;
         if(isMuxChannelUsed()){
@@ -185,7 +185,7 @@ public class FlushTest extends ChannelTestBase {
      * -Dmux.factorycount parameter.
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingSharedMuxFactory() {
         String[] names = null;
         int muxFactoryCount = 1;
@@ -203,7 +203,7 @@ public class FlushTest extends ChannelTestBase {
      * parameter.
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingUnsharedMuxFactoryMultipleService() {
         String[] names = null;
         int muxFactoryCount = 2;
@@ -220,7 +220,7 @@ public class FlushTest extends ChannelTestBase {
      * channels created is getMuxFactoryCount().
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingWithStateTransfer() {
         String[] names = null;
         if(isMuxChannelUsed()){
@@ -240,7 +240,7 @@ public class FlushTest extends ChannelTestBase {
      * channels created is getMuxFactoryCount().
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingWithConnectAndStateTransfer() {
         String[] names = null;
         if(isMuxChannelUsed()){
@@ -260,7 +260,7 @@ public class FlushTest extends ChannelTestBase {
      * mux.on=true.
      * 
      */
-    @org.testng.annotations.Test
+    @Test
     public void testBlockingWithStateTransferAndMultipleServiceMuxChannel() {
         String[] names = null;
         if(isMuxChannelUsed()){
@@ -468,11 +468,4 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(FlushTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(FlushTest.suite());
-    }
 }

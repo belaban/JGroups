@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.38 2008/04/08 07:19:01 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.39 2008/04/08 08:29:35 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -39,12 +39,12 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         return true;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentStartupLargeState() {
         concurrentStartupHelper(true, false);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentStartupSmallState() {
         concurrentStartupHelper(false, true);
     }
@@ -300,12 +300,5 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(ConcurrentStartupTest.class);
-    }
 
-    public static void main(String[] args) {
-        String[] testCaseName = { ConcurrentStartupTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
 }

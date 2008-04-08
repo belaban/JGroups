@@ -1,9 +1,9 @@
-// $Id: NakackTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
+// $Id: NakackTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.debug.ProtocolTester;
 import org.jgroups.stack.IpAddress;
@@ -34,7 +34,7 @@ public class NakackTest {
     
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void test0() throws Exception {
         Object mutex=new Object();
         CheckNoGaps check=new CheckNoGaps(1, this, mutex);
@@ -71,13 +71,6 @@ public class NakackTest {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(NakackTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
 
     private static class CheckNoGaps extends Protocol {

@@ -1,35 +1,22 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.jgroups.*;
+import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.5 2008/04/08 07:19:10 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.6 2008/04/08 08:29:43 belaban Exp $
  */
-public class PullPushShunTest extends TestCase implements MessageListener, MembershipListener, ChannelListener {
+public class PullPushShunTest extends ChannelTestBase implements MessageListener, MembershipListener, ChannelListener {
     private JChannel channel;
     PullPushAdapter adapter;
 
 
-    public static Test suite() {
-        return new TestSuite(PullPushShunTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
-
-    protected void setUp() throws Exception {
-        ;
-    }
-
-    protected void tearDown() throws Exception {
-        ;
-    }
 
     public void testShunningandReconnect() throws Exception {
         Address old_local_addr, new_local_addr;

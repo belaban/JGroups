@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.Protocol;
@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.6 2008/04/08 07:19:03 belaban Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.7 2008/04/08 08:29:32 belaban Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -73,12 +73,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         c1=c2=c1_repl=c2_repl=null; 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransfer() throws Exception {
         regularStateTransfer(false); 
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectAndStateTransfer() throws Exception {
         regularStateTransfer(true); 
     }
@@ -126,12 +126,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         assert c1_repl.get("bike").equals("Centurion");
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransferWithTwoApplications() throws Exception {
         stateTransferWithTwoApplications(false);
     }
     
-    @org.testng.annotations.Test
+    @Test
     public void testConnectAndStateTransferWithTwoApplications() throws Exception {
         stateTransferWithTwoApplications(true);
     }
@@ -204,7 +204,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransferWithRegistration() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1",true,null);
         ch1.connect("bla");
@@ -280,7 +280,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransferWithReconnect() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         setCorrectPortRange(ch1);
@@ -427,7 +427,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         Assert.assertEquals(cluster_view.size(), num_cluster_view_mbrs, msg);
     }   
 
-    @org.testng.annotations.Test
+    @Test
     public void testStateTransferFromSelf() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -440,12 +440,12 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testGetSubstates() throws Exception {
         getSubstates(false);
     }
    
-    @org.testng.annotations.Test
+    @Test
     public void testConnectAndGetSubstates() throws Exception {
         getSubstates(true);
     }
@@ -535,7 +535,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
 
-    @org.testng.annotations.Test
+    @Test
     public void testGetSubstatesMultipleTimes() throws Exception {
         ch1=factory.createMultiplexerChannel(mux_conf_stack, "c1");
         ch1.connect("bla");
@@ -591,13 +591,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
         _testEvenNumbersPresent(c2_repl);
     }
     
-    public static Test suite() {
-        return new TestSuite(MultiplexerStateTransferTest.class);
-    }
 
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(MultiplexerStateTransferTest.suite());
-    }   
 
     private static class Cache extends ExtendedReceiverAdapter {
         protected final Map data ;

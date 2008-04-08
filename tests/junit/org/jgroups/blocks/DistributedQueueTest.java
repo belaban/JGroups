@@ -1,31 +1,23 @@
-// $Id: DistributedQueueTest.java,v 1.12 2008/04/08 07:19:08 belaban Exp $
+// $Id: DistributedQueueTest.java,v 1.13 2008/04/08 08:29:43 belaban Exp $
 
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestCase;
-import junit.framework.TestSuite;
+
+
+import org.testng.annotations.*;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.jgroups.tests.ChannelTestBase;
 
 import java.util.Vector;
 
-public class DistributedQueueTest extends TestCase
+public class DistributedQueueTest extends ChannelTestBase
 {
 
 	final int NUM_ITEMS = 10;
 	static Log logger = LogFactory.getLog(DistributedQueueTest.class);
     String props;
 
-	public DistributedQueueTest(String testName)
-	{
-		super(testName);
-	}
-
-	public static Test suite()
-	{
-		return new TestSuite(DistributedQueueTest.class);
-	}
 
 	protected DistributedQueue queue1;
 	protected DistributedQueue queue2;
@@ -180,9 +172,5 @@ public class DistributedQueueTest extends TestCase
 			assertTrue(e1.equals(e2));
 		}
 	}
-	
-	public static void main(String[] args)
-	{
-		junit.textui.TestRunner.run(suite());
-	}
+
 }

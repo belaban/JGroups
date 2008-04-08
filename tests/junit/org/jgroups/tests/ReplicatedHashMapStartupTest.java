@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.ChannelException;
@@ -21,7 +21,7 @@ import java.util.Vector;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.3 2008/04/08 07:19:03 belaban Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.4 2008/04/08 08:29:32 belaban Exp $
  */
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
@@ -42,12 +42,12 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         return true;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentStartup4Members() {
         concurrentStartupHelper(4);
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testConcurrentStartup8Members() {
         concurrentStartupHelper(8);
     }
@@ -124,12 +124,5 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
       
     }
-    public static Test suite() {
-        return new TestSuite(ReplicatedHashMapStartupTest.class);
-    }
 
-    public static void main(String[] args) {
-        String[] testCaseName = { ReplicatedHashMapStartupTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
 }

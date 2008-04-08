@@ -9,7 +9,7 @@ import org.testng.annotations.Test;
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.8 2008/04/08 07:18:59 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
  */
 public class UnicastLoopbackTest {
     JChannel channel=null;
@@ -64,8 +64,5 @@ public class UnicastLoopbackTest {
         Assert.assertEquals(NUM, received);
     }
 
-    public static void main(String[] args) {
-        String[] testCaseName={UnicastLoopbackTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+
 }

@@ -1,21 +1,20 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
 import org.jgroups.stack.ExponentialInterval;
 import org.jgroups.Global;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 /**
  * @author Bela Ban
- * @version $Id: ExponentialIntervalTest.java,v 1.3 2008/03/10 15:39:21 belaban Exp $
+ * @version $Id: ExponentialIntervalTest.java,v 1.4 2008/04/08 08:29:39 belaban Exp $
  */
 public class ExponentialIntervalTest {
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public static void testInitialization() {
         ExponentialInterval interval=new ExponentialInterval(10);
         System.out.println("interval=" + interval);
@@ -27,7 +26,7 @@ public class ExponentialIntervalTest {
         Assert.assertEquals(20, value);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public static void testNoargConstructor() {
         ExponentialInterval interval=new ExponentialInterval();
         Assert.assertEquals(30, interval.next());
@@ -35,7 +34,7 @@ public class ExponentialIntervalTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public static void testMax() {
         ExponentialInterval interval=new ExponentialInterval(1000);
         System.out.println("interval=" + interval);

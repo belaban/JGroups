@@ -1,9 +1,9 @@
-// $Id: SizeTest.java,v 1.7 2008/03/31 06:15:20 vlada Exp $$
+// $Id: SizeTest.java,v 1.8 2008/04/08 08:29:39 belaban Exp $$
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.mux.MuxHeader;
@@ -33,12 +33,12 @@ public class SizeTest {
     public SizeTest(String name) {
     }
    
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTpHeader() throws Exception {
         _testSize(new TpHeader("DemoChannel"));
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testPingHeader() throws Exception {
         _testSize(new PingHeader(PingHeader.GET_MBRS_REQ, "bla"));
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, new PingRsp()));
@@ -50,7 +50,7 @@ public class SizeTest {
         _testSize(new PingHeader(PingHeader.GET_MBRS_RSP, rsp));
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNakackHeader() throws Exception {
         _testSize(new NakAckHeader(NakAckHeader.MSG, 322649));
         _testSize(new NakAckHeader(NakAckHeader.XMIT_REQ, 100, 104, new IpAddress("127.0.0.1", 5655)));
@@ -58,7 +58,7 @@ public class SizeTest {
         _testSize(new NakAckHeader(NakAckHeader.XMIT_RSP, 322649));
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testFdHeaders() throws Exception {
         FD.FdHeader hdr=new FD.FdHeader(FD.FdHeader.HEARTBEAT_ACK);
         _testSize(hdr);
@@ -92,7 +92,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testFdSockHeaders() throws Exception {
         FD_SOCK.FdHeader hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE);
         _testSize(hdr);
@@ -117,13 +117,13 @@ public class SizeTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testUnicastHeader() throws Exception {
         UNICAST.UnicastHeader hdr=new UNICAST.UnicastHeader(UNICAST.UnicastHeader.DATA, 322649);
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStableHeader() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -137,7 +137,7 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStableHeader2() throws Exception {
         org.jgroups.protocols.pbcast.STABLE.StableHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -150,7 +150,7 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSequencerHeader() throws Exception {
         org.jgroups.protocols.SEQUENCER.SequencerHeader hdr;
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
@@ -160,7 +160,7 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAddressVector() throws Exception {
         Vector v=new Vector();
         _testSize(v);
@@ -170,7 +170,7 @@ public class SizeTest {
         _testSize(v);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testViewId() throws Exception {
         ViewId vid=new ViewId();
         _testSize(vid);
@@ -182,7 +182,7 @@ public class SizeTest {
         _testSize(vid);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testView() throws Exception {
         View v=new View();
         _testSize(v);
@@ -197,7 +197,7 @@ public class SizeTest {
         _testSize(v);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testViewPayload() throws Exception {
         View v=new View();
         v.addPayload("name", "Bela Ban");
@@ -215,7 +215,7 @@ public class SizeTest {
         _testSize(v);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMergeView() throws Exception {
         View v=new MergeView();
         _testSize(v);
@@ -231,7 +231,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMergeView2() throws Exception {
         Vector m1, m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -263,7 +263,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMergeView3() throws Exception {
         Vector m1, m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -297,7 +297,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testViewSyncHeader() throws Exception {
         Address creator=new IpAddress("localhost", 12345);
         Vector members=new Vector();
@@ -319,7 +319,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testJoinRsp() throws Exception {
         JoinRsp rsp;
         Vector members=new Vector();
@@ -338,7 +338,7 @@ public class SizeTest {
         _testSize(rsp);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testGmsHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_REQ, addr);
@@ -353,26 +353,26 @@ public class SizeTest {
 
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testFCHeader() throws Exception {
         FC.FcHeader hdr=new FC.FcHeader(FC.FcHeader.REPLENISH);
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testFragHeader() throws Exception {
         FragHeader hdr=new FragHeader(322649, 1, 10);
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testCompressHeader() throws Exception {
         COMPRESS.CompressHeader hdr=new COMPRESS.CompressHeader(2002);
         _testSize(hdr);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStateHeader() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         STATE_TRANSFER.StateHeader hdr;
@@ -394,7 +394,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testEncryptHeader() throws Exception {
         ENCRYPT.EncryptHeader hdr=new ENCRYPT.EncryptHeader((short)1, null);
         _testSize(hdr);
@@ -402,37 +402,37 @@ public class SizeTest {
         _testSize(hdr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddress() throws Exception {
         IpAddress addr=new IpAddress();
         _testSize(addr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddress1() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 5555);
         _testSize(addr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddressWithHighPort() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 65535);
         _testSize(addr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddress2() throws Exception {
         IpAddress addr=new IpAddress(3456);
         _testSize(addr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddress3() throws Exception {
         IpAddress addr=new IpAddress(5555, false);
         _testSize(addr);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testIpAddressWithAdditionalData() throws Exception {
         IpAddress addr=new IpAddress(5555, false);
         addr.setAdditionalData("bela".getBytes());
@@ -440,7 +440,7 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testRequestCorrelatorHeader() throws Exception {
         RequestCorrelator.Header hdr;
 
@@ -488,14 +488,14 @@ public class SizeTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testServiceInfo() throws Exception {
         ServiceInfo si=new ServiceInfo();
         _testSize(si);     
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMuxHeader() throws Exception {
         MuxHeader hdr=new MuxHeader();
         _testSize(hdr);
@@ -587,12 +587,4 @@ public class SizeTest {
      }
 
 
-
-    public static Test suite() {
-        return new TestSuite(SizeTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

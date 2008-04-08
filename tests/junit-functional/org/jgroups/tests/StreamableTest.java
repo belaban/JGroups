@@ -1,9 +1,9 @@
-// $Id: StreamableTest.java,v 1.4 2008/03/31 06:15:20 vlada Exp $
+// $Id: StreamableTest.java,v 1.5 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.PingRsp;
@@ -29,7 +29,7 @@ public class StreamableTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamable() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         byte[] tmp;
@@ -82,35 +82,35 @@ public class StreamableTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamable2() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 0, 4);
         stream(msg);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testStreamable3() throws Exception {
         byte[] buf={'b', 'e', 'l', 'a', 'b', 'a', 'n'};
         Message msg=new Message(null, null, buf, 4, 3);
         stream(msg);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNullBuffer() throws Exception {
         Message msg=new Message();
         stream(msg);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNonNullBuffer() throws Exception {
         Message msg=new Message(null, null, "Hello world".getBytes());
         stream(msg);
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNonNullAddress() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -119,7 +119,7 @@ public class StreamableTest {
         stream(msg);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testHeaders() throws Exception {
         Address dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -133,7 +133,7 @@ public class StreamableTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testAdditionalData() throws Exception {
         IpAddress dest, src;
         dest=new IpAddress("228.1.2.3", 5555);
@@ -150,7 +150,7 @@ public class StreamableTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMergeView() throws Exception {
         Vector tmp_m1, tmp_m2 , m3, all, subgroups;
         Address a,b,c,d,e,f;
@@ -261,11 +261,4 @@ public class StreamableTest {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(StreamableTest.class);
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 }

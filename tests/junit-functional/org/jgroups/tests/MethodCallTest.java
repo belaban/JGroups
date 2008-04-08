@@ -1,9 +1,9 @@
-// $Id: MethodCallTest.java,v 1.2 2008/03/10 15:39:21 belaban Exp $
+// $Id: MethodCallTest.java,v 1.3 2008/04/08 08:29:41 belaban Exp $
 
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.util.Util;
 import org.jgroups.Global;
@@ -19,7 +19,7 @@ import java.lang.reflect.Method;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Revision: 1.2 $
+ * @version $Revision: 1.3 $
  **/
 
 public class MethodCallTest {
@@ -59,7 +59,7 @@ public class MethodCallTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOld() {
         try {
             MethodCall mc=new MethodCall("foo", new Object[]{new Integer(22), "Bela"});
@@ -70,7 +70,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOld2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"});
@@ -81,7 +81,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testWithNull() {
         try {
             MethodCall mc=new MethodCall("foobar", null, (Class[])null);
@@ -93,7 +93,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null});
@@ -104,7 +104,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull2() {
         try {
             MethodCall mc=new MethodCall("bar", new Object[]{null, "Bela"});
@@ -115,7 +115,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull3() {
         try {
             MethodCall mc=new MethodCall("foobar", null);
@@ -126,7 +126,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOldWithNull4() {
         try {
             MethodCall mc=new MethodCall("foobar", new Object[0]);
@@ -140,7 +140,7 @@ public class MethodCallTest {
 
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMethod() {
         Method m;
         try {
@@ -153,7 +153,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypes() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"}, new Class[]{int.class, String.class});
@@ -166,7 +166,7 @@ public class MethodCallTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithArray() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, "Bela"},
@@ -179,7 +179,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, null},
@@ -192,7 +192,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument2() {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
@@ -208,7 +208,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument3() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[]{}, new Class[]{});
@@ -223,7 +223,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument4() {
         MethodCall mc;
         mc=new MethodCall("foobar", (Object[])null, (Class[])null);
@@ -238,7 +238,7 @@ public class MethodCallTest {
         }
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTypesWithNullArgument5() {
         MethodCall mc;
         mc=new MethodCall("foobar", new Object[0], new Class[0]);
@@ -254,7 +254,7 @@ public class MethodCallTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSignature() {
         MethodCall mc;
         mc=new MethodCall("foo", new Object[]{new Integer(35), "Bela"},
@@ -268,7 +268,7 @@ public class MethodCallTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testBufferSize() throws Exception {
         int a=10;
         String b="Bela";
@@ -291,7 +291,7 @@ public class MethodCallTest {
     // OLD
     //
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
@@ -301,7 +301,7 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testInheritanceOLD() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod", new Object[] {"abc"});
@@ -315,7 +315,7 @@ public class MethodCallTest {
     // METHOD
     //
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
@@ -326,7 +326,7 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testInheritanceMETHOD() throws Throwable {
 
         Method method = Target.class.getMethod("someMethod", new Class[] { String.class });
@@ -341,7 +341,7 @@ public class MethodCallTest {
     // TYPES
     //
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -353,7 +353,7 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testInheritanceTYPES() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -368,7 +368,7 @@ public class MethodCallTest {
     /**
      * This tests whether overriden methods are correctly identified and invoked.
      */
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testOverriddenForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("overriddenMethod",
@@ -381,7 +381,7 @@ public class MethodCallTest {
 
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testNoArgumentMethodForTYPES() throws Throwable  {
 
         MethodCall methodCall = new MethodCall("noArgumentMethod", new Object[0], new Class[0]);
@@ -397,7 +397,7 @@ public class MethodCallTest {
     // SIGNATURE
     //
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testSIGNATURE() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -409,7 +409,7 @@ public class MethodCallTest {
         Assert.assertEquals("ABC", result);
     }
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testInheritanceSIGNATURE() throws Throwable {
 
         MethodCall methodCall = new MethodCall("someMethod",
@@ -422,7 +422,7 @@ public class MethodCallTest {
     }
 
 
-    @org.testng.annotations.Test(groups=Global.FUNCTIONAL)
+    @Test(groups=Global.FUNCTIONAL)
     public void testMarshalling() throws Exception {
         MethodCall methodCall = new MethodCall("someMethod",
                                                new Object[] { "abc" },
@@ -445,15 +445,6 @@ public class MethodCallTest {
         return retval;
     }
 
-
-    public static Test suite() {
-        TestSuite s=new TestSuite(MethodCallTest.class);
-        return s;
-    }
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(suite());
-    }
 
     public class Target {
 

@@ -4,8 +4,8 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.util.HashMap;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
@@ -14,7 +14,7 @@ import org.jgroups.tests.ChannelTestBase;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.6 2008/04/08 07:19:08 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.7 2008/04/08 08:29:42 belaban Exp $
  */
 public class DistributedLockManagerTest extends ChannelTestBase {
 
@@ -22,11 +22,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
             super(testName);
     }
 
-    public static Test suite() {
-            return new TestSuite(DistributedLockManagerTest.class);
-    }
 
-    
     private Channel channel1;
     private Channel channel2;
 
@@ -155,7 +151,4 @@ public class DistributedLockManagerTest extends ChannelTestBase {
         lockManager1.unlock("obj1", "owner1", true);
     }
 
-    public static void main(String[] args) {
-	junit.textui.TestRunner.run(suite());
-    }
 }

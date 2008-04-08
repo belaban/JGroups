@@ -1,7 +1,7 @@
 package org.jgroups.tests;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
@@ -27,7 +27,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.10 2008/04/08 07:18:55 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.11 2008/04/08 08:29:32 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -56,7 +56,7 @@ public class ShunTest extends ChannelTestBase {
         return true;
     }
 
-    @org.testng.annotations.Test
+    @Test
     public void testShunning() {
         connectAndShun(2,false);
     }
@@ -71,7 +71,7 @@ public class ShunTest extends ChannelTestBase {
      * After B has rejoined, it invokes an RPC and it should get valid return values from both A and B.
      * @throws Exception
      */
-    @org.testng.annotations.Test
+    @Test
     public void testTwoMembersShun() throws Exception {
         View view;
         channel_conf= System.getProperty("channel.conf.flush", "udp.xml");
@@ -346,12 +346,5 @@ public class ShunTest extends ChannelTestBase {
         }
     }
 
-    public static Test suite() {
-        return new TestSuite(ShunTest.class);
-    }
 
-    public static void main(String[] args) {
-        String[] testCaseName = { ShunTest.class.getName() };
-        junit.textui.TestRunner.main(testCaseName);
-    }
 }

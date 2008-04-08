@@ -1,7 +1,7 @@
 package org.jgroups.blocks;
 
-import junit.framework.Test;
-import junit.framework.TestSuite;
+
+import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -35,7 +35,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.11 2008/04/08 07:44:55 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.12 2008/04/08 08:29:43 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -355,12 +355,4 @@ public class RpcDispatcherTest extends ChannelTestBase {
     }
 
 
-    public static Test suite() {
-        return new TestSuite(RpcDispatcherTest.class);
-    }
-
-
-    public static void main(String[] args) {
-        junit.textui.TestRunner.run(RpcDispatcherTest.suite());
-    }
 }
