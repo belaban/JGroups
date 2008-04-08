@@ -11,16 +11,17 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.5 2008/04/08 07:44:55 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.6 2008/04/08 15:25:26 belaban Exp $
  */
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
+    private final Target target=new Target();
 
     @BeforeMethod
     public void setUp() throws Exception {
         channel=createChannel("A");
-        disp=new RpcDispatcher(channel, null, null, this);
+        disp=new RpcDispatcher(channel, null, null, target);
         channel.connect("demo");
     }
 
@@ -30,9 +31,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
         channel.close();
     }
 
-    public void foo(Pojo p) {
-        System.out.println(p.toString());
-    }
+
 
     @Test
     public void testUnserializableValue() {
@@ -54,6 +53,12 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
 
     private static class Pojo { // doesn't implement Serializable !
         int age; String name;
+    }
+
+    private static class Target {
+        public static void foo(Pojo p) {
+            System.out.println(p.toString());
+        }
     }
 
 
