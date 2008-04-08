@@ -12,6 +12,7 @@
         <packages>
             <package name="org.jgroups.tests.*"/>
             <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
         </packages>
     </test>
 </suite>
