@@ -9,6 +9,7 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -21,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.10 2008/03/10 16:34:00 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.11 2008/04/08 12:00:35 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
@@ -33,16 +34,10 @@ public class ConnectionTableTest {
 
     final static int PORT1=7521, PORT2=8931;
 
-    static {
-        try {
-            loopback_addr=InetAddress.getByName("127.0.0.1");
-        }
-        catch(UnknownHostException e) {
-            e.printStackTrace();
-        }
+    @BeforeClass
+    public static void init() throws UnknownHostException {
+        loopback_addr=InetAddress.getByName("127.0.0.1");
     }
-
-
 
 
     @BeforeMethod
