@@ -15,11 +15,11 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: FIFOMessageQueueTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
+ * @version $Id: FIFOMessageQueueTest.java,v 1.3 2008/04/08 12:28:08 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class FIFOMessageQueueTest {
-    String s1="s1", s2="s2", s3="s3";
+    private static final String s1="s1", s2="s2", s3="s3";
     private static final Address a1, a2;
 
     static {
@@ -39,7 +39,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testPutTwoTakeTwo() throws InterruptedException {
+    public static void testPutTwoTakeTwo() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1); // 1 is available immediately
         queue.put(a1, s1, 2); // 2 is queued
@@ -58,7 +58,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testTakeFollowedByPut() throws InterruptedException {
+    public static void testTakeFollowedByPut() throws InterruptedException {
         final FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         Assert.assertEquals(0, queue.size());
 
@@ -82,7 +82,7 @@ public class FIFOMessageQueueTest {
     }
 
 
-    public void testMultipleTakersOnePutter() throws Exception {
+    public static void testMultipleTakersOnePutter() throws Exception {
         final FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         final CyclicBarrier barrier=new CyclicBarrier(11);
         for(int i=0; i < 10; i++) {
@@ -108,7 +108,7 @@ public class FIFOMessageQueueTest {
     }
 
 
-    public void testConcurrentPutsAndTakes() throws InterruptedException {
+    public static void testConcurrentPutsAndTakes() throws InterruptedException {
         final FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         final int NUM=10000;
         final int print=NUM / 10;
@@ -174,7 +174,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testNullAddress() throws InterruptedException {
+    public static void testNullAddress() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(null, s1, 1);
         queue.put(a1, s1, 2);
@@ -209,7 +209,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testSimplePutAndTake() throws InterruptedException {
+    public static void testSimplePutAndTake() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1);
         Assert.assertEquals(1, queue.size());
@@ -219,7 +219,7 @@ public class FIFOMessageQueueTest {
     }
 
 
-    public void testSimplePutAndTakeMultipleSenders() throws InterruptedException {
+    public static void testSimplePutAndTakeMultipleSenders() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1);
         queue.put(a2, s1, 2);
@@ -234,7 +234,7 @@ public class FIFOMessageQueueTest {
     }
 
 
-    public void testMultiplePutsAndTakes() throws InterruptedException {
+    public static void testMultiplePutsAndTakes() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         for(int i=1; i <= 5; i++)
             queue.put(a1, s1, i);
@@ -254,7 +254,7 @@ public class FIFOMessageQueueTest {
      * Sender A sends M1 to S1 and M2 to S1. M2 should wait until M1 is done
      */
 
-    public void testSameSenderSameDestination() throws InterruptedException {
+    public static void testSameSenderSameDestination() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1);
         queue.put(a1, s1, 2);
@@ -285,7 +285,7 @@ public class FIFOMessageQueueTest {
      * to wait for M1 to complete
      */
 
-    public void testSameSenderMultipleDestinations() throws InterruptedException {
+    public static void testSameSenderMultipleDestinations() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 10);
         queue.put(a1, s1, 11);
@@ -366,7 +366,7 @@ public class FIFOMessageQueueTest {
      * should not have to wait for M1's completion
      */
 
-    public void testDifferentSendersSameDestination() throws InterruptedException {
+    public static void testDifferentSendersSameDestination() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 10);
         queue.put(a2, s1, 20);
@@ -404,7 +404,7 @@ public class FIFOMessageQueueTest {
      * Sender A sends M1 to S1 and sender B sends M2 to S2. M1 and M2 should get processed concurrently 
      */
 
-    public void testDifferentSendersDifferentDestinations() throws Exception {
+    public static void testDifferentSendersDifferentDestinations() throws Exception {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1);
         queue.put(a2, s2, 2);
@@ -438,7 +438,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testDifferentSendersDifferentDestinationsMultipleMessages() throws Exception {
+    public static void testDifferentSendersDifferentDestinationsMultipleMessages() throws Exception {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         queue.put(a1, s1, 1);
         queue.put(a2, s2, 2);
@@ -494,7 +494,7 @@ public class FIFOMessageQueueTest {
 
 
 
-    public void testOrdering() throws InterruptedException {
+    public static void testOrdering() throws InterruptedException {
         FIFOMessageQueue<String,Integer> queue=new FIFOMessageQueue<String,Integer>();
         for(int i=1; i <= 3; i++)
             queue.put(a1, s1, i);

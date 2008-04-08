@@ -18,7 +18,7 @@ import java.util.Vector;
 /**
  * Tests the BARRIER protocol
  * @author Bela Ban
- * @version $Id: BARRIERTest.java,v 1.3 2008/03/10 15:39:22 belaban Exp $
+ * @version $Id: BARRIERTest.java,v 1.4 2008/04/08 12:18:32 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class BARRIERTest {
@@ -52,7 +52,6 @@ public class BARRIERTest {
     }
 
 
-    @Test
     public void testBlocking() {
         assert !(barrier_prot.isClosed());
         s.send(new Event(Event.CLOSE_BARRIER));
@@ -62,7 +61,6 @@ public class BARRIERTest {
     }
 
 
-    @Test
     public void testThreadsBlockedOnBarrier() {
         MyReceiver receiver=new MyReceiver();
         s.setReceiver(receiver);
@@ -87,7 +85,6 @@ public class BARRIERTest {
     }
 
 
-    @Test
     public void testThreadsBlockedOnMutex() throws InterruptedException {
         BlockingReceiver receiver=new BlockingReceiver();
         s.setReceiver(receiver);

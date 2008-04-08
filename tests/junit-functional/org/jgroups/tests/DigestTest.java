@@ -1,4 +1,3 @@
-// $Id: DigestTest.java,v 1.3 2008/04/08 08:29:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,6 +17,10 @@ import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * @author Bela Ban
+ * @version $Id: DigestTest.java,v 1.4 2008/04/08 12:25:28 belaban Exp $
+ */
 @Test(groups=Global.FUNCTIONAL, sequential=true)
 public class DigestTest {
     Digest         d, d2;
@@ -42,13 +45,13 @@ public class DigestTest {
         md=new MutableDigest(map);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSize() {
         d2=new Digest(3);
         Assert.assertEquals(0, d2.size());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testEquals() {
         d2=d.copy();
         System.out.println("d: " + d + "\nd2= " + d2);
@@ -56,7 +59,7 @@ public class DigestTest {
         Assert.assertEquals(d, d2);
     }
     
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testDifference(){
     	
 		Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
@@ -102,7 +105,7 @@ public class DigestTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testIsGreaterThanOrEqual() {
         Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(4, 500, 501));
@@ -126,7 +129,7 @@ public class DigestTest {
         assert !(my.isGreaterThanOrEqual(d));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testEquals2() {
         md=new MutableDigest(d);
         System.out.println("d: " + d + "\nmd= " + md);
@@ -138,7 +141,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMutability() {
         Digest md2=md;
         Assert.assertEquals(md, md2);
@@ -146,7 +149,7 @@ public class DigestTest {
         Assert.assertEquals(md, md2);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testImmutability() {
         MutableDigest tmp=new MutableDigest(d);
         Assert.assertEquals(d, tmp);
@@ -155,19 +158,19 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testImmutability2() {
         Digest tmp=d.copy();
         Assert.assertEquals(d, tmp);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testImmutability3() {
         Digest tmp=new Digest(d);
         Assert.assertEquals(tmp, d);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testImmutability4() {
         Digest copy=md.copy();
         Assert.assertEquals(copy, md);
@@ -175,7 +178,7 @@ public class DigestTest {
         assert !(copy.equals(md));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSeal() {
         MutableDigest tmp=new MutableDigest(3);
         tmp.add(a2, 1,2,3);
@@ -192,7 +195,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSeal2() {
         md.incrementHighestDeliveredSeqno(a1);
         md.seal();
@@ -208,7 +211,7 @@ public class DigestTest {
         tmp.incrementHighestDeliveredSeqno(a3);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAdd() {
         Assert.assertEquals(3, md.size());
         md.add(a1, 100, 200, 201);
@@ -217,14 +220,14 @@ public class DigestTest {
         Assert.assertEquals(4, md.size());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAddDigest() {
         Digest tmp=md.copy();
         md.add(tmp);
         Assert.assertEquals(3, md.size());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testAddDigest2() {
         MutableDigest tmp=new MutableDigest(4);
         tmp.add(new IpAddress(1111), 1,2,3);
@@ -235,7 +238,7 @@ public class DigestTest {
         Assert.assertEquals(5, md.size());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testGet() {
         Digest.Entry entry;
         entry=d.get(a1);
@@ -246,7 +249,7 @@ public class DigestTest {
         Assert.assertEquals(entry, new Digest.Entry(20, 25, 33));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testIncrementHighSeqno() {
         md=new MutableDigest(3);
         md.add(a1, 1, 100);
@@ -267,7 +270,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testConstructor() {
         Assert.assertEquals(3, md.size());
         md.clear();
@@ -277,20 +280,20 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testConstructor2() {
         Digest dd=new Digest(3);
         Assert.assertEquals(0, dd.size());
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testConstructor3() {
         Digest dd=new MutableDigest(3);
         Assert.assertEquals(0, dd.size());
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testContains() {
         assert d.contains(a1);
         assert d.contains(a2);
@@ -299,7 +302,7 @@ public class DigestTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testResetAt() {
         md.resetAt(a1);
         Assert.assertEquals(0, md.lowSeqnoAt(a1));
@@ -308,7 +311,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testLowSeqnoAt() {
         Assert.assertEquals(4, d.lowSeqnoAt(a1));
         Assert.assertEquals(25, d.lowSeqnoAt(a2));
@@ -316,7 +319,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testHighSeqnoAt() {
         Assert.assertEquals(500, d.highestDeliveredSeqnoAt(a1));
         Assert.assertEquals(26, d.highestDeliveredSeqnoAt(a2));
@@ -329,7 +332,7 @@ public class DigestTest {
 //        assertEquals(555, md.highSeqnoAt(a1));
 //    }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testHighSeqnoSeenAt() {
         Assert.assertEquals(501, d.highestReceivedSeqnoAt(a1));
         Assert.assertEquals(26, d.highestReceivedSeqnoAt(a2));
@@ -342,7 +345,7 @@ public class DigestTest {
 //        assertEquals(100, md.highSeqnoSeenAt(a2));
 //    }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSetHighestDeliveredAndSeenSeqnoAt() {
         Assert.assertEquals(4, d.lowSeqnoAt(a1));
         Assert.assertEquals(500, d.highestDeliveredSeqnoAt(a1));
@@ -353,7 +356,7 @@ public class DigestTest {
         Assert.assertEquals(20, md.highestReceivedSeqnoAt(a1));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testCopy() {
         d=d.copy();
         testLowSeqnoAt();
@@ -364,14 +367,14 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testCopy2() {
         Digest tmp=d.copy();
         Assert.assertEquals(tmp, d);
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMutableCopy() {
         Digest copy=md.copy();
         System.out.println("md=" + md + "\ncopy=" + copy);
@@ -382,7 +385,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMerge() {
         Map<Address, Digest.Entry> map=new HashMap<Address, Digest.Entry>();
         map.put(a1, new Digest.Entry(3, 499, 502));
@@ -412,7 +415,7 @@ public class DigestTest {
         Assert.assertEquals(35, digest.highestReceivedSeqnoAt(a3));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testNonConflictingMerge() {
         MutableDigest cons_d=new  MutableDigest(5);
         IpAddress ip1=new IpAddress(1111), ip2=new IpAddress(2222);
@@ -444,7 +447,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testConflictingMerge() {
         MutableDigest new_d=new MutableDigest(2);
         new_d.add(a1, 5, 450, 501);
@@ -470,30 +473,30 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSendersOtherIsNull() {
         assert !(d.sameSenders(null));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSenders1MNullDifferentLenth() {
         d2=new Digest(1);
         assert !(d2.sameSenders(d));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSenders1MNullSameLength() {
         d2=new Digest(3);
         assert !(d2.sameSenders(d));
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSendersIdentical() {
         d2=d.copy();
         assert d.sameSenders(d2);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSendersNotIdentical() {
         MutableDigest tmp=new MutableDigest(3);
         tmp.add(a1, 4, 500, 501);
@@ -503,7 +506,7 @@ public class DigestTest {
         assert d.sameSenders(tmp);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameSendersNotSameLength() {
         md=new MutableDigest(3);
         md.add(a1, 4, 500, 501);
@@ -512,7 +515,7 @@ public class DigestTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testStreamable() throws IOException, IllegalAccessException, InstantiationException {
         ByteArrayOutputStream outstream=new ByteArrayOutputStream();
         DataOutputStream dos=new DataOutputStream(outstream);
@@ -526,7 +529,7 @@ public class DigestTest {
         Assert.assertEquals(d, tmp);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSerializedSize() throws Exception {
         long len=d.serializedSize();
         byte[] buf=Util.streamableToByteBuffer(d);

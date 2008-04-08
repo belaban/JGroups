@@ -16,7 +16,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.4 2008/03/10 15:39:21 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.5 2008/04/08 12:20:52 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -26,21 +26,16 @@ public class ConfiguratorTest {
     final String[] below={"FC", "UNICAST", "TRACE", "NAKACK", "FD", "PING", "UDP"};
     final String[] above={"FC", "TRACE", "UNICAST", "NAKACK", "FD", "PING", "UDP"};
 
-    public ConfiguratorTest(String name) {
-    }
+
 
     @BeforeMethod
-    public void setUp() throws Exception {
-
+    void setUp() throws Exception {
         JChannel mock_channel=new JChannel() {
-
         };
-
         stack=new ProtocolStack(mock_channel, props);
     }
 
 
-    @Test
     public void testInsertion() throws Exception {
         stack.setup();
         List protocols=stack.getProtocols();
@@ -88,8 +83,7 @@ public class ConfiguratorTest {
     }
 
 
-    @Test
-    public void testParsing() throws Exception {
+    public static void testParsing() throws Exception {
         String config="UDP(mcast_addr=ff18:eb72:479f::2:3;oob_thread_pool.max_threads=4;" +
                 "oob_thread_pool.keep_alive_time=5000;max_bundle_size=64000;mcast_send_buf_size=640000;" +
                 "oob_thread_pool.queue_max_size=10;mcast_recv_buf_size=25000000;" +
