@@ -1,62 +1,65 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Channel;
-import org.jgroups.ChannelException;
 import org.jgroups.TimeoutException;
 import org.jgroups.tests.ChannelTestBase;
-import org.testng.annotations.AfterTest;
-import org.testng.annotations.BeforeTest;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.6 2008/04/08 07:44:55 belaban Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.7 2008/04/09 12:59:53 belaban Exp $
  */
+@Test
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
 
-    @BeforeTest
+    @BeforeClass
     protected void setUp() throws Exception {
         channel=createChannel("A");
         disp=new RpcDispatcher(channel, null, null, this);
         channel.connect("demo");
     }
 
-    @AfterTest
+    @AfterClass
     protected void tearDown() throws Exception {
         disp.stop();
         channel.close();
     }
 
-
-    public Object foo() {
+    @Test(enabled=false)
+    public static Object foo() {
         System.out.println("-- foo()");
         return "foo(): OK";
     }
 
-    public Object bar() throws Exception {
+    @Test(enabled=false)
+    public static Object bar() throws Exception {
         System.out.println("-- bar()");
         throw new TimeoutException("this is an exception");
     }
 
-    public Object foobar() {
+    @Test(enabled=false)
+    public static Object foobar() {
         System.out.println("-- foobar()");
         throw new IllegalArgumentException("bla bla bla from foobar");
     }
 
-    public Object foofoobar() {
+    @Test(enabled=false)
+    public static Object foofoobar() {
         System.out.println("-- foofoobar()");
         throw new AssertionError("bla bla bla from foofoobar");
     }
 
-    public void fooWithThrowable() throws Throwable {
+    @Test(enabled=false)
+    public static void fooWithThrowable() throws Throwable {
         System.out.println("-- fooWithThrowable()");
         throw new Throwable("this is an exception");
     }
 
 
-    @Test
     public void testMethodWithoutException() throws Throwable {
         Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
@@ -82,7 +85,7 @@ public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
         System.out.println("retval: " + retval);
     }
 
-    @Test(expectedExceptions=TimeoutException.class)
+    @Test(expectedExceptions=Throwable.class)
     public void testMethodWithThrowable() throws Throwable {
         Object retval=disp.callRemoteMethod(channel.getLocalAddress(), "fooWithThrowable", null, (Class[])null, GroupRequest.GET_ALL, 5000);
         System.out.println("retval: " + retval);
