@@ -27,17 +27,13 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.11 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.12 2008/04/09 15:01:35 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
     RpcDispatcher disp1, disp2;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
+
 
     @AfterMethod
     protected void tearDown() throws Exception {
@@ -52,7 +48,7 @@ public class ShunTest extends ChannelTestBase {
         ;
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 
@@ -61,8 +57,8 @@ public class ShunTest extends ChannelTestBase {
         connectAndShun(2,false);
     }
 
-
-    public long getCurrentTime() {
+    @Test(enabled=false)
+    public static long getCurrentTime() {
         return System.currentTimeMillis();
     }
 
@@ -74,7 +70,6 @@ public class ShunTest extends ChannelTestBase {
     @Test
     public void testTwoMembersShun() throws Exception {
         View view;
-        channel_conf= System.getProperty("channel.conf.flush", "udp.xml");
         c1=createChannel();
         c1.setOpt(Channel.AUTO_GETSTATE, false);
         c1.addChannelListener(new BelasChannelListener("C1"));

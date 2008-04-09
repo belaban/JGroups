@@ -22,11 +22,11 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.18 2008/04/08 07:18:59 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.19 2008/04/09 15:01:36 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return false;
     }
    

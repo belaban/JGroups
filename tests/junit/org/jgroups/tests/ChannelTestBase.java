@@ -30,8 +30,6 @@ public class ChannelTestBase {
 
     protected String channel_conf="udp.xml";
 
-    protected String channel_conf_flush="flush_udp.xml";
-
     protected boolean mux_on=false;
 
     protected String mux_conf="stacks.xml";
@@ -71,10 +69,9 @@ public class ChannelTestBase {
 
 
     @BeforeClass
-    @Parameters(value={"channel.conf", "channel.conf.flush", "mux.on", "mux.conf", "mux.conf.stack",
+    @Parameters(value={"channel.conf", "mux.on", "mux.conf", "mux.conf.stack",
             "mux.factorycount", "compare_thread_count", "use_blocking"})
     protected void initialize(@Optional("udp.xml") String channel_conf,
-                              @Optional("flush-udp.xml") String channel_conf_flush,
                               @Optional("false") String mux_on,
                               @Optional("stacks.xml") String mux_conf,
                               @Optional("udp") String mux_conf_stack,
@@ -83,9 +80,6 @@ public class ChannelTestBase {
                               @Optional("false") String use_blocking) throws Exception {
         if(channel_conf != null)
             this.channel_conf=channel_conf;
-
-        if(channel_conf_flush != null)
-            this.channel_conf_flush=channel_conf_flush;
 
         if(mux_on != null)
             this.mux_on=Boolean.parseBoolean(mux_on);
@@ -127,12 +121,12 @@ public class ChannelTestBase {
     }
 
     protected boolean isTunnelUsed() {
-        return channel_conf.contains("tunnel") || channel_conf_flush.contains("tunnel");
+        return channel_conf.contains("tunnel");
     }
 
+    
     @AfterClass
     protected void terminate() throws Exception {
-
         if(isMuxChannelUsed()) {
             for(int i=0; i < muxFactory.length; i++) {
                 muxFactory[i].destroy();

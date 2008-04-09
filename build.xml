@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.145 2008/04/09 14:53:35 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.146 2008/04/09 15:01:37 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -33,7 +33,6 @@
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
-    <property name="channel.conf.flush" value="flush-udp.xml"/>
     <property name="mux.on" value="false"/>
     <property name="mux.conf" value="stacks.xml"/>
     <property name="mux.conf.stack" value="udp"/>
