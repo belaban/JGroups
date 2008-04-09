@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.12 2008/04/08 07:18:56 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.13 2008/04/09 14:42:11 belaban Exp $
  */
 @Test(sequential=true)
 public class ConnectTest extends ChannelTestBase {
@@ -24,8 +24,7 @@ public class ConnectTest extends ChannelTestBase {
 
 
     @AfterMethod
-    @AfterClass
-    public void tearDown() throws Exception {        
+    public void tearDown() throws Exception {
         if(channel != null) {
             channel.close();
             channel = null;
