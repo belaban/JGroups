@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.42 2008/03/14 02:09:24 vlada Exp $
+// $Id: Channel.java,v 1.43 2008/04/09 15:49:26 belaban Exp $
 
 package org.jgroups;
 
@@ -61,6 +61,10 @@ public abstract class Channel implements Transport {
 
 
     protected abstract Log getLog();
+
+    public Channel copy() throws ChannelException {
+        throw new UnsupportedOperationException();
+    }
 
     /**
      Connects the channel to a group. The client is now able to receive group

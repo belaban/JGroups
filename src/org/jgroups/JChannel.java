@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.182 2008/04/07 06:00:54 belaban Exp $
+ * @version $Id: JChannel.java,v 1.183 2008/04/09 15:49:26 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -294,6 +294,20 @@ public class JChannel extends Channel {
         init(c);
     }
 
+    /**
+     * Returns a channel with the same properties and options as the source. The returned channel will not be connected
+     * even if the source channel is.
+     * @return
+     * @throws ChannelException
+     */
+    public Channel copy() throws ChannelException {
+        JChannel retval=new JChannel(props);
+        retval.auto_reconnect=auto_reconnect;
+        retval.auto_getstate=auto_getstate;
+        retval.receive_blocks=receive_blocks;
+        retval.receive_local_msgs=receive_local_msgs;
+        return retval;
+    }
 
     /**
      * Returns the protocol stack.
