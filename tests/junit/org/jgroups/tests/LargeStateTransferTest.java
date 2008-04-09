@@ -19,8 +19,9 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.11 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.12 2008/04/09 14:34:50 belaban Exp $
  */
+@Test
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
     Promise<Integer> p=new Promise<Integer>();    
@@ -28,17 +29,13 @@ public class LargeStateTransferTest extends ChannelTestBase {
     final static int SIZE_1=100000, SIZE_2=1000000, SIZE_3=5000000, SIZE_4=10000000;
 
 
-
-       
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
         provider=createChannel("A");
         requester=createChannel("A");
     }
@@ -49,33 +46,28 @@ public class LargeStateTransferTest extends ChannelTestBase {
             provider.close();
         if(requester != null)
             requester.close();
-        ;
     }
 
 
-    @Test
     public void testStateTransfer1() throws ChannelException {
         _testStateTransfer(SIZE_1);
     }
 
-    @Test
     public void testStateTransfer2() throws ChannelException {
         _testStateTransfer(SIZE_2);
     }
 
-    @Test
     public void testStateTransfer3() throws ChannelException {
         _testStateTransfer(SIZE_3);
     }
 
-    @Test
     public void testStateTransfer4() throws ChannelException {
         _testStateTransfer(SIZE_4);
     }
 
 
 
-    public void _testStateTransfer(int size) throws ChannelException {
+    private void _testStateTransfer(int size) throws ChannelException {
         provider.setReceiver(new Provider(size));
         provider.connect("X");
         p.reset();
