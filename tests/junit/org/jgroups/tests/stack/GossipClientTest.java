@@ -1,4 +1,4 @@
-// $Id: GossipClientTest.java,v 1.4 2008/04/08 07:19:14 belaban Exp $
+// $Id: GossipClientTest.java,v 1.5 2008/04/09 13:06:58 belaban Exp $
 
 package org.jgroups.tests.stack;
 
@@ -19,7 +19,7 @@ import java.util.List;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Revision: 1.4 $
+ * @version $Revision: 1.5 $
  * @since 2.2.1
  */
 public class GossipClientTest {
@@ -27,12 +27,10 @@ public class GossipClientTest {
     private int port=-1;
     private long expiryTime=1000;
 
-    public GossipClientTest(String name) {
-    }
+
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         port=Utilities.startGossipRouter(expiryTime, "127.0.0.1");
         client=new GossipClient(new IpAddress("127.0.0.1", port), expiryTime, 1000, null);
         client.setRefresherEnabled(false); // don't refresh the registrations
@@ -40,7 +38,6 @@ public class GossipClientTest {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        ;
         client.stop();
         Utilities.stopGossipRouter();
     }
