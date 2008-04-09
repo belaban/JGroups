@@ -35,8 +35,9 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.12 2008/04/08 08:29:43 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.13 2008/04/09 12:54:34 belaban Exp $
  */
+@Test(sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;
@@ -47,8 +48,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
     // specify return value sizes which may generate timeouts or OOMEs with 64Mb heap
     final static int[] HUGESIZES={10000000, 20000000};
 
+    @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         c1=createChannel("A");
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
         c1.connect("demo");
@@ -60,8 +61,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c3.connect("demo");
     }
 
+    @AfterMethod
     protected void tearDown() throws Exception {
-        ;
         disp3.stop();
         c3.close();
         disp2.stop();
@@ -70,8 +71,9 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c1.close();
     }
 
-    public void foo() {
-    }
+//    @Test(alwaysRun=false,enabled=false,description="No TestNG method, only used to invoke via reflection")
+//    public void foo() {
+//    }
 
 
     /**
