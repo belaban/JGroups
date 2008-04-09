@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.16 2008/04/08 08:29:32 belaban Exp $
+// $Id: CloseTest.java,v 1.17 2008/04/09 15:51:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,7 +9,6 @@ import org.jgroups.View;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.Vector;
@@ -22,11 +21,6 @@ import java.util.Vector;
 public class CloseTest extends ChannelTestBase {
     Channel channel, channel1, channel2, c1, c2, c3;  
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-    }
-
 
     @AfterMethod
     public void tearDown() throws Exception {
@@ -36,17 +30,14 @@ public class CloseTest extends ChannelTestBase {
         closeChannel(c1);
         closeChannel(c2);
         closeChannel(c3);
-
-        ;
     }
     
-    protected boolean useBlocking()
-    {
-       return false;
+    protected boolean useBlocking() {
+        return false;
     }
  
 
-    private void closeChannel(Channel c) {
+    private static void closeChannel(Channel c) {
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
         }
@@ -159,7 +150,7 @@ public class CloseTest extends ChannelTestBase {
         Assert.assertEquals(0, c2.getNumMessages());
     }
 
-    private void dumpMessages(String msg, Channel ch) throws Exception {
+    private static void dumpMessages(String msg, Channel ch) throws Exception {
         while(ch.getNumMessages() > 0) {
             Object obj=ch.receive(0);
             if(obj instanceof View)
