@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.146 2008/04/08 08:54:55 belaban Exp $
+ * @version $Id: Util.java,v 1.147 2008/04/09 12:47:24 belaban Exp $
  */
 public class Util {
 
@@ -102,7 +102,7 @@ public class Util {
 
 
     public static void assertTrue(boolean condition) {
-        assert condition : null;
+        assert condition;
     }
 
     public static void assertTrue(String message, boolean condition) {
@@ -113,7 +113,7 @@ public class Util {
     }
 
     public static void assertFalse(boolean condition) {
-        assert condition;
+        assertFalse(null, condition);
     }
 
     public static void assertFalse(String message, boolean condition) {
