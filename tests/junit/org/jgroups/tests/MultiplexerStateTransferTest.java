@@ -19,7 +19,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.7 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.8 2008/04/09 13:06:51 belaban Exp $
  */
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
@@ -27,7 +27,6 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     JChannelFactory factory, factory2;   
 
     @BeforeMethod
-    @BeforeTest
     public void setUp() throws Exception {
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
@@ -37,8 +36,7 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
     }
 
     @AfterMethod
-    @AfterTest
-    public void tearDown() throws Exception {        
+    public void tearDown() throws Exception {
         if(ch1_repl != null)
             ch1_repl.close();
         if(ch2_repl != null)
