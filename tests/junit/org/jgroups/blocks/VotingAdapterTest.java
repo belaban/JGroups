@@ -1,11 +1,14 @@
 package org.jgroups.blocks;
 
 
-import org.testng.annotations.*;
-
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
+
+@Test
 public class VotingAdapterTest extends ChannelTestBase {
     private Channel channel1;
     private Channel channel2;
@@ -20,8 +23,8 @@ public class VotingAdapterTest extends ChannelTestBase {
 
     protected static boolean logConfigured=false;
 
+    @BeforeMethod
     public void setUp() throws Exception {
-        ;
         listener1=new TestVoteChannelListener(true);
         listener2=new TestVoteChannelListener(true);
         listener3=new TestVoteChannelListener(false);
@@ -29,44 +32,20 @@ public class VotingAdapterTest extends ChannelTestBase {
 
         channel1=createChannel("A");
         adapter1=new VotingAdapter(channel1);
-
         channel1.connect("voting");
-
-        // give some time for the channel to become a coordinator
-        try {
-            Thread.sleep(1000);
-        }
-        catch(Exception ex) {
-        }
 
         channel2=createChannel("A");
         adapter2=new VotingAdapter(channel2);
-
         channel2.connect("voting");
-
-        try {
-            Thread.sleep(1000);
-        }
-        catch(InterruptedException ex) {
-        }
     }
 
+    @AfterMethod
     public void tearDown() throws Exception {
         channel2.close();
-
-        try {
-            Thread.sleep(1000);
-        }
-        catch(InterruptedException ex) {
-        }
-
-
         channel1.close();
-        ;
     }
 
     public void testVoteAll() throws Exception {
-    
         adapter1.addVoteListener(listener1);
         adapter2.addVoteListener(listener2);
 
@@ -87,15 +66,15 @@ public class VotingAdapterTest extends ChannelTestBase {
      * object creation.
      */
     public static class TestVoteChannelListener implements VotingListener {
-            private boolean vote;
+        private boolean vote;
 
-            public TestVoteChannelListener(boolean vote) {
-                    this.vote = vote;
-            }
+        public TestVoteChannelListener(boolean vote) {
+            this.vote = vote;
+        }
 
-            public boolean vote(Object decree) {
-                    return vote;
-            }
+        public boolean vote(Object decree) {
+            return vote;
+        }
     }
 
 
