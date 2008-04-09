@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.144 2008/04/08 13:21:30 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.145 2008/04/09 14:53:35 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -97,6 +97,10 @@
         <mkdir dir="${tmp.dir}"/>
         <mkdir dir="${tmp.dir}/test-results"/>
         <mkdir dir="${tmp.dir}/test-results/xml"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/udp-tests"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/udp-tests-flush"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-tests"/>
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-tests-flush"/>
     </target>
 
 
@@ -947,9 +951,13 @@
     <target name="all-new-tests">
         <sequential>
             <antcall target="udp-tests"/>
+            <antcall target="udp-tests-flush"/>
             <antcall target="tcp-tests"/>
+            <antcall target="tcp-tests-flush"/>
         </sequential>
     </target>
+
+
 
     <target name="udp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
         <runtest testname.ext="udp"
@@ -959,20 +967,27 @@
                 />
     </target>
 
-    <target name="udp-tests-2" >
-            <runtest testname.ext="udp"
-                     threadcount="1"
-                     parallel="tests"
-                     testng.xmlfile="testng-udp.xml"
-                    />
-        </target>
-
+    <target name="udp-tests-flush" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+        <runtest testname.ext="udp-flush"
+                 threadcount="1"
+                 parallel="tests"
+                 testng.xmlfile="testng-udp-flush.xml"
+                />
+    </target>
 
     <target name="tcp-tests" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
         <runtest testname.ext="tcp"
                  threadcount="1"
                  parallel="tests"
                  testng.xmlfile="testng-tcp.xml"
+                />
+    </target>
+
+    <target name="tcp-tests-flush" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+        <runtest testname.ext="tcp-flush"
+                 threadcount="1"
+                 parallel="tests"
+                 testng.xmlfile="testng-tcp-flush.xml"
                 />
     </target>
 

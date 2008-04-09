@@ -1,0 +1,21 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="udp-tests"
+       parallel="tests"
+       thread-count="1"
+        >
+
+    <test name="tcp" junit="false">
+        <parameter name="channel.conf" value="flush-tcp.xml"/>
+        <groups>
+            <run>
+                <exclude name="functional"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
+        </packages>
+    </test>
+
+</suite>
