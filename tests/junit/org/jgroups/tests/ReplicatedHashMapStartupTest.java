@@ -21,24 +21,18 @@ import java.util.Vector;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.4 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.5 2008/04/09 15:01:35 belaban Exp $
  */
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
     private static final int FACTORY_COUNT = 8;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush",
-                "flush-udp.xml");
-    }
 
     protected int getMuxFactoryCount() {
         return FACTORY_COUNT;
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

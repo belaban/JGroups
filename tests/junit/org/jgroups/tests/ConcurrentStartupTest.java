@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.39 2008/04/08 08:29:35 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.40 2008/04/09 15:01:35 belaban Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -30,12 +30,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         mod.set(1);
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

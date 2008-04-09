@@ -27,13 +27,8 @@ import java.util.concurrent.TimeUnit;
  */
 public class StreamingStateTransferTest extends ChannelTestBase {
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

@@ -13,7 +13,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.4 2008/04/08 07:18:59 belaban Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.5 2008/04/09 15:01:35 belaban Exp $
  */
 public class ConcurrentStartFlushTest extends ChannelTestBase {    
     private Receiver r1, r2, r3;
@@ -21,21 +21,14 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     private static final long TIMEOUT=10000L;
 
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
-
     @AfterMethod
     protected void tearDown() throws Exception {
-        ;
         c3.close();
         c2.close();
         c1.close();
     }
     
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

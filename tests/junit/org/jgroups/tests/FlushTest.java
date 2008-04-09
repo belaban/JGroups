@@ -22,21 +22,12 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.65 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.66 2008/04/09 15:01:35 belaban Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
 
-    public FlushTest(){
-        super();
-    }
 
-   
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
 
     @AfterMethod
     public void tearDown() throws Exception {
@@ -53,12 +44,10 @@ public class FlushTest extends ChannelTestBase {
             assertFalse(c1.isConnected());
             c1 = null;
         }
-
         Util.sleep(500);
-        ;
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

@@ -18,7 +18,7 @@ import java.util.*;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.8 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.9 2008/04/09 15:01:36 belaban Exp $
  */
 public class ReconciliationTest extends ChannelTestBase {
 
@@ -28,15 +28,8 @@ public class ReconciliationTest extends ChannelTestBase {
 
     private List<MyReceiver> receivers;
 
-    public ReconciliationTest(){
-        super();
-    }
 
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
 
     @AfterMethod
     public void tearDown() throws Exception {
@@ -45,12 +38,10 @@ public class ReconciliationTest extends ChannelTestBase {
                 channel.close();
             }
         }
-
         Util.sleep(500);
-        ;
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }
 

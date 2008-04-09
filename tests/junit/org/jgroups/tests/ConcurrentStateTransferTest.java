@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.8 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.9 2008/04/09 15:01:35 belaban Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -32,10 +32,9 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     @BeforeMethod
     public void setUp() throws Exception {
         mod.set(1);
-        channel_conf= System.getProperty("channel.conf.flush", "flush-udp.xml");
     }
 
-    public boolean useBlocking() {
+    protected boolean useBlocking() {
         return true;
     }  
 

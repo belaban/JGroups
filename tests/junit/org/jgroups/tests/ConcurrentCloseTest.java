@@ -10,17 +10,11 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.3 2008/04/08 07:19:04 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.4 2008/04/09 15:01:36 belaban Exp $
  */
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
 
-
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        channel_conf=System.getProperty("channel.conf.flush", "flush-udp.xml");
-    }
 
     @AfterMethod
     public void tearDown() throws Exception {
