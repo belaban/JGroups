@@ -8,20 +8,24 @@ import java.net.DatagramSocket;
 import java.net.ServerSocket;
 import java.rmi.server.UID;
 import java.util.StringTokenizer;
+import java.util.List;
+import java.util.ArrayList;
 
 /**
  * Manages resources such as multicast addresses and multicast ports, and TCP ports
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.1 2008/04/10 10:25:08 belaban Exp $
+ * @version $Id: ResourceManager.java,v 1.2 2008/04/10 10:39:56 belaban Exp $
  */
 public class ResourceManager {
     private static final IpAddressRep rep;
     private static short mcast_port;
+    private static short tcp_port;
 
 
     static {
         String tmp_addr=System.getProperty(Global.INITIAL_MCAST_ADDR, "230.1.1.1");
         mcast_port=Short.valueOf(System.getProperty(Global.INITIAL_MCAST_PORT, "7000"));
+        tcp_port=Short.valueOf(System.getProperty(Global.INITIAL_TCP_PORT, "10000"));
         try {
             InetAddress tmp=InetAddress.getByName(tmp_addr);
             if(!tmp.isMulticastAddress())
@@ -62,6 +66,21 @@ public class ResourceManager {
     }
 
 
+    public static synchronized List<Short> getNextTcpPorts(InetAddress bind_addr, int num_requested_ports) throws Exception {
+        short port=tcp_port++;
+        List<Short> retval=new ArrayList<Short>(num_requested_ports);
+
+        for(int i=0; i < num_requested_ports; i++) {
+            ServerSocket sock=Util.createServerSocket(bind_addr, port);
+            port=(short)sock.getLocalPort();
+            retval.add(port);
+            tcp_port=++port;
+            sock.close();
+        }
+        return retval;
+    }
+
+
     public static String getUniqueClusterName(String base_name) {
         return base_name != null? base_name + "-" + new UID().toString() : new UID().toString();
     }
@@ -71,11 +90,13 @@ public class ResourceManager {
     }
 
     public static void main(String[] args) throws Exception {
-        for(int i=0; i < 10; i++) {
-            String addr=getNextMulticastAddress();
-            int mcast_port=getNextMulticastPort(InetAddress.getByName("192.168.1.5"));
-            System.out.println("addr = " + addr + ":" + mcast_port);
-        }
+        List<Short> ports=getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 15);
+        System.out.println("ports = " + ports);
+
+
+        ports=getNextTcpPorts(InetAddress.getByName("192.168.1.5"), 5);
+        System.out.println("ports = " + ports);
+        
 
     }
 
