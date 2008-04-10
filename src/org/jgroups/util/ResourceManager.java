@@ -12,9 +12,10 @@ import java.util.List;
 import java.util.ArrayList;
 
 /**
- * Manages resources such as multicast addresses and multicast ports, and TCP ports
+ * Manages resources such as multicast addresses and multicast ports, and TCP ports. This class is mainly used for
+ * running unit tests in parallel (TestNG) and preventing clusters intended to be separate from joining each other.
  * @author Bela Ban
- * @version $Id: ResourceManager.java,v 1.2 2008/04/10 10:39:56 belaban Exp $
+ * @version $Id: ResourceManager.java,v 1.3 2008/04/10 10:41:41 belaban Exp $
  */
 public class ResourceManager {
     private static final IpAddressRep rep;
