@@ -27,7 +27,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         Channel c1=createChannel("A");
         this.map1=new ReplicatedHashMap<String,String>(c1, false);
         map1.setBlockingUpdates(true);
@@ -45,7 +44,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     protected void tearDown() throws Exception {
         this.map1.stop();
         this.map2.stop();
-        ;
     }
 
     @Test

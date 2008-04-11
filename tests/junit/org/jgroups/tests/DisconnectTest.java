@@ -1,4 +1,3 @@
-// $Id: DisconnectTest.java,v 1.15 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,24 +22,16 @@ import org.testng.annotations.BeforeMethod;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Revision: 1.15 $
+ * @version $Id: DisconnectTest.java,v 1.16 2008/04/11 14:30:55 belaban Exp $
  **/
 public class DisconnectTest {
-
     private JChannel channel;
     private int routerPort;
 
-    public DisconnectTest(String name) {
-    }
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-    }
 
     @AfterMethod
     public void tearDown() throws Exception {
-        ;
         if(channel != null) {
             channel.close();
             channel=null;
@@ -48,14 +39,13 @@ public class DisconnectTest {
     }
 
 
-    private String getTUNNELProps(int routerPort, int gossipPort) {
-        return
-                "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
+    private static String getTUNNELProps(int routerPort, int gossipPort) {
+        return "TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
                 "PING(gossip_host=127.0.0.1;gossip_port=" + gossipPort + "):" +
                 "FD:" +
                 "VERIFY_SUSPECT(timeout=1500):" +
-                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000):" +                
-                "pbcast.STABLE(desired_avg_gossip=20000):" +                
+                "pbcast.NAKACK(gc_lag=100;retransmit_timeout=3000):" +
+                "pbcast.STABLE(desired_avg_gossip=20000):" +
                 "pbcast.GMS(join_timeout=50000;shun=false;" +
                 "print_local_addr=true)";
     }
