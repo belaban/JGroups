@@ -274,6 +274,10 @@ public class ChannelTestBase {
         return (JChannel)new DefaultChannelTestFactory().createChannel(id);
     }
 
+    protected JChannel createChannel(Object id, String props) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel(id, props);
+    }
+
     protected JChannel createChannel() throws Exception {
         return createChannel("A");
     }
@@ -290,11 +294,9 @@ public class ChannelTestBase {
             return createChannel(configFile, channelOptions);
         }
 
-        protected JChannel createChannel(String configFile, Map<Integer, Object> channelOptions)
-                throws Exception {
-            JChannel ch=null;
+        protected JChannel createChannel(String configFile, Map<Integer, Object> channelOptions) throws Exception {
             log.info("Using configuration file " + configFile);
-            ch=new JChannel(configFile);
+            JChannel ch=new JChannel(configFile);
             for(Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
                 Integer key=entry.getKey();
                 Object value=entry.getValue();
@@ -304,7 +306,14 @@ public class ChannelTestBase {
         }
 
         public Channel createChannel(Object id) throws Exception {
+            return createChannel(id, null);
+        }
+
+
+        public Channel createChannel(Object id, String props) throws Exception {
             JChannel c=null;
+            if(props == null)
+                props=channel_conf;
             if(isMuxChannelUsed()) {
                 log.info("Using configuration file " + mux_conf + ", stack is " + mux_conf_stack);
                 synchronized(muxFactory) {
@@ -318,16 +327,18 @@ public class ChannelTestBase {
                         }
                     }
                 }
-
                 throw new Exception("Cannot create mux channel with id " + id
                         + " since all currently used channels have already registered service with that id");
             }
             else {
-                c=createChannel(channel_conf, useBlocking());
+                c=createChannel(props, useBlocking());
             }
             return c;
         }
     }
+
+
+
 
     public class NextAvailableMuxChannelTestFactory implements ChannelTestFactory {
         public Channel createChannel(Object id) throws Exception {
