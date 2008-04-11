@@ -16,14 +16,13 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.17 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.18 2008/04/11 14:28:59 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
     @BeforeMethod
-    @BeforeTest
     public void setUp() throws Exception {
         c1=createChannel("A");
         c2=createChannel("A");
@@ -31,7 +30,6 @@ public class JoinTest extends ChannelTestBase {
 
 
     @AfterMethod
-    @AfterTest
     public void tearDown() throws Exception {        
         if(c2 != null)
             c2.close();
