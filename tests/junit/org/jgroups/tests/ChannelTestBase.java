@@ -7,6 +7,7 @@ import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.TCPPING;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -293,11 +294,12 @@ public class ChannelTestBase {
      * one even if they have the same cluster name. This is done by modifying mcast_addr and mcast_port with UDP,
      * and by changing TCP.start_port, TCP.port_range and TCPPING.initial_hosts with TCP. Mainly used to
      * run TestNG tests concurrently. Note that MuxChannels are not currently supported.
+     * @param num The number of channels we will create. Only important (for port_range) with TCP, ignored by UDP
      * @return
      * @throws Exception
      */
-    protected JChannel createUniqueChannel() throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createUniqueChannel();
+    protected JChannel createUniqueChannel(int num) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createUniqueChannel(num);
     }
 
     /**
@@ -354,7 +356,7 @@ public class ChannelTestBase {
             return c;
         }
 
-        public Channel createUniqueChannel() throws Exception {
+        public Channel createUniqueChannel(int num) throws Exception {
             JChannel c=null;
             if(isMuxChannelUsed()) {
                 throw new IllegalStateException("MuxChannels are currently not supported");
@@ -362,8 +364,8 @@ public class ChannelTestBase {
             c=createChannel(channel_conf, useBlocking());
             ProtocolStack stack=c.getProtocolStack();
             Protocol transport=stack.getTransport();
+            Properties props=new Properties();
             if(transport instanceof UDP) {
-                Properties props=new Properties();
                 String mcast_addr=ResourceManager.getNextMulticastAddress();
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
                 props.setProperty("mcast_addr", mcast_addr);
@@ -371,12 +373,27 @@ public class ChannelTestBase {
                 transport.setProperties(props);
             }
             else if(transport instanceof BasicTCP) {
+                List<Short> ports=ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
 
+                props.setProperty("bind_port", String.valueOf(ports.get(0)));
+                props.setProperty("port_range", String.valueOf(num));
+                transport.setProperties(props);
+
+                Protocol ping=stack.findProtocol(TCPPING.class);
+                if(ping == null)
+                    throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
+                props.clear();
+
+                List<String> initial_hosts=new LinkedList<String>();
+                for(short port: ports) {
+                    initial_hosts.add(bind_addr + "[" + port + "]");
+                }
+                String tmp=Util.printListWithDelimiter(initial_hosts, ",");
+                props.setProperty("initial_hosts", tmp);
             }
             else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }
-
             return c;
         }
 
