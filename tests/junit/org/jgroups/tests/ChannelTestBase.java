@@ -278,59 +278,40 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(Object id) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(id);
+        return (JChannel)new DefaultChannelTestFactory().createChannel(id, false, 1);
     }
 
     protected JChannel createChannel(Object id, String props) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(id, props);
+        return new DefaultChannelTestFactory().createChannel(id, props);
     }
 
     protected JChannel createChannel() throws Exception {
-        return createChannel("A");
+        return createChannel("A", false, 1);
     }
 
     /**
      * Creates a channel and modifies the configuration such that no other channel will able to join this
-     * one even if they have the same cluster name. This is done by modifying mcast_addr and mcast_port with UDP,
+     * one even if they have the same cluster name (if unique = true). This is done by modifying mcast_addr and mcast_port with UDP,
      * and by changing TCP.start_port, TCP.port_range and TCPPING.initial_hosts with TCP. Mainly used to
      * run TestNG tests concurrently. Note that MuxChannels are not currently supported.
      * @param num The number of channels we will create. Only important (for port_range) with TCP, ignored by UDP
      * @return
      * @throws Exception
      */
-    protected JChannel createUniqueChannel(int num) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createUniqueChannel(num);
+    protected JChannel createChannel(Object id, boolean unique, int num) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel(id, unique, num);
     }
 
     /**
      * Default channel factory used in junit tests
      */
     protected class DefaultChannelTestFactory implements ChannelTestFactory {
-
-        protected JChannel createChannel(String configFile, boolean useBlocking)
-                throws Exception {
-            Map<Integer, Object> channelOptions=new HashMap<Integer, Object>();
-            channelOptions.put(Channel.BLOCK, useBlocking);
-            return createChannel(configFile, channelOptions);
-        }
-
-        protected JChannel createChannel(String configFile, Map<Integer, Object> channelOptions) throws Exception {
-            log.info("Using configuration file " + configFile);
-            JChannel ch=new JChannel(configFile);
-            for(Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
-                Integer key=entry.getKey();
-                Object value=entry.getValue();
-                ch.setOpt(key, value);
-            }
-            return ch;
-        }
-
+        
         public Channel createChannel(Object id) throws Exception {
-            return createChannel(id, null);
+            return createChannel(id, false, 1);
         }
 
-
-        public Channel createChannel(Object id, String props) throws Exception {
+        public JChannel createChannel(Object id, String props) throws Exception {
             JChannel c=null;
             if(props == null)
                 props=channel_conf;
@@ -356,13 +337,32 @@ public class ChannelTestBase {
             return c;
         }
 
-        public Channel createUniqueChannel(int num) throws Exception {
-            JChannel c=null;
-            if(isMuxChannelUsed()) {
-                throw new IllegalStateException("MuxChannels are currently not supported");
+
+        public Channel createChannel(Object id, boolean unique, int num) throws Exception {
+            JChannel c=createChannel(id, null);
+            if(unique && !isMuxChannelUsed()) {
+                makeUnique(c, num);
             }
-            c=createChannel(channel_conf, useBlocking());
-            ProtocolStack stack=c.getProtocolStack();
+            return c;
+        }
+
+
+        private JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
+            Map<Integer, Object> channelOptions=new HashMap<Integer, Object>();
+            channelOptions.put(Channel.BLOCK, useBlocking);
+
+            log.info("Using configuration file " + configFile);
+            JChannel ch=new JChannel(configFile);
+            for(Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
+                Integer key=entry.getKey();
+                Object value=entry.getValue();
+                ch.setOpt(key, value);
+            }
+            return ch;
+        }
+
+        private void makeUnique(JChannel channel, int num) throws Exception {
+            ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
             Properties props=new Properties();
             if(transport instanceof UDP) {
@@ -394,8 +394,9 @@ public class ChannelTestBase {
             else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }
-            return c;
         }
+
+
 
     }
 
