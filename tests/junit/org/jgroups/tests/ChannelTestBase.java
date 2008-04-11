@@ -5,8 +5,13 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.mux.MuxChannel;
+import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
+import org.jgroups.util.ResourceManager;
 import org.testng.annotations.*;
 
 import java.io.InputStream;
@@ -14,6 +19,7 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.net.InetAddress;
 
 /**
  * @author Bela Ban
@@ -283,6 +289,18 @@ public class ChannelTestBase {
     }
 
     /**
+     * Creates a channel and modifies the configuration such that no other channel will able to join this
+     * one even if they have the same cluster name. This is done by modifying mcast_addr and mcast_port with UDP,
+     * and by changing TCP.start_port, TCP.port_range and TCPPING.initial_hosts with TCP. Mainly used to
+     * run TestNG tests concurrently. Note that MuxChannels are not currently supported.
+     * @return
+     * @throws Exception
+     */
+    protected JChannel createUniqueChannel() throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createUniqueChannel();
+    }
+
+    /**
      * Default channel factory used in junit tests
      */
     protected class DefaultChannelTestFactory implements ChannelTestFactory {
@@ -335,7 +353,35 @@ public class ChannelTestBase {
             }
             return c;
         }
+
+        public Channel createUniqueChannel() throws Exception {
+            JChannel c=null;
+            if(isMuxChannelUsed()) {
+                throw new IllegalStateException("MuxChannels are currently not supported");
+            }
+            c=createChannel(channel_conf, useBlocking());
+            ProtocolStack stack=c.getProtocolStack();
+            Protocol transport=stack.getTransport();
+            if(transport instanceof UDP) {
+                Properties props=new Properties();
+                String mcast_addr=ResourceManager.getNextMulticastAddress();
+                short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
+                props.setProperty("mcast_addr", mcast_addr);
+                props.setProperty("mcast_port", String.valueOf(mcast_port));
+                transport.setProperties(props);
+            }
+            else if(transport instanceof BasicTCP) {
+
+            }
+            else {
+                throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
+            }
+
+            return c;
+        }
+
     }
+
 
 
 
