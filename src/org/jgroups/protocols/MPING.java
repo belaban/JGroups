@@ -21,7 +21,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.33 2008/03/13 02:00:22 vlada Exp $
+ * @version $Id: MPING.java,v 1.34 2008/04/12 12:35:25 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -231,7 +231,6 @@ public class MPING extends PING implements Runnable {
 
     public void start() throws Exception {
         mcast_sock=new MulticastSocket(mcast_port);
-        // mcast_sock=Util.createMulticastSocket(mcast_addr, mcast_port, log);
         mcast_sock.setTimeToLive(ip_ttl);
 
         if(receive_on_all_interfaces || (receive_interfaces != null && !receive_interfaces.isEmpty())) {
@@ -369,7 +368,7 @@ public class MPING extends PING implements Runnable {
             catch(SocketException socketEx) {
                 break;
             }
-            catch(Exception ex) {
+            catch(Throwable ex) {
                 log.error("failed receiving packet", ex);
             }
             finally {
