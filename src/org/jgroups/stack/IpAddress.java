@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.42.2.1 2008/04/12 12:29:54 belaban Exp $
+// $Id: IpAddress.java,v 1.42.2.2 2008/04/12 12:31:21 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -12,7 +12,6 @@ import java.io.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.net.Inet4Address;
 
 
 /**
