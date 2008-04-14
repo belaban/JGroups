@@ -4,10 +4,10 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.20 2008/04/14 08:30:11 belaban Exp $
+    version: $Id: tcp.xml,v 1.21 2008/04/14 08:39:38 belaban Exp $
 -->
 <config>
-    <TCP start_port="7800"
+    <TCP bind_port="7800"
          loopback="true"
          recv_buf_size="20000000"
          send_buf_size="640000"
