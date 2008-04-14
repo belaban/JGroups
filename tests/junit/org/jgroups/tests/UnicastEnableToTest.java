@@ -14,25 +14,21 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.3 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.4 2008/04/14 08:34:46 belaban Exp $
  */
 public class UnicastEnableToTest {
     JChannel channel=null, channel2=null;
 
 
-    public UnicastEnableToTest(String name) {
-    }
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         channel=new JChannel("udp.xml");
         channel.connect("demo-group");
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        ;
         if(channel2 != null) {
             channel2.close();
             channel2=null;

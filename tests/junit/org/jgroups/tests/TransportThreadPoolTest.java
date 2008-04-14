@@ -14,20 +14,18 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.4 2008/04/08 07:19:00 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.5 2008/04/14 08:34:46 belaban Exp $
  */
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 
     @BeforeMethod
-    @BeforeTest
     protected void setUp() throws Exception {
         c1=createChannel();
         c2=createChannel();
     }
 
     @AfterMethod
-    @AfterTest
     protected void tearDown() throws Exception {
         c2.close();
         c1.close();

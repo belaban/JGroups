@@ -1,4 +1,3 @@
-// $Id: TUNNELDeadLockTest.java,v 1.14 2008/04/08 08:29:33 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +7,7 @@ import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
+import org.jgroups.Global;
 import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
 import org.testng.annotations.AfterMethod;
@@ -18,9 +18,10 @@ import org.testng.annotations.BeforeMethod;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Revision: 1.14 $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.15 2008/04/14 08:34:46 belaban Exp $
  * @see TUNNELDeadLockTest#testStress
  */
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class TUNNELDeadLockTest {
     private JChannel channel;
     private Promise promise;
@@ -33,32 +34,23 @@ public class TUNNELDeadLockTest {
     // the time (in ms) the main thread waits for all the messages to arrive,
     // before declaring the test failed.
     private int mainTimeout=60000;
-
     int routerPort=-1;
 
 
-    public TUNNELDeadLockTest(String name) {
-    }
-
     @BeforeMethod
-    public void setUp() throws Exception {
-        ;
+    void setUp() throws Exception {
         promise=new Promise();
         routerPort=Utilities.startGossipRouter("127.0.0.1");
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
-
-        ;
-
+    void tearDown() throws Exception {
         // I prefer to close down the channel inside the test itself, for the
         // reason that the channel might be brought in an uncloseable state by
         // the test.
 
         // TO_DO: no elegant way to stop the Router threads and clean-up
-        //        resources. Use the Router administrative interface, when
-        //        available.
+        //        resources. Use the Router administrative interface, when available.
 
         channel=null;
         promise.reset();
@@ -67,7 +59,7 @@ public class TUNNELDeadLockTest {
     }
 
 
-    private String getTUNNELProps(int routerPort) {
+    private static String getTUNNELProps(int routerPort) {
         String props;
 
         props="TUNNEL(router_host=127.0.0.1;router_port=" + routerPort + "):" +
@@ -161,8 +153,7 @@ public class TUNNELDeadLockTest {
             assert false : msg;
         }
 
-        // don't close it in tearDown() because it hangs forever for a failed
-        // test.
+        // don't close it in tearDown() because it hangs forever for a failed test.
         channel.close();
     }
 

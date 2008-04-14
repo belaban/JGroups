@@ -27,7 +27,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.12 2008/04/09 15:01:35 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.13 2008/04/14 08:34:46 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -45,7 +45,6 @@ public class ShunTest extends ChannelTestBase {
             disp1.stop();
         if(c1 != null)
             c1.close();
-        ;
     }
 
     protected boolean useBlocking() {

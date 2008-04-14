@@ -1,13 +1,11 @@
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.ArrayList;
@@ -63,11 +61,11 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         }
     }
 
-    public void transferHelper(String channelNames[], boolean useDispatcher) {
+    void transferHelper(String channelNames[], boolean useDispatcher) {
         transferHelper(channelNames, false, false, useDispatcher);
     }
 
-    public void transferHelper(String channelNames[],
+    void transferHelper(String channelNames[],
                                boolean crash,
                                boolean largeTransfer,
                                boolean useDispatcher) {

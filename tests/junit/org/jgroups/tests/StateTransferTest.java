@@ -18,9 +18,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.24 2008/04/08 07:18:56 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.25 2008/04/14 08:34:46 belaban Exp $
  */
-@Test(sequential=false)
+@Test(sequential=true)
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT=10000;
 
