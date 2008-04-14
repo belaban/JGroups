@@ -14,16 +14,15 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.4 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.5 2008/04/14 08:42:55 belaban Exp $
  */
-public class UnicastEnableToTest {
+public class UnicastEnableToTest extends ChannelTestBase {
     JChannel channel=null, channel2=null;
-
 
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        channel=new JChannel("udp.xml");
+        channel=createChannel();
         channel.connect("demo-group");
     }
 
@@ -56,7 +55,7 @@ public class UnicastEnableToTest {
 
     @Test
     public void testUnicastMessageToExistingMember() throws Exception {
-        channel2=new JChannel("udp.xml");
+        channel2=createChannel();
         channel2.connect("demo-group");
         Assert.assertEquals(2, channel2.getView().size());
         MyReceiver receiver=new MyReceiver();
@@ -73,7 +72,7 @@ public class UnicastEnableToTest {
 
     @Test
     public void testUnicastMessageToLeftMember() throws Exception {
-        channel2=new JChannel("udp.xml");
+        channel2=createChannel();
         channel2.connect("demo-group");
         Assert.assertEquals(2, channel2.getView().size());
         Address dest=channel2.getLocalAddress();
@@ -91,7 +90,7 @@ public class UnicastEnableToTest {
 
     @Test
     public void testUnicastMessageToLeftMemberWithEnableUnicastToEvent() throws Exception {
-        channel2=new JChannel("udp.xml");
+        channel2=createChannel();
         channel2.connect("demo-group");
         Assert.assertEquals(2, channel2.getView().size());
         Address dest=channel2.getLocalAddress();

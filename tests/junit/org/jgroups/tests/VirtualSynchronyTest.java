@@ -1,11 +1,9 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -35,6 +33,7 @@ import java.util.Random;
  * @version $Id$ 
  *
  */
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class VirtualSynchronyTest {
 
 	private final static String CHANNEL_PROPS="flush-udp.xml";
@@ -43,9 +42,7 @@ public class VirtualSynchronyTest {
 	private Random r = new Random();
 	
 	
-	public VirtualSynchronyTest(String arg0) {
-    }
-	
+
 	@Test
     public void testVSynch() throws Exception
 	{
@@ -91,16 +88,7 @@ public class VirtualSynchronyTest {
 		return from + r.nextInt(to-from);
 	}
 
-	@BeforeMethod
-    protected void setUp() throws Exception {
-		;
-	}
 
-	@AfterMethod
-    protected void tearDown() throws Exception {
-		;
-	}
-	
 
 	
 	private static class GroupMemberThread extends Thread {
@@ -133,7 +121,7 @@ public class VirtualSynchronyTest {
 		}
 
 		public void setRunning(boolean b) {
-			running=false;	
+			running=b;
 			System.out.println("Disconnect " + getAddress());
 			if(ch!=null)ch.close();
 		}
@@ -213,7 +201,7 @@ public class VirtualSynchronyTest {
 			if (currentView != null) {
 				payload = new VSynchPayload(currentView.getVid(),
 						numberOfMessagesInView,ch.getLocalAddress());
-				ch.send((Address)tmpView.getMembers().get(0), null, payload);
+				ch.send(tmpView.getMembers().get(0), null, payload);
 			}
 			numberOfMessagesInView = 0;
 			payloads.clear();
@@ -232,8 +220,9 @@ public class VirtualSynchronyTest {
 		public int msgViewCount;
 
 		public Address member;
+        private static final long serialVersionUID=-3684761509882737012L;
 
-		public VSynchPayload(ViewId viewId, int numbreOfMessagesInView,Address a) {
+        public VSynchPayload(ViewId viewId, int numbreOfMessagesInView,Address a) {
 			super();
 			this.viewId = viewId;
 			this.msgViewCount = numbreOfMessagesInView;

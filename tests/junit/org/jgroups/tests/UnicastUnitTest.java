@@ -11,24 +11,20 @@ import java.util.List;
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.4 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.5 2008/04/14 08:42:56 belaban Exp $
  */
 public class UnicastUnitTest extends ChannelTestBase {
     JChannel ch1, ch2=null;
 
 
-
-
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         ch1=createChannel();
         ch2=createChannel();
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        ;
         if(ch2 != null)
             ch2.close();
         if(ch1 != null)
