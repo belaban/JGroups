@@ -1,6 +1,5 @@
 package org.jgroups.tests;
 
-import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -22,7 +21,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.9 2008/04/14 07:54:07 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.10 2008/04/14 08:18:39 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
@@ -104,13 +103,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
-        Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
         assert ret == null;
 
 
-        rsp=(Rsp)rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
         assert ret == null;
@@ -167,19 +166,19 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
-        Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         byte[] ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
 
-        rsp=(Rsp)rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
     }
 
 
-    private void disableBundling(JChannel ch) {
+    private static void disableBundling(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
         TP transport = (TP)stack.findProtocol(TP.class);       
         if(transport != null) {

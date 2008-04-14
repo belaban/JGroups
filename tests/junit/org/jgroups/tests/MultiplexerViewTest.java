@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.18 2008/04/14 07:54:07 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.19 2008/04/14 08:18:40 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -55,7 +55,7 @@ public class MultiplexerViewTest extends ChannelTestBase {
         View v=c1.getView();
         assert v == null;
 
-        ((MuxChannel)c1).getClusterView();
+        v=((MuxChannel)c1).getClusterView();
         assert v == null;
         Address local_addr=c1.getLocalAddress();
         assert local_addr == null;

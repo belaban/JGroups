@@ -1,12 +1,14 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -24,7 +26,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.12 2008/04/14 08:05:42 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.13 2008/04/14 08:18:39 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class EncryptMessageOrderTestCase {
@@ -60,6 +62,11 @@ public class EncryptMessageOrderTestCase {
         System.out.println("msg num : " + MESSAGE_NUMBER);
 
 
+    }
+
+    @BeforeClass
+    static void init() {
+        ClassConfigurator.add((short)24526, EncryptOrderTestHeader.class);
     }
 
     /**

@@ -18,25 +18,19 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.9 2008/04/14 07:54:07 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.10 2008/04/14 08:18:40 belaban Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerFailoverTest {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
     static final String GROUP="demo-group";
     static final int NUM_MSGS=50;
+    static final String props="sequencer.xml";
 
 
-    String props="sequencer.xml";
-
-
-
-    public SequencerFailoverTest(String name) {
-    }
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         ch1=new JChannel(props);
         ch1.connect(GROUP);
 
@@ -49,7 +43,6 @@ public class SequencerFailoverTest {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        ;
         if(ch3 != null) {
             ch3.close();
             ch3 = null;

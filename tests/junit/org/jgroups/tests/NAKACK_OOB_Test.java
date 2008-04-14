@@ -18,18 +18,17 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.7 2008/04/14 07:54:06 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.8 2008/04/14 08:18:40 belaban Exp $
  */
 public class NAKACK_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2, ch3;
-    static final String props="udp.xml";
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ch1=new JChannel(props);
-        ch2=new JChannel(props);
-        ch3=new JChannel(props);
+        ch1=createChannel();
+        ch2=createChannel();
+        ch3=createChannel();
     }
 
     @AfterMethod
