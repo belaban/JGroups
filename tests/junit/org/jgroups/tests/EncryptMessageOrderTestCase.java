@@ -24,9 +24,9 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.11 2008/04/14 07:54:06 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.12 2008/04/14 08:05:42 belaban Exp $
  */
-@Test(groups=Global.NOT_STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class EncryptMessageOrderTestCase {
 
     public static int MESSAGE_NUMBER=5 * 100;

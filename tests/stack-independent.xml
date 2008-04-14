@@ -1,12 +1,12 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="not-stack-dependent"
+<suite name="stack-independent"
        parallel="tests"
        thread-count="1" >
 
-    <test name="not-stack-dependent" junit="false">
+    <test name="stack-independent" junit="false">
         <groups>
             <run>
-                <include name="not-stack-dependent"/>
+                <include name="stack-independent"/>
             </run>
         </groups>
         <packages>
