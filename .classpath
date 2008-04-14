@@ -8,7 +8,6 @@
 	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/stress"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/ant.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk14-117.jar"/>
 	<classpathentry kind="lib" path="lib/bsh-1.2b3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/junit.jar"/>
