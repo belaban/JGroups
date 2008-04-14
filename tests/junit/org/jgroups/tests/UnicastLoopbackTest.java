@@ -9,25 +9,20 @@ import org.testng.annotations.Test;
 /**
  * Tests unicasts to self (loopback of transport protocol)
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.10 2008/04/14 08:42:56 belaban Exp $
  */
-public class UnicastLoopbackTest {
+public class UnicastLoopbackTest extends ChannelTestBase {
     JChannel channel=null;
 
 
-    public UnicastLoopbackTest(String name) {
-    }
-
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
-        channel=new JChannel();
+        channel=createChannel();
         channel.connect("demo-group");
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        ;
         if(channel != null) {
             channel.close();
             channel=null;
@@ -41,12 +36,6 @@ public class UnicastLoopbackTest {
         Address local_addr=channel.getLocalAddress();
         for(int i=1; i <= NUM; i++) {
             channel.send(new Message(local_addr, null, new Integer(i)));
-//            try {
-//                Thread.sleep(1);
-//            }
-//            catch(InterruptedException e) {
-//                e.printStackTrace();
-//            }
             if(i % 100 == 0)
                 System.out.println("-- sent " + i);
         }
