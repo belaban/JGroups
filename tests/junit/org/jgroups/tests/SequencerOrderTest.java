@@ -3,10 +3,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -22,35 +19,18 @@ import java.util.List;
  * gets seqno, thread#2 gets seqno, thread#2 sends, thread#1 tries to send but
  * is out of order.
  */
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
     private JChannel ch1, ch2;
     private MyReceiver r1, r2;
     static final String GROUP="demo-group";
     static final int NUM_MSGS=1000;
+    static final String props="sequencer.xml";
 
 
-    String props="UDP(mcast_addr=228.8.8.8;mcast_port=45566;ip_ttl=2;" +
-            "mcast_send_buf_size=25000000;mcast_recv_buf_size=640000;" +
-            "enable_bundling=true;use_incoming_packet_handler=true;loopback=true):" +
-            "PING(timeout=2000;num_initial_members=3):" +
-            "MERGE2(min_interval=5000;max_interval=10000):" +
-            "FD(timeout=2000;max_tries=2):" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=600,1200,2400,4800):" +
-            "UNICAST(timeout=600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=5000):" +
-            "pbcast.GMS(join_timeout=5000;" +
-            "shun=true;print_local_addr=true;view_ack_collection_timeout=2000):" +
-            "SEQUENCER";
-
-
-
-    public SequencerOrderTest(String name) {
-    }
 
     @BeforeMethod
-    public void setUp() throws Exception {
-        ;
+    void setUp() throws Exception {
         ch1=new JChannel(props);
         ch1.connect(GROUP);
 
@@ -59,8 +39,7 @@ public class SequencerOrderTest {
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
-        ;
+    void tearDown() throws Exception {
         if(ch2 != null) {
             ch2.close();
             ch2 = null;
