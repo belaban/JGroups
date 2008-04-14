@@ -1,0 +1,19 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="not-stack-dependent"
+       parallel="tests"
+       thread-count="1" >
+
+    <test name="not-stack-dependent" junit="false">
+        <groups>
+            <run>
+                <include name="not-stack-dependent"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
+        </packages>
+    </test>
+
+</suite>
