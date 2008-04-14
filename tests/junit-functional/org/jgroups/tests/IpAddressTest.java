@@ -1,4 +1,4 @@
-// $Id: IpAddressTest.java,v 1.2 2007/09/14 11:05:26 belaban Exp $
+// $Id: IpAddressTest.java,v 1.2.2.1 2008/04/14 06:28:04 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -300,7 +300,7 @@ public class IpAddressTest extends TestCase {
         x=new IpAddress(5555);
         x.setAdditionalData(new byte[]{'b','e','l','a'});
 
-        y=new IpAddress();
+        y=new IpAddress(1000);
         y.setAdditionalData(new byte[]{'b','e','l','a'});
 
         a.setAdditionalData(null);
@@ -331,8 +331,8 @@ public class IpAddressTest extends TestCase {
         assertNotNull(x2.getAdditionalData());
         assertEquals(4, x2.getAdditionalData().length);
 
-        assertNull(y2.getIpAddress());
-        assertEquals(0, y2.getPort());
+        assertNotNull(y2.getIpAddress());
+        assertEquals(1000, y2.getPort());
         assertNotNull(y2.getAdditionalData());
         assertEquals(4, y2.getAdditionalData().length);
     }
