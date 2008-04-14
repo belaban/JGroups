@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.146 2008/04/09 15:01:37 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.147 2008/04/14 07:05:20 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -915,7 +915,7 @@
     </target>
 
 
-    <target name="report"
+    <target name="report.old"
             depends="findxalan"
             if="xalan.available"
             description="Generates HTML from unit tests (target unitests-xml must have run before)">
@@ -924,6 +924,23 @@
         <junitreport todir="${tmp.dir}/html">
             <fileset dir="${tmp.dir}/tests-results" includes="**/TEST-*.xml"/>
             <report todir="${tmp.dir}/html"/>
+        </junitreport>
+        <echo message="********************************************************************"/>
+        <echo message="The unit test report is available in ${tmp.dir}/html/index.html"/>
+        <echo message="********************************************************************"/>
+    </target>
+
+    <target name="report"
+            depends="findxalan"
+            if="xalan.available"
+            description="Generates HTML from unit tests (target unitests-xml must have run before)">
+        <delete dir="${tmp.dir}/html"/>
+        <mkdir dir="${tmp.dir}/html"/>
+        <junitreport todir="${tmp.dir}/html">
+            <fileset dir="${tmp.dir}/test-results/xml">
+                <include name="**/*.xml"/>
+            </fileset>
+            <report format="frames"  todir="${tmp.dir}/html"/>
         </junitreport>
         <echo message="********************************************************************"/>
         <echo message="The unit test report is available in ${tmp.dir}/html/index.html"/>
