@@ -18,7 +18,7 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.17 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.18 2008/04/14 07:30:35 belaban Exp $
  */
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
@@ -28,13 +28,10 @@ public class DiscardTest extends ChannelTestBase {
     final Promise<Long> ch1_all_received=new Promise<Long>();
     final Promise<Long> ch2_all_received=new Promise<Long>();
 
-    public DiscardTest(String name) {
-        super(name);
-    }
+
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         ch1_all_received.reset();
         ch2_all_received.reset();
     }
@@ -43,7 +40,6 @@ public class DiscardTest extends ChannelTestBase {
     protected void tearDown() throws Exception{
         ch2.close();
         ch1.close();
-        ;
     }
 
     @Test

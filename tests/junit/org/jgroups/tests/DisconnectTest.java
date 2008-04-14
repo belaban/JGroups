@@ -2,8 +2,6 @@
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
@@ -13,7 +11,7 @@ import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 /**
@@ -22,7 +20,7 @@ import org.testng.annotations.BeforeMethod;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.16 2008/04/11 14:30:55 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.17 2008/04/14 07:30:35 belaban Exp $
  **/
 public class DisconnectTest {
     private JChannel channel;

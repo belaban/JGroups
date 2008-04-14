@@ -1,12 +1,11 @@
 package org.jgroups.tests;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.jgroups.Header;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.MessageListener;
 import org.jgroups.blocks.PullPushAdapter;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -28,7 +27,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.9 2008/04/08 08:29:34 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.10 2008/04/14 07:30:35 belaban Exp $
  */
 public class EncryptMessageOrderTestCase extends ChannelTestBase {
 
@@ -41,8 +40,6 @@ public class EncryptMessageOrderTestCase extends ChannelTestBase {
     String groupName = "ENCRYPT_ORDER_TEST";
 
     boolean orderCounterFailure = false;
-
-    protected Log log=LogFactory.getLog(this.getClass());
 
     public static final String properties ="EncryptNoKeyStore.xml";
 
@@ -82,12 +79,7 @@ public class EncryptMessageOrderTestCase extends ChannelTestBase {
 
         adapter1=new PullPushAdapter(channel1);
 
-        // sleep one second before second member joins
-        try {
-            Thread.sleep(1000);
-        }
-        catch(InterruptedException ex) {
-        }
+        Util.sleep(1000);
 
         channel2=new JChannel(properties);
         channel2.connect(groupName);
@@ -95,13 +87,7 @@ public class EncryptMessageOrderTestCase extends ChannelTestBase {
 
         adapter2=new PullPushAdapter(channel2);
 
-        // sleep one second before processing continues
-        try {
-            Thread.sleep(1000);
-        }
-        catch(InterruptedException ex) {
-        }
-
+        Util.sleep(1000);
     }
 
     /**

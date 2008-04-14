@@ -7,42 +7,28 @@ import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 
 import java.util.concurrent.CyclicBarrier;
+import java.util.Properties;
 
 
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.7 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.8 2008/04/14 07:30:35 belaban Exp $
  */
-public class DisconnectStressTest {
-    static CyclicBarrier all_disconnected=null;
-    static CyclicBarrier    start_disconnecting=null;
+public class DisconnectStressTest extends ChannelTestBase {
+    CyclicBarrier           all_disconnected=null;
+    CyclicBarrier           start_disconnecting=null;
     static final int        NUM=30;
     static final long       TIMEOUT=50000;
-    static final MyThread[] threads=new MyThread[NUM];
+    final MyThread[]        threads=new MyThread[NUM];
     static String           groupname="ConcurrentTestDemo";
 
-
-    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=3000;num_initial_members=3):" +
-            "MERGE2(min_interval=3000;max_interval=5000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-            "UNICAST(timeout=300,600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=5000):" +
-            "FRAG(frag_size=4096):" +
-            "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
-            "merge_timeout=30000;handle_concurrent_startup=true)";
-
-
-
-    public DisconnectStressTest(String name) {
-    }
 
 
     static void log(String msg) {
@@ -65,7 +51,6 @@ public class DisconnectStressTest {
 
         log("DISCONNECTING");
         start_disconnecting.await(); // causes all channels to disconnect
-
         all_disconnected.await();  // notification when all threads have disconnected
     }
 
@@ -73,7 +58,7 @@ public class DisconnectStressTest {
 
 
 
-    public static class MyThread extends Thread {
+    public class MyThread extends Thread {
         int                index=-1;
         long                total_connect_time=0, total_disconnect_time=0;
         private JChannel    ch=null;
@@ -98,7 +83,8 @@ public class DisconnectStressTest {
             View view;
 
             try {
-                ch=new JChannel(props);
+                ch=createChannel();
+                modifyStack(ch);
                 log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
                 ch.connect(groupname);
@@ -124,6 +110,22 @@ public class DisconnectStressTest {
             catch(Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        private void modifyStack(JChannel ch) {
+            ProtocolStack stack=ch.getProtocolStack();
+            Properties props=new Properties();
+            Protocol prot=stack.findProtocol(MERGE2.class);
+            if(prot != null) {
+                props.clear();
+                props.setProperty("min_interval", "3000");
+                props.setProperty("max_interval", "5000");
+                prot.setProperties(props);
+            }
+            prot=stack.findProtocol(STABLE.class);
+            props.clear();
+            props.setProperty("desired_avg_gossip", "5000");
+            prot.setProperties(props);
         }
 
 

@@ -10,7 +10,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.4 2008/04/09 15:01:36 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.5 2008/04/14 07:30:35 belaban Exp $
  */
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -27,8 +27,6 @@ public class ConcurrentCloseTest extends ChannelTestBase {
             c1.close();
             c1=null;
         }
-
-        ;
     }
 
     /**
