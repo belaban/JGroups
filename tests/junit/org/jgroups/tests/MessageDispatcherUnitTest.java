@@ -22,21 +22,16 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.8 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.9 2008/04/14 07:54:07 belaban Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
     JChannel ch, ch2;    
 
 
-    public MessageDispatcherUnitTest(String name) {
-        super(name);
-    }
-
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ;
         ch=createChannel();
         disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
@@ -55,7 +50,6 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
             ch2.close();
         }
         Util.sleep(500);
-        ;
     }
 
 

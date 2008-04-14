@@ -9,7 +9,7 @@
         <parameter name="channel.conf" value="flush-udp.xml"/>
         <groups>
             <run>
-                <exclude name="functional"/>
+                <include name="stack-dependent"/>
             </run>
         </groups>
         <packages>

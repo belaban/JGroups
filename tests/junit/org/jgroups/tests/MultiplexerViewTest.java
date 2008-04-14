@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.17 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.18 2008/04/14 07:54:07 belaban Exp $
  */
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
@@ -24,14 +24,10 @@ public class MultiplexerViewTest extends ChannelTestBase {
     static final UnblockEvent UNBLOCK_EVENT=new UnblockEvent();
     JChannelFactory factory, factory2;
 
-    public MultiplexerViewTest(String name) {
-        super(name);
-    }
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -48,7 +44,6 @@ public class MultiplexerViewTest extends ChannelTestBase {
             c1.close();
         factory.destroy();
         factory2.destroy();
-        ;
     }
 
     @Test

@@ -3,11 +3,11 @@ package org.jgroups.tests;
 import org.jgroups.JChannel;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -18,18 +18,14 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.4 2008/04/08 07:18:54 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.5 2008/04/14 07:54:06 belaban Exp $
  */
+@Test(groups=Global.NOT_STACK_DEPENDENT, sequential=true)
 public class GossipRouterTest {
     final static String PROPS="tunnel.xml";
     GossipRouter router;
     JChannel c1, c2;
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
-        ;
-
-    }
 
     @AfterMethod
     protected void tearDown() throws Exception {
@@ -43,7 +39,6 @@ public class GossipRouterTest {
         if(c1 != null) {
             c1.close();
         }
-        ;
     }
 
     /**

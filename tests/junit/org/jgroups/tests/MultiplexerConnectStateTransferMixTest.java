@@ -16,21 +16,17 @@ import java.util.TreeMap;
 /**
  * Tests various intermixed combinations of regular connect and get state with connect-and-get-state 
  * @author Vladimir Blagojevic
- * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.4 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.5 2008/04/14 07:54:06 belaban Exp $
  */
 public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
     private Cache c1, c2,c3, c1_repl, c2_repl,c3_repl;
     private Channel ch1, ch2, ch3, ch1_repl, ch2_repl,ch3_repl;
     JChannelFactory factory, factory2;   
 
-    public MultiplexerConnectStateTransferMixTest(String name) {
-        super(name);
-    }
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -79,8 +75,6 @@ public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
 
         ch1_repl=ch2_repl=ch1=ch2=ch3=null;
         c1=c2=c1_repl=c2_repl=c3_repl=null; 
-        
-        ;
     }
     
     @Test

@@ -16,9 +16,8 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.18 2008/04/11 14:28:59 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.19 2008/04/14 07:54:06 belaban Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 

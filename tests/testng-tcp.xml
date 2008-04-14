@@ -8,7 +8,7 @@
         <parameter name="channel.conf" value="tcp.xml"/>
         <groups>
             <run>
-                <exclude name="functional"/>
+                <include name="stack-dependent"/>
             </run>
         </groups>
         <packages>

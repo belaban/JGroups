@@ -1,10 +1,11 @@
-// $Id: SendAndReceiveTest.java,v 1.11 2008/04/08 08:29:33 belaban Exp $
+// $Id: SendAndReceiveTest.java,v 1.12 2008/04/14 07:54:07 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.JChannel;
 import org.jgroups.Message;
+import org.jgroups.Global;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
@@ -14,6 +15,7 @@ import org.testng.annotations.Test;
  * and expects reception of N messages within a given time. Fails otherwise.
  * @author Bela Ban
  */
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SendAndReceiveTest {
     JChannel channel;
     static final int NUM_MSGS=1000;

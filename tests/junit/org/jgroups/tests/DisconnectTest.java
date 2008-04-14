@@ -2,10 +2,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
@@ -20,8 +17,9 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.17 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.18 2008/04/14 07:54:07 belaban Exp $
  **/
+@Test(groups=Global.NOT_STACK_DEPENDENT,sequential=true)
 public class DisconnectTest {
     private JChannel channel;
     private int routerPort;

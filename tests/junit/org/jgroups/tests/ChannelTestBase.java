@@ -66,13 +66,6 @@ public class ChannelTestBase {
     protected final Log log=LogFactory.getLog(this.getClass());
 
 
-    public ChannelTestBase() {
-        super();
-    }
-
-    public ChannelTestBase(String name) {
-        ; // fixes compile errors for TestCase (until we've changed all occurrences)
-    }
 
 
     @BeforeClass
