@@ -1,10 +1,10 @@
-// $Id: IpAddressTest.java,v 1.5 2008/04/08 12:31:10 belaban Exp $
 
 package org.jgroups.tests;
 
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.jgroups.Global;
+import org.jgroups.Address;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -33,8 +33,6 @@ public class IpAddressTest {
     }
 
 
-
-    @Test(groups=Global.FUNCTIONAL)
     public static void testUnknownAddress() {
         try {
             IpAddress tmp=new IpAddress("idontknow.com", 55);
@@ -44,7 +42,6 @@ public class IpAddressTest {
         }
     }
 
-    @Test(groups=Global.FUNCTIONAL)
     public void testEquality() throws Exception {
         Assert.assertEquals(a, b);
         Assert.assertEquals(c, b);
@@ -52,7 +49,7 @@ public class IpAddressTest {
         Assert.assertEquals(c, e);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testEqualityWithDnsRoundRobin() throws UnknownHostException {
         IpAddress x1, x2, x3;
 
@@ -71,14 +68,14 @@ public class IpAddressTest {
         Assert.assertEquals(x1, x2);
         Assert.assertEquals(x3, x1);
 
-        HashSet s=new HashSet();
+        HashSet<Address> s=new HashSet<Address>();
         s.add(x1);
         s.add(x2);
         s.add(x3);
         System.out.println("s=" + s);
         Assert.assertEquals(1, s.size());
 
-        HashMap m=new HashMap();
+        HashMap<Address,String> m=new HashMap<Address,String>();
         m.put(x1, "Bela");
         m.put(x2, "Michelle");
         m.put(x3, "Nicole");
@@ -87,7 +84,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testInequality() throws Exception {
         IpAddress tmp=null;
         assert !a.equals(d);
@@ -99,7 +96,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testSameHost() throws Exception {
         assert Util.sameHost(a, b);
         assert Util.sameHost(a, c);
@@ -109,7 +106,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testNotSameHost() throws Exception {
         assert !Util.sameHost(a, f);
         assert !Util.sameHost(e, f);
@@ -117,7 +114,7 @@ public class IpAddressTest {
         assert !Util.sameHost(null, null);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testMcast() {
         assert h.isMulticastAddress();
         assert !a.isMulticastAddress();
@@ -127,7 +124,7 @@ public class IpAddressTest {
     }
 
     
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testCompareTo() {
         Assert.assertEquals(0, a.compareTo(b));
         assert a.compareTo(d) < 0;
@@ -135,7 +132,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testCompareTime() {
         final int NUM=1000000;
         _testCompareTime(a, a, NUM);
@@ -158,7 +155,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testHashcode() {
         int hcode_a=a.hashCode();
         int hcode_b=b.hashCode();
@@ -166,7 +163,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testHashcodeTime() {
         int hash=-1;
         final int NUM=10000000;
@@ -181,7 +178,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testIPv6WithExternalization() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -204,7 +201,7 @@ public class IpAddressTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testIPv6WithStreamable() throws IOException, ClassNotFoundException {
         InetAddress tmp=Util.getFirstNonLoopbackIPv6Address();
         IpAddress ip=new IpAddress(tmp, 5555);
@@ -226,7 +223,7 @@ public class IpAddressTest {
         Assert.assertEquals(ip, ip2);
     }
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testExternalization() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -256,7 +253,7 @@ public class IpAddressTest {
 
     
     
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testExternalizationAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         ObjectOutputStream    oos=new ObjectOutputStream(bos);
@@ -299,7 +296,7 @@ public class IpAddressTest {
     }
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testStreamable() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -311,7 +308,7 @@ public class IpAddressTest {
         x=new IpAddress(5555);
         x.setAdditionalData(new byte[]{'b','e','l','a'});
 
-        y=new IpAddress();
+        y=new IpAddress(1111);
         y.setAdditionalData(new byte[]{'b','e','l','a'});
 
         a.setAdditionalData(null);
@@ -342,15 +339,15 @@ public class IpAddressTest {
         assert x2.getAdditionalData() != null;
         Assert.assertEquals(4, x2.getAdditionalData().length);
 
-        assert y2.getIpAddress() == null;
-        Assert.assertEquals(0, y2.getPort());
+        assert y2.getIpAddress() != null;
+        Assert.assertEquals(1111, y2.getPort());
         assert y2.getAdditionalData() != null;
         Assert.assertEquals(4, y2.getAdditionalData().length);
     }
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public static void testStreamableWithHighPort() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
@@ -376,7 +373,7 @@ public class IpAddressTest {
 
 
 
-    @Test(groups=Global.FUNCTIONAL)
+
     public void testStreamableAdditionalData() throws Exception {
         ByteArrayOutputStream bos=new ByteArrayOutputStream();
         DataOutputStream      oos=new DataOutputStream(bos);
