@@ -6,7 +6,7 @@
         
 -->        
 <config>
-    <TCP start_port="7800"
+    <TCP bind_port="7800"
          loopback="true"
          recv_buf_size="20000000"
          send_buf_size="640000"

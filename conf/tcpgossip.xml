@@ -5,7 +5,7 @@
 <!-- input file: tcpgossip.old.xml -->
 
 <config>
-    <TCP start_port="7800" bind_addr="localhost" loopback="true"/>
+    <TCP bind_port="7800" bind_addr="localhost" loopback="true"/>
     <TCPGOSSIP timeout="3000" initial_hosts="localhost[12000]" num_initial_members="3"/>
     <FD timeout="2000" max_tries="4"/>
     <VERIFY_SUSPECT timeout="1500"  />

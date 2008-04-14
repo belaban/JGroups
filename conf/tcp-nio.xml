@@ -7,11 +7,11 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: tcp-nio.xml,v 1.10 2008/04/14 08:30:12 belaban Exp $
+    version: $Id: tcp-nio.xml,v 1.11 2008/04/14 08:39:38 belaban Exp $
 -->
 <config>
     <TCP_NIO
-            start_port="7800"
+            bind_port="7800"
             loopback="true"
             recv_buf_size="20000000"
             send_buf_size="640000"
