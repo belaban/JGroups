@@ -17,7 +17,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.4 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.5 2008/04/14 07:30:35 belaban Exp $
  */
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
@@ -28,7 +28,6 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         barrier=new CyclicBarrier(4);
         ch1=createChannel();
         ch2=createChannel();
@@ -41,7 +40,6 @@ public class ConcurrentStackTest extends ChannelTestBase {
         if(ch2 != null) ch2.close();
         if(ch1 != null) ch1.close();
         barrier.reset();
-        ;
     }
 
 

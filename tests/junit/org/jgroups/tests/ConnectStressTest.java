@@ -1,4 +1,4 @@
-// $Id: ConnectStressTest.java,v 1.24 2008/04/08 08:29:33 belaban Exp $
+// $Id: ConnectStressTest.java,v 1.25 2008/04/14 07:30:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -20,27 +20,19 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.24 2008/04/08 08:29:33 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.25 2008/04/14 07:30:35 belaban Exp $
  */
-public class ConnectStressTest {
-    static CyclicBarrier start_connecting=null;
-    static CyclicBarrier  connected=null;
-    static CyclicBarrier  received_all_views=null;
-    static CyclicBarrier  start_disconnecting=null;
-    static CyclicBarrier  disconnected=null;
-    static final int      NUM=20;
-    static final MyThread[] threads=new MyThread[NUM];
-    static JChannel       channel=null;
-    static String         groupname="ConcurrentTestDemo";
+public class ConnectStressTest extends ChannelTestBase {
+    CyclicBarrier    start_connecting=null;
+    CyclicBarrier    connected=null;
+    CyclicBarrier    received_all_views=null;
+    CyclicBarrier    start_disconnecting=null;
+    CyclicBarrier    disconnected=null;
+    static final int NUM=20;
+    final MyThread[] threads=new MyThread[NUM];
+    JChannel         channel=null;
+    static String    groupname="ConcurrentTestDemo";
 
-
-    static String props="udp.xml";
-
-
-
-    public ConnectStressTest(String name) {
-
-    }
 
 
     static void log(String msg) {
@@ -59,7 +51,7 @@ public class ConnectStressTest {
         long start, stop;
 
         //  create main channel - will be coordinator for JOIN requests
-        channel=new JChannel(props);
+        channel=createChannel();
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         changeProperties(channel);
         start=System.currentTimeMillis();
@@ -140,8 +132,8 @@ public class ConnectStressTest {
 
 
 
-    public static class MyThread extends Thread {
-        int                index=-1;
+    public class MyThread extends Thread {
+        int                 index=-1;
         long                total_connect_time=0, total_disconnect_time=0;
         private JChannel    ch=null;
         private Address     my_addr=null;
@@ -162,7 +154,7 @@ public class ConnectStressTest {
             View view;
 
             try {
-                ch=new JChannel(props);
+                ch=createChannel();
                 changeProperties(ch);
                 ch.setOpt(Channel.AUTO_RECONNECT, true);
 
@@ -212,6 +204,9 @@ public class ConnectStressTest {
                 e.printStackTrace();
             }
             catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+            catch(Exception e) {
                 e.printStackTrace();
             }
         }

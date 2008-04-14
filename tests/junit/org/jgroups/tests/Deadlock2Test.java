@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.14 2008/04/08 08:29:34 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.15 2008/04/14 07:30:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,18 +21,14 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  */
 public class Deadlock2Test extends ChannelTestBase {
-
     private static boolean DEADLOCK_DETECTION = true;
-
     private String name = "Deadlock2Test";
 
 
-    public Deadlock2Test(String name) {
-        super(name);
-    }
+
 
 
     /**
