@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
+// $Id: MergeStressTest.java,v 1.10 2008/04/14 07:54:07 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,47 +6,33 @@ package org.jgroups.tests;
 
 import org.testng.annotations.*;
 import org.jgroups.*;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.STABLE;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 
 import java.util.concurrent.CyclicBarrier;
+import java.util.Properties;
 
 
 /**
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.9 2008/04/08 08:29:32 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.10 2008/04/14 07:54:07 belaban Exp $
  */
-public class MergeStressTest {
-    static CyclicBarrier start_connecting=null;
-    static CyclicBarrier    received_all_views=null;
-    static CyclicBarrier    start_disconnecting=null;
-    static CyclicBarrier    disconnected=null;
+public class MergeStressTest extends ChannelTestBase {
+    CyclicBarrier           start_connecting=null;
+    CyclicBarrier           received_all_views=null;
+    CyclicBarrier           start_disconnecting=null;
+    CyclicBarrier           disconnected=null;
     static final int        NUM=10;
     static final long       TIMEOUT=50000;
-    static final MyThread[] threads=new MyThread[NUM];
+    final MyThread[]        threads=new MyThread[NUM];
     static String           groupname="ConcurrentTestDemo";
 
-
-    static String props="UDP(mcast_addr=228.8.8.9;mcast_port=7788;ip_ttl=1;" +
-            "mcast_send_buf_size=150000;mcast_recv_buf_size=80000):" +
-            "PING(timeout=3000;num_initial_members=3):" +
-            "MERGE2(min_interval=3000;max_interval=5000):" +
-            "FD_SOCK:" +
-            "VERIFY_SUSPECT(timeout=1500):" +
-            "pbcast.NAKACK(gc_lag=50;retransmit_timeout=300,600,1200,2400,4800):" +
-            "UNICAST(timeout=300,600,1200,2400):" +
-            "pbcast.STABLE(desired_avg_gossip=5000):" +
-            "FRAG(frag_size=4096):" +
-            "pbcast.GMS(join_timeout=5000;" +
-            "shun=false;print_local_addr=false;view_ack_collection_timeout=5000;" +
-            "merge_timeout=30000;handle_concurrent_startup=false)";
-
-
-
-    public MergeStressTest(String name) {
-    }
 
 
     static void log(String msg) {
@@ -101,7 +87,7 @@ public class MergeStressTest {
 
 
 
-    public static class MyThread extends ReceiverAdapter implements Runnable {
+    public class MyThread extends ReceiverAdapter implements Runnable {
         int                 index=-1;
         long                total_connect_time=0, total_disconnect_time=0;
         private JChannel    ch=null;
@@ -161,7 +147,8 @@ public class MergeStressTest {
 
             try {
                 start_connecting.await();
-                ch=new JChannel(props);
+                ch=createChannel();
+                modifyStack(ch);
                 ch.setReceiver(this);
                 log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
@@ -193,6 +180,23 @@ public class MergeStressTest {
             catch(Exception e) {
                 e.printStackTrace();
             }
+        }
+
+
+        private void modifyStack(JChannel ch) {
+            ProtocolStack stack=ch.getProtocolStack();
+            Properties props=new Properties();
+            Protocol prot=stack.findProtocol(MERGE2.class);
+            if(prot != null) {
+                props.clear();
+                props.setProperty("min_interval", "3000");
+                props.setProperty("max_interval", "5000");
+                prot.setProperties(props);
+            }
+            prot=stack.findProtocol(STABLE.class);
+            props.clear();
+            props.setProperty("desired_avg_gossip", "5000");
+            prot.setProperties(props);
         }
 
 

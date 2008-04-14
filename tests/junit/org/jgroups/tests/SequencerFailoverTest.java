@@ -3,10 +3,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -21,8 +18,9 @@ import java.util.List;
  * Tests a SEQUENCER based stack: A, B and C. B starts multicasting messages with a monotonically increasing
  * number. Then A is crashed. C and B should receive *all* numbers *without* a gap.
  * @author Bela Ban
- * @version $Id: SequencerFailoverTest.java,v 1.8 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: SequencerFailoverTest.java,v 1.9 2008/04/14 07:54:07 belaban Exp $
  */
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SequencerFailoverTest {
     JChannel ch1, ch2, ch3; // ch1 is the coordinator
     static final String GROUP="demo-group";

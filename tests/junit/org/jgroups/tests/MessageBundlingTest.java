@@ -9,7 +9,6 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -17,7 +16,7 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.13 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.14 2008/04/14 07:54:07 belaban Exp $
  */
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
@@ -27,16 +26,12 @@ public class MessageBundlingTest extends ChannelTestBase {
     private static final boolean BUNDLING=true;
     private static final int MAX_BYTES=20000;
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-    }
+
     
     @AfterMethod
     public void tearDown() throws Exception {
         closeChannel(ch2);
         closeChannel(ch1);
-        ;
     }
 
 
@@ -44,7 +39,7 @@ public class MessageBundlingTest extends ChannelTestBase {
        return false;
     }
     
-    private void prepareChannels() throws Exception,ChannelException {
+    private void prepareChannels() throws Exception {
         ch1=createChannel();
         setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
         setLoopback(ch1, false);
@@ -162,7 +157,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         Util.sleep(5000);
     }
 
-    private void setLoopback(JChannel ch, boolean b) {
+    private static void setLoopback(JChannel ch, boolean b) {
         ProtocolStack stack=ch.getProtocolStack();
         Vector<Protocol> prots=stack.getProtocols();
         TP transport=(TP)prots.lastElement();
@@ -170,7 +165,7 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    private void setBundling(JChannel ch, boolean enabled, int max_bytes, long timeout) {
+    private static void setBundling(JChannel ch, boolean enabled, int max_bytes, long timeout) {
         ProtocolStack stack=ch.getProtocolStack();
         Vector<Protocol> prots=stack.getProtocols();
         TP transport=(TP)prots.lastElement();
@@ -187,7 +182,7 @@ public class MessageBundlingTest extends ChannelTestBase {
         }
     }
 
-    private void closeChannel(Channel c) {
+    private static void closeChannel(Channel c) {
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
         }

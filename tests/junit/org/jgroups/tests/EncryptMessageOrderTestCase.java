@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Header;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
+import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.util.Util;
 import org.testng.Assert;
@@ -27,9 +24,10 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.10 2008/04/14 07:30:35 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.11 2008/04/14 07:54:06 belaban Exp $
  */
-public class EncryptMessageOrderTestCase extends ChannelTestBase {
+@Test(groups=Global.NOT_STACK_DEPENDENT,sequential=true)
+public class EncryptMessageOrderTestCase {
 
     public static int MESSAGE_NUMBER=5 * 100;
 
@@ -166,7 +164,7 @@ public class EncryptMessageOrderTestCase extends ChannelTestBase {
                             Assert.assertEquals(counter, ((EncryptOrderTestHeader)((Message)jgMessage).getHeader("EncryptOrderTest")).seqno);
                         	counter++;
                         } catch (Exception e){
-                        	log.warn(e);
+                        	e.printStackTrace();
                         	orderCounterFailure =true;
                         }
                         if(!started)

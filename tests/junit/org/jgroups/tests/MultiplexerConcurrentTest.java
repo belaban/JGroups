@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.6 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.7 2008/04/14 07:54:06 belaban Exp $
  */
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
@@ -25,14 +25,9 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
     private static final long MAX_TIME=5000;
 
 
-    public MultiplexerConcurrentTest(String name) {
-        super(name);
-    }
-
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ;
         factory=new JChannelFactory();
         factory.setMultiplexerConfig(mux_conf);
 
@@ -64,7 +59,6 @@ public class MultiplexerConcurrentTest extends ChannelTestBase {
             assertFalse(((MuxChannel)s2).getChannel().isConnected());
         }
         s1=s2=null;
-        ;
     }
 
 
