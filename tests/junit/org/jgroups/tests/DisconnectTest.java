@@ -17,9 +17,9 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.18 2008/04/14 07:54:07 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.19 2008/04/14 08:05:42 belaban Exp $
  **/
-@Test(groups=Global.NOT_STACK_DEPENDENT,sequential=true)
+@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class DisconnectTest {
     private JChannel channel;
     private int routerPort;
