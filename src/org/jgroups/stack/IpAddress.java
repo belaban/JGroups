@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.44 2008/04/12 12:35:25 belaban Exp $
+// $Id: IpAddress.java,v 1.45 2008/04/14 06:41:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -305,7 +305,7 @@ public class IpAddress implements Address {
 
     public void readFrom(DataInputStream in) throws IOException {
         int len=in.readByte();
-        if(len != Global.IPV4_SIZE && size != Global.IPV6_SIZE)
+        if(len > 0 && (len != Global.IPV4_SIZE && size != Global.IPV6_SIZE))
             throw new IOException("length has to be " + Global.IPV4_SIZE + " or " + Global.IPV6_SIZE + " bytes");
             byte[] a = new byte[len]; // 4 bytes (IPv4) or 16 bytes (IPv6)
             in.readFully(a);
