@@ -19,29 +19,24 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.6 2008/04/08 08:29:34 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.7 2008/04/14 08:34:46 belaban Exp $
  */
-public class UNICAST_OOB_Test {
+public class UNICAST_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2;
-    final String props="udp.xml";
 
-    public UNICAST_OOB_Test(String name) {
-    }
 
     @BeforeMethod
-    public void setUp() throws Exception {
-        ;
-        ch1=new JChannel(props);
-        ch2=new JChannel(props);
+    void setUp() throws Exception {
+        ch1=createChannel();
+        ch2=createChannel();
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if(ch1 != null)
             ch1.close();
         if(ch2 != null)
             ch2.close();
-        ;
     }
 
 

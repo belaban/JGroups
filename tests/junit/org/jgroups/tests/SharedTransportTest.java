@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.16 2008/04/08 07:19:02 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.17 2008/04/14 08:34:46 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -34,7 +34,6 @@ public class SharedTransportTest extends ChannelTestBase {
         if(a != null)
             a.close();
         r1=r2=r3=null;
-        ;
     }
 
 
