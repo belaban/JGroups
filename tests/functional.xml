@@ -3,7 +3,7 @@
        parallel="methods"
        thread-count="20" >
 
-    <test name="all-functional-tests" junit="false">
+    <test name="functional" junit="false">
         <groups>
             <run>
                 <include name="functional"/>

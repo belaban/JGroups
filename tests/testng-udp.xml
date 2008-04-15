@@ -1,5 +1,5 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="udp-tests"
+<suite name="udp"
        parallel="tests"
        thread-count="1"
         >
