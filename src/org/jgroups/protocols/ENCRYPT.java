@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.39 2008/03/12 07:30:29 belaban Exp $
+// $Id: ENCRYPT.java,v 1.40 2008/04/15 15:43:36 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -1401,7 +1401,7 @@ public class ENCRYPT extends Protocol {
 
         public String toString()
         {
-            return "ENCRYPT [type=" + type + " version=\"" + version + "\"]";
+            return "ENCRYPT [type=" + type + " version=\"" + (version != null? version.length() + " bytes" : "n/a") + "\"]";
         }
 
         public int size() {
