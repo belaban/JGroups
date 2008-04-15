@@ -477,7 +477,6 @@ public class ENCRYPTAsymmetricTest {
 
         public void up(Event evt) {
             storeUp(evt);
-            System.out.println("Up:" + evt.toString());
         }
 
         public void setProtocol(Protocol prot) {
@@ -485,16 +484,13 @@ public class ENCRYPTAsymmetricTest {
 
         public void passUp(Event evt) {
             storeUp(evt);
-            System.out.println("PassUp:" + evt.toString());
         }
 
         public void down(Event evt) {
-            System.out.println("down:" + evt.toString());
         }
 
         public void passDown(Event evt) {
             storeDown(evt);
-            System.out.println("passDown:" + evt.toString());
         }
 
         protected Map getUpMessages() {
