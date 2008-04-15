@@ -5,63 +5,148 @@ import org.testng.ITestResult;
 import org.testng.TestListenerAdapter;
 import org.testng.annotations.Test;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.4 2008/04/14 06:40:55 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.5 2008/04/15 12:18:14 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
     private String suffix=null;
 
-    private List<ITestResult> m_configIssues=Collections.synchronizedList(new ArrayList<ITestResult>());
     private static final String SUFFIX="test.suffix";
     private static final String XML_DEF="<?xml version=\"1.0\" encoding=\"UTF-8\" ?>";
     private static final String CDATA="![CDATA[";
     private static final String LT="&lt;";
     private static final String GT="&gt;";
+    private static final String SYSTEM_OUT="system-out";
+    private static final String SYSTEM_ERR="system-err";
+
+    private PrintStream old_stdout=System.out;
+    private PrintStream old_stderr=System.err;
 
 
-    private Map<Class, List<ITestResult>> classes=new HashMap<Class,List<ITestResult>>();
+    private final ConcurrentMap<Class, List<ITestResult>> classes=new ConcurrentHashMap<Class,List<ITestResult>>();
+
+    /** Map to keep systemout and systemerr associated with a class */
+    private final ConcurrentMap<Class,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class,Tuple<StringBuffer,StringBuffer>>();
+
+    public static InheritableThreadLocal<Class> local=new InheritableThreadLocal<Class>();
+
+
+    class MyOutput extends PrintStream {
+        final int type; // 1 == stdout, 2 == stderr
+
+        public MyOutput(String fileName, int type) throws FileNotFoundException {
+            super(fileName);
+            this.type=type;
+            if(type != 1 && type != 2)
+                throw new IllegalArgumentException("index has to be 1 or 2");
+        }
+
+        public void println(String s) {
+            append(s);
+        }
+
+        public void print(String s) {
+            append(s);
+        }
+
+        public void print(Object obj) {
+            if(obj != null)
+                append(obj.toString());
+            else
+                append("null");
+        }
+
+        private synchronized void append(String x) {
+            Class clazz=local.get();
+            if(clazz != null) {
+                // System.err.println("PRINT [" + Thread.currentThread() + "]: " + clazz.getName() + ": " + x);
+                Tuple<StringBuffer,StringBuffer> tuple=outputs.get(clazz);
+                if(tuple == null) {
+                    old_stderr.println("tuple for " + clazz + " not found");
+                }
+                else {
+                    StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
+                    if(sb.length() == 0) {
+                        sb.append("\n" + clazz.getName() + ":");
+                    }
+                    sb.append("\n").append(x);
+                }
+            }
+            else {
+                old_stderr.println("**** local not found: " + x);
+            }
+        }
+    }
+
+
+    public void onTestStart(ITestResult result) {
+        Class real_class=result.getTestClass().getRealClass();
+        local.set(real_class);
+
+        List<ITestResult> results=classes.get(real_class);
+        if(results == null) {
+            results=new LinkedList<ITestResult>();
+            classes.putIfAbsent(real_class, results);
+        }
+
+        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer()));
+        // old_stdout.println(Thread.currentThread() + " running " + real_class.getName() + "." + result.getName() + "()");
+    }
+
 
 
     /** Invoked each time a test succeeds */
     public void onTestSuccess(ITestResult tr) {
-        addTest(tr.getTestClass().getRealClass(), tr);
+        Class real_class=tr.getTestClass().getRealClass();
+        addTest(real_class, tr);
+        old_stdout.println("OK:   " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
     }
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
+        Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
+        old_stdout.println("OK:   " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
     }
 
-    private void addTest(Class clazz, ITestResult result) {
-        List<ITestResult> results=classes.get(clazz);
-        if(results == null) {
-            results=new LinkedList<ITestResult>();
-            classes.put(clazz, results);
-        }
-        results.add(result);
-    }
+
 
     /**
      * Invoked each time a test fails.
      */
     public void onTestFailure(ITestResult tr) {
+        Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
+        old_stderr.println("FAIL: " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
     }
 
     /**
      * Invoked each time a test is skipped.
      */
     public void onTestSkipped(ITestResult tr) {
+        Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
+        old_stdout.println("SKIP: " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
+    }
+
+      private void addTest(Class clazz, ITestResult result) {
+        List<ITestResult> results=classes.get(clazz);
+        if(results == null) {
+            results=new LinkedList<ITestResult>();
+            classes.putIfAbsent(clazz, results);
+        }
+
+        results=classes.get(clazz);
+        results.add(result);
     }
 
     /**
@@ -72,6 +157,18 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         if(suffix != null)
             suffix=suffix.trim();
         output_dir=context.getOutputDirectory(); // + File.separator + context.getName() + suffix + ".xml";
+
+        try {
+            System.setOut(new MyOutput("/tmp/tmp.txt", 1));
+    }
+        catch(FileNotFoundException e) {
+        }
+
+        try {
+            System.setErr(new MyOutput("/tmp/tmp.txt", 2));
+        }
+        catch(FileNotFoundException e) {
+        }
     }
 
     /**
@@ -79,6 +176,9 @@ public class JUnitXMLReporter extends TestListenerAdapter {
      * Configuration methods have been called.
      */
     public void onFinish(ITestContext context) {
+        System.setOut(old_stdout);
+        System.setErr(old_stderr);
+
         try {
             generateReport();
         }
@@ -137,11 +237,6 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
                     Throwable ex=result.getThrowable();
 
-                    if(result.getStatus() != ITestResult.SUCCESS && result.getStatus() != ITestResult.SUCCESS_PERCENTAGE_FAILURE) {
-                        System.out.println("FAIL ("
-                                + result.getStatus() + "): " + result.getMethod().getMethod() + ", ex=" + ex);
-                    }
-
                     switch(result.getStatus()) {
                         case ITestResult.SUCCESS:
                             case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
@@ -159,6 +254,21 @@ public class JUnitXMLReporter extends TestListenerAdapter {
                     out.write("\n</testcase>");
                 }
 
+                Tuple<StringBuffer, StringBuffer> stdout=outputs.get(clazz);
+                if(stdout != null) {
+                    StringBuffer system_out=stdout.getVal1();
+                    StringBuffer system_err=stdout.getVal2();
+                    writeOutput(out, system_out.toString(), 1);
+                    out.write("\n");
+                    writeOutput(out, system_err.toString(), 2);
+                    if(system_out.length() > 0) {
+                        out.write("\n<" + SYSTEM_OUT + "><" + CDATA + "\n");
+                        out.write(system_out.toString());
+                        out.write("\n]]>");
+                        out.write("\n</" + SYSTEM_OUT + ">");
+                    }
+                }
+
                 out.write("\n</testsuite>\n");
             }
             finally {
@@ -168,6 +278,14 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
     }
 
+    private static void writeOutput(FileWriter out, String s, int type) throws IOException {
+        if(s != null && s.length() > 0) {
+            out.write("\n<" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + "><" + CDATA + "\n");
+            out.write(s);
+            out.write("\n]]>");
+            out.write("\n</" + (type == 2? SYSTEM_ERR : SYSTEM_OUT) + ">");
+        }
+    }
 
 
     private static void writeFailure(String type, Method method, Throwable ex, String msg, FileWriter out) throws IOException {
@@ -262,14 +380,6 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         return retval;
     }
 
-
-    public void onConfigurationFailure(ITestResult itr) {
-        m_configIssues.add(itr);
-    }
-
-    public void onConfigurationSkip(ITestResult itr) {
-        m_configIssues.add(itr);
-    }
 
 
 }
