@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.151 2008/04/15 14:29:13 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.152 2008/04/15 15:34:28 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -1043,7 +1043,6 @@
         <attribute name="threadcount" default="1"/>
         <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
         <sequential>
-            <mkdir dir="${tmp.dir}/test-results/xml/stack-dependent"/>
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
