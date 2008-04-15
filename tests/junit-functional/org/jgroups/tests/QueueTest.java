@@ -1,4 +1,3 @@
-// $Id: QueueTest.java,v 1.2 2008/03/10 15:39:20 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,14 +7,17 @@ import org.jgroups.TimeoutException;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.LinkedList;
 
 
-@Test(groups=Global.FUNCTIONAL)
+/**
+ * @author Bela Ban
+ * @version $Id: QueueTest.java,v 1.3 2008/04/15 15:16:36 belaban Exp $
+ */
+@Test(groups=Global.FUNCTIONAL,sequential=false)
 public class QueueTest {
 
 
@@ -26,16 +28,16 @@ public class QueueTest {
         queue.add("Q2");
         queue.add("Q3");
 
-        Assert.assertEquals("Q1", queue.peek());
-        Assert.assertEquals("Q1", queue.remove());
+        assert queue.peek().equals("Q1");
+        assert queue.remove().equals("Q1");
 
-        Assert.assertEquals("Q2", queue.peek());
-        Assert.assertEquals("Q2", queue.remove());
+        assert queue.peek().equals("Q2");
+        assert queue.remove().equals("Q2");
 
         queue.addAtHead("Q4");
         queue.add("Q5");
-        Assert.assertEquals("Q4", queue.peek());
-        Assert.assertEquals("Q4", queue.remove());
+        assert queue.peek().equals("Q4");
+        assert queue.remove().equals("Q4");
 
         queue.close(true);
 
@@ -44,15 +46,13 @@ public class QueueTest {
             assert false : "should not get here";
         }
         catch(org.jgroups.util.QueueClosedException qc) {
-            assert true;
         }
 
         int size=queue.size();
         queue.removeElement("Q5");
-        Assert.assertEquals((size - 1), queue.size());
-
-        Assert.assertEquals("Q3", queue.peek());
-        Assert.assertEquals("Q3", queue.remove());
+        assert queue.size() == size -1;
+        assert queue.peek().equals("Q3");
+        assert queue.remove().equals("Q3");
         assert queue.closed();
     }
 
@@ -83,7 +83,7 @@ public class QueueTest {
         for(int i=1; i <= 3; i++) {
             Object obj=queue.remove();
             assert obj != null;
-            Assert.assertEquals(obj, new Integer(i));
+            assert new Integer(i).equals(obj);
         }
         queue.remove();
     }
@@ -98,9 +98,9 @@ public class QueueTest {
         queue.add(new Integer(8));
         System.out.println("queue: " + Util.dumpQueue(queue));
         int size=queue.size();
-        Assert.assertEquals(4, size);
+        assert size == 4;
         LinkedList values=queue.values();
-        Assert.assertEquals(size, values.size());
+        assert values.size() == size;
     }
 
 
@@ -131,7 +131,6 @@ public class QueueTest {
         final Queue queue=new Queue();
         assert queue.getFirst() == null;
         assert queue.getLast() == null;
-        Assert.assertEquals(queue.getFirst(), queue.getLast());
     }
 
 
@@ -143,13 +142,13 @@ public class QueueTest {
         l.add("three");
         queue.addAll(l);
         System.out.println("queue is " + queue);
-        Assert.assertEquals(3, queue.size());
-        Assert.assertEquals("one", queue.remove());
-        Assert.assertEquals(2, queue.size());
-        Assert.assertEquals("two", queue.remove());
-        Assert.assertEquals(1, queue.size());
-        Assert.assertEquals("three", queue.remove());
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 3;
+        assert queue.remove().equals("one");
+        assert queue.size() == 2;
+        assert queue.remove().equals("two");
+        assert queue.size() == 1;
+        assert queue.remove().equals("three");
+        assert queue.size() == 0;
     }
 
 
@@ -160,7 +159,7 @@ public class QueueTest {
         queue.add(s1);
         assert queue.getFirst() != null;
         assert queue.getLast() != null;
-        Assert.assertEquals(queue.getFirst(), queue.getLast());
+        assert queue.getLast().equals(queue.getFirst());
 
         queue.add(s2);
         assert queue.getFirst() != queue.getLast();
@@ -170,14 +169,14 @@ public class QueueTest {
 
         System.out.println("o1=" + o1 + ", o2=" + o2 + ", o1.equals(o2)=" + o1.equals(o2));
 
-        Assert.assertEquals(queue.peek(), queue.getFirst());
+        assert queue.getFirst().equals(queue.peek());
         queue.remove();
 
-        Assert.assertEquals(1, queue.size());
-        Assert.assertEquals(queue.getFirst(), queue.getLast());
+        assert queue.size() == 1;
+        assert queue.getLast().equals(queue.getFirst());
         queue.remove();
 
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
         assert queue.getFirst() == null;
         assert queue.getLast() == null;
     }
@@ -188,7 +187,7 @@ public class QueueTest {
         final Queue queue=new Queue();
         queue.close(true);
         queue.waitUntilClosed(0);
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
     }
 
 
@@ -202,7 +201,7 @@ public class QueueTest {
         catch(QueueClosedException e) {
             assert e != null;
         }
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
     }
 
 
@@ -211,8 +210,8 @@ public class QueueTest {
         queue.add("one");
         queue.close(true);
         Object obj=queue.peek();
-        Assert.assertEquals("one", obj);
-        Assert.assertEquals(1, queue.size());
+        assert obj.equals("one");
+        assert queue.size() == 1;
         queue.remove();
         try {
             queue.peek();
@@ -221,7 +220,7 @@ public class QueueTest {
         catch(QueueClosedException e) {
             assert e != null;
         }
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
     }
 
 
@@ -244,7 +243,7 @@ public class QueueTest {
         }.start();
         queue.close(true);
         queue.waitUntilClosed(0);
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
     }
 
 
@@ -284,7 +283,7 @@ public class QueueTest {
         try {
             queue.removeElement(s1);
             assert !(queue.closed());
-            Assert.assertEquals(0, queue.size());
+            assert queue.size() == 0;
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -300,7 +299,7 @@ public class QueueTest {
         try {
             queue.add(s1);
             queue.removeElement(s1);
-            Assert.assertEquals(0, queue.size());
+            assert queue.size() == 0;
             assert queue.getFirst() == null;
             assert queue.getLast() == null;
         }
@@ -318,10 +317,10 @@ public class QueueTest {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s1);
-            Assert.assertEquals(1, queue.size());
-            Assert.assertEquals(queue.getFirst(), s2);
-            Assert.assertEquals(queue.getLast(), s2);
-            Assert.assertEquals(queue.getFirst(), queue.getLast());
+            assert queue.size() == 1;
+            assert queue.getFirst().equals(s2);
+            assert queue.getLast().equals(s2);
+            assert queue.getFirst().equals(queue.getLast());
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -337,10 +336,10 @@ public class QueueTest {
             queue.add(s1);
             queue.add(s2);
             queue.removeElement(s2);
-            Assert.assertEquals(1, queue.size());
-            Assert.assertEquals(queue.getFirst(), s1);
-            Assert.assertEquals(queue.getLast(), s1);
-            Assert.assertEquals(queue.getFirst(), queue.getLast());
+            assert queue.size() == 1;
+            assert queue.getFirst().equals(s1);
+            assert queue.getLast().equals(s1);
+            assert queue.getFirst().equals(queue.getLast());
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -357,9 +356,9 @@ public class QueueTest {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s1);
-            Assert.assertEquals(2, queue.size());
-            Assert.assertEquals(queue.getFirst(), s2);
-            Assert.assertEquals(queue.getLast(), s3);
+            assert queue.size() == 2;
+            assert queue.getFirst().equals(s2);
+            assert queue.getLast().equals(s3);
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -376,9 +375,9 @@ public class QueueTest {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s2);
-            Assert.assertEquals(2, queue.size());
-            Assert.assertEquals(queue.getFirst(), s1);
-            Assert.assertEquals(queue.getLast(), s3);
+            assert queue.size() == 2;
+            assert queue.getFirst().equals(s1);
+            assert queue.getLast().equals(s3);
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -395,9 +394,9 @@ public class QueueTest {
             queue.add(s2);
             queue.add(s3);
             queue.removeElement(s3);
-            Assert.assertEquals(2, queue.size());
-            Assert.assertEquals(queue.getFirst(), s1);
-            Assert.assertEquals(queue.getLast(), s2);
+            assert queue.size() == 2;
+            assert queue.getFirst().equals(s1);
+            assert queue.getLast().equals(s2);
         }
         catch(QueueClosedException ex) {
             assert false : ex.toString();
@@ -462,21 +461,21 @@ public class QueueTest {
         Queue queue=new Queue();
         queue.add("one");
         queue.add("two");
-        Assert.assertEquals(2, queue.size());
+        assert queue.size() == 2;
         queue.close(true);
-        Assert.assertEquals(2, queue.size());
+        assert queue.size() == 2;
         queue.clear();
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
         queue=new Queue();
         queue.add("one");
         queue.add("two");
         queue.clear();
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
         queue.add("one");
         queue.add("two");
-        Assert.assertEquals(2, queue.size());
+        assert queue.size() == 2;
         queue.clear();
-        Assert.assertEquals(0, queue.size());
+        assert queue.size() == 0;
     }
 
 
@@ -599,7 +598,7 @@ public class QueueTest {
             }
         }
 
-        Assert.assertEquals(2, num_dead);
+        assert num_dead == 2;
     }
 
     /** Multiple threads call remove(), one threads then adds an element. Only 1 thread should actually terminate
@@ -629,7 +628,7 @@ public class QueueTest {
             }
         }
 
-        Assert.assertEquals(2, num_dead);
+        assert num_dead == 2;
 
         System.out.println("closing queue - causing all remaining threads to terminate");
         queue.close(false); // will cause all threads still blocking on peek() to return
@@ -643,7 +642,7 @@ public class QueueTest {
                 num_dead++;
             }
         }
-        Assert.assertEquals(10, num_dead);
+        assert num_dead == 10;
     }
 
 
@@ -676,7 +675,7 @@ public class QueueTest {
             }
         }
 
-        Assert.assertEquals(10, num_dead);
+        assert num_dead == 10;
         queue.close(false); // will cause all threads still blocking on peek() to return
     }
 
@@ -711,7 +710,7 @@ public class QueueTest {
             if(ret != null)
                 num_received++;
         }
-        Assert.assertEquals(NUM, num_received);
+        assert num_received == NUM;
         stop=System.currentTimeMillis();
         System.out.println("time to add/remove " + NUM + " elements: " + (stop-start));
     }
