@@ -1,11 +1,11 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="udp-tests"
+<suite name="udp-flush"
        parallel="tests"
        thread-count="1"
         >
 
 
-    <test name="udp" junit="false">
+    <test name="udp-flush" junit="false">
         <parameter name="channel.conf" value="flush-udp.xml"/>
         <groups>
             <run>

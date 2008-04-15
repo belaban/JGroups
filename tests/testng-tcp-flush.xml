@@ -1,10 +1,10 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
-<suite name="udp-tests"
+<suite name="tcp-flush"
        parallel="tests"
        thread-count="1"
         >
 
-    <test name="tcp" junit="false">
+    <test name="tcp-flush" junit="false">
         <parameter name="channel.conf" value="flush-tcp.xml"/>
         <groups>
             <run>
