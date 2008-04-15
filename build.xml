@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.150 2008/04/15 14:22:27 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.151 2008/04/15 14:29:13 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -963,9 +963,8 @@
         </sequential>
     </target>
 
-    <target name="functional" depends="compile, prepare,prepare.test,makeKeystore">
+    <target name="functional" depends="compile, makeKeystore">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
-        <!--<runtest parallel="methods" threadcount="20"/>-->
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
                 outputdir="${tmp.dir}/test-results/xml"
@@ -977,7 +976,8 @@
         </testng>
     </target>
 
-    <target name="stack-independent" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+    <target name="stack-independent" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest testname.ext="ind"
                  threadcount="1"
                  parallel="tests"
@@ -985,7 +985,8 @@
                 />
     </target>
 
-    <target name="udp" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+    <target name="udp" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="1"
                  parallel="tests"
@@ -993,7 +994,8 @@
                 />
     </target>
 
-    <target name="udp-flush" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+    <target name="udp-flush" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest testname.ext="udp-flush"
                  threadcount="1"
                  parallel="tests"
@@ -1001,7 +1003,8 @@
                 />
     </target>
 
-    <target name="tcp" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+    <target name="tcp" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="1"
                  parallel="tests"
@@ -1009,7 +1012,8 @@
                 />
     </target>
 
-    <target name="tcp-flush" depends="compile, prepare, prepare.test, makeKeystore, copy-build-properties">
+    <target name="tcp-flush" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
         <runtest testname.ext="tcp-flush"
                  threadcount="1"
                  parallel="tests"
