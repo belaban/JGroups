@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.5 2008/04/15 12:18:14 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.6 2008/04/15 12:38:25 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -261,12 +261,6 @@ public class JUnitXMLReporter extends TestListenerAdapter {
                     writeOutput(out, system_out.toString(), 1);
                     out.write("\n");
                     writeOutput(out, system_err.toString(), 2);
-                    if(system_out.length() > 0) {
-                        out.write("\n<" + SYSTEM_OUT + "><" + CDATA + "\n");
-                        out.write(system_out.toString());
-                        out.write("\n]]>");
-                        out.write("\n</" + SYSTEM_OUT + ">");
-                    }
                 }
 
                 out.write("\n</testsuite>\n");
