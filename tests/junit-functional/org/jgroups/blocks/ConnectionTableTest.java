@@ -5,11 +5,8 @@ import org.jgroups.Global;
 import org.jgroups.blocks.BasicConnectionTable.Connection;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.testng.annotations.BeforeClass;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -22,31 +19,27 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.11 2008/04/08 12:00:35 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.12 2008/04/15 12:37:22 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableTest {
     private BasicConnectionTable ct1, ct2;
-    static InetAddress loopback_addr=null;
+    static final InetAddress loopback_addr;
+
+    static {
+        try {
+            loopback_addr=InetAddress.getByName("127.0.0.1");
+        }
+        catch(UnknownHostException e) {
+            throw new RuntimeException("failed initializing loopback_addr", e);
+        }
+    }
+
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
-    Address addr1, addr2;
-    int active_threads=0;
-
     final static int PORT1=7521, PORT2=8931;
-
-    @BeforeClass
-    public static void init() throws UnknownHostException {
-        loopback_addr=InetAddress.getByName("127.0.0.1");
-    }
+    static final Address addr1=new IpAddress(loopback_addr, PORT1), addr2=new IpAddress(loopback_addr, PORT2);
 
 
-    @BeforeMethod
-    protected void setUp() throws Exception {
-        active_threads=Thread.activeCount();
-        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
-        addr1=new IpAddress(loopback_addr, PORT1);
-        addr2=new IpAddress(loopback_addr, PORT2);
-    }
 
 
     @AfterMethod
@@ -88,9 +81,9 @@ public class ConnectionTableTest {
         int num_conns;
         System.out.println("ct1: " + ct1 + "ct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        Assert.assertEquals(0, num_conns);
+        assert num_conns == 0;
         num_conns=ct2.getNumConnections();
-        Assert.assertEquals(0, num_conns);
+        assert num_conns == 0;
 
         barrier.await(10000, TimeUnit.MILLISECONDS);
         sender1.join();
@@ -99,17 +92,17 @@ public class ConnectionTableTest {
         
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        Assert.assertEquals(1, num_conns);
+        assert num_conns == 1;
         num_conns=ct2.getNumConnections();
-        Assert.assertEquals(1, num_conns);
+        assert num_conns == 1;
         
         Util.sleep(500);
         
         System.out.println("ct1: " + ct1 + "\nct2: " + ct2);
         num_conns=ct1.getNumConnections();
-        Assert.assertEquals(1, num_conns);
+        assert num_conns == 1;
         num_conns=ct2.getNumConnections();
-        Assert.assertEquals(1, num_conns);
+        assert num_conns == 1;
         
         Connection connection = ct1.getConnection(addr2);
         assert !(connection.isSocketClosed()) : "valid connection to peer";
@@ -208,9 +201,9 @@ public class ConnectionTableTest {
     }
 
 
-    private void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
+    private static void _testStop(BasicConnectionTable table1, BasicConnectionTable table2) throws Exception {
         table1.send(addr1, data, 0, data.length); // send to self
-        Assert.assertEquals(0, table1.getNumConnections());
+        assert table1.getNumConnections() == 0;
         table1.send(addr2, data, 0, data.length); // send to other
 
         table2.send(addr2, data, 0, data.length); // send to self
@@ -219,13 +212,13 @@ public class ConnectionTableTest {
 
         System.out.println("table1:\n" + table1 + "\ntable2:\n" + table2);
 
-        Assert.assertEquals(1, table1.getNumConnections());
-        Assert.assertEquals(1, table2.getNumConnections());
+        assert table1.getNumConnections() == 1;
+        assert table2.getNumConnections() == 1;
 
         table2.stop();
         table1.stop();
-        Assert.assertEquals(0, table1.getNumConnections());
-        Assert.assertEquals(0, table2.getNumConnections());
+        assert table1.getNumConnections() == 0;
+        assert table2.getNumConnections() == 0;
     }
 
 
