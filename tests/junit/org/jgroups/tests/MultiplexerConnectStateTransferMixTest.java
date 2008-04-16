@@ -16,8 +16,9 @@ import java.util.TreeMap;
 /**
  * Tests various intermixed combinations of regular connect and get state with connect-and-get-state 
  * @author Vladimir Blagojevic
- * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.5 2008/04/14 07:54:06 belaban Exp $
+ * @version $Id: MultiplexerConnectStateTransferMixTest.java,v 1.6 2008/04/16 08:01:36 belaban Exp $
  */
+@Test(groups=Global.MULTIPLEXER)
 public class MultiplexerConnectStateTransferMixTest extends ChannelTestBase {
     private Cache c1, c2,c3, c1_repl, c2_repl,c3_repl;
     private Channel ch1, ch2, ch3, ch1_repl, ch2_repl,ch3_repl;

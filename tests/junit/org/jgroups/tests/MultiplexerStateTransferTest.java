@@ -19,8 +19,9 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.9 2008/04/14 08:18:39 belaban Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.10 2008/04/16 08:01:36 belaban Exp $
  */
+@Test(groups=Global.MULTIPLEXER)
 public class MultiplexerStateTransferTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
