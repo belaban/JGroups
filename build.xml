@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.152 2008/04/15 15:34:28 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.153 2008/04/16 07:31:33 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -25,6 +25,7 @@
     <property name="doc.dir" value="${root.dir}/doc"/>
     <property name="javadoc.dir" value="${dist.dir}/javadoc"/>
     <property name="conf.dir" value="${root.dir}/conf"/>
+    <property name="testng.conf.dir" value="${root.dir}/conf/testng"/>
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
@@ -1050,7 +1051,7 @@
                     threadcount="@{threadcount}"
                     parallel="tests"
                     >
-                <xmlfileset dir="${tests.dir}" includes="@{testng.xmlfile}"/>
+                <xmlfileset dir="${testng.conf.dir}" includes="@{testng.xmlfile}"/>
                 <sysproperty key="test.suffix" value="@{testname.ext}"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
