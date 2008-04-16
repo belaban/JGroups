@@ -16,8 +16,9 @@ import java.util.List;
 /**
  * Test the multiplexer functionality provided by JChannelFactory, especially the service views and cluster views
  * @author Bela Ban
- * @version $Id: MultiplexerViewTest.java,v 1.19 2008/04/14 08:18:40 belaban Exp $
+ * @version $Id: MultiplexerViewTest.java,v 1.20 2008/04/16 08:01:36 belaban Exp $
  */
+@Test(groups=Global.MULTIPLEXER)
 public class MultiplexerViewTest extends ChannelTestBase {
     private Channel c1, c2, c3, c4;    
     static final BlockEvent BLOCK_EVENT=new BlockEvent();

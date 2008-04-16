@@ -1,10 +1,7 @@
 package org.jgroups.tests;
 
 import org.testng.annotations.*;
-import org.jgroups.Channel;
-import org.jgroups.JChannelFactory;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
+import org.jgroups.*;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -15,8 +12,9 @@ import java.util.*;
 /**
  * Test the multiplexer concurrency functionality. This is described in http://jira.jboss.com/jira/browse/JGRP-426
  * @author Bela Ban
- * @version $Id: MultiplexerConcurrentTest.java,v 1.7 2008/04/14 07:54:06 belaban Exp $
+ * @version $Id: MultiplexerConcurrentTest.java,v 1.8 2008/04/16 08:01:36 belaban Exp $
  */
+@Test(groups=Global.MULTIPLEXER)
 public class MultiplexerConcurrentTest extends ChannelTestBase {
     private Channel s1, s2, s11, s21;
     JChannelFactory factory, factory2;

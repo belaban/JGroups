@@ -16,8 +16,9 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerTest.java,v 1.51 2008/04/14 07:54:07 belaban Exp $
+ * @version $Id: MultiplexerTest.java,v 1.52 2008/04/16 08:01:36 belaban Exp $
  */
+@Test(groups=Global.MULTIPLEXER)
 public class MultiplexerTest extends ChannelTestBase {
     private Cache c1, c2, c1_repl, c2_repl;
     private Channel ch1, ch2, ch1_repl, ch2_repl;
