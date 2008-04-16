@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.153 2008/04/16 07:31:33 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.154 2008/04/16 07:46:39 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -973,7 +973,7 @@
                 threadcount="20"
                 parallel="methods"
                 >
-            <xmlfileset dir="${tests.dir}" includes="functional.xml"/>
+            <xmlfileset dir="${testng.conf.dir}" includes="functional.xml"/>
         </testng>
     </target>
 
