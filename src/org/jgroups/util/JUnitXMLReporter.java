@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.6 2008/04/15 12:38:25 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.7 2008/04/16 07:46:39 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -82,9 +82,6 @@ public class JUnitXMLReporter extends TestListenerAdapter {
                     sb.append("\n").append(x);
                 }
             }
-            else {
-                old_stderr.println("**** local not found: " + x);
-            }
         }
     }
 
@@ -109,13 +106,13 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     public void onTestSuccess(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(real_class, tr);
-        old_stdout.println("OK:   " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
+        print(old_stdout, "OK:   ",  real_class.getName(), tr.getName());
     }
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        old_stdout.println("OK:   " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
+        print(old_stdout, "OK:   ",  real_class.getName(), tr.getName());
     }
 
 
@@ -126,7 +123,7 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     public void onTestFailure(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        old_stderr.println("FAIL: " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
+        print(old_stderr, "FAIL: ",  real_class.getName(), tr.getName());
     }
 
     /**
@@ -135,10 +132,15 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     public void onTestSkipped(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        old_stdout.println("SKIP: " + Thread.currentThread()  + " " + real_class.getName() + "." + tr.getName() + "()");
+        print(old_stdout, "SKIP: ",  real_class.getName(), tr.getName());
     }
 
-      private void addTest(Class clazz, ITestResult result) {
+    private static void print(PrintStream out, String msg, String classname, String method_name) {
+        // out.println(msg + "[thread-" + Thread.currentThread().getId()  + "] " + classname + "." + method_name + "()");
+        out.println(msg  + classname + "." + method_name + "()");
+    }
+
+    private void addTest(Class clazz, ITestResult result) {
         List<ITestResult> results=classes.get(clazz);
         if(results == null) {
             results=new LinkedList<ITestResult>();
@@ -228,6 +230,8 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
 
                 for(ITestResult result: results) {
+                    if(result == null)
+                        continue;
                     long time=result.getEndMillis() - result.getStartMillis();
                     out.write("\n    <testcase classname=\"" + clazz.getName());
                     if(suffix != null)
