@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.7 2008/04/16 07:46:39 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.8 2008/04/16 13:24:49 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -52,36 +52,46 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         }
 
         public void println(String s) {
-            append(s);
+            append(s, true);
         }
 
         public void print(String s) {
-            append(s);
+            append(s, false);
         }
 
         public void print(Object obj) {
             if(obj != null)
-                append(obj.toString());
+                append(obj.toString(), false);
             else
-                append("null");
+                append("null", false);
         }
 
-        private synchronized void append(String x) {
+        public void println(Object obj) {
+            if(obj != null)
+                append(obj.toString(), true);
+            else
+                append("null", true);
+        }
+
+        private synchronized void append(String x, boolean newline) {
             Class clazz=local.get();
             if(clazz != null) {
                 // System.err.println("PRINT [" + Thread.currentThread() + "]: " + clazz.getName() + ": " + x);
                 Tuple<StringBuffer,StringBuffer> tuple=outputs.get(clazz);
-                if(tuple == null) {
-                    old_stderr.println("tuple for " + clazz + " not found");
-                }
-                else {
+                if(tuple != null) {
                     StringBuffer sb=type == 1? tuple.getVal1() : tuple.getVal2();
                     if(sb.length() == 0) {
                         sb.append("\n" + clazz.getName() + ":");
                     }
                     sb.append("\n").append(x);
+                    return;
                 }
             }
+            PrintStream stream=type == 2? old_stderr : old_stdout;
+            if(newline)
+                stream.println(x);
+            else
+                stream.print(x);
         }
     }
 
