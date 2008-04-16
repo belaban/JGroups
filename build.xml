@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.154 2008/04/16 07:46:39 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.155 2008/04/16 13:55:56 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -991,6 +991,9 @@
         <runtest testname.ext="udp"
                  threadcount="1"
                  parallel="tests"
+                 initial_mcast_addr="235.10.10.10"
+                 initial_mcast_port="25100"
+                 initial_tcp_port="25100"
                  testng.xmlfile="testng-udp.xml"
                 />
     </target>
@@ -1000,6 +1003,9 @@
         <runtest testname.ext="udp-flush"
                  threadcount="1"
                  parallel="tests"
+                 initial_mcast_addr="235.20.20.20"
+                 initial_mcast_port="25200"
+                 initial_tcp_port="25200"
                  testng.xmlfile="testng-udp-flush.xml"
                 />
     </target>
@@ -1009,6 +1015,9 @@
         <runtest testname.ext="tcp"
                  threadcount="1"
                  parallel="tests"
+                 initial_mcast_addr="235.30.30.30"
+                 initial_mcast_port="25300"
+                 initial_tcp_port="25300"
                  testng.xmlfile="testng-tcp.xml"
                 />
     </target>
@@ -1018,6 +1027,9 @@
         <runtest testname.ext="tcp-flush"
                  threadcount="1"
                  parallel="tests"
+                 initial_mcast_addr="235.40.40.40"
+                 initial_mcast_port="25400"
+                 initial_tcp_port="25400"
                  testng.xmlfile="testng-tcp-flush.xml"
                 />
     </target>
@@ -1043,6 +1055,9 @@
         <attribute name="testname.ext" default="udp"/>
         <attribute name="threadcount" default="1"/>
         <attribute name="testng.xmlfile" default="stack-dependent.xml"/>
+        <attribute name="initial_mcast_addr" default="235.1.2.3"/>
+        <attribute name="initial_mcast_port" default="23000"/>
+        <attribute name="initial_tcp_port" default="23000"/>
         <sequential>
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
@@ -1053,6 +1068,9 @@
                     >
                 <xmlfileset dir="${testng.conf.dir}" includes="@{testng.xmlfile}"/>
                 <sysproperty key="test.suffix" value="@{testname.ext}"/>
+                <sysproperty key="INITIAL_MCAST_ADDR" value="@{initial_mcast_addr}"/>
+                <sysproperty key="INITIAL_MCAST_PORT" value="@{initial_mcast_port}"/>
+                <sysproperty key="INITIAL_TCP_PORT" value="@{initial_tcp_port}"/>
                 <jvmarg value="-Djgroups.bind_addr=${jgroups.bind_addr}"/>
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
