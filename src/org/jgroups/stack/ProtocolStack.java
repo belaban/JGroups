@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.68 2008/04/04 08:11:41 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.69 2008/04/17 09:10:29 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -232,6 +232,46 @@ public class ProtocolStack extends Protocol implements Transport {
             }
         }
         sb.append("</config>");
+
+        return sb.toString();
+    }
+
+    public String printProtocolSpecAsPlainString() {
+        StringBuilder sb=new StringBuilder();
+        Protocol     prot=bottom_prot;
+        Properties   tmpProps;
+        String       name;
+        Map.Entry    entry;
+        boolean      initialized=false;
+
+        while(prot != null) {
+            name=prot.getName();
+            if(name != null) {
+                if("ProtocolStack".equals(name))
+                    break;
+                if(initialized)
+                    sb.append(":");
+                else
+                    initialized=true;
+                sb.append(name);
+                tmpProps=prot.getProperties();
+                if(tmpProps != null && !tmpProps.isEmpty()) {
+                    sb.append("(");
+                    boolean first=true;
+                    for(Iterator it=tmpProps.entrySet().iterator(); it.hasNext();) {
+                        entry=(Map.Entry)it.next();
+                        if(first)
+                            first=false;
+                        else
+                            sb.append(";");
+                        sb.append(entry.getKey() + "=" + entry.getValue());
+                    }
+                    sb.append(")");
+                }
+                sb.append("\n");
+                prot=prot.getUpProtocol();
+            }
+        }
 
         return sb.toString();
     }

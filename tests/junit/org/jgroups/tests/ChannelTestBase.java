@@ -278,6 +278,10 @@ public class ChannelTestBase {
         return new DefaultChannelTestFactory().createChannel(id, props);
     }
 
+    protected JChannel createChannel(String props) throws Exception {
+        return new DefaultChannelTestFactory().createChannel("A", props);
+    }
+
     protected JChannel createChannel() throws Exception {
         return createChannel("A", false, 1);
     }
@@ -294,6 +298,20 @@ public class ChannelTestBase {
     protected JChannel createChannel(Object id, boolean unique, int num) throws Exception {
         return (JChannel)new DefaultChannelTestFactory().createChannel(id, unique, num);
     }
+
+    protected JChannel createChannel(boolean unique, int num) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel("A", unique, num);
+    }
+
+
+    protected static String getUniqueClusterName() {
+        return getUniqueClusterName(null);
+    }
+
+    protected static String getUniqueClusterName(String base_name) {
+        return ResourceManager.getUniqueClusterName(base_name);
+    }
+
 
     /**
      * Default channel factory used in junit tests

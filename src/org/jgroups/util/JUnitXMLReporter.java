@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentMap;
  * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
  * modified
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.8 2008/04/16 13:24:49 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.9 2008/04/17 09:10:27 belaban Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -146,8 +146,8 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     }
 
     private static void print(PrintStream out, String msg, String classname, String method_name) {
-        // out.println(msg + "[thread-" + Thread.currentThread().getId()  + "] " + classname + "." + method_name + "()");
-        out.println(msg  + classname + "." + method_name + "()");
+        out.println(msg + "[" + Thread.currentThread().getId()  + "] " + classname + "." + method_name + "()");
+        // out.println(msg  + classname + "." + method_name + "()");
     }
 
     private void addTest(Class clazz, ITestResult result) {

@@ -77,20 +77,15 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.183 2008/04/09 15:49:26 belaban Exp $
+ * @version $Id: JChannel.java,v 1.184 2008/04/17 09:10:31 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
 
-    /**
-     * The default protocol stack used by the default constructor.
-     */
+    /** The default protocol stack used by the default constructor  */
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 
     static final String FORCE_PROPS="force.properties";
-
-    /* the protocol stack configuration string */
-    private String props=null;
 
     /*the address of this JChannel instance*/
     private Address local_addr=null;
@@ -301,7 +296,7 @@ public class JChannel extends Channel {
      * @throws ChannelException
      */
     public Channel copy() throws ChannelException {
-        JChannel retval=new JChannel(props);
+        JChannel retval=new JChannel(getProperties());
         retval.auto_reconnect=auto_reconnect;
         retval.auto_getstate=auto_getstate;
         retval.receive_blocks=receive_blocks;
@@ -324,12 +319,11 @@ public class JChannel extends Channel {
     }
 
     /**
-     * returns the protocol stack configuration in string format.
-     * an example of this property is<BR>
+     * Returns the protocol stack configuration in string format. An example of this property is<BR>
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
      */
     public String getProperties() {
-        return props;
+        return prot_stack != null? prot_stack.printProtocolSpecAsPlainString() : "n/a";
     }
 
     public boolean statsEnabled() {
@@ -583,7 +577,7 @@ public class JChannel extends Channel {
             mq.reset();
 
             // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this, props);
+            prot_stack=new ProtocolStack(this, getProperties());
             prot_stack.setup();
             closed=false;
         }
@@ -1449,7 +1443,7 @@ public class JChannel extends Channel {
             sb.append("auto_reconnect=").append(auto_reconnect).append('\n');
             sb.append("auto_getstate=").append(auto_getstate).append('\n');
             sb.append("state_transfer_supported=").append(state_transfer_supported).append('\n');
-            sb.append("props=").append(props).append('\n');
+            sb.append("props=").append(getProperties()).append('\n');
         }
 
         return sb.toString();
@@ -1463,8 +1457,8 @@ public class JChannel extends Channel {
         if(log.isInfoEnabled())
             log.info("JGroups version: " + Version.description);
         ConfiguratorFactory.substituteVariables(configurator); // replace vars with system props
-        props=configurator.getProtocolStackString();
-        prot_stack=new ProtocolStack(this, props);
+        String tmp=configurator.getProtocolStackString();
+        prot_stack=new ProtocolStack(this, tmp);
         try {
             prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
         }
