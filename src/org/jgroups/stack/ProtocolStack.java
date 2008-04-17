@@ -9,7 +9,6 @@ import org.jgroups.util.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -21,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.69 2008/04/17 09:10:29 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.70 2008/04/17 12:26:22 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -238,41 +237,36 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public String printProtocolSpecAsPlainString() {
         StringBuilder sb=new StringBuilder();
-        Protocol     prot=bottom_prot;
-        Properties   tmpProps;
-        String       name;
-        Map.Entry    entry;
-        boolean      initialized=false;
+        Protocol      prot=bottom_prot;
+        Properties    tmpProps;
+        boolean       initialized=false;
+        Class         clazz;
 
         while(prot != null) {
-            name=prot.getName();
-            if(name != null) {
-                if("ProtocolStack".equals(name))
-                    break;
-                if(initialized)
-                    sb.append(":");
-                else
-                    initialized=true;
-                sb.append(name);
-                tmpProps=prot.getProperties();
-                if(tmpProps != null && !tmpProps.isEmpty()) {
-                    sb.append("(");
-                    boolean first=true;
-                    for(Iterator it=tmpProps.entrySet().iterator(); it.hasNext();) {
-                        entry=(Map.Entry)it.next();
-                        if(first)
-                            first=false;
-                        else
-                            sb.append(";");
-                        sb.append(entry.getKey() + "=" + entry.getValue());
-                    }
-                    sb.append(")");
+            clazz=prot.getClass();
+            if(clazz.equals(ProtocolStack.class))
+                break;
+            if(initialized)
+                sb.append(":");
+            else
+                initialized=true;
+            sb.append(clazz.getName());
+            tmpProps=prot.getProperties();
+            if(tmpProps != null && !tmpProps.isEmpty()) {
+                sb.append("(");
+                boolean first=true;
+                for(Map.Entry<Object,Object> entry: tmpProps.entrySet()) {
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(";");
+                    sb.append(entry.getKey() + "=" + entry.getValue());
                 }
-                sb.append("\n");
-                prot=prot.getUpProtocol();
+                sb.append(")");
             }
+            sb.append("\n");
+            prot=prot.getUpProtocol();
         }
-
         return sb.toString();
     }
 
