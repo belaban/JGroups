@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.84 2008/03/06 05:38:45 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.85 2008/04/18 09:04:47 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 public class FD_SOCK extends Protocol implements Runnable {
@@ -49,8 +49,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     ServerSocket                srv_sock=null;                     // server socket to which another member connects to monitor me
 
     InetAddress                 bind_addr=null;                    // the NIC on which the ServerSocket should listen
-
-    String                      group_name=null;                   // the name of the group (set on CONNECT, nulled on DISCONNECT)
 
     private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
     IpAddress                   srv_sock_addr=null;                // pair of server_socket:port
@@ -321,7 +319,6 @@ public class FD_SOCK extends Protocol implements Runnable {
             case Event.CONNECT:
             case Event.CONNECT_WITH_STATE_TRANSFER:    
                 Object ret=down_prot.down(evt);
-                group_name=(String)evt.getArg();
                 srv_sock=Util.createServerSocket(bind_addr, start_port); // grab a random unused port above 10000
                 srv_sock_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
                 startServerSocket();
