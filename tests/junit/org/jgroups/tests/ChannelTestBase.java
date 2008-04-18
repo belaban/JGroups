@@ -304,6 +304,9 @@ public class ChannelTestBase {
         return createChannel("A", null, unique, num);
     }
 
+    protected JChannel createChannel(boolean unique) throws Exception {
+        return createChannel("A", null, unique, 1);
+    }
 
     protected static String getUniqueClusterName() {
         return getUniqueClusterName(null);
