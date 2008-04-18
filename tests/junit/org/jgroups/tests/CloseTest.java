@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.17 2008/04/09 15:51:16 belaban Exp $
+// $Id: CloseTest.java,v 1.18 2008/04/18 10:18:36 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -18,84 +18,89 @@ import java.util.Vector;
  * Demos the creation of a channel and subsequent connection and closing. Demo application should exit (no
  * more threads running)
  */
+@Test(groups="temp", sequential=false)
 public class CloseTest extends ChannelTestBase {
-    Channel channel, channel1, channel2, c1, c2, c3;  
+    private final ThreadLocal<Channel> ch=new ThreadLocal<Channel>(),
+            channel1=new ThreadLocal<Channel>(),
+            c1=new ThreadLocal<Channel>(),
+            c2=new ThreadLocal<Channel>(),
+            c3=new ThreadLocal<Channel>();
 
 
     @AfterMethod
-    public void tearDown() throws Exception {
-        closeChannel(channel);
+    void tearDown() throws Exception {
+        closeChannel(ch);
         closeChannel(channel1);
-        closeChannel(channel2);
         closeChannel(c1);
         closeChannel(c2);
         closeChannel(c3);
     }
-    
+
     protected boolean useBlocking() {
         return false;
     }
- 
 
-    private static void closeChannel(Channel c) {
+
+    private static void closeChannel(ThreadLocal<Channel> local) {
+        Channel c=local.get();
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
         }
+        local.set(null);
     }
 
 
     @Test
     public void testDoubleClose() throws Exception {
         System.out.println("-- creating channel1 --");
-        channel1=createChannel();
+        channel1.set(createChannel(true));
         System.out.println("-- connecting channel1 --");
-        channel1.connect("bla");
-        
-        assertTrue("channel open", channel1.isOpen());
-        assertTrue("channel connected", channel1.isConnected()); 
-        
+        channel1.get().connect(getUniqueClusterName("CloseTest.testDoubleClose"));
+
+        assertTrue("channel open", channel1.get().isOpen());
+        assertTrue("channel connected", channel1.get().isConnected());
+
         System.out.println("-- closing channel1 --");
-        channel1.close();
+        channel1.get().close();
         System.out.println("-- closing channel1 (again) --");
-        channel1.close();
-        assertFalse("channel not connected", channel1.isConnected());
-        System.out.println("-- done, threads are ");
-        Util.printThreads();
+        channel1.get().close();
+        assertFalse("channel not connected", channel1.get().isConnected());
     }
 
     @Test
     public void testCreationAndClose() throws Exception {
         System.out.println("-- creating channel1 --");
-        Channel c = null;
-        c = createChannel();
-        c.connect("CloseTest1");
-        assertTrue("channel open", c.isOpen());
-        assertTrue("channel connected", c.isConnected());        
-        c.close();        
-        assertFalse("channel not connected", c.isConnected());
-        c.close();
+        ch.set(createChannel(true));
+        ch.get().connect(getUniqueClusterName("CloseTest.testCreationAndClose"));
+        assertTrue("channel open", ch.get().isOpen());
+        assertTrue("channel connected", ch.get().isConnected());
+        ch.get().close();
+        assertFalse("channel not connected", ch.get().isConnected());
+        ch.get().close();
     }
-    
+
     @Test
     public void testViewChangeReceptionOnChannelCloseByParticipant() throws Exception {
-        Address  a1, a2;
+        Address a1, a2;
         Vector members;
-        c1 = createChannel("A");               
+        c1.set(createChannel(true));
+        final String props=c1.get().getProperties();
         System.out.println("-- connecting c1");
-        c1.connect("X");
+        final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByParticipant");
+        c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        dumpMessages("c1", c1);
-        a1=c1.getLocalAddress();       
-        c2 = createChannel("A");   
+        dumpMessages("c1", c1.get());
+        a1=c1.get().getLocalAddress();
+        c2.set(createChannelWithProps(props));
         System.out.println("-- connecting c2");
-        c2.connect("X");
+        c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        a2=c2.getLocalAddress();
-        dumpMessages("c2", c2);
+        a2=c2.get().getLocalAddress();
+        dumpMessages("c2", c2.get());
 
         System.out.println("-- closing c2");
-        c2.close();
-        Object obj=c1.receive(100);
+        c2.get().close();
+        Object obj=c1.get().receive(100);
         assertTrue(obj instanceof View);
         View v=(View)obj;
         members=v.getMembers();
@@ -104,7 +109,7 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(members.contains(a1));
         assertTrue(members.contains(a2));
 
-        obj=c1.receive(100);
+        obj=c1.get().receive(100);
         assertTrue(obj instanceof View);
         v=(View)obj;
         members=v.getMembers();
@@ -116,30 +121,32 @@ public class CloseTest extends ChannelTestBase {
 
     @Test
     public void testViewChangeReceptionOnChannelCloseByCoordinator() throws Exception {
-        Address  a1, a2;
+        Address a1, a2;
         Vector members;
         Object obj;
         View v;
-        c1=createChannel("A");
-        c1.connect("X");
+        final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByCoordinator");
+        c1.set(createChannel(true));
+        final String props=c1.get().getProperties();
+        c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        dumpMessages("c1", c1);
-        a1=c1.getLocalAddress();
-        c2=createChannel("A");       
-        c2.connect("X");
+        dumpMessages("c1", c1.get());
+        a1=c1.get().getLocalAddress();
+        c2.set(createChannelWithProps(props));
+        c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
-        a2=c2.getLocalAddress();
-        v=(View)c2.receive(1);
+        a2=c2.get().getLocalAddress();
+        v=(View)c2.get().receive(1);
         members=v.getMembers();
         Assert.assertEquals(2, members.size());
         assertTrue(members.contains(a2));
 
-        c1.close();
+        c1.get().close();
         Util.sleep(500);
 
-        System.out.println("queue of c2 is " + c2.dumpQueue());
-        assertTrue("found 0 messages in channel", c2.getNumMessages() > 0);
-        obj=c2.receive(0);
+        System.out.println("queue of c2 is " + c2.get().dumpQueue());
+        assertTrue("found 0 messages in channel", c2.get().getNumMessages() > 0);
+        obj=c2.get().receive(0);
         assertTrue(obj instanceof View);
         v=(View)obj;
         members=v.getMembers();
@@ -147,7 +154,7 @@ public class CloseTest extends ChannelTestBase {
         assertFalse(members.contains(a1));
         assertTrue(members.contains(a2));
 
-        Assert.assertEquals(0, c2.getNumMessages());
+        assert c2.get().getNumMessages() == 0;
     }
 
     private static void dumpMessages(String msg, Channel ch) throws Exception {
@@ -161,70 +168,70 @@ public class CloseTest extends ChannelTestBase {
     @Test
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel();
+        ch.set(createChannel(true));
         System.out.println("-- connecting channel to CloseTest1--");
-        channel.connect("CloseTest1");
-        System.out.println("view is " + channel.getView());
+        ch.get().connect(getUniqueClusterName("CloseTest.testConnectDisconnectConnectCloseSequence"));
+        System.out.println("view is " + ch.get().getView());
         System.out.println("-- disconnecting channel --");
-        channel.disconnect();
+        ch.get().disconnect();
         System.out.println("-- connecting channel to OtherGroup --");
-        channel.connect("OtherGroup");
-        System.out.println("view is " + channel.getView());
+        ch.get().connect(getUniqueClusterName("CloseTest.testConnectDisconnectConnectCloseSequence"));
+        System.out.println("view is " + ch.get().getView());
         System.out.println("-- closing channel --");
-        channel.close();
-        System.out.println("-- done, threads are ");
-        Util.printThreads();
+        ch.get().close();
     }
 
+
+    
 
     @Test
     public void testConnectCloseSequenceWith2Members() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel("A");
+        ch.set(createChannel(true));
+        final String props=ch.get().getProperties();
         System.out.println("-- connecting channel --");
-        channel.connect("X");
-        System.out.println("view is " + channel.getView());
+        final String GROUP=getUniqueClusterName("CloseTest.testConnectCloseSequenceWith2Members");
+        ch.get().connect(GROUP);
+        System.out.println("view is " + ch.get().getView());
 
         System.out.println("-- creating channel1 --");
-        channel1=createChannel("A");
+        channel1.set(createChannelWithProps(props));
         System.out.println("-- connecting channel1 --");
-        channel1.connect("X");
-        System.out.println("view is " + channel1.getView());
+        channel1.get().connect(GROUP);
+        System.out.println("view is " + channel1.get().getView());
 
         System.out.println("-- closing channel1 --");
-        channel1.close();
+        channel1.get().close();
 
         Util.sleep(2000);
         System.out.println("-- closing channel --");
-        channel.close();
+        ch.get().close();
     }
 
 
     @Test
     public void testCreationAndClose2() throws Exception {
         System.out.println("-- creating channel2 --");
-        channel2=createChannel();
+        ch.set(createChannel(true));
         System.out.println("-- connecting channel2 --");
-        channel2.connect("CloseTest2");
+        ch.get().connect(getUniqueClusterName("CloseTest.testCreationAndClose2"));
         System.out.println("-- closing channel --");
-        channel2.close();
-        Util.sleep(2000);
-        Util.printThreads();
+        ch.get().close();
     }
 
 
     @Test
     public void testChannelClosedException() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel();
+        ch.set(createChannel(true));
         System.out.println("-- connecting channel --");
-        channel.connect("CloseTestLoop");
+        ch.get().connect(getUniqueClusterName("CloseTest.testChannelClosedException"));
         System.out.println("-- closing channel --");
-        channel.close();
+        ch.get().close();
         Util.sleep(2000);
 
         try {
-            channel.connect("newGroup");
+            ch.get().connect(getUniqueClusterName("CloseTest.testChannelClosedException"));
             assert false;
         }
         catch(ChannelClosedException ex) {
@@ -235,92 +242,94 @@ public class CloseTest extends ChannelTestBase {
     @Test
     public void testCreationAndCloseLoop() throws Exception {
         System.out.println("-- creating channel --");
-        channel=createChannel();
-
+        ch.set(createChannel(true));
+        final String GROUP=getUniqueClusterName("CloseTest.testCreationAndCloseLoop");
         for(int i=1; i <= 10; i++) {
             System.out.println("-- connecting channel (attempt #" + i + " ) --");
-            channel.connect("CloseTestLoop2");
+            ch.get().connect(GROUP);
             System.out.println("-- closing channel --");
-            channel.close();
+            ch.get().close();
 
             System.out.println("-- reopening channel --");
-            channel.open();
+            ch.get().open();
         }
-        channel.close();
-    }   
+        ch.get().close();
+    }
 
 
     @Test
     public void testMultipleConnectsAndDisconnects() throws Exception {
-        c1=createChannel("A");
-        assertTrue(c1.isOpen());
-        assertFalse(c1.isConnected());
-        c1.connect("bla");
-        System.out.println("view after c1.connect(): " + c1.getView());
-        assertTrue(c1.isOpen());
-        assertTrue(c1.isConnected());
-        assertServiceAndClusterView(c1, 1);
+        c1.set(createChannel(true));
+        final String props=c1.get().getProperties();
+        assertTrue(c1.get().isOpen());
+        assertFalse(c1.get().isConnected());
+        final String GROUP=getUniqueClusterName("CloseTest.testMultipleConnectsAndDisconnects");
+        c1.get().connect(GROUP);
+        System.out.println("view after c1.connect(): " + c1.get().getView());
+        assertTrue(c1.get().isOpen());
+        assertTrue(c1.get().isConnected());
+        assertServiceAndClusterView(c1.get(), 1);
 
-        c2=createChannel("A");
-        assertTrue(c2.isOpen());
-        assertFalse(c2.isConnected());
+        c2.set(createChannelWithProps(props));
+        assertTrue(c2.get().isOpen());
+        assertFalse(c2.get().isConnected());
 
-        c2.connect("bla");
-        System.out.println("view after c2.connect(): " + c2.getView());
-        assertTrue(c2.isOpen());
-        assertTrue(c2.isConnected());
-        assertServiceAndClusterView(c2, 2);
+        c2.get().connect(GROUP);
+        System.out.println("view after c2.connect(): " + c2.get().getView());
+        assertTrue(c2.get().isOpen());
+        assertTrue(c2.get().isConnected());
+        assertServiceAndClusterView(c2.get(), 2);
         Util.sleep(500);
-        assertServiceAndClusterView(c1, 2);
+        assertServiceAndClusterView(c1.get(), 2);
 
-        c2.disconnect();
-        System.out.println("view after c2.disconnect(): " + c2.getView());
-        assertTrue(c2.isOpen());
-        assertFalse(c2.isConnected());
+        c2.get().disconnect();
+        System.out.println("view after c2.disconnect(): " + c2.get().getView());
+        assertTrue(c2.get().isOpen());
+        assertFalse(c2.get().isConnected());
         Util.sleep(500);
-        assertServiceAndClusterView(c1, 1);
+        assertServiceAndClusterView(c1.get(), 1);
 
-        c2.connect("bla");
-        System.out.println("view after c2.connect(): " + c2.getView());
-        assertTrue(c2.isOpen());
-        assertTrue(c2.isConnected());
-        assertServiceAndClusterView(c2, 2);
+        c2.get().connect(GROUP);
+        System.out.println("view after c2.connect(): " + c2.get().getView());
+        assertTrue(c2.get().isOpen());
+        assertTrue(c2.get().isConnected());
+        assertServiceAndClusterView(c2.get(), 2);
         Util.sleep(300);
-        assertServiceAndClusterView(c1, 2);
+        assertServiceAndClusterView(c1.get(), 2);
 
         // Now see what happens if we reconnect the first channel
-        c3=createChannel("A");
-        assertTrue(c3.isOpen());
-        assertFalse(c3.isConnected());
-        assertServiceAndClusterView(c1, 2);
-        assertServiceAndClusterView(c2, 2);
+        c3.set(createChannelWithProps(props));
+        assertTrue(c3.get().isOpen());
+        assertFalse(c3.get().isConnected());
+        assertServiceAndClusterView(c1.get(), 2);
+        assertServiceAndClusterView(c2.get(), 2);
 
-        c1.disconnect();
+        c1.get().disconnect();
         Util.sleep(1000);
-        assertTrue(c1.isOpen());
-        assertFalse(c1.isConnected());
-        assertServiceAndClusterView(c2, 1);
-        assertTrue(c3.isOpen());
-        assertFalse(c3.isConnected());
+        assertTrue(c1.get().isOpen());
+        assertFalse(c1.get().isConnected());
+        assertServiceAndClusterView(c2.get(), 1);
+        assertTrue(c3.get().isOpen());
+        assertFalse(c3.get().isConnected());
 
-        c1.connect("bla");
-        System.out.println("view after c1.connect(): " + c1.getView());
-        assertTrue(c1.isOpen());
-        assertTrue(c1.isConnected());
-        assertServiceAndClusterView(c1, 2);
+        c1.get().connect(GROUP);
+        System.out.println("view after c1.connect(): " + c1.get().getView());
+        assertTrue(c1.get().isOpen());
+        assertTrue(c1.get().isConnected());
+        assertServiceAndClusterView(c1.get(), 2);
         Util.sleep(500);
-        assertServiceAndClusterView(c2, 2);
-        assertTrue(c3.isOpen());
-        assertFalse(c3.isConnected());
+        assertServiceAndClusterView(c2.get(), 2);
+        assertTrue(c3.get().isOpen());
+        assertFalse(c3.get().isConnected());
     }
 
 
-    private void assertServiceAndClusterView(Channel ch, int num) {
+    private static void assertServiceAndClusterView(Channel ch, int num) {
         View view=ch.getView();
         String msg="view=" + view;
         assertNotNull(view);
         Assert.assertEquals(view.size(), num, msg);
     }
 
- 
+
 }
