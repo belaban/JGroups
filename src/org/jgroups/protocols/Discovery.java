@@ -30,7 +30,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.43 2008/03/25 02:42:06 vlada Exp $
+ * @version $Id: Discovery.java,v 1.44 2008/04/18 08:57:18 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {
@@ -267,7 +267,7 @@ public abstract class Discovery extends Protocol {
                     if(log.isWarnEnabled())
                         log.warn("group_addr (" + group_addr + ") or cluster_name of header (" + hdr.cluster_name
                         + ") is null; passing up discovery request from " + msg.getSrc() + ", but this should not" +
-                                "be the case");
+                                " be the case");
                 }
                 else {
                     if(!group_addr.equals(hdr.cluster_name)) {
