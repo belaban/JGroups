@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.17 2008/04/18 09:05:35 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.18 2008/04/18 09:22:54 belaban Exp $
  */
 @Test(groups="temp",sequential=false)
 public class ChannelTest extends ChannelTestBase {
@@ -297,7 +297,7 @@ public class ChannelTest extends ChannelTestBase {
 
         public void viewAccepted(View new_view) {
             connected=channel.isConnected();
-            System.out.println("ConnectedChecker: channel.isConnected()=" + connected + ", view=" + new_view);
+            // System.out.println("ConnectedChecker: channel.isConnected()=" + connected + ", view=" + new_view);
         }
     }
 
@@ -321,7 +321,7 @@ public class ChannelTest extends ChannelTestBase {
         public void viewAccepted(View new_view) {
             View view=channel.getView();
             String str="viewAccepted(): channel's view=" + view + "\nreceived view=" + new_view;
-            System.out.println(str);
+            // System.out.println(str);
             if(!view.equals(new_view)) {
                 success=false;
                 reason+=str + "\n";
