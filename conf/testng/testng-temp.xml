@@ -1,0 +1,22 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="udp"
+       parallel="methods"
+       thread-count="10"
+        >
+
+
+    <test name="udp" junit="false">
+        <parameter name="channel.conf" value="udp.xml"/>
+        <groups>
+            <run>
+                <include name="temp"/>
+            </run>
+        </groups>
+        <packages>
+            <package name="org.jgroups.tests.*"/>
+            <package name="org.jgroups.blocks.*"/>
+            <package name="org.jgroups.protocols.*"/>
+        </packages>
+    </test>
+
+</suite>
