@@ -15,7 +15,7 @@ import org.testng.annotations.Test;
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.13 2008/04/09 14:42:11 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.14 2008/04/18 10:18:37 belaban Exp $
  */
 @Test(sequential=true)
 public class ConnectTest extends ChannelTestBase {
@@ -59,8 +59,6 @@ public class ConnectTest extends ChannelTestBase {
         System.out.print("Closing channel: ");
         channel.close();
         System.out.println("-- closed --");
-        System.out.println("Remaining threads are:");
-        Util.printThreads();
     }
 
     @Test
@@ -73,8 +71,6 @@ public class ConnectTest extends ChannelTestBase {
         assert view.size() == 1;
         assert view.containsMember(channel.getLocalAddress());
         channel.close();
-        System.out.println("Remaining threads are:");
-        Util.printThreads();
     }
 
 
@@ -105,8 +101,6 @@ public class ConnectTest extends ChannelTestBase {
         assert view.containsMember(coordinator.getLocalAddress());
         coordinator.close();
         channel.close();
-        System.out.println("Remaining threads are:");
-        Util.printThreads();
     }
 
 
@@ -134,8 +128,6 @@ public class ConnectTest extends ChannelTestBase {
         assert msg.getObject().equals("payload");
         coordinator.close();
         channel.close();
-        System.out.println("Remaining threads are:");
-        Util.printThreads();
     }
 
 

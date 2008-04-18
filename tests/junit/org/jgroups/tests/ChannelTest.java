@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.18 2008/04/18 09:22:54 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.19 2008/04/18 10:18:36 belaban Exp $
  */
 @Test(groups="temp",sequential=false)
 public class ChannelTest extends ChannelTestBase {
@@ -229,7 +229,7 @@ public class ChannelTest extends ChannelTestBase {
         ch.get().setReceiver(receiver);
         for(int i=1; i <= NUM; i++) {
             ch.get().send(new Message(null, null, new Integer(i)));
-            System.out.println("-- sent " + i);
+            // System.out.println("-- sent " + i);
         }
         receiver.waitForCompletion();
         List<Integer> nums=receiver.getNums();
@@ -272,7 +272,7 @@ public class ChannelTest extends ChannelTestBase {
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();
             synchronized(nums) {
-                System.out.println("-- received " + num);
+                // System.out.println("-- received " + num);
                 nums.add(num);
                 if(nums.size() >= expected) {
                     nums.notifyAll();
