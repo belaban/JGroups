@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.15 2008/04/17 09:10:26 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.16 2008/04/18 09:07:01 belaban Exp $
  */
 @Test(groups="temp",sequential=false)
 public class AddDataTest extends ChannelTestBase {
@@ -56,14 +56,14 @@ public class AddDataTest extends ChannelTestBase {
         m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
         byte[] buf=new byte[1000];
         JChannel ch1=null, ch2=null;
-        String GROUP=getUniqueClusterName("add-data-test");
+        String GROUP=getUniqueClusterName("AddDataTest");
 
         try {
             ch1=createChannel(true, 1);
             ch1.down(new Event(Event.CONFIG, m));
             String props=ch1.getProperties();
 
-            ch2=createChannel(props); // same props as ch1 above
+            ch2=createChannelWithProps(props); // same props as ch1 above
             ch2.down(new Event(Event.CONFIG, m));
             MyReceiver receiver=new MyReceiver();
             ch2.setReceiver(receiver);

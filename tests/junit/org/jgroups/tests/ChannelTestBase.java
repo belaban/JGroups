@@ -276,7 +276,11 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannelWithProps(String props) throws Exception {
-        return createChannel("A", props, false, 1);
+        return createChannelWithProps("A", props);
+    }
+
+    protected JChannel createChannelWithProps(String id, String props) throws Exception {
+        return createChannel(id, props, false, 1);
     }
 
     protected JChannel createChannel() throws Exception {
