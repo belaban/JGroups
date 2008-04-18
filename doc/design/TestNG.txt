@@ -4,7 +4,7 @@ Migration from JUnit to TestNG
 ==============================
 
 Author Bela Ban
-Version: $Id: TestNG.txt,v 1.16 2008/04/08 06:59:03 belaban Exp $
+Version: $Id: TestNG.txt,v 1.17 2008/04/18 09:13:12 belaban Exp $
 
 Goals
 -----
@@ -143,3 +143,65 @@ Questions, issues
         ch.close();
     }
   
+
+    Update 1: use of thread locals instead of instance variables:
+    -------------------------------------------------------------
+
+    Since the same thread invokes the before (@BeforeMethod) and after (@AfterMethod) methods, we can move boilerplate
+    code to before- or after-methods, e.g.
+
+    // instance variables
+    private final ThreadLocal<Channel> ch=new ThreadLocal<Channel>();
+    private final ThreadLocal<String>  PROPS=new ThreadLocal<String>();
+    private final ThreadLocal<String>  GROUP=new ThreadLocal<String>();
+
+     @BeforeMethod
+    void init() throws Exception {
+        String cluster_name=getUniqueClusterName("ChannelTest");
+        GROUP.set(cluster_name);
+        Channel tmp=createChannel(true, 2);
+        String tmp_props=tmp.getProperties();
+        PROPS.set(tmp_props);
+        tmp.connect(GROUP.get());
+        ch.set(tmp);
+    }
+
+
+    @AfterMethod
+    void cleanup() {
+        Channel tmp_ch=ch.get();
+        Util.close(tmp_ch);
+        ch.set(null);
+        GROUP.set(null);
+        PROPS.set(null);
+    }
+
+     @Test
+    public void testViewChange() throws Exception {
+        ViewChecker checker=new ViewChecker(ch.get());
+        ch.get().setReceiver(checker);
+
+        Channel ch2=createChannelWithProps(PROPS.get());
+        try {
+            ch2.connect(GROUP.get());
+            assertTrue(checker.getReason(), checker.isSuccess());
+            ch2.close();
+            assertTrue(checker.getReason(), checker.isSuccess());
+        }
+        finally {
+            Util.close(ch2);
+        }
+    }
+
+
+    Update 2: use a unique channels
+    -------------------------------
+
+    In the above example, cluster names were unique for any given test (getUniqueClusterName()), and
+    channels were also unique (createChannel(true, 2)).
+    Unique channels are created by the superclass ChannelTestBase: it simply creates a normal channel, but then
+    (if unique is true in createChannel()), looks at the config and changes it, e.g. mcast_addr and mcast_port, or
+    bind_port for TCP.
+
+    To join another channel to the unique channel for the test, we get the modified properties (Channel.getProperties()),
+    store them in the PROPS thread local, and have the new channels use PROPS.
