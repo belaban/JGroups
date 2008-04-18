@@ -15,9 +15,9 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.15 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.16 2008/04/18 05:52:28 belaban Exp $
  */
-@Test(sequential=true)
+@Test(groups="temp",sequential=true)
 public class ChannelTest extends ChannelTestBase {
     Channel ch;
 
