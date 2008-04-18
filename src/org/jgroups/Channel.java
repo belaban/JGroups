@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.43 2008/04/09 15:49:26 belaban Exp $
+// $Id: Channel.java,v 1.44 2008/04/18 07:53:50 belaban Exp $
 
 package org.jgroups;
 
@@ -325,6 +325,10 @@ public abstract class Channel implements Transport {
      @return The cluster name */
     abstract public String getClusterName();
 
+
+    public String getProperties() {
+        return "n/a";
+    }
 
     /**
      When up_handler is set, all events will be passed to it directly. These will not be received
