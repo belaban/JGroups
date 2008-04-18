@@ -270,20 +270,13 @@ public class ChannelTestBase {
         return names;
     }
 
-    protected JChannel createChannel(Object id) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(id, false, 1);
-    }
 
-    protected JChannel createChannel(Object id, String props) throws Exception {
-        return new DefaultChannelTestFactory().createChannel(id, props);
-    }
-
-    protected JChannel createChannel(String props) throws Exception {
-        return new DefaultChannelTestFactory().createChannel("A", props);
+    protected JChannel createChannel(String id) throws Exception {
+        return createChannel(id, false, 1);
     }
 
     protected JChannel createChannel() throws Exception {
-        return createChannel("A", false, 1);
+        return createChannel("A");
     }
 
     /**
@@ -295,12 +288,12 @@ public class ChannelTestBase {
      * @return
      * @throws Exception
      */
-    protected JChannel createChannel(Object id, boolean unique, int num) throws Exception {
+    protected JChannel createChannel(String id, boolean unique, int num) throws Exception {
         return (JChannel)new DefaultChannelTestFactory().createChannel(id, unique, num);
     }
 
     protected JChannel createChannel(boolean unique, int num) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel("A", unique, num);
+        return createChannel("A", unique, num);
     }
 
 
@@ -318,11 +311,11 @@ public class ChannelTestBase {
      */
     protected class DefaultChannelTestFactory implements ChannelTestFactory {
         
-        public Channel createChannel(Object id) throws Exception {
+        public Channel createChannel(String id) throws Exception {
             return createChannel(id, false, 1);
         }
 
-        public JChannel createChannel(Object id, String props) throws Exception {
+        public JChannel createChannel(String id, String props) throws Exception {
             JChannel c=null;
             if(props == null)
                 props=channel_conf;
@@ -330,8 +323,8 @@ public class ChannelTestBase {
                 log.info("Using configuration file " + mux_conf + ", stack is " + mux_conf_stack);
                 synchronized(muxFactory) {
                     for(int i=0; i < muxFactory.length; i++) {
-                        if(!muxFactory[i].hasMuxChannel(mux_conf_stack, id.toString())) {
-                            c=(JChannel)muxFactory[i].createMultiplexerChannel(mux_conf_stack, id.toString());
+                        if(!muxFactory[i].hasMuxChannel(mux_conf_stack, id)) {
+                            c=(JChannel)muxFactory[i].createMultiplexerChannel(mux_conf_stack, id);
                             if(useBlocking()) {
                                 c.setOpt(Channel.BLOCK, Boolean.TRUE);
                             }
@@ -340,7 +333,7 @@ public class ChannelTestBase {
                     }
                 }
                 throw new Exception("Cannot create mux channel with id " + id
-                        + " since all currently used channels have already registered service with that id");
+                        + " since an existing channel has already registered a service with that id");
             }
             else {
                 c=createChannel(props, useBlocking());
@@ -349,7 +342,7 @@ public class ChannelTestBase {
         }
 
 
-        public Channel createChannel(Object id, boolean unique, int num) throws Exception {
+        public Channel createChannel(String id, boolean unique, int num) throws Exception {
             JChannel c=createChannel(id, null);
             if(unique && !isMuxChannelUsed()) {
                 makeUnique(c, num);
@@ -416,7 +409,7 @@ public class ChannelTestBase {
 
 
     public class NextAvailableMuxChannelTestFactory implements ChannelTestFactory {
-        public Channel createChannel(Object id) throws Exception {
+        public Channel createChannel(String id) throws Exception {
             return ChannelTestBase.this.createChannel(id);
         }
     }
@@ -425,7 +418,7 @@ public class ChannelTestBase {
      * Decouples channel creation for junit tests
      */
     protected interface ChannelTestFactory {
-        public Channel createChannel(Object id) throws Exception;
+        public Channel createChannel(String id) throws Exception;
     }
 
     interface EventSequence {
