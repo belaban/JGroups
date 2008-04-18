@@ -272,7 +272,11 @@ public class ChannelTestBase {
 
 
     protected JChannel createChannel(String id) throws Exception {
-        return createChannel(id, false, 1);
+        return createChannel(id, null, false, 1);
+    }
+
+    protected JChannel createChannelWithProps(String props) throws Exception {
+        return createChannel("A", props, false, 1);
     }
 
     protected JChannel createChannel() throws Exception {
@@ -288,12 +292,12 @@ public class ChannelTestBase {
      * @return
      * @throws Exception
      */
-    protected JChannel createChannel(String id, boolean unique, int num) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(id, unique, num);
+    protected JChannel createChannel(String id, String props, boolean unique, int num) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel(id, props, unique, num);
     }
 
     protected JChannel createChannel(boolean unique, int num) throws Exception {
-        return createChannel("A", unique, num);
+        return createChannel("A", null, unique, num);
     }
 
 
@@ -312,7 +316,7 @@ public class ChannelTestBase {
     protected class DefaultChannelTestFactory implements ChannelTestFactory {
         
         public Channel createChannel(String id) throws Exception {
-            return createChannel(id, false, 1);
+            return createChannel(id, null, false, 1);
         }
 
         public JChannel createChannel(String id, String props) throws Exception {
@@ -342,8 +346,8 @@ public class ChannelTestBase {
         }
 
 
-        public Channel createChannel(String id, boolean unique, int num) throws Exception {
-            JChannel c=createChannel(id, null);
+        public Channel createChannel(String id, String props, boolean unique, int num) throws Exception {
+            JChannel c=createChannel(id, props);
             if(unique && !isMuxChannelUsed()) {
                 makeUnique(c, num);
             }
