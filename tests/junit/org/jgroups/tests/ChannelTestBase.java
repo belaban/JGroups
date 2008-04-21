@@ -4,30 +4,29 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.BasicTCP;
-import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Util;
 import org.jgroups.util.ResourceManager;
+import org.jgroups.util.Util;
 import org.testng.annotations.*;
 
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-import java.net.InetAddress;
 
 /**
  * @author Bela Ban
  * @author Vladimir Blagojevic
  * @author <a href="mailto://brian.stansberry@jboss.com">Brian Stansberry</a>
- * @version $Revision$
+ * @version $Id$
  */
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class ChannelTestBase {
@@ -232,8 +231,7 @@ public class ChannelTestBase {
      *                        getMuxFactoryCount())
      * @return array of mux application id's represented as String objects
      */
-    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount,
-                                                 int muxFactoryCount) {
+    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount, int muxFactoryCount) {
         if(muxFactoryCount > getMuxFactoryCount()) {
             throw new IllegalArgumentException("Parameter muxFactoryCount hs to be less than or equal to getMuxFactoryCount()");
         }
@@ -448,7 +446,6 @@ public class ChannelTestBase {
 
     interface EventSequence {
         List<Object> getEvents();
-
         String getName();
     }
 
@@ -456,13 +453,10 @@ public class ChannelTestBase {
      * Base class for all aplications using channel
      */
     protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable {
-        protected Channel channel;
-
-        protected Thread thread;
-
+        protected Channel   channel;
+        protected Thread    thread;
         protected Throwable exception;
-
-        protected String name;
+        protected String    name;
 
         public ChannelApplication(String name) throws Exception {
             ChannelTestBase.this.createChannel(name);
@@ -480,8 +474,7 @@ public class ChannelTestBase {
         }
 
         /**
-         * Method allowing implementation of specific test application level
-         * logic
+         * Method allowing implementation of specific test application level logic
          * @throws Exception
          */
         protected abstract void useChannel() throws Exception;
@@ -505,9 +498,6 @@ public class ChannelTestBase {
             return result;
         }
 
-        public boolean isUsingMuxChannel() {
-            return channel instanceof MuxChannel;
-        }
 
         public Address getLocalAddress() {
             return channel.getLocalAddress();
@@ -526,9 +516,6 @@ public class ChannelTestBase {
             }
         }
 
-        public void setChannel(Channel ch) {
-            this.channel=ch;
-        }
 
         public Channel getChannel() {
             return channel;
@@ -564,10 +551,6 @@ public class ChannelTestBase {
         RpcDispatcher dispatcher;
         List<Object> events;
 
-        public PushChannelApplication(String name) throws Exception {
-            this(name, false);
-        }
-
         public PushChannelApplication(String name, boolean useDispatcher) throws Exception {
             this(name, new DefaultChannelTestFactory(), useDispatcher);
         }
@@ -587,13 +570,6 @@ public class ChannelTestBase {
             return events;
         }
 
-        public RpcDispatcher getDispatcher() {
-            return dispatcher;
-        }
-
-        public boolean hasDispatcher() {
-            return dispatcher != null;
-        }
 
         public void block() {
             events.add(new BlockEvent());
@@ -792,7 +768,6 @@ public class ChannelTestBase {
 
     protected interface MemberRetrievable {
         public List getMembers();
-
         public Address getLocalAddress();
     }
 
@@ -913,11 +888,5 @@ public class ChannelTestBase {
         return true;
     }
 
-    protected static void sleepRandom(int minTime, int maxTime) {
-        int nextInt=RANDOM.nextInt(maxTime);
-        if(nextInt < minTime)
-            nextInt=minTime;
-        Util.sleep(nextInt);
-    }
 
 }
