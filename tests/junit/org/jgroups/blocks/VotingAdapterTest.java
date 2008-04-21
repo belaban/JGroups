@@ -8,7 +8,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
-@Test
+@Test(groups="temp")
 public class VotingAdapterTest extends ChannelTestBase {
     private Channel channel1;
     private Channel channel2;
@@ -24,23 +24,24 @@ public class VotingAdapterTest extends ChannelTestBase {
     protected static boolean logConfigured=false;
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         listener1=new TestVoteChannelListener(true);
         listener2=new TestVoteChannelListener(true);
         listener3=new TestVoteChannelListener(false);
         listener4=new TestVoteChannelListener(false);
 
-        channel1=createChannel("A");
+        channel1=createChannel(true);
+        final String props=channel1.getProperties();
         adapter1=new VotingAdapter(channel1);
-        channel1.connect("voting");
+        channel1.connect("VotingAdapterTest");
 
-        channel2=createChannel("A");
+        channel2=createChannelWithProps(props);
         adapter2=new VotingAdapter(channel2);
-        channel2.connect("voting");
+        channel2.connect("VotingAdapterTest");
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         channel2.close();
         channel1.close();
     }
@@ -51,13 +52,13 @@ public class VotingAdapterTest extends ChannelTestBase {
 
         boolean voting1 = adapter1.vote("object1", VotingAdapter.VOTE_ALL, 1000);
     
-        assertTrue("Result of voting1 should be 'true'.", voting1);
+        assert voting1 : "Result of voting1 should be 'true'";
 
         adapter1.addVoteListener(listener3);
 
         boolean voting2 = adapter1.vote("object2", VotingAdapter.VOTE_ALL, 1000);
     
-        assertTrue("Result of voting2 should be 'false'.", !voting2);
+        assert !voting2 : "Result of voting2 should be 'false'";
         
     }
 

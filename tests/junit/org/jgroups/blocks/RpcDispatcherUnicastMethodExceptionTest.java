@@ -9,18 +9,18 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.7 2008/04/09 12:59:53 belaban Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.8 2008/04/21 11:45:21 belaban Exp $
  */
-@Test
+@Test(groups="temp")
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
 
     @BeforeClass
     protected void setUp() throws Exception {
-        channel=createChannel("A");
+        channel=createChannel(true);
         disp=new RpcDispatcher(channel, null, null, this);
-        channel.connect("demo");
+        channel.connect(getUniqueClusterName("RpcDispatcherUnicastMethodExceptionTest"));
     }
 
     @AfterClass
