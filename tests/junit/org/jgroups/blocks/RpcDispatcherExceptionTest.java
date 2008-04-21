@@ -3,30 +3,30 @@ package org.jgroups.blocks;
 
 import org.jgroups.Channel;
 import org.jgroups.tests.ChannelTestBase;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.AfterMethod;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.7 2008/04/08 15:29:13 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.8 2008/04/21 10:27:24 belaban Exp $
  */
-@Test
+@Test(groups="temp",sequential=true)
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;
     private final Target target=new Target();
 
-    @BeforeMethod
+    @BeforeClass
     public void setUp() throws Exception {
-        channel=createChannel("A");
+        channel=createChannel(true);
         disp=new RpcDispatcher(channel, null, null, target);
-        channel.connect("demo");
+        channel.connect("RpcDispatcherExceptionTest");
     }
 
-    @AfterMethod
+    @AfterClass
     public void tearDown() throws Exception {
         disp.stop();
         channel.close();
@@ -40,7 +40,7 @@ public class RpcDispatcherExceptionTest extends ChannelTestBase {
         }
         catch(Throwable t) {
             System.out.println("received an exception as expected: " + t);
-            assertTrue(t.getCause() instanceof NotSerializableException);
+            assert t.getCause() instanceof NotSerializableException;
         }
     }
 
