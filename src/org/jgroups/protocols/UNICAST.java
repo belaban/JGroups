@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.98 2008/03/12 11:35:39 belaban Exp $
+// $Id: UNICAST.java,v 1.99 2008/04/21 10:27:21 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -323,8 +323,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 if(!started) {
-                    if(log.isWarnEnabled())
-                        log.warn("discarded message as start() has not yet been called, message: " + msg);
+                    if(log.isTraceEnabled())
+                        log.trace("discarded message as start() has not yet been called, message: " + msg);
                     return null;
                 }
 
