@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.39 2007/11/27 15:06:14 belaban Exp $
+// $Id: ConnectionTableNIO.java,v 1.40 2008/04/21 08:43:07 vlada Exp $
 
 package org.jgroups.blocks;
 
@@ -7,6 +7,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.PortsManager;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
 
 import java.io.IOException;
 import java.net.*;
@@ -388,7 +389,8 @@ public class ConnectionTableNIO extends BasicConnectionTable implements Runnable
                   return new_thread;
               }
           });
-         m_requestProcessors = requestProcessors;
+          requestProcessors.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(requestProcessors.getRejectedExecutionHandler()));
+          m_requestProcessors = requestProcessors;
       }
 
       m_writeHandlers = WriteHandler.create(getThreadFactory(),getWriterThreads(), thread_group, m_backGroundThreads, log);
