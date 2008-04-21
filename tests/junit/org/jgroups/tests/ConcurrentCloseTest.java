@@ -10,14 +10,15 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.5 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.6 2008/04/21 07:30:15 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
 
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if(c2 != null) {
             c2.close();
             c2=null;
@@ -32,15 +33,18 @@ public class ConcurrentCloseTest extends ChannelTestBase {
     /**
      * 2 channels, both call Channel.close() at exactly the same time
      */
-    @Test
     public void testConcurrentClose() throws Exception {
         System.setProperty("useBlocking", "true"); // enables reception of block() and unblock() callbacks
-        c1=createChannel();
+        c1=createChannel(true);
         c1.setReceiver(new MyReceiver("C1"));
-        c2=createChannel();
+
+        final String props=c1.getProperties();
+        c2=createChannelWithProps(props);
         c2.setReceiver(new MyReceiver("C2"));
-        c1.connect("x");
-        c2.connect("x");
+
+        final String GROUP=getUniqueClusterName("ConcurrentCloseTest");
+        c1.connect(GROUP);
+        c2.connect(GROUP);
         CyclicBarrier barrier=new CyclicBarrier(3);
 
         Closer one=new Closer(c1, barrier), two=new Closer(c2, barrier);
