@@ -35,9 +35,9 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.13 2008/04/09 12:54:34 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.14 2008/04/21 11:34:03 belaban Exp $
  */
-@Test(sequential=true)
+@Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;
@@ -48,20 +48,24 @@ public class RpcDispatcherTest extends ChannelTestBase {
     // specify return value sizes which may generate timeouts or OOMEs with 64Mb heap
     final static int[] HUGESIZES={10000000, 20000000};
 
-    @BeforeMethod
+    @BeforeClass
     protected void setUp() throws Exception {
-        c1=createChannel("A");
+        c1=createChannel(true);
+        final String props=c1.getProperties();
+        final String GROUP=getUniqueClusterName("RpcDispatcherTest");
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
-        c1.connect("demo");
-        c2=createChannel("A");
+        c1.connect(GROUP);
+
+        c2=createChannelWithProps(props);
         disp2=new RpcDispatcher(c2, null, null, new ServerObject(2));
-        c2.connect("demo");
-        c3=createChannel("A");
+        c2.connect(GROUP);
+
+        c3=createChannelWithProps(props);
         disp3=new RpcDispatcher(c3, null, null, new ServerObject(3));
-        c3.connect("demo");
+        c3.connect(GROUP);
     }
 
-    @AfterMethod
+    @AfterClass
     protected void tearDown() throws Exception {
         disp3.stop();
         c3.close();
@@ -71,9 +75,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c1.close();
     }
 
-//    @Test(alwaysRun=false,enabled=false,description="No TestNG method, only used to invoke via reflection")
-//    public void foo() {
-//    }
+
 
 
     /**
@@ -87,6 +89,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * from servers 2 and 3 are accepted.
      *
      */
+    @Test(groups="first")
     public void testResponseFilter() {
     	
     	final long timeout = 10 * 1000 ;
@@ -124,8 +127,9 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
+    @Test(groups="first")
     public void testLargeReturnValue() {
-        setProps(c1); setProps(c2); setProps(c3);
+        setProperties();
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValue(SIZES[i]);
         }
@@ -144,8 +148,9 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * the length of time depends upon the speed of the machine the test runs on. 
      *
      */
+    @Test(groups="first")
     public void testHugeReturnValue() {
-        setProps(c1); setProps(c2); setProps(c3);
+        setProperties();
         for(int i=0; i < HUGESIZES.length; i++) {
             _testHugeValue(HUGESIZES[i]);
         }
@@ -155,6 +160,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     /**
      * Tests a method call to {A,B,C} where C left *before* the call. http://jira.jboss.com/jira/browse/JGRP-620
      */
+    @Test(dependsOnGroups="first")
     public void testMethodInvocationToNonExistingMembers() {
     	
     	final int timeout = 5 * 1000 ;
@@ -195,11 +201,16 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * The expected behaviour is that all RPC requests complete successfully.
      *
      */
+    @Test(groups="first")
     public void testLargeReturnValueUnicastCall() throws Throwable {
-        setProps(c1); setProps(c2); setProps(c3);
+        setProperties();
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
         }
+    }
+
+    private void setProperties() {
+        setProps(c1); setProps(c2); setProps(c3);
     }
 
 
@@ -232,7 +243,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
         System.out.println("\ntesting with " + size + " bytes");
         RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, timeout);
         System.out.println("rsps:");
-        assertEquals("there should be three responses to the RPC call", 3, rsps.size());
+        assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
+                " were received: " + rsps;
         
         for(Map.Entry<Address,Rsp> entry: rsps.entrySet()) {
         	
@@ -240,13 +252,12 @@ public class RpcDispatcherTest extends ChannelTestBase {
         	Object obj = entry.getValue().getValue() ;
         	
         	// this should not happen
-        	assertFalse("exception was raised in processing reasonably sized argument", 
-        				obj instanceof java.lang.Throwable) ;
+        	assert !(obj instanceof Throwable) : "exception was raised in processing reasonably sized argument";
         	
             byte[] val=(byte[]) obj;
-            assertNotNull("return value should not be null", val);
+            assert val != null;
             System.out.println(val.length + " bytes from " + entry.getValue().getSender());
-            assertEquals("return value does not match required size",size, val.length);
+            assert val.length == size : "return value does not match required size";
         }
     }
     
@@ -267,7 +278,9 @@ public class RpcDispatcherTest extends ChannelTestBase {
         System.out.println("\ntesting with " + size + " bytes");
         RspList rsps=disp1.callRemoteMethods(null, "largeReturnValue", new Object[]{size}, new Class[]{int.class}, GroupRequest.GET_ALL, timeout);
         System.out.println("rsps:");
-        assertEquals("there should be three responses to the RPC call", 3, rsps.size());
+        assert rsps != null;
+        assert rsps.size() == 3 : "there should be three responses to the RPC call but only " + rsps.size() +
+                " were received: " + rsps;
 
         // in checking the return values, we need to take account of timeouts (i.e. when
         // a null value is returned) and exceptions 
@@ -293,9 +306,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
         	
         	// if we reach here, we sould have a reasobable value
         	byte[] val=(byte[]) obj;
-            assertNotNull("return value should not be null", val);
             System.out.println(val.length + " bytes from " + entry.getValue().getSender());
-            assertEquals("return value does not match required size", size, val.length);
+            assert val.length == size : "return value does not match required size";
         }
     }
 
