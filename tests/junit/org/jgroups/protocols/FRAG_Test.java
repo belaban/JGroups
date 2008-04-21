@@ -98,8 +98,8 @@ public class FRAG_Test extends ChannelTestBase {
         }
 
         System.out.println("sent: " + sent + ", received: " + received + ", corrupted: " + corrupted);
-        assertEquals("sent and received should be the same", sent, received);
-        assertEquals("we should have 0 corrupted messages", 0, corrupted);
+        assert sent == received : "sent and received should be the same (sent=" + sent + ", received=" + received + ")";
+        assert corrupted == 0 : "we should have 0 corrupted messages";
     }
 
 
