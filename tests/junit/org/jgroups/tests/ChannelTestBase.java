@@ -8,6 +8,7 @@ import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -361,9 +362,19 @@ public class ChannelTestBase {
             if(unique && !isMuxChannelUsed()) {
                 makeUnique(c, num);
             }
+            muteLocalAddress(c);
             return c;
         }
 
+        private void muteLocalAddress(JChannel c) {
+            ProtocolStack stack=c.getProtocolStack();
+            Protocol gms=stack.findProtocol(GMS.class);
+            if(gms != null) {
+                Properties props=new Properties();
+                props.setProperty("print_local_addr", "false");
+                gms.setProperties(props);
+            }
+        }
 
         private JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
             Map<Integer, Object> channelOptions=new HashMap<Integer, Object>();

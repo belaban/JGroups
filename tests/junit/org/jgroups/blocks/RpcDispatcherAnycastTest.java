@@ -13,7 +13,7 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.7 2008/04/21 08:44:09 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.8 2008/04/21 11:59:11 belaban Exp $
  */
 @Test(groups="temp")
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
@@ -80,7 +80,7 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         }
 
         public Address foo() {
-            System.out.println("foo() - returning " + addr);
+            // System.out.println("foo() - returning " + addr);
             return addr;
         }
 
