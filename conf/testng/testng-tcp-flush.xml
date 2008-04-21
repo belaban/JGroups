@@ -9,6 +9,7 @@
         <groups>
             <run>
                 <include name="stack-dependent"/>
+                <include name="flush"/>
             </run>
         </groups>
         <packages>

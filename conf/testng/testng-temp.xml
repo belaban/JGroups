@@ -10,6 +10,7 @@
         <groups>
             <run>
                 <include name="temp"/>
+                <exclude name="flush"/>
             </run>
         </groups>
         <packages>

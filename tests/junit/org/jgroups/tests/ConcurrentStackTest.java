@@ -17,8 +17,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.5 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.6 2008/04/21 13:35:28 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
     final static int NUM=10, EXPECTED=NUM * 3;
@@ -27,11 +28,12 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         barrier=new CyclicBarrier(4);
-        ch1=createChannel();
-        ch2=createChannel();
-        ch3=createChannel();
+        ch1=createChannel(true);
+        final String props=ch1.getProperties();
+        ch2=createChannelWithProps(props);
+        ch3=createChannelWithProps(props);
     }
 
     @AfterMethod
@@ -64,9 +66,9 @@ public class ConcurrentStackTest extends ChannelTestBase {
         MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
         ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
 
-        ch1.connect("test");
-        ch2.connect("test");
-        ch3.connect("test");
+        ch1.connect("ConcurrentStackTest");
+        ch2.connect("ConcurrentStackTest");
+        ch3.connect("ConcurrentStackTest");
         View v=ch3.getView();
         Assert.assertEquals(3, v.size());
 
@@ -136,13 +138,13 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-    private boolean verifyFIFO(List<Integer> list) {
+    private static boolean verifyFIFO(List<Integer> list) {
         List<Integer> list2=new LinkedList(list);
         Collections.sort(list2);
         return list.equals(list2);
     }
 
-    private void print(Address addr, List<Integer> list) {
+    private static void print(Address addr, List<Integer> list) {
         StringBuilder sb=new StringBuilder();
         sb.append(addr).append(": ");
         for(Integer i: list)
@@ -151,7 +153,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
     /** Accepts up to 30% over */
-    private void checkTime(long time, boolean threadless) {
+    private static void checkTime(long time, boolean threadless) {
         long min_time, max_time;
 
         if(threadless) {
@@ -167,10 +169,10 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-    private void setThreadless(JChannel ch1, boolean threadless) {
+    private static void setThreadless(JChannel ch1, boolean threadless) {
         Protocol tp=ch1.getProtocolStack().findProtocol(TP.class);
         if(tp == null)
-            throw new IllegalStateException("Protocol UDP not found in properties");
+            throw new IllegalStateException("Transport protocol not found");
         Properties p=new Properties();
         p.setProperty("use_concurrent_stack", String.valueOf(threadless));
         p.setProperty("thread_pool.min_threads", "1");
