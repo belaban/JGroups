@@ -15,15 +15,11 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.12 2008/04/08 14:19:07 belaban Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.13 2008/04/21 12:29:26 belaban Exp $
  */
-@Test
+@Test(groups="temp")
 public class STATE_TRANSFER_Test extends ChannelTestBase {
-
-    public final static String CHANNEL_PROPS="udp.xml";
-
-    public static final String GROUP_NAME="jgroups.TEST_GROUP";
-
+    public static final String GROUP_NAME="STATE_TRANSFER_Test";
     private Coordinator coord;
 
 
@@ -44,15 +40,17 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         coord=null;
     }
 
-    static class Coordinator implements ChannelListener {
+    class Coordinator implements ChannelListener {
 
         private JChannel channel=null;
         private int cnt=0;  // the state
         private volatile boolean closed=false;
+        String getProps() {
+            return channel.getProperties();
+        }
 
-        protected Coordinator() throws ChannelException {
-
-            channel=new JChannel(CHANNEL_PROPS);
+        protected Coordinator() throws Exception {
+            channel=createChannel(true);
             channel.setOpt(Channel.LOCAL, Boolean.FALSE);
             channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
             channel.addChannelListener(this);
@@ -140,8 +138,8 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         }
     }
 
-    public static void testBasicStateSync() throws Exception {
-        Channel channel=new JChannel(CHANNEL_PROPS);
+    public void testBasicStateSync() throws Exception {
+        Channel channel=createChannelWithProps(coord.getProps());
         channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 
         channel.connect(GROUP_NAME);
