@@ -5,6 +5,7 @@ import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.BeforeMethod;
@@ -22,11 +23,12 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.41 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.42 2008/04/21 15:18:04 belaban Exp $
  */
+@Test(groups=Global.FLUSH)
 public class ConcurrentStartupTest extends ChannelTestBase {
-
     private AtomicInteger mod = new AtomicInteger(1);
+
 
     @BeforeMethod
     protected void setUp() throws Exception {
@@ -37,12 +39,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
         return true;
     }
 
-    @Test
     public void testConcurrentStartupLargeState() {
         concurrentStartupHelper(true, false);
     }
 
-    @Test
     public void testConcurrentStartupSmallState() {
         concurrentStartupHelper(false, true);
     }
@@ -95,7 +95,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 channels[i].start();
                 semaphore.release(1);
                 //sleep at least a second and max second and a half
-                sleepRandom(1000,1500);
+                Util.sleepRandom(1500);
             }
 
             // Make sure everyone is in sync
