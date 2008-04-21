@@ -3,8 +3,6 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -13,9 +11,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.5 2008/04/09 15:01:35 belaban Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.6 2008/04/21 13:35:28 belaban Exp $
  */
-public class ConcurrentStartFlushTest extends ChannelTestBase {    
+public class ConcurrentStartFlushTest extends ChannelTestBase {
     private Receiver r1, r2, r3;
     Channel c1,c2,c3;
     private static final long TIMEOUT=10000L;
@@ -32,22 +30,26 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
         return true;
     }
 
-    @Test
+    
     public void testSimpleFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(2);
-        c1 = createChannel();
+        c1 = createChannel(true);
         r1=new Receiver("C1", c1);
-        c2 = createChannel();
+        final String props=c1.getProperties();
+
+        c2 = createChannelWithProps(props);
         r2=new Receiver("C2", c2);
-        c3 = createChannel();
+
+        c3 = createChannelWithProps(props);
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
-        
-        c1.connect("test");
-        c2.connect("test");
-        c3.connect("test");
+
+        final String GROUP=getUniqueClusterName("ConcurrentStartFlushTest");
+        c1.connect(GROUP);
+        c2.connect(GROUP);
+        c3.connect(GROUP);
 
         Flusher flusher_one=new Flusher(c1, barrier);
 
@@ -68,27 +70,27 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
         checkEventStateTransferSequence(r1);
         checkEventStateTransferSequence(r2);
         checkEventStateTransferSequence(r3);
-        
-
     }
 
 
-    @Test
     public void testConcurrentFlush() throws Exception {
         CyclicBarrier barrier=new CyclicBarrier(3);
-        c1 = createChannel();
+        c1 = createChannel(true);
+        final String props=c1.getProperties();
         r1=new Receiver("C1", c1);
-        c2 = createChannel();
+
+        c2 = createChannelWithProps(props);
         r2=new Receiver("C2", c2);
-        c3 = createChannel();
+        c3 = createChannelWithProps(props);
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
-        
-        c1.connect("test");
-        c2.connect("test");
-        c3.connect("test");
+
+        final String GROUP=getUniqueClusterName("ConcurrentStartFlushTest");
+        c1.connect(GROUP);
+        c2.connect(GROUP);
+        c3.connect(GROUP);
 
         Flusher flusher_one=new Flusher(c1, barrier);
         Flusher flusher_three=new Flusher(c3, barrier);
@@ -115,21 +117,24 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testFlushStartedByOneButCompletedByOther() throws Exception {
-        c1 = createChannel();
+        c1 = createChannel(true);
+        final String props=c1.getProperties();
         r1=new Receiver("C1", c1);
-        c2 = createChannel();
+
+        c2 = createChannelWithProps(props);
         r2=new Receiver("C2", c2);
-        c3 = createChannel();
+
+        c3 = createChannelWithProps(props);
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         c3.setReceiver(r3);
-        
-        c1.connect("test");
-        c2.connect("test");
-        c3.connect("test");
+
+        final String GROUP=getUniqueClusterName("ConcurrentStartFlushTest");
+        c1.connect(GROUP);
+        c2.connect(GROUP);
+        c3.connect(GROUP);
 
         Util.sleep(1000);
 
