@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.13 2008/04/03 14:58:01 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.14 2008/04/21 08:44:12 vlada Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -1489,16 +1489,17 @@ public abstract class TP extends Protocol {
         ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(ProtocolStack.newIDThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
 
+        //default
+        RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
         if(rejection_policy != null) {
             if(rejection_policy.equals("abort"))
-                pool.setRejectedExecutionHandler(new ThreadPoolExecutor.AbortPolicy());
+                handler = new ThreadPoolExecutor.AbortPolicy();
             else if(rejection_policy.equals("discard"))
-                pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardPolicy());
+                handler = new ThreadPoolExecutor.DiscardPolicy();
             else if(rejection_policy.equals("discardoldest"))
-                pool.setRejectedExecutionHandler(new ThreadPoolExecutor.DiscardOldestPolicy());
-            else
-                pool.setRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy());
+                handler = new ThreadPoolExecutor.DiscardOldestPolicy();         
         }
+        pool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(handler));
 
         return pool;
     }
