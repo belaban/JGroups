@@ -48,6 +48,7 @@ public class ChannelTestBase {
     protected int active_threads=0;
 
     protected JChannelFactory muxFactory[]=null;
+    protected final Object muxFactoryMutex=new Object();
 
     protected boolean compare_thread_count=false;
 
@@ -332,7 +333,7 @@ public class ChannelTestBase {
                 props=channel_conf;
             if(isMuxChannelUsed()) {
                 log.info("Using configuration file " + mux_conf + ", stack is " + mux_conf_stack);
-                synchronized(muxFactory) {
+                synchronized(muxFactoryMutex) {
                     for(int i=0; i < muxFactory.length; i++) {
                         if(!muxFactory[i].hasMuxChannel(mux_conf_stack, id)) {
                             c=(JChannel)muxFactory[i].createMultiplexerChannel(mux_conf_stack, id);
