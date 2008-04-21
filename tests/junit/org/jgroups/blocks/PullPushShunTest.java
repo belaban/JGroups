@@ -9,9 +9,9 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.7 2008/04/08 15:11:36 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.8 2008/04/21 08:37:31 belaban Exp $
  */
-@Test
+@Test(groups="temp")
 public class PullPushShunTest extends ChannelTestBase {
     private JChannel channel;
     private PullPushAdapter adapter;
@@ -21,7 +21,7 @@ public class PullPushShunTest extends ChannelTestBase {
 
     public void testShunningandReconnect() throws Exception {
         Address old_local_addr, new_local_addr;
-        channel=new JChannel();
+        channel=createChannel(true);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         channel.addChannelListener(new ChannelListener() {
 
