@@ -14,7 +14,7 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.5 2008/04/21 10:27:24 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.6 2008/04/21 11:59:11 belaban Exp $
  */
 @Test(groups="temp")
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
@@ -96,9 +96,9 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     static class ServerObject {
 
         public static void foo(long timeout) {
-            System.out.println("-- received foo(), blocking for " + timeout + " ms");
+            // System.out.println("-- received foo(), blocking for " + timeout + " ms");
             Util.sleep(timeout);
-            System.out.println("-- returning");
+            // System.out.println("-- returning");
         }
     }
 
