@@ -7,6 +7,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
+import org.jgroups.util.ShutdownRejectedExecutionHandler;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 import org.jgroups.util.Digest;
@@ -379,6 +380,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                 return getProtocolStack().getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");                                
             }
         };
+        threadPool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(threadPool.getRejectedExecutionHandler()));
         threadPool.setThreadFactory(factory);
         return threadPool;
     }
