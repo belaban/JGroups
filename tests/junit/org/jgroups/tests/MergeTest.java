@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.19 2008/04/09 15:01:36 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.20 2008/04/21 14:35:18 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -74,7 +74,7 @@ public class MergeTest extends ChannelTestBase {
                 channels[i].start();
                 semaphore.release(1);
                 //sleep at least a second and max second and a half
-                sleepRandom(1000,1500);
+                Util.sleepRandom(1500);
             }
 
             // Make sure everyone is in sync
