@@ -1,27 +1,27 @@
-// $Id: ConnectStressTest.java,v 1.25 2008/04/14 07:30:35 belaban Exp $
 
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.util.Vector;
-import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.25 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.26 2008/04/21 15:24:56 belaban Exp $
  */
+@Test(groups="temp")
 public class ConnectStressTest extends ChannelTestBase {
     CyclicBarrier    start_connecting=null;
     CyclicBarrier    connected=null;
@@ -31,7 +31,8 @@ public class ConnectStressTest extends ChannelTestBase {
     static final int NUM=20;
     final MyThread[] threads=new MyThread[NUM];
     JChannel         channel=null;
-    static String    groupname="ConcurrentTestDemo";
+    static String    groupname=getUniqueClusterName("ConcurrentTestDemo");
+    String           PROPS=null;
 
 
 
@@ -51,15 +52,17 @@ public class ConnectStressTest extends ChannelTestBase {
         long start, stop;
 
         //  create main channel - will be coordinator for JOIN requests
-        channel=createChannel();
+        channel=createChannel(true);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         changeProperties(channel);
+        PROPS=channel.getProperties();
+
         start=System.currentTimeMillis();
         channel.connect(groupname);
         stop=System.currentTimeMillis();
         log(channel.getLocalAddress() + " connected in " + (stop-start) + " msecs (" +
                     channel.getView().getMembers().size() + " members). VID=" + channel.getView().getVid());
-        Assert.assertEquals(channel.getView().getMembers().size(), 1, "view should have size == 1 after initial connect ");
+        assert channel.getView().getMembers().size() == 1 : "view should have size == 1 after initial connect ";
 
         for(int i=0; i < threads.length; i++) {
             threads[i]=new MyThread(i);
@@ -87,7 +90,7 @@ public class ConnectStressTest extends ChannelTestBase {
                     break;
                 Util.sleep(5*1000);
             }
-            Assert.assertEquals(num_members, (NUM + 1), "coordinator unable to obtain complete view");
+            assert num_members == (NUM + 1) : "coordinator unable to obtain complete view";
             
             received_all_views.await();
             stop=System.currentTimeMillis();
@@ -120,7 +123,7 @@ public class ConnectStressTest extends ChannelTestBase {
             }
             Util.sleep(3000);
         }
-        Assert.assertEquals(num_members, 1, "view should have size == 1 after disconnect ");
+        assert num_members == 1 : "view should have size == 1 after disconnect ";
         log("closing all channels");
         for(int i=0; i < threads.length; i++) {
             MyThread t=threads[i];
@@ -154,8 +157,8 @@ public class ConnectStressTest extends ChannelTestBase {
             View view;
 
             try {
-                ch=createChannel();
-                changeProperties(ch);
+                ch=createChannelWithProps(PROPS);
+                // changeProperties(ch);
                 ch.setOpt(Channel.AUTO_RECONNECT, true);
 
                 start_connecting.await();
@@ -197,22 +200,12 @@ public class ConnectStressTest extends ChannelTestBase {
                 log(my_addr + " disconnected in " + (stop-start) + " msecs");
                 disconnected.await();
             }
-            catch(BrokenBarrierException e) {
-                e.printStackTrace();
-            }
-            catch(ChannelException e) {
-                e.printStackTrace();
-            }
-            catch(InterruptedException e) {
-                e.printStackTrace();
-            }
             catch(Exception e) {
                 e.printStackTrace();
             }
         }
-
-
     }
+
 
     private static void changeProperties(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
