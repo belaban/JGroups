@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.18 2008/04/18 10:18:36 belaban Exp $
+// $Id: CloseTest.java,v 1.19 2008/04/21 07:30:14 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -169,14 +169,19 @@ public class CloseTest extends ChannelTestBase {
     public void testConnectDisconnectConnectCloseSequence() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
-        System.out.println("-- connecting channel to CloseTest1--");
-        ch.get().connect(getUniqueClusterName("CloseTest.testConnectDisconnectConnectCloseSequence"));
+
+        System.out.println("-- connecting channel to CloseTest--");
+        ch.get().connect("CloseTest.testConnectDisconnectConnectCloseSequence-CloseTest");
         System.out.println("view is " + ch.get().getView());
+
         System.out.println("-- disconnecting channel --");
         ch.get().disconnect();
+
+        Util.sleep(500);
         System.out.println("-- connecting channel to OtherGroup --");
-        ch.get().connect(getUniqueClusterName("CloseTest.testConnectDisconnectConnectCloseSequence"));
+        ch.get().connect("CloseTest.testConnectDisconnectConnectCloseSequence-OtherGroup");
         System.out.println("view is " + ch.get().getView());
+
         System.out.println("-- closing channel --");
         ch.get().close();
     }
