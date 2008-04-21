@@ -19,7 +19,7 @@ import java.util.Properties;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.8 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.9 2008/04/21 15:44:18 belaban Exp $
  */
 public class DisconnectStressTest extends ChannelTestBase {
     CyclicBarrier           all_disconnected=null;
@@ -27,7 +27,7 @@ public class DisconnectStressTest extends ChannelTestBase {
     static final int        NUM=30;
     static final long       TIMEOUT=50000;
     final MyThread[]        threads=new MyThread[NUM];
-    static String           groupname="ConcurrentTestDemo";
+    static String           groupname="DisconnectStressTest";
 
 
 
