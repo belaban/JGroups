@@ -11,7 +11,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.Vector;
 
-@Test
+@Test(groups="temp",sequential=true)
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
     private Channel channel, channel2;
     private RpcDispatcher disp, disp2;
@@ -19,20 +19,21 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
 
 
-    @BeforeMethod
+    @BeforeClass
     protected void setUp() throws Exception {
-        channel=createChannel("A");
+        channel=createChannel(true);
+        final String props=channel.getProperties();
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, target);
-        channel.connect("RpcDispatcherSerializationTestGroup");
+        channel.connect("RpcDispatcherSerializationTest");
 
-        channel2=createChannel("A");
+        channel2=createChannelWithProps(props);
         disp2=new RpcDispatcher(channel2, null, null, target);
-        channel2.connect("RpcDispatcherSerializationTestGroup");
+        channel2.connect("RpcDispatcherSerializationTest");
     }
 
 
-    @AfterMethod
+    @AfterClass
     protected void tearDown() throws Exception {
         channel2.close();
         disp2.stop();
