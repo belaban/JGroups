@@ -3,14 +3,13 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.6 2008/04/21 07:30:15 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.7 2008/04/21 07:39:23 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentCloseTest extends ChannelTestBase {

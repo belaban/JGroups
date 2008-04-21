@@ -1,23 +1,23 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Channel;
+import org.jgroups.tests.ChannelTestBase;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
+
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
-import java.util.HashMap;
-
-
-import org.testng.annotations.*;
-
-import org.jgroups.Channel;
-import org.jgroups.util.Util;
-import org.jgroups.tests.ChannelTestBase;
+import java.util.Map;
 
 /**
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.8 2008/04/08 14:28:18 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.9 2008/04/21 07:39:22 belaban Exp $
  */
-@Test(sequential=true)
+@Test(groups="temp",sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {
     private Channel channel1;
     private Channel channel2;
@@ -29,29 +29,28 @@ public class DistributedLockManagerTest extends ChannelTestBase {
     protected LockManager lockManager2;
 
 
-    @BeforeMethod
-    public void setUp() throws Exception {
-        channel1=createChannel("A");
+    @BeforeClass
+    void setUp() throws Exception {
+        channel1=createChannel(true);
         adapter1=new VotingAdapter(channel1);
-        channel1.connect("voting");
+        final String props=channel1.getProperties();
+        channel1.connect("DistributedLockManagerTest");
 
         lockManager1=new DistributedLockManager(adapter1, "1");
         Util.sleep(1000);  // give some time for the channel to become a coordinator
 
-        channel2=createChannel("A");
+        channel2=createChannelWithProps(props);
         adapter2=new VotingAdapter(channel2);
         lockManager2=new DistributedLockManager(adapter2, "2");
 
-        channel2.connect("voting");
-
+        channel2.connect("DistributedLockManagerTest");
         Util.sleep(1000);
     }
 
 
-    @AfterMethod
-    public void tearDown() throws Exception {
+    @AfterClass
+    void tearDown() throws Exception {
         channel2.close();
-        Util.sleep(1000);
         channel1.close();
     }
 
@@ -94,7 +93,7 @@ public class DistributedLockManagerTest extends ChannelTestBase {
         
         Field heldLocksField = lockManager2.getClass().getDeclaredField("heldLocks");
         heldLocksField.setAccessible(true);
-        HashMap heldLocks = (HashMap)heldLocksField.get(lockManager2);
+        Map<String,Object> heldLocks = (Map<String,Object>)heldLocksField.get(lockManager2);
         heldLocks.put("obj1", acquireLockDecree);
         
         // Both lockManagers hold a lock on obj1 now
