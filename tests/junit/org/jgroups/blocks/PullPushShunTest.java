@@ -9,14 +9,12 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.8 2008/04/21 08:37:31 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.9 2008/04/21 12:05:27 belaban Exp $
  */
 @Test(groups="temp")
 public class PullPushShunTest extends ChannelTestBase {
     private JChannel channel;
     private PullPushAdapter adapter;
-    private final Handler handler=new Handler();
-
 
 
     public void testShunningandReconnect() throws Exception {
@@ -46,7 +44,7 @@ public class PullPushShunTest extends ChannelTestBase {
             }
         });
         channel.connect("PullPushTestShun");
-        adapter=new PullPushAdapter(channel, handler, handler);
+        adapter=new PullPushAdapter(channel, null, null);
         assertEquals(1, channel.getView().getMembers().size());
         old_local_addr=channel.getLocalAddress();
         assertNotNull(old_local_addr);
@@ -65,19 +63,6 @@ public class PullPushShunTest extends ChannelTestBase {
     }
 
 
-
-    private static class Handler extends ReceiverAdapter {
-
-        public void receive(Message msg) {
-            System.out.println("-- received " + msg);
-        }
-
-        public void viewAccepted(View new_view) {
-            System.out.println("-- view: " + new_view);
-        }
-
-
-    }
 
 
 }

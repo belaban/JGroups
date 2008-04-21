@@ -180,7 +180,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
     static class Target {
         public static void methodA(boolean b, long l) {
-            System.out.println("methodA(" + b + ", " + l + ") called");
+            ;
         }
 
         public static boolean methodB() {
