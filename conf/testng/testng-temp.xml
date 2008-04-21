@@ -1,7 +1,7 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="udp"
        parallel="methods"
-       thread-count="10"
+       thread-count="25"
         >
 
 
