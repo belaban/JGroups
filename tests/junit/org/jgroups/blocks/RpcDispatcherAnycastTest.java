@@ -13,36 +13,37 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.6 2008/04/08 15:25:26 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.7 2008/04/21 08:44:09 belaban Exp $
  */
-@Test
+@Test(groups="temp")
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
     Channel ch, ch2, ch3;  
 
     @BeforeMethod
-    public void setUp() throws Exception {
-        ch=createChannel("A");
+    void setUp() throws Exception {
+        ch=createChannel(true);
         ServerObject obj=new ServerObject(null);
         disp=new RpcDispatcher(ch, null, null, obj);
-        ch.connect("demo");
+        ch.connect("RpcDispatcherAnycastTest");
         obj.setAddress(ch.getLocalAddress());
 
-        ch2=createChannel("A");
+        final String props=ch.getProperties();
+        ch2=createChannelWithProps(props);
         ServerObject obj2=new ServerObject(null);
         disp2=new RpcDispatcher(ch2, null, null, obj2);
-        ch2.connect("demo");
+        ch2.connect("RpcDispatcherAnycastTest");
         obj2.setAddress(ch2.getLocalAddress());
 
-        ch3=createChannel("A");
+        ch3=createChannelWithProps(props);
         ServerObject obj3=new ServerObject(null);
         disp3=new RpcDispatcher(ch3, null, null, obj3);
-        ch3.connect("demo");
+        ch3.connect("RpcDispatcherAnycastTest");
         obj3.setAddress(ch3.getLocalAddress());
     }
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         ch3.close();
         disp3.stop();
         ch2.close();
@@ -56,9 +57,9 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
     public void testUnserializableValue() {
         Vector members=ch.getView().getMembers();
         System.out.println("members: " + members);
-        assertTrue("we should have more than 1 member", members.size() > 1);
+        assert members.size() > 1: "we should have more than 1 member";
 
-        Vector subset=Util.pickSubset(members, 0.2);
+        Vector<Address> subset=Util.pickSubset(members, 0.2);
         System.out.println("subset: " + subset);
 
         Util.sleep(1000);
