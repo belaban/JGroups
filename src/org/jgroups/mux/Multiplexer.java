@@ -35,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.14 2008/04/02 01:12:02 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.15 2008/04/21 08:44:10 vlada Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -221,7 +221,7 @@ public class Multiplexer implements UpHandler {
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
                                       new SynchronousQueue<Runnable>(), 
                                       factory,
-                                      new ThreadPoolExecutor.CallerRunsPolicy());
+                                      new ShutdownRejectedExecutionHandler(new ThreadPoolExecutor.CallerRunsPolicy()));
     }
 
     protected void shutdownThreadPool() {
