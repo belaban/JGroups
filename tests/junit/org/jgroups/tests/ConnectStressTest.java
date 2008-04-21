@@ -19,9 +19,8 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.27 2008/04/21 15:44:18 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.28 2008/04/21 16:18:13 belaban Exp $
  */
-@Test(groups="temp")
 public class ConnectStressTest extends ChannelTestBase {
     CyclicBarrier    start_connecting=null;
     CyclicBarrier    connected=null;
