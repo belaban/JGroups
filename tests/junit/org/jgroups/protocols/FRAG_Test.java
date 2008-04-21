@@ -20,7 +20,7 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-@Test
+@Test(groups="temp")
 public class FRAG_Test extends ChannelTestBase {
     IpAddress a1;
     Vector members;
@@ -36,7 +36,7 @@ public class FRAG_Test extends ChannelTestBase {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         a1=new IpAddress(1111);
         members=new Vector();
         members.add(a1);
@@ -46,11 +46,9 @@ public class FRAG_Test extends ChannelTestBase {
         s.setView(v);
         s.addMember(a1);
         Protocol frag=createProtocol();
-        System.out.println("protocol to be tested: " + frag);
+        System.out.println("protocol to be tested: " + frag.getName());
         Properties props=new Properties();
         props.setProperty("frag_size", "512");
-        props.setProperty("up_thread", "false");
-        props.setProperty("down_thread", "false");
         frag.setPropertiesInternal(props);
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
@@ -63,7 +61,7 @@ public class FRAG_Test extends ChannelTestBase {
     }
 
     @AfterMethod
-    public static void tearDown() throws Exception {
+    static void tearDown() throws Exception {
         s.stop();
     }
 
