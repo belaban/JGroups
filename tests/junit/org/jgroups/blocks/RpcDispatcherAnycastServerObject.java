@@ -22,9 +22,9 @@ public class RpcDispatcherAnycastServerObject extends ReceiverAdapter {
     }
 
     public void doSomething() {
-        System.out.println("doSomething invoked on " + c.getLocalAddress() + ".  i = " + i);
+        // System.out.println("doSomething invoked on " + c.getLocalAddress() + ".  i = " + i);
         i++;
-        System.out.println("Now i = " + i);
+        // System.out.println("Now i = " + i);
     }
 
     public void callRemote(boolean useAnycast, boolean excludeSelf) {
