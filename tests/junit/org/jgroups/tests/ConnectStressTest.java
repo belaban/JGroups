@@ -2,10 +2,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.JChannel;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -19,8 +16,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.28 2008/04/21 16:18:13 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.29 2008/04/22 16:04:41 belaban Exp $
  */
+@Test(groups={"temp"})
 public class ConnectStressTest extends ChannelTestBase {
     CyclicBarrier    start_connecting=null;
     CyclicBarrier    connected=null;
