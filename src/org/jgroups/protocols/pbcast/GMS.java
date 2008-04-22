@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.5 2008/04/22 13:44:18 belaban Exp $
+ * @version $Id: GMS.java,v 1.126.2.6 2008/04/22 14:00:02 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -554,7 +554,7 @@ public class GMS extends Protocol {
 
     protected Address determineCoordinator() {
         synchronized(members) {
-            return members != null && members.size() > 0? (Address)members.elementAt(0) : null;
+            return members != null && members.size() > 0? members.elementAt(0) : null;
         }
     }
 
@@ -567,7 +567,7 @@ public class GMS extends Protocol {
 
         synchronized(members) {
             if(members.size() < 2) return false;
-            new_coord=(Address)members.elementAt(1);  // member at 2nd place
+            new_coord=members.elementAt(1);  // member at 2nd place
             return new_coord != null && new_coord.equals(potential_new_coord);
         }
     }
@@ -1206,7 +1206,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.5 2008/04/22 13:44:18 belaban Exp $
+     * @version $Id: GMS.java,v 1.126.2.6 2008/04/22 14:00:02 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1335,7 +1335,7 @@ public class GMS extends Protocol {
                             wait_time=end_time - System.currentTimeMillis();
                             if(wait_time > 0)
                                 q.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
-                            keepGoing=q.size() > 0;
+                            keepGoing=q.size() > 0 && firstRequest.canBeProcessedTogether((Request)q.peek());
                         }
                     }
                     while(keepGoing && System.currentTimeMillis() < end_time);
