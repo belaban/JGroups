@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.156 2008/04/17 09:10:27 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.157 2008/04/22 12:32:43 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -995,6 +995,18 @@
                  initial.mcast.port="25001"
                  initial.tcp.port="25001"
                  testng.xmlfile="testng-temp.xml"
+                />
+    </target>
+
+    <target name="protocols" depends="compile, makeKeystore, copy-build-properties">
+        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
+        <runtest testname.ext="udp"
+                 threadcount="10"
+                 parallel="methods"
+                 initial.mcast.addr="235.1.1.1"
+                 initial.mcast.port="25001"
+                 initial.tcp.port="25001"
+                 testng.xmlfile="testng-protocols.xml"
                 />
     </target>
 
