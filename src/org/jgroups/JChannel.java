@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.184 2008/04/17 09:10:31 belaban Exp $
+ * @version $Id: JChannel.java,v 1.185 2008/04/22 06:41:28 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -469,9 +469,7 @@ public class JChannel extends Channel {
 
             try {
                 Event connect_event=new Event(Event.CONNECT_WITH_STATE_TRANSFER, cluster_name);
-                Object res=downcall(connect_event); // waits forever until
-                // connected (or channel is
-                // closed)
+                Object res=downcall(connect_event); // waits forever until connected (or channel is closed)
                 joinSuccessful=!(res != null && res instanceof Exception);
                 if(!joinSuccessful) {
                     stopStack(true, false);
