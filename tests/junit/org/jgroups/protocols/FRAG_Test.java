@@ -20,7 +20,7 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-@Test(groups="temp")
+@Test(groups={"temp", "protocols"})
 public class FRAG_Test extends ChannelTestBase {
     IpAddress a1;
     Vector members;
