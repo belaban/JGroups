@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.4 2008/01/10 06:57:38 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.5 2008/04/22 13:44:18 belaban Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -1206,7 +1206,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.4 2008/01/10 06:57:38 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.5 2008/04/22 13:44:18 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1316,30 +1316,36 @@ public class GMS extends Protocol {
         }
 
         public void run() {
-            long start, stop, wait_time;
+            long end_time, wait_time;
             List<Request> requests=new LinkedList<Request>();
             while(Thread.currentThread().equals(thread)) {
-                requests.clear();
                 try {
                     boolean keepGoing=false;
-                    start=System.currentTimeMillis();
+                    end_time=System.currentTimeMillis() + max_bundling_time;
                     do {
                         Request firstRequest=(Request)q.remove(INTERVAL); // throws a TimeoutException if it runs into timeout
                         requests.add(firstRequest);
+                        if(!view_bundling)
+                            break;
                         if(q.size() > 0) {
                             Request nextReq=(Request)q.peek();
                             keepGoing=view_bundling && firstRequest.canBeProcessedTogether(nextReq);
                         }
                         else {
-                            stop=System.currentTimeMillis();
-                            wait_time=max_bundling_time - (stop-start);
+                            wait_time=end_time - System.currentTimeMillis();
                             if(wait_time > 0)
-                                Util.sleep(wait_time);
+                                q.waitUntilClosed(wait_time); // misnomer: waits until element has been added or q closed
                             keepGoing=q.size() > 0;
                         }
                     }
-                    while(keepGoing);
-                    process(requests);
+                    while(keepGoing && System.currentTimeMillis() < end_time);
+
+                    try {
+                        process(requests);
+                    }
+                    finally {
+                        requests.clear();
+                    }
                 }
                 catch(QueueClosedException e) {
                     break;
