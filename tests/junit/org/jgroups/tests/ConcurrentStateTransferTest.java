@@ -23,8 +23,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.9 2008/04/09 15:01:35 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.10 2008/04/22 16:04:41 belaban Exp $
  */
+@Test(groups="vlad",sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
     private final AtomicInteger mod = new AtomicInteger(1);
