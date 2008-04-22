@@ -22,13 +22,13 @@ import java.util.Vector;
  */
 @Test(groups={"temp", "protocols"})
 public class FRAG_Test extends ChannelTestBase {
-    IpAddress a1;
-    Vector members;
-    View v;
-    static Simulator s=null;
-    static int num_done=0;
+    private IpAddress a1;
+    private Vector members;
+    private View v;
+    private Simulator s=null;
+    private int num_done=0;
 
-    static Sender[] senders=null;
+    private Sender[] senders=null;
 
     public static final int SIZE=10000; // bytes
     public static final int NUM_MSGS=10;
@@ -61,7 +61,7 @@ public class FRAG_Test extends ChannelTestBase {
     }
 
     @AfterMethod
-    static void tearDown() throws Exception {
+    void tearDown() throws Exception {
         s.stop();
     }
 
@@ -105,7 +105,7 @@ public class FRAG_Test extends ChannelTestBase {
 
 
 
-    static class Sender extends Thread {
+    class Sender extends Thread {
         int id=-1;
         int num_sent=0;
         int num_received=0;
@@ -157,7 +157,7 @@ public class FRAG_Test extends ChannelTestBase {
             }
         }
 
-        private static byte[] createBuffer(int id) {
+        private byte[] createBuffer(int id) {
             ByteBuffer buf=ByteBuffer.allocate(SIZE);
             int elements=SIZE / Global.INT_SIZE;
             for(int i=0; i < elements; i++) {
@@ -194,7 +194,7 @@ public class FRAG_Test extends ChannelTestBase {
         }
     }
 
-    static class Receiver implements Simulator.Receiver {
+    class Receiver implements Simulator.Receiver {
         int received=0;
 
         public void receive(Event evt) {
