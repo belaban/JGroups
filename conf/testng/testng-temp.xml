@@ -11,6 +11,7 @@
             <run>
                 <include name="temp"/>
                 <exclude name="flush"/>
+                <exclude name="vlad"/>
             </run>
         </groups>
         <packages>
