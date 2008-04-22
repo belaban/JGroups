@@ -11,6 +11,7 @@
             <run>
                 <include name="stack-dependent"/>
                 <exclude name="flush"/>
+                <exclude name="vlad"/>
             </run>
         </groups>
         <packages>
