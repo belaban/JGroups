@@ -2,75 +2,52 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Channel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Promise;
-import org.jgroups.util.Util;
-import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.14 2008/04/18 10:18:37 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.15 2008/04/23 10:40:15 belaban Exp $
  */
-@Test(sequential=true)
+@Test(groups="temp",sequential=true)
 public class ConnectTest extends ChannelTestBase {
     Channel channel;
-    static final int TIMES=10;
 
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if(channel != null) {
             channel.close();
             channel = null;
         }
     }
 
-    void doIt(int times) {
-        for(int i=0; i < times; i++) {
-            System.out.println("\nAttempt #" + (i + 1));
-            System.out.print("Connecting to channel: ");
-            try {
-                channel.connect("ConnectTest");
-                System.out.println("-- connected: " + channel.getView() + " --");
-            }
-            catch(Exception e) {
-                System.out.println("-- connection failed --");
-                System.err.println(e);
-            }
-            System.out.print("Disconnecting from channel: ");
-            channel.disconnect();
-            System.out.println("-- disconnected --");
-        }
-    }
 
 
     @Test
     public void testConnectAndDisconnect() throws Exception {
-        System.out.print("Creating channel: ");
-        channel=createChannel();
-        System.out.println("-- created --");
-        doIt(TIMES);
-        System.out.print("Closing channel: ");
-        channel.close();
-        System.out.println("-- closed --");
+        channel=createChannel(true);
+        final String GROUP=getUniqueClusterName("ConnectTest");
+        for(int i=0; i < 5; i++) {
+            System.out.print("Attempt #" + (i + 1));
+            channel.connect(GROUP);
+            System.out.println(": OK");
+            channel.disconnect();
+        }
     }
 
     @Test
     public void testDisconnectConnectOne() throws Exception {
-        channel=createChannel();
-        channel.connect("testgroup1");
+        channel=createChannel(true);
+        channel.connect("ConnectTest.testgroup-1");
         channel.disconnect();
-        channel.connect("testgroup2");
+        channel.connect("ConnectTest.testgroup-2");
         View view=channel.getView();
         assert view.size() == 1;
         assert view.containsMember(channel.getLocalAddress());
-        channel.close();
     }
 
 
@@ -80,19 +57,22 @@ public class ConnectTest extends ChannelTestBase {
     @Test
     public void testDisconnectConnectTwo() throws Exception {
         View     view;
-        Channel coordinator=createChannel("A");
-        coordinator.connect("testgroup");
+        Channel coordinator=createChannel(true);
+        final String props=coordinator.getProperties();
+        coordinator.connect("ConnectTest.testgroup-3");
         view=coordinator.getView();
         System.out.println("-- view for coordinator: " + view);
+        assert view.size() == 1;
 
-        channel=createChannel("A");
-        channel.connect("testgroup1");
+        channel=createChannelWithProps(props);
+        channel.connect("ConnectTest.testgroup-4");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
+        assert view.size() == 1;
 
         channel.disconnect();
 
-        channel.connect("testgroup");
+        channel.connect("ConnectTest.testgroup-3");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
 
@@ -100,7 +80,6 @@ public class ConnectTest extends ChannelTestBase {
         assert view.containsMember(channel.getLocalAddress());
         assert view.containsMember(coordinator.getLocalAddress());
         coordinator.close();
-        channel.close();
     }
 
 
@@ -114,20 +93,20 @@ public class ConnectTest extends ChannelTestBase {
     @Test
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
-        Channel coordinator=createChannel("A");
+        Channel coordinator=createChannel(true);
+        final String props=coordinator.getProperties();
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
-        coordinator.connect("testgroup");
+        coordinator.connect("ConnectTest.testgroup-5");
 
-        channel=createChannel("A");
-        channel.connect("testgroup1");
+        channel=createChannelWithProps(props);
+        channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
-        channel.connect("testgroup");
+        channel.connect("ConnectTest.testgroup-5");
         channel.send(new Message(null, null, "payload"));
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert msg.getObject().equals("payload");
         coordinator.close();
-        channel.close();
     }
 
 
