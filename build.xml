@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.158 2008/04/22 16:27:53 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.159 2008/04/23 11:37:20 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -567,7 +567,7 @@
 
     <target name="all-tests-cc" depends="makeKeystore,downloadFormatter"
             description="Runs functional testsuite only, until stack-dependent testsuite has been converted from JUnit">
-        <antcall target="functional"/>
+        <antcall target="temp"/>
     </target>
 
     <!--
