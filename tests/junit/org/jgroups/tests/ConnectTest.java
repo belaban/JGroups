@@ -6,6 +6,8 @@ import org.jgroups.Channel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.View;
+import org.jgroups.protocols.TP;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -14,7 +16,7 @@ import org.testng.annotations.Test;
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.16 2008/04/23 11:36:19 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.17 2008/04/23 14:02:11 belaban Exp $
  */
 @Test(groups={"temp","single"},sequential=true)
 public class ConnectTest extends ChannelTestBase {
@@ -43,6 +45,7 @@ public class ConnectTest extends ChannelTestBase {
     @Test
     public void testDisconnectConnectOne() throws Exception {
         channel=createChannel(true);
+        changeProps(channel);
         channel.connect("ConnectTest.testgroup-1");
         channel.disconnect();
         channel.connect("ConnectTest.testgroup-2");
@@ -59,6 +62,7 @@ public class ConnectTest extends ChannelTestBase {
     public void testDisconnectConnectTwo() throws Exception {
         View     view;
         coordinator=createChannel(true);
+        changeProps(coordinator);
         final String props=coordinator.getProperties();
         coordinator.connect("ConnectTest.testgroup-3");
         view=coordinator.getView();
@@ -66,6 +70,7 @@ public class ConnectTest extends ChannelTestBase {
         assert view.size() == 1;
 
         channel=createChannelWithProps(props);
+        changeProps(channel);
         channel.connect("ConnectTest.testgroup-4");
         view=channel.getView();
         System.out.println("-- view for channel: " + view);
@@ -94,11 +99,13 @@ public class ConnectTest extends ChannelTestBase {
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
         coordinator=createChannel(true);
+        changeProps(coordinator);
         final String props=coordinator.getProperties();
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
         coordinator.connect("ConnectTest.testgroup-5");
 
         channel=createChannelWithProps(props);
+        changeProps(channel);
         channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
         channel.connect("ConnectTest.testgroup-5");
@@ -109,7 +116,11 @@ public class ConnectTest extends ChannelTestBase {
     }
 
 
-
+    private static void changeProps(Channel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        TP transport=(TP)stack.getTransport();
+        transport.setLogDiscardMessages(false);
+    }
 
 
 
