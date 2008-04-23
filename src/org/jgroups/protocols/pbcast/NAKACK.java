@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.180 2008/03/13 02:00:25 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.181 2008/04/23 14:53:47 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
@@ -198,6 +198,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
     protected boolean print_stability_history_on_failed_xmit=false;
 
+    /** If true, logs messages discarded because received from other members */
+    @ManagedAttribute(description="If true, logs messages discarded because received from other members",writable=true)
+    private boolean log_discard_msgs=true;
+
 
     public NAKACK() {
     }
@@ -314,6 +318,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * @deprecated removed in 2.6
      */
     public void setMaxXmitSize(long max_xmit_size) {
+    }
+
+    public void setLogDiscardMessages(boolean flag) {
+        log_discard_msgs=flag;
+    }
+
+    public boolean getLogDiscardMessages() {
+        return log_discard_msgs;
     }
 
     public boolean setProperties(Properties props) {
@@ -829,7 +841,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(win == null) {  // discard message if there is no entry for sender
             if(leaving)
                 return;
-            if(log.isWarnEnabled())
+            if(log.isWarnEnabled() && log_discard_msgs)
                 log.warn(local_addr + "] discarded message from non-member " + sender + ", my view is " + view);
             return;
         }

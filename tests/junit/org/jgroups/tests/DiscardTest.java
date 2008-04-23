@@ -18,13 +18,14 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.18 2008/04/14 07:30:35 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.19 2008/04/23 14:53:47 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
     static final long NUM_MSGS=10000;
     static final int MSG_SIZE=1000;
-    private static final String GROUP="DiscardTestGroup";
+    private static final String GROUP=getUniqueClusterName("DiscardTest");
     final Promise<Long> ch1_all_received=new Promise<Long>();
     final Promise<Long> ch2_all_received=new Promise<Long>();
 
@@ -38,27 +39,25 @@ public class DiscardTest extends ChannelTestBase {
     
     @AfterMethod
     protected void tearDown() throws Exception{
-        ch2.close();
-        ch1.close();
+        Util.close(ch2,ch1);
     }
 
-    @Test
     public void testDiscardProperties() throws Exception {
         _testLosslessReception(true);
     }
 
-    @Test
     public void testFastProperties() throws Exception {
         _testLosslessReception(false);
     }
 
-    public void _testLosslessReception(boolean discard) throws Exception {
+    private void _testLosslessReception(boolean discard) throws Exception {
         Address ch1_addr, ch2_addr;
         long start, stop;
 
-        ch1=createChannel();
+        ch1=createChannel(true);
+        final String props=ch1.getProperties();
         ch1.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "ch1"));
-        ch2=createChannel();
+        ch2=createChannelWithProps(props);
         ch2.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "ch2"));
 
         if(discard) {
@@ -96,10 +95,10 @@ public class DiscardTest extends ChannelTestBase {
 
         System.out.println("-- waiting for ch1 and ch2 to receive " + NUM_MSGS + " messages");
         Long num_msgs;
-        num_msgs=(Long)ch1_all_received.getResult();
+        num_msgs=ch1_all_received.getResult();
         System.out.println("-- received " + num_msgs + " messages on ch1");
 
-        num_msgs=(Long)ch2_all_received.getResult();
+        num_msgs=ch2_all_received.getResult();
         stop=System.currentTimeMillis();
         System.out.println("-- received " + num_msgs + " messages on ch2");
 
@@ -111,7 +110,6 @@ public class DiscardTest extends ChannelTestBase {
                            + "ms, "
                            + msgs_sec
                            + " msgs/sec");
-        
     }
 
     static class MyReceiver extends ReceiverAdapter {
