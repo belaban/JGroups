@@ -6,9 +6,12 @@ import org.jgroups.*;
 import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.AfterClass;
 
 
 /**
@@ -17,21 +20,28 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.19 2008/04/14 08:05:42 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.20 2008/04/23 15:12:40 belaban Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class DisconnectTest {
-    private JChannel channel;
-    private int routerPort;
+    private JChannel channel, coordinator;
+    private String props;
+    private final static String GROUP="DisconnectTest";
 
+    @BeforeClass
+    void startRouter() throws Exception {
+        int routerPort=Utilities.startGossipRouter();
+        props=getTUNNELProps(routerPort, routerPort);
+    }
 
+    @AfterClass
+    static void stopRouter() throws Exception {
+        Utilities.stopGossipRouter();
+    }
 
     @AfterMethod
-    public void tearDown() throws Exception {
-        if(channel != null) {
-            channel.close();
-            channel=null;
-        }
+    void tearDown() throws Exception {
+        Util.close(channel, coordinator);
     }
 
 
@@ -54,20 +64,12 @@ public class DisconnectTest {
      * getLocalAddress() on a disconnected channel.
      *
      **/
-    @Test
     public void testNullLocalAddress_TUNNEL() throws Exception {
-        try {
-            routerPort=Utilities.startGossipRouter();
-            String props = getTUNNELProps(routerPort, routerPort);
-            channel = new JChannel(props);
-            channel.connect("testgroup");
-            assert channel.getLocalAddress() != null;
-            channel.disconnect();
-            assert channel.getLocalAddress() == null;
-        }
-        finally {
-            Utilities.stopGossipRouter();
-        }
+        channel = new JChannel(props);
+        channel.connect(GROUP);
+        assert channel.getLocalAddress() != null;
+        channel.disconnect();
+        assert channel.getLocalAddress() == null;
     }
 
 
@@ -75,12 +77,11 @@ public class DisconnectTest {
      * Tests connect-disconnect-connect sequence for a group with one member
      * (using default configuration).
      **/
-    @Test
     public void testDisconnectConnectOne_Default() throws Exception {
-        channel=new JChannel();
-        channel.connect("testgroup1");
+        channel=new JChannel(props);
+        channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
-        channel.connect("testgroup2");
+        channel.connect("DisconnectTest.testgroup-2");
         View view=channel.getView();
         Assert.assertEquals(1, view.size());
         assert view.containsMember(channel.getLocalAddress());
@@ -91,20 +92,17 @@ public class DisconnectTest {
      * Tests connect-disconnect-connect sequence for a group with two members
      * (using default configuration).
      **/
-    @Test
     public void testDisconnectConnectTwo_Default() throws Exception {
-        JChannel coordinator=new JChannel();
-        coordinator.connect("testgroup");
-        channel=new JChannel();
-        channel.connect("testgroup1");
+        coordinator=new JChannel(props);
+        coordinator.connect(GROUP);
+        channel=new JChannel(props);
+        channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
-        channel.connect("testgroup");
+        channel.connect(GROUP);
         View view=channel.getView();
         Assert.assertEquals(2, view.size());
         assert view.containsMember(channel.getLocalAddress());
         assert view.containsMember(coordinator.getLocalAddress());
-
-        coordinator.close();
     }
 
 
@@ -116,20 +114,19 @@ public class DisconnectTest {
      * after DISCONNECT. Because of this problem, the channel couldn't be used
      * to multicast messages.
      **/
-    @Test
     public void testDisconnectConnectSendTwo_Default() throws Exception {
 
         final Promise msgPromise=new Promise();
-        JChannel coordinator=new JChannel();
-        coordinator.connect("testgroup");
+        coordinator=new JChannel(props);
+        coordinator.connect(GROUP);
         PullPushAdapter ppa= new PullPushAdapter(coordinator,
                                                  new PromisedMessageListener(msgPromise));
         ppa.start();
 
-        channel=new JChannel();
-        channel.connect("testgroup1");
+        channel=new JChannel(props);
+        channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
-        channel.connect("testgroup");
+        channel.connect(GROUP);
 
         channel.send(new Message(null, null, "payload"));
 
@@ -138,7 +135,6 @@ public class DisconnectTest {
         Assert.assertEquals("payload", msg.getObject());
 
         ppa.stop();
-        coordinator.close();
     }
 
 
@@ -146,54 +142,35 @@ public class DisconnectTest {
       * Tests connect-disconnect-connect sequence for a group with one member
       * (using TUNNEL).
       **/
-     @Test
      public void testDisconnectConnectOne_TUNNEL() throws Exception {
-        try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
-            channel=new JChannel(props);
-            channel.connect("testgroup1");
-            channel.disconnect();
-            channel.connect("testgroup2");
-            View view=channel.getView();
-            Assert.assertEquals(1, view.size());
-            assert view.containsMember(channel.getLocalAddress());
-        }
-        finally {
-            Utilities.stopGossipRouter();
-        }
-     }
+        channel=new JChannel(props);
+        channel.connect("DisconnectTest.testgroup-1");
+        channel.disconnect();
+        channel.connect("DisconnectTest.testgroup-2");
+        View view=channel.getView();
+        Assert.assertEquals(1, view.size());
+        assert view.containsMember(channel.getLocalAddress());
+    }
 
 
      /**
       * Tests connect-disconnect-connect sequence for a group with two members
       * (using TUNNEL).
       **/
-     @Test
      public void testDisconnectConnectTwo_TUNNEL() throws Exception {
-         try {
-             routerPort = Utilities.startGossipRouter();
-             String props=getTUNNELProps(routerPort, routerPort);
-             // String props="tunnel.xml";
-             JChannel coordinator=new JChannel(props);
-             coordinator.connect("testgroup");
-             channel=new JChannel(props);
-             channel.connect("testgroup1");
-             channel.disconnect();
-             channel.connect("testgroup");
+         coordinator=new JChannel(props);
+         coordinator.connect(GROUP);
+         channel=new JChannel(props);
+         channel.connect("DisconnectTest.testgroup-1");
+         channel.disconnect();
+         channel.connect(GROUP);
 
-             Thread.sleep(1000);
+         Thread.sleep(1000);
 
-             View view=channel.getView();
-             Assert.assertEquals(2, view.size());
-             assert view.containsMember(channel.getLocalAddress());
-             assert view.containsMember(coordinator.getLocalAddress());
-
-             coordinator.close();
-         }
-         finally {
-             Utilities.stopGossipRouter();
-         }
+         View view=channel.getView();
+         Assert.assertEquals(2, view.size());
+         assert view.containsMember(channel.getLocalAddress());
+         assert view.containsMember(coordinator.getLocalAddress());
      }
 
 
@@ -204,37 +181,25 @@ public class DisconnectTest {
       * DISCONNECT. Because of this problem, the channel couldn't be used to
       * multicast messages.
       **/
-     @Test
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
-        try {
-            routerPort = Utilities.startGossipRouter();
-            String props=getTUNNELProps(routerPort, routerPort);
+        final Promise msgPromise=new Promise();
+        coordinator=new JChannel(props);
+        coordinator.connect(GROUP);
+        PullPushAdapter ppa=new PullPushAdapter(coordinator, new PromisedMessageListener(msgPromise));
+        ppa.start();
 
-            final Promise msgPromise=new Promise();
-            JChannel coordinator=new JChannel(props);
-            coordinator.connect("testgroup");
-            PullPushAdapter ppa=
-                    new PullPushAdapter(coordinator,
-                                        new PromisedMessageListener(msgPromise));
-            ppa.start();
+        channel=new JChannel(props);
+        channel.connect("DisconnectTest.testgroup-1");
+        channel.disconnect();
+        channel.connect(GROUP);
 
-            channel=new JChannel(props);
-            channel.connect("testgroup1");
-            channel.disconnect();
-            channel.connect("testgroup");
+        channel.send(new Message(null, null, "payload"));
 
-            channel.send(new Message(null, null, "payload"));
+        Message msg=(Message)msgPromise.getResult(20000);
+        assert msg != null;
+        Assert.assertEquals("payload", msg.getObject());
 
-            Message msg=(Message)msgPromise.getResult(20000);
-            assert msg != null;
-            Assert.assertEquals("payload", msg.getObject());
-
-            ppa.stop();
-            coordinator.close();
-        }
-        finally {
-            Utilities.stopGossipRouter();
-        }
+        ppa.stop();
     }
 
 

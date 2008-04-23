@@ -21,9 +21,9 @@ import java.util.Properties;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.10 2008/04/23 14:53:47 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.11 2008/04/23 15:15:25 belaban Exp $
  */
-@Test(groups={"temp", "single"})
+@Test(groups="temp")
 public class DisconnectStressTest extends ChannelTestBase {
     CyclicBarrier           all_disconnected=null;
     CyclicBarrier           start_disconnecting=null;
