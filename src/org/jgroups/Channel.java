@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.44 2008/04/18 07:53:50 belaban Exp $
+// $Id: Channel.java,v 1.45 2008/04/23 14:00:21 belaban Exp $
 
 package org.jgroups;
 
@@ -6,6 +6,7 @@ package org.jgroups;
 import org.apache.commons.logging.Log;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.stack.ProtocolStack;
 
 import java.io.Serializable;
 import java.util.*;
@@ -65,6 +66,8 @@ public abstract class Channel implements Transport {
     public Channel copy() throws ChannelException {
         throw new UnsupportedOperationException();
     }
+
+    public abstract ProtocolStack getProtocolStack();
 
     /**
      Connects the channel to a group. The client is now able to receive group
