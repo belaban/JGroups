@@ -46,7 +46,6 @@ public class FRAG_Test extends ChannelTestBase {
         s.setView(v);
         s.addMember(a1);
         Protocol frag=createProtocol();
-        System.out.println("protocol to be tested: " + frag.getName());
         Properties props=new Properties();
         props.setProperty("frag_size", "512");
         frag.setPropertiesInternal(props);
@@ -200,8 +199,8 @@ public class FRAG_Test extends ChannelTestBase {
         public void receive(Event evt) {
             if(evt.getType() == Event.MSG) {
                 received++;
-                if(received % 1000 == 0)
-                    System.out.println("<== " + received);
+                //if(received % 1000 == 0)
+                  //  System.out.println("<== " + received);
 
                 Message msg=(Message)evt.getArg();
                 byte[] data=msg.getBuffer();
