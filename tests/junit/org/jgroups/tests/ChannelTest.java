@@ -15,7 +15,7 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.19 2008/04/18 10:18:36 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.20 2008/04/23 14:11:01 belaban Exp $
  */
 @Test(groups="temp",sequential=false)
 public class ChannelTest extends ChannelTestBase {
@@ -272,7 +272,6 @@ public class ChannelTest extends ChannelTestBase {
         public void receive(Message msg) {
             Integer num=(Integer)msg.getObject();
             synchronized(nums) {
-                // System.out.println("-- received " + num);
                 nums.add(num);
                 if(nums.size() >= expected) {
                     nums.notifyAll();
