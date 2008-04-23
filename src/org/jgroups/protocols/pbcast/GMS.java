@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.138 2008/04/22 13:57:19 belaban Exp $
+ * @version $Id: GMS.java,v 1.139 2008/04/23 14:53:47 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -101,6 +101,9 @@ public class GMS extends Protocol {
     long                      resume_task_timeout=20000;
 
     boolean                   flushProtocolInStack=false;
+
+    @ManagedAttribute(writable=true,description="Logs failures for collecting all view acks if true")
+    boolean                   log_collect_msgs=true;
 
     public static final String       name="GMS";
 
@@ -207,6 +210,14 @@ public class GMS extends Protocol {
         return coord != null && local_addr != null && local_addr.equals(coord);
     }
 
+
+    public void setLogCollectMessages(boolean flag) {
+        log_collect_msgs=flag;
+    }
+
+    public boolean getLogCollectMessages() {
+        return log_collect_msgs;
+    }
 
     public void resetStats() {
         super.resetStats();
@@ -457,9 +468,10 @@ public class GMS extends Protocol {
                 log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
-                    "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
-                    "), local_addr=" + local_addr);
+            if(log.isWarnEnabled() && log_collect_msgs)
+                log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
+                        "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
+                        "), local_addr=" + local_addr);
         }
     }
 
@@ -1236,7 +1248,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.138 2008/04/22 13:57:19 belaban Exp $
+     * @version $Id: GMS.java,v 1.139 2008/04/23 14:53:47 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
