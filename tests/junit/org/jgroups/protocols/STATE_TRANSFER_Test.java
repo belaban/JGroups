@@ -15,7 +15,7 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.13 2008/04/21 12:29:26 belaban Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.14 2008/04/23 14:07:36 belaban Exp $
  */
 @Test(groups="temp")
 public class STATE_TRANSFER_Test extends ChannelTestBase {
@@ -26,8 +26,8 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-        System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "error");
+        // System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
+        // System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "error");
 
         coord=new Coordinator();
         coord.recvLoop();
@@ -80,12 +80,12 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
                         try {
                             tmp=channel.receive(0);
                             if(tmp instanceof ExitEvent) {
-                                System.err.println("-- received EXIT, waiting for ChannelReconnected callback");
+                                // System.err.println("-- received EXIT, waiting for ChannelReconnected callback");
                                 break;
                             }
                             if(tmp instanceof GetStateEvent) {
                                 synchronized(Coordinator.this) {
-                                    System.err.println("--  GetStateEvent, cnt=" + cnt);
+                                    // System.err.println("--  GetStateEvent, cnt=" + cnt);
                                     channel.returnState(Util.objectToByteBuffer(new Integer(cnt)));
                                 }
                             }
@@ -113,7 +113,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
                         try {
                             synchronized(Coordinator.this) {
                                 channel.send(null, null, new Integer(++cnt));
-                                System.err.println("send cnt=" + cnt);
+                                // System.err.println("send cnt=" + cnt);
                             }
                             Thread.sleep(1000);
                         }
@@ -160,7 +160,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
                 }
                 if(tmp instanceof SetStateEvent) {
                     cnt=((Integer)Util.objectFromByteBuffer(((SetStateEvent)tmp).getArg())).intValue();
-                    System.err.println("--  SetStateEvent, cnt=" + cnt);
+                    // System.err.println("--  SetStateEvent, cnt=" + cnt);
                     continue;
                 }
                 if(tmp instanceof Message) {

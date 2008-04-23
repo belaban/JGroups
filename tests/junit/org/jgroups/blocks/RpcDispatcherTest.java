@@ -35,7 +35,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.14 2008/04/21 11:34:03 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.15 2008/04/23 14:11:02 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -99,8 +99,8 @@ public class RpcDispatcherTest extends ChannelTestBase {
                                                  int num=0;
                                                  public boolean isAcceptable(Object response, Address sender) {
                                                      boolean retval=((Integer)response).intValue() > 1;
-                                                     System.out.println("-- received " + response + " from " +
-                                                     sender + ": " + (retval ? "OK" : "NOTOK"));
+                                                     // System.out.println("-- received " + response + " from " +
+                                                     // sender + ": " + (retval ? "OK" : "NOTOK"));
                                                      if(retval)
                                                          num++;
                                                      return retval;
