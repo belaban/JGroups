@@ -47,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.184 2008/04/23 09:28:58 belaban Exp $
+ * @version $Id: TP.java,v 1.185 2008/04/23 14:01:00 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -119,6 +119,9 @@ public abstract class TP extends Protocol {
      * to true means that we expect the exact same version on all incoming packets */
     @ManagedAttribute(description="Discard packets with a different version",writable=true)
     protected boolean discard_incompatible_packets=false;
+
+    /** whether or not warnings about messages from different groups are logged - private flag, not for common use */
+    private boolean log_discard_msgs=true;
 
     /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
      * Packet handler is a separate thread taking care of de-serialization, receiver
@@ -498,8 +501,13 @@ public abstract class TP extends Protocol {
         return thread_pool_queue_max_size;
     }
 
+    public void setLogDiscardMessages(boolean flag) {
+        log_discard_msgs=flag;
+    }
 
-
+    public boolean getLogDiscardMessages() {
+        return log_discard_msgs;
+    }
 
 
 
@@ -1214,7 +1222,7 @@ public abstract class TP extends Protocol {
         else {
             // Discard if message's group name is not the same as our group name
             if(perform_cluster_name_matching && channel_name != null && !channel_name.equals(ch_name)) {
-                if(log.isWarnEnabled())
+                if(log.isWarnEnabled() && log_discard_msgs)
                     log.warn(new StringBuilder("discarded message from different group \"").append(ch_name).
                             append("\" (our group is \"").append(channel_name).append("\"). Sender was ").append(msg.getSrc()));
             }
