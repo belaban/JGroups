@@ -1,16 +1,18 @@
-// $Id: Deadlock2Test.java,v 1.15 2008/04/14 07:30:35 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.16 2008/04/23 10:54:34 belaban Exp $
 
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.Address;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
 import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.Test;
 
 import java.util.Enumeration;
 import java.util.Vector;
@@ -21,14 +23,20 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  */
+@Test(groups="temp",sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
     private static boolean DEADLOCK_DETECTION = true;
     private String name = "Deadlock2Test";
 
+    private JChannel c1, c2;
 
 
+    @AfterMethod
+    void cleanup() {
+        Util.close(c1, c2);
+    }
 
 
     /**
@@ -38,14 +46,13 @@ public class Deadlock2Test extends ChannelTestBase {
      *
      * @throws Exception
      */
-    @Test
     public void testOneChannel() throws Exception {
-        Channel channel = createChannel();
+        c1 = createChannel(true);
         ServerObject serverObject = new ServerObject("obj1");
-        RpcDispatcher disp=new RpcDispatcher(channel, null, null, serverObject, DEADLOCK_DETECTION);
+        RpcDispatcher disp=new RpcDispatcher(c1, null, null, serverObject, DEADLOCK_DETECTION);
         serverObject.setRpcDispatcher(disp);
-        channel.connect(name);
-        Address localAddress = channel.getLocalAddress();
+        c1.connect(name);
+        Address localAddress = c1.getLocalAddress();
 
         // call the nested group method on itself
         MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
@@ -57,10 +64,6 @@ public class Deadlock2Test extends ChannelTestBase {
         assertEquals("outerMethod[innerMethod]", rspList.getValue(localAddress));
         assertTrue(rspList.isReceived(localAddress));
         assertFalse(rspList.isSuspected(localAddress));
-
-        channel.disconnect();
-        channel.close();
-
     }
 
 
@@ -82,48 +85,42 @@ public class Deadlock2Test extends ChannelTestBase {
      * If there is a deadlock, JUnit will timeout and fail the test.
      *
      */
-    @Test
     public void testTwoChannels() throws Throwable {
         ServerObject obj1, obj2 = null;
 
-        Channel c1 = createChannel("A");
+        c1 = createChannel(true);
+        final String props=c1.getProperties();
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        Channel c2 = createChannel("A");
+        c2 = createChannelWithProps(props);
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
         c2.connect(name);
         Address localAddress2 = c2.getLocalAddress();
 
-        try {
-            // call a point-to-point method on Member 2 that triggers a nested distributed RPC
-            MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
-            log("calling outerMethod() on " + localAddress2);
-            Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
-            log("results of outerMethod(): " + retval);
-        }
-        finally {
-            c2.close();
-            c1.close();
-        }
+        // call a point-to-point method on Member 2 that triggers a nested distributed RPC
+        MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
+        log("calling outerMethod() on " + localAddress2);
+        Object retval = disp1.callRemoteMethod(localAddress2, call, GroupRequest.GET_ALL, 0);
+        log("results of outerMethod(): " + retval);
     }
 
 
-    @Test
     public void testTwoChannelsWithInitialMulticast() throws Exception {
         ServerObject obj1, obj2 = null;
 
-        Channel c1 = createChannel("A");
+        c1 = createChannel(true);
+        final String props=c1.getProperties();
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        Channel c2 = createChannel("A");
+        c2 = createChannelWithProps(props);
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
@@ -133,18 +130,12 @@ public class Deadlock2Test extends ChannelTestBase {
         dests.add(c1.getLocalAddress());
         dests.add(c2.getLocalAddress());
 
-        try {
-            // call a point-to-point method on Member 2 that triggers a nested distributed RPC
-            MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
-            log("calling outerMethod() on all members");
-            RspList rsps = disp1.callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
-            log("results of outerMethod():\n" + rsps);
-            Assert.assertEquals(2, rsps.size());
-        }
-        finally {
-            c2.close();
-            c1.close();
-        }
+        // call a point-to-point method on Member 2 that triggers a nested distributed RPC
+        MethodCall call = new MethodCall("outerMethod", new Object[0], new Class[0]);
+        log("calling outerMethod() on all members");
+        RspList rsps = disp1.callRemoteMethods(dests, call, GroupRequest.GET_ALL, 0);
+        log("results of outerMethod():\n" + rsps);
+        Assert.assertEquals(2, rsps.size());
     }
 
 
