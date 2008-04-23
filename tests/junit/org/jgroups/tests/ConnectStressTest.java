@@ -4,19 +4,24 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.PING;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.Vector;
+import java.util.Properties;
 import java.util.concurrent.CyclicBarrier;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.29 2008/04/22 16:04:41 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.30 2008/04/23 09:27:52 belaban Exp $
  */
 @Test(groups={"temp"})
 public class ConnectStressTest extends ChannelTestBase {
@@ -28,7 +33,7 @@ public class ConnectStressTest extends ChannelTestBase {
     static final int NUM=20;
     final MyThread[] threads=new MyThread[NUM];
     JChannel         channel=null;
-    static String    groupname=getUniqueClusterName("ConnectStressTest");
+    static final String    groupname="ConnectStressTest";
     String           PROPS=null;
 
 
@@ -206,19 +211,39 @@ public class ConnectStressTest extends ChannelTestBase {
 
     private static void changeProperties(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        GMS gms=(GMS)stack.findProtocol("GMS");
-        if(gms != null) {
-            gms.setViewBundling(true);
-            gms.setMaxBundlingTime(300);
+        final Properties props=new Properties();
+        Protocol prot=stack.findProtocol("GMS");
+        if(prot != null) {
+            props.setProperty("view_bundling", "true");
+            props.setProperty("max_bundling_time", "300");
+            // gms.setViewBundling(true);
+            // gms.setMaxBundlingTime(300);
+            prot.setProperties(props);
         }
-        MERGE2 merge=(MERGE2)stack.findProtocol("MERGE2");
-        if(merge != null) {
-            merge.setMinInterval(5000);
-            merge.setMaxInterval(10000);
+        prot=stack.findProtocol("MERGE2");
+        if(prot != null) {
+            props.clear();
+            props.setProperty("min_interval", "5000");
+            props.setProperty("max_interval", "10000");
+            // merge.setMinInterval(5000);
+            // merge.setMaxInterval(10000);
+            prot.setProperties(props);
+        }
+
+        prot=stack.findProtocol(PING.class);
+        if(prot == null)
+            prot=stack.findProtocol(TCPPING.class);
+        if(prot == null)
+            prot=stack.findProtocol(MPING.class);
+        if(prot != null) {
+            props.clear();
+            props.setProperty("num_initial_members", String.valueOf(NUM));
+            props.setProperty("num_ping_requests", "3");
+            prot.setProperties(props);
         }
     }
 
-  
 
+ 
 
 }
