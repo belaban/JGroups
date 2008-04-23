@@ -2,27 +2,28 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.Channel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.View;
 import org.jgroups.util.Promise;
+import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.15 2008/04/23 10:40:15 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.16 2008/04/23 11:36:19 belaban Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups={"temp","single"},sequential=true)
 public class ConnectTest extends ChannelTestBase {
-    Channel channel;
+    Channel channel, coordinator;
 
 
     @AfterMethod
     void tearDown() throws Exception {
-        if(channel != null) {
-            channel.close();
-            channel = null;
-        }
+        Util.close(channel, coordinator);
     }
 
 
@@ -57,7 +58,7 @@ public class ConnectTest extends ChannelTestBase {
     @Test
     public void testDisconnectConnectTwo() throws Exception {
         View     view;
-        Channel coordinator=createChannel(true);
+        coordinator=createChannel(true);
         final String props=coordinator.getProperties();
         coordinator.connect("ConnectTest.testgroup-3");
         view=coordinator.getView();
@@ -79,7 +80,6 @@ public class ConnectTest extends ChannelTestBase {
         assert view.size() == 2;
         assert view.containsMember(channel.getLocalAddress());
         assert view.containsMember(coordinator.getLocalAddress());
-        coordinator.close();
     }
 
 
@@ -93,7 +93,7 @@ public class ConnectTest extends ChannelTestBase {
     @Test
     public void testDisconnectConnectSendTwo() throws Exception {
         final Promise<Message> msgPromise=new Promise<Message>();
-        Channel coordinator=createChannel(true);
+        coordinator=createChannel(true);
         final String props=coordinator.getProperties();
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
         coordinator.connect("ConnectTest.testgroup-5");
@@ -106,7 +106,6 @@ public class ConnectTest extends ChannelTestBase {
         Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert msg.getObject().equals("payload");
-        coordinator.close();
     }
 
 

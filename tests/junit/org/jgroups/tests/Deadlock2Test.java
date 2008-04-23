@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.16 2008/04/23 10:54:34 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.17 2008/04/23 11:36:19 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.16 $
+ * @version $Revision: 1.17 $
  */
 @Test(groups="temp",sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
