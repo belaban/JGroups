@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.9 2008/04/08 12:36:46 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.10 2008/04/24 07:13:34 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
@@ -29,7 +29,7 @@ public class MessageTest {
         }
         catch(IllegalArgumentException ex) {
         }
-        Assert.assertEquals(0, m1.getFlags());
+        assert m1.getFlags() == 0;
     }
 
 
