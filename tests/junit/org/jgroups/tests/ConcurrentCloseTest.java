@@ -9,7 +9,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.8 2008/04/21 16:18:13 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.9 2008/04/24 07:37:01 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentCloseTest extends ChannelTestBase {
@@ -18,15 +18,7 @@ public class ConcurrentCloseTest extends ChannelTestBase {
 
     @AfterMethod
     void tearDown() throws Exception {
-        if(c2 != null) {
-            c2.close();
-            c2=null;
-        }
-
-        if(c1 != null) {
-            c1.close();
-            c1=null;
-        }
+        Util.close(c2, c1);
     }
 
     /**
