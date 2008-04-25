@@ -2,6 +2,9 @@
 Replication between data centers
 ================================
 
+Author: Bela Ban
+Version: $Id: DataCenterReplication.txt,v 1.2 2008/04/25 14:04:25 belaban Exp $
+
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
 (almost) up-to-date data.
@@ -9,4 +12,4 @@ asynchronously. In case of a site failure of NYC, all clients can be switched ov
 There is no replication going on from SFO to NYC by default, only when SFO becomes the primary site.
 
 For the example, we assume that each site uses a UDP based stack, and replication between the sites use a
-TCP based stack.
+TCP based stack, see figure DataCenterReplication.png.
