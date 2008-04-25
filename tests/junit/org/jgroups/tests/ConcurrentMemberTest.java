@@ -11,22 +11,22 @@ import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
  * Test case modelling http://jira.jboss.com/jira/browse/JGRP-659
  * @author unknown
- * @version $Id: ConcurrentMemberTest.java,v 1.1 2008/04/25 06:59:17 belaban Exp $
+ * @version $Id: ConcurrentMemberTest.java,v 1.2 2008/04/25 07:07:58 belaban Exp $
  */
 @Test(groups="temp", sequential=true)
 public class ConcurrentMemberTest extends ChannelTestBase {
     private GroupManager coordinator=null;
     private List<GroupManager> managers=null;
+    private static String GROUP="ConcurrentMemberTest";
 
     @BeforeMethod
-    void beforeEachTest() {
+    void beforeEachTest() throws Exception {
         coordinator=startCoordinator();
         managers=new ArrayList<GroupManager>();
     }
@@ -52,20 +52,20 @@ public class ConcurrentMemberTest extends ChannelTestBase {
         coordinator.join();
     }
 
-    public void testStartingTwoConcurrentConnections() {
+    public void testStartingTwoConcurrentConnections() throws Exception {
         doConnections(2);
     }
 
-    public void testStartingFiveConcurrentConnections() {
+    public void testStartingFiveConcurrentConnections() throws Exception {
         doConnections(5);
     }
 
-    public void testStartingFifteenConcurrentConnections() {
+    public void testStartingFifteenConcurrentConnections() throws Exception {
         doConnections(15);
     }
 
-    private GroupManager startCoordinator() {
-        coordinator=new GroupManager("cluster1", "coordinator");
+    private GroupManager startCoordinator() throws Exception {
+        coordinator=new GroupManager("coordinator");
         coordinator.start();
 
         // Wait for coordinator to stabilize
@@ -73,9 +73,9 @@ public class ConcurrentMemberTest extends ChannelTestBase {
         return coordinator;
     }
 
-    private void doConnections(int count) {
+    private void doConnections(int count) throws Exception {
         for(int i=0; i < count; i++) {
-            managers.add(new GroupManager("cluster1", "connection-" + i));
+            managers.add(new GroupManager("connection-" + i));
         }
 
         for(GroupManager manager : managers) {
@@ -174,8 +174,8 @@ public class ConcurrentMemberTest extends ChannelTestBase {
 
         volatile boolean shutdown=false;
 
-        public GroupManager(String clusterName, String name) {
-            group=new GroupConnection(clusterName);
+        public GroupManager(String name) throws Exception {
+            group=new GroupConnection();
             this.setName(name);
         }
 
@@ -186,7 +186,12 @@ public class ConcurrentMemberTest extends ChannelTestBase {
         }
 
         public void run() {
-            group.connect();
+            try {
+                group.connect();
+            }
+            catch(ChannelException e) {
+                e.printStackTrace();
+            }
 
             setName(getName() + "[" + group.getId() + "]");
 
@@ -198,131 +203,8 @@ public class ConcurrentMemberTest extends ChannelTestBase {
 
 
 
-    private interface Channel {
-        void connect();
 
-        Object receive(long timeout);
 
-        void publish(Message message);
-
-        void disconnect();
-
-        boolean requestState(Address member, long timeout);
-
-        void returnState(byte[] state);
-
-        String getId();
-
-        Address getSelf();
-
-        List<Address> getMembers();
-    }
-
-    private class MulticastChannel implements Channel {
-        private static final String jgroupsConfig="udp.xml";
-
-        private String clusterName;
-
-        private JChannel jChannel;
-
-        public MulticastChannel(String clusterName) {
-            this.clusterName=clusterName;
-
-            try {
-                jChannel=new JChannel(jgroupsConfig);
-            }
-            catch(ChannelException ce) {
-                throw new RuntimeException(ce);
-            }
-        }
-
-        public void connect() {
-            try {
-                jChannel.connect(clusterName);
-            }
-            catch(ChannelException ce) {
-                throw new RuntimeException(ce);
-            }
-        }
-
-        public Object receive(long timeout) {
-            try {
-                Object obj=jChannel.receive(timeout);
-
-                if(obj != null) {
-                    log.info(getId() + "received message from JGroups -" + obj);
-                    return obj;
-                }
-            }
-            catch(ChannelException ce) {
-                throw new RuntimeException(ce);
-            }
-            catch(TimeoutException te) {
-                // Will happen
-            }
-
-            return null;
-        }
-
-        public boolean isConnected() {
-            return jChannel.isConnected();
-        }
-
-        public void disconnect() {
-            jChannel.close();
-        }
-
-        public void publish(Message message) {
-            if(!jChannel.isConnected()) {
-                throw new IllegalStateException(
-                        "Unable to publish message when closed.");
-            }
-
-            try {
-                jChannel.send(new org.jgroups.Message());
-            }
-            catch(ChannelException ce) {
-                throw new RuntimeException(ce);
-            }
-        }
-
-        public boolean requestState(Address member, long timeout) {
-            try {
-                return jChannel.getState(member, timeout);
-            }
-            catch(ChannelException ce) {
-                throw new RuntimeException(ce);
-            }
-        }
-
-        public void returnState(byte[] state) {
-            jChannel.returnState(state);
-        }
-
-        public String getId() {
-            return jChannel.getLocalAddress() == null? null : jChannel
-                    .getLocalAddress().toString();
-        }
-
-        public Address getSelf() {
-            return jChannel.getLocalAddress();
-        }
-
-        public List<Address> getMembers() {
-            List<Address> retVal=new ArrayList<Address>();
-
-            if(isConnected()) {
-                View view=jChannel.getView();
-                Vector<Address> addresses=view.getMembers();
-
-                for(Address address : addresses) {
-                    retVal.add(address);
-                }
-            }
-
-            return retVal;
-        }
-    }
 
     public class GroupConnection {
         protected final Log log=LogFactory.getLog(this.getClass());
@@ -339,22 +221,18 @@ public class ConcurrentMemberTest extends ChannelTestBase {
 
         private String state=null;
 
-        public GroupConnection() {
-            this("default-group");
-        }
 
-        public GroupConnection(String name) {
-            channel=new MulticastChannel(name);
-
+        public GroupConnection() throws Exception {
+            channel=createChannel();
             stateLock=new ReentrantLock();
         }
 
         public String getId() {
-            return channel.getId();
+            return channel.getLocalAddress().toString();
         }
 
-        public void connect() {
-            channel.connect();
+        public void connect() throws ChannelException {
+            channel.connect(GROUP);
 
             receiver=new ReceiverThread(channel);
             receiver.start();
@@ -391,10 +269,10 @@ public class ConcurrentMemberTest extends ChannelTestBase {
         }
 
         public Address getCoordinator() {
-            List<Address> members=channel.getMembers();
+            List<Address> tmp=channel.getView().getMembers();
 
-            if(members != null && members.size() > 0) {
-                return members.get(0);
+            if(tmp != null && !tmp.isEmpty()) {
+                return tmp.get(0);
             }
             else {
                 return null;
@@ -407,16 +285,16 @@ public class ConcurrentMemberTest extends ChannelTestBase {
          * @return
          */
         public List<Address> getChannelMembers() {
-            return channel.getMembers();
+            return channel.getView().getMembers();
         }
 
         private class ReceiverThread extends Thread {
-            private Channel channel=null;
+            private Channel ch=null;
 
             private volatile boolean shutdown=false;
 
             public ReceiverThread(Channel channel) {
-                this.channel=channel;
+                this.ch=channel;
             }
 
             public void shutdown() {
@@ -425,39 +303,51 @@ public class ConcurrentMemberTest extends ChannelTestBase {
 
             public void run() {
                 while(!shutdown) {
-                    Object o=channel.receive(5000);
+                    Object o=null;
+                    try {
+                        o=ch.receive(5000);
+                    }
+                    catch(ChannelNotConnectedException e) {
+                        e.printStackTrace();
+                    }
+                    catch(ChannelClosedException e) {
+                        e.printStackTrace();
+                    }
+                    catch(TimeoutException e) {
+                        e.printStackTrace();
+                    }
 
                     if(o != null) {
                         if(o instanceof Message) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "received data message -"
                                     + new String(((Message)o).getBuffer()));
                         }
                         else if(o instanceof View) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "recieved view message -" + o);
 
                             View view=(View)o;
 
                             members=view.getMembers();
-                            log.info(channel.getId() + "cached members are "
+                            log.info(ch.getLocalAddress().toString() + "cached members are "
                                     + members);
 
                             configureState(view);
                         }
                         else if(o instanceof GetStateEvent) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "recieved getstate message -" + o);
 
                             stateLock.lock();
                             try {
                                 if(state == null) {
-                                    channel
+                                    ch
                                             .returnState("NO STATE CURRENTLY SET"
                                                     .getBytes());
                                 }
                                 else {
-                                    channel.returnState(state.getBytes());
+                                    ch.returnState(state.getBytes());
                                 }
                             }
                             finally {
@@ -465,7 +355,7 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                             }
                         }
                         else if(o instanceof SetStateEvent) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "recieved setstate message -" + o);
 
                             byte[] bytes=(byte[])((SetStateEvent)o)
@@ -475,7 +365,7 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                                 stateLock.lock();
                                 state=new String(bytes);
 
-                                log.info(channel.getId() + "set state to '"
+                                log.info(ch.getLocalAddress().toString() + "set state to '"
                                         + state + "'");
                             }
                             finally {
@@ -483,15 +373,20 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                             }
                         }
                         else if(o instanceof ExitEvent) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "recieved exit message -" + o);
 
                             disconnect();
-                            connect();
+                            try {
+                                connect();
+                            }
+                            catch(ChannelException e) {
+                                e.printStackTrace();
+                            }
                         }
                     }
                     else {
-                        log.info(channel.getId()
+                        log.info(ch.getLocalAddress().toString()
                                 + "has no messages after 5 seconds.");
                     }
                 }
@@ -501,10 +396,9 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                 if(view instanceof MergeView) {
                     MergeView mergeView=(MergeView)view;
 
-                    if(!isMemberOfLargestSubgroup(mergeView, channel.getSelf())) {
-                        log
-                                .info(channel.getId()
-                                        + "is not member of largest subgroup, need to get state");
+                    if(!isMemberOfLargestSubgroup(mergeView, ch.getLocalAddress())) {
+                        log.info(ch.getLocalAddress().toString()
+                                + "is not member of largest subgroup, need to get state");
 
                         // Not member of largest group, so get state from
                         // coordinator of largest group
@@ -517,7 +411,7 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                 else {
                     // If I am the coordinator, then set the initial state
                     if(view.getVid().getCoordAddress().toString().equals(
-                            channel.getId())) {
+                            ch.getLocalAddress().toString())) {
 
                         if(state == null) {
                             stateLock.lock();
@@ -572,12 +466,12 @@ public class ConcurrentMemberTest extends ChannelTestBase {
 
                         int count=0;
 
-                        log.info(channel.getId() + "getting state from"
+                        log.info(ch.getLocalAddress().toString() + "getting state from"
                                 + stateHolder);
 
-                        while(!channel.requestState(stateHolder, 10000)) {
+                        while(!ch.getState(stateHolder, 10000)) {
                             log
-                                    .info(channel.getId()
+                                    .info(ch.getLocalAddress().toString()
                                             + "failed getting state from"
                                             + stateHolder);
 
@@ -585,7 +479,7 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                                 isRequestingState=false;
 
                                 log
-                                        .info(channel.getId()
+                                        .info(ch.getLocalAddress().toString()
                                                 + "Failed to get state after 6 attempts, exiting.");
                                 retVal=false;
                                 break;
@@ -593,11 +487,17 @@ public class ConcurrentMemberTest extends ChannelTestBase {
                         }
 
                         if(retVal) {
-                            log.info(channel.getId()
+                            log.info(ch.getLocalAddress().toString()
                                     + "successfully requested state from"
                                     + stateHolder);
                         }
                     }
+                }
+                catch(ChannelNotConnectedException e) {
+                    e.printStackTrace();
+                }
+                catch(ChannelClosedException e) {
+                    e.printStackTrace();
                 }
                 finally {
                     isRequestingState=false;
