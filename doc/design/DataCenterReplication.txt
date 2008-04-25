@@ -3,30 +3,36 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.5 2008/04/25 14:21:47 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.6 2008/04/25 15:54:30 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
-(almost) up-to-date data.
+(almost) up-to-date data. The failing over of clients to SFO is outside the scope of this proposal, and could
+be done for example by changing DNS entries, load balancers etc.
 
 There is no replication going on from SFO to NYC by default, only when SFO becomes the primary site.
+
+The assumption is that there is no message between data centers which requires a response. This would require
+NAT functionlity, which we may provide in a future version.
 
 For the example, we assume that each site uses a UDP based stack, and replication between the sites use a
 TCP based stack, see figure DataCenterReplication.png.
 
 There is a local cluster, based on UDP, at each site and one global cluster, based on TCP, which connects the
 two sites. Each coordinator of the local cluster is also a member of the global cluster, e.g. member E in NYC
-(assuming it is the coordinator) is also member X of the TCP cluster. This is called a *relay* member.
+(assuming it is the coordinator) is also member X of the TCP cluster. This is called a *relay* member. A relay
+member is always member of the local and global cluster.
 
 A relay member has a UDP stack which additionally contains a protocol RELAY at the top (shown in the bottom part
 of the figure). RELAY has a JChannel which connects to the TCP group, but *only* when it is (or becomes) coordinator
-of the local cluster. The configuration of that channel is done via a property in RELAY.
+of the local cluster. The configuration of the TCP channel is done via a property in RELAY.
 
 Any *multicast* message (we don't relay unicast messages) that is received by RELAY traveling
 up the stack is sent via the TCP channel to the other site. When received there, the corresponding RELAY
 protocol changes the destination of the message to null (those are multicast messages after all) and leaves
-the src (which might point to X if sent from NYC). When a response is received which points to any non-local
-address (e.g. X), RELAY simply drops it.
+the src (which might point to X if sent from NYC), then it sends the message down the stack, where it will get
+multicast to all members of the local cluster (including the sender). When a response is received which
+points to any non-local address (e.g. X), RELAY simply drops it.
 
 When forwarding a message to the local cluster, RELAY adds a header. When it receives the multicast message it
 forwarded itself, and a header is present, it does *not* relay it back to the other site but simply drops it.
@@ -43,5 +49,21 @@ When there is a coordinator failover, the new coordinator communicates briefly w
 which was the highest message relayed by it. It then forwards buffered messages with lower numbers and removes the
 remaining messages in the buffer. During this replay, message relaying is suspended.
 
+Therefore, a relay has to handle 3 types of messages from the global (TCP) cluster:
+ (1) Regular multicast messages
+ (2) A message asking for the highest sequence number received from another relay, and the response to this
+ (3) A message stating that the other side will go down gracefully (no need to replay buffered messages)
 
 
+Example walkthrough
+-------------------
+- C (in the NYC cluster, with coordinator E) multicasts a message
+- A, B, C, D and E receive the multicast
+- D (second-in-line) buffer the message (bounded buffer)
+- E is the relay. The byte buffer is extracted and a new message M is created. M's source is C, the dest is null
+  (= send to all). Note that the original headers are *not* sent with M. If this is needed, we need to revisit.
+- X receives M, drops it (because it is the sender, determined by the header).
+- Y receives M, adds a RELAY header and sends it down the stack
+- T, U, V, W and S receive M and deliver it
+- Y does not relay M because M has a header
+- Should some member reply (to X), then RELAY at Y will drop the message
