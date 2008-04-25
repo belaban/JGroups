@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.139 2008/04/23 14:53:47 belaban Exp $
+ * @version $Id: GMS.java,v 1.140 2008/04/25 11:44:37 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -382,47 +382,7 @@ public class GMS extends Protocol {
     }
 
 
-    /**
-     Compute a new view, given the current view, the new members and the suspected/left
-     members. Then simply mcast the view to all members. This is different to the VS GMS protocol,
-     in which we run a FLUSH protocol which tries to achive consensus on the set of messages mcast in
-     the current view before proceeding to install the next view.
-
-     The members for the new view are computed as follows:
-     <pre>
-                   existing          leaving        suspected          joining
-
-     1. new_view      y                 n               n                 y
-     2. tmp_view      y                 y               n                 y
-     (view_dest)
-     </pre>
-
-     <ol>
-     <li>
-     The new view to be installed includes the existing members plus the joining ones and
-     excludes the leaving and suspected members.
-     <li>
-     A temporary view is sent down the stack as an <em>event</em>. This allows the bottom layer
-     (e.g. UDP or TCP) to determine the members to which to send a multicast message. Compared
-     to the new view, leaving members are <em>included</em> since they have are waiting for a
-     view in which they are not members any longer before they leave. So, if we did not set a
-     temporary view, joining members would not receive the view (signalling that they have been
-     joined successfully). The temporary view is essentially the current view plus the joining
-     members (old members are still part of the current view).
-     </ol>
-     */
-    public void castViewChange(Vector<Address> new_mbrs, Vector<Address> old_mbrs, Vector<Address> suspected_mbrs) {
-        View new_view;
-
-        // next view: current mbrs + new_mbrs - old_mbrs - suspected_mbrs
-        new_view=getNextView(new_mbrs, old_mbrs, suspected_mbrs);
-        castViewChange(new_view, null);
-    }
-
-
-    public void castViewChange(View new_view, Digest digest) {
-        castViewChangeWithDest(new_view, digest, null);
-    }
+   
 
 
     /**
@@ -432,27 +392,18 @@ public class GMS extends Protocol {
      * @param digest
      * @param members
      */
-    public void castViewChangeWithDest(View new_view, Digest digest, List<Address> members) {
-        Message   view_change_msg;
-        GmsHeader hdr;
-        long      start, stop;
-        ViewId    vid=new_view.getVid();
-        int       size=-1;
-
-        if(members == null || members.isEmpty())
-            members=new_view.getMembers();
-
+    public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {           
         if(log.isTraceEnabled())
             log.trace("mcasting view {" + new_view + "} (" + new_view.size() + " mbrs)\n");
-
-        start=System.currentTimeMillis();
-        view_change_msg=new Message(); // bcast to all members
-        hdr=new GmsHeader(GmsHeader.VIEW, new_view);
+       
+        Message view_change_msg=new Message(); // bcast to all members
+        GmsHeader hdr=new GmsHeader(GmsHeader.VIEW, new_view);
         hdr.my_digest=digest;
         view_change_msg.putHeader(name, hdr);
 
-        ack_collector.reset(vid, members);
-        size=ack_collector.size();
+        List<Address> ackMembers = new_view.getMembers();
+        ack_collector.reset(new_view.getVid(), ackMembers);   
+               
         
         // Send down a local TMP_VIEW event. This is needed by certain layers (e.g. NAKACK) to compute correct digest
         // in case client's next request (e.g. getState()) reaches us *before* our own view change multicast.
@@ -460,19 +411,32 @@ public class GMS extends Protocol {
         down_prot.up(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.MSG, view_change_msg));
+        
+        if(jr != null && newMembers !=null){
+            for(Address joiner: newMembers) {
+                sendJoinResponse(jr, joiner);
+            }          
+        }
 
         try {
-            ack_collector.waitForAllAcks(view_ack_collection_timeout);
-            stop=System.currentTimeMillis();
+            ack_collector.waitForAllAcks(view_ack_collection_timeout);            
             if(log.isTraceEnabled())
-                log.trace("received all ACKs (" + size + ") for " + vid + " in " + (stop-start) + "ms");
+                log.trace("received all ACKs (" + ack_collector.size() + ") for " + new_view.getVid());
         }
         catch(TimeoutException e) {
-            if(log.isWarnEnabled() && log_collect_msgs)
-                log.warn("failed to collect all ACKs (" + size + ") for view " + new_view + " after " + view_ack_collection_timeout +
-                        "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
-                        "), local_addr=" + local_addr);
+            log.warn("failed to collect all ACKs (" + ack_collector.size() + ") for view " + new_view + " after " + view_ack_collection_timeout +
+                    "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
+                    "), local_addr=" + local_addr);
         }
+        
+    }
+    
+    public void sendJoinResponse(JoinRsp rsp, Address dest) {
+        Message m=new Message(dest, null, null);        
+        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
+        m.putHeader(getName(), hdr);        
+        getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, dest));
+        getDownProtocol().down(new Event(Event.MSG, m));        
     }
 
 
@@ -1248,7 +1212,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.139 2008/04/23 14:53:47 belaban Exp $
+     * @version $Id: GMS.java,v 1.140 2008/04/25 11:44:37 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

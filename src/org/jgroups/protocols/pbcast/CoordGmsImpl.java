@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.86 2008/03/27 09:02:53 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.87 2008/04/25 11:44:38 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -238,8 +238,7 @@ public class CoordGmsImpl extends GmsImpl {
                 || !this.merge_id.equals(merge_id)) {
             if(log.isErrorEnabled()) log.error("merge_ids don't match (or are null); merge view discarded");
             return;
-        }
-        final List<Address> my_members=gms.view != null? gms.view.getMembers() : null;
+        }       
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
@@ -248,7 +247,7 @@ public class CoordGmsImpl extends GmsImpl {
         gms.timer.execute(new Runnable() {
             public void run() {
                 
-                gms.castViewChangeWithDest(data.view, data.digest, my_members);                
+                gms.castViewChangeWithDest(data.view, data.digest, null, null);                
                 /*
                  * if we have flush in stack send ack back to merge coordinator                 
                  * */
@@ -406,28 +405,8 @@ public class CoordGmsImpl extends GmsImpl {
                 join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
             }
 
-            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
-
-            Vector<Address> tmp_mbrs=new_view != null? new Vector<Address>(new_view.getMembers()) : null;
-            if(gms.flushProtocolInStack) {
-                // We already flushed current members. Send a view to all joining member and we wait for their ACKs
-                // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
-                // (below in finally clause) and members are allowed to send messages again                                      
-               
-                sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
-                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
-            }
-            else {
-                if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
-                    tmp_mbrs.removeAll(new_mbrs);
-                // Broadcast the new view
-                // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
-                // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
-                // view V2 which may get dropped by existing members because they're still in view V1.
-                // (http://jira.jboss.com/jira/browse/JGRP-235)
-                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
-                sendJoinResponses(join_rsp, new_mbrs); // Return result to newly joined clients (if there are any)
-            }
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
+            gms.castViewChangeWithDest(new_view, null,join_rsp,new_mbrs);  
         }
         finally {
             if(joining_mbrs)
