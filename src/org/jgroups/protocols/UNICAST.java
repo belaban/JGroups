@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.91.2.3 2008/03/12 11:33:29 belaban Exp $
+// $Id: UNICAST.java,v 1.91.2.4 2008/04/25 08:01:43 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -434,11 +434,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-348
-                if(view instanceof MergeView) {
-                    if(log.isTraceEnabled())
-                        log.trace("removing all connections for the current members due to a merge");
-                    removeConnections(members);
-                }
+                // update (bela, April  25 2008): reverted because of http://jira.jboss.com/jira/browse/JGRP-659, we fix this
+                // in 2.7 only as we don't want to change the serialization format. The JIRA issue is
+                // http://jira.jboss.com/jira/browse/JGRP-742
+//                if(view instanceof MergeView) {
+//                    if(log.isTraceEnabled())
+//                        log.trace("removing all connections for the current members due to a merge");
+//                    removeConnections(members);
+//                }
 
                 break;
 
