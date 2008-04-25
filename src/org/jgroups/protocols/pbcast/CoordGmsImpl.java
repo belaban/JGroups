@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.1 2008/01/10 06:56:48 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.2 2008/04/25 09:22:26 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -341,7 +341,7 @@ public class CoordGmsImpl extends GmsImpl {
                         log.warn(mbr + " already present; returning existing view " + gms.view);
                     join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
                 }
-                sendJoinResponse(join_rsp, mbr);
+                gms.sendJoinResponse(join_rsp, mbr);
                 it.remove();
             }
         }
@@ -395,28 +395,8 @@ public class CoordGmsImpl extends GmsImpl {
                 join_rsp=new JoinRsp(new_view, join_digest != null? join_digest.copy() : null);
             }
 
-            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members
-
-            Vector<Address> tmp_mbrs=new_view != null? new Vector<Address>(new_view.getMembers()) : null;
-            if(gms.flushProtocolInStack) {
-                // We already flushed current members. Send a view to all joining member and we wait for their ACKs
-                // together with ACKs from current members. After all ACKS have been collected, FLUSH is stopped
-                // (below in finally clause) and members are allowed to send messages again                                      
-               
-                sendJoinResponses(join_rsp, new_mbrs); // might be a no-op if no joining members
-                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
-            }
-            else {
-                if(tmp_mbrs != null) // exclude the newly joined member from VIEW_ACKs
-                    tmp_mbrs.removeAll(new_mbrs);
-                // Broadcast the new view
-                // we'll multicast the new view first and only, when everyone has replied with a VIEW_ACK (or timeout),
-                // send the JOIN_RSP back to the client. This prevents the client from sending multicast messages in
-                // view V2 which may get dropped by existing members because they're still in view V1.
-                // (http://jira.jboss.com/jira/browse/JGRP-235)
-                gms.castViewChangeWithDest(new_view, null, tmp_mbrs);
-                sendJoinResponses(join_rsp, new_mbrs); // Return result to newly joined clients (if there are any)
-            }
+            sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
+            gms.castViewChangeWithDest(new_view, null,join_rsp,new_mbrs);                      
         }
         finally {
             if(joining_mbrs)
@@ -471,26 +451,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_task) {
             merge_task.stop();
         }
-    }
-
-    private void sendJoinResponses(JoinRsp rsp, Collection<Address> joiners) {
-        if(joiners != null && rsp != null) {
-            for(Address joiner: joiners) {
-                sendJoinResponse(rsp, joiner);
-            }
-        }
-    }
-
-
-    private void sendJoinResponse(JoinRsp rsp, Address dest) {
-        Message m=new Message(dest, null, null);
-        m.setFlag(Message.OOB);
-        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
-        m.putHeader(gms.getName(), hdr);
-        if(!gms.members.contains(dest))
-            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, dest));
-        gms.getDownProtocol().down(new Event(Event.MSG, m));
-    }
+    }  
 
     private void sendLeaveResponses(Collection<Address> leaving_members) {
         for(Address address:leaving_members){
