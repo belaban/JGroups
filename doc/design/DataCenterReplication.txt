@@ -3,7 +3,7 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.2 2008/04/25 14:04:25 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.3 2008/04/25 14:08:12 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
@@ -13,3 +13,10 @@ There is no replication going on from SFO to NYC by default, only when SFO becom
 
 For the example, we assume that each site uses a UDP based stack, and replication between the sites use a
 TCP based stack, see figure DataCenterReplication.png.
+
+There is a local cluster, based on UDP, at each site and one global cluster, based on TCP, which connects the
+two sites. Each coordinator of the local cluster is also a member of the global cluster, e.g. member E in NYC
+(assuming it is the coordinator) is also member X of the TCP cluster. This is called a *relay* member.
+
+A relay member has a UDP stack which contains a protocol RELAY at the top (shown in the bottom part
+of the figure).
