@@ -3,7 +3,7 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.4 2008/04/25 14:16:34 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.5 2008/04/25 14:21:47 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
@@ -31,4 +31,17 @@ address (e.g. X), RELAY simply drops it.
 When forwarding a message to the local cluster, RELAY adds a header. When it receives the multicast message it
 forwarded itself, and a header is present, it does *not* relay it back to the other site but simply drops it.
 Otherwise, we would have a cycle.
+
+When a coordinator crashes or leaves, the next-in-line becomes coordinator and activates the RELAY protocol,
+connecting to the TCP channel and starting to relay messages.
+
+However, if we receive messages from the local cluster while the coordinator has crashed and the new one hasn't taken
+over yet, we'd lose messages. Therefore, we need additional functionality in RELAY which buffers the last N messages
+(or M bytes, or for T seconds) and numbers all messages sent. This is done by the second-in-line.
+
+When there is a coordinator failover, the new coordinator communicates briefly with the other site to determine
+which was the highest message relayed by it. It then forwards buffered messages with lower numbers and removes the
+remaining messages in the buffer. During this replay, message relaying is suspended.
+
+
 
