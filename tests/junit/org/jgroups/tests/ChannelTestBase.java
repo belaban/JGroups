@@ -871,7 +871,8 @@ public class ChannelTestBase extends TestCase {
 
     public static boolean isViewComplete(Channel channel, int memberCount) {
 
-        List<Address> members = channel.getView().getMembers();
+        View view=channel.getView();
+        List<Address> members = view !=null? view.getMembers(): null;
         if(members == null || memberCount > members.size()){
             return false;
         }else if(memberCount < members.size()){
