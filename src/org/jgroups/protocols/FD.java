@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.58.2.1 2008/01/22 14:39:12 belaban Exp $
+ * @version $Id: FD.java,v 1.58.2.2 2008/04/28 09:55:32 belaban Exp $
  */
 public class FD extends Protocol {
     Address               local_addr=null;
@@ -345,7 +345,7 @@ public class FD extends Protocol {
     private void updateTimestamp(Address sender) {
         lock.lock();
         try {
-            if(ping_dest != null && sender != null) {
+            if(ping_dest != null && sender != null && ping_dest.equals(sender)) {
                 last_ack=System.currentTimeMillis();
                 if(log.isTraceEnabled())
                     log.trace("received msg from " + sender + " (counts as ack)");
