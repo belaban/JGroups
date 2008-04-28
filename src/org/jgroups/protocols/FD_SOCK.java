@@ -32,7 +32,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.85 2008/04/18 09:04:47 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.86 2008/04/28 08:20:20 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 public class FD_SOCK extends Protocol implements Runnable {
@@ -79,6 +79,9 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     /** whether to use KEEP_ALIVE on the ping socket or not */
     private boolean             keep_alive=true;
+
+    @ManagedAttribute(writable=true,description="max time in millis to wait for Socket.connect() to return")
+    private int                 sock_conn_timeout=3000;
 
     private volatile boolean    running=false;
 
@@ -154,6 +157,12 @@ public class FD_SOCK extends Protocol implements Runnable {
         if(str != null) {
             log.error("srv_sock_bind_addr is deprecated and will be ignored - use bind_addr instead");
             props.remove("srv_sock_bind_addr");
+        }
+
+        str=props.getProperty("sock_conn_timeout");
+        if(str != null) {
+            sock_conn_timeout=Integer.parseInt(str);
+            props.remove("sock_conn_timeout");
         }
 
         try {
@@ -586,9 +595,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 return false;
             }
             try {
-                ping_sock=new Socket(dest.getIpAddress(), dest.getPort());
+                SocketAddress destAddr=new InetSocketAddress(dest.getIpAddress(), dest.getPort());
+                ping_sock=new Socket();
                 ping_sock.setSoLinger(true, 1);
                 ping_sock.setKeepAlive(keep_alive);
+                ping_sock.connect(destAddr, sock_conn_timeout);
                 ping_input=ping_sock.getInputStream();
                 return true;
             }
