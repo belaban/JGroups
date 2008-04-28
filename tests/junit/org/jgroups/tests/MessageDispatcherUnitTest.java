@@ -18,7 +18,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.5.4.1 2008/02/15 01:06:20 vlada Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.5.4.2 2008/04/28 13:32:47 vlada Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
@@ -99,13 +99,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
         assertEquals(2, rsps.size());
-        Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         Object ret=rsp.getValue();
         assertNull(ret);
 
 
-        rsp=(Rsp)rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
         assertNull(ret);
@@ -150,6 +150,8 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(new byte[size]));
         ch2.connect("x");
         assertEquals(2, ch2.getView().size());
+        blockUntilViewsReceived(ch, 2, 1000);
+        blockUntilViewsReceived(ch2, 2, 1000);
 
         System.out.println("casting message");
         start=System.currentTimeMillis();
@@ -159,12 +161,12 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         System.out.println("call took " + (stop-start) + " ms");
         assertNotNull(rsps);
         assertEquals(2, rsps.size());
-        Rsp rsp=(Rsp)rsps.get(ch.getLocalAddress());
+        Rsp rsp=rsps.get(ch.getLocalAddress());
         assertNotNull(rsp);
         byte[] ret=(byte[])rsp.getValue();
         assertEquals(size, ret.length);
 
-        rsp=(Rsp)rsps.get(ch2.getLocalAddress());
+        rsp=rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         assertEquals(size, ret.length);

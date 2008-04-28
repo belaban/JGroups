@@ -48,6 +48,9 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         channel2=createChannel("A");
         disp2=new RpcDispatcher(channel2, null, null, this);
         channel2.connect("RpcDispatcherSerializationTestGroup");
+        
+        blockUntilViewsReceived(channel, 2, 1000);
+        blockUntilViewsReceived(channel2, 2, 1000);
     }
 
 

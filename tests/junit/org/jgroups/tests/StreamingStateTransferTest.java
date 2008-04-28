@@ -75,7 +75,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                                boolean largeTransfer,
                                boolean useDispatcher) {
         int channelCount = channelNames.length;
-        ArrayList channels = new ArrayList(channelCount);
+        ArrayList<StreamingStateTransferApplication> channels=new ArrayList<StreamingStateTransferApplication>(channelCount);
 
         // Create a semaphore and take all its tickets
         Semaphore semaphore = new Semaphore(channelCount);
@@ -100,7 +100,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 Util.sleep(2000);
 
                 if(crash && !crashed && i > 2){
-                    StreamingStateTransferApplication coord = (StreamingStateTransferApplication) channels.remove(0);
+                    StreamingStateTransferApplication coord = channels.remove(0);
                     coord.cleanup();
                     crashed = true;
                 }
