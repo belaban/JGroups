@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.5 2008/02/22 16:28:50 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.6 2008/04/28 13:32:47 vlada Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -63,6 +63,8 @@ public class SharedTransportTest extends ChannelTestBase {
 
         a.connect("x");
         b.connect("x");
+        blockUntilViewsReceived(a, 2, 1000);
+        blockUntilViewsReceived(b, 2, 1000);
 
         View view=a.getView();
         assertEquals(2, view.size());
@@ -78,6 +80,9 @@ public class SharedTransportTest extends ChannelTestBase {
 
         a.connect("x");
         b.connect("y");
+        
+        blockUntilViewsReceived(a, 1, 1000);
+        blockUntilViewsReceived(b, 1, 1000);
 
         View view=a.getView();
         assertEquals(1, view.size());
@@ -103,6 +108,9 @@ public class SharedTransportTest extends ChannelTestBase {
         a.connect("a");
         c.connect("a");
 
+        blockUntilViewsReceived(a, 2, 2000);
+        blockUntilViewsReceived(c, 2, 2000);
+        
         View view=a.getView();
         assertEquals(2, view.size());
         view=c.getView();
@@ -119,6 +127,11 @@ public class SharedTransportTest extends ChannelTestBase {
 
         r1.clear(); r2.clear(); r3.clear();
         b.connect("b");
+        
+        blockUntilViewsReceived(a, 2, 1000);
+        blockUntilViewsReceived(b, 1, 1000);
+        blockUntilViewsReceived(c, 2, 1000);
+        
 
         a.send(new Message(null, null, "msg-3"));
         b.send(new Message(null, null, "msg-4"));
@@ -156,6 +169,9 @@ public class SharedTransportTest extends ChannelTestBase {
 
         a.connect("x");
         b.connect("x");
+        
+        blockUntilViewsReceived(a, 2, 1000);
+        blockUntilViewsReceived(b, 2, 1000);
 
         View view=a.getView();
         assertEquals(2, view.size());
@@ -168,6 +184,9 @@ public class SharedTransportTest extends ChannelTestBase {
         b=createSharedChannel(SINGLETON_2);
         a.connect("x");
         b.connect("x");
+        
+        blockUntilViewsReceived(a, 2, 1000);
+        blockUntilViewsReceived(b, 2, 1000);
         View view=b.getView();
         System.out.println("b's view is " + view);
         assertEquals(2, view.size());

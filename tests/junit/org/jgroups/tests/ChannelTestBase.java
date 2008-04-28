@@ -295,7 +295,7 @@ public class ChannelTestBase extends TestCase {
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable {
+    protected abstract class ChannelApplication implements EventSequence, Runnable, ChannelRetrievable {
         protected Channel channel;
 
         protected Thread thread;
@@ -338,16 +338,7 @@ public class ChannelTestBase extends TestCase {
                 exception = e; // Save it for the test to check
             }
         }
-
-        public List getMembers() {
-            List result = null;
-            View v = channel.getView();
-            if(v != null){
-                result = v.getMembers();
-            }
-            return result;
-        }
-
+            
         public boolean isUsingMuxChannel() {
             return channel instanceof MuxChannel;
         }
@@ -691,10 +682,8 @@ public class ChannelTestBase extends TestCase {
     }
     
 
-    protected interface MemberRetrievable {
-        public List getMembers();
-
-        public Address getLocalAddress();
+    public interface ChannelRetrievable {
+        Channel getChannel();
     }
 
     /**
@@ -741,7 +730,7 @@ public class ChannelTestBase extends TestCase {
      * Checks each channel in the parameter array to see if it has the exact
      * same view as other channels in an array.
      */
-    public static boolean areViewsComplete(MemberRetrievable[] channels, int memberCount) {
+    public static boolean areViewsComplete(Channel[] channels, int memberCount) {
         for(int i = 0;i < memberCount;i++){
             if(!isViewComplete(channels[i], memberCount)){
                 return false;
@@ -753,7 +742,7 @@ public class ChannelTestBase extends TestCase {
 
     /**
      * Loops, continually calling
-     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
+     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.ChannelRetrievable[], int)}
      * until it either returns true or <code>timeout</code> ms have elapsed.
      * 
      * @param channels
@@ -764,17 +753,31 @@ public class ChannelTestBase extends TestCase {
      *             if <code>timeout</code> ms have elapse without all channels
      *             having the same number of members.
      */
-    public static void blockUntilViewsReceived(MemberRetrievable[] channels, long timeout) {
+    public static void blockUntilViewsReceived(Channel[] channels, long timeout) {
         blockUntilViewsReceived(channels, channels.length, timeout);
+    }   
+    
+    public static void blockUntilViewsReceived(List<? extends ChannelRetrievable> channels, int count, long timeout) {
+        Channel[] cs = new Channel[channels.size()];
+        int i = 0;
+        for(ChannelRetrievable channel:channels) {
+            cs[i++] = channel.getChannel();
+        }
+        blockUntilViewsReceived(cs, count, timeout);
     }
-
-    public static void blockUntilViewsReceived(Collection channels, long timeout) {
-        blockUntilViewsReceived(channels, channels.size(), timeout);
+    
+    public static void blockUntilViewsReceived(List<? extends ChannelRetrievable> channels,long timeout) {
+        Channel[] cs = new Channel[channels.size()];
+        int i = 0;
+        for(ChannelRetrievable channel:channels) {
+            cs[i++] = channel.getChannel();
+        }
+        blockUntilViewsReceived(cs, cs.length, timeout);
     }
 
     /**
      * Loops, continually calling
-     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.MemberRetrievable[], int)}
+     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.ChannelRetrievable[], int)}
      * until it either returns true or <code>timeout</code> ms have elapsed.
      * 
      * @param channels
@@ -785,7 +788,7 @@ public class ChannelTestBase extends TestCase {
      *             if <code>timeout</code> ms have elapse without all channels
      *             having the same number of members.
      */
-    public static void blockUntilViewsReceived(MemberRetrievable[] channels, int count, long timeout) {
+    public static void blockUntilViewsReceived(Channel[] channels, int count, long timeout) {
         long failTime = System.currentTimeMillis() + timeout;
 
         while(System.currentTimeMillis() < failTime){
@@ -796,18 +799,68 @@ public class ChannelTestBase extends TestCase {
         }
 
         StringBuilder sb = new StringBuilder();
-        for (MemberRetrievable c : channels) {            
-            sb.append(c.getLocalAddress()+ ",view=" +c.getMembers()+"|");
+        for (Channel c : channels) {            
+            sb.append(c.getLocalAddress()+ ",view=" +c.getView().getMembers()+"|");
         }
         throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
     }
+    
+    public static void blockUntilViewsReceived(Channel channel, int count, long timeout) {
+        long failTime=System.currentTimeMillis() + timeout;
+        boolean timeouted = false;
+        while(!isViewComplete(channel, count) && !timeouted) {            
+            timeouted=System.currentTimeMillis() > failTime;
+            Util.sleep(100);
+        }        
+        if(timeouted) {
+            StringBuilder sb=new StringBuilder();
+            sb.append(channel.getLocalAddress() + ",view=" + channel.getView().getMembers() + "|");
+            throw new RuntimeException("timed out before caches had complete views. Views are " + sb.toString());
+        }
+    }
+    
+    /**
+     * Loops, continually calling
+     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.ChannelRetrievable[], int)}
+     * until it either returns true or <code>timeout</code> ms have elapsed.
+     * 
+     * @param channels
+     *                channels which must all have consistent views
+     * @param timeout
+     *                max number of ms to loop
+     * @throws RuntimeException
+     *                 if <code>timeout</code> ms have elapse without all
+     *                 channels having the same number of members.
+     */
+    public static void blockUntilViewsReceived(ChannelRetrievable[] channels, int count, long timeout) {
+        List<ChannelRetrievable> list=Arrays.asList(channels);
+        blockUntilViewsReceived(list,count,timeout);
+    }
+    
+    /**
+     * Loops, continually calling
+     * {@link #areViewsComplete(org.jgroups.tests.ChannelTestBase.ChannelRetrievable[], int)}
+     * until it either returns true or <code>timeout</code> ms have elapsed.
+     * 
+     * @param channels
+     *            channels which must all have consistent views
+     * @param timeout
+     *            max number of ms to loop
+     * @throws RuntimeException
+     *             if <code>timeout</code> ms have elapse without all channels
+     *             having the same number of members.
+     */
+    public static void blockUntilViewsReceived(ChannelRetrievable[] channels, long timeout) {
+        List<ChannelRetrievable> list=Arrays.asList(channels);
+        blockUntilViewsReceived(list,list.size(),timeout);
+    }
 
-    public static void blockUntilViewsReceived(Collection channels, int count, long timeout) {
+    public static void blockUntilViewsReceived(Collection<Channel> channels, int count, long timeout) {
         long failTime = System.currentTimeMillis() + timeout;
 
         while(System.currentTimeMillis() < failTime){
             Util.sleep(100);
-            if(areViewsComplete((MemberRetrievable[]) channels.toArray(new MemberRetrievable[channels.size()]),
+            if(areViewsComplete(channels.toArray(new Channel[]{}),
                                 count)){
                 return;
             }
@@ -816,9 +869,9 @@ public class ChannelTestBase extends TestCase {
         throw new RuntimeException("timed out before caches had complete views");
     }
 
-    public static boolean isViewComplete(MemberRetrievable channel, int memberCount) {
+    public static boolean isViewComplete(Channel channel, int memberCount) {
 
-        List members = channel.getMembers();
+        List<Address> members = channel.getView().getMembers();
         if(members == null || memberCount > members.size()){
             return false;
         }else if(memberCount < members.size()){

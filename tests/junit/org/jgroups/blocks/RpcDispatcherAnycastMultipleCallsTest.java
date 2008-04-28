@@ -76,6 +76,7 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase
       for (int i=0; i<n; i++){         
          targets[i] = new RpcDispatcherAnycastServerObject(createChannel("A"));   
       }
+      blockUntilViewsReceived(targets, 1000);
 
       // test that the target method has been invoked 0 times on each instance.
       for (int i=0; i<n; i++) assertEquals(0, targets[i].i);
