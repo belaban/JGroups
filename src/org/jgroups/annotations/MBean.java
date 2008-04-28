@@ -2,7 +2,8 @@ package org.jgroups.annotations;
 import java.lang.annotation.*;
 /**
  * Optional annotation that exposes all public methods in the class 
- * hierarchy (excluding Object) as MBean operations.
+ * hierarchy (excluding Object) as MBean operations. All methods 
+ * are exposed if and only if exposeAll attribute is true.  
  * <p>
  * 
  * If a more fine grained MBean attribute and operation exposure is needed 
@@ -11,7 +12,7 @@ import java.lang.annotation.*;
  * 
  * 
  * @author Chris Mills
- * @version $Id: MBean.java,v 1.5 2008/03/12 04:48:15 vlada Exp $
+ * @version $Id: MBean.java,v 1.6 2008/04/28 13:43:10 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -19,6 +20,6 @@ import java.lang.annotation.*;
 @Inherited
 public @interface MBean {
     String objectName() default "";
-
+    boolean exposeAll() default false;
     String description() default "";
 }

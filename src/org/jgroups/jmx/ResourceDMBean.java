@@ -31,7 +31,7 @@ import org.jgroups.annotations.ManagedOperation;
  * 
  * @author Chris Mills
  * @author Vladimir Blagojevic
- * @version $Id: ResourceDMBean.java,v 1.26 2008/04/03 14:43:38 belaban Exp $
+ * @version $Id: ResourceDMBean.java,v 1.27 2008/04/28 13:43:11 vlada Exp $
  * @see ManagedAttribute
  * @see ManagedOperation
  * @see MBean
@@ -358,7 +358,7 @@ public class ResourceDMBean implements DynamicMBean {
                     }
                 }
             }
-            else if (method.isAnnotationPresent(ManagedOperation.class) ||isMBeanAnnotationPresent()){
+            else if (method.isAnnotationPresent(ManagedOperation.class) || isMBeanAnnotationPresentWithExposeAll()){
                 ManagedOperation op=method.getAnnotation(ManagedOperation.class);                
                 String attName=method.getName();
                 if(isSetMethod(method) || isGetMethod(method)) {
@@ -506,8 +506,9 @@ public class ResourceDMBean implements DynamicMBean {
         }
     }
     
-    private boolean isMBeanAnnotationPresent(){
-    	return getObject().getClass().isAnnotationPresent(MBean.class);
+    private boolean isMBeanAnnotationPresentWithExposeAll(){
+        Class<? extends Object> c=getObject().getClass();
+    	return c.isAnnotationPresent(MBean.class) && c.getAnnotation(MBean.class).exposeAll();
     }
        
     private class MethodAttributeEntry implements AttributeEntry {
