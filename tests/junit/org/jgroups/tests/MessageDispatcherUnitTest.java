@@ -18,7 +18,7 @@ import java.util.Properties;
 /**
  * Tests return values from MessageDispatcher.castMessage()
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.5.4.2 2008/04/28 13:32:47 vlada Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.5.4.3 2008/04/29 07:29:13 vlada Exp $
  */
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
@@ -91,6 +91,9 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         assertEquals(2, ch2.getView().size());
         System.out.println("view: " + ch2.getView());
 
+        blockUntilViewsReceived(ch, 2, 1000);
+        blockUntilViewsReceived(ch2, 2, 1000);
+        
         System.out.println("casting message");
         start=System.currentTimeMillis();
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);

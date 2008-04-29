@@ -17,7 +17,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.9.4.2 2008/02/15 01:06:20 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.9.4.3 2008/04/29 07:29:12 vlada Exp $
  */
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -58,8 +58,8 @@ public class JoinTest extends ChannelTestBase {
         c1.connect("X");
         c2.connect("X");
         
-        //no blocking is used, let the view propagate
-        Util.sleep(2000);
+        blockUntilViewsReceived(c1, 2, 1000);
+        blockUntilViewsReceived(c2, 2, 1000);
         
         View v1=c1.getView(), v2=c2.getView();
         System.out.println("v1=" + v1 + ", v2=" + v2);
