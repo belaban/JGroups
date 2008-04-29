@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.7 2008/04/25 09:22:26 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.8 2008/04/29 21:14:59 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -365,7 +365,10 @@ public class GMS extends Protocol {
         hdr.my_digest=digest;
         view_change_msg.putHeader(name, hdr);
 
-        List<Address> ackMembers = new_view.getMembers();
+        List<Address> ackMembers = new ArrayList<Address>(new_view.getMembers());
+        if(newMembers != null && !newMembers.isEmpty()) {
+            ackMembers.removeAll(newMembers);
+        }
         ack_collector.reset(new_view.getVid(), ackMembers);   
                
         
@@ -376,23 +379,53 @@ public class GMS extends Protocol {
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.MSG, view_change_msg));
         
-        if(jr != null && newMembers !=null){
-            for(Address joiner: newMembers) {
-                sendJoinResponse(jr, joiner);
-            }          
-        }
-
         try {
-            ack_collector.waitForAllAcks(view_ack_collection_timeout);            
+            ack_collector.waitForAllAcks(view_ack_collection_timeout);
             if(log.isTraceEnabled())
-                log.trace("received all ACKs (" + ack_collector.size() + ") for " + new_view.getVid());
+                log.trace("received all ACKs (" + ack_collector.size()
+                          + ") for "
+                          + new_view.getVid());
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + ack_collector.size() + ") for view " + new_view + " after " + view_ack_collection_timeout +
-                    "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
-                    "), local_addr=" + local_addr);
-        }
+            log.warn("failed to collect all ACKs (" + ack_collector.size()
+                     + ") for view "
+                     + new_view
+                     + " after "
+                     + view_ack_collection_timeout
+                     + "ms, missing ACKs from "
+                     + ack_collector.printMissing()
+                     + " (received="
+                     + ack_collector.printReceived()
+                     + "), local_addr="
+                     + local_addr);
+        }   
         
+        if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
+            ack_collector.reset(new_view.getVid(), new ArrayList<Address>(newMembers));
+            for(Address joiner:newMembers) {
+                sendJoinResponse(jr, joiner);
+            }
+            try {
+                ack_collector.waitForAllAcks(view_ack_collection_timeout);
+                if(log.isTraceEnabled())
+                    log.trace("received all ACKs (" + ack_collector.size()
+                              + ") for "
+                              + new_view.getVid());
+            }
+            catch(TimeoutException e) {
+                log.warn("failed to collect all ACKs (" + ack_collector.size()
+                         + ") for view "
+                         + new_view
+                         + " after "
+                         + view_ack_collection_timeout
+                         + "ms, missing ACKs from "
+                         + ack_collector.printMissing()
+                         + " (received="
+                         + ack_collector.printReceived()
+                         + "), local_addr="
+                         + local_addr);
+            }
+        }           
     }
     
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
@@ -1168,7 +1201,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.7 2008/04/25 09:22:26 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.8 2008/04/29 21:14:59 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
