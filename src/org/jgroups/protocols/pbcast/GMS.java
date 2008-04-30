@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.8 2008/04/29 21:14:59 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.9 2008/04/30 13:35:46 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -296,12 +296,11 @@ public class GMS extends Protocol {
      * Computes the next view. Returns a copy that has <code>old_mbrs</code> and
      * <code>suspected_mbrs</code> removed and <code>new_mbrs</code> added.
      */
-    public View getNextView(Collection new_mbrs, Collection old_mbrs, Collection suspected_mbrs) {
+    public View getNextView(Collection<Address> new_mbrs, Collection<Address> old_mbrs, Collection<Address> suspected_mbrs) {
         Vector<Address> mbrs;
         long vid;
         View v;
-        Membership tmp_mbrs;
-        Address tmp_mbr;
+        Membership tmp_mbrs;       
 
         synchronized(members) {
             if(view_id == null) {
@@ -322,8 +321,8 @@ public class GMS extends Protocol {
 
             // Update joining list (see DESIGN for explanation)
             if(new_mbrs != null) {
-                for(Iterator it=new_mbrs.iterator(); it.hasNext();) {
-                    tmp_mbr=(Address)it.next();
+                for(Iterator<Address> it=new_mbrs.iterator(); it.hasNext();) {
+                    Address tmp_mbr=it.next();
                     if(!joining.contains(tmp_mbr))
                         joining.addElement(tmp_mbr);
                 }
@@ -331,15 +330,15 @@ public class GMS extends Protocol {
 
             // Update leaving list (see DESIGN for explanations)
             if(old_mbrs != null) {
-                for(Iterator it=old_mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=old_mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
             }
             if(suspected_mbrs != null) {
-                for(Iterator it=suspected_mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=suspected_mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!leaving.contains(addr))
                         leaving.add(addr);
                 }
@@ -450,7 +449,7 @@ public class GMS extends Protocol {
         Address coord;
         int rc;
         ViewId vid=new_view.getVid();
-        Vector mbrs=new_view.getMembers();
+        Vector<Address> mbrs=new_view.getMembers();
 
         // Discards view with id lower than our own. Will be installed without check if first view
         if(view_id != null) {
@@ -518,8 +517,8 @@ public class GMS extends Protocol {
                 tmp_members.remove(leaving); // remove members that haven't yet been removed from the membership
 
                 // add to prev_members
-                for(Iterator it=mbrs.iterator(); it.hasNext();) {
-                    Address addr=(Address)it.next();
+                for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) {
+                    Address addr=it.next();
                     if(!prev_members.contains(addr))
                         prev_members.add(addr);
                 }
@@ -569,7 +568,7 @@ public class GMS extends Protocol {
 
 
     /** Returns true if local_addr is member of mbrs, else false */
-    protected boolean checkSelfInclusion(Vector mbrs) {
+    protected boolean checkSelfInclusion(Vector<Address> mbrs) {
         Object mbr;
         if(mbrs == null)
             return false;
@@ -625,20 +624,31 @@ public class GMS extends Protocol {
     }
 
     boolean startFlush(View new_view) {
-        if(new_view != null && new_view.size() > 0){
-            return (Boolean) up_prot.up(new Event(Event.SUSPEND,
-                                                  new ArrayList<Address>(new_view.getMembers())));
+        boolean successfulFlush=true;
+        boolean validView=new_view != null && new_view.size() > 0;
+        if(validView && flushProtocolInStack) {
+            successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND,
+                                                          new ArrayList<Address>(new_view.getMembers())));
+
+            if(successfulFlush) {
+                if(log.isTraceEnabled())
+                    log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
+            }
+            else {
+                if(log.isWarnEnabled())
+                    log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
+            }
         }
-        //flushing empty view always succeeds
-        return true;
+        return successfulFlush;
     }
 
     void stopFlush() {
-       
-        if(log.isDebugEnabled()){
-            log.debug(getLocalAddress() + " sending RESUME event");
+        if(flushProtocolInStack) {
+            if(log.isDebugEnabled()) {
+                log.debug(getLocalAddress() + " sending RESUME event");
+            }
+            up_prot.up(new Event(Event.RESUME));
         }
-        up_prot.up(new Event(Event.RESUME));
     }
     
     void stopFlush(List<Address> members) {
@@ -706,19 +716,8 @@ public class GMS extends Protocol {
                     case GmsHeader.MERGE_REQ:
                         down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
                         
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack) {
-                           View v=new View(view_id.copy(), members.getMembers());
-                           boolean successfulFlush = startFlush(v);
-                           if (successfulFlush){
-                               if(log.isTraceEnabled())
-                                  log.trace("Successful flush for merge from" + getLocalAddress());
-                           }
-                           else {
-                               if(log.isWarnEnabled())
-                                  log.warn("Flush for merge from " + getLocalAddress() + " failed");
-                           }                         
-                        }                                                                                                                   
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process                        
+                        startFlush(new View(view_id.copy(), members.getMembers()));                                                                                                              
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
@@ -735,9 +734,7 @@ public class GMS extends Protocol {
 
                     case GmsHeader.CANCEL_MERGE:
                         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack){                            
-                            stopFlush();
-                        }
+                        stopFlush();
                         impl.handleMergeCancelled(hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
@@ -803,7 +800,7 @@ public class GMS extends Protocol {
     public Object down(Event evt) {
         Object arg=null;
         switch(evt.getType()) {            
-            case Event.CONNECT:               
+            case Event.CONNECT:
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -815,7 +812,7 @@ public class GMS extends Protocol {
                 }
                 return arg;  // don't pass down: was already passed down
                 
-            case Event.CONNECT_WITH_STATE_TRANSFER:                
+            case Event.CONNECT_WITH_STATE_TRANSFER:
                 down_prot.down(evt);
                 if(local_addr == null)
                     if(log.isFatalEnabled()) log.fatal("[CONNECT] local_addr is null");
@@ -1201,7 +1198,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.8 2008/04/29 21:14:59 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.9 2008/04/30 13:35:46 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1273,8 +1270,8 @@ public class GMS extends Protocol {
             if(log.isTraceEnabled())
                 log.trace("suspended ViewHandler");
             Resumer resumer=new Resumer(merge_id, resume_tasks, this);
-            Future future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
-            Future old_future=resume_tasks.put(merge_id, future);
+            Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
+            Future<?> old_future=resume_tasks.put(merge_id, future);
             if(old_future != null)
                 old_future.cancel(true);
 
