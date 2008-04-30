@@ -24,7 +24,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.140 2008/04/25 11:44:37 vlada Exp $
+ * @version $Id: GMS.java,v 1.141 2008/04/30 13:36:07 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -401,7 +401,10 @@ public class GMS extends Protocol {
         hdr.my_digest=digest;
         view_change_msg.putHeader(name, hdr);
 
-        List<Address> ackMembers = new_view.getMembers();
+        List<Address> ackMembers = new ArrayList<Address>(new_view.getMembers());
+        if(newMembers != null && !newMembers.isEmpty()) {
+            ackMembers.removeAll(newMembers);
+        }
         ack_collector.reset(new_view.getVid(), ackMembers);   
                
         
@@ -412,23 +415,53 @@ public class GMS extends Protocol {
         down_prot.down(new Event(Event.TMP_VIEW, new_view));
         down_prot.down(new Event(Event.MSG, view_change_msg));
         
-        if(jr != null && newMembers !=null){
-            for(Address joiner: newMembers) {
-                sendJoinResponse(jr, joiner);
-            }          
-        }
-
         try {
-            ack_collector.waitForAllAcks(view_ack_collection_timeout);            
+            ack_collector.waitForAllAcks(view_ack_collection_timeout);
             if(log.isTraceEnabled())
-                log.trace("received all ACKs (" + ack_collector.size() + ") for " + new_view.getVid());
+                log.trace("received all ACKs (" + ack_collector.size()
+                          + ") for "
+                          + new_view.getVid());
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + ack_collector.size() + ") for view " + new_view + " after " + view_ack_collection_timeout +
-                    "ms, missing ACKs from " + ack_collector.printMissing() + " (received=" + ack_collector.printReceived() +
-                    "), local_addr=" + local_addr);
-        }
+            log.warn("failed to collect all ACKs (" + ack_collector.size()
+                     + ") for view "
+                     + new_view
+                     + " after "
+                     + view_ack_collection_timeout
+                     + "ms, missing ACKs from "
+                     + ack_collector.printMissing()
+                     + " (received="
+                     + ack_collector.printReceived()
+                     + "), local_addr="
+                     + local_addr);
+        }   
         
+        if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
+            ack_collector.reset(new_view.getVid(), new ArrayList<Address>(newMembers));
+            for(Address joiner:newMembers) {
+                sendJoinResponse(jr, joiner);
+            }
+            try {
+                ack_collector.waitForAllAcks(view_ack_collection_timeout);
+                if(log.isTraceEnabled())
+                    log.trace("received all ACKs (" + ack_collector.size()
+                              + ") for "
+                              + new_view.getVid());
+            }
+            catch(TimeoutException e) {
+                log.warn("failed to collect all ACKs (" + ack_collector.size()
+                         + ") for view "
+                         + new_view
+                         + " after "
+                         + view_ack_collection_timeout
+                         + "ms, missing ACKs from "
+                         + ack_collector.printMissing()
+                         + " (received="
+                         + ack_collector.printReceived()
+                         + "), local_addr="
+                         + local_addr);
+            }
+        }           
     }
     
     public void sendJoinResponse(JoinRsp rsp, Address dest) {
@@ -629,20 +662,31 @@ public class GMS extends Protocol {
     }
 
     boolean startFlush(View new_view) {
-        if(new_view != null && new_view.size() > 0){
-            return (Boolean) up_prot.up(new Event(Event.SUSPEND,
-                                                  new ArrayList<Address>(new_view.getMembers())));
+        boolean successfulFlush=true;
+        boolean validView=new_view != null && new_view.size() > 0;
+        if(validView && flushProtocolInStack) {
+            successfulFlush=(Boolean)up_prot.up(new Event(Event.SUSPEND,
+                                                          new ArrayList<Address>(new_view.getMembers())));
+
+            if(successfulFlush) {
+                if(log.isTraceEnabled())
+                    log.trace("Successful GMS flush by coordinator at " + getLocalAddress());
+            }
+            else {
+                if(log.isWarnEnabled())
+                    log.warn("GMS flush by coordinator at " + getLocalAddress() + " failed");
+            }
         }
-        //flushing empty view always succeeds
-        return true;
+        return successfulFlush;
     }
 
     void stopFlush() {
-       
-        if(log.isDebugEnabled()){
-            log.debug(getLocalAddress() + " sending RESUME event");
+        if(flushProtocolInStack) {
+            if(log.isDebugEnabled()) {
+                log.debug(getLocalAddress() + " sending RESUME event");
+            }
+            up_prot.up(new Event(Event.RESUME));
         }
-        up_prot.up(new Event(Event.RESUME));
     }
     
     void stopFlush(List<Address> members) {
@@ -710,19 +754,8 @@ public class GMS extends Protocol {
                     case GmsHeader.MERGE_REQ:
                         down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
                         
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack) {
-                           View v=new View(view_id.copy(), members.getMembers());
-                           boolean successfulFlush = startFlush(v);
-                           if (successfulFlush){
-                               if(log.isTraceEnabled())
-                                  log.trace("Successful flush for merge from" + getLocalAddress());
-                           }
-                           else {
-                               if(log.isWarnEnabled())
-                                  log.warn("Flush for merge from " + getLocalAddress() + " failed");
-                           }                         
-                        }                                                                                                                   
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process                        
+                        startFlush(new View(view_id.copy(), members.getMembers()));                                                                                                                 
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
@@ -744,9 +777,7 @@ public class GMS extends Protocol {
 
                     case GmsHeader.CANCEL_MERGE:
                         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack){                            
-                            stopFlush();
-                        }
+                        stopFlush();
                         impl.handleMergeCancelled(hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
@@ -1212,7 +1243,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.140 2008/04/25 11:44:37 vlada Exp $
+     * @version $Id: GMS.java,v 1.141 2008/04/30 13:36:07 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

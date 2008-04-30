@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.87 2008/04/25 11:44:38 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.88 2008/04/30 13:36:08 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -319,8 +319,7 @@ public class CoordGmsImpl extends GmsImpl {
             }
         }
 
-        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)
-        boolean joining_mbrs=!new_mbrs.isEmpty();
+        new_mbrs.remove(gms.local_addr); // remove myself - cannot join myself (already joined)        
 
         if(gms.view_id == null) {
             // we're probably not the coord anymore (we just left ourselves), let someone else do it
@@ -351,7 +350,7 @@ public class CoordGmsImpl extends GmsImpl {
                         log.warn(mbr + " already present; returning existing view " + gms.view);
                     join_rsp=new JoinRsp(new View(gms.view_id, gms.members.getMembers()), gms.getDigest());
                 }
-                sendJoinResponse(join_rsp, mbr);
+                gms.sendJoinResponse(join_rsp, mbr);
                 it.remove();
             }
         }
@@ -361,8 +360,7 @@ public class CoordGmsImpl extends GmsImpl {
                 log.trace("found no members to add or remove, will not create new view");
             return;
         }
-
-        JoinRsp join_rsp=null;
+        
         View new_view=gms.getNextView(new_mbrs, leaving_mbrs, suspected_mbrs);
         gms.up(new Event(Event.PREPARE_VIEW,new_view));
         gms.down(new Event(Event.PREPARE_VIEW,new_view));
@@ -370,25 +368,17 @@ public class CoordGmsImpl extends GmsImpl {
         if(log.isDebugEnabled())
             log.debug("new=" + new_mbrs + ", suspected=" + suspected_mbrs + ", leaving=" + leaving_mbrs +
                     ", new view: " + new_view);
-                
+             
+        JoinRsp join_rsp=null;
+        boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            if(gms.flushProtocolInStack) {                                                
-                boolean successfulFlush=gms.startFlush(new_view);
-                if(successfulFlush) {
-                    if(log.isTraceEnabled())
-                        log.trace("Successful GMS flush by coordinator at " + gms.getLocalAddress());
-                }
-                else {
-                    if(log.isWarnEnabled())
-                        log.warn("GMS flush by coordinator at " + gms.getLocalAddress() + " failed");
-                }
-            }
+            gms.startFlush(new_view);
             
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
             // in the digest returned to the client, so the client will *not* be able to ask for retransmission
-            // of those messages if he misses them
-            if(joining_mbrs) {
+            // of those messages if he misses them            
+            if(hasJoiningMembers) {
                 gms.getDownProtocol().down(new Event(Event.SUSPEND_STABLE, MAX_SUSPEND_TIMEOUT));
                 Digest tmp=gms.getDigest(); // get existing digest
                 MutableDigest join_digest=null;
@@ -406,12 +396,12 @@ public class CoordGmsImpl extends GmsImpl {
             }
 
             sendLeaveResponses(leaving_mbrs); // no-op if no leaving members                            
-            gms.castViewChangeWithDest(new_view, null,join_rsp,new_mbrs);  
+            gms.castViewChangeWithDest(new_view, null,join_rsp,new_mbrs);                      
         }
         finally {
-            if(joining_mbrs)
+            if(hasJoiningMembers)
                 gms.getDownProtocol().down(new Event(Event.RESUME_STABLE));
-            if(gms.flushProtocolInStack && !joinAndStateTransferInitiated)
+            if(!joinAndStateTransferInitiated)
                 gms.stopFlush();
             if(leaving) {
                 gms.initState(); // in case connect() is called again
@@ -461,26 +451,7 @@ public class CoordGmsImpl extends GmsImpl {
         synchronized(merge_task) {
             merge_task.stop();
         }
-    }
-
-    private void sendJoinResponses(JoinRsp rsp, Collection<Address> joiners) {
-        if(joiners != null && rsp != null) {
-            for(Address joiner: joiners) {
-                sendJoinResponse(rsp, joiner);
-            }
-        }
-    }
-
-
-    private void sendJoinResponse(JoinRsp rsp, Address dest) {
-        Message m=new Message(dest, null, null);
-        m.setFlag(Message.OOB);
-        GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.JOIN_RSP, rsp);
-        m.putHeader(gms.getName(), hdr);
-        if(!gms.members.contains(dest))
-            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, dest));
-        gms.getDownProtocol().down(new Event(Event.MSG, m));
-    }
+    }  
 
     private void sendLeaveResponses(Collection<Address> leaving_members) {
         for(Address address:leaving_members){
@@ -855,8 +826,8 @@ public class CoordGmsImpl extends GmsImpl {
                  *[JGRP-700] - FLUSH: flushing should span merge
                  * 
                  * */
-                if(gms.flushProtocolInStack)
-                    gms.stopFlush();
+                
+                gms.stopFlush();
                 
                 merging=false;
                 merge_leader=null;
