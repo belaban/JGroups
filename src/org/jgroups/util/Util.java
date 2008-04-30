@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.2 2008/01/21 13:53:26 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.3 2008/04/30 05:33:03 belaban Exp $
  */
 public class Util {
 
@@ -112,6 +112,18 @@ public class Util {
         if(val > max_mem) {
             throw new IllegalArgumentException(buf_name + "(" + Util.printBytes(val) + ") exceeds max memory allocated to VM (" +
                     Util.printBytes(max_mem) + ")");
+        }
+    }
+    
+
+    public static int keyPress(String msg) {
+        System.out.println(msg);
+
+        try {
+            return System.in.read();
+        }
+        catch(IOException e) {
+            return 0;
         }
     }
 
