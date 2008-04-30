@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.7 2008/03/12 10:08:22 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.8 2008/04/30 16:22:47 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -915,7 +915,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(log.isErrorEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                sb.append(") ").append(original_sender).append(" not found in retransmission table: ").append(printMessages());
+                sb.append(") ").append(original_sender).append(" not found in retransmission table:\n").append(printMessages());
                 if(print_stability_history_on_failed_xmit) {
                     sb.append(" (stability history:\n").append(printStabilityHistory());
                 }
@@ -930,7 +930,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in retransmission table of ").append(original_sender).append(": ").append(win);
+                    sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
                     if(print_stability_history_on_failed_xmit) {
                         sb.append(" (stability history:\n").append(printStabilityHistory());
                     }
