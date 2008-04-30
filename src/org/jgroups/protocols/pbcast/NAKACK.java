@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.181 2008/04/23 14:53:47 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.182 2008/04/30 16:23:19 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
@@ -948,7 +948,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(log.isErrorEnabled()) {
                 StringBuilder sb=new StringBuilder();
                 sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
-                sb.append(") ").append(original_sender).append(" not found in retransmission table: ").append(printMessages());
+                sb.append(") ").append(original_sender).append(" not found in retransmission table:\n").append(printMessages());
                 if(print_stability_history_on_failed_xmit) {
                     sb.append(" (stability history:\n").append(printStabilityHistory());
                 }
@@ -963,7 +963,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     StringBuilder sb=new StringBuilder();
                     sb.append("(requester=").append(xmit_requester).append(", local_addr=").append(this.local_addr);
                     sb.append(") message ").append(original_sender).append("::").append(i);
-                    sb.append(" not found in retransmission table of ").append(original_sender).append(": ").append(win);
+                    sb.append(" not found in retransmission table of ").append(original_sender).append(":\n").append(win);
                     if(print_stability_history_on_failed_xmit) {
                         sb.append(" (stability history:\n").append(printStabilityHistory());
                     }
