@@ -18,6 +18,12 @@ import java.util.List;
  * Tests a SEQUENCER based stack: demonstrates race condition where thread#1
  * gets seqno, thread#2 gets seqno, thread#2 sends, thread#1 tries to send but
  * is out of order.
+ * 
+ * In order to test total ordering, make sure that messages are sent from 
+ * concurrent senders; using one sender will cause NAKACK to FIFO order 
+ * the messages and the assertions in this test will still hold true, whether
+ * SEQUENCER is present or not. 
+ *
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
@@ -56,6 +62,8 @@ public class SequencerOrderTest {
         ch1.setReceiver(r1);
         r2=new MyReceiver(ch2.getLocalAddress());
         ch2.setReceiver(r2);
+        
+        // use concurrent senders to send messages to the group
         
         Thread thread1 = new Thread() {
         	public void run() {
