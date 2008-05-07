@@ -77,7 +77,7 @@ public class SequencerOrderTest {
         		Util.sleep(300);
                 for(int i=1; i <= NUM_MSGS; i++) {
                     try {
-                    	ch1.send(new Message(null, null, new Integer(i)));
+                    	ch2.send(new Message(null, null, new Integer(i)));
                     } catch (Exception e) {
                     	throw new RuntimeException(e);
                     }
