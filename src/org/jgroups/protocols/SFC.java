@@ -5,6 +5,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 import org.jgroups.util.Streamable;
@@ -24,13 +25,14 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.20 2008/03/08 09:46:46 vlada Exp $
+ * @version $Id: SFC.java,v 1.21 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
     static final String name="SFC";
 
     /** Max number of bytes to send per receiver until an ack must be received before continuing sending */
+    @Property
     private long max_credits=2000000;
 
     private Long MAX_CREDITS;
@@ -63,6 +65,7 @@ public class SFC extends Protocol {
     private final Condition credits_available=lock.newCondition();
 
     /** Number of milliseconds after which we send a new credit request if we are waiting for credit responses */
+    @Property
     private long max_block_time=5000;
 
     /** Last time a thread woke up from blocking and had to request credit */
@@ -181,36 +184,7 @@ public class SFC extends Protocol {
     public final String getName() {
         return name;
     }
-
-    public boolean setProperties(Properties props) {
-        String  str;
-        super.setProperties(props);
-
-        str=props.getProperty("max_block_time");
-        if(str != null) {
-            max_block_time=Long.parseLong(str);
-            props.remove("max_block_time");
-        }
-
-        str=props.getProperty("max_credits");
-        if(str != null) {
-            max_credits=Long.parseLong(str);
-            props.remove("max_credits");
-        }
-
-        Util.checkBufferSize("SFC.max_credits", max_credits);
-        MAX_CREDITS=new Long(max_credits);
-        curr_credits_available=max_credits;
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
-
-
+    
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.MSG:
@@ -356,6 +330,11 @@ public class SFC extends Protocol {
     }
 
 
+    public void init() throws Exception{
+        Util.checkBufferSize("SFC.max_credits", max_credits);
+        MAX_CREDITS=new Long(max_credits);
+        curr_credits_available=max_credits;
+    }
 
 
     public void start() throws Exception {

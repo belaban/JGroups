@@ -22,7 +22,7 @@ import java.util.*;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.79 2008/03/10 07:22:04 belaban Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.80 2008/05/08 09:46:48 vlada Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
 public class STATE_TRANSFER extends Protocol {
@@ -73,22 +73,8 @@ public class STATE_TRANSFER extends Protocol {
 
 
     public boolean setProperties(Properties props) {
-        super.setProperties(props);             
-        String str=props.getProperty("use_flush");   
-        if(str != null) {
-            log.warn("use_flush has been deprecated and its value will be ignored");
-            props.remove("use_flush");
-        } 
-        str=props.getProperty("flush_timeout");   
-        if(str != null) {
-            log.warn("flush_timeout has been deprecated and its value will be ignored");
-            props.remove("flush_timeout");
-        }     
-                                             
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
+        super.setProperties(props);        
+        listDeprecatedProperties(props, "use_flush","flush_timeout");      
         return true;
     }
 

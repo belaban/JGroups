@@ -7,6 +7,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -34,17 +35,19 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.66 2008/04/28 09:56:09 belaban Exp $
+ * @version $Id: FD.java,v 1.67 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
     Address               local_addr=null;
     
+    @Property
     @ManagedAttribute(description="Number of milliseconds after which a " + 
                       "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
     long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
     long                  last_ack=System.currentTimeMillis();
     int                   num_tries=0;
+    @Property
     @ManagedAttribute(description="Number of times to send a are-you-alive msg",writable=true)
     int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
 
@@ -64,6 +67,7 @@ public class FD extends Protocol {
     @GuardedBy("lock")
     final Map<Address,Integer>  invalid_pingers=new HashMap<Address,Integer>(7);
 
+    @Property
     @ManagedAttribute(description="Shun switch",writable=true)
     boolean               shun=true;
     TimeScheduler         timer=null;
@@ -111,37 +115,7 @@ public class FD extends Protocol {
             sb.append(new Date()).append(": ").append(addr).append("\n");
         }
         return sb.toString();
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("timeout");
-        if(str != null) {
-            timeout=Long.parseLong(str);
-            props.remove("timeout");
-        }
-
-        str=props.getProperty("max_tries");  // before suspecting a member
-        if(str != null) {
-            max_tries=Integer.parseInt(str);
-            props.remove("max_tries");
-        }
-
-        str=props.getProperty("shun");
-        if(str != null) {
-            shun=Boolean.valueOf(str).booleanValue();
-            props.remove("shun");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }   
 
     public void resetStats() {
         num_heartbeats=num_suspect_events=0;

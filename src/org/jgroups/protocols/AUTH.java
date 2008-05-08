@@ -45,15 +45,7 @@ public class AUTH extends Protocol{
                 }
                 return false;
             }
-        }
-
-        if(!props.isEmpty()) {
-            //this should never happen as everything is read in to the AuthToken instance
-            if(log.isErrorEnabled()){
-                log.error("AUTH.setProperties(): the following properties are not recognized: " + props);
-            }
-            return false;
-        }
+        }        
         return true;
     }
 

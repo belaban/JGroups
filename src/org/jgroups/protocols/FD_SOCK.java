@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -32,12 +33,15 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.86 2008/04/28 08:20:20 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.87 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 public class FD_SOCK extends Protocol implements Runnable {
+    @Property
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
+    @Property
     long                        suspect_msg_interval=5000;         // (BroadcastTask): mcast SUSPECT every 5000 msecs
+    @Property
     int                         num_tries=3;                       // attempts coord is solicited for socket cache until we give up
     final Vector<Address>       members=new Vector<Address>(11);            // list of group members (updated on VIEW_CHANGE)
     boolean                     srv_sock_sent=false;               // has own socket been broadcast yet ?
@@ -63,6 +67,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
      * picks a random port */
+    @Property
     int                         start_port=0;
     final Promise<IpAddress>    ping_addr_promise=new Promise<IpAddress>();   // to fetch the ping_addr for ping_dest
     final Object                sock_mutex=new Object();           // for access to ping_sock, ping_input
@@ -78,8 +83,10 @@ public class FD_SOCK extends Protocol implements Runnable {
     final BoundedList<Address>  suspect_history=new BoundedList<Address>(20);
 
     /** whether to use KEEP_ALIVE on the ping socket or not */
+    @Property
     private boolean             keep_alive=true;
 
+    @Property
     @ManagedAttribute(writable=true,description="max time in millis to wait for Socket.connect() to return")
     private int                 sock_conn_timeout=3000;
 
@@ -120,50 +127,9 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
     public boolean setProperties(Properties props) {
-        String str;
-
         super.setProperties(props);
-        str=props.getProperty("get_cache_timeout");
-        if(str != null) {
-            get_cache_timeout=Long.parseLong(str);
-            props.remove("get_cache_timeout");
-        }
-
-        str=props.getProperty("suspect_msg_interval");
-        if(str != null) {
-            suspect_msg_interval=Long.parseLong(str);
-            props.remove("suspect_msg_interval");
-        }
-
-        str=props.getProperty("num_tries");
-        if(str != null) {
-            num_tries=Integer.parseInt(str);
-            props.remove("num_tries");
-        }
-
-        str=props.getProperty("start_port");
-        if(str != null) {
-            start_port=Integer.parseInt(str);
-            props.remove("start_port");
-        }
-
-        str=props.getProperty("keep_alive");
-        if(str != null) {
-            keep_alive=Boolean.parseBoolean(str);
-            props.remove("keep_alive");
-        }
-
-        str=props.getProperty("srv_sock_bind_addr");
-        if(str != null) {
-            log.error("srv_sock_bind_addr is deprecated and will be ignored - use bind_addr instead");
-            props.remove("srv_sock_bind_addr");
-        }
-
-        str=props.getProperty("sock_conn_timeout");
-        if(str != null) {
-            sock_conn_timeout=Integer.parseInt(str);
-            props.remove("sock_conn_timeout");
-        }
+        
+        listDeprecatedProperties(props, "srv_sock_bind_addr");
 
         try {
             bind_addr=Util.getBindAddress(props);
@@ -174,11 +140,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
         catch(SocketException ex) {
             log.fatal("failed getting bind_addr", ex);
-            return false;
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;

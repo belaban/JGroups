@@ -11,7 +11,7 @@ import java.util.*;
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.8 2007/01/12 14:20:33 belaban Exp $
+ * @version $Id: STATS.java,v 1.9 2008/05/08 09:46:42 vlada Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -29,16 +29,7 @@ public class STATS extends Protocol {
 
     public String getName() {
         return "STATS";
-    }
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }  
 
     public void resetStats() {
         sent_msgs=sent_bytes=sent_ucasts=sent_mcasts=received_ucasts=received_mcasts=0;

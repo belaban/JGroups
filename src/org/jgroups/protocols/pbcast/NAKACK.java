@@ -8,6 +8,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 
@@ -33,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.182 2008/04/30 16:23:19 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.183 2008/05/08 09:46:48 vlada Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
@@ -47,6 +48,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final Lock          seqno_lock=new ReentrantLock();
     
     @ManagedAttribute(description = "Garbage collection lag", writable = true)
+    @Property
     private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
     private Map<Thread,ReentrantLock> locks;
 
@@ -56,18 +58,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
      * message, the sender only retransmits once.
      */
+    @Property
     @ManagedAttribute(description = "Retransmit messages using multicast rather than unicast",  writable = true)
     private boolean use_mcast_xmit=true;
 
     /** Use a multicast to request retransmission of missing messages. This may be costly as every member in the cluster
      * will send a response
      */
+    @Property
     private boolean use_mcast_xmit_req=false;
 
     /**
      * Ask a random member for retransmission of a missing message. If set to true, discard_delivered_msgs will be
      * set to false
      */
+    @Property
     @ManagedAttribute(description = "Ask a random member for retransmission of a missing message",writable = true)
     private boolean xmit_from_random_member=false;
 
@@ -75,9 +80,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** The first value (in milliseconds) to use in the exponential backoff retransmission mechanism. Only enabled
      * if the value is > 0
      */
+    @Property
     private long exponential_backoff=0;
 
     /** If enabled, we use statistics gathered from actual retransmission times to compute the new retransmission times */
+    @Property
     private boolean use_stats_for_retransmission=false;
 
     /**
@@ -87,6 +94,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
      * around, and don't need to wait for garbage collection to remove them.
      */
+    @Property
     @ManagedAttribute(description = "Discard delivered messages",writable = true)
     private boolean discard_delivered_msgs=false;
 
@@ -97,11 +105,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
      * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
      */
+    @Property
     private boolean eager_lock_release=true;
 
     /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
      * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
      */
+    @Property
     @ManagedAttribute(description = "If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used", writable = true)
     private int max_xmit_buf_size=0;
 
@@ -135,6 +145,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
     private HashMap<Address,StatsEntry> received=new HashMap<Address,StatsEntry>();
 
+    @Property
     private int stats_list_size=20;
 
     /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size XMIT requests */
@@ -146,6 +157,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Per-sender map of seqnos and timestamps, to keep track of avg times for retransmission of messages */
     private final ConcurrentMap<Address,ConcurrentMap<Long,Long>> xmit_stats=new ConcurrentHashMap<Address,ConcurrentMap<Long,Long>>();
 
+    @Property
     private int xmit_history_max_size=50;
 
     /** Maintains a list of the last N retransmission times (duration it took to retransmit a message) for all members */
@@ -188,6 +200,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @GuardedBy("rebroadcast_digest_lock")
     private Digest rebroadcast_digest=null;
 
+    @Property
     private long max_rebroadcast_timeout=2000;
 
     private static final int NUM_REBROADCAST_MSGS=3;
@@ -196,6 +209,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
 
     /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
+    @Property
     protected boolean print_stability_history_on_failed_xmit=false;
 
     /** If true, logs messages discarded because received from other members */
@@ -333,6 +347,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         long[] tmp;
 
         super.setProperties(props);
+        listDeprecatedProperties(props, "max_xmit_size");
         str=props.getProperty("retransmit_timeout");
         if(str != null) {
             tmp=Util.parseCommaDelimitedLongs(str);
@@ -340,76 +355,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(tmp != null && tmp.length > 0) {
                 retransmit_timeouts=tmp;
             }
-        }
-
-        str=props.getProperty("gc_lag");
-        if(str != null) {
-            gc_lag=Integer.parseInt(str);
-            if(gc_lag < 0) {
-                log.error("gc_lag cannot be negative, setting it to 0");
-            }
-            props.remove("gc_lag");
-        }
-
-        str=props.getProperty("max_xmit_size");
-        if(str != null) {
-            if(log.isWarnEnabled())
-                log.warn("max_xmit_size was deprecated in 2.6 and will be ignored");
-            props.remove("max_xmit_size");
-        }
-
-        str=props.getProperty("use_mcast_xmit");
-        if(str != null) {
-            use_mcast_xmit=Boolean.valueOf(str).booleanValue();
-            props.remove("use_mcast_xmit");
-        }
-
-        str=props.getProperty("use_mcast_xmit_req");
-        if(str != null) {
-            use_mcast_xmit_req=Boolean.valueOf(str).booleanValue();
-            props.remove("use_mcast_xmit_req");
-        }
-
-        str=props.getProperty("exponential_backoff");
-        if(str != null) {
-            exponential_backoff=Long.parseLong(str);
-            props.remove("exponential_backoff");
-        }
-
-        str=props.getProperty("use_stats_for_retransmission");
-        if(str != null) {
-            use_stats_for_retransmission=Boolean.valueOf(str);
-            props.remove("use_stats_for_retransmission");
-        }
-
-        str=props.getProperty("discard_delivered_msgs");
-        if(str != null) {
-            discard_delivered_msgs=Boolean.valueOf(str);
-            props.remove("discard_delivered_msgs");
-        }
-
-        str=props.getProperty("xmit_from_random_member");
-        if(str != null) {
-            xmit_from_random_member=Boolean.valueOf(str);
-            props.remove("xmit_from_random_member");
-        }
-
-        str=props.getProperty("max_xmit_buf_size");
-        if(str != null) {
-            max_xmit_buf_size=Integer.parseInt(str);
-            props.remove("max_xmit_buf_size");
-        }
-
-        str=props.getProperty("stats_list_size");
-        if(str != null) {
-            stats_list_size=Integer.parseInt(str);
-            props.remove("stats_list_size");
-        }
-
-        str=props.getProperty("xmit_history_max_size");
-        if(str != null) {
-            xmit_history_max_size=Integer.parseInt(str);
-            props.remove("xmit_history_max_size");
         }
 
         str=props.getProperty("enable_xmit_time_stats");
@@ -422,19 +367,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 xmit_time_stats=new ConcurrentHashMap<Long,XmitTimeStat>();
                 xmit_time_stats_start=System.currentTimeMillis();
             }
-        }
-
-        str=props.getProperty("max_rebroadcast_timeout");
-        if(str != null) {
-            max_rebroadcast_timeout=Long.parseLong(str);
-            props.remove("max_rebroadcast_timeout");
-        }
-
-        str=props.getProperty("eager_lock_release");
-        if(str != null) {
-            eager_lock_release=Boolean.valueOf(str).booleanValue();
-            props.remove("eager_lock_release");
-        }
+        }    
 
         if(xmit_from_random_member) {
             if(discard_delivered_msgs) {
@@ -443,16 +376,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
-        str=props.getProperty("print_stability_history_on_failed_xmit");
-        if(str != null) {
-            print_stability_history_on_failed_xmit=Boolean.valueOf(str).booleanValue();
-            props.remove("print_stability_history_on_failed_xmit");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
         return true;
     }
 

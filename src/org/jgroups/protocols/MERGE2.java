@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.45 2008/03/13 02:00:20 vlada Exp $
+// $Id: MERGE2.java,v 1.46 2008/05/08 09:46:43 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -9,12 +9,12 @@ import org.jgroups.View;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.util.List;
-import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -50,10 +50,13 @@ public class MERGE2 extends Protocol {
     private Address					local_addr=null;   
     private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator
     @ManagedAttribute(description="Minimum time between runs to discover other clusters",writable=true)
+    @Property
     private long					min_interval=5000;     // minimum time between executions of the FindSubgroups task
     @ManagedAttribute(description="Maximum time between runs to discover other clusters",writable=true)
+    @Property
     private long					max_interval=20000;    // maximum time between executions of the FindSubgroups task
     private volatile boolean		is_coord=false;  
+    @Property
     private volatile boolean		use_separate_thread=false; // Use a new thread to send the MERGE event up the stack    
     private TimeScheduler			timer;
     
@@ -62,6 +65,14 @@ public class MERGE2 extends Protocol {
             timer=stack.timer;
         else
             throw new Exception("Discovery.init(): timer cannot be retrieved from protocol stack");
+        
+        if(min_interval <= 0 || max_interval <= 0) {
+            throw new Exception("min_interval and max_interval have to be > 0");            
+        }
+        
+        if(max_interval <= min_interval) {
+            throw new Exception ("max_interval has to be greater than min_interval");        
+        }  
     }
 
 
@@ -83,47 +94,7 @@ public class MERGE2 extends Protocol {
 
     public void setMaxInterval(long l) {
         max_interval=l;
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("min_interval");
-        if(str != null) {
-            min_interval=Long.parseLong(str);
-            props.remove("min_interval");
-        }
-
-        str=props.getProperty("max_interval");
-        if(str != null) {
-            max_interval=Long.parseLong(str);
-            props.remove("max_interval");
-        }
-
-        if(min_interval <= 0 || max_interval <= 0) {
-            if(log.isErrorEnabled()) log.error("min_interval and max_interval have to be > 0");
-            return false;
-        }
-        if(max_interval <= min_interval) {
-            if(log.isErrorEnabled()) log.error("max_interval has to be greater than min_interval");
-            return false;
-        }
-
-        str=props.getProperty("use_separate_thread");
-        if(str != null) {
-            use_separate_thread=Boolean.valueOf(str).booleanValue();
-            props.remove("use_separate_thread");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
+    }  
 
     public Vector<Integer> requiredDownServices() {
         Vector<Integer> retval=new Vector<Integer>(1);

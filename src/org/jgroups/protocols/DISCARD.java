@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.19 2008/01/08 07:14:31 vlada Exp $
+// $Id: DISCARD.java,v 1.20 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -21,8 +22,11 @@ import java.util.*;
  */
 
 public class DISCARD extends Protocol {
+    @Property
     double up=0.0;    // probability of dropping up   msgs
+    @Property
     double down=0.0;  // probability of dropping down msgs
+    @Property
     boolean excludeItself=true;   // if true don't discard messages sent/received in this stack
     Address localAddress;
     int num_down=0, num_up=0;
@@ -46,36 +50,6 @@ public class DISCARD extends Protocol {
     public void setDiscardAll(boolean discard_all) {
         this.discard_all=discard_all;
     }
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("up");
-        if(str != null) {
-            up=Double.parseDouble(str);
-            props.remove("up");
-        }
-
-        str=props.getProperty("down");
-        if(str != null) {
-            down=Double.parseDouble(str);
-            props.remove("down");
-        }
-
-        str=props.getProperty("excludeitself");
-        if(str != null) {
-            excludeItself=Boolean.valueOf(str).booleanValue();
-            props.remove("excludeitself");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("DISCARD.setProperties(): these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
 
     /** Messages from this sender will get dropped */
     public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}

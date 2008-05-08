@@ -7,6 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
@@ -35,14 +36,16 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.42 2008/03/27 11:16:52 belaban Exp $
+ * @version $Id: FRAG.java,v 1.43 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
     
+    @Property
     @ManagedAttribute(description="Fragmentation size",writable=true)
     private int frag_size=8192;  // conservative value
 
+    @Property
     @ManagedAttribute(description="The max size in bytes the byte array output buffer should be, " +
             "otherwise we keep memory occupied unnecessarily", writable=true)
     private int max_retained_buffer=70000;
@@ -76,32 +79,7 @@ public class FRAG extends Protocol {
     public long getNumberOfSentFragments() {return num_sent_frags;}
     public long getNumberOfReceivedMessages() {return num_received_msgs;}
     public long getNumberOfReceivedFragments() {return num_received_frags;}
-
-    /**
-     * Setup the Protocol instance acording to the configuration string
-     */
-    public boolean setProperties(Properties props) {
-        String str;
-        
-        super.setProperties(props);
-        str=props.getProperty("frag_size");
-        if(str != null) {
-            frag_size=Integer.parseInt(str);
-            props.remove("frag_size");
-        }
-
-        str=props.getProperty("max_retained_buffer");
-        if(str != null) {
-            max_retained_buffer=Integer.parseInt(str);
-            props.remove("max_retained_buffer");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+  
 
     public void init() throws Exception {
         super.init();

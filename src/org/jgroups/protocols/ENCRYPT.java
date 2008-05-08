@@ -1,8 +1,9 @@
-// $Id: ENCRYPT.java,v 1.40 2008/04/15 15:43:36 belaban Exp $
+// $Id: ENCRYPT.java,v 1.41 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Streamable;
@@ -107,18 +108,26 @@ public class ENCRYPT extends Protocol {
     boolean keyServer = false;
 
     // encryption properties in no supplied key mode
+    @Property
     String asymProvider = null;
     static final String symProvider = null;
+    @Property
     String asymAlgorithm = "RSA";
+    @Property
     String symAlgorithm = DEFAULT_SYM_ALGO;
+    @Property
     int asymInit = 512; // initial public/private key length
+    @Property
     int symInit = 56; // initial shared key length
 
     // properties for functioning in supplied key mode
     private boolean suppliedKey = false;
+    @Property
     private String keyStoreName;
-    private String storePassword ="changeit"; //JDK default
+    @Property
+    private String storePassword ="changeit"; //JDK default    
     private String keyPassword="changeit"; //JDK default
+    @Property
     private String alias="mykey"; // JDK default
 
 
@@ -157,6 +166,7 @@ public class ENCRYPT extends Protocol {
     private Cipher asymCipher;
 
     /** determines whether to encrypt the entire message, or just the buffer */
+    @Property
     private boolean encrypt_entire_message=false;
 
 
@@ -190,89 +200,11 @@ public class ENCRYPT extends Protocol {
 
 
     public boolean setProperties(Properties props)
-    {
-        String str;
-
-        super.setProperties(props);
-        // asymmetric key length
-        str = props.getProperty("asym_init");
-        if (str != null)
-        {
-            asymInit = Integer.parseInt(str);
-            props.remove("asym_init");
-
-            if (log.isInfoEnabled())
-                log.info("Asym algo bits used is " + asymInit);
-        }
-
-        // symmetric key length
-        str = props.getProperty("sym_init");
-        if (str != null)
-        {
-            symInit = Integer.parseInt(str);
-            props.remove("sym_init");
-
-            if (log.isInfoEnabled())
-                log.info("Sym algo bits used is " + symInit);
-        }
-
-        // asymmetric algorithm name
-        str = props.getProperty("asym_algorithm");
-        if (str != null)
-        {
-            asymAlgorithm = str;
-            props.remove("asym_algorithm");
-
-            if (log.isInfoEnabled())
-                log.info("Asym algo used is " + asymAlgorithm);
-        }
-
-        // symmetric algorithm name
-        str = props.getProperty("sym_algorithm");
-        if (str != null)
-        {
-            symAlgorithm = str;
-            props.remove("sym_algorithm");
-
-            if (log.isInfoEnabled())
-                log.info("Sym algo used is " + symAlgorithm);
-        }
-
-        // symmetric algorithm name
-        str = props.getProperty("asym_provider");
-        if (str != null)
-        {
-            asymProvider = str;
-            props.remove("asym_provider");
-
-            if (log.isInfoEnabled())
-                log.info("asymProvider used is " + asymProvider);
-        }
+    {       
+        super.setProperties(props);       
 
         //symmetric algorithm name
-        str = props.getProperty("key_store_name");
-        if (str != null)
-        {
-            keyStoreName = str;
-            props.remove("key_store_name");
-
-            if (log.isInfoEnabled())
-                log.info("key_store_name used is " + keyStoreName);
-        }
-
-        //		symmetric algorithm name
-        str = props.getProperty("store_password");
-        if (str != null)
-        {
-            storePassword = str;
-            props.remove("store_password");
-
-            if (log.isInfoEnabled())
-                log.info("store_password used is not null");
-        }
-
-        //		symmetric algorithm name
-        str = props.getProperty("key_password");
+        String str = props.getProperty("key_password");
         if (str != null)
         {
             keyPassword = str;
@@ -286,34 +218,7 @@ public class ENCRYPT extends Protocol {
 
             if (log.isInfoEnabled())
                 log.info("key_password used is same as store_password");
-        }
-
-        //		symmetric algorithm name
-        str = props.getProperty("alias");
-        if (str != null)
-        {
-            alias = str;
-            props.remove("alias");
-
-            if (log.isInfoEnabled())
-                log.info("alias used is " + alias);
-        }
-
-        str=props.getProperty("encrypt_entire_message");
-        if(str != null)
-        {
-            this.encrypt_entire_message=Boolean.valueOf(str).booleanValue();
-            props.remove("encrypt_entire_message");
-        }
-
-        if (!props.isEmpty())
-        {
-
-            if (log.isErrorEnabled())
-                log.error("these properties are not recognized:" + props);
-            return false;
-        }
-
+        }       
         return true;
     }
 

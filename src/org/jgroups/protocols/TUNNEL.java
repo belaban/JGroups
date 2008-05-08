@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.47 2008/02/06 02:11:14 vlada Exp $
+// $Id: TUNNEL.java,v 1.48 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.RouterStub;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -13,8 +14,6 @@ import org.jgroups.util.Util;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.net.SocketException;
-import java.util.Enumeration;
-import java.util.Properties;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -39,12 +38,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class TUNNEL extends TP {
+    @Property
     private String router_host = null;
 
+    @Property
     private int router_port = 0;
 
     private RouterStub stub;
 
+    @Property
     long reconnect_interval = 5000;
     
     /*
@@ -77,6 +79,14 @@ public class TUNNEL extends TP {
             timer = stack.timer;
         else
             throw new Exception("TUNNEL.init(): timer cannot be retrieved from protocol stack");
+        
+        if(log.isDebugEnabled()){
+            log.debug("router_host=" + router_host + ";router_port=" + router_port);
+        }
+
+        if(router_host == null || router_port == 0){
+            throw new Exception("both router_host and router_port have to be set !");            
+        }
     }
 
     public void start() throws Exception {
@@ -96,55 +106,6 @@ public class TUNNEL extends TP {
         teardownTunnel();
         super.stop();        
         local_addr = null;
-    }
-
-    /** Setup the Protocol instance acording to the configuration string */
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str = props.getProperty("router_host");
-        if(str != null){
-            router_host = str;
-            props.remove("router_host");
-        }
-
-        str = props.getProperty("router_port");
-        if(str != null){
-            router_port = Integer.parseInt(str);
-            props.remove("router_port");
-        }
-
-        if(log.isDebugEnabled()){
-            log.debug("router_host=" + router_host + ";router_port=" + router_port);
-        }
-
-        if(router_host == null || router_port == 0){
-            if(log.isErrorEnabled()){
-                log.error("both router_host and router_port have to be set !");
-                return false;
-            }
-        }
-
-        str = props.getProperty("reconnect_interval");
-        if(str != null){
-            reconnect_interval = Long.parseLong(str);
-            props.remove("reconnect_interval");
-        }
-
-        if(!props.isEmpty()){
-            StringBuilder sb = new StringBuilder();
-            for(Enumeration e = props.propertyNames();e.hasMoreElements();){
-                sb.append(e.nextElement().toString());
-                if(e.hasMoreElements()){
-                    sb.append(", ");
-                }
-            }
-            if(log.isErrorEnabled())
-                log.error("The following properties are not recognized: " + sb);
-            return false;
-        }
-        return true;
     }
 
     /** Tears the TCP connection to the router down */

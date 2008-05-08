@@ -1,9 +1,10 @@
-// $Id: FD_SIMPLE.java,v 1.20 2008/04/08 14:51:21 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.21 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
+import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.20 $
+ * @version $Revision: 1.21 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -37,13 +38,16 @@ public class FD_SIMPLE extends Protocol {
 
     final Lock    heartbeat_lock=new ReentrantLock();
     @GuardedBy("heartbeat_lock")
-    Future        heartbeat_future=null;
+    Future<?>        heartbeat_future=null;
     HeartbeatTask task;
 
+    @Property
     long interval=3000;            // interval in msecs between are-you-alive messages
+    @Property
     long timeout=3000;             // time (in msecs) to wait for a response to are-you-alive
-    final Vector members=new Vector();
-    final HashMap counters=new HashMap();   // keys=Addresses, vals=Integer (count)
+    final Vector<Address> members=new Vector<Address>();
+    final HashMap<Address,Integer> counters=new HashMap<Address,Integer>();   // keys=Addresses, vals=Integer (count)
+    @Property
     int max_missed_hbs=5;         // max number of missed responses until a member is suspected
     static final String name="FD_SIMPLE";
 
@@ -194,8 +198,8 @@ public class FD_SIMPLE extends Protocol {
                 }
 
                 // remove all keys from 'counters' which are not in this new view
-                for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
-                    key=(Address)it.next();
+                for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
+                    key=it.next();
                     if(!members.contains(key)) {
                         if(log.isInfoEnabled()) log.info("removing " + key + " from counters");
                         it.remove();
@@ -218,7 +222,7 @@ public class FD_SIMPLE extends Protocol {
     Address getHeartbeatDest() {
         Address retval=null;
         int r, size;
-        Vector members_copy;
+        Vector<Address> members_copy;
 
         if(members == null || members.size() < 2 || local_addr == null)
             return null;
@@ -226,7 +230,7 @@ public class FD_SIMPLE extends Protocol {
         members_copy.removeElement(local_addr); // don't select myself as heartbeat destination
         size=members_copy.size();
         r=((int)(Math.random() * (size + 1))) % size;
-        retval=(Address)members_copy.elementAt(r);
+        retval=members_copy.elementAt(r);
         return retval;
     }
 
@@ -237,7 +241,7 @@ public class FD_SIMPLE extends Protocol {
 
         if(mbr == null) return ret;
         synchronized(counters) {
-            cnt=(Integer)counters.get(mbr);
+            cnt=counters.get(mbr);
             if(cnt == null) {
                 cnt=new Integer(0);
                 counters.put(mbr, cnt);
@@ -264,8 +268,8 @@ public class FD_SIMPLE extends Protocol {
         StringBuilder sb=new StringBuilder();
         Address key;
 
-        for(Iterator it=counters.keySet().iterator(); it.hasNext();) {
-            key=(Address)it.next();
+        for(Iterator<Address> it=counters.keySet().iterator(); it.hasNext();) {
+            key=it.next();
             sb.append(key).append(": ").append(counters.get(key)).append('\n');
         }
         return sb.toString();

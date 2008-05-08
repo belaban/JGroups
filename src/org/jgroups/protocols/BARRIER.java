@@ -2,11 +2,10 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.MBean;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Properties;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -27,9 +26,11 @@ import java.util.concurrent.locks.ReentrantLock;
  * When an OPEN_BARRIER event is received, we simply open the barrier again and let all messages pass in the up
  * direction. This is done by releasing the WL.
  * @author Bela Ban
- * @version $Id: BARRIER.java,v 1.10 2008/03/12 08:47:23 belaban Exp $
+ * @version $Id: BARRIER.java,v 1.11 2008/05/08 09:46:42 vlada Exp $
  */
 public class BARRIER extends Protocol {
+    
+    @Property
     @ManagedAttribute(writable=true,description="max time (in ms) a barrier can be closed. If exceeded, the barrier is" +
             "opened no matter what")
     long max_close_time=60000; // how long can the barrier stay closed (in ms) ? 0 means forever
@@ -40,31 +41,14 @@ public class BARRIER extends Protocol {
     Condition barrier_opened=lock.newCondition();
     Condition no_msgs_pending=lock.newCondition();
     ConcurrentMap<Thread,Object> in_flight_threads=new ConcurrentHashMap<Thread,Object>();
-    Future barrier_opener_future=null;
+    Future<?> barrier_opener_future=null;
     TimeScheduler timer;
     private static final Object NULL=new Object();
 
 
     public String getName() {
         return "BARRIER";
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-        super.setProperties(props);
-        str=props.getProperty("max_close_time");
-        if(str != null) {
-            max_close_time=Long.parseLong(str);
-            props.remove("max_close_time");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }    
 
     @ManagedAttribute
     public boolean isClosed() {

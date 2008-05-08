@@ -17,7 +17,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.21 2008/03/08 09:46:46 vlada Exp $
+ * @version $Id: SEQUENCER.java,v 1.22 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
@@ -71,18 +71,7 @@ public class SEQUENCER extends Protocol {
     @ManagedOperation
     public String printStats() {
         return dumpStats().toString();
-    }
-
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }    
 
     private final long nextSeqno() {
         synchronized(this) {

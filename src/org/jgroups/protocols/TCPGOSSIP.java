@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 
@@ -22,7 +23,7 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  *
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.29 2008/03/01 08:04:43 belaban Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.30 2008/05/08 09:46:42 vlada Exp $
  */
 public class TCPGOSSIP extends Discovery {
     Vector<IpAddress>   initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
@@ -30,7 +31,9 @@ public class TCPGOSSIP extends Discovery {
 
     // we need to refresh the registration with the GossipRouter(s) periodically,
     // so that our entries are not purged from the cache
+    @Property
     long                gossip_refresh_rate=20000;
+    @Property
     int                 sock_conn_timeout=1000;     // max time in millis for a socket creation
     final static String name="TCPGOSSIP";
 
@@ -42,20 +45,8 @@ public class TCPGOSSIP extends Discovery {
 
 
     public boolean setProperties(Properties props) {
-        String str;
-        str=props.getProperty("gossip_refresh_rate");  // wait for at most n members
-        if(str != null) {
-            gossip_refresh_rate=Integer.parseInt(str);
-            props.remove("gossip_refresh_rate");
-        }
-
-        str=props.getProperty("sock_conn_timeout");  // wait for at most n members
-        if(str != null) {
-            sock_conn_timeout=Integer.parseInt(str);
-            props.remove("sock_conn_timeout");
-        }
-
-        str=props.getProperty("initial_hosts");
+        
+        String str=props.getProperty("initial_hosts");
         if(str != null) {
             props.remove("initial_hosts");
             try {
@@ -121,7 +112,7 @@ public class TCPGOSSIP extends Discovery {
     public void sendGetMembersRequest(String cluster_name) {
         Message msg, copy;
         PingHeader hdr;
-        List tmp_mbrs;
+        List<Address> tmp_mbrs;
         Address mbr_addr;
 
         if(group_addr == null) {
@@ -143,8 +134,8 @@ public class TCPGOSSIP extends Discovery {
         msg.setFlag(Message.OOB);
         msg.putHeader(name, hdr);
 
-        for(Iterator it=tmp_mbrs.iterator(); it.hasNext();) {
-            mbr_addr=(Address)it.next();
+        for(Iterator<Address> it=tmp_mbrs.iterator(); it.hasNext();) {
+            mbr_addr=it.next();
             copy=msg.copy();
             copy.setDest(mbr_addr);
             if(log.isTraceEnabled()) log.trace("[FIND_INITIAL_MBRS] sending PING request to " + copy.getDest());

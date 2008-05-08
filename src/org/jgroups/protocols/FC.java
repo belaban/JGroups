@@ -5,6 +5,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Streamable;
@@ -37,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.94 2008/03/13 02:00:22 vlada Exp $
+ * @version $Id: FC.java,v 1.95 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -76,6 +77,7 @@ public class FC extends Protocol {
      */
     @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
                                    "be received before continuing sending",writable=true)
+    @Property                                   
     private long max_credits=500000;
 
     /**
@@ -84,6 +86,7 @@ public class FC extends Protocol {
      * wait forever.
      */
     @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
+    @Property
     private long max_block_time=5000;
 
     /**
@@ -91,6 +94,7 @@ public class FC extends Protocol {
      * credits are exhausted (0 credits left))
      */
     @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",writable=true)
+    @Property
     private double min_threshold=0.25;
 
     /**
@@ -137,6 +141,7 @@ public class FC extends Protocol {
      * Set to false by default in 2.5 because we have OOB messages for credit replenishments - this flag should not be set
      * to true if the concurrent stack is used
      */
+    @Property
     private boolean ignore_synchronous_response=false;
 
     /**
@@ -303,23 +308,10 @@ public class FC extends Protocol {
 
 
     public boolean setProperties(Properties props) {
-        String str;
-        boolean min_credits_set=false;
+        super.setProperties(props);      
+        boolean min_credits_set=false;            
 
-        super.setProperties(props);
-        str=props.getProperty("max_credits");
-        if(str != null) {
-            max_credits=Long.parseLong(str);
-            props.remove("max_credits");
-        }
-
-        str=props.getProperty("min_threshold");
-        if(str != null) {
-            min_threshold=Double.parseDouble(str);
-            props.remove("min_threshold");
-        }
-
-        str=props.getProperty("min_credits");
+        String str=props.getProperty("min_credits");
         if(str != null) {
             min_credits=Long.parseLong(str);
             props.remove("min_credits");
@@ -327,25 +319,9 @@ public class FC extends Protocol {
         }
 
         if(!min_credits_set)
-            min_credits=(long)((double)max_credits * min_threshold);
-
-        str=props.getProperty("max_block_time");
-        if(str != null) {
-            max_block_time=Long.parseLong(str);
-            props.remove("max_block_time");
-        }
-
-        Util.checkBufferSize("FC.max_credits", max_credits);
-        str=props.getProperty("ignore_synchronous_response");
-        if(str != null) {
-            ignore_synchronous_response=Boolean.valueOf(str);
-            props.remove("ignore_synchronous_response");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
+            min_credits=(long)(max_credits * min_threshold);
+        
+        Util.checkBufferSize("FC.max_credits", max_credits);       
         return true;
     }
 

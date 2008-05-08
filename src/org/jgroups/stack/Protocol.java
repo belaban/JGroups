@@ -6,6 +6,7 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.annotations.Property;
 
 import java.util.Map;
 import java.util.Properties;
@@ -29,12 +30,13 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.55 2007/12/03 13:17:55 belaban Exp $
+ * @version $Id: Protocol.java,v 1.56 2008/05/08 09:46:50 vlada Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
+    @Property
     protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
     protected final Log        log=LogFactory.getLog(this.getClass());
 
@@ -62,42 +64,20 @@ public abstract class Protocol {
      */
     public boolean setPropertiesInternal(Properties props) {
         this.props.putAll(props);
-
-        String str=props.getProperty("down_thread");
-        if(str != null) {
-            if(log.isWarnEnabled())
-                log.warn("down_thread was deprecated and is ignored");
-            props.remove("down_thread");
-        }
-
-        str=props.getProperty("down_thread_prio");
-        if(str != null) {
-            if(log.isWarnEnabled())
-                log.warn("down_thread_prio was deprecated and is ignored");
-            props.remove("down_thread_prio");
-        }
-
-        str=props.getProperty("up_thread");
-        if(str != null) {
-            if(log.isWarnEnabled())
-                log.warn("up_thread was deprecated and is ignored");
-            props.remove("up_thread");
-        }
-
-        str=props.getProperty("up_thread_prio");
-        if(str != null) {
-            if(log.isWarnEnabled())
-                log.warn("up_thread_prio was deprecated and is ignored");
-            props.remove("up_thread_prio");
-        }
-
-        str=props.getProperty("stats");
-        if(str != null) {
-            stats=Boolean.valueOf(str).booleanValue();
-            props.remove("stats");
-        }
-
+        listDeprecatedProperties(props,"down_thread","down_thread_prio","up_thread","up_thread_prio");              
         return setProperties(props);
+    }
+    
+    protected void listDeprecatedProperties(Properties props, String... deprecatedProperties){
+        for(String propertyName:deprecatedProperties){
+            String propertyValue = props.getProperty(propertyName);
+            if(propertyValue != null){
+                if(log.isWarnEnabled()){
+                    log.warn(propertyName + " was deprecated and will be ignored");
+                }
+                props.remove(propertyName);
+            }
+        }        
     }
 
 

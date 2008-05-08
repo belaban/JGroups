@@ -4,6 +4,7 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Header;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 
@@ -19,7 +20,7 @@ import java.util.zip.Inflater;
  * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
  * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.19 2007/05/01 10:55:10 belaban Exp $
+ * @version $Id: COMPRESS.java,v 1.20 2008/05/08 09:46:42 vlada Exp $
  */
 public class COMPRESS extends Protocol {
     BlockingQueue<Deflater> deflater_pool=null;
@@ -27,12 +28,15 @@ public class COMPRESS extends Protocol {
 
 
     /** Values are from 0-9 (0=no compression, 9=best compression) */
+    @Property
     int compression_level=Deflater.BEST_COMPRESSION; // this is 9
 
     /** Minimal payload size of a message (in bytes) for compression to kick in */
+    @Property
     long min_size=500;
 
     /** Number of inflaters/deflaters, for concurrency, increase this to the max number of concurrent requests possible */
+    @Property
     int pool_size=2;
 
 
@@ -59,42 +63,7 @@ public class COMPRESS extends Protocol {
             deflater.end();
         for(Inflater inflater: inflater_pool)
             inflater.end();
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("compression_level");
-        if(str != null) {
-            compression_level=Integer.parseInt(str);
-            props.remove("compression_level");
-        }
-
-        str=props.getProperty("min_size");
-        if(str != null) {
-            min_size=Long.parseLong(str);
-            props.remove("min_size");
-        }
-
-        str=props.getProperty("pool_size");
-        if(str != null) {
-            pool_size=Integer.parseInt(str);
-            if(pool_size <= 0) {
-                log.warn("pool_size must be > 0, setting it to 1");
-                pool_size=1;
-            }
-            props.remove("pool_size");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
+    }   
 
 
     /**

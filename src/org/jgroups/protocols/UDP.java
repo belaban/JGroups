@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
@@ -37,7 +38,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.164 2008/04/23 09:29:15 belaban Exp $
+ * @version $Id: UDP.java,v 1.165 2008/05/08 09:46:42 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -71,6 +72,7 @@ public class UDP extends TP implements Runnable {
      * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
      * </UL>
      */
+    @Property
     int             tos=8; // valid values: 2, 4, 8 (default), 16
 
 
@@ -93,21 +95,26 @@ public class UDP extends TP implements Runnable {
 
     /** Whether to enable IP multicasting. If false, multiple unicast datagram
      * packets are sent rather than one multicast packet */
+    @Property
     boolean         ip_mcast=true;
 
     /** The time-to-live (TTL) for multicast datagram packets */
     int             ip_ttl=8;
 
     /** Send buffer size of the multicast datagram socket */
+    @Property
     int             mcast_send_buf_size=32000;
 
     /** Receive buffer size of the multicast datagram socket */
+    @Property
     int             mcast_recv_buf_size=64000;
 
     /** Send buffer size of the unicast datagram socket */
+    @Property
     int             ucast_send_buf_size=32000;
 
     /** Receive buffer size of the unicast datagram socket */
+    @Property
     int             ucast_recv_buf_size=64000;
 
 
@@ -142,17 +149,12 @@ public class UDP extends TP implements Runnable {
      *         properties are left over and not handled by the protocol stack
      */
     public boolean setProperties(Properties props) {
-        String str;
+
 
         super.setProperties(props);
-
-        str=props.getProperty("num_last_ports");
-        if(str != null) {            
-            props.remove("num_last_ports");
-            log.warn("num_last_ports has been deprecated, property will be ignored");
-        }
-
-        str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
+        listDeprecatedProperties(props, "num_last_ports","null_src_addresses");
+        
+        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
                              "mcast_addr", false, "228.8.8.8");
         if(str != null)
             mcast_addr_name=str;
@@ -161,55 +163,12 @@ public class UDP extends TP implements Runnable {
                              props, "mcast_port", false, "7600");
         if(str != null)
             mcast_port=Integer.parseInt(str);
-
-        str=props.getProperty("ip_mcast");
-        if(str != null) {
-            ip_mcast=Boolean.valueOf(str).booleanValue();
-            props.remove("ip_mcast");
-        }
-
+       
         str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, props, "ip_ttl", false, "64");
         if(str != null) {
             ip_ttl=Integer.parseInt(str);
             props.remove("ip_ttl");
-        }
-
-        str=props.getProperty("tos");
-        if(str != null) {
-            tos=Integer.parseInt(str);
-            props.remove("tos");
-        }
-
-        str=props.getProperty("mcast_send_buf_size");
-        if(str != null) {
-            mcast_send_buf_size=Integer.parseInt(str);
-            props.remove("mcast_send_buf_size");
-        }
-
-        str=props.getProperty("mcast_recv_buf_size");
-        if(str != null) {
-            mcast_recv_buf_size=Integer.parseInt(str);
-            props.remove("mcast_recv_buf_size");
-        }
-
-        str=props.getProperty("ucast_send_buf_size");
-        if(str != null) {
-            ucast_send_buf_size=Integer.parseInt(str);
-            props.remove("ucast_send_buf_size");
-        }
-
-        str=props.getProperty("ucast_recv_buf_size");
-        if(str != null) {
-            ucast_recv_buf_size=Integer.parseInt(str);
-            props.remove("ucast_recv_buf_size");
-        }
-
-        str=props.getProperty("null_src_addresses");
-        if(str != null) {
-            // null_src_addresses=Boolean.valueOf(str).booleanValue();
-            props.remove("null_src_addresses");
-            log.error("null_src_addresses has been deprecated, property will be ignored");
-        }
+        }        
 
         Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
         Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);

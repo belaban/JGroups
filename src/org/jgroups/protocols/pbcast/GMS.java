@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.pbcast.GmsImpl.Request;
 
 
@@ -24,7 +25,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.141 2008/04/30 13:36:07 vlada Exp $
+ * @version $Id: GMS.java,v 1.142 2008/05/08 09:46:47 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -43,24 +44,34 @@ public class GMS extends Protocol {
     ViewId                    view_id=null;
     private long              ltime=0;
     @ManagedAttribute(description="Join timeout",writable=true)
+    @Property
     long                      join_timeout=5000;
+    @Property
     long                      leave_timeout=5000;
+    @Property
     long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Hashtable<String,GmsImpl>   impls=new Hashtable<String,GmsImpl>(3);
     @ManagedAttribute(description="Shunning toggle",writable=true)
+    @Property
     private boolean           shun=false;
+    @Property
     boolean                   merge_leader=false;         // can I initiate a merge ?
+    @Property
     private boolean           print_local_addr=true;
+    @Property
     boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
     /** Setting this to false disables concurrent startups. This is only used by unit testing code
      * for testing merging. To everybody else: don't change it to false ! */
+    @Property
     boolean                   handle_concurrent_startup=true;
     /** Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
      * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
      * together if they are queued at approximately the same time */
     @ManagedAttribute(description="View bundling toggle",writable=true)
+    @Property
     private boolean           view_bundling=true;
+    @Property
     private long              max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
     static final String       CLIENT="Client";
     static final String       COORD="Coordinator";
@@ -68,6 +79,7 @@ public class GMS extends Protocol {
     TimeScheduler             timer=null;
 
     /** Max number of old members to keep in history */
+    @Property
     protected int             num_prev_mbrs=50;
 
     /** Keeps track of old members (up to num_prev_mbrs) */
@@ -76,6 +88,7 @@ public class GMS extends Protocol {
     /** If we receive a JOIN request from P and P is already in the current membership, then we send back a JOIN
      * response with an error message when this property is set to true (Channel.connect() will fail). Otherwise,
      * we return the current view */
+    @Property
     boolean                   reject_join_from_existing_member=true;
 
     int                       num_views=0;
@@ -95,9 +108,11 @@ public class GMS extends Protocol {
 
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
+    @Property
     long                      view_ack_collection_timeout=2000;
 
     /** How long should a Resumer wait until resuming the ViewHandler */
+    @Property
     long                      resume_task_timeout=20000;
 
     boolean                   flushProtocolInStack=false;
@@ -889,125 +904,9 @@ public class GMS extends Protocol {
 
 
     /** Setup the Protocol instance according to the configuration string */
-    public boolean setProperties(Properties props) {
-        String str;
-
+    public boolean setProperties(Properties props) {      
         super.setProperties(props);
-        str=props.getProperty("shun");
-        if(str != null) {
-            shun=Boolean.valueOf(str).booleanValue();
-            props.remove("shun");
-        }
-
-        str=props.getProperty("merge_leader");
-        if(str != null) {
-            merge_leader=Boolean.valueOf(str).booleanValue();
-            props.remove("merge_leader");
-        }
-
-        str=props.getProperty("print_local_addr");
-        if(str != null) {
-            print_local_addr=Boolean.valueOf(str).booleanValue();
-            props.remove("print_local_addr");
-        }
-
-        str=props.getProperty("join_timeout");           // time to wait for JOIN
-        if(str != null) {
-            join_timeout=Long.parseLong(str);
-            props.remove("join_timeout");
-        }
-
-        str=props.getProperty("join_retry_timeout");     // time to wait between JOINs
-        if(str != null) {
-            props.remove("join_retry_timeout");
-            if(log.isWarnEnabled())
-                log.warn("join_retry_timeout has been deprecated and its value will be ignored");
-        }
-
-        str=props.getProperty("leave_timeout");           // time to wait until coord responds to LEAVE req.
-        if(str != null) {
-            leave_timeout=Long.parseLong(str);
-            props.remove("leave_timeout");
-        }
-
-        str=props.getProperty("merge_timeout");           // time to wait for MERGE_RSPS from subgroup coordinators
-        if(str != null) {
-            merge_timeout=Long.parseLong(str);
-            props.remove("merge_timeout");
-        }
-
-        str=props.getProperty("digest_timeout");          // time to wait for GET_DIGEST_OK from PBCAST
-        if(str != null) {
-            log.warn("digest_timeout has been deprecated and its value will be ignored");
-            props.remove("digest_timeout");
-        }
-
-        str=props.getProperty("view_ack_collection_timeout");
-        if(str != null) {
-            view_ack_collection_timeout=Long.parseLong(str);
-            props.remove("view_ack_collection_timeout");
-        }
-
-        str=props.getProperty("resume_task_timeout");
-        if(str != null) {
-            resume_task_timeout=Long.parseLong(str);
-            props.remove("resume_task_timeout");
-        }
-
-        str=props.getProperty("disable_initial_coord");
-        if(str != null) {
-            disable_initial_coord=Boolean.valueOf(str).booleanValue();
-            props.remove("disable_initial_coord");
-            if(log.isWarnEnabled())
-                log.warn("disable_initial_coord has been deprecated and will be phased out by 3.0, please don't use it anymore");
-        }
-
-        str=props.getProperty("handle_concurrent_startup");
-        if(str != null) {
-            handle_concurrent_startup=Boolean.valueOf(str).booleanValue();
-            props.remove("handle_concurrent_startup");
-        }
-
-        str=props.getProperty("num_prev_mbrs");
-        if(str != null) {
-            num_prev_mbrs=Integer.parseInt(str);
-            props.remove("num_prev_mbrs");
-        }
-
-        str=props.getProperty("reject_join_from_existing_member");
-        if(str != null) {
-            reject_join_from_existing_member=Boolean.parseBoolean(str);
-            props.remove("reject_join_from_existing_member");
-        }
-        
-        str=props.getProperty("use_flush");
-        if(str != null) {
-            log.warn("use_flush has been deprecated and its value will be ignored");
-            props.remove("use_flush");
-        } 
-        str=props.getProperty("flush_timeout");   
-        if(str != null) {
-            log.warn("flush_timeout has been deprecated and its value will be ignored");
-            props.remove("flush_timeout");
-        }  
-
-        str=props.getProperty("view_bundling");
-        if(str != null) {
-            view_bundling=Boolean.valueOf(str).booleanValue();
-            props.remove("view_bundling");
-        }
-
-        str=props.getProperty("max_bundling_time");
-        if(str != null) {
-            max_bundling_time=Long.parseLong(str);
-            props.remove("max_bundling_time");
-        }
-
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
+        listDeprecatedProperties(props, "join_retry_timeout","digest_timeout","use_flush","flush_timeout");      
         return true;
     }
 
@@ -1243,7 +1142,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.141 2008/04/30 13:36:07 vlada Exp $
+     * @version $Id: GMS.java,v 1.142 2008/05/08 09:46:47 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

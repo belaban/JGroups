@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.*;
 
 import java.util.*;
@@ -25,26 +26,30 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.17 2008/03/13 02:00:16 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.18 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
     Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
 
+    @Property
     @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster",writable=true)
     long                       interval=3000;
 
+    @Property
     @ManagedAttribute(description="Number of milliseconds after which a " + 
                       "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
     long                       timeout=5000;
 
     /** when a message is received from P, this is treated as if P sent a heartbeat */
+    @Property
     boolean                    msg_counts_as_heartbeat=true;
 
     Address                    local_addr=null;
     final List<Address>        members=new ArrayList<Address>();
 
+    @Property
     @ManagedAttribute(description="Shun switch",writable=true)
     boolean                    shun=true;
     
@@ -111,42 +116,7 @@ public class FD_ALL extends Protocol {
     public String printTimestamps() {
         return printTimeStamps();
     }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("timeout");
-        if(str != null) {
-            timeout=Long.parseLong(str);
-            props.remove("timeout");
-        }
-
-        str=props.getProperty("interval");
-        if(str != null) {
-            interval=Long.parseLong(str);
-            props.remove("interval");
-        }
-
-        str=props.getProperty("shun");
-        if(str != null) {
-            shun=Boolean.valueOf(str).booleanValue();
-            props.remove("shun");
-        }
-
-        str=props.getProperty("msg_counts_as_heartbeat");
-        if(str != null) {
-            msg_counts_as_heartbeat=Boolean.valueOf(str).booleanValue();
-            props.remove("msg_counts_as_heartbeat");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+  
 
     public void resetStats() {
         num_heartbeats_sent=num_heartbeats_received=num_suspect_events=0;

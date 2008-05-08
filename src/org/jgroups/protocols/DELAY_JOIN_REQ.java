@@ -2,42 +2,26 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.util.Date;
-import java.util.Properties;
 
 /**
  * Discards 2 JOIN-REQs then accepts 1, then discards 2 more and so on
  * @author Bela Ban
- * @version $Id: DELAY_JOIN_REQ.java,v 1.2 2007/11/16 14:20:46 belaban Exp $
+ * @version $Id: DELAY_JOIN_REQ.java,v 1.3 2008/05/08 09:46:42 vlada Exp $
  */
 public class DELAY_JOIN_REQ extends Protocol {
+    
+    @Property
     private long delay=4000;
 
     public String getName() {
         return "DELAY_JOIN_REQ";
-    }
-
-    public boolean setProperties(Properties props) {
-        String     str;
-
-        super.setProperties(props);
-
-        str=props.getProperty("delay");
-        if(str != null) {
-            delay=Long.parseLong(str);
-            props.remove("delay");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }  
 
     public long getDelay() {
         return delay;

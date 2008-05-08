@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
@@ -41,12 +42,13 @@ import java.util.*;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.27 2008/04/08 14:51:21 belaban Exp $
+ * @version $Id: SMACK.java,v 1.28 2008/05/08 09:46:42 vlada Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
     long[]                 timeout=new long[]{1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
+    @Property
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
     final Set<Address>     members=new LinkedHashSet<Address>();      // contains Addresses
     AckMcastSenderWindow   sender_win=null;
@@ -55,6 +57,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     Address                local_addr=null;           // my own address
     long                   seqno=1;                   // seqno for msgs sent by this sender
     long                   vid=1;                     // for the fake view changes
+    @Property
     boolean                print_local_addr=true;
     static final String    name="SMACK";
     
@@ -70,18 +73,11 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     }
 
 
-    public boolean setProperties(Properties props) {
-        String str;
-        long[] tmp;
-
+    public boolean setProperties(Properties props) {               
         super.setProperties(props);
-        str=props.getProperty("print_local_addr");
-        if(str != null) {
-            print_local_addr=Boolean.valueOf(str).booleanValue();
-            props.remove("print_local_addr");
-        }
-
-        str=props.getProperty("timeout");
+       
+        String str=props.getProperty("timeout");
+        long[] tmp;
         if(str != null) {
             tmp=Util.parseCommaDelimitedLongs(str);
             props.remove("timeout");
@@ -89,16 +85,7 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
                 timeout=tmp;
         }
 
-        str=props.getProperty("max_xmits");
-        if(str != null) {
-            max_xmits=Integer.parseInt(str);
-            props.remove("max_xmits");
-        }
 
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
         return true;
     }
 

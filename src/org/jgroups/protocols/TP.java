@@ -6,6 +6,8 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -47,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.186 2008/04/23 14:53:48 belaban Exp $
+ * @version $Id: TP.java,v 1.187 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -60,14 +62,16 @@ public abstract class TP extends Protocol {
     protected String          channel_name=null;
 
     /** The interface (NIC) which should be used by this transport */
-    @ManagedAttribute
+    @ManagedAttribute    
     protected InetAddress     bind_addr=null;
 
     /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
+    @Property
     boolean                   use_local_host=false;
 
     /** If true, the transport should use all available interfaces to receive multicast messages */
     @ManagedAttribute
+    @Property
     boolean                   receive_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
@@ -76,11 +80,13 @@ public abstract class TP extends Protocol {
      * If this property is set, it override receive_on_all_interfaces.
      */
     @ManagedAttribute
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
     List<NetworkInterface>    receive_interfaces=null;
 
     /** If true, the transport should use all available interfaces to send multicast messages. This means
      * the same multicast message is sent N times, so use with care */
     @ManagedAttribute
+    @Property
     boolean                   send_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
@@ -89,13 +95,17 @@ public abstract class TP extends Protocol {
      * If this property is set, it override send_on_all_interfaces.
      */
     @ManagedAttribute
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
     List<NetworkInterface>    send_interfaces=null;
 
 
     /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
+    @Property(name="start_port",deprecatedMessage="start_port is deprecated; use bind_port instead")
     int             bind_port=0;
+    @Property(name="end_port",deprecatedMessage="end_port is deprecated; use port_range instead")
     int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
+    @Property
     boolean         prevent_port_reuse=false;
 
     /** The members of this group (updated when a member joins or leaves) */
@@ -112,12 +122,14 @@ public abstract class TP extends Protocol {
      * when the real copy arrives - it will be discarded. Useful for Window
      * media (non)sense */
     @ManagedAttribute(description = "", writable = true)
-	boolean loopback = false;
+    @Property
+    boolean loopback = false;
 
 
     /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
      * to true means that we expect the exact same version on all incoming packets */
     @ManagedAttribute(description="Discard packets with a different version",writable=true)
+    @Property
     protected boolean discard_incompatible_packets=false;
 
     /** whether or not warnings about messages from different groups are logged - private flag, not for common use */
@@ -132,6 +144,7 @@ public abstract class TP extends Protocol {
     		"Packet handler is a separate thread taking care of de-serialization, receiver " +
             "thread(s) simply put packet in queue and return immediately. Setting this to " + 
             "true adds one more thread",writable=true)
+    @Property(name="use_packet_handler",deprecatedMessage="'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead")    
     boolean         use_incoming_packet_handler=true;
 
     /** Used by packet handler to store incoming DatagramPackets */
@@ -148,6 +161,7 @@ public abstract class TP extends Protocol {
     IncomingMessageHandler incoming_msg_handler;
 
 
+    @Property
     boolean use_concurrent_stack=true;
     ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
@@ -163,10 +177,14 @@ public abstract class TP extends Protocol {
     /** ================================== OOB thread pool ============================== */
     /** The thread pool which handles OOB messages */
     Executor oob_thread_pool;
+    @Property(name="oob_thread_pool.enabled")
     boolean oob_thread_pool_enabled=true;
+    @Property(name="oob_thread_pool.min_threads")
     int oob_thread_pool_min_threads=2;
+    @Property(name="oob_thread_pool.max_threads")
     int oob_thread_pool_max_threads=10;
     /** Number of milliseconds after which an idle thread is removed */
+    @Property(name="oob_thread_pool.keep_alive_time")
     long oob_thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute
@@ -175,12 +193,15 @@ public abstract class TP extends Protocol {
     /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
     BlockingQueue<Runnable> oob_thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with direct executor) */
+    @Property(name="oob_thread_pool.queue_enabled")
     boolean oob_thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
-    @ManagedAttribute
+    @ManagedAttribute    
+    @Property(name="oob_thread_pool.queue_max_size")
     int oob_thread_pool_queue_max_size=500;
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
+    @Property(name="oob_thread_pool.rejection_policy")
     String oob_thread_pool_rejection_policy="Run";
 
     public Executor getOOBThreadPool() {
@@ -197,10 +218,16 @@ public abstract class TP extends Protocol {
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
     Executor thread_pool;
+    @Property(name="thread_pool.enabled")
     boolean thread_pool_enabled=true;
+    
+    @Property(name="thread_pool.min_threads")
     int thread_pool_min_threads=2;
+    
+    @Property(name="thread_pool.max_threads")
     int thread_pool_max_threads=10;
     /** Number of milliseconds after which an idle thread is removed */
+    @Property(name="thread_pool.keep_alive_time")
     long thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute
@@ -209,12 +236,16 @@ public abstract class TP extends Protocol {
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     BlockingQueue<Runnable> thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
+    @Property(name="thread_pool.queue_enabled")
     boolean thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
     @ManagedAttribute
+    @Property(name="thread_pool.queue_max_size")
     int thread_pool_queue_max_size=500;
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
+    
+    @Property(name="thread_pool.rejection_policy")
     String thread_pool_rejection_policy="Run";
 
     public Executor getDefaultThreadPool() {
@@ -245,9 +276,11 @@ public abstract class TP extends Protocol {
 
     /** Enable bundling of smaller messages into bigger ones */
     @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
+    @Property
     boolean enable_bundling=false;
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
+    @Property
     boolean enable_unicast_bundling=true;
 
     private Bundler    bundler=null;
@@ -255,11 +288,15 @@ public abstract class TP extends Protocol {
     protected TimeScheduler      timer=null;
 
     private DiagnosticsHandler diag_handler=null;
+    @Property
     boolean enable_diagnostics=true;
+    @Property
     String diagnostics_addr="224.0.0.75";
+    @Property
     int    diagnostics_port=7500;
 
     /** If this transport is shared, identifies all the transport instances which are to be shared */
+    @Property
     String singleton_name=null;
 
     /** If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their
@@ -272,8 +309,13 @@ public abstract class TP extends Protocol {
     final String name=getName();
 
     protected PortsManager pm=null;
+    @Property
     protected String persistent_ports_file=null;
+    @Property
     protected long pm_expiry_time=30000L;
+    @Property
+    protected boolean persistent_ports=false;
+    
 
     static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
     static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
@@ -357,6 +399,7 @@ public abstract class TP extends Protocol {
     public int getMaxBundleSize() {return max_bundle_size;}
 
     @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent",writable=true)
+    @Property(name="max_bundle_size")
     public void setMaxBundleSize(int size) {
         if(size > max_bundle_size) {
             throw new IllegalArgumentException("max_bundle_size (" + size
@@ -377,6 +420,7 @@ public abstract class TP extends Protocol {
     public long getMaxBundleTimeout() {return max_bundle_timeout;}
     
     @ManagedAttribute(description="Max number of milliseconds until queued messages are sent", writable=true)
+    @Property(name="max_bundle_timeout")
     public void setMaxBundleTimeout(long timeout) {
         if(timeout <= 0) {
             throw new IllegalArgumentException("max_bundle_timeout of " + timeout
@@ -627,6 +671,11 @@ public abstract class TP extends Protocol {
 
     public void init() throws Exception {
         super.init();
+        verifyRejectionPolicy(oob_thread_pool_rejection_policy);
+        verifyRejectionPolicy(thread_pool_rejection_policy);
+        if(persistent_ports){
+            pm = new PortsManager(pm_expiry_time,persistent_ports_file);
+        }
         if(bind_addr != null) {
             Map<String, Object> m=new HashMap<String, Object>(1);
             m.put("bind_addr", bind_addr);
@@ -752,321 +801,21 @@ public abstract class TP extends Protocol {
      *         properties are left over and not handled by the protocol stack
      */
     public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        String str;
-
+        super.setProperties(props);    
+        String str = null;
+        
         try {
-            bind_addr=Util.getBindAddress(props);
+            bind_addr = Util.getBindAddress(props);
         }
-        catch(IOException unknown) {
-            throw new IllegalArgumentException("failed determining bind address", unknown);
-        }
-
-        str=props.getProperty("use_local_host");
-        if(str != null) {
-            use_local_host=Boolean.parseBoolean(str);
-            props.remove("use_local_host");
-        }
-
-        str=props.getProperty("bind_to_all_interfaces");
-        if(str != null) {
-            receive_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("bind_to_all_interfaces");
-            log.warn("bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead");
-        }
-
-        str=props.getProperty("receive_on_all_interfaces");
-        if(str != null) {
-            receive_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("receive_on_all_interfaces");
-        }
-
-        str=props.getProperty("receive_interfaces");
-        if(str != null) {
-            try {
-                receive_interfaces=Util.parseInterfaceList(str);
-                props.remove("receive_interfaces");
-            }
-            catch(Exception e) {
-                log.error("error determining interfaces (" + str + ")", e);
-                return false;
-            }
-        }
-
-        str=props.getProperty("send_on_all_interfaces");
-        if(str != null) {
-            send_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("send_on_all_interfaces");
-        }
-
-        str=props.getProperty("send_interfaces");
-        if(str != null) {
-            try {
-                send_interfaces=Util.parseInterfaceList(str);
-                props.remove("send_interfaces");
-            }
-            catch(Exception e) {
-                log.error("error determining interfaces (" + str + ")", e);
-                return false;
-            }
-        }
-
-        str=props.getProperty("bind_port");
-        if(str != null) {
-            bind_port=Integer.parseInt(str);
-            props.remove("bind_port");
-        }
-
-        str=props.getProperty("port_range");
-        if(str != null) {
-            port_range=Integer.parseInt(str);
-            props.remove("port_range");
-        }
-
-        str=props.getProperty("persistent_ports_file");
-        if(str != null) {
-            persistent_ports_file=str;
-            props.remove("persistent_ports_file");
-        }
-
-        str=props.getProperty("ports_expiry_time");
-        if(str != null) {
-            pm_expiry_time=Integer.parseInt(str);
-            if(pm != null)
-                pm.setExpiryTime(pm_expiry_time);
-            props.remove("ports_expiry_time");
-        }
-
-        str=props.getProperty("persistent_ports");
-        if(str != null) {
-            if(Boolean.valueOf(str).booleanValue())
-                pm=new PortsManager(pm_expiry_time, persistent_ports_file);
-            props.remove("persistent_ports");
-        }
-
-        str=props.getProperty("prevent_port_reuse");
-        if(str != null) {
-            prevent_port_reuse=Boolean.valueOf(str);
-            props.remove("prevent_port_reuse");
-        }
-
-        str=props.getProperty("loopback");
-        if(str != null) {
-            loopback=Boolean.valueOf(str).booleanValue();
-            props.remove("loopback");
-        }
-
-        str=props.getProperty("discard_incompatible_packets");
-        if(str != null) {
-            discard_incompatible_packets=Boolean.valueOf(str).booleanValue();
-            props.remove("discard_incompatible_packets");
-        }
-
-        // this is deprecated, just left for compatibility (use use_incoming_packet_handler)
-        str=props.getProperty("use_packet_handler");
-        if(str != null) {
-            use_incoming_packet_handler=Boolean.valueOf(str).booleanValue();
-            props.remove("use_packet_handler");
-            if(log.isWarnEnabled()) log.warn("'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead");
-        }
-
-        str=props.getProperty("use_incoming_packet_handler");
-        if(str != null) {
-            use_incoming_packet_handler=Boolean.valueOf(str).booleanValue();
-            props.remove("use_incoming_packet_handler");
-        }
-
-        str=props.getProperty("use_concurrent_stack");
-        if(str != null) {
-            use_concurrent_stack=Boolean.valueOf(str).booleanValue();
-            props.remove("use_concurrent_stack");
-        }
-
+        catch(Exception e) {
+            throw new IllegalArgumentException("Failed to determine bind address",e);
+        }        
+        
         str=props.getProperty("thread_naming_pattern");
         if(str != null) {
             thread_naming_pattern=new ThreadNamingPattern(str);
             props.remove("thread_naming_pattern");
-        }
-
-        // ======================================= OOB thread pool =========================================
-        str=props.getProperty("oob_thread_pool.enabled");
-        if(str != null) {
-            oob_thread_pool_enabled=Boolean.valueOf(str).booleanValue();
-            props.remove("oob_thread_pool.enabled");
-        }
-
-        str=props.getProperty("oob_thread_pool.min_threads");
-        if(str != null) {
-            oob_thread_pool_min_threads=Integer.valueOf(str).intValue();
-            props.remove("oob_thread_pool.min_threads");
-        }
-
-        str=props.getProperty("oob_thread_pool.max_threads");
-        if(str != null) {
-            oob_thread_pool_max_threads=Integer.valueOf(str).intValue();
-            props.remove("oob_thread_pool.max_threads");
-        }
-
-        str=props.getProperty("oob_thread_pool.keep_alive_time");
-        if(str != null) {
-            oob_thread_pool_keep_alive_time=Long.valueOf(str).longValue();
-            props.remove("oob_thread_pool.keep_alive_time");
-        }
-
-        str=props.getProperty("oob_thread_pool.queue_enabled");
-        if(str != null) {
-            oob_thread_pool_queue_enabled=Boolean.valueOf(str).booleanValue();
-            props.remove("oob_thread_pool.queue_enabled");
-        }
-
-        str=props.getProperty("oob_thread_pool.queue_max_size");
-        if(str != null) {
-            oob_thread_pool_queue_max_size=Integer.valueOf(str).intValue();
-            props.remove("oob_thread_pool.queue_max_size");
-        }
-
-        str=props.getProperty("oob_thread_pool.rejection_policy");
-        if(str != null) {
-            str=str.toLowerCase().trim();
-            oob_thread_pool_rejection_policy=str;
-            if(!(str.equals("run") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
-                log.error("rejection policy of " + str + " is unknown");
-                return false;
-            }
-            props.remove("oob_thread_pool.rejection_policy");
-        }
-
-
-
-
-        // ======================================= Regular thread pool =========================================
-        str=props.getProperty("thread_pool.enabled");
-        if(str != null) {
-            thread_pool_enabled=Boolean.valueOf(str).booleanValue();
-            props.remove("thread_pool.enabled");
-        }
-
-        str=props.getProperty("thread_pool.min_threads");
-        if(str != null) {
-            thread_pool_min_threads=Integer.valueOf(str).intValue();
-            props.remove("thread_pool.min_threads");
-        }
-
-        str=props.getProperty("thread_pool.max_threads");
-        if(str != null) {
-            thread_pool_max_threads=Integer.valueOf(str).intValue();
-            props.remove("thread_pool.max_threads");
-        }
-
-        str=props.getProperty("thread_pool.keep_alive_time");
-        if(str != null) {
-            thread_pool_keep_alive_time=Long.valueOf(str).longValue();
-            props.remove("thread_pool.keep_alive_time");
-        }
-
-        str=props.getProperty("thread_pool.queue_enabled");
-        if(str != null) {
-            thread_pool_queue_enabled=Boolean.valueOf(str).booleanValue();
-            props.remove("thread_pool.queue_enabled");
-        }
-
-        str=props.getProperty("thread_pool.queue_max_size");
-        if(str != null) {
-            thread_pool_queue_max_size=Integer.valueOf(str).intValue();
-            props.remove("thread_pool.queue_max_size");
-        }
-
-        str=props.getProperty("thread_pool.rejection_policy");
-        if(str != null) {
-            str=str.toLowerCase().trim();
-            thread_pool_rejection_policy=str;
-            if(!(str.equals("run") || str.equals("abort")|| str.equals("discard")|| str.equals("discardoldest"))) {
-                log.error("rejection policy of " + str + " is unknown");
-                return false;
-            }
-            props.remove("thread_pool.rejection_policy");
-        }
-
-
-        str=props.getProperty("use_outgoing_packet_handler");
-        if(str != null) {
-            log.warn("Attribute \"use_outgoing_packet_handler\" has been deprecated and is ignored");
-            props.remove("use_outgoing_packet_handler");
-        }
-
-        str=props.getProperty("outgoing_queue_max_size");
-        if(str != null) {
-            log.warn("Attribute \"use_outgoing_queue_max_size\" has been deprecated and is ignored");
-            props.remove("outgoing_queue_max_size");
-        }
-        
-        str=props.getProperty("enable_bundling");
-        if(str != null) {
-            enable_bundling=Boolean.valueOf(str).booleanValue();
-            props.remove("enable_bundling");
-        }
-
-        str=props.getProperty("max_bundle_size");
-        if(str != null) {
-            int bundle_size=Integer.parseInt(str);            
-            try {
-                if(enable_bundling)
-                    setMaxBundleSize(bundle_size);
-            }
-            catch(Exception e) {
-                log.error("Could not set max_bundle_size", e);
-                return false;
-            }
-            finally {
-                props.remove("max_bundle_size");
-            }
-        }
-
-        str=props.getProperty("max_bundle_timeout");
-        if(str != null) {            
-            try {
-                if(enable_bundling)
-                    setMaxBundleTimeout(Long.parseLong(str));
-            }
-            catch(Exception e) {
-                log.error("Could not set max_bundle_timeout", e);
-                return false;
-            }
-            finally {
-                props.remove("max_bundle_timeout");
-            }            
         }       
-
-        str=props.getProperty("enable_unicast_bundling");
-        if(str != null) {
-            enable_unicast_bundling=Boolean.valueOf(str).booleanValue();
-            props.remove("enable_unicast_bundling");
-        }
-
-        str=props.getProperty("enable_diagnostics");
-        if(str != null) {
-            enable_diagnostics=Boolean.valueOf(str).booleanValue();
-            props.remove("enable_diagnostics");
-        }
-
-        str=props.getProperty("diagnostics_addr");
-        if(str != null) {
-            diagnostics_addr=str;
-            props.remove("diagnostics_addr");
-        }
-
-        str=props.getProperty("diagnostics_port");
-        if(str != null) {
-            diagnostics_port=Integer.parseInt(str);
-            props.remove("diagnostics_port");
-        }
-
-        str=props.getProperty(Global.SINGLETON_NAME);
-        if(str != null) {
-            singleton_name=str;
-            props.remove(Global.SINGLETON_NAME);
-        }
-
         return true;
     }
 
@@ -1632,6 +1381,13 @@ public abstract class TP extends Protocol {
             }
             catch(InterruptedException e) {
             }
+        }
+    }
+    
+    private void verifyRejectionPolicy(String str) throws Exception{
+        if(!(str.equalsIgnoreCase("run") || str.equalsIgnoreCase("abort")|| str.equalsIgnoreCase("discard")|| str.equalsIgnoreCase("discardoldest"))) {
+            log.error("rejection policy of " + str + " is unknown");
+            throw new Exception("Unknown rejection policy " + str);
         }
     }
 

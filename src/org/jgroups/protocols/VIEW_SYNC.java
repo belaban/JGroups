@@ -7,13 +7,13 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.Properties;
 import java.util.Vector;
 import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
  * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.28 2008/04/03 14:38:48 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.29 2008/05/08 09:46:43 vlada Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
@@ -33,8 +33,8 @@ public class VIEW_SYNC extends Protocol {
     final Vector<Address> mbrs=new Vector<Address>();
     View                  my_view=null;
     ViewId                my_vid=null;
-
-    /** Sends a VIEW_SYNC message to the group every 20 seconds on average. 0 disables sending of VIEW_SYNC messages */
+  
+    @Property
     @ManagedAttribute(description="Sends a VIEW_SYNC message to the group every 20 seconds on average",writable=true)
     long                 avg_send_interval=60000;
 
@@ -89,28 +89,7 @@ public class VIEW_SYNC extends Protocol {
     public void resetStats() {
         super.resetStats();
         num_views_adjusted=num_views_sent=0;
-    }
-
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-
-        str=props.getProperty("avg_send_interval");
-        if(str != null) {
-            avg_send_interval=Long.parseLong(str);
-            props.remove("avg_send_interval");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
+    }  
 
     public void start() throws Exception {
         if(stack != null && stack.timer != null)

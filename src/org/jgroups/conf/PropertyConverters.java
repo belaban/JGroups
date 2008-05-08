@@ -1,20 +1,34 @@
 package org.jgroups.conf;
+
 import java.util.Properties;
 
 import org.jgroups.util.Util;
 
+/**
+ * Groups a set of standard PropertyConverter(s) supplied by JGroups.
+ * 
+ * <p>
+ * Third parties can provide their own converters if such need arises by
+ * implementing {@link PropertyConverter} interface and by specifying that
+ * converter as converter on a specific Property annotation of a field or a
+ * method instance.
+ * 
+ * @author Vladimir Blagojevic
+ * @version $Id: PropertyConverters.java,v 1.2 2008/05/08 09:46:49 vlada Exp $
+ */
 public class PropertyConverters {
 
     public static class NetworkInterfaceList implements PropertyConverter {
 
         public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
-           return Util.parseInterfaceList(propertyValue);
+            return Util.parseInterfaceList(propertyValue);
         }
     }
-     
+
     public static class Default implements PropertyConverter {
         public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
-            if(propertyValue == null) throw new NullPointerException("Property value cannot be null");
+            if(propertyValue == null)
+                throw new NullPointerException("Property value cannot be null");
             if(Boolean.TYPE.equals(propertyFieldType)) {
                 return Boolean.parseBoolean(propertyValue);
             }
