@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.99 2008/04/21 10:27:21 belaban Exp $
+// $Id: UNICAST.java,v 1.100 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
@@ -49,13 +50,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
     // default is true
+    @Property
     private boolean          use_gms=true;
     private boolean          started=false;
 
     // ack a message before it is processed by the application to limit unnecessary retransmits
+    @Property
     private boolean          immediate_ack=false;
 
     /** whether to loop back messages sent to self (will be removed in the future, default=false) */
+    @Property
     private boolean          loopback=false;
 
     /**
@@ -65,6 +69,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
      * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
      * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
      */
+    @Property
     private boolean eager_lock_release=true;
 
     /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
@@ -207,46 +212,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("timeout");
         }
 
-        str=props.getProperty("window_size");
-        if(str != null) {
-            props.remove("window_size");
-            log.warn("window_size is deprecated and will be ignored");
-        }
-
-        str=props.getProperty("min_threshold");
-        if(str != null) {
-            props.remove("min_threshold");
-            log.warn("min_threshold is deprecated and will be ignored");
-        }
-
-        str=props.getProperty("use_gms");
-        if(str != null) {
-            use_gms=Boolean.valueOf(str).booleanValue();
-            props.remove("use_gms");
-        }
-
-        str=props.getProperty("immediate_ack");
-        if(str != null) {
-        	immediate_ack=Boolean.valueOf(str).booleanValue();
-            props.remove("immediate_ack");
-        }
-
-        str=props.getProperty("loopback");
-        if(str != null) {
-            loopback=Boolean.valueOf(str).booleanValue();
-            props.remove("loopback");
-        }
-
-        str=props.getProperty("eager_lock_release");
-        if(str != null) {
-            eager_lock_release=Boolean.valueOf(str).booleanValue();
-            props.remove("eager_lock_release");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
+        listDeprecatedProperties(props, "window_size","min_threshold");
+     
         return true;
     }
 

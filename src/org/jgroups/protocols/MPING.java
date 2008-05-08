@@ -3,8 +3,9 @@ package org.jgroups.protocols;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.ExposedByteArrayOutputStream;
 import org.jgroups.util.Util;
@@ -21,7 +22,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.36 2008/04/12 12:45:50 belaban Exp $
+ * @version $Id: MPING.java,v 1.37 2008/05/08 09:46:42 vlada Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -39,6 +40,7 @@ public class MPING extends PING implements Runnable {
     int                    mcast_port=7555;
 
      /** If true, the transport should use all available interfaces to receive multicast messages */
+    @Property(name="bind_to_all_interfaces",deprecatedMessage="bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead")
     boolean                receive_on_all_interfaces=false;
 
      /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
@@ -46,10 +48,12 @@ public class MPING extends PING implements Runnable {
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
      * If this property is set, it override receive_on_all_interfaces.
      */
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
     List<NetworkInterface> receive_interfaces=null;
 
     /** If true, the transport should use all available interfaces to send multicast messages. This means
      * the same multicast message is sent N times, so use with care */
+    @Property
     boolean                send_on_all_interfaces=false;
 
     /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
@@ -57,6 +61,7 @@ public class MPING extends PING implements Runnable {
      * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
      * If this property is set, it override send_on_all_interfaces.
      */
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
     List<NetworkInterface> send_interfaces=null;
 
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
@@ -121,22 +126,16 @@ public class MPING extends PING implements Runnable {
     }
 
 
-    public boolean setProperties(Properties props) {
-        String str;
-
+    public boolean setProperties(Properties props) {       
         try {
             bind_addr=Util.getBindAddress(props);
         }
-        catch(UnknownHostException unknown) {
+        catch(Exception unknown) {
             log.fatal("failed getting bind_addr", unknown);
             return false;
-        }
-        catch(SocketException ex) {
-            log.fatal("failed getting bind_addr", ex);
-            return false;
-        }
+        }       
 
-        str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, "230.5.6.7");
+        String str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, "230.5.6.7");
         if(str != null) {
             try {
                 mcast_addr=InetAddress.getByName(str);
@@ -158,50 +157,6 @@ public class MPING extends PING implements Runnable {
         if(str != null) {
             ip_ttl=Integer.parseInt(str);
             props.remove("ip_ttl");
-        }
-
-        str=props.getProperty("bind_to_all_interfaces");
-        if(str != null) {
-            receive_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("bind_to_all_interfaces");
-            log.warn("bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead");
-            props.remove("bind_to_all_interfaces");
-        }
-
-        str=props.getProperty("receive_on_all_interfaces");
-        if(str != null) {
-            receive_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("receive_on_all_interfaces");
-        }
-
-        str=props.getProperty("receive_interfaces");
-        if(str != null) {
-            try {
-                receive_interfaces=Util.parseInterfaceList(str);
-                props.remove("receive_interfaces");
-            }
-            catch(Exception e) {
-                log.error("error determining interfaces (" + str + ")", e);
-                return false;
-            }
-        }
-
-        str=props.getProperty("send_on_all_interfaces");
-        if(str != null) {
-            send_on_all_interfaces=Boolean.parseBoolean(str);
-            props.remove("send_on_all_interfaces");
-        }
-
-        str=props.getProperty("send_interfaces");
-        if(str != null) {
-            try {
-                send_interfaces=Util.parseInterfaceList(str);
-                props.remove("send_interfaces");
-            }
-            catch(Exception e) {
-                log.error("error determining interfaces (" + str + ")", e);
-                return false;
-            }
         }
 
         if(mcast_addr == null) {

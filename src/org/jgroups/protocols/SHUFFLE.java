@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
 import java.util.*;
@@ -19,6 +20,7 @@ import java.util.*;
 
 public class SHUFFLE extends Protocol implements Runnable {
 
+    @Property
     String       name="SHUFFLE";
     final List         messages;
     Thread       messagesHandler;
@@ -29,24 +31,6 @@ public class SHUFFLE extends Protocol implements Runnable {
 
     public String getName() {
         return name;
-    }
-
-    public boolean setProperties(Properties props) {
-        String     str;
-
-        super.setProperties(props);
-        str=props.getProperty("name");
-        if(str != null) {
-            name=str;
-            props.remove("name");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("DUMMY.setProperties(): these properties are not recognized: " + props);
-
-            return false;
-        }
-        return true;
     }
 
     /**

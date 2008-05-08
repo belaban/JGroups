@@ -1,12 +1,11 @@
-// $Id: DELAY.java,v 1.10 2007/01/12 14:19:35 belaban Exp $
+// $Id: DELAY.java,v 1.11 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-
-import java.util.Properties;
 
 
 /**
@@ -17,40 +16,17 @@ import java.util.Properties;
  */
 
 public class DELAY extends Protocol {
-    int in_delay=0, out_delay=0;
+    @Property
+    int in_delay=0;
+    @Property
+    int out_delay=0;
 
     /**
      * All protocol names have to be unique !
      */
     public String getName() {
         return "DELAY";
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-
-        str=props.getProperty("in_delay");
-        if(str != null) {
-            in_delay=Integer.parseInt(str);
-            props.remove("in_delay");
-        }
-
-        str=props.getProperty("out_delay");
-        if(str != null) {
-            out_delay=Integer.parseInt(str);
-            props.remove("out_delay");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("DELAY.setProperties(): these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
+    } 
 
     public Object up(Event evt) {
         int delay=in_delay > 0 ? computeDelay(in_delay) : 0;

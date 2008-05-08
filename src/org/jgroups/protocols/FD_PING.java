@@ -1,56 +1,34 @@
 package org.jgroups.protocols;
 
 import org.apache.commons.logging.Log;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.util.Properties;
 
 /**
  * Protocol which uses an executable (e.g. /sbin/ping, or a script) to check whether a given host is up or not,
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.5 2008/01/22 10:44:30 belaban Exp $
+ * @version $Id: FD_PING.java,v 1.6 2008/05/08 09:46:43 vlada Exp $
  */
 public class FD_PING extends FD {
     /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
      * The only argument passed to cmd is the host's address (symbolic name or dotted-decimal IP address) */
+    @Property
     String cmd="ping";
 
     /** Write the stdout of the command to the log */
+    @Property
     boolean verbose=true;
 
     public String getName() {
         return "FD_PING";
-    }
-
-
-    public boolean setProperties(Properties props) {
-        String str;
-        str=props.getProperty("cmd");
-        if(str != null) {
-            cmd=str;
-            props.remove("cmd");
-        }
-
-        str=props.getProperty("verbose");
-        if(str != null) {
-            verbose=new Boolean(str).booleanValue();
-            props.remove("verbose");
-        }
-
-        super.setProperties(props);
-
-        if(props.size() > 0) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }    
 
     protected Monitor createMonitor() {
         return new PingMonitor();

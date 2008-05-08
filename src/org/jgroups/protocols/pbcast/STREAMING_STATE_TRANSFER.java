@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -96,12 +97,16 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      */
     private InetAddress bind_addr;
 
+    @Property
     private int bind_port = 0;
 
+    @Property
     private int max_pool = 5;
 
+    @Property
     private long pool_thread_keep_alive;
 
+    @Property
     private int socket_buffer_size = 8 * 1024;   
 
     private volatile boolean flushProtocolInStack = false;
@@ -149,39 +154,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-
-        String str = props.getProperty("use_flush");
-        if(str != null){
-            log.warn("use_flush has been deprecated and its value will be ignored");
-            props.remove("use_flush");
-        }
-        str = props.getProperty("flush_timeout");
-        if(str != null){
-            log.warn("flush_timeout has been deprecated and its value will be ignored");
-            props.remove("flush_timeout");
-        }
+        listDeprecatedProperties(props, "use_flush","flush_timeout","use_reading_thread");
         
-        str = props.getProperty("use_reading_thread");
-        if(str != null){
-            log.warn("use_reading_thread has been deprecated and its value will be ignored");
-            props.remove("use_reading_thread");
-        }
-
         try{
-            bind_addr = Util.parseBindAddress(props, "bind_addr");
-        }catch(UnknownHostException e){
+            bind_addr = Util.getBindAddress(props);
+        }catch(Exception e){
             log.error("(bind_addr): host " + e.getLocalizedMessage() + " not known");
             return false;
-        }
-        bind_port = Util.parseInt(props, "start_port", 0);
-        socket_buffer_size = Util.parseInt(props, "socket_buffer_size", 8 * 1024); // 8K
-        max_pool = Util.parseInt(props, "max_pool", 5);
-        pool_thread_keep_alive = Util.parseLong(props, "pool_thread_keep_alive", 1000 * 30); // 30sec      
-        if(!props.isEmpty()){
-            log.error("the following properties are not recognized: " + props);
-
-            return false;
-        }
+        }        
         return true;
     }
 

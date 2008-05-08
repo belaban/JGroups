@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
@@ -24,14 +25,18 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.41 2008/03/01 08:05:42 belaban Exp $
+ * @version $Id: PING.java,v 1.42 2008/05/08 09:46:42 vlada Exp $
  */
 public class PING extends Discovery {
+    @Property
     String             gossip_host=null;
     Vector<IpAddress>  gossip_hosts=null;
+    @Property
     int                gossip_port=0;
+    @Property
     long               gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
     GossipClient       client;
+    @Property
     int                port_range=1;        // number of ports to be probed for initial membership
     private List<Address> initial_hosts=null;  // hosts to be contacted for the initial membership
     public static final String name="PING";
@@ -55,16 +60,8 @@ public class PING extends Discovery {
      * @return returns true if all properties were parsed properly
      *         returns false if there are unrecnogized properties in the property set
      */
-    public boolean setProperties(Properties props) {
-        String str;
-
-        str=props.getProperty("gossip_host");
-        if(str != null) {
-            gossip_host=str;
-            props.remove("gossip_host");
-        }
-
-        str=props.getProperty("gossip_hosts");
+    public boolean setProperties(Properties props) {        
+        String str=props.getProperty("gossip_hosts");
         if(str != null) {
             try {
                 gossip_hosts=createInitialHosts(str);
@@ -73,18 +70,6 @@ public class PING extends Discovery {
                 throw new IllegalArgumentException(e);
             }
             props.remove("gossip_hosts");
-        }
-
-        str=props.getProperty("gossip_port");
-        if(str != null) {
-            gossip_port=Integer.parseInt(str);
-            props.remove("gossip_port");
-        }
-
-        str=props.getProperty("gossip_refresh");
-        if(str != null) {
-            gossip_refresh=Long.parseLong(str);
-            props.remove("gossip_refresh");
         }
 
         if(gossip_hosts != null) {
@@ -99,16 +84,7 @@ public class PING extends Discovery {
                 if(log.isErrorEnabled()) log.error("creation of GossipClient failed, exception=" + e);
                 return false; // will cause stack creation to abort
             }
-        }
-
-        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
-        if(str != null) {                              // how many times can we increment the port
-            port_range=Integer.parseInt(str);
-            if(port_range < 1) {
-                port_range=1;
-            }
-            props.remove("port_range");
-        }
+        }       
 
         str=props.getProperty("initial_hosts");
         if(str != null) {

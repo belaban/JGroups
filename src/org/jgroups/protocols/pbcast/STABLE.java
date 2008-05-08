@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 
@@ -30,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.88 2008/03/13 02:00:25 vlada Exp $
+ * @version $Id: STABLE.java,v 1.89 2008/05/08 09:46:48 vlada Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 public class STABLE extends Protocol {
@@ -51,10 +52,12 @@ public class STABLE extends Protocol {
 
     /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
     @ManagedAttribute(writable=true)
+    @Property
     private long                  desired_avg_gossip=20000;
 
     /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
      * small number (> 0 !) if <code>max_bytes</code> is used */
+    @Property
     private long                  stability_delay=6000;
 
     @GuardedBy("stability_lock")
@@ -73,6 +76,7 @@ public class STABLE extends Protocol {
      * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
      * <code>stability_delay</code> should be set to a low number as well */
     @ManagedAttribute(writable=true)
+    @Property
     private long                  max_bytes=0;
 
     /** The total number of bytes received from unicast and multicast messages */
@@ -142,52 +146,10 @@ public class STABLE extends Protocol {
         return retval;
     }
 
-    public boolean setProperties(Properties props) {
-        String str;
-
+    public boolean setProperties(Properties props) {        
         super.setProperties(props);
-        str=props.getProperty("digest_timeout");
-        if(str != null) {
-            props.remove("digest_timeout");
-            log.error("digest_timeout has been deprecated; it will be ignored");
-        }
-
-        str=props.getProperty("desired_avg_gossip");
-        if(str != null) {
-            desired_avg_gossip=Long.parseLong(str);
-            props.remove("desired_avg_gossip");
-        }
-
-        str=props.getProperty("stability_delay");
-        if(str != null) {
-            stability_delay=Long.parseLong(str);
-            props.remove("stability_delay");
-        }
-
-        str=props.getProperty("max_gossip_runs");
-        if(str != null) {
-            props.remove("max_gossip_runs");
-            log.error("max_gossip_runs has been deprecated and will be ignored");
-        }
-
-        str=props.getProperty("max_bytes");
-        if(str != null) {
-            max_bytes=Long.parseLong(str);
-            props.remove("max_bytes");
-        }
-
-        str=props.getProperty("max_suspend_time");
-        if(str != null) {
-            log.error("max_suspend_time is not supported any longer; please remove it (ignoring it)");
-            props.remove("max_suspend_time");
-        }
-
-        Util.checkBufferSize("STABLE.max_bytes", max_bytes);
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
+        listDeprecatedProperties(props, "digest_timeout","max_gossip_runs","max_suspend_time");    
+        Util.checkBufferSize("STABLE.max_bytes", max_bytes);      
         return true;
     }
 

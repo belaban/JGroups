@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.150 2008/04/23 11:36:20 belaban Exp $
+ * @version $Id: Util.java,v 1.151 2008/05/08 09:46:47 vlada Exp $
  */
 public class Util {
 
@@ -1864,52 +1864,7 @@ public class Util {
 
          return tmp;
      }
-
-    public static int parseInt(Properties props,String property,int defaultValue)
-    {
-        int result = defaultValue;
-        String str=props.getProperty(property);
-        if(str != null) {
-            result=Integer.parseInt(str);
-            props.remove(property);
-        }
-        return result;
-    }
-
-
-    public static long parseLong(Properties props,String property,long defaultValue)
-    {
-        long result = defaultValue;
-        String str=props.getProperty(property);
-        if(str != null) {
-            result=Integer.parseInt(str);
-            props.remove(property);
-        }
-        return result;
-    }
-
-    public static boolean parseBoolean(Properties props,String property,boolean defaultValue)
-    {
-        boolean result = defaultValue;
-        String str=props.getProperty(property);
-        if(str != null) {
-            result=str.equalsIgnoreCase("true");
-            props.remove(property);
-        }
-        return result;
-    }
-
-    public static InetAddress parseBindAddress(Properties props, String property) throws UnknownHostException {
-        InetAddress bind_addr=null;
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                                    ignore_systemprops, null);
-        if(str != null) {
-            bind_addr=InetAddress.getByName(str);
-            props.remove(property);
-        }
-        return bind_addr;
-    }
+  
 
 
     /**

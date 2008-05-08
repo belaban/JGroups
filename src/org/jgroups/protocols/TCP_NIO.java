@@ -2,6 +2,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.blocks.BasicConnectionTable;
 import org.jgroups.blocks.ConnectionTableNIO;
 import org.jgroups.stack.IpAddress;
@@ -9,14 +10,13 @@ import org.jgroups.util.PortsManager;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Properties;
 
 /**
  * Transport using NIO
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.21 2008/03/28 02:36:23 vlada Exp $
+ * @version $Id: TCP_NIO.java,v 1.22 2008/05/08 09:46:42 vlada Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -106,66 +106,23 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
    @ManagedAttribute
    public int getOpenConnections()      {return ct.getNumConnections();}
 
-    
 
-   /** Setup the Protocol instance acording to the configuration string */
-   public boolean setProperties(Properties props) {
-       String str;
-
-       str=props.getProperty("reader_threads");
-       if(str != null) {
-          m_reader_threads=Integer.parseInt(str);
-          props.remove("reader_threads");
-       }
-
-       str=props.getProperty("writer_threads");
-       if(str != null) {
-          m_writer_threads=Integer.parseInt(str);
-          props.remove("writer_threads");
-       }
-
-       str=props.getProperty("processor_threads");
-       if(str != null) {
-          m_processor_threads=Integer.parseInt(str);
-          props.remove("processor_threads");
-       }
-
-      str=props.getProperty("processor_minThreads");
-      if(str != null) {
-         m_processor_minThreads=Integer.parseInt(str);
-         props.remove("processor_minThreads");
-      }
-
-      str=props.getProperty("processor_maxThreads");
-      if(str != null) {
-         m_processor_maxThreads =Integer.parseInt(str);
-         props.remove("processor_maxThreads");
-      }
-
-      str=props.getProperty("processor_queueSize");
-      if(str != null) {
-         m_processor_queueSize=Integer.parseInt(str);
-         props.remove("processor_queueSize");
-      }
-
-      str=props.getProperty("processor_keepAliveTime");
-      if(str != null) {
-         m_processor_keepAliveTime=Long.parseLong(str);
-         props.remove("processor_keepAliveTime");
-      }
-
-      return super.setProperties(props);
-   }
-
+   @Property
    private int m_reader_threads = 3;
 
+   @Property
    private int m_writer_threads = 3;
 
+   @Property
    private int m_processor_threads = 5;                    // PooledExecutor.createThreads()
+   @Property
    private int m_processor_minThreads = 5;                 // PooledExecutor.setMinimumPoolSize()
+   @Property
    private int m_processor_maxThreads = 5;                 // PooledExecutor.setMaxThreads()
+   @Property
    private int m_processor_queueSize=100;                   // Number of queued requests that can be pending waiting
                                                             // for a background thread to run the request.
+   @Property
    private long m_processor_keepAliveTime = Long.MAX_VALUE; // PooledExecutor.setKeepAliveTime( milliseconds);
                                                             // negative value used to mean (before 2.5 release) to wait forever,
                                                             // instead set to Long.MAX_VALUE to keep alive forever

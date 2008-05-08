@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.34 2008/01/21 23:29:19 vlada Exp $
+// $Id: TCPPING.java,v 1.35 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -8,6 +8,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Global;
 import org.jgroups.util.Util;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 
 import java.util.*;
@@ -33,6 +34,7 @@ import java.net.UnknownHostException;
  * @author Bela Ban
  */
 public class TCPPING extends Discovery {
+    @Property
     int                 port_range=1;        // number of ports to be probed for initial membership
 
     /** List<IpAddress> */
@@ -56,20 +58,8 @@ public class TCPPING extends Discovery {
     }
 
 
-    public boolean setProperties(Properties props) {
-        String str;
-        this.props.putAll(props); // redundant
-
-        str=props.getProperty("port_range");           // if member cannot be contacted on base port,
-        if(str != null) {                              // how many times can we increment the port
-            port_range=Integer.parseInt(str);
-            if (port_range < 1) {
-               port_range = 1;
-            }
-            props.remove("port_range");
-        }
-
-        str=Util.getProperty(new String[]{Global.TCPPING_INITIAL_HOSTS}, props, "initial_hosts", false, null);
+    public boolean setProperties(Properties props) {       
+        String str=Util.getProperty(new String[]{Global.TCPPING_INITIAL_HOSTS}, props, "initial_hosts", false, null);
         if(str != null) {
             props.remove("initial_hosts");
             try {

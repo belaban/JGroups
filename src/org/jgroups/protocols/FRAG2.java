@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
@@ -35,17 +36,19 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.38 2008/03/13 02:00:18 vlada Exp $
+ * @version $Id: FRAG2.java,v 1.39 2008/05/08 09:46:42 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
 
     /** The max number of bytes in a message. If a message's buffer is bigger, it will be fragmented */
+    @Property
     @ManagedAttribute(description="Fragmentation size",writable=true)
     int frag_size=1500;
 
     /** Number of bytes that we think the headers plus src and dest will take up when
         message is serialized by transport. This will be subtracted from frag_size */
+    @Property
     @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ",writable=true)
     int overhead=200;
 
@@ -83,45 +86,18 @@ public class FRAG2 extends Protocol {
 
     synchronized int getNextId() {
         return curr_id++;
-    }
-
-    /** Setup the Protocol instance acording to the configuration string */
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("frag_size");
-        if(str != null) {
-            frag_size=Integer.parseInt(str);
-            props.remove("frag_size");
-        }
-
-        str=props.getProperty("overhead");
-        if(str != null) {
-            overhead=Integer.parseInt(str);
-            props.remove("overhead");
-        }
-
-        int old_frag_size=frag_size;
-        frag_size-=overhead;
-        if(frag_size <=0) {
-            log.error("frag_size=" + old_frag_size + ", overhead=" + overhead +
-                      ", new frag_size=" + frag_size + ": new frag_size is invalid");
-            return false;
-        }
-
-        if(log.isDebugEnabled())
-            log.debug("frag_size=" + old_frag_size + ", overhead=" + overhead + ", new frag_size=" + frag_size);
-
-        if(!props.isEmpty()) {
-            log.error("FRAG2.setProperties(): the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
+    }  
 
     public void init() throws Exception {
         super.init();
+        
+        int old_frag_size=frag_size;
+        frag_size-=overhead;
+        if(frag_size <=0) {
+            throw new Exception("frag_size=" + old_frag_size + ", overhead=" + overhead +
+                      ", new frag_size=" + frag_size + ": new frag_size is invalid");            
+        }     
+        
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
         up_prot.up(new Event(Event.INFO, info));

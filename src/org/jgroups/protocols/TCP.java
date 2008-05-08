@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.49 2008/03/28 02:36:23 vlada Exp $
+// $Id: TCP.java,v 1.50 2008/05/08 09:46:43 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,6 @@ import org.jgroups.util.PortsManager;
 
 import java.net.InetAddress;
 import java.util.Collection;
-import java.util.Properties;
 
 
 /**
@@ -43,17 +42,6 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
     public int getOpenConnections()      {return ct.getNumConnections();}
     @ManagedOperation
     public String printConnections()     {return ct.toString();}
-
-
-    /** Setup the Protocol instance acording to the configuration string */
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
 
     public void send(Address dest, byte[] data, int offset, int length) throws Exception {
         ct.send(dest, data, offset, length);

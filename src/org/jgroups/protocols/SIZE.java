@@ -1,15 +1,15 @@
-// $Id: SIZE.java,v 1.21 2007/04/27 07:59:19 belaban Exp $
+// $Id: SIZE.java,v 1.22 2008/05/08 09:46:43 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.util.Properties;
 import java.util.Vector;
 
 
@@ -22,10 +22,13 @@ import java.util.Vector;
  */
 public class SIZE extends Protocol {
     final Vector members=new Vector();
+    @Property
     boolean print_msg=false;
+    @Property
     boolean raw_buffer=false; // just print size of message buffer
 
     /** Min size in bytes above which msgs should be printed */
+    @Property
     long min_size=0;
 
     final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(65535);
@@ -40,39 +43,6 @@ public class SIZE extends Protocol {
 
 
     public void init() {
-    }
-
-
-    /**
-     * Setup the Protocol instance acording to the configuration string
-     */
-    public boolean setProperties(Properties props) {super.setProperties(props);
-        String str;
-
-        str=props.getProperty("print_msg");
-        if(str != null) {
-            print_msg=Boolean.valueOf(str).booleanValue();
-            props.remove("print_msg");
-        }
-
-        str=props.getProperty("raw_buffer");
-        if(str != null) {
-            raw_buffer=Boolean.valueOf(str).booleanValue();
-            props.remove("raw_buffer");
-        }
-
-        str=props.getProperty("min_size");
-        if(str != null) {
-            min_size=Integer.parseInt(str);
-            props.remove("min_size");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-
-            return false;
-        }
-        return true;
     }
 
 

@@ -1,10 +1,11 @@
-// $Id: MERGE3.java,v 1.18 2008/04/08 14:51:21 belaban Exp $
+// $Id: MERGE3.java,v 1.19 2008/05/08 09:46:42 vlada Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
@@ -35,16 +36,19 @@ import java.util.concurrent.Future;
 @Experimental
 public class MERGE3 extends Protocol {
     Address local_addr=null;
+    @Property
     long min_interval=5000;     // minimum time between executions of the FindSubgroups task
+    @Property
     long max_interval=20000;    // maximum time between executions of the FindSubgroups task
     boolean is_coord=false;
-    final Vector  mbrs=new Vector();
+    final Vector<Address>  mbrs=new Vector<Address>();
     TimeScheduler timer=null;
-    Future announcer_task_future=null;
+    Future<?> announcer_task_future=null;
     CoordinatorAnnouncer announcer_task=null;
-    final Set announcements=Collections.synchronizedSet(new HashSet());
+    final Set<Address> announcements=Collections.synchronizedSet(new HashSet<Address>());
 
     /** Use a new thread to send the MERGE event up the stack */
+    @Property
     boolean use_separate_thread=false;
 
 
@@ -54,47 +58,16 @@ public class MERGE3 extends Protocol {
         return "MERGE3";
     }
 
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("min_interval");
-        if(str != null) {
-            min_interval=Long.parseLong(str);
-            props.remove("min_interval");
-        }
-
-        str=props.getProperty("max_interval");
-        if(str != null) {
-            max_interval=Long.parseLong(str);
-            props.remove("max_interval");
-        }
-
-        if(min_interval <= 0 || max_interval <= 0) {
-            if(log.isErrorEnabled()) log.error("min_interval and max_interval have to be > 0");
-            return false;
-        }
-        if(max_interval <= min_interval) {
-            if(log.isErrorEnabled()) log.error("max_interval has to be greater than min_interval");
-            return false;
-        }
-
-        str=props.getProperty("use_separate_thread");
-        if(str != null) {
-            use_separate_thread=Boolean.valueOf(str).booleanValue();
-            props.remove("use_separate_thread");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("MERGE2.setProperties(): the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
     public void init() throws Exception {
         timer=stack.timer;
+                
+        if(min_interval <= 0 || max_interval <= 0) {
+            throw new Exception("min_interval and max_interval have to be > 0");            
+        }
+        
+        if(max_interval <= min_interval) {
+            throw new Exception ("max_interval has to be greater than min_interval");        
+        }  
     }
 
 
@@ -137,7 +110,7 @@ public class MERGE3 extends Protocol {
 
 
     public Object down(Event evt) {
-        Vector tmp;
+        Vector<Address> tmp;
         Address coord;
 
         switch(evt.getType()) {
@@ -147,7 +120,7 @@ public class MERGE3 extends Protocol {
                 tmp=((View)evt.getArg()).getMembers();
                 mbrs.clear();
                 mbrs.addAll(tmp);
-                coord=(Address)mbrs.elementAt(0);
+                coord=mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     if(is_coord == false) {
                         is_coord=true;
@@ -207,7 +180,7 @@ public class MERGE3 extends Protocol {
 
     void processAnnouncements() {
         if(announcements.size() > 1) {
-            Vector coords=new Vector(announcements);  // create a clone
+            Vector<Address> coords=new Vector<Address>(announcements);  // create a clone
             if(coords.size() > 1) {
                 if(log.isDebugEnabled())
                     log.debug("passing up MERGE event, coords=" + coords);

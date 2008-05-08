@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
@@ -10,7 +11,6 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.UnknownHostException;
 import java.util.*;
 
 
@@ -19,14 +19,17 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.32 2007/11/05 16:23:02 vlada Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.33 2008/05/08 09:46:42 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address                local_addr=null;
+    @Property
     private                        long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
+    @Property
     private                        int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
     final Hashtable<Address,Long>  suspects=new Hashtable<Address,Long>();  // keys=Addresses, vals=time in mcses since added
     private Thread                 timer=null;
+    @Property
     private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
     private InetAddress            bind_addr;          // interface for ICMP pings
     /** network interface to be used to send the ICMP packets */
@@ -43,47 +46,12 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public boolean setProperties(Properties props) {
         super.setProperties(props);
 
-        boolean ignore_systemprops=Util.isBindAddressPropertyIgnored();
-        String str=Util.getProperty(new String[]{Global.BIND_ADDR, Global.BIND_ADDR_OLD}, props, "bind_addr",
-                             ignore_systemprops, null);
-        if(str != null) {
-            try {
-                bind_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(bind_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("bind_addr");
+        try {
+            bind_addr = Util.getBindAddress(props);
         }
-
-        str=props.getProperty("timeout");
-        if(str != null) {
-            timeout=Long.parseLong(str);
-            props.remove("timeout");
-        }
-
-        str=props.getProperty("num_msgs");
-        if(str != null) {
-            num_msgs=Integer.parseInt(str);
-            if(num_msgs <= 0) {
-                if(log.isWarnEnabled())
-                    log.warn("num_msgs is invalid (" + num_msgs + "): setting it to 1");
-                num_msgs=1;
-            }
-            props.remove("num_msgs");
-        }
-
-        str=props.getProperty("use_icmp");
-        if(str != null) {
-            use_icmp=Boolean.valueOf(str).booleanValue();
-            props.remove("use_icmp");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
+        catch(Exception e) {
+            throw new IllegalArgumentException("Failed to determine bind address",e);
+        }    
         return true;
     }
 

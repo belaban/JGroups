@@ -2,19 +2,20 @@ package org.jgroups.protocols;
 
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-
-import java.util.Properties;
 
 /**
  * Discards a message whose sequence number (in the payload, as a Long) matches seqno 2 times,
  * before passing it up. Used for unit testing
  * of OOB messages
  * @author Bela Ban
- * @version $Id: DISCARD_PAYLOAD.java,v 1.6 2007/01/12 14:19:40 belaban Exp $
+ * @version $Id: DISCARD_PAYLOAD.java,v 1.7 2008/05/08 09:46:42 vlada Exp $
  */
 public class DISCARD_PAYLOAD extends Protocol {
+    @Property
     long seqno=3; // drop 3
+    @Property
     long duplicate=4; // duplicate 4 (one time)
     int num_discards=0;
 
@@ -23,32 +24,7 @@ public class DISCARD_PAYLOAD extends Protocol {
 
     public String getName() {
         return "DISCARD_PAYLOAD";
-    }
-
-    public boolean setProperties(Properties props) {
-        String     str;
-
-        super.setProperties(props);
-
-        str=props.getProperty("seqno");
-        if(str != null) {
-            seqno=Long.parseLong(str);
-            props.remove("seqno");
-        }
-
-        str=props.getProperty("duplicate");
-        if(str != null) {
-            duplicate=Long.parseLong(str);
-            props.remove("duplicate");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("these properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
+    }   
 
     public Object up(Event evt) {
         if(evt.getType() == Event.MSG) {

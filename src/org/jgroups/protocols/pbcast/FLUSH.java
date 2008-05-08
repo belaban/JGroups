@@ -5,6 +5,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Digest;
 import org.jgroups.util.Promise;
@@ -83,15 +84,20 @@ public class FLUSH extends Protocol {
     /**
      * Default timeout for a group member to be in
      * <code>isBlockingFlushDown</code>
-     */
+     */    
+    @Property
     private long timeout = 8000;
      
+    @Property
     private long start_flush_timeout = 2500;
     
+    @Property
     private long retry_timeout = 3000;
 
+    @Property
     private boolean enable_reconciliation = true;
     
+    @Property
     private int flush_retry_count = 4;
     
     private final AtomicInteger viewCounter = new AtomicInteger(0);   
@@ -131,24 +137,7 @@ public class FLUSH extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-
-        timeout = Util.parseLong(props, "timeout", timeout);
-        flush_retry_count = Util.parseInt(props, "flush_retry_count", flush_retry_count);
-        start_flush_timeout = Util.parseLong(props, "start_flush_timeout", start_flush_timeout);        
-        retry_timeout = Util.parseLong(props, "retry_timeout", retry_timeout);
-        enable_reconciliation = Util.parseBoolean(props,
-                                                  "enable_reconciliation",
-                                                  enable_reconciliation);
-        String str = props.getProperty("auto_flush_conf");
-        if(str != null){
-            log.warn("auto_flush_conf has been deprecated and its value will be ignored");
-            props.remove("auto_flush_conf");
-        }
-
-        if(!props.isEmpty()){
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
+        listDeprecatedProperties(props, "auto_flush_conf");              
         return true;
     }
 
@@ -198,12 +187,12 @@ public class FLUSH extends Protocol {
     }
         
     private boolean startFlush(Event evt){        
-        return startFlush(evt, flush_retry_count);
+        return startFlush(evt, flush_retry_count,false);
     }
     
-    private boolean startFlush(Event evt, int numberOfAttempts) {
+    private boolean startFlush(Event evt, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
-        if(!flushInProgress.get()){
+        if(!flushInProgress.get() || force){
             flush_promise.reset();                                 
             if(log.isDebugEnabled())
                 log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
@@ -230,7 +219,7 @@ public class FLUSH extends Protocol {
                           + ". Attempts left "
                           + numberOfAttempts);
             }
-            successfulFlush = startFlush(evt, --numberOfAttempts);
+            successfulFlush = startFlush(evt, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -923,20 +912,8 @@ public class FLUSH extends Protocol {
         public void writeTo(DataOutputStream out) throws IOException {
             out.writeByte(type);
             out.writeLong(viewID);
-            if(flushParticipants != null && !flushParticipants.isEmpty()){
-                out.writeShort(flushParticipants.size());
-                for (Address participant : flushParticipants) {
-                    Util.writeAddress(participant, out);    
-                }                       
-            }else{
-                out.writeShort(0);
-            }
-            if(digest != null){
-                out.writeBoolean(true);
-                Util.writeStreamable(digest, out);
-            }else{
-                out.writeBoolean(false);
-            }
+            Util.writeAddresses(flushParticipants, out);           
+            Util.writeStreamable(digest, out);            
         }
 
         public void readFrom(DataInputStream in) throws IOException,
@@ -944,17 +921,8 @@ public class FLUSH extends Protocol {
                                                 InstantiationException {
             type = in.readByte();
             viewID = in.readLong();
-            int flushParticipantsSize = in.readShort();
-            if(flushParticipantsSize > 0){
-                flushParticipants = new ArrayList<Address>(flushParticipantsSize);
-                for(int i = 0;i < flushParticipantsSize;i++){
-                    flushParticipants.add(Util.readAddress(in));
-                }
-            }
-            boolean hasDigest = in.readBoolean();
-            if(hasDigest){
-                digest = (Digest) Util.readStreamable(Digest.class, in);
-            }
+            flushParticipants = Util.readAddresses(in, ArrayList.class);
+            digest = (Digest) Util.readStreamable(Digest.class, in);            
         }
     }
 }

@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.Property;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Promise;
@@ -30,7 +31,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.44 2008/04/18 08:57:18 belaban Exp $
+ * @version $Id: Discovery.java,v 1.45 2008/05/08 09:46:43 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {
@@ -38,14 +39,17 @@ public abstract class Discovery extends Protocol {
     Address					local_addr=null;
     String					group_addr=null;
     
+    @Property
     @ManagedAttribute(description="Timeout (ms) to wait for the initial members",writable=true)
     long					timeout=3000;
     
+    @Property
     @ManagedAttribute(description="Minimum number of initial members to get a response from",writable=true)
     int						num_initial_members=2;
     boolean					is_server=false;
     TimeScheduler			timer=null;
     
+    @Property
     @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " +
                       "distributed over timeout ms",writable=true)
     int                     num_ping_requests=2;
@@ -114,58 +118,7 @@ public abstract class Discovery extends Protocol {
         ret.addElement(new Integer(Event.FIND_INITIAL_MBRS));
         return ret;
     }
-
-    /**
-     * sets the properties of the PING protocol.
-     * The following properties are available
-     * property: timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
-     * property: num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
-     * @param props - a property set
-     * @return returns true if all properties were parsed properly
-     *         returns false if there are unrecnogized properties in the property set
-     */
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("timeout");              // max time to wait for initial members
-        if(str != null) {
-            timeout=Long.parseLong(str);
-            if(timeout <= 0) {
-                if(log.isErrorEnabled()) log.error("timeout must be > 0");
-                return false;
-            }
-            props.remove("timeout");
-        }
-
-        str=props.getProperty("num_initial_members");  // wait for at most n members
-        if(str != null) {
-            num_initial_members=Integer.parseInt(str);
-            props.remove("num_initial_members");
-        }
-
-        str=props.getProperty("num_ping_requests");  // number of GET_MBRS_REQ messages
-        if(str != null) {
-            num_ping_requests=Integer.parseInt(str);
-            props.remove("num_ping_requests");
-            if(num_ping_requests < 1)
-                num_ping_requests=1;            
-        }
-
-        if(!props.isEmpty()) {
-            StringBuilder sb=new StringBuilder();
-            for(Enumeration<?> e=props.propertyNames(); e.hasMoreElements();) {
-                sb.append(e.nextElement().toString());
-                if(e.hasMoreElements()) {
-                    sb.append(", ");
-                }
-            }
-            if(log.isErrorEnabled()) log.error("The following properties are not recognized: " + sb);
-            return false;
-        }
-        return true;
-    }
-
+    
     public void resetStats() {
         super.resetStats();
         num_discovery_requests=0;
@@ -298,8 +251,7 @@ public abstract class Discovery extends Protocol {
 
                 if(log.isTraceEnabled())
                     log.trace("received GET_MBRS_RSP, rsp=" + rsp);
-                // myfuture.addResponse(rsp);
-
+                
                 synchronized(ping_responses) {
                     for(Responses rsps: ping_responses)
                         rsps.addResponse(rsp);
@@ -471,120 +423,4 @@ public abstract class Discovery extends Protocol {
         }
 
     }
-    
-
-//    private static class MyFuture implements Future<List<PingRsp>> {
-//        final int num_expected_rsps;
-//        @GuardedBy("lock")
-//        final List<PingRsp> responses=new LinkedList<PingRsp>();
-//        @GuardedBy("lock")
-//        volatile boolean cancelled=false;
-//        @GuardedBy("lock")
-//        volatile boolean done=false;
-//        final Lock lock;
-//        Condition all_responses_received;
-//
-//
-//        public MyFuture(int num_expected_rsps) {
-//            this.num_expected_rsps=num_expected_rsps;
-//            this.lock=new ReentrantLock();
-//            all_responses_received=lock.newCondition();
-//        }
-//
-//        public MyFuture(int num_expected_rsps, Lock lock, Condition cond) {
-//            this.num_expected_rsps=num_expected_rsps;
-//            this.lock=lock;
-//            all_responses_received=cond;
-//        }
-//
-//        public boolean cancel(boolean b) {
-//            lock.lock();
-//            try {
-//                boolean retval=!cancelled;
-//                cancelled=true;
-//                responses.clear();
-//                all_responses_received.signalAll();
-//                return retval;
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        public boolean isCancelled() {
-//            return cancelled;
-//        }
-//
-//        public boolean isDone() {
-//            return done;
-//        }
-//
-//        public List<PingRsp> get() throws InterruptedException, ExecutionException {
-//            lock.lock();
-//            try {
-//                while(responses.size() < num_expected_rsps && !cancelled) {
-//                    all_responses_received.await();
-//                }
-//                return _get();
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        public List<PingRsp> get(long timeout, TimeUnit timeUnit) throws InterruptedException, ExecutionException, TimeoutException {
-//            long start_time=System.currentTimeMillis(), time_to_wait=timeout;
-//
-//            lock.lock();
-//            try {
-//                while(responses.size() < num_expected_rsps && time_to_wait > 0 && !cancelled) {
-//                    all_responses_received.await(time_to_wait, TimeUnit.MILLISECONDS);
-//                    time_to_wait=timeout - (System.currentTimeMillis() - start_time);
-//                }
-//                if(responses.size() >= num_expected_rsps || time_to_wait <= 0)
-//                    done=true;
-//                return _get();
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//
-//        void addResponse(PingRsp rsp) {
-//            if(rsp == null)
-//                return;
-//            lock.lock();
-//            try {
-//                if(!responses.contains(rsp)) {
-//                    responses.add(rsp);
-//                    if(responses.size() >= num_expected_rsps)
-//                        done=true;
-//                    all_responses_received.signalAll();
-//                }
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        void reset() {
-//            lock.lock();
-//            try {
-//                cancelled=false;
-//                done=false;
-//                responses.clear();
-//                all_responses_received.signalAll();
-//            }
-//            finally {
-//                lock.unlock();
-//            }
-//        }
-//
-//        private List<PingRsp> _get() {
-//            return cancelled? null : new LinkedList<PingRsp>(responses);
-//        }
-//    }
-
-
 }
