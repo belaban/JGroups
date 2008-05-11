@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.34 2008/05/07 08:35:18 vlada Exp $
+ * @version $Id: Configurator.java,v 1.35 2008/05/11 14:16:32 vlada Exp $
  */
 public class Configurator {
 
@@ -82,74 +82,81 @@ public class Configurator {
     }
 
     public static void startProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) throws Exception {
-        Protocol above_prot=null;
+        Protocol above_prot=null;        
         for(final Protocol prot: protocols) {
-            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
-            if(singleton_name != null && singleton_name.length() > 0) {
-                TP transport=(TP)prot;
-                final Map<String, Protocol> up_prots=transport.getUpProtocols();
-                synchronized(up_prots) {
-                    Set<String> keys=up_prots.keySet();
-                    if(keys.contains(cluster_name))
-                        throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
-                                "transport: " + keys);
+            if(prot instanceof TP){
+                String singleton_name=((TP)prot).getSingletonName();
+                if(singleton_name != null && singleton_name.length() > 0) {
+                    TP transport=(TP)prot;
+                    final Map<String, Protocol> up_prots=transport.getUpProtocols();
+                    synchronized(up_prots) {
+                        Set<String> keys=up_prots.keySet();
+                        if(keys.contains(cluster_name))
+                            throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
+                                    "transport: " + keys);
 
-                    for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
-                        Map.Entry<String,Protocol> entry=it.next();
-                        Protocol tmp=entry.getValue();
-                        if(tmp == above_prot) {
-                            it.remove();
+                        for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
+                            Map.Entry<String,Protocol> entry=it.next();
+                            Protocol tmp=entry.getValue();
+                            if(tmp == above_prot) {
+                                it.remove();
+                            }
+                        }
+
+                        if(above_prot != null) {
+                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                            above_prot.setDownProtocol(ad);
+                            up_prots.put(cluster_name, ad);
                         }
                     }
-
-                    if(above_prot != null) {
-                        TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
-                        above_prot.setDownProtocol(ad);
-                        up_prots.put(cluster_name, ad);
-                    }
-                }
-                synchronized(singletons) {
-                    Tuple<TP,Short> val=singletons.get(singleton_name);
-                    if(val == null) {
-                        singletons.put(singleton_name, new Tuple<TP,Short>(transport,(short)1));
-                    }
-                    else {
-                        short num_starts=val.getVal2();
-                        val.setVal2((short)(num_starts +1));
-                        if(num_starts >= 1) {
-                            if(above_prot != null)
-                                above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
-                            continue;
+                    synchronized(singletons) {
+                        Tuple<TP,Short> val=singletons.get(singleton_name);
+                        if(val == null) {
+                            singletons.put(singleton_name, new Tuple<TP,Short>(transport,(short)1));
+                        }
+                        else {
+                            short num_starts=val.getVal2();
+                            val.setVal2((short)(num_starts +1));
+                            if(num_starts >= 1) {
+                                if(above_prot != null)
+                                    above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
+                                continue;
+                            }
                         }
                     }
                 }
-            }
+            }                       
             prot.start();
             above_prot=prot;
         }
     }
 
-    public static void stopProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) {
-        for(final Protocol prot: protocols) {
-            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
-            if(singleton_name != null && singleton_name.length() > 0) {
-                TP transport=(TP)prot;
-                final Map<String, Protocol> up_prots=transport.getUpProtocols();
+    public static void stopProtocolStack(List<Protocol> protocols,
+                                         String cluster_name,
+                                         final Map<String,Tuple<TP,Short>> singletons) {
+        
+        for(final Protocol prot:protocols) {
+            if(prot instanceof TP) {
+                String singleton_name=((TP)prot).getSingletonName();
+                if(singleton_name != null && singleton_name.length() > 0) {
+                    TP transport=(TP)prot;
+                    final Map<String,Protocol> up_prots=transport.getUpProtocols();
 
-                synchronized(up_prots) {
-                    up_prots.remove(cluster_name);
-                }
+                    synchronized(up_prots) {
+                        up_prots.remove(cluster_name);
+                    }
 
-                synchronized(singletons) {
-                    Tuple<TP,Short> val=singletons.get(singleton_name);
-                    if(val != null) {
-                        short num_starts=(short)Math.max(val.getVal2() -1, 0);
-                        val.setVal2(num_starts);
-                        if(num_starts > 0) {
-                            continue; // don't call TP.stop() if we still have references to the transport
+                    synchronized(singletons) {
+                        Tuple<TP,Short> val=singletons.get(singleton_name);
+                        if(val != null) {
+                            short num_starts=(short)Math.max(val.getVal2() - 1, 0);
+                            val.setVal2(num_starts);
+                            if(num_starts > 0) {
+                                continue; // don't call TP.stop() if we still have references to the transport
+                            }
+                            else
+                                singletons.remove(singleton_name);
                         }
-                        else
-                            singletons.remove(singleton_name);
                     }
                 }
             }
@@ -309,7 +316,7 @@ public class Configurator {
             current_layer.setUpProtocol(next_layer);
 
              if(current_layer instanceof TP) {
-                String singleton_name=Util.getProperty(current_layer, Global.SINGLETON_NAME);
+                String singleton_name= ((TP)current_layer).getSingletonName();
                 if(singleton_name != null && singleton_name.length() > 0) {
                     ConcurrentMap<String, Protocol> up_prots=((TP)current_layer).getUpProtocols();
                     String key;
@@ -502,10 +509,8 @@ public class Configurator {
     public static void sanityCheck(Vector<Protocol> protocols) throws Exception {
         Vector<String> names=new Vector<String>();
         Protocol prot;
-        String name;
-        ProtocolReq req;
-        Vector<ProtocolReq> req_list=new Vector<ProtocolReq>();
-        int evt_type;
+        String name;       
+        Vector<ProtocolReq> req_list=new Vector<ProtocolReq>();        
 
         // Checks for unique names
         for(int i=0; i < protocols.size(); i++) {
@@ -522,70 +527,44 @@ public class Configurator {
 
 
         // Checks whether all requirements of all layers are met
-        for(int i=0; i < protocols.size(); i++) {
-            prot=protocols.elementAt(i);
-            req=new ProtocolReq(prot.getName());
-            req.up_reqs=prot.requiredUpServices();
-            req.down_reqs=prot.requiredDownServices();
-            req.up_provides=prot.providedUpServices();
-            req.down_provides=prot.providedDownServices();
-            req_list.addElement(req);
-        }
-
-
-        for(int i=0; i < req_list.size(); i++) {
-            req=req_list.elementAt(i);
-
-            // check whether layers above this one provide corresponding down services
-            if(req.up_reqs != null) {
-                for(int j=0; j < req.up_reqs.size(); j++) {
-                    evt_type=((Integer)req.up_reqs.elementAt(j)).intValue();
-
-                    if(!providesDownServices(i, req_list, evt_type)) {
-                        throw new Exception("Configurator.sanityCheck(): event " +
-                                            Event.type2String(evt_type) + " is required by " +
-                                            req.name + ", but not provided by any of the layers above");
-                    }
+        for(Protocol p:protocols){           
+            req_list.add(new ProtocolReq(p));
+        }    
+        
+        for(ProtocolReq pr:req_list){
+            for(Integer evt_type:pr.up_reqs) {                
+                if(!providesDownServices(req_list, evt_type)) {
+                    throw new Exception("Configurator.sanityCheck(): event " +
+                                        Event.type2String(evt_type) + " is required by " +
+                                        pr.name + ", but not provided by any of the layers above");
                 }
-            }
-
-            // check whether layers below this one provide corresponding up services
-            if(req.down_reqs != null) {  // check whether layers above this one provide up_reqs
-                for(int j=0; j < req.down_reqs.size(); j++) {
-                    evt_type=((Integer)req.down_reqs.elementAt(j)).intValue();
-
-                    if(!providesUpServices(i, req_list, evt_type)) {
-                        throw new Exception("Configurator.sanityCheck(): event " +
-                                            Event.type2String(evt_type) + " is required by " +
-                                            req.name + ", but not provided by any of the layers below");
-                    }
+            } 
+            
+            for(Integer evt_type:pr.down_reqs) {                
+                if(!providesUpServices(req_list, evt_type)) {
+                    throw new Exception("Configurator.sanityCheck(): event " +
+                                        Event.type2String(evt_type) + " is required by " +
+                                        pr.name + ", but not provided by any of the layers above");
                 }
-            }
-
-        }
+            }                     
+        }            
     }
 
 
-    /** Check whether any of the protocols 'below' end_index provide evt_type */
-    static boolean providesUpServices(int end_index, Vector req_list, int evt_type) {
-        ProtocolReq req;
-
-        for(int i=0; i < end_index; i++) {
-            req=(ProtocolReq)req_list.elementAt(i);
-            if(req.providesUpService(evt_type))
+    /** Check whether any of the protocols 'below' provide evt_type */
+    static boolean providesUpServices(Vector<ProtocolReq> req_list, int evt_type) {        
+        for (ProtocolReq pr:req_list){
+            if(pr.providesUpService(evt_type))
                 return true;
         }
-        return false;
+        return false;              
     }
 
 
-    /** Checks whether any of the protocols 'above' start_index provide evt_type */
-    static boolean providesDownServices(int start_index, Vector req_list, int evt_type) {
-        ProtocolReq req;
-
-        for(int i=start_index; i < req_list.size(); i++) {
-            req=(ProtocolReq)req_list.elementAt(i);
-            if(req.providesDownService(evt_type))
+    /** Checks whether any of the protocols 'above' provide evt_type */
+    static boolean providesDownServices(Vector<ProtocolReq> req_list, int evt_type) {
+        for (ProtocolReq pr:req_list){
+            if(pr.providesDownService(evt_type))
                 return true;
         }
         return false;
@@ -600,104 +579,96 @@ public class Configurator {
 
 
     private static class ProtocolReq {
-        Vector up_reqs=null;
-        Vector down_reqs=null;
-        Vector up_provides=null;
-        Vector down_provides=null;
-        String name=null;
+        final Vector<Integer> up_reqs=new Vector<Integer>();
+        final Vector<Integer> down_reqs=new Vector<Integer>();
+        final Vector<Integer> up_provides=new Vector<Integer>();
+        final Vector<Integer> down_provides=new Vector<Integer>();
+        final String name;
 
-        ProtocolReq(String name) {
-            this.name=name;
+        ProtocolReq(Protocol p) {
+            this.name=p.getName();
+            if(p.requiredUpServices() != null) {
+                up_reqs.addAll(p.requiredUpServices());
+            }
+            if(p.requiredDownServices() != null) {
+                down_reqs.addAll(p.requiredDownServices());
+            }
+
+            if(p.providedUpServices() != null) {
+                up_provides.addAll(p.providedUpServices());
+            }
+            if(p.providedDownServices() != null) {
+                down_provides.addAll(p.providedDownServices());
+            }
+
         }
 
-
         boolean providesUpService(int evt_type) {
-            int type;
-
-            if(up_provides != null) {
-                for(int i=0; i < up_provides.size(); i++) {
-                    type=((Integer)up_provides.elementAt(i)).intValue();
-                    if(type == evt_type)
-                        return true;
-                }
+            for(Integer type:up_provides) {
+                if(type == evt_type)
+                    return true;
             }
             return false;
         }
 
         boolean providesDownService(int evt_type) {
-            int type;
 
-            if(down_provides != null) {
-                for(int i=0; i < down_provides.size(); i++) {
-                    type=((Integer)down_provides.elementAt(i)).intValue();
-                    if(type == evt_type)
-                        return true;
-                }
+            for(Integer type:down_provides) {
+                if(type == evt_type)
+                    return true;
             }
             return false;
         }
 
-
         public String toString() {
             StringBuilder ret=new StringBuilder();
             ret.append('\n' + name + ':');
-            if(up_reqs != null)
+            if(!up_reqs.isEmpty())
                 ret.append("\nRequires from above: " + printUpReqs());
 
-            if(down_reqs != null)
+            if(!down_reqs.isEmpty())
                 ret.append("\nRequires from below: " + printDownReqs());
 
-            if(up_provides != null)
+            if(!up_provides.isEmpty())
                 ret.append("\nProvides to above: " + printUpProvides());
 
-            if(down_provides != null)
+            if(!down_provides.isEmpty())
                 ret.append("\nProvides to below: ").append(printDownProvides());
             return ret.toString();
         }
 
-
         String printUpReqs() {
             StringBuilder ret;
             ret=new StringBuilder("[");
-            if(up_reqs != null) {
-                for(int i=0; i < up_reqs.size(); i++) {
-                    ret.append(Event.type2String(((Integer)up_reqs.elementAt(i)).intValue()) + ' ');
-                }
+            for(Integer type:up_reqs) {
+                ret.append(Event.type2String(type) + ' ');
             }
             return ret.toString() + ']';
         }
 
         String printDownReqs() {
             StringBuilder ret=new StringBuilder("[");
-            if(down_reqs != null) {
-                for(int i=0; i < down_reqs.size(); i++) {
-                    ret.append(Event.type2String(((Integer)down_reqs.elementAt(i)).intValue()) + ' ');
-                }
+            for(Integer type:down_reqs) {
+                ret.append(Event.type2String(type) + ' ');
             }
             return ret.toString() + ']';
         }
 
-
         String printUpProvides() {
             StringBuilder ret=new StringBuilder("[");
-            if(up_provides != null) {
-                for(int i=0; i < up_provides.size(); i++) {
-                    ret.append(Event.type2String(((Integer)up_provides.elementAt(i)).intValue()) + ' ');
-                }
+            for(Integer type:up_provides) {
+                ret.append(Event.type2String(type) + ' ');
             }
             return ret.toString() + ']';
         }
 
         String printDownProvides() {
             StringBuilder ret=new StringBuilder("[");
-            if(down_provides != null) {
-                for(int i=0; i < down_provides.size(); i++)
-                    ret.append(Event.type2String(((Integer)down_provides.elementAt(i)).intValue()) +
-                               ' ');
+            for(Integer type:down_provides) {
+                ret.append(Event.type2String(type) + ' ');
             }
             return ret.toString() + ']';
         }
-
     }
 
 

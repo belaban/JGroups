@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.151 2008/05/08 09:46:47 vlada Exp $
+ * @version $Id: Util.java,v 1.152 2008/05/11 14:16:33 vlada Exp $
  */
 public class Util {
 
@@ -2350,55 +2350,7 @@ public class Util {
     }
 
 
-    public static String getProperty(Protocol prot, String prop_name) {
-        if(prot == null)
-            return null;
-        String name=prot.getProperties().getProperty(prop_name);
-        return name == null? name : name.trim();
-    }
-
-
-    /*
-    public static void main(String[] args) {
-	DatagramSocket sock;
-	InetAddress    addr=null;
-	int            port=0;
-
-	for(int i=0; i < args.length; i++) {
-	    if(args[i].equals("-help")) {
-		System.out.println("Util [-help] [-addr] [-port]");
-		return;
-	    }
-	    if(args[i].equals("-addr")) {
-		try {
-		    addr=InetAddress.getByName(args[++i]);
-		    continue;
-		}
-		catch(Exception ex) {
-		    log.error(ex);
-		    return;
-		}
-	    }
-	    if(args[i].equals("-port")) {
-		port=Integer.parseInt(args[++i]);
-		continue;
-	    }
-	    System.out.println("Util [-help] [-addr] [-port]");
-	    return;
-	}
-
-	try {
-	    sock=createDatagramSocket(addr, port);
-	    System.out.println("sock: local address is " + sock.getLocalAddress() + ":" + sock.getLocalPort() +
-			       ", remote address is " + sock.getInetAddress() + ":" + sock.getPort());
-	    System.in.read();
-	}
-	catch(Exception ex) {
-	    log.error(ex);
-	}
-    }
-    */
-
+    
     public static void main(String args[]) throws Exception {
         System.out.println("IPv4: " + isIPv4Stack());
         System.out.println("IPv6: " + isIPv6Stack());
