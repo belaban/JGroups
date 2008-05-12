@@ -2,7 +2,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
-import org.jgroups.tests.UnicastLoopbackTest.MyReceiver;
 import org.jgroups.util.Promise;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -13,7 +12,7 @@ import org.testng.annotations.Test;
  * Tests unicasts to self (loopback of transport protocol)
  * @author Richard Achmatowicz 12 May 2008
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.11 2008/05/12 15:53:49 rachmatowicz Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.12 2008/05/12 22:03:36 rachmatowicz Exp $
  */
 public class UnicastLoopbackTest extends ChannelTestBase {
     JChannel channel=null;
@@ -81,7 +80,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     	num_msgs_sent_after = getNumMessagesSentViaNetwork(channel) ;
 
     	// when loopback == true, messages should not touch the network
-    	assertEquals(num_msgs_sent_before, num_msgs_sent_after, "Messages are (incorrectly) being sent via network") ;
+    	Assert.assertEquals(num_msgs_sent_before, num_msgs_sent_after, "Messages are (incorrectly) being sent via network") ;
 
     	try { 
     		// wait for all messages to be received
@@ -89,7 +88,7 @@ public class UnicastLoopbackTest extends ChannelTestBase {
     	}
     	catch(TimeoutException te) {
     		// timeout exception occurred 
-    		fail("Test timed out before all messages were received") ;
+    		Assert.fail("Test timed out before all messages were received") ;
     	}
 
     }
@@ -143,9 +142,9 @@ public class UnicastLoopbackTest extends ChannelTestBase {
 
     	private final int numExpected ;
     	private int numReceived;
-    	private final Promise p ;
+    	private final Promise<Boolean> p ;
 
-    	public MyReceiver(int numExpected, Promise p) {
+    	public MyReceiver(int numExpected, Promise<Boolean> p) {
     		this.numExpected = numExpected ;
     		this.numReceived = 0 ;
     		this.p = p ;
