@@ -31,7 +31,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * This class combines both {@link org.jgroups.blocks.ReplicatedHashtable} (asynchronous replication) and
  * {@link org.jgroups.blocks.DistributedHashtable} (synchronous replication) into one class
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.12.2.1 2008/02/28 07:31:56 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.12.2.2 2008/05/12 14:01:08 vlada Exp $
  */
 public class ReplicatedHashMap<K extends Serializable,V extends Serializable> extends ConcurrentHashMap<K,V> implements ExtendedReceiver, ReplicatedMap<K,V> {
     private static final long serialVersionUID=-5317720987340048547L;
@@ -721,7 +721,7 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
 
     /*------------------- Membership Changes ----------------------*/
 
-    public void viewAccepted(View new_view) {
+    public void viewAccepted(final View new_view) {
         Vector<Address> new_mbrs=new_view.getMembers();
 
         if(new_mbrs != null) {
@@ -732,6 +732,38 @@ public class ReplicatedHashMap<K extends Serializable,V extends Serializable> ex
         //if size is bigger than one, there are more peers in the group
         //otherwise there is only one server.
         send_message=members.size() > 1;
+        
+        /**
+         * In the event of a MergeView abuse the cumulative nature of the
+         * superclass' setState() method. By ensuring that all members of the
+         * new merged view add the state of all the coordinators of the previous
+         * unmerged views, everyone should end up in the same state.
+         * 
+         * 
+         * http://jira.jboss.com/jira/browse/JGRP-751
+         * 
+         * TODO: What if the getStates() complete in different orders? Is that
+         * possible?
+         */
+        if(new_view instanceof MergeView) {
+            final Runnable runnable=new Runnable() {
+
+                public void run() {
+                    for(final View subgroup:((MergeView)new_view).getSubgroups()) {
+                        try {
+                            channel.getState(subgroup.getMembers().firstElement(), 0);
+                        }
+                        catch(final ChannelNotConnectedException e) {
+                            throw new IllegalStateException("channel not connected!", e);
+                        }
+                        catch(final ChannelClosedException e) {
+                            throw new IllegalStateException("channel is closed!", e);
+                        }
+                    }
+                }
+            };
+            new Thread(runnable, "map-merging").start();
+        }
     }
 
 
