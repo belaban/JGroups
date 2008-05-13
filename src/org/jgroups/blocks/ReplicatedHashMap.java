@@ -3,6 +3,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.persistence.PersistenceFactory;
 import org.jgroups.persistence.PersistenceManager;
 import org.jgroups.util.Promise;
@@ -40,8 +41,9 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.17 2008/05/13 11:54:15 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.18 2008/05/13 12:33:53 belaban Exp $
  */
+@Unsupported(comment="Use JBossCache instead")
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
 
