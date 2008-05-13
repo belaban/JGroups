@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.95 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FC.java,v 1.96 2008/05/13 13:09:32 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -785,9 +785,15 @@ public class FC extends Protocol {
             }
 
             // remove all creditors which are not in the new view
-            for(Address creditor: creditors) {
+            /*for(Address creditor: creditors) {
                 if(!mbrs.contains(creditor))
                     creditors.remove(creditor);
+            }*/
+            // fixed http://jira.jboss.com/jira/browse/JGRP-754 (CCME)
+            for(Iterator<Address> it=creditors.iterator(); it.hasNext();) {
+                Address creditor=it.next();
+                if(!mbrs.contains(creditor))
+                    it.remove();
             }
 
             if(log.isTraceEnabled()) log.trace("creditors are " + creditors);
