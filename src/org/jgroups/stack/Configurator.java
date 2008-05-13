@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.36 2008/05/13 07:18:54 belaban Exp $
+ * @version $Id: Configurator.java,v 1.37 2008/05/13 07:40:19 belaban Exp $
  */
 public class Configurator {
 
@@ -806,7 +806,7 @@ public class Configurator {
                         }
                         catch(Exception e) {
                             throw new Exception("Could not assign property " + propertyName + " in protocol "
-                                    + p.getName() + " method is " + methodName + " converted value is " + converted, e);
+                                    + p.getName() + ", method is " + methodName + ", converted value is " + converted, e);
                         }
                         finally {
                             props.remove(propertyName);
