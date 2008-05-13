@@ -40,11 +40,10 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.15 2008/04/04 09:36:41 vlada Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.16 2008/05/13 11:49:26 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
-    private static final long serialVersionUID=-5317720987340048547L;
 
     public interface Notification<K extends Serializable, V extends Serializable> {
         void entrySet(K key, V value);
@@ -97,22 +96,22 @@ public class ReplicatedHashMap<K extends Serializable, V extends Serializable> e
         }
     }
 
-    private transient Channel channel;
-    protected transient RpcDispatcher disp=null;
+    private Channel channel;
+    protected RpcDispatcher disp=null;
     private String cluster_name=null;
     // to be notified when mbrship changes
-    private final transient Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
+    private final Set<Notification> notifs=new CopyOnWriteArraySet<Notification>();
     private final Vector<Address> members=new Vector<Address>(); // keeps track of all DHTs
-    private transient boolean persistent=false; // whether to use PersistenceManager to save state
-    private transient PersistenceManager persistence_mgr=null;
+    private boolean persistent=false; // whether to use PersistenceManager to save state
+    private PersistenceManager persistence_mgr=null;
 
     /**
      * Determines when the updates have to be sent across the network, avoids
      * sending unnecessary messages when there are no member in the group
      */
-    private volatile transient boolean send_message=false;
+    private volatile boolean send_message=false;
 
-    protected final transient Promise<Boolean> state_promise=new Promise<Boolean>();
+    protected final Promise<Boolean> state_promise=new Promise<Boolean>();
 
     /**
      * Whether updates across the cluster should be asynchronous (default) or
