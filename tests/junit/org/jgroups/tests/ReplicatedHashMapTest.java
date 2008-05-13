@@ -1,15 +1,17 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
-import org.jgroups.blocks.ReplicatedHashMap;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
+import org.jgroups.Channel;
+import org.jgroups.Global;
+import org.jgroups.blocks.ReplicatedHashMap;
+import org.testng.Assert;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 /**
  * Test methods for ReplicatedHashMap
@@ -18,14 +20,13 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version $Id: ReplicatedHashMapTest.java,v 1.3 2007/08/22 11:23:28 belaban
  *          Exp $
  */
+@Test(groups="temp",sequential=true)
 public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map1;
     private ReplicatedHashMap<String,String> map2;
     private ConcurrentHashMap<String,String> wrap=new ConcurrentHashMap<String,String>();
 
-
-
-    @BeforeMethod
+    @BeforeClass
     protected void setUp() throws Exception {
         Channel c1=createChannel("A");
         this.map1=new ReplicatedHashMap<String,String>(c1, false);
@@ -41,12 +42,17 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
     }
 
     @AfterMethod
+    protected void clean() {
+        map1.clear();
+        map2.clear();
+    }
+
+    @AfterClass
     protected void tearDown() throws Exception {
         this.map1.stop();
         this.map2.stop();
     }
 
-    @Test
     public void testEqualsEtc() {
         map1.put("key1", "value1");
         assertEquals(this.map1, this.map2);
@@ -55,7 +61,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertEquals(this.wrap, this.map1);
     }
 
-    @Test
     public void testSize() {
         Assert.assertEquals(0, this.map1.size());
         Assert.assertEquals(this.map2.size(), this.map1.size());
@@ -69,12 +74,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals(this.map2.size(), this.map1.size());
     }
 
-    //    public void testBla() {
-    //        this.map1.put("key1", "value1");
-    //        Util.sleep(120000);
-    //    }
-
-    @Test
     public void testIsEmpty() {
         assertTrue(this.map1.isEmpty());
         assertTrue(this.map2.isEmpty());
@@ -85,7 +84,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertFalse(this.map2.isEmpty());
     }
 
-    @Test
     public void testContainsKey() {
         assertFalse(this.map1.containsKey("key1"));
         assertFalse(this.map2.containsKey("key1"));
@@ -97,7 +95,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertTrue(this.map2.containsKey("key2"));
     }
 
-    @Test
     public void testContainsValue() {
         assertFalse(this.map1.containsValue("value1"));
         assertFalse(this.map2.containsValue("value1"));
@@ -109,7 +106,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertTrue(this.map2.containsValue("value2"));
     }
 
-    @Test
     public void testPutAndGet() {
         assert this.map1.get("key1") == null;
         assert this.map2.get("key1") == null;
@@ -121,7 +117,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertNotNull(this.map2.get("key2"));
     }
 
-    @Test
     public void testPutIfAbsent() {
         String retval=map1.putIfAbsent("name", "Bela");
         assert retval == null;
@@ -132,7 +127,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals("Bela", map2.get("name"));
     }
 
-    @Test
     public void testRemove() {
         assert this.map1.get("key1") == null;
         assert this.map2.get("key1") == null;
@@ -154,7 +148,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assert this.map2.get("key2") == null;
     }
 
-    @Test
     public void testRemove2() {
         map1.put("name", "Bela");
         map1.put("id", "322649");
@@ -169,7 +162,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals(1, map2.size());
     }
 
-    @Test
     public void testReplace() {
         map1.put("name", "Bela");
         map1.put("id", "322649");
@@ -187,7 +179,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals("322000", map2.get("id"));
     }
 
-    @Test
     public void testReplace2() {
         map1.put("name", "Bela");
         map1.put("id", "322649");
@@ -200,7 +191,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         Assert.assertEquals("1", map1.get("id"));
     }
 
-    @Test
     public void testPutAll() {
         Map<String,String> all1=new HashMap<String,String>();
         all1.put("key1", "value1");
@@ -227,7 +217,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertTrue(this.map2.containsKey("key4"));
     }
 
-    @Test
     public void testClear() {
         assertTrue(this.map1.isEmpty());
         assertTrue(this.map2.isEmpty());
@@ -248,7 +237,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertTrue(this.map2.isEmpty());
     }
 
-    @Test
     public void testKeySet() {
         Map<String,String> all1=new HashMap<String,String>();
         all1.put("key1", "value1");
@@ -267,7 +255,6 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
         assertEquals(all1.keySet(), this.map2.keySet());
     }
 
-    @Test
     public void testValues() {
         Map<String,String> all1=new HashMap<String,String>();
         all1.put("key1", "value1");
