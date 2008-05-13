@@ -18,6 +18,10 @@
 
   <section><title>PullPushAdapter</title>
 
+      <para>
+          Note that this building block has been deprecated and should not be used anymore !
+      </para>
+
     <para>This class is a converter (or adapter, as used in <xref
     linkend="Gamma:1995"/> between the pull-style of actively
     receiving messages from the channel and the push-style where
@@ -486,150 +490,60 @@
   </section>
 
 
-  <section><title>DistributedHashtable</title>
+  <section><title>ReplicatedHashMap</title>
 
-    <para>A <classname>DistributedHashtable</classname> is derived
-    from <classname>java.util.Hashtable</classname> and allows to
-    create several instances of hashtables in different processes. All
-    of these instances have exactly the same state at all times. When
-    creating such an instance, a group name determines which group of
-    hashtables will be joined. The new instance will then query the
-    state from existing members and update itself before starting to
-    service requests. If there are no existing members, it will simply
-    start with an empty state.</para>
+      <para>
+          This class was written as a demo of how state can be shared between nodes of a cluster. It has never been
+          heavily tested and is therefore not meant to be used in production, and unsupported.
+      </para>
 
-    <para>Modifications such as <methodname>put()</methodname>,
-    <methodname>clear()</methodname> or
-    <methodname>remove()</methodname> will be propagated in orderly
-    fashion to all replicas. Read-only requests such as
-    <methodname>get()</methodname> will only be sent to the local
-    copy.</para>
+      <para>A <classname>ReplicatedHashMap</classname> uses a concurrent hashmap internally
+          and allows to
+          create several instances of hashmaps in different processes. All
+          of these instances have exactly the same state at all times. When
+          creating such an instance, a group name determines which group of
+          replicated hashmaps will be joined. The new instance will then query the
+          state from existing members and update itself before starting to
+          service requests. If there are no existing members, it will simply
+          start with an empty state.
+      </para>
 
-    <para>Since both keys and values of a hashtable will be sent
-    across the network as copies, both of them have to be
-    serializable. This allows for example to register remote RMI
-    objects with any local instance of a hashtable, which can
-    subsequently be looked up by another process which can then invoke
-    remote methods (remote RMI objects are serializable). Thus, a
-    distributed naming and registration service can be built in just a
-    couple of lines.</para>
+      <para>Modifications such as <methodname>put()</methodname>,
+          <methodname>clear()</methodname> or
+          <methodname>remove()</methodname> will be propagated in orderly
+          fashion to all replicas. Read-only requests such as
+          <methodname>get()</methodname> will only be sent to the local
+          copy.
+      </para>
 
-    <para>A <classname>DistributedHashtable</classname> allows to
-    register for notifications, e.g. when a new item is set, or an
-    existing one removed. All registered listeners will notified when
-    such an event occurs. Notification is always local; for example in
-    the case of removing an element, first the element is removed in
-    all replicas, which then notify their listener(s) of the removal
-    (after the fact).</para>
+      <para>Since both keys and values of a hashtable will be sent
+          across the network, both of them have to be
+          serializable. This allows for example to register remote RMI
+          objects with any local instance of a hashtable, which can
+          subsequently be looked up by another process which can then invoke
+          remote methods (remote RMI objects are serializable). Thus, a
+          distributed naming and registration service can be built in just a
+          couple of lines.
+      </para>
 
-    <para><classname>DistributedHashtable</classname> allow members in
-    a group to share common state across process and machine
-    boundaries.</para>
+      <para>A <classname>ReplicatedHashMap</classname> allows to
+          register for notifications, e.g. when a new item is set, or an
+          existing one removed. All registered listeners will notified when
+          such an event occurs. Notification is always local; for example in
+          the case of removing an element, first the element is removed in
+          all replicas, which then notify their listener(s) of the removal
+          (after the fact).
+      </para>
+
+      <para><classname>ReplicatedHashMap</classname> allow members in
+          a group to share common state across process and machine
+          boundaries.
+      </para>
 
   </section>
     
-  <section><title>ReplicatedHashtable</title>
 
-    <para><classname>ReplicatedHashtable</classname> provides exactly
-    the same methods as as
-    <classname>DistributedHashtable</classname>. However, it is
-    implemented differently. Whereas the latter uses synchronous
-    remote group method invocation (similar to
-    <classname>RpcDispatcher</classname>), the former uses
-    asynchronous communication to keep the replicas up-to-date.</para>
 
-  </section>
-
-  <section><title>DistributedTree</title>
-
-    <para>Similar to <classname>DistributedHashtable</classname> this
-    class also provides replication of a data structure across
-    multiple processes. However, a tree structure instead of a
-    hashtable is replicated by
-    <classname>DistributedTree</classname>. Updates are multicast to
-    all group members reliably and in the same order using the
-    underlying channel.</para>
-
-    <para>The tree consists of a root and zero or more child
-    nodes. Each node can be either another subtree, or a leaf node. A
-    node has a name and a value. The value can be any object that is
-    serializable. A node in the tree is identified by concatenating
-    all nodes from the root to it, separated with
-    <literal>'/'</literal> characters, e.g.</para>
-
-    <para><literal>/a/b/c</literal>.</para>
-
-    <para>New nodes can be added dynamically. Existing nodes (also
-    entire subtrees) can be removed. Values can be attached to an
-    existing node. Whenever the tree is modified events will be sent
-    for which listeners can register. Listeners have to implement
-    interface <classname>DistributedTreeListener</classname>:</para>
-
-    <screen> 
-    public interface DistributedTreeListener {
-        void nodeAdded(String fqn, Serializable element);
-        void nodeRemoved(String fqn);
-        void nodeModified(String fqn, Serializable old_element, Serializable new_element);
-    }
-    </screen>
-
-    <para>The methods provided by
-    <classname>DistributedTree</classname> are listed below (not all
-    methods shown):</para>
-
-    <screen>
-    public class DistributedTree {
-         public void         add(String fqn);
-         public void         add(String fqn, Serializable element);
-         public void         remove(String fqn);
-         public boolean      exists(String fqn);
-         public Serializable get(String fqn);
-         public void         set(String fqn, Serializable element);
-         public Vector       getChildrenNames(String fqn);
-    }
-    </screen>
-    
-    <para>The two <methodname>add()</methodname> methods add a new
-    node. The first method assigns no value to the node, whereas the
-    second does. Note that it does not matter whether or not parent
-    nodes exists: an addition of <literal>"/a/b/c/d"</literal> to a
-    tree <literal>"/a/b"</literal> would create nodes
-    <literal>"/a/b/c"</literal> and
-    <literal>"/a/b/c/d"</literal>. However, if a value was given, it
-    would be assigned only to the latter.</para>
-
-    <para>The <methodname>remove()</methodname> method removes a node
-    from the tree. If the node is a subtree itself, all nodes under it
-    will be removed recursively. E.g. the removal of
-    <literal>"/"</literal> from <literal>"/a/b"</literal> would
-    trigger 3 <methodname>nodeRemoved()</methodname> notifications:
-    <literal>"/a/b"</literal>, <literal>"/a"</literal> and
-    <literal>"/"</literal> (in this order)<footnote><para>Assuming
-    that these are the only nodes in the entire tree,
-    e.g. <literal>"/a"</literal> has no other
-    children</para></footnote>.</para>
-
-    <para>The <methodname>exists()</methodname> method tests whether a
-    given node exists in the tree.</para>
-
-    <para>The <methodname>get()</methodname> method returns either the
-    value associated with the given node, or null if the node cannot
-    be found or there is no value attached.</para>
-
-    <para>Method <methodname>set()</methodname> attaches a value to a
-    given node. It fails if the node does not exist. Use
-    <methodname>add(String, Serializable)</methodname> instead if the
-    node should be created if not existent.</para>
-
-    <para>Method <methodname>getChildrenNames()</methodname> furnishes
-    a list of the fully qualified names of all children nodes of a
-    given node. This gives a programmer modest navigation
-    possibilities within the tree.</para>
-
-    <para>There is a demo application in
-    <classname>org.jgroups.demos.DistributedTreeDemo</classname>.</para>
-
-  </section>
 
   <section><title>NotificationBus</title>
 
