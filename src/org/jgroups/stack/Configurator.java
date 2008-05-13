@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.37 2008/05/13 07:40:19 belaban Exp $
+ * @version $Id: Configurator.java,v 1.38 2008/05/13 15:16:57 vlada Exp $
  */
 public class Configurator {
 
@@ -838,7 +838,7 @@ public class Configurator {
                             }
                         }
                         String propertyValue=props.getProperty(propertyName);
-                        if(propertyValue != null) {
+                        if(propertyValue != null || (propertyValue == null && annotation.complex())) {
                             PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                             if(propertyConverter == null) {
                                 throw new Exception("Could not find property converter for field " + propertyName

@@ -14,7 +14,7 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.2 2008/05/08 09:46:49 vlada Exp $
+ * @version $Id: PropertyConverters.java,v 1.3 2008/05/13 15:16:57 vlada Exp $
  */
 public class PropertyConverters {
 
@@ -24,6 +24,14 @@ public class PropertyConverters {
             return Util.parseInterfaceList(propertyValue);
         }
     }
+    
+    public static class BindAddress implements PropertyConverter {
+
+        public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
+            return Util.getBindAddress(props);
+        }
+    }
+
 
     public static class Default implements PropertyConverter {
         public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {

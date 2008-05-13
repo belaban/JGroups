@@ -29,7 +29,7 @@ import org.jgroups.conf.PropertyConverters;
  * 
  * 
  * @author Vladimir Blagojevic
- * @version $Id: Property.java,v 1.2 2008/05/08 09:46:49 vlada Exp $
+ * @version $Id: Property.java,v 1.3 2008/05/13 15:16:56 vlada Exp $
  */
 
 @Retention(RetentionPolicy.RUNTIME)
@@ -41,4 +41,6 @@ public @interface Property {
     String deprecatedMessage() default "";
 
     Class<?> converter() default PropertyConverters.Default.class;
+
+    boolean complex() default false;
 }
