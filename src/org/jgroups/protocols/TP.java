@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.188 2008/05/11 14:16:33 vlada Exp $
+ * @version $Id: TP.java,v 1.189 2008/05/13 07:43:58 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -404,15 +404,11 @@ public abstract class TP extends Protocol {
         if(size > max_bundle_size) {
             throw new IllegalArgumentException("max_bundle_size (" + size
                                                + ") is greater than largest TP fragmentation size ("
-                                               + max_bundle_size
-                                               + ')');
+                                               + max_bundle_size + ')');
         }
         if(size <= 0) {
             throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
         }
-        if(!enable_bundling)
-            throw new IllegalStateException("Bundling not enabled");
-            
         max_bundle_size=size;
     }
     
@@ -423,12 +419,8 @@ public abstract class TP extends Protocol {
     @Property(name="max_bundle_timeout")
     public void setMaxBundleTimeout(long timeout) {
         if(timeout <= 0) {
-            throw new IllegalArgumentException("max_bundle_timeout of " + timeout
-                                               + " is invalid");
+            throw new IllegalArgumentException("max_bundle_timeout of " + timeout + " is invalid");
         }
-        if(!enable_bundling)
-            throw new IllegalStateException("Bundling not enabled");
-        
         max_bundle_timeout=timeout;
     }
     
