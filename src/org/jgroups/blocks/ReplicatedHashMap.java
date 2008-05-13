@@ -40,7 +40,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
  * into one class
  * 
  * @author Bela Ban
- * @version $Id: ReplicatedHashMap.java,v 1.16 2008/05/13 11:49:26 belaban Exp $
+ * @version $Id: ReplicatedHashMap.java,v 1.17 2008/05/13 11:54:15 belaban Exp $
  */
 public class ReplicatedHashMap<K extends Serializable, V extends Serializable> extends
         AbstractMap<K,V> implements ConcurrentMap<K,V>, ExtendedReceiver, ReplicatedMap<K,V> {
