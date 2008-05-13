@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.5 2008/04/14 08:42:55 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.6 2008/05/13 08:30:29 belaban Exp $
  */
 public class UnicastEnableToTest extends ChannelTestBase {
     JChannel channel=null, channel2=null;
@@ -28,14 +28,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        if(channel2 != null) {
-            channel2.close();
-            channel2=null;
-        }
-        if(channel != null) {
-            channel.close();
-            channel=null;
-        }
+        Util.close(channel2, channel);
     }
 
 
