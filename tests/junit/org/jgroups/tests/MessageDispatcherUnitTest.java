@@ -1,5 +1,7 @@
 package org.jgroups.tests;
 
+import java.util.Properties;
+
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -11,25 +13,24 @@ import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
-import java.util.Properties;
-
 
 /**
  * Tests return values from MessageDispatcher.castMessage()
+ * 
  * @author Bela Ban
- * @version $Id: MessageDispatcherUnitTest.java,v 1.10 2008/04/14 08:18:39 belaban Exp $
+ * @version $Id: MessageDispatcherUnitTest.java,v 1.10 2008/04/14 08:18:39
+ *          belaban Exp $
  */
+@Test(groups="temp", sequential=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
-    JChannel ch, ch2;    
+    JChannel ch, ch2;
 
-
-
-    @BeforeMethod
+    @BeforeClass
     protected void setUp() throws Exception {
         ch=createChannel();
         disableBundling(ch);
@@ -37,22 +38,22 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         ch.connect("x");
     }
 
-
-
-
-    @AfterMethod
+    @AfterClass
     protected void tearDown() throws Exception {
         disp.stop();
         ch.close();
-        if(ch2 != null) {
-            disp2.stop();
-            ch2.close();
-        }
         Util.sleep(500);
     }
 
+    @AfterMethod
+    protected void closeSecondChannel() {
+        if(ch2 != null) {
+            disp2.stop();
+            ch2.close();
+            Util.sleep(500);
+        }
+    }
 
-    @Test
     public void testNullMessageToSelf() {
         MyHandler handler=new MyHandler(null);
         disp.setRequestHandler(handler);
@@ -64,31 +65,24 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         assert obj == null;
     }
 
-
-    @Test
     public void test200ByteMessageToSelf() {
         sendMessage(200);
     }
 
-
-    @Test
     public void test2000ByteMessageToSelf() {
         sendMessage(2000);
     }
 
-    @Test
     public void test20000ByteMessageToSelf() {
         sendMessage(20000);
     }
 
-
-    @Test
     public void testNullMessageToAll() throws Exception {
         disp.setRequestHandler(new MyHandler(null));
 
         ch2=createChannel();
         disableBundling(ch2);
-        long stop,start=System.currentTimeMillis();
+        long stop, start=System.currentTimeMillis();
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
         stop=System.currentTimeMillis();
         ch2.connect("x");
@@ -100,7 +94,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
-        System.out.println("call took " + (stop-start) + " ms");
+        System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
         Rsp rsp=rsps.get(ch.getLocalAddress());
@@ -108,28 +102,26 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         Object ret=rsp.getValue();
         assert ret == null;
 
-
         rsp=rsps.get(ch2.getLocalAddress());
         assertNotNull(rsp);
         ret=rsp.getValue();
         assert ret == null;
+
+        Util.close(ch2);
     }
 
-    @Test
     public void test200ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(200);
     }
 
-    @Test
     public void test2000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(2000);
     }
 
-    @Test
     public void test20000ByteMessageToAll() throws Exception {
         sendMessageToBothChannels(20000);
     }
-    
+
     private void sendMessage(int size) {
         long start, stop;
         MyHandler handler=new MyHandler(new byte[size]);
@@ -138,15 +130,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
-        System.out.println("call took " + (stop-start) + " ms");
+        System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(1, rsps.size());
         byte[] buf=(byte[])rsps.getFirst();
         assertNotNull(buf);
         Assert.assertEquals(size, buf.length);
     }
-
-
 
     private void sendMessageToBothChannels(int size) throws Exception {
         long start, stop;
@@ -163,7 +153,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         RspList rsps=disp.castMessage(null, new Message(), GroupRequest.GET_ALL, 0);
         stop=System.currentTimeMillis();
         System.out.println("rsps:\n" + rsps);
-        System.out.println("call took " + (stop-start) + " ms");
+        System.out.println("call took " + (stop - start) + " ms");
         assertNotNull(rsps);
         Assert.assertEquals(2, rsps.size());
         Rsp rsp=rsps.get(ch.getLocalAddress());
@@ -175,12 +165,13 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         assertNotNull(rsp);
         ret=(byte[])rsp.getValue();
         Assert.assertEquals(size, ret.length);
-    }
 
+        Util.close(ch2);
+    }
 
     private static void disableBundling(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport = (TP)stack.findProtocol(TP.class);       
+        TP transport=(TP)stack.findProtocol(TP.class);
         if(transport != null) {
             Properties tmp=new Properties();
             tmp.setProperty("enable_bundling", "false");
@@ -188,11 +179,8 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         }
     }
 
-
-
     private static class MyHandler implements RequestHandler {
         byte[] retval=null;
-
 
         public MyHandler(byte[] retval) {
             this.retval=retval;
