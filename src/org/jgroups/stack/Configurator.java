@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.35 2008/05/11 14:16:32 vlada Exp $
+ * @version $Id: Configurator.java,v 1.36 2008/05/13 07:18:54 belaban Exp $
  */
 public class Configurator {
 
@@ -679,8 +679,8 @@ public class Configurator {
     public static class ProtocolConfiguration {
         private final String protocol_name;
         private final String properties_str;
-        private final Properties properties=new Properties();       
-        private static final String protocol_prefix="org.jgroups.protocols";       
+        private final Properties properties=new Properties();
+        private static final String protocol_prefix="org.jgroups.protocols";
 
 
         /**
@@ -688,18 +688,18 @@ public class Configurator {
          * @param config_str The configuration specification for the protocol, e.g.
          *                   <pre>VERIFY_SUSPECT(timeout=1500)</pre>
          */
-        public ProtocolConfiguration(String config_str) throws Exception {            
+        public ProtocolConfiguration(String config_str) throws Exception {
             int index=config_str.indexOf('(');  // e.g. "UDP(in_port=3333)"
             int end_index=config_str.lastIndexOf(')');
 
             if(index == -1) {
                 protocol_name=config_str;
-                properties_str = "";
+                properties_str="";
             }
             else {
                 if(end_index == -1) {
                     throw new Exception("Configurator.ProtocolConfiguration(): closing ')' " +
-                                        "not found in " + config_str + ": properties cannot be set !");
+                            "not found in " + config_str + ": properties cannot be set !");
                 }
                 else {
                     properties_str=config_str.substring(index + 1, end_index);
@@ -710,13 +710,13 @@ public class Configurator {
             /* "in_port=5555;out_port=6666" */
             if(properties_str.length() > 0) {
                 String[] components=properties_str.split(";");
-                for(String property:components) {
+                for(String property : components) {
                     String name, value;
                     index=property.indexOf('=');
                     if(index == -1) {
                         throw new Exception("Configurator.ProtocolConfiguration(): '=' not found in " + property
-                                            + " of "
-                                            + protocol_name);
+                                + " of "
+                                + protocol_name);
                     }
                     name=property.substring(0, index);
                     value=property.substring(index + 1, property.length());
@@ -724,14 +724,14 @@ public class Configurator {
                 }
             }
         }
-      
+
         public String getProtocolName() {
             return protocol_name;
         }
-       
+
         public Properties getProperties() {
             return properties;
-        }       
+        }
 
         private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
             Protocol retval=null;
@@ -762,21 +762,18 @@ public class Configurator {
 
             try {
                 retval=(Protocol)clazz.newInstance();
-
                 if(retval == null)
                     throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
-                retval.setProtocolStack(prot_stack);                     
+                retval.setProtocolStack(prot_stack);
                 resolveAndAssignFields(retval, properties);
-                resolveAndInvokePropertyMethods(retval, properties);                                
+                resolveAndInvokePropertyMethods(retval, properties);
                 if(!retval.setPropertiesInternal(properties))
                     throw new IllegalArgumentException("the following properties in " + protocol_name
-                                                       + " are not recognized: "
-                                                       + properties);
-                
-                if(!properties.isEmpty()){
+                            + " are not recognized: " + properties);
+
+                if(!properties.isEmpty()) {
                     throw new IllegalArgumentException("the following properties in " + protocol_name
-                                                       + " are not recognized: "
-                                                       + properties);
+                            + " are not recognized: " + properties);
                 }
             }
             catch(InstantiationException inst_ex) {
@@ -786,40 +783,30 @@ public class Configurator {
             }
             return retval;
         }
-              
-        private void resolveAndInvokePropertyMethods(Protocol p, Properties props) throws Exception {
+
+        private static void resolveAndInvokePropertyMethods(Protocol p, Properties props) throws Exception {
             Method[] methods=p.getClass().getMethods();
-            for(Method method:methods) {
+            for(Method method: methods) {
                 String methodName=method.getName();
                 if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
                     Property annotation=method.getAnnotation(Property.class);
-                    String propertyName=annotation.name().length() > 0? annotation.name()
-                                                                      : methodName.substring(3);
+                    String propertyName=annotation.name().length() > 0? annotation.name() : methodName.substring(3);
                     propertyName=renameFromJavaCodingConvention(propertyName);
                     String prop=props.getProperty(propertyName);
                     if(prop != null) {
-                        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter()
-                                                                                         .newInstance();
+                        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                         if(propertyConverter == null) {
                             throw new Exception("Could not find property converter for field " + propertyName
-                                                + " in protocol "
-                                                + p.getName());
+                                    + " in protocol " + p.getName());
                         }
                         Object converted=null;
                         try {
-                            converted=propertyConverter.convert(method.getParameterTypes()[0],
-                                                                props,
-                                                                prop);
+                            converted=propertyConverter.convert(method.getParameterTypes()[0], props, prop);
                             method.invoke(p, converted);
                         }
                         catch(Exception e) {
-                            throw new Exception("Could not assign property " + propertyName
-                                                + " in protocol "
-                                                + p.getName()
-                                                + " method is "
-                                                + methodName
-                                                + " converted value is "
-                                                + converted,e);
+                            throw new Exception("Could not assign property " + propertyName + " in protocol "
+                                    + p.getName() + " method is " + methodName + " converted value is " + converted, e);
                         }
                         finally {
                             props.remove(propertyName);
@@ -828,20 +815,20 @@ public class Configurator {
                 }
             }
         }
-        
-        private boolean isSetPropertyMethod(Method method) {
-            return(method.getName().startsWith("set") &&                  
-                   method.getReturnType() == java.lang.Void.TYPE &&
-                   method.getParameterTypes().length == 1);
+
+        private static boolean isSetPropertyMethod(Method method) {
+            return (method.getName().startsWith("set") &&
+                    method.getReturnType() == java.lang.Void.TYPE &&
+                    method.getParameterTypes().length == 1);
         }
 
-        private void resolveAndAssignFields(Protocol p, Properties props) throws Exception {
+        private static void resolveAndAssignFields(Protocol p, Properties props) throws Exception {
             //traverse class hierarchy and find all annotated fields
-            for(Class<?> clazz=p.getClass();clazz != null;clazz=clazz.getSuperclass()) {
+            for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
-                for(Field field:fields) {
+                for(Field field: fields) {
                     if(field.isAnnotationPresent(Property.class)) {
-                        Property annotation=field.getAnnotation(Property.class);                        
+                        Property annotation=field.getAnnotation(Property.class);
                         String propertyName=field.getName();
                         if(props.containsKey(annotation.name())) {
                             propertyName=annotation.name();
@@ -850,29 +837,21 @@ public class Configurator {
                                 log.warn(annotation.deprecatedMessage());
                             }
                         }
-                        String propertyValue=props.getProperty(propertyName);                                                
+                        String propertyValue=props.getProperty(propertyName);
                         if(propertyValue != null) {
-                            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter()
-                                                                                             .newInstance();
+                            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                             if(propertyConverter == null) {
                                 throw new Exception("Could not find property converter for field " + propertyName
-                                                    + " in protocol "
-                                                    + p.getName());
+                                        + " in protocol " + p.getName());
                             }
                             Object converted=null;
                             try {
-                                converted=propertyConverter.convert(field.getType(),
-                                                                    props,
-                                                                    propertyValue);                                
+                                converted=propertyConverter.convert(field.getType(), props, propertyValue);
                                 setField(field, p, converted);
                             }
                             catch(Exception e) {
-                                throw new Exception("Property assignment with value " + propertyName
-                                                    + " in protocol "
-                                                    + p.getName()
-                                                    + " and converted to "
-                                                    + converted
-                                                    + " could not be assigned",e);
+                                throw new Exception("Property assignment with value " + propertyName + " in protocol "
+                                        + p.getName() + " and converted to " + converted + " could not be assigned", e);
                             }
                             finally {
                                 props.remove(propertyName);
@@ -882,27 +861,28 @@ public class Configurator {
                 }
             }
         }
-        
-        private void setField(Field field, Object target, Object value) {
-            if (!Modifier.isPublic(field.getModifiers())) {
+
+        private static void setField(Field field, Object target, Object value) {
+            if(!Modifier.isPublic(field.getModifiers())) {
                 field.setAccessible(true);
             }
             try {
                 field.set(target, value);
-            } catch (IllegalAccessException iae) {
+            }
+            catch(IllegalAccessException iae) {
                 throw new IllegalArgumentException("Could not set field " + field, iae);
             }
         }
-        
+
         public static String renameFromJavaCodingConvention(String fieldName) {
             Pattern p=Pattern.compile("[A-Z]");
             Matcher m=p.matcher(fieldName.substring(1));
             StringBuffer sb=new StringBuffer();
             while(m.find()) {
-                m.appendReplacement(sb,"_" + fieldName.substring(m.end(), m.end()+1).toLowerCase());
+                m.appendReplacement(sb, "_" + fieldName.substring(m.end(), m.end() + 1).toLowerCase());
             }
             m.appendTail(sb);
-            sb.insert(0, fieldName.substring(0,1).toLowerCase());
+            sb.insert(0, fieldName.substring(0, 1).toLowerCase());
             return sb.toString();
         }
 
