@@ -1,19 +1,24 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Address;
-import org.jgroups.Message;
-import org.jgroups.util.Util;
-import org.testng.Assert;
-import org.testng.annotations.Test;
-
-import java.io.*;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+
+import org.jgroups.Address;
+import org.jgroups.Global;
+import org.jgroups.Message;
+import org.jgroups.util.Util;
+import org.testng.Assert;
+import org.testng.annotations.Test;
 
 /**
  * Tests streaming state transfer.
@@ -23,12 +28,9 @@ import java.util.concurrent.TimeUnit;
  * @version $Id$
  * 
  */
+@Test(groups={Global.FLUSH}, sequential=false)
 public class StreamingStateTransferTest extends ChannelTestBase {
-
-
-    protected boolean useBlocking() {
-        return true;
-    }
+    
 
     @Test
     public void testTransfer() {
@@ -70,7 +72,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                                boolean largeTransfer,
                                boolean useDispatcher) {
         int channelCount = channelNames.length;
-        ArrayList channels = new ArrayList(channelCount);
+        ArrayList<StreamingStateTransferApplication> channels = new ArrayList<StreamingStateTransferApplication>(channelCount);
 
         // Create a semaphore and take all its tickets
         Semaphore semaphore = new Semaphore(channelCount);
@@ -95,7 +97,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 Util.sleep(2000);
 
                 if(crash && !crashed && i > 2){
-                    StreamingStateTransferApplication coord = (StreamingStateTransferApplication) channels.remove(0);
+                    StreamingStateTransferApplication coord = channels.remove(0);
                     coord.cleanup();
                     crashed = true;
                 }
@@ -122,7 +124,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
 
             Util.sleep(3000);
             for(int i = 0;i < channels.size();i++){
-                StreamingStateTransferApplication current = (StreamingStateTransferApplication) channels.get(i);
+                StreamingStateTransferApplication current = channels.get(i);
                 if(current.getStateInvoked){
                     getStateInvokedCount++;
                 }
@@ -135,10 +137,10 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 if(current.partialSetStateInvoked){
                     partialSetStateInvokedCount++;
                 }
-                Map map = current.getMap();
+                Map<Address,List<Integer>> map = current.getMap();
                 for(int j = 0;j < channels.size();j++){
-                    StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(j);
-                    List l = (List) map.get(app.getLocalAddress());
+                    StreamingStateTransferApplication app = channels.get(j);
+                    List<?> l = map.get(app.getLocalAddress());
                     int size = l != null ? l.size() : 0;
                     Assert.assertEquals(size, StreamingStateTransferApplication.COUNT, "Correct element count in map ");
                 }
@@ -160,7 +162,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
             log.warn(ex);
         }finally{
             for(int i = 0;i < channels.size();i++){
-                StreamingStateTransferApplication app = (StreamingStateTransferApplication) channels.get(i);
+                StreamingStateTransferApplication app = channels.get(i);
                 Util.sleep(500);
                 app.cleanup();
             }
@@ -168,7 +170,7 @@ public class StreamingStateTransferTest extends ChannelTestBase {
     }
 
     protected class StreamingStateTransferApplication extends PushChannelApplicationWithSemaphore {
-        private final Map stateMap = new HashMap();
+        private final Map<Address,List<Integer>> stateMap = new HashMap<Address,List<Integer>>();
 
         public static final int COUNT = 25;
 
@@ -194,16 +196,16 @@ public class StreamingStateTransferTest extends ChannelTestBase {
         public void receive(Message msg) {
             Address sender = msg.getSrc();
             synchronized(stateMap){
-                List list = (List) stateMap.get(sender);
+                List<Integer> list = stateMap.get(sender);
                 if(list == null){
-                    list = new ArrayList();
+                    list = new ArrayList<Integer>();
                     stateMap.put(sender, list);
                 }
-                list.add(msg.getObject());
+                list.add((Integer)msg.getObject());
             }
         }
 
-        public Map getMap() {
+        public Map<Address,List<Integer>> getMap() {
             return stateMap;
         }
 
