@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.190 2008/05/13 13:29:00 belaban Exp $
+ * @version $Id: TP.java,v 1.191 2008/05/13 15:16:53 vlada Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -57,12 +57,13 @@ public abstract class TP extends Protocol {
     /** The address (host and port) of this member */
     protected Address         local_addr=null;
 
-    /** The name of the group to which this member is connected */
-	@ManagedAttribute
+    /** The name of the group to which this member is connected */    
+    @ManagedAttribute
     protected String          channel_name=null;
 
     /** The interface (NIC) which should be used by this transport */
     @ManagedAttribute    
+    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
     protected InetAddress     bind_addr=null;
 
     /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
@@ -801,16 +802,7 @@ public abstract class TP extends Protocol {
      */
     public boolean setProperties(Properties props) {
         super.setProperties(props);    
-        String str = null;
-        
-        try {
-            bind_addr = Util.getBindAddress(props);
-        }
-        catch(Exception e) {
-            throw new IllegalArgumentException("Failed to determine bind address",e);
-        }        
-        
-        str=props.getProperty("thread_naming_pattern");
+        String str=props.getProperty("thread_naming_pattern");
         if(str != null) {
             thread_naming_pattern=new ThreadNamingPattern(str);
             props.remove("thread_naming_pattern");

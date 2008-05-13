@@ -5,6 +5,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.StateTransferInfo;
@@ -91,10 +92,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private volatile double avg_state_size = 0;
 
-    /*
-     * properties
-     * 
-     */
+    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
     private InetAddress bind_addr;
 
     @Property
@@ -154,14 +152,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public boolean setProperties(Properties props) {
         super.setProperties(props);
-        listDeprecatedProperties(props, "use_flush","flush_timeout","use_reading_thread");
-        
-        try{
-            bind_addr = Util.getBindAddress(props);
-        }catch(Exception e){
-            log.error("(bind_addr): host " + e.getLocalizedMessage() + " not known");
-            return false;
-        }        
+        listDeprecatedProperties(props, "use_flush","flush_timeout","use_reading_thread");       
         return true;
     }
 

@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
@@ -19,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.33 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.34 2008/05/13 15:16:53 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address                local_addr=null;
@@ -31,6 +32,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Thread                 timer=null;
     @Property
     private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
+    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
     private InetAddress            bind_addr;          // interface for ICMP pings
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface       intf=null;
@@ -40,21 +42,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
     public String getName() {
         return name;
-    }
-
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-
-        try {
-            bind_addr = Util.getBindAddress(props);
-        }
-        catch(Exception e) {
-            throw new IllegalArgumentException("Failed to determine bind address",e);
-        }    
-        return true;
-    }
-
+    }   
 
     public Object down(Event evt) {
         if(evt.getType() == Event.SHUTDOWN) {

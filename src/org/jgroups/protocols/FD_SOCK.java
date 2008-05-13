@@ -7,6 +7,7 @@ import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
@@ -33,7 +34,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.87 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.88 2008/05/13 15:16:53 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 public class FD_SOCK extends Protocol implements Runnable {
@@ -52,6 +53,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     Address                     local_addr=null;                   // our own address
     ServerSocket                srv_sock=null;                     // server socket to which another member connects to monitor me
 
+    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
     InetAddress                 bind_addr=null;                    // the NIC on which the ServerSocket should listen
 
     private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
@@ -130,18 +132,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         super.setProperties(props);
         
         listDeprecatedProperties(props, "srv_sock_bind_addr");
-
-        try {
-            bind_addr=Util.getBindAddress(props);
-        }
-        catch(UnknownHostException unknown) {
-            log.fatal("failed getting bind_addr", unknown);
-            return false;
-        }
-        catch(SocketException ex) {
-            log.fatal("failed getting bind_addr", ex);
-            return false;
-        }
         return true;
     }    
     
