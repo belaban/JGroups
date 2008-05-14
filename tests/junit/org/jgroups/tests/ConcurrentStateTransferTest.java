@@ -4,6 +4,7 @@ package org.jgroups.tests;
 import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
@@ -23,9 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.10 2008/04/22 16:04:41 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.11 2008/05/14 08:12:19 vlada Exp $
  */
-@Test(groups="vlad",sequential=true)
+@Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
     private final AtomicInteger mod = new AtomicInteger(1);
@@ -33,11 +34,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
     @BeforeMethod
     public void setUp() throws Exception {
         mod.set(1);
-    }
-
-    protected boolean useBlocking() {
-        return true;
-    }  
+    }    
 
     
     @Test
