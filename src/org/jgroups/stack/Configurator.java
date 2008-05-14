@@ -7,6 +7,7 @@ import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverter;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
@@ -33,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.39 2008/05/14 06:31:41 belaban Exp $
+ * @version $Id: Configurator.java,v 1.40 2008/05/14 07:16:46 vlada Exp $
  */
 public class Configurator {
 
@@ -838,7 +839,7 @@ public class Configurator {
                             }
                         }
                         String propertyValue=props.getProperty(propertyName);
-                        if(propertyValue != null || annotation.complex()) {
+                        if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
                             PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                             if(propertyConverter == null) {
                                 throw new Exception("Could not find property converter for field " + propertyName

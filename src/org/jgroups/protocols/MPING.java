@@ -22,7 +22,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.38 2008/05/13 15:16:54 vlada Exp $
+ * @version $Id: MPING.java,v 1.39 2008/05/14 07:16:43 vlada Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -31,7 +31,7 @@ public class MPING extends PING implements Runnable {
     MulticastSocket[]      mcast_send_sockets=null;
     Thread                 receiver=null;
     @ManagedAttribute(description="Bind address for multicast socket",writable=true)
-    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
+    @Property(converter=PropertyConverters.BindAddress.class)
     InetAddress            bind_addr=null;
     @ManagedAttribute(description="Time to live for discovery packets",writable=true)
     int                    ip_ttl=8;
