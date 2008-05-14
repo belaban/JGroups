@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.27 2007/10/26 09:58:35 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.29 2008/05/14 12:00:29 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -8,7 +8,6 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.Message;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
@@ -25,8 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    RetransmitCommand       retransmit_command = null;   // called to request XMIT of msg
-    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap();        // keys: seqnos (Long), values: Messages
+    RetransmitCommand       retransmit_command = null;                            // called to request XMIT of msg
+    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>(); 
     Interval                interval=new StaticInterval(400,800,1200,1600);
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
@@ -45,14 +44,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
      */
     public AckSenderWindow(RetransmitCommand com) {
         retransmit_command = com;
-        retransmitter = new Retransmitter(null, this);
-        retransmitter.setRetransmitTimeouts(interval);
-    }
-
-
-    public AckSenderWindow(RetransmitCommand com, Interval interval) {
-        retransmit_command = com;
-        this.interval = interval;
         retransmitter = new Retransmitter(null, this);
         retransmitter.setRetransmitTimeouts(interval);
     }
@@ -115,7 +106,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ");
-        TreeSet keys=new TreeSet(msgs.keySet());
+        TreeSet<Long> keys=new TreeSet<Long>(msgs.keySet());
         if(!keys.isEmpty())
             sb.append(keys.first()).append(" - ").append(keys.last());
         else
@@ -127,7 +118,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public String printDetails() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ").
-                append(new TreeSet(msgs.keySet()));
+                append(new TreeSet<Long>(msgs.keySet()));
         return sb.toString();
     }
 
@@ -183,110 +174,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     }
 
 
-    public static void main(String[] args) {
-        Interval xmit_timeouts=new StaticInterval(1000, 2000, 3000, 4000);
-        AckSenderWindow win=new AckSenderWindow(new Dummy(), xmit_timeouts);
 
-
-
-        final int NUM = 1000;
-
-        for (int i = 1; i < NUM; i++)
-            win.add(i, new Message());
-
-
-        System.out.println(win);
-        Util.sleep(5000);
-
-        for (int i = 1; i < NUM; i++) {
-            if (i % 2 == 0) // ack the even seqnos
-                win.ack(i);
-        }
-
-        System.out.println(win);
-        Util.sleep(4000);
-
-        for (int i = 1; i < NUM; i++) {
-            if (i % 2 != 0) // ack the odd seqnos
-                win.ack(i);
-        }
-        System.out.println(win);
-
-        win.add(3, new Message());
-        win.add(5, new Message());
-        win.add(4, new Message());
-        win.add(8, new Message());
-        win.add(9, new Message());
-        win.add(6, new Message());
-        win.add(7, new Message());
-        win.add(3, new Message());
-        System.out.println(win);
-
-
-        try {
-            Thread.sleep(5000);
-            win.ack(5);
-            System.out.println("ack(5)");
-            win.ack(4);
-            System.out.println("ack(4)");
-            win.ack(6);
-            System.out.println("ack(6)");
-            win.ack(7);
-            System.out.println("ack(7)");
-            win.ack(8);
-            System.out.println("ack(8)");
-            win.ack(6);
-            System.out.println("ack(6)");
-            win.ack(9);
-            System.out.println("ack(9)");
-            System.out.println(win);
-
-            Thread.sleep(5000);
-            win.ack(3);
-            System.out.println("ack(3)");
-            System.out.println(win);
-
-            Thread.sleep(3000);
-            win.add(10, new Message());
-            win.add(11, new Message());
-            System.out.println(win);
-            Thread.sleep(3000);
-            win.ack(10);
-            System.out.println("ack(10)");
-            win.ack(11);
-            System.out.println("ack(11)");
-            System.out.println(win);
-
-            win.add(12, new Message());
-            win.add(13, new Message());
-            win.add(14, new Message());
-            win.add(15, new Message());
-            win.add(16, new Message());
-            System.out.println(win);
-
-            Util.sleep(1000);
-            win.ack(12);
-            System.out.println("ack(12)");
-            win.ack(13);
-            System.out.println("ack(13)");
-
-            win.ack(15);
-            System.out.println("ack(15)");
-            System.out.println(win);
-
-            Util.sleep(5000);
-            win.ack(16);
-            System.out.println("ack(16)");
-            System.out.println(win);
-
-            Util.sleep(1000);
-
-            win.ack(14);
-            System.out.println("ack(14)");
-            System.out.println(win);
-        } catch (Exception e) {
-            log.error(e);
-        }
-    }
 
 }
