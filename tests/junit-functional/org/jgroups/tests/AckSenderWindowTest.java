@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.StaticInterval;
 import org.jgroups.util.Util;
+import org.jgroups.util.TimeScheduler;
 import org.testng.annotations.Test;
 
 import java.util.Map;
@@ -15,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Test cases for AckSenderWindow
  * @author Bela Ban
- * @version  $Id: AckSenderWindowTest.java,v 1.5 2008/04/08 12:18:03 belaban Exp $
+ * @version  $Id: AckSenderWindowTest.java,v 1.6 2008/05/14 11:57:58 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class AckSenderWindowTest {
@@ -28,39 +29,45 @@ public class AckSenderWindowTest {
 
     /** Tests whether retransmits are called at correct times for 1000 messages */
     @Test(groups=Global.FUNCTIONAL)
-    public void testRetransmits() {
+    public void testRetransmits() throws InterruptedException {
         int   num_non_correct_entries=0;
 
-        win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts));
+        TimeScheduler timer=new TimeScheduler();
+        win=new AckSenderWindow(new MyRetransmitCommand(), new StaticInterval(xmit_timeouts), timer);
+        try {
 
-        // 1. Send NUM_MSGS messages:
-        System.out.println("-- sending " + NUM_MSGS + " messages:");
-        for(long i=0; i < NUM_MSGS; i++) {
-            msgs.put(new Long(i), new Entry());
-            win.add(i, new Message());
+            // 1. Send NUM_MSGS messages:
+            System.out.println("-- sending " + NUM_MSGS + " messages:");
+            for(long i=0; i < NUM_MSGS; i++) {
+                msgs.put(new Long(i), new Entry());
+                win.add(i, new Message());
+            }
+            System.out.println("-- done");
+
+            // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
+            System.out.println("-- waiting for all retransmits");
+            long end_time=System.currentTimeMillis() + 20000L, curr, start=System.currentTimeMillis();
+
+            Util.sleep(1000);
+            while((curr=System.currentTimeMillis()) < end_time) {
+                // 3. Check whether all Entries have correct retransmission times
+                num_non_correct_entries=checkEntries(false);
+                if(num_non_correct_entries == 0)
+                    break;
+                Util.sleep(2000L);
+            }
+
+            System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
+
+            num_non_correct_entries=checkEntries(true);
+            if(num_non_correct_entries > 0)
+                System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
+            assert num_non_correct_entries == 0;
         }
-        System.out.println("-- done");
-
-        // 2. Wait for at least 4 xmits/msg: total of 1000 + 2000 + 4000 + 8000ms = 15000ms; wait for 20000ms
-        System.out.println("-- waiting for all retransmits");
-        long end_time=System.currentTimeMillis() + 20000L, curr, start=System.currentTimeMillis();
-
-        Util.sleep(1000);
-        while((curr=System.currentTimeMillis()) < end_time) {
-            // 3. Check whether all Entries have correct retransmission times
-            num_non_correct_entries=checkEntries(false);
-            if(num_non_correct_entries == 0)
-                break;
-            Util.sleep(2000L);
+        finally {
+            win.reset();
+            timer.stop();
         }
-
-        System.out.println("-- waited for " + (System.currentTimeMillis() - start) + " ms");
-
-        num_non_correct_entries=checkEntries(true);
-        if(num_non_correct_entries > 0)
-            System.err.println("Number of incorrect retransmission timeouts: " + num_non_correct_entries);
-        assert num_non_correct_entries == 0;
-        win.reset();
     }
 
 
