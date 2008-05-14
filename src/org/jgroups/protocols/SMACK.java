@@ -5,6 +5,7 @@ package org.jgroups.protocols;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
@@ -42,10 +43,10 @@ import java.util.*;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.28 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: SMACK.java,v 1.29 2008/05/14 12:29:07 belaban Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
-@Experimental
+@Experimental @Unsupported
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
     long[]                 timeout=new long[]{1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
     @Property
