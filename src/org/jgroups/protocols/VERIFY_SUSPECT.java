@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.34 2008/05/13 15:16:53 vlada Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.35 2008/05/14 07:16:43 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address                local_addr=null;
@@ -32,7 +32,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Thread                 timer=null;
     @Property
     private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
-    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
+    @Property(converter=PropertyConverters.BindAddress.class)
     private InetAddress            bind_addr;          // interface for ICMP pings
     /** network interface to be used to send the ICMP packets */
     private NetworkInterface       intf=null;

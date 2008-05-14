@@ -92,7 +92,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private volatile double avg_state_size = 0;
 
-    @Property(converter=PropertyConverters.BindAddress.class,complex=true)
+    @Property(converter=PropertyConverters.BindAddress.class)
     private InetAddress bind_addr;
 
     @Property
