@@ -9,6 +9,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 
 import java.io.*;
@@ -35,7 +36,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.67 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FD.java,v 1.68 2008/05/14 14:43:42 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
@@ -124,8 +125,8 @@ public class FD extends Protocol {
 
 
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
+        if(stack != null && ProtocolStack.timer != null)
+            timer=ProtocolStack.timer;
         else
             throw new Exception("FD.init(): timer cannot be retrieved from protocol stack");
     }
