@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.21 2008/05/08 09:46:42 vlada Exp $
+// $Id: FD_SIMPLE.java,v 1.22 2008/05/14 14:42:17 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,6 +7,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Streamable;
@@ -29,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.21 $
+ * @version $Revision: 1.22 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -57,7 +58,7 @@ public class FD_SIMPLE extends Protocol {
     }
 
     public void init() throws Exception {
-        timer=stack.timer;
+        timer=ProtocolStack.timer;
     }
 
     public boolean setProperties(Properties props) {
@@ -83,7 +84,7 @@ public class FD_SIMPLE extends Protocol {
         }
 
         if(!props.isEmpty()) {
-            log.error("FD_SIMPLE.setProperties(): the following properties are not recognized: " + props);
+            log.error("the following properties are not recognized: " + props);
             return false;
         }
         return true;
