@@ -10,7 +10,7 @@ LIB=$BIN/../lib
 
 LIBS=$LIB/log4j-1.2.6.jar:$LIB/commons-logging.jar:$LIB/concurrent.jar
 
-echo $CLASSPATH
+#echo $CLASSPATH
 
 CLASSPATH=$BIN/../classes:$CLASSPATH:$LIBS
 
