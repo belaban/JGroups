@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.59 2008/05/14 13:02:27 belaban Exp $
+// $Id: Event.java,v 1.60 2008/05/14 13:26:32 belaban Exp $
 
 package org.jgroups;
 
@@ -28,8 +28,6 @@ public class Event {
     public static final int GET_DIGEST                         = 39;  //
     public static final int SET_DIGEST                         = 41;  // arg = Digest
     public static final int EXIT                               = 46;  // received when member was forced out of the group
-    public static final int PERF                               = 47;  // for performance measurements
-    public static final int HEARD_FROM                         = 50;  // arg = Vector (list of Addresses)
     public static final int UNSUSPECT                          = 51;  // arg = Address (of unsuspected member)
     public static final int MERGE_DIGEST                       = 53;  // arg = Digest
     public static final int CONFIG                             = 56;  // arg = Map<String,Object> (config properties)
@@ -116,8 +114,6 @@ public class Event {
             case SET_DIGEST:             return "SET_DIGEST";
             case MERGE:                  return "MERGE"; // Added by gianlucac@tin.it to support partitions merging in GMS
             case EXIT:                   return "EXIT";
-            case PERF:                   return "PERF";
-            case HEARD_FROM:             return "HEARD_FROM";
             case UNSUSPECT:              return "UNSUSPECT";
             case MERGE_DIGEST:           return "MERGE_DIGEST";
             case CONFIG:                 return "CONFIG";

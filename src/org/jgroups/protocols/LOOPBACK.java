@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.25 2007/08/14 08:15:20 belaban Exp $
+// $Id: LOOPBACK.java,v 1.26 2008/05/14 13:26:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -81,10 +81,6 @@ public class LOOPBACK extends Protocol {
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:    
             group_addr=(String)evt.getArg();
-            break;
-
-        case Event.PERF:
-            up_prot.up(evt);
             break;
         }
         return null;
