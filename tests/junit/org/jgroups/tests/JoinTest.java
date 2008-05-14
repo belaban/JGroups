@@ -16,8 +16,11 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.19 2008/04/14 07:54:06 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.20 2008/05/14 12:50:58 vlada Exp $
+ * 
+ * TODO make possibly parallel 
  */
+@Test(groups={"temp"},sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
@@ -30,15 +33,12 @@ public class JoinTest extends ChannelTestBase {
 
     @AfterMethod
     public void tearDown() throws Exception {        
-        if(c2 != null)
-            c2.close();
-        if(c1 != null)
-            c1.close();
+        Util.close(c2,c1);
     }
 
     @Test
     public void testSingleJoin() throws ChannelException {
-        c1.connect("X");
+        c1.connect("JoinTest");
         View v=c1.getView();
         assert v != null;
         assert v.size() == 1;
@@ -51,8 +51,8 @@ public class JoinTest extends ChannelTestBase {
      */
     @Test
     public void testJoinsOnTwoChannels() throws ChannelException {
-        c1.connect("X");
-        c2.connect("X");
+        c1.connect("JoinTest");
+        c2.connect("JoinTest");
         
         Util.sleep(2000); //no blocking is used, let the view propagate
         
@@ -68,6 +68,8 @@ public class JoinTest extends ChannelTestBase {
 
     @Test
     public void testJoinsOnTwoChannelsAndSend() throws ChannelException {
+        c1.connect("JoinTest");
+        c2.connect("JoinTest");
         MyReceiver r1=new MyReceiver("c1");
         MyReceiver r2=new MyReceiver("c2");
         c1.setReceiver(r1);
@@ -144,7 +146,8 @@ public class JoinTest extends ChannelTestBase {
 
     void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
                                          long delay_join_req, long tolerance) throws Exception {
-        c1.connect("x");
+        c1.connect("JoinTest");
+        c2.connect("JoinTest");
 
         ProtocolStack stack=c2.getProtocolStack();
         GMS gms=(GMS)stack.findProtocol("GMS");
