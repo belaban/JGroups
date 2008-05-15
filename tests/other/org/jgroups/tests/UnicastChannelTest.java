@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.9 2008/03/03 12:32:24 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.10 2008/05/15 06:04:55 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -77,6 +77,14 @@ public class UnicastChannelTest {
             ch.setReceiver(new ReceiverAdapter() {
                 public void receive(Message msg) {
                     System.out.println("<-- " + msg.getObject());
+                }
+
+                public void viewAccepted(View new_view) {
+                    System.out.println("new_view = " + new_view);
+                }
+
+                public void suspect(Address suspected_mbr) {
+                    System.out.println("suspected_mbr = " + suspected_mbr);
                 }
             });
             runClient();
