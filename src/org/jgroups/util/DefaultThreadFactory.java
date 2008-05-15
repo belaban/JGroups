@@ -1,9 +1,13 @@
 package org.jgroups.util;
 
 /**
+ * Thread factory mainly responsible for naming of threads. Can be replaced by user. If use_numbering is set, a thread
+ * THREAD will be called THREAD-1, THREAD-2, and so on.<p/>
+ * If a pattern has been set (through setPattern()), then the cluster name and local address will also be added, e.g.
+ * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * @version $Id: DefaultThreadFactory.java,v 1.1 2008/05/15 12:56:11 belaban Exp $
+ * @version $Id: DefaultThreadFactory.java,v 1.2 2008/05/15 14:14:15 belaban Exp $
  */
 public class DefaultThreadFactory implements ThreadFactory {
     private final ThreadGroup group;
@@ -29,7 +33,7 @@ public class DefaultThreadFactory implements ThreadFactory {
         this.use_numbering=use_numbering;
     }
 
-    public void setThreadNamingPattern(String pattern) {
+    public void setPattern(String pattern) {
         includeClusterName=pattern.contains("c");
         includeLocalAddress=pattern.contains("l");
     }
@@ -43,17 +47,11 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     public Thread newThread(Runnable r, String name) {
-        Thread retval=newThread(group, r, name);
-        retval.setDaemon(createDaemons);
-        renameThread(retval);
-        return retval;
+        return newThread(group, r, name);
     }
 
     public Thread newThread(Runnable r) {
-        Thread retval=newThread(group, r, baseName);
-        retval.setDaemon(createDaemons);
-        renameThread(retval);
-        return retval;
+        return newThread(group, r, baseName);
     }
 
     public Thread newThread(ThreadGroup group, Runnable r, String name) {
