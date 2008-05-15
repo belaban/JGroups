@@ -77,7 +77,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.185 2008/04/22 06:41:28 belaban Exp $
+ * @version $Id: JChannel.java,v 1.186 2008/05/15 10:49:19 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -350,18 +350,18 @@ public class JChannel extends Channel {
     @ManagedAttribute
     public int getNumberOfTasksInTimer() {
         ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.timer.size() : -1;
+        return ps != null? ProtocolStack.timer.size() : -1;
     }
 
     @ManagedAttribute
     public int getTimerThreads() {
         ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.getTimerThreads() : -1;
+        return ps != null? ProtocolStack.getTimerThreads() : -1;
     }
 
     public String dumpTimerQueue() {
         ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.dumpTimerQueue() : "<n/a";
+        return ps != null? ProtocolStack.dumpTimerQueue() : "<n/a";
     }
 
     /**
@@ -764,7 +764,7 @@ public class JChannel extends Channel {
     }
     
     @ManagedAttribute
-    public String getVersion() {
+    public static String getVersion() {
         return Version.printDescription();
     }  
 
@@ -1070,147 +1070,150 @@ public class JChannel extends Channel {
 
         switch(type) {
 
-        case Event.MSG:
-            msg=(Message)evt.getArg();
-            if(stats) {
-                received_msgs++;
-                received_bytes+=msg.getLength();
-            }
+            case Event.MSG:
+                msg=(Message)evt.getArg();
+                if(stats) {
+                    received_msgs++;
+                    received_bytes+=msg.getLength();
+                }
 
-            if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
-                if(local_addr != null && msg.getSrc() != null)
-                    if(local_addr.equals(msg.getSrc()))
-                        return null;
-            }
-            break;
+                if(!receive_local_msgs) {  // discard local messages (sent by myself to me)
+                    if(local_addr != null && msg.getSrc() != null)
+                        if(local_addr.equals(msg.getSrc()))
+                            return null;
+                }
+                break;
 
-        case Event.VIEW_CHANGE:
-            View tmp=(View)evt.getArg();
-            if(tmp instanceof MergeView)
-                my_view=new View(tmp.getVid(), tmp.getMembers());
-            else
-                my_view=tmp;
+            case Event.VIEW_CHANGE:
+                View tmp=(View)evt.getArg();
+                if(tmp instanceof MergeView)
+                    my_view=new View(tmp.getVid(), tmp.getMembers());
+                else
+                    my_view=tmp;
 
-            /*
+                /*
              * Bela&Vladimir Oct 27th,2006 (JGroups 2.4)- we need to switch to
              * connected=true because client can invoke channel.getView() in
              * viewAccepted() callback invoked on this thread
              * (see Event.VIEW_CHANGE handling below)
              */
 
-            // not good: we are only connected when we returned from connect() - bela June 22 2007
-            //            if(connected == false) {
-            //                connected=true;
-            //            }
-            break;
+                // not good: we are only connected when we returned from connect() - bela June 22 2007
+                //            if(connected == false) {
+                //                connected=true;
+                //            }
+                break;
 
-        case Event.CONFIG:
-            Map<String,Object> config=(Map<String,Object>)evt.getArg();
-            if(config != null) {
-                if(config.containsKey("state_transfer")) {
-                    state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+            case Event.CONFIG:
+                Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                if(config != null) {
+                    if(config.containsKey("state_transfer")) {
+                        state_transfer_supported=((Boolean)config.get("state_transfer")).booleanValue();
+                    }
+                    if(config.containsKey("flush_supported")) {
+                        flush_supported=((Boolean)config.get("flush_supported")).booleanValue();
+                    }
                 }
-                if(config.containsKey("flush_supported")) {
-                    flush_supported=((Boolean)config.get("flush_supported")).booleanValue();
-                }
-            }
-            break;
+                break;
             
-        case Event.INFO:
-           Map<String, Object> m = (Map<String, Object>) evt.getArg();
-           info.putAll(m);            
-           break;    
+            case Event.INFO:
+                Map<String, Object> m = (Map<String, Object>) evt.getArg();
+                info.putAll(m);
+                break;
 
-        case Event.GET_STATE_OK:
-            StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
-            byte[] state=state_info.state;
+            case Event.GET_INFO:
+                return info;
 
-            try {
+            case Event.GET_STATE_OK:
+                StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
+                byte[] state=state_info.state;
+
+                try {
+                    if(up_handler != null) {
+                        return up_handler.up(evt);
+                    }
+
+                    if(state != null) {
+                        String state_id=state_info.state_id;
+                        if(receiver != null) {
+                            try {
+                                if(receiver instanceof ExtendedReceiver && state_id != null)
+                                    ((ExtendedReceiver)receiver).setState(state_id, state);
+                                else
+                                    receiver.setState(state);
+                            }
+                            catch(Throwable t) {
+                                if(log.isWarnEnabled())
+                                    log.warn("failed calling setState() in receiver", t);
+                            }
+                        }
+                        else {
+                            try {
+                                mq.add(new Event(Event.STATE_RECEIVED, state_info));
+                            }
+                            catch(Exception e) {
+                            }
+                        }
+                    }
+                }
+                finally {
+                    state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
+                }
+                break;
+            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
+                state_promise.setResult(Boolean.TRUE);
+                break;
+
+            case Event.STATE_TRANSFER_INPUTSTREAM:
+                StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                InputStream is=sti.inputStream;
+                //Oct 13,2006 moved to down() when Event.STATE_TRANSFER_INPUTSTREAM_CLOSED is received
+                //state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
+
                 if(up_handler != null) {
                     return up_handler.up(evt);
                 }
 
-                if(state != null) {
-                    String state_id=state_info.state_id;
-                    if(receiver != null) {
+                if(is != null) {
+                    if(receiver instanceof ExtendedReceiver) {
                         try {
-                            if(receiver instanceof ExtendedReceiver && state_id != null)
-                                ((ExtendedReceiver)receiver).setState(state_id, state);
+                            if(sti.state_id == null)
+                                ((ExtendedReceiver)receiver).setState(is);
                             else
-                                receiver.setState(state);
+                                ((ExtendedReceiver)receiver).setState(sti.state_id, is);
                         }
                         catch(Throwable t) {
                             if(log.isWarnEnabled())
                                 log.warn("failed calling setState() in receiver", t);
                         }
                     }
+                    else if(receiver instanceof Receiver){
+                        if(log.isWarnEnabled()){
+                            log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
+                                    " application does not implement ExtendedMessageListener. State is not transfered");
+                            Util.close(is);
+                        }
+                    }
                     else {
                         try {
-                            mq.add(new Event(Event.STATE_RECEIVED, state_info));
+                            mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
                         }
                         catch(Exception e) {
                         }
                     }
                 }
-            }
-            finally {
-                state_promise.setResult(state != null? Boolean.TRUE : Boolean.FALSE);
-            }
-            break;
-        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
-            state_promise.setResult(Boolean.TRUE);
-            break;     
+                break;
 
-        case Event.STATE_TRANSFER_INPUTSTREAM:
-            StateTransferInfo sti=(StateTransferInfo)evt.getArg();
-            InputStream is=sti.inputStream;
-            //Oct 13,2006 moved to down() when Event.STATE_TRANSFER_INPUTSTREAM_CLOSED is received
-            //state_promise.setResult(is != null? Boolean.TRUE : Boolean.FALSE);
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr_promise.setResult((Address)evt.getArg());
+                break;
 
-            if(up_handler != null) {
-                return up_handler.up(evt);
-            }
+            case Event.EXIT:
+                handleExit(evt);
+                return null;  // no need to pass event up; already done in handleExit()
 
-            if(is != null) {
-                if(receiver instanceof ExtendedReceiver) {
-                    try {
-                        if(sti.state_id == null)
-                            ((ExtendedReceiver)receiver).setState(is);
-                        else
-                            ((ExtendedReceiver)receiver).setState(sti.state_id, is);
-                    }
-                    catch(Throwable t) {
-                        if(log.isWarnEnabled())
-                            log.warn("failed calling setState() in receiver", t);
-                    }
-                }
-                else if(receiver instanceof Receiver){
-                    if(log.isWarnEnabled()){
-                        log.warn("Channel has STREAMING_STATE_TRANSFER, however," +
-                                " application does not implement ExtendedMessageListener. State is not transfered");
-                        Util.close(is);
-                    }
-                }
-                else {
-                    try {
-                        mq.add(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
-                    }
-                    catch(Exception e) {
-                    }
-                }
-            }
-            break;
-
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr_promise.setResult((Address)evt.getArg());
-            break;
-
-        case Event.EXIT:
-            handleExit(evt);
-            return null;  // no need to pass event up; already done in handleExit()
-
-        default:
-            break;
+            default:
+                break;
         }
 
 
@@ -1219,7 +1222,7 @@ public class JChannel extends Channel {
             Object ret=up_handler.up(evt);
 
             if(type == Event.UNBLOCK){
-               flush_unblock_promise.setResult(Boolean.TRUE);
+                flush_unblock_promise.setResult(Boolean.TRUE);
             }
             return ret;
         }
@@ -1282,7 +1285,7 @@ public class JChannel extends Channel {
                 }
                 break;
             case Event.STATE_TRANSFER_OUTPUTSTREAM:
-        	StateTransferInfo sti=(StateTransferInfo)evt.getArg();
+                StateTransferInfo sti=(StateTransferInfo)evt.getArg();
                 OutputStream os=sti.outputStream;
                 if(receiver instanceof ExtendedReceiver) {                    
                     if(os != null) {
@@ -1786,7 +1789,7 @@ public class JChannel extends Channel {
         if(mbrs == null)
             return null;
         if(!mbrs.isEmpty())
-            return (Address)mbrs.firstElement();
+            return mbrs.firstElement();
         return null;
     }
 

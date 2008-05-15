@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.53 2008/01/22 10:44:36 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.54 2008/05/15 10:49:09 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -134,11 +134,10 @@ public class NakReceiverWindow {
         highest_delivered=highest_delivered_seqno;
         highest_received=highest_delivered;
         low=Math.min(lowest_seqno, highest_delivered);
-
+        if(sched == null)
+            throw new IllegalStateException("timer has to be provided and cannot be null");
         if(cmd != null)
-            retransmitter=sched == null ?
-                    new Retransmitter(sender, cmd) :
-                    new Retransmitter(sender, cmd, sched);
+            retransmitter=new Retransmitter(sender, cmd, sched);
     }
 
 

@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.70 2008/04/17 12:26:22 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.71 2008/05/15 10:49:12 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -28,8 +28,8 @@ public class ProtocolStack extends Protocol implements Transport {
     public static final int BELOW = 2; // used by insertProtocol()
 
     protected PatternedThreadFactory thread_factory;
-    protected PatternedThreadFactory timer_thread_factory;
-    public final TimeScheduler timer;
+    protected static PatternedThreadFactory timer_thread_factory;
+    public static final TimeScheduler timer;
     private Protocol top_prot = null;
     private Protocol bottom_prot = null;
     private String setup_string;
@@ -39,6 +39,22 @@ public class ProtocolStack extends Protocol implements Transport {
 
     static {
         singleton_transports=new ConcurrentHashMap<String,Tuple<TP,Short>>();
+
+        timer_thread_factory=new IdThreadFactory(
+                newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
+                null);
+
+        timer=new TimeScheduler(timer_thread_factory);
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            public void run() {
+                try {
+                    timer.stop();
+                }
+                catch(InterruptedException e) {
+                }
+            }
+        });
     }
 
 
@@ -69,11 +85,6 @@ public class ProtocolStack extends Protocol implements Transport {
         catch(Exception e) {
             throw new ChannelException("failed initializing ClassConfigurator", e);
         }
-
-        this.timer_thread_factory=new IdThreadFactory(
-                newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
-                null);
-        timer= new TimeScheduler(timer_thread_factory);
     }
 
 
@@ -87,7 +98,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return thread_factory;
     }
 
-    public ThreadFactory getTimerThreadFactory() {
+    public static ThreadFactory getTimerThreadFactory() {
         return timer_thread_factory;
     }
 
@@ -95,7 +106,7 @@ public class ProtocolStack extends Protocol implements Transport {
         thread_factory=new PatternedThreadFactory(f, null);
     }
 
-    public void setTimerThreadFactory(ThreadFactory f) {
+    public static void setTimerThreadFactory(ThreadFactory f) {
         timer_thread_factory=new PatternedThreadFactory(f, null);
         timer.setThreadFactory(f);
     }
@@ -108,7 +119,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return channel;
     }
 
-    public int getTimerThreads() {
+    public static int getTimerThreads() {
         return timer.getCorePoolSize();
     }
 
@@ -156,7 +167,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return retval;
     }
 
-    public String dumpTimerQueue() {
+    public static String dumpTimerQueue() {
         return timer.dumpTaskQueue();
     }
 
@@ -366,11 +377,11 @@ public class ProtocolStack extends Protocol implements Transport {
             Configurator.destroyProtocolStack(getProtocols());           // destroys msg queues and threads
             top_prot=null;
         }        
-        try {
-            timer.stop();
-        }
-        catch(Exception ex) {
-        }        
+//        try {
+//            timer.stop();
+//        }
+//        catch(Exception ex) {
+//        }
     }
 
 
@@ -383,7 +394,7 @@ public class ProtocolStack extends Protocol implements Transport {
     public void startStack(String cluster_name) throws Exception {
         if(stopped == false) return;
 
-        timer.start();
+        // timer.start();
         Configurator.startProtocolStack(getProtocols(), cluster_name, singleton_transports);
         stopped=false;
     }

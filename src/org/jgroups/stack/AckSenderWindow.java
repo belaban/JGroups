@@ -1,4 +1,4 @@
-// $Id: AckSenderWindow.java,v 1.28 2008/05/14 11:58:21 belaban Exp $
+// $Id: AckSenderWindow.java,v 1.30 2008/05/15 10:49:10 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -24,8 +24,8 @@ import java.util.concurrent.ConcurrentMap;
  * @author Bela Ban
  */
 public class AckSenderWindow implements Retransmitter.RetransmitCommand {
-    RetransmitCommand       retransmit_command = null;   // called to request XMIT of msg
-    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap();        // keys: seqnos (Long), values: Messages
+    RetransmitCommand       retransmit_command = null;                            // called to request XMIT of msg
+    final ConcurrentMap<Long,Message> msgs=new ConcurrentHashMap<Long,Message>(); 
     Interval                interval=new StaticInterval(400,800,1200,1600);
     final Retransmitter     retransmitter;
     static final Log        log=LogFactory.getLog(AckSenderWindow.class);
@@ -33,27 +33,6 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
 
     public interface RetransmitCommand {
         void retransmit(long seqno, Message msg);
-    }
-
-
-    /**
-     * Creates a new instance. Thre retransmission thread has to be started separately with
-     * <code>start()</code>.
-     * @param com If not null, its method <code>retransmit()</code> will be called when a message
-     *            needs to be retransmitted (called by the Retransmitter).
-     */
-    public AckSenderWindow(RetransmitCommand com) {
-        retransmit_command = com;
-        retransmitter = new Retransmitter(null, this);
-        retransmitter.setRetransmitTimeouts(interval);
-    }
-
-
-    public AckSenderWindow(RetransmitCommand com, Interval interval) {
-        retransmit_command = com;
-        this.interval = interval;
-        retransmitter = new Retransmitter(null, this);
-        retransmitter.setRetransmitTimeouts(interval);
     }
 
 
@@ -114,7 +93,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public String toString() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ");
-        TreeSet keys=new TreeSet(msgs.keySet());
+        TreeSet<Long> keys=new TreeSet<Long>(msgs.keySet());
         if(!keys.isEmpty())
             sb.append(keys.first()).append(" - ").append(keys.last());
         else
@@ -126,7 +105,7 @@ public class AckSenderWindow implements Retransmitter.RetransmitCommand {
     public String printDetails() {
         StringBuilder sb=new StringBuilder();
         sb.append(msgs.size()).append(" msgs (").append(retransmitter.size()).append(" to retransmit): ").
-                append(new TreeSet(msgs.keySet()));
+                append(new TreeSet<Long>(msgs.keySet()));
         return sb.toString();
     }
 

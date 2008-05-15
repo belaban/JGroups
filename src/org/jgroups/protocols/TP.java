@@ -13,6 +13,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
+import org.jgroups.util.ThreadFactory;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -49,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.192 2008/05/14 07:16:43 vlada Exp $
+ * @version $Id: TP.java,v 1.193 2008/05/15 10:49:17 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -174,7 +175,7 @@ public abstract class TP extends Protocol {
      */
     protected ThreadNamingPattern thread_naming_pattern=new ThreadNamingPattern("cl");
 
-    /** */
+    /** Keeps track of connects and disconnects, in order to start and stop threads */
     int connect_count=0;
 
 
@@ -592,19 +593,32 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
 
 
-    private StringBuilder _getInfo() {
+    private StringBuilder _getInfo(Channel ch) {
         StringBuilder sb=new StringBuilder();
-        sb.append(local_addr).append(" (").append(channel_name).append(") ").append("\n");
-        sb.append("local_addr=").append(local_addr).append("\n");
-        sb.append("group_name=").append(channel_name).append("\n");
+        sb.append(ch.getLocalAddress()).append(" (").append(ch.getClusterName()).append(") ").append("\n");
+        sb.append("local_addr=").append(ch.getLocalAddress()).append("\n");
+        sb.append("group_name=").append(ch.getClusterName()).append("\n");
         sb.append("version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
-        sb.append("view: ").append(view).append('\n');
+        sb.append("view: ").append(ch.getView()).append('\n');
         sb.append(getInfo());
         return sb;
     }
 
 
     private void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request) {
+        if(singleton_name != null && singleton_name.length() > 0) {
+            for(Protocol prot: up_prots.values()) {
+                ProtocolStack st=prot.getProtocolStack();
+                handleDiagnosticProbe(sender, sock, request, st);
+            }
+        }
+        else {
+            handleDiagnosticProbe(sender, sock, request, stack);
+        }
+    }
+
+
+    private void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request, ProtocolStack stack) {
         try {
             StringTokenizer tok=new StringTokenizer(request);
             String req=tok.nextToken();
@@ -614,7 +628,7 @@ public abstract class TP extends Protocol {
                 while(tok.hasMoreTokens())
                     l.add(tok.nextToken().trim().toLowerCase());
 
-                info=_getInfo();
+                info=_getInfo(stack.getChannel());
 
                 if(l.contains("jmx")) {
                     Channel ch=stack.getChannel();
@@ -640,7 +654,6 @@ public abstract class TP extends Protocol {
                     }
                 }
             }
-
 
             byte[] diag_rsp=info.toString().getBytes();
             if(log.isDebugEnabled())
@@ -688,7 +701,7 @@ public abstract class TP extends Protocol {
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        timer=stack.timer;
+        timer=ProtocolStack.timer;
         if(timer == null)
             throw new Exception("timer is null");
 

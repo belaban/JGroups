@@ -1,24 +1,37 @@
-// $Id: RetransmitterTest.java,v 1.3 2008/03/10 15:39:20 belaban Exp $
+// $Id: RetransmitterTest.java,v 1.4 2008/05/15 10:49:14 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Address;
 import org.jgroups.Global;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.stack.StaticInterval;
 import org.testng.Assert;
 import org.testng.annotations.Test;
+import org.testng.annotations.BeforeTest;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
 
 
 @Test(groups=Global.FUNCTIONAL)
 public class RetransmitterTest {
     private final Address sender=new org.jgroups.stack.IpAddress(5555);
+    private TimeScheduler timer;
 
+    @BeforeMethod
+    void initTimer() {
+        timer=new TimeScheduler();
+    }
 
+    @AfterMethod
+    void destroyTimer() throws InterruptedException {
+        timer.stop();
+    }
 
     public void testNoEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         int size=xmitter.size();
         System.out.println("xmitter: " + xmitter);
@@ -27,7 +40,7 @@ public class RetransmitterTest {
 
 
     public void testSingleEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 1);
         int size=xmitter.size();
@@ -37,7 +50,7 @@ public class RetransmitterTest {
 
 
     public void testEntry() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
@@ -47,7 +60,7 @@ public class RetransmitterTest {
 
 
     public void testMultipleEntries() {
-        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter());
+        Retransmitter xmitter=new Retransmitter(sender, new MyXmitter(), timer);
         xmitter.setRetransmitTimeouts(new StaticInterval(1000,2000,4000,8000));
         xmitter.add(1, 10);
         int size=xmitter.size();
