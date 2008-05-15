@@ -3,29 +3,26 @@ package org.jgroups.util;
 import org.jgroups.Address;
 
 public class ThreadNamingPattern {
-    
-    private final boolean includeClusterName;
-    private final boolean includeLocalAddress;
+    private boolean includeClusterName=false;
+    private boolean includeLocalAddress=false;
     private String clusterName;
     private Address address; 
 
     
     /**
-     * Creates a default ThreadNamingPattern that 
-     * does not rename threads.   
-     * 
+     * Creates a default ThreadNamingPattern that does not rename threads.
      */
     public ThreadNamingPattern() {
-        includeClusterName=false;
-        includeLocalAddress=false;
     }
-    
+
     /**
-     * Creates a ThreadNamingPattern that renames  
-     * threads according to specified pattern
-     * 
+     * Creates a ThreadNamingPattern that renames threads according to specified pattern
      */
     public ThreadNamingPattern(String pattern) {
+        setPattern(pattern);
+    }
+
+    public void setPattern(String pattern) {
         includeClusterName=pattern.contains("c");
         includeLocalAddress=pattern.contains("l");
     }
