@@ -17,9 +17,9 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.18 2008/04/30 13:29:44 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.19 2008/05/15 10:49:20 belaban Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups="unknown",sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver r1, r2, r3;
@@ -308,13 +308,15 @@ public class SharedTransportTest extends ChannelTestBase {
         TimeScheduler timer1=a.getProtocolStack().timer;
         TimeScheduler timer2=b.getProtocolStack().timer;
 
+        assert timer1 == timer2;
+
         assert !timer1.isShutdown();
         assert !timer2.isShutdown();
 
         Util.sleep(500);
         b.close();
 
-        assert timer2.isShutdown();
+        assert !timer2.isShutdown();
         assert !timer1.isShutdown();
     }
 
@@ -357,6 +359,10 @@ public class SharedTransportTest extends ChannelTestBase {
             StringBuilder sb=new StringBuilder();
             sb.append("[" + name + "]: view = " + new_view);
             System.out.println(sb);
+        }
+
+        public String toString() {
+            return super.toString() + " (size=" + list.size() + ")";
         }
     }
 

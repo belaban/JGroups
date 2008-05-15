@@ -89,7 +89,8 @@ public abstract class BasicTCP extends TP {
 
     public void init() throws Exception {
         super.init();
-        if(bind_port <= 0) {
+        boolean is_shared_transport=singleton_name != null && singleton_name.length() > 0;
+        if(!is_shared_transport && bind_port <= 0) {
             Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
             if(dynamic_discovery_prot == null)
                 dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");

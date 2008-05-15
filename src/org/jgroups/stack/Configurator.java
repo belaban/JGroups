@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.40 2008/05/14 07:16:46 vlada Exp $
+ * @version $Id: Configurator.java,v 1.41 2008/05/15 10:49:09 belaban Exp $
  */
 public class Configurator {
 
@@ -106,6 +106,7 @@ public class Configurator {
 
                         if(above_prot != null) {
                             TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                            ad.setProtocolStack(above_prot.getProtocolStack());
                             above_prot.setDownProtocol(ad);
                             up_prots.put(cluster_name, ad);
                         }

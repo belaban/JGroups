@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowStressTest.java,v 1.9 2006/12/31 15:31:19 belaban Exp $
+// $Id: NakReceiverWindowStressTest.java,v 1.10 2008/05/15 10:49:16 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -9,6 +9,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
 import org.jgroups.util.Util;
+import org.jgroups.util.TimeScheduler;
 
 import java.io.IOException;
 
@@ -46,13 +47,19 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
     }
 
 
-    public void start() throws IOException {
+    public void start() throws IOException, InterruptedException {
         System.out.println("num_msgs=" + num_msgs + "\ndiscard_prob=" + discard_prob);
 
-        sender=new IpAddress("localhost", 5555);
-        win=new NakReceiverWindow(sender, this, 1);
-        start=System.currentTimeMillis();
-        sendMessages(num_msgs);
+        TimeScheduler timer=new TimeScheduler();
+        try {
+            sender=new IpAddress("localhost", 5555);
+            win=new NakReceiverWindow(sender, this, 1, timer);
+            start=System.currentTimeMillis();
+            sendMessages(num_msgs);
+        }
+        finally {
+            timer.stop();
+        }
     }
 
 
@@ -147,6 +154,9 @@ public class NakReceiverWindowStressTest implements Retransmitter.RetransmitComm
             test.start();
         }
         catch(IOException e) {
+            e.printStackTrace();
+        }
+        catch(InterruptedException e) {
             e.printStackTrace();
         }
     }

@@ -30,7 +30,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.56 2008/05/08 09:46:50 vlada Exp $
+ * @version $Id: Protocol.java,v 1.57 2008/05/15 10:49:12 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -192,7 +192,8 @@ public abstract class Protocol {
     }
 
 
-    public abstract String getName();   // all protocol names have to be unique !
+    /** All protocol names have to be unique ! */
+    public abstract String getName();
 
     public Protocol getUpProtocol() {
         return up_prot;

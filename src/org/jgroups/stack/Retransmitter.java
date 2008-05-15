@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.24 2008/05/13 13:44:26 belaban Exp $
+// $Id: Retransmitter.java,v 1.25 2008/05/15 10:49:11 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.Future;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 public class Retransmitter {
 
@@ -39,7 +39,6 @@ public class Retransmitter {
     private Address                        sender=null;
     private final ConcurrentMap<Long,Task> msgs=new ConcurrentHashMap<Long,Task>(11);
     private RetransmitCommand              cmd=null;
-    private boolean                        retransmitter_owned;
     private TimeScheduler                  timer=null;
     protected static final Log             log=LogFactory.getLog(Retransmitter.class);
 
@@ -67,18 +66,9 @@ public class Retransmitter {
      * @param sched retransmissions scheduler
      */
     public Retransmitter(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
-        init(sender, cmd, sched, false);
+        init(sender, cmd, sched);
     }
 
-
-    /**
-     * Create a new Retransmitter associated with the given sender address
-     * @param sender the address from which retransmissions are expected or to which retransmissions are sent
-     * @param cmd the retransmission callback reference
-     */
-    public Retransmitter(Address sender, RetransmitCommand cmd) {
-        init(sender, cmd, new TimeScheduler(), true);
-    }
 
 
     public void setRetransmitTimeouts(Interval interval) {
@@ -137,32 +127,9 @@ public class Retransmitter {
         msgs.clear();
     }
 
-    /**
-     * Stop the rentransmition and clear all pending msgs.
-     * <p>
-     * If this retransmitter has been provided  an externally managed
-     * scheduler, then just clear all msgs and the associated tasks, else
-     * stop the scheduler. In this case the method blocks until the
-     * scheduler's thread is dead. Only the owner of the scheduler should
-     * stop it.
-     */
+
     public void stop() {
-        // i. If retransmitter is owned, stop it else cancel all tasks
-        // ii. Clear all pending msgs
-        if(retransmitter_owned) {
-            try {
-                timer.stop();
-            }
-            catch(InterruptedException ex) {
-                if(log.isErrorEnabled()) log.error("failed stopping retransmitter", ex);
-                Thread.currentThread().interrupt(); // set interrupt flag again
-            }
-        }
-        else {
-            for(Task task: msgs.values())
-                task.cancel();
-        }
-        msgs.clear();
+        reset();
     }
 
 
@@ -189,13 +156,10 @@ public class Retransmitter {
      * @param sender the address from which retransmissions are expected
      * @param cmd the retransmission callback reference
      * @param sched retransmissions scheduler
-     * @param sched_owned whether the scheduler parameter is owned by this
-     * object or is externally provided
      */
-    private void init(Address sender, RetransmitCommand cmd, TimeScheduler sched, boolean sched_owned) {
+    private void init(Address sender, RetransmitCommand cmd, TimeScheduler sched) {
         this.sender=sender;
         this.cmd=cmd;
-        retransmitter_owned=sched_owned;
         timer=sched;
     }
 
@@ -251,47 +215,7 @@ public class Retransmitter {
 
 
 
-    public static void main(String[] args) {
-        Retransmitter xmitter;
-        Address sender;
 
-        try {
-            sender=new org.jgroups.stack.IpAddress("localhost", 5555);
-            xmitter=new Retransmitter(sender, new MyXmitter());
-            xmitter.setRetransmitTimeouts(new StaticInterval(1000, 2000, 4000, 8000));
-
-            xmitter.add(1, 10);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(1);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(2);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(4);
-            System.out.println("retransmitter: " + xmitter);
-
-            Util.sleep(3000);
-            xmitter.remove(3);
-            System.out.println("retransmitter: " + xmitter);
-
-            Util.sleep(1000);
-            xmitter.remove(10);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(8);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(6);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(7);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(9);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(5);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.stop();
-        }
-        catch(Exception e) {
-            log.error(e);
-        }
-    }
 
 
     static class MyXmitter implements Retransmitter.RetransmitCommand {

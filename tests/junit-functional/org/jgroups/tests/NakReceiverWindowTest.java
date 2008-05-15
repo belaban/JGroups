@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.4 2008/04/08 12:39:38 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.5 2008/05/15 10:49:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,19 +6,32 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.AfterMethod;
 
 
 @Test(groups=Global.FUNCTIONAL)
 public class NakReceiverWindowTest {
     private Address sender;
     private MyRetransmitCommand cmd=new MyRetransmitCommand();
+    private TimeScheduler timer;
+
+    @BeforeMethod
+    void initTimer() {
+        timer=new TimeScheduler();
+    }
+
+    @AfterMethod
+    void destroyTimer() throws InterruptedException {
+        timer.stop();
+    }
 
 
     @BeforeClass
@@ -28,20 +41,20 @@ public class NakReceiverWindowTest {
 
 
     public void test1() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
         check(win, 0, 1, 1);
         assert win.get(23) == null;
     }
 
 
     public void test2() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         check(win, 0, 100, 100);
     }
 
 
     public void test3() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         assert win.get(1) != null;
         check(win, 0, 1, 0);
@@ -56,14 +69,14 @@ public class NakReceiverWindowTest {
 
 
     public void test4() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
         win.add(2, new Message());
         check(win, 0, 2, 1);
     }
 
 
     public void test5() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         win.add(100, new Message());
         check(win, 0, 101, 100);
@@ -71,7 +84,7 @@ public class NakReceiverWindowTest {
 
 
     public void test6() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         System.out.println("win: " + win);
         win.add(100, new Message());
@@ -87,7 +100,7 @@ public class NakReceiverWindowTest {
 
 
     public void testLowerBounds() {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
         win.add(101, new Message());
         System.out.println("win: " + win);
         win.add(100, new Message());
@@ -102,7 +115,7 @@ public class NakReceiverWindowTest {
 
 
     public void test7() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -120,7 +133,7 @@ public class NakReceiverWindowTest {
 
 
     public void testLowerBounds2() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, null);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, 50, timer);
         win.add(100, new Message());
         win.add(101, new Message());
         win.add(102, new Message());
@@ -139,7 +152,7 @@ public class NakReceiverWindowTest {
 
 
     public void test8() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -163,7 +176,7 @@ public class NakReceiverWindowTest {
 
 
     public void testAdd() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         check(win, 0, 0, 0);
         win.add(0, new Message()); // discarded, next expected is 1
         check(win, 0, 0, 0);
@@ -188,7 +201,7 @@ public class NakReceiverWindowTest {
 
 
     public void test9() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -211,7 +224,7 @@ public class NakReceiverWindowTest {
 
 
     public void testHighestDelivered() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -240,7 +253,7 @@ public class NakReceiverWindowTest {
 
 
     public void testMissingMessages() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
         check(win, 0, 5, 0);
@@ -252,7 +265,7 @@ public class NakReceiverWindowTest {
 
 
     public void testMissingMessages2() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
         check(win, 0, 5, 0);
@@ -266,7 +279,7 @@ public class NakReceiverWindowTest {
 
 
     public void testMissingMessages3() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(5, new Message());
         check(win, 0, 5, 0);
@@ -294,7 +307,7 @@ public class NakReceiverWindowTest {
 
 
     public void testMissingMessages4() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         win.add(105, new Message());
         check(win, 0, 105, 100);
@@ -322,7 +335,7 @@ public class NakReceiverWindowTest {
 
 
     public void testMissingMessages5() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 100, timer);
         win.add(101, new Message());
         check(win, 0, 101, 100);
         win.add(108, new Message());
@@ -350,7 +363,7 @@ public class NakReceiverWindowTest {
 
 
     public void test10() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -361,7 +374,7 @@ public class NakReceiverWindowTest {
 
 
     public void test10a() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -374,7 +387,7 @@ public class NakReceiverWindowTest {
 
 
     public void test11() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -387,7 +400,7 @@ public class NakReceiverWindowTest {
 
 
     public void test12() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
 
         win.add(1, new Message(null, null, new Integer(1)));
         win.add(2, new Message(null, null, new Integer(2)));
@@ -401,7 +414,7 @@ public class NakReceiverWindowTest {
 
 
     public void test13() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         win.add(1, new Message());
         win.add(2, new Message());
         win.add(3, new Message());
@@ -420,7 +433,7 @@ public class NakReceiverWindowTest {
 
 
     public void testAddOOBAtHead() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(0, oob());
         assert !(rc);
@@ -433,7 +446,7 @@ public class NakReceiverWindowTest {
 
 
     public void testAddOOBAtTail() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(1, oob());
         assert rc;
@@ -446,7 +459,7 @@ public class NakReceiverWindowTest {
 
 
     public void testAddOOBInTheMiddle() throws Exception {
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
         boolean rc;
         rc=win.add(3, oob());
         assert rc;
@@ -492,7 +505,7 @@ public class NakReceiverWindowTest {
     void add(int num_msgs) {
         long start, stop;
         double time_per_msg;
-        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
         start=System.currentTimeMillis();
         for(int i=1; i < 1 + num_msgs; i++) {
             win.add(i, new Message());
