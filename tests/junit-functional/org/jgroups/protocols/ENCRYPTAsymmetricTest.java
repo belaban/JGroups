@@ -114,7 +114,7 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default symetric key
-        Util.assertEquals("IDEA", encrypt.getSymAlgorithm());
+        assert "IDEA".equals(encrypt.getSymAlgorithm()) : "expected IDEA but was " + encrypt.getSymAlgorithm();
         Util.assertEquals(128, encrypt.getSymInit());
         Util.assertEquals("IDEA", encrypt.getDesKey().getAlgorithm());
         Util.assertEquals("RAW", encrypt.getDesKey().getFormat());
@@ -136,7 +136,7 @@ public class ENCRYPTAsymmetricTest {
         encrypt.init();
 
         // test the default symetric key
-        Util.assertEquals("AES", encrypt.getSymAlgorithm());
+        assert "AES".equals(encrypt.getSymAlgorithm()) : "expected AES but was " + encrypt.getSymAlgorithm();
         Util.assertEquals(128, encrypt.getSymInit());
         Util.assertEquals("AES", encrypt.getDesKey().getAlgorithm());
         Util.assertEquals("RAW", encrypt.getDesKey().getFormat());
