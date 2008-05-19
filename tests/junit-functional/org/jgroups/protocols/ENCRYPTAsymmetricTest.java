@@ -104,35 +104,23 @@ public class ENCRYPTAsymmetricTest {
     }*/
 
 
+    @Test(expectedExceptions=Exception.class)
     public static void testInitIDEAProperties() throws Exception {
         Properties props=new Properties();
         props.put("sym_algorithm", "IDEA");
         props.put("sym_init", "128");
 
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
-        encrypt.init();
-
-        // test the default symetric key
-        assert "IDEA".equals(encrypt.getSymAlgorithm()) : "expected IDEA but was " + encrypt.getSymAlgorithm();
-        Util.assertEquals(128, encrypt.getSymInit());
-        Util.assertEquals("IDEA", encrypt.getDesKey().getAlgorithm());
-        Util.assertEquals("RAW", encrypt.getDesKey().getFormat());
-        Util.assertNotNull(encrypt.getDesKey().getEncoded());
-
-        //test the resulting ciphers
-
-        Util.assertNotNull(encrypt.getSymDecodingCipher());
-        Util.assertNotNull(encrypt.getSymEncodingCipher());
+        encrypt.symAlgorithm =  "IDEA";
+        encrypt.symInit = 128;
+        encrypt.init();        
     }
 
 
-    public static void testInitAESProperties() throws Exception {
-        Properties props=new Properties();
-        props.put("sym_algorithm", "AES");
-        props.put("sym_init", "128");
+    public static void testInitAESProperties() throws Exception {       
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.symAlgorithm = "AES";
+        encrypt.symInit = 128;     
         encrypt.init();
 
         // test the default symetric key
