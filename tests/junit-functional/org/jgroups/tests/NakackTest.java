@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.4 2008/04/08 12:39:38 belaban Exp $
+// $Id: NakackTest.java,v 1.5 2008/05/19 10:54:50 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -24,12 +24,11 @@ public class NakackTest {
 
 
     @BeforeMethod
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         num_msgs_received=0;
         num_msgs_sent=0;
     }
     
-
 
 
     public void test0() throws Exception {
