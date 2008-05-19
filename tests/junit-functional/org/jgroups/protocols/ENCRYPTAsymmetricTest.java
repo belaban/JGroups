@@ -105,11 +105,7 @@ public class ENCRYPTAsymmetricTest {
 
 
     @Test(expectedExceptions=Exception.class)
-    public static void testInitIDEAProperties() throws Exception {
-        Properties props=new Properties();
-        props.put("sym_algorithm", "IDEA");
-        props.put("sym_init", "128");
-
+    public static void testInitIDEAProperties() throws Exception {    
         ENCRYPT encrypt=new ENCRYPT();
         encrypt.symAlgorithm =  "IDEA";
         encrypt.symInit = 128;
