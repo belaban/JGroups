@@ -8,7 +8,6 @@
 	<classpathentry excluding="**/obsolete/*" kind="src" path="tests/stress"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/ant.jar"/>
-	<classpathentry kind="lib" path="lib/bcprov-jdk14-117.jar"/>
 	<classpathentry kind="lib" path="lib/bsh-1.2b3.jar"/>
 	<classpathentry kind="lib" path="lib/commons-logging.jar"/>
 	<classpathentry kind="lib" path="lib/jms.jar"/>
@@ -16,5 +15,6 @@
 	<classpathentry kind="lib" path="lib/log4j.jar"/>
 	<classpathentry kind="lib" path="lib/xalan.jar"/>
 	<classpathentry kind="lib" path="conf"/>
+	<classpathentry kind="lib" path="lib/bcprov-1.39.jar"/>
 	<classpathentry kind="output" path="eclipse-classes"/>
 </classpath>
