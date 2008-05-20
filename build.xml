@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.159 2008/04/23 11:37:20 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.160 2008/05/20 15:31:21 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -354,7 +354,7 @@
 
     <target name="makeKeystore"
             depends="compile"
-            description="Generates an appropraite temporary keystore file for the unit tests and the JVM in use">
+            description="Generates an appropriate temporary keystore file for the unit tests and the JVM in use">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
             <arg value="--storeName"/>
