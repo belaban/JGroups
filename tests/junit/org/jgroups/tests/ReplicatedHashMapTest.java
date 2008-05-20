@@ -1,17 +1,16 @@
 package org.jgroups.tests;
 
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.jgroups.Channel;
-import org.jgroups.Global;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
+
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Test methods for ReplicatedHashMap
@@ -28,16 +27,16 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        Channel c1=createChannel("A");
+        Channel c1=createChannel(true);
         this.map1=new ReplicatedHashMap<String,String>(c1, false);
         map1.setBlockingUpdates(true);
-        c1.connect("demo");
+        c1.connect("ReplicatedHashMapTest");
         this.map1.start(5000);
 
-        Channel c2=createChannel("A");
+        Channel c2=createChannelWithProps(c1.getProperties());
         this.map2=new ReplicatedHashMap<String,String>(wrap, c2, false);
         map2.setBlockingUpdates(true);
-        c2.connect("demo");
+        c2.connect("ReplicatedHashMapTest");
         this.map2.start(5000);
     }
 
