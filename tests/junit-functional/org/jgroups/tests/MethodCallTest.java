@@ -18,7 +18,7 @@ import java.lang.reflect.Method;
 /**
  * @author Bela Ban belaban@yahoo.com
  * @author <a href="mailto:ovidiu@jboss.org">Ovidiu Feodorov</a>
- * @version $Id: MethodCallTest.java,v 1.5 2008/04/08 13:21:30 belaban Exp $
+ * @version $Id: MethodCallTest.java,v 1.6 2008/05/20 15:16:44 belaban Exp $
  **/
 @Test(groups=Global.FUNCTIONAL)
 public class MethodCallTest {
@@ -185,12 +185,17 @@ public class MethodCallTest {
         }
     }
 
-    @Test(expectedExceptions=IllegalArgumentException.class)
     public void testTypesWithNullArgument2() throws Throwable {
         MethodCall mc;
         mc=new MethodCall("bar", new Object[]{new String[]{"one", "two", "three"}, new Object[]{}},
                           new Class[]{String[].class, String.class});
-        mc.invoke(target);
+        try {
+            mc.invoke(target);
+            assert false: "we should not get here as there should be an argument mismatch exception";
+        }
+        catch(IllegalArgumentException ex) {
+            System.out.println("caught IllegalArgumentException - as expected");
+        }
     }
 
 
