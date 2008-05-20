@@ -52,9 +52,9 @@ public class SimpleToken extends AuthToken {
                 }
                 return true;
             }else{
-                if(log.isWarnEnabled()){
-                    log.warn("Authentication failed on SimpleToken");
-                }
+                //if(log.isWarnEnabled()){
+                  //  log.warn("Authentication failed on SimpleToken");
+                //}
                 return false;
             }
         }
