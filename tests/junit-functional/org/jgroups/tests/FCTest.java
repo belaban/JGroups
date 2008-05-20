@@ -1,4 +1,4 @@
-// $Id: FCTest.java,v 1.2 2008/03/10 15:39:22 belaban Exp $
+// $Id: FCTest.java,v 1.3 2008/05/20 14:48:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -8,6 +8,7 @@ import org.jgroups.View;
 import org.jgroups.Global;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.FC;
+import org.jgroups.protocols.FRAG2;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
@@ -48,7 +49,9 @@ public class FCTest {
         props.setProperty("min_credits", "1000");
         props.setProperty("max_block_time", "1000");
         fc.setProperties(props);
-        Protocol[] stack=new Protocol[]{fc};
+        FRAG2 frag=new FRAG2();
+        frag.setFragSize(60000);
+        Protocol[] stack=new Protocol[]{frag, fc};
         s.setProtocolStack(stack);
         s.start();
     }
