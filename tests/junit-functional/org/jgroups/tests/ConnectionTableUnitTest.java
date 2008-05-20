@@ -5,6 +5,7 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.blocks.ConnectionTable;
+import org.jgroups.blocks.BasicConnectionTable;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -13,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: ConnectionTableUnitTest.java,v 1.4 2008/04/08 12:25:28 belaban Exp $
+ * @version $Id: ConnectionTableUnitTest.java,v 1.5 2008/05/20 12:49:07 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConnectionTableUnitTest {
@@ -28,11 +29,11 @@ public class ConnectionTableUnitTest {
         ct1=new ConnectionTable(port1);
         ct1.setUseSendQueues(false);
         ct1.start();
-        log("address of ct1: " + ct1.getLocalAddress());
+        // log("address of ct1: " + ct1.getLocalAddress());
         ct2=new ConnectionTable(port2);
         ct2.setUseSendQueues(false);
         ct2.start();
-        log("address of ct2: " + ct2.getLocalAddress());
+        //log("address of ct2: " + ct2.getLocalAddress());
     }
 
     @AfterMethod
@@ -59,6 +60,9 @@ public class ConnectionTableUnitTest {
     public void testSendEmptyData() throws Exception {
         byte[]  data=new byte[0];
         Address myself=ct1.getLocalAddress();
+        ct1.setReceiver(new BasicConnectionTable.Receiver() {
+            public void receive(Address sender, byte[] data, int offset, int length) {}
+        });
         ct1.send(myself, data, 0, data.length);
     }
 
