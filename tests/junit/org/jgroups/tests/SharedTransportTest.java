@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.19 2008/05/15 10:49:20 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.20 2008/05/20 11:27:37 belaban Exp $
  */
 @Test(groups="unknown",sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -305,8 +305,8 @@ public class SharedTransportTest extends ChannelTestBase {
         b=createSharedChannel(SINGLETON_1);
         a.connect("x");
         b.connect("y");
-        TimeScheduler timer1=a.getProtocolStack().timer;
-        TimeScheduler timer2=b.getProtocolStack().timer;
+        TimeScheduler timer1=a.getProtocolStack().getTransport().getTimer();
+        TimeScheduler timer2=b.getProtocolStack().getTransport().getTimer();
 
         assert timer1 == timer2;
 
@@ -318,6 +318,10 @@ public class SharedTransportTest extends ChannelTestBase {
 
         assert !timer2.isShutdown();
         assert !timer1.isShutdown();
+
+        a.close(); // now, reference counting reaches 0, so the timer thread pool is stopped
+        assert timer2.isShutdown();
+        assert timer1.isShutdown();
     }
 
 

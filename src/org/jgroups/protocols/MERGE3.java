@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.19 2008/05/08 09:46:42 vlada Exp $
+// $Id: MERGE3.java,v 1.20 2008/05/20 11:27:32 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -59,7 +59,7 @@ public class MERGE3 extends Protocol {
     }
 
     public void init() throws Exception {
-        timer=stack.timer;
+        timer=getTransport().getTimer();
                 
         if(min_interval <= 0 || max_interval <= 0) {
             throw new Exception("min_interval and max_interval have to be > 0");            

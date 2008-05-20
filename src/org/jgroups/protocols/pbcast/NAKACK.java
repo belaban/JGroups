@@ -34,7 +34,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.183 2008/05/08 09:46:48 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.184 2008/05/20 11:27:27 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
@@ -493,7 +493,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     public void start() throws Exception {
-        timer=stack != null ? stack.timer : null;
+        timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
         locks=stack.getLocks();

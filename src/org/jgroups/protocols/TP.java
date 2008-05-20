@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.193 2008/05/15 10:49:17 belaban Exp $
+ * @version $Id: TP.java,v 1.194 2008/05/20 11:27:31 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -173,15 +173,24 @@ public abstract class TP extends Protocol {
      * c: include the cluster name, e.g. "MyCluster"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
-    protected ThreadNamingPattern thread_naming_pattern=new ThreadNamingPattern("cl");
+    @Property
+    protected String thread_naming_pattern="cl";
+
+    public String getThreadNamingPattern() {return thread_naming_pattern;}
+
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
     int connect_count=0;
+
+    /** Number of times init() was called. Incremented on init(), decremented on destroy() */
+    int init_count=0;
 
 
     /** ================================== OOB thread pool ============================== */
     /** The thread pool which handles OOB messages */
     Executor oob_thread_pool;
+    /** Factory which is used by oob_thread_pool */
+    ThreadFactory oob_thread_factory=null;
     @Property(name="oob_thread_pool.enabled")
     boolean oob_thread_pool_enabled=true;
     @Property(name="oob_thread_pool.min_threads")
@@ -223,6 +232,9 @@ public abstract class TP extends Protocol {
 
     /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
     Executor thread_pool;
+    /** Factory which is used by oob_thread_pool */
+    ThreadFactory default_thread_factory=null;
+
     @Property(name="thread_pool.enabled")
     boolean thread_pool_enabled=true;
     
@@ -261,7 +273,38 @@ public abstract class TP extends Protocol {
         if(this.thread_pool != null)
             shutdownThreadPool(this.thread_pool);
         this.thread_pool=thread_pool;
-    } /** =============================== End of regular thread pool ============================= */
+    }
+
+    /** ================================== Timer thread pool ================================= */
+    protected TimeScheduler timer=null;
+
+    DefaultThreadFactory timer_thread_factory;
+
+    @ManagedAttribute(name="timer.num_threads", description="Max number of threads to be used by the timer thread pool")
+    @Property(name="timer.max_threads")
+    int  max_timer_threads=4;
+
+    public void setTimerThreadFactory(ThreadFactory factory) {
+        if(factory instanceof DefaultThreadFactory)
+            timer_thread_factory=(DefaultThreadFactory)factory;
+        timer.setThreadFactory(factory);
+    }
+
+    public TimeScheduler getTimer() {return timer;}
+
+    /** =================================Default thread factory ================================== */
+    /** Used by all threads created by JGroups outside of the thread pools */
+    protected ThreadFactory global_thread_factory=null;
+
+    public ThreadFactory getThreadFactory() {
+        return global_thread_factory;
+    }
+
+    public void setThreadFactory(ThreadFactory factory) {
+        global_thread_factory=factory;
+    }
+
+    /** ============================= End of default thread factory ============================== */
 
 
 
@@ -289,8 +332,6 @@ public abstract class TP extends Protocol {
     boolean enable_unicast_bundling=true;
 
     private Bundler    bundler=null;
-
-    protected TimeScheduler      timer=null;
 
     private DiagnosticsHandler diag_handler=null;
     @Property
@@ -428,7 +469,7 @@ public abstract class TP extends Protocol {
         }
         max_bundle_timeout=timeout;
     }
-    
+
     public Address getLocalAddress() {return local_addr;}
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
@@ -680,6 +721,29 @@ public abstract class TP extends Protocol {
 
     public void init() throws Exception {
         super.init();
+
+        if(init_count++ >= 1) {
+            return;
+        }
+
+        // Create the default thread factory
+        global_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+
+        // Create the timer and the associated thread factory - depends on singleton_name
+        // timer_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
+        timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
+        if(singleton_name != null && singleton_name.trim().length() > 0) {
+            timer_thread_factory.setIncludeClusterName(false);
+        }
+
+        default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
+        
+        oob_thread_factory=new DefaultThreadFactory(pool_thread_group, "OOB", false, true);
+
+        setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
+
+        timer=new TimeScheduler(timer_thread_factory, max_timer_threads);
+
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
         if(persistent_ports){
@@ -691,17 +755,18 @@ public abstract class TP extends Protocol {
             up(new Event(Event.CONFIG, m));
         }
 
-        HashMap<String, ThreadNamingPattern> map=new HashMap<String, ThreadNamingPattern>();
+        Map<String, Object> map=new HashMap<String, Object>();
         map.put("thread_naming_pattern", thread_naming_pattern);
+        map.put("timer", timer);
         up(new Event(Event.INFO, map));
     }
+
 
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
      */
     public void start() throws Exception {
-        timer=ProtocolStack.timer;
         if(timer == null)
             throw new Exception("timer is null");
 
@@ -726,7 +791,7 @@ public abstract class TP extends Protocol {
                 else
                     oob_thread_pool_queue=new SynchronousQueue<Runnable>();
                 oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, "OOB");
+                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
             }
             else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 oob_thread_pool=new DirectExecutor();
@@ -743,7 +808,7 @@ public abstract class TP extends Protocol {
                 else
                     thread_pool_queue=new SynchronousQueue<Runnable>();
                 thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                             thread_pool_rejection_policy, thread_pool_queue, "Incoming");
+                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
             }
             else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
                 thread_pool=new DirectExecutor();
@@ -761,7 +826,7 @@ public abstract class TP extends Protocol {
             bundler=new Bundler();
         }
 
-        thread_naming_pattern.setAddress(local_addr);
+        setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
         sendUpLocalAddressEvent();
     }
 
@@ -792,6 +857,16 @@ public abstract class TP extends Protocol {
             shutdownThreadPool(thread_pool);
             thread_pool=null;
         }
+
+        if(timer != null) {
+            try {
+                timer.stop();
+                init_count=0;
+            }
+            catch(InterruptedException e) {
+                log.error("failed stopping the timer", e);
+            }
+        }
     }
 
 
@@ -806,23 +881,6 @@ public abstract class TP extends Protocol {
     public String getSingletonName() {
         return singleton_name;
     }
-
-    /**
-     * Setup the Protocol instance according to the configuration string
-     * @return true if no other properties are left.
-     *         false if the properties still have data in them, ie ,
-     *         properties are left over and not handled by the protocol stack
-     */
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);    
-        String str=props.getProperty("thread_naming_pattern");
-        if(str != null) {
-            thread_naming_pattern=new ThreadNamingPattern(str);
-            props.remove("thread_naming_pattern");
-        }       
-        return true;
-    }
-
 
 
 
@@ -1296,7 +1354,7 @@ public abstract class TP extends Protocol {
         case Event.CONNECT_WITH_STATE_TRANSFER:    
             channel_name=(String)evt.getArg();
             header=new TpHeader(channel_name);
-            thread_naming_pattern.setClusterName(channel_name);
+            setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
             setThreadNames();
             try {
                 handleConnect();
@@ -1323,15 +1381,20 @@ public abstract class TP extends Protocol {
 
 
     protected void setThreadNames() {
+        if(!(global_thread_factory instanceof DefaultThreadFactory))
+            return;
+        DefaultThreadFactory tmp=(DefaultThreadFactory)global_thread_factory;
+
         if(incoming_packet_handler != null)
-            thread_naming_pattern.renameThread(IncomingPacketHandler.THREAD_NAME,
-                                               incoming_packet_handler.getThread());
-        if(incoming_msg_handler != null)
-            thread_naming_pattern.renameThread(IncomingMessageHandler.THREAD_NAME,
-                                               incoming_msg_handler.getThread());
-        if(diag_handler != null)
-            thread_naming_pattern.renameThread(DiagnosticsHandler.THREAD_NAME,
-                                               diag_handler.getThread());
+            tmp.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
+
+        if(incoming_msg_handler != null) {
+            tmp.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
+        }
+
+        if(diag_handler != null) {
+            tmp.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
+        }
     }
 
 
@@ -1343,6 +1406,27 @@ public abstract class TP extends Protocol {
         if(diag_handler != null && diag_handler.getThread() != null)
             diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);
     }
+
+    private void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
+        ThreadFactory[] factories={timer_thread_factory, default_thread_factory, oob_thread_factory, global_thread_factory};
+        boolean is_shared_transport=singleton_name != null && singleton_name.trim().length() > 0;
+
+        for(ThreadFactory factory: factories) {
+            if(factory instanceof DefaultThreadFactory) {
+                DefaultThreadFactory tmp=(DefaultThreadFactory)factory;
+                if(pattern != null) {
+                    tmp.setPattern(pattern);
+                    if(is_shared_transport)
+                        tmp.setIncludeClusterName(false);
+                }
+                if(cluster_name != null && !is_shared_transport) // only set cluster name if we don't have a shared transport
+                    tmp.setClusterName(cluster_name);
+                if(local_address != null)
+                    tmp.setAddress(local_address.toString());
+            }
+        }
+    }
+
     
     protected void handleConfigEvent(Map<String,Object> map) {
         if(map == null) return;
@@ -1354,11 +1438,11 @@ public abstract class TP extends Protocol {
     }
 
 
-    protected ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
-                                               BlockingQueue<Runnable> queue, final String thread_name) {
+    protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
+                                                      BlockingQueue<Runnable> queue, final ThreadFactory factory) {
 
         ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
-        pool.setThreadFactory(ProtocolStack.newIDThreadFactory(thread_naming_pattern, pool_thread_group, thread_name, false));
+        pool.setThreadFactory(factory);
 
         //default
         RejectedExecutionHandler handler = new ThreadPoolExecutor.CallerRunsPolicy();
@@ -1536,7 +1620,7 @@ public abstract class TP extends Protocol {
 
         void start() {
             if(t == null || !t.isAlive()) {
-                t=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);                
+                t=global_thread_factory.newThread(this, THREAD_NAME);
                 t.setDaemon(true);
                 t.start();
             }
@@ -1585,7 +1669,7 @@ public abstract class TP extends Protocol {
 
         public void start() {
             if(t == null || !t.isAlive()) {
-                t=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);                
+                t=global_thread_factory.newThread(this, THREAD_NAME);
                 t.setDaemon(true);
                 t.start();
             }
@@ -1796,7 +1880,7 @@ public abstract class TP extends Protocol {
             bindToInterfaces(interfaces, diag_sock);
 
             if(thread == null || !thread.isAlive()) {
-                thread=getProtocolStack().getThreadFactory().newThread(this, THREAD_NAME);              
+                thread=global_thread_factory.newThread(this, THREAD_NAME);              
                 thread.setDaemon(true);
                 thread.start();
             }
@@ -1853,17 +1937,26 @@ public abstract class TP extends Protocol {
         final String transport_name;
         final TpHeader header;
         final List<Address> members=new ArrayList<Address>();
+        final DefaultThreadFactory factory;
 
-        public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down) {
+        public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down, String pattern, Address addr) {
             this.cluster_name=cluster_name;
             this.transport_name=transport_name;
             this.up_prot=up;
             this.down_prot=down;
             this.header=new TpHeader(cluster_name);
+            this.factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "", false);
+            factory.setPattern(pattern);
+            if(addr != null)
+                factory.setAddress(addr.toString());
         }
 
         public List<Address> getMembers() {
             return Collections.unmodifiableList(members);
+        }
+
+        public ThreadFactory getThreadFactory() {
+            return factory;
         }
 
         public Object down(Event evt) {
@@ -1878,8 +1971,23 @@ public abstract class TP extends Protocol {
                     members.clear();
                     members.addAll(tmp);
                     break;
+                case Event.CONNECT:
+                case Event.CONNECT_WITH_STATE_TRANSFER:
+                    factory.setClusterName((String)evt.getArg());
+                    break;
             }
             return down_prot.down(evt);
+        }
+
+        public Object up(Event evt) {
+            switch(evt.getType()) {
+                case Event.SET_LOCAL_ADDRESS:
+                    Address addr=(Address)evt.getArg();
+                    if(addr != null)
+                        factory.setAddress(addr.toString());
+                    break;
+            }
+            return up_prot.up(evt);
         }
 
         public String getName() {

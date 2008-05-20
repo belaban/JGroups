@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.100 2008/05/08 09:46:42 vlada Exp $
+// $Id: UNICAST.java,v 1.101 2008/05/20 11:27:31 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -218,7 +218,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     }
 
     public void start() throws Exception {
-        timer=stack.timer;
+        timer=getTransport().getTimer();
         if(timer == null)
             throw new Exception("timer is null");
         locks=stack.getLocks();

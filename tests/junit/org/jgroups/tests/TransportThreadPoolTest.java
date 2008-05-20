@@ -14,7 +14,7 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.5 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.6 2008/05/20 11:27:36 belaban Exp $
  */
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -47,11 +47,11 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         assert r1.getMsgs().size() == 2;
         assert r2.getMsgs().size() == 2;
 
-        TP transport=(TP)c1.getProtocolStack().getTransport();
+        TP transport=c1.getProtocolStack().getTransport();
         ExecutorService thread_pool=Executors.newCachedThreadPool();
         transport.setDefaultThreadPool(thread_pool);
 
-        transport=(TP)c2.getProtocolStack().getTransport();
+        transport=c2.getProtocolStack().getTransport();
         thread_pool=Executors.newCachedThreadPool();
         transport.setDefaultThreadPool(thread_pool);
 

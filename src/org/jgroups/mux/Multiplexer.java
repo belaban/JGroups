@@ -9,6 +9,7 @@ import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -36,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.102 2008/04/21 08:43:09 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.103 2008/05/20 11:27:35 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -220,7 +221,7 @@ public class Multiplexer implements UpHandler {
         max_threads=Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
         keep_alive=Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
 
-        org.jgroups.util.ThreadFactory factory = ProtocolStack.newThreadFactory(pattern, new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads"), "Multiplexer", false);
+        ThreadFactory factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Multiplexer", false, true);
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
                                       new SynchronousQueue<Runnable>(), 
                                       factory,

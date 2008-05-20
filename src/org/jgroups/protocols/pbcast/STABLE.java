@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.89 2008/05/08 09:46:48 vlada Exp $
+ * @version $Id: STABLE.java,v 1.90 2008/05/20 11:27:24 belaban Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 public class STABLE extends Protocol {
@@ -179,10 +179,9 @@ public class STABLE extends Protocol {
     }
 
     public void start() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
-            throw new Exception("timer cannot be retrieved from protocol stack");
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved");
         if(desired_avg_gossip > 0)
             startStableTask();
     }

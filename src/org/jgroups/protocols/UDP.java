@@ -8,6 +8,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
+import org.jgroups.util.DefaultThreadFactory;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -38,7 +39,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.166 2008/05/15 10:49:17 belaban Exp $
+ * @version $Id: UDP.java,v 1.167 2008/05/20 11:27:32 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -709,8 +710,10 @@ public class UDP extends TP implements Runnable {
             //start the listener thread of the ucast_recv_sock
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
-            if(thread_naming_pattern != null)
-                thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+
+            if(global_thread_factory instanceof DefaultThreadFactory)
+                ((DefaultThreadFactory)global_thread_factory).renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+
             if(log.isDebugEnabled())
                 log.debug("created unicast receiver thread " + ucast_receiver.getThread());
         }
@@ -726,7 +729,7 @@ public class UDP extends TP implements Runnable {
             }
 
             if(mcast_receiver == null) {                
-                mcast_receiver=getProtocolStack().getThreadFactory().newThread(this,MCAST_RECEIVER_THREAD_NAME);
+                mcast_receiver=global_thread_factory.newThread(this,MCAST_RECEIVER_THREAD_NAME);
                 mcast_receiver.setPriority(Thread.MAX_PRIORITY); // needed ????                
                 mcast_receiver.start();
                 if(log.isDebugEnabled())
@@ -770,11 +773,13 @@ public class UDP extends TP implements Runnable {
 
     protected void setThreadNames() {
         super.setThreadNames();
-
-        thread_naming_pattern.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
-        if(ucast_receiver != null)
-            thread_naming_pattern.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME,
-                                               ucast_receiver.getThread());
+        DefaultThreadFactory tmp=null;
+        if(global_thread_factory instanceof DefaultThreadFactory) {
+            tmp=(DefaultThreadFactory)global_thread_factory;
+            tmp.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
+            if(ucast_receiver != null)
+                tmp.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+        }
     }
 
     protected void unsetThreadNames() {
@@ -828,7 +833,7 @@ public class UDP extends TP implements Runnable {
 
         public void start() {
             if(thread == null) {               
-                thread=getProtocolStack().getThreadFactory().newThread(this,UCAST_RECEIVER_THREAD_NAME);
+                thread=global_thread_factory.newThread(this,UCAST_RECEIVER_THREAD_NAME);
                 // thread.setDaemon(true);
                 running=true;
                 thread.start();
