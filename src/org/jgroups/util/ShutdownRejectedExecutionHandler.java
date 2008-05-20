@@ -30,12 +30,7 @@ public class ShutdownRejectedExecutionHandler implements RejectedExecutionHandle
 
     public void rejectedExecution(Runnable r, ThreadPoolExecutor executor) {
 
-        if(executor.isShutdown()) {
-            LogFactory.getLog(this.getClass()).warn("ThreadPoolExecutor " + executor
-                                                    + " is shutdown and rejected submitted task "
-                                                    + r);
-        }
-        else {
+        if(!executor.isShutdown()) {
             handler.rejectedExecution(r, executor);
         }
     }
