@@ -31,9 +31,9 @@ import org.testng.annotations.Test;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.10 2008/05/13 10:35:07 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.11 2008/05/20 16:01:59 belaban Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
 
     private List<JChannel> channels;
