@@ -11,10 +11,8 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
+import org.jgroups.protocols.TP;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -77,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.186 2008/05/15 10:49:19 belaban Exp $
+ * @version $Id: JChannel.java,v 1.187 2008/05/20 11:27:28 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -349,19 +347,19 @@ public class JChannel extends Channel {
     public long getReceivedBytes() {return received_bytes;}
     @ManagedAttribute
     public int getNumberOfTasksInTimer() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ProtocolStack.timer.size() : -1;
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.size() : -1;
     }
 
     @ManagedAttribute
     public int getTimerThreads() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ProtocolStack.getTimerThreads() : -1;
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.getCorePoolSize() : -1;
     }
 
     public String dumpTimerQueue() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ProtocolStack.dumpTimerQueue() : "<n/a";
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.dumpTaskQueue() : "<n/a";
     }
 
     /**
@@ -1121,9 +1119,6 @@ public class JChannel extends Channel {
                 info.putAll(m);
                 break;
 
-            case Event.GET_INFO:
-                return info;
-
             case Event.GET_STATE_OK:
                 StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
                 byte[] state=state_info.state;
@@ -1790,6 +1785,16 @@ public class JChannel extends Channel {
             return null;
         if(!mbrs.isEmpty())
             return mbrs.firstElement();
+        return null;
+    }
+
+    private TimeScheduler getTimer() {
+        if(prot_stack != null) {
+            TP transport=prot_stack.getTransport();
+            if(transport != null) {
+                return transport.getTimer();
+            }
+        }
         return null;
     }
 

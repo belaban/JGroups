@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.46 2008/05/08 09:46:43 vlada Exp $
+// $Id: MERGE2.java,v 1.47 2008/05/20 11:27:32 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -61,10 +61,9 @@ public class MERGE2 extends Protocol {
     private TimeScheduler			timer;
     
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
-            throw new Exception("Discovery.init(): timer cannot be retrieved from protocol stack");
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved");
         
         if(min_interval <= 0 || max_interval <= 0) {
             throw new Exception("min_interval and max_interval have to be > 0");            

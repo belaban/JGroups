@@ -6,6 +6,8 @@ package org.jgroups.stack;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.protocols.TP;
 import org.jgroups.annotations.Property;
 
 import java.util.Map;
@@ -30,7 +32,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.57 2008/05/15 10:49:12 belaban Exp $
+ * @version $Id: Protocol.java,v 1.58 2008/05/20 11:27:39 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -87,6 +89,22 @@ public abstract class Protocol {
     
     public ProtocolStack getProtocolStack(){
         return stack;
+    }
+
+    protected TP getTransport() {
+        Protocol retval=this;
+        while(retval != null && retval.down_prot != null) {
+            retval=retval.down_prot;
+        }
+        return (TP)retval;
+    }
+
+    /** Supposed to be overwritten by subclasses. Usually the transport returns a valid non-null thread factory, but
+     * thread factories can also be created by individual protocols
+     * @return
+     */
+    public ThreadFactory getThreadFactory() {
+        return down_prot != null? down_prot.getThreadFactory(): null;
     }
 
 

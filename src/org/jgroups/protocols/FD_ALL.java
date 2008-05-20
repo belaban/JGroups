@@ -26,7 +26,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.18 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.19 2008/05/20 11:27:31 belaban Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -125,10 +125,8 @@ public class FD_ALL extends Protocol {
 
 
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
-            throw new Exception("timer cannot be retrieved from protocol stack");
+        if(timer == null)
+            throw new Exception("timer not set");
     }
 
 
@@ -189,6 +187,15 @@ public class FD_ALL extends Protocol {
                         break;
                 }
                 return null;
+
+            case Event.INFO:
+                Map<String,Object> map=(Map<String,Object>)evt.getArg();
+                if(map != null) {
+                    TimeScheduler tmp=(TimeScheduler)map.get("timer");
+                    if(tmp != null)
+                        timer=tmp;
+                }
+                break;
         }
         return up_prot.up(evt); // pass up to the layer above us
     }

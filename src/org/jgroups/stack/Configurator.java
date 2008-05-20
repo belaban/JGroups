@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.41 2008/05/15 10:49:09 belaban Exp $
+ * @version $Id: Configurator.java,v 1.42 2008/05/20 11:27:39 belaban Exp $
  */
 public class Configurator {
 
@@ -85,7 +85,7 @@ public class Configurator {
     public static void startProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) throws Exception {
         Protocol above_prot=null;        
         for(final Protocol prot: protocols) {
-            if(prot instanceof TP){
+            if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
                 if(singleton_name != null && singleton_name.length() > 0) {
                     TP transport=(TP)prot;
@@ -105,7 +105,9 @@ public class Configurator {
                         }
 
                         if(above_prot != null) {
-                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot, 
+                                                                         transport.getThreadNamingPattern(),
+                                                                         transport.getLocalAddress());
                             ad.setProtocolStack(above_prot.getProtocolStack());
                             above_prot.setDownProtocol(ad);
                             up_prots.put(cluster_name, ad);
@@ -137,7 +139,7 @@ public class Configurator {
                                          String cluster_name,
                                          final Map<String,Tuple<TP,Short>> singletons) {
         
-        for(final Protocol prot:protocols) {
+        for(final Protocol prot: protocols) {
             if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
                 if(singleton_name != null && singleton_name.length() > 0) {

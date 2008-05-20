@@ -7,19 +7,19 @@ package org.jgroups.util;
  * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * @version $Id: DefaultThreadFactory.java,v 1.2 2008/05/15 14:14:15 belaban Exp $
+ * @version $Id: DefaultThreadFactory.java,v 1.3 2008/05/20 11:27:23 belaban Exp $
  */
 public class DefaultThreadFactory implements ThreadFactory {
-    private final ThreadGroup group;
-    private final String      baseName;
-    private final boolean     createDaemons;
-    private short             counter=0; // if numbering is enabled
-    private final boolean     use_numbering;
+    protected final ThreadGroup group;
+    protected final String      baseName;
+    protected final boolean     createDaemons;
+    protected short             counter=0; // if numbering is enabled
+    protected final boolean     use_numbering;
 
-    private boolean           includeClusterName=false;
-    private boolean           includeLocalAddress=false;
-    private String            clusterName=null;
-    private String            address=null;
+    protected boolean           includeClusterName=false;
+    protected boolean           includeLocalAddress=false;
+    protected String            clusterName=null;
+    protected String            address=null;
 
 
     public DefaultThreadFactory(ThreadGroup group, String baseName, boolean createDaemons) {
@@ -34,8 +34,14 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     public void setPattern(String pattern) {
-        includeClusterName=pattern.contains("c");
-        includeLocalAddress=pattern.contains("l");
+        if(pattern != null) {
+            includeClusterName=pattern.contains("c");
+            includeLocalAddress=pattern.contains("l");
+        }
+    }
+
+    public void setIncludeClusterName(boolean includeClusterName) {
+        this.includeClusterName=includeClusterName;
     }
 
     public void setClusterName(String channelName){
@@ -55,16 +61,23 @@ public class DefaultThreadFactory implements ThreadFactory {
     }
 
     public Thread newThread(ThreadGroup group, Runnable r, String name) {
+        return newThread(group, r, name, null, null);
+    }
+
+    protected Thread newThread(ThreadGroup group, Runnable r, String name, String address, String cluster_name) {
         Thread retval=new Thread(group, r, name);
         retval.setDaemon(createDaemons);
-        renameThread(retval);
+        renameThread(retval, address, cluster_name);
         return retval;
     }
 
+    public void renameThread(String base_name, Thread thread) {
+        renameThread(base_name, thread, address, clusterName);
+    }
 
-    protected void renameThread(Thread thread) {
+    public void renameThread(String base_name, Thread thread, String address, String cluster_name) {
         if(thread == null) return;
-        StringBuilder sb=new StringBuilder(thread.getName());
+        StringBuilder sb=new StringBuilder(base_name != null? base_name : thread.getName());
         if(use_numbering) {
             short id;
             synchronized(this) {
@@ -72,14 +85,32 @@ public class DefaultThreadFactory implements ThreadFactory {
             }
             sb.append("-" + id);
         }
-        if(includeClusterName)
-            sb.append(',').append(clusterName);
+        if(includeClusterName) {
+            sb.append(',');
+            if(cluster_name != null)
+                sb.append(cluster_name);
+            else
+                sb.append(this.clusterName);
+        }
 
-        if(includeLocalAddress)
-            sb.append(',').append(address);
+        if(includeLocalAddress) {
+            sb.append(',');
+            if(address != null)
+                sb.append(address);
+            else
+                sb.append(this.address);
+        }
 
         if(use_numbering || includeClusterName || includeLocalAddress)
             thread.setName(sb.toString());
+    }
+
+    protected void renameThread(Thread thread, String address, String cluster_name) {
+        renameThread(null, thread, address, cluster_name);
+    }
+
+    public void renameThread(Thread thread) {
+        renameThread(null, thread);
     }
 
 

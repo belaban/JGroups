@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.50 2008/05/08 09:46:43 vlada Exp $
+// $Id: TCP.java,v 1.51 2008/05/20 11:27:30 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -112,7 +112,7 @@ public class TCP extends BasicTCP implements ConnectionTable.Receiver { // , Bas
            cTable=new ConnectionTable(this, bindAddress, externalAddress, startPort, endPort,
                                       reaperInterval, connExpireTime, pm);
        }       
-       cTable.setThreadFactory(getProtocolStack().getThreadFactory());
+       cTable.setThreadFactory(getThreadFactory());
        return cTable;
    }
 
