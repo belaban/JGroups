@@ -78,9 +78,9 @@ public class FixedMembershipToken extends AuthToken {
                 }
                 return true;
             }else{
-                if(log.isWarnEnabled()){
-                    log.warn("Authentication failed on FixedMembershipToken");
-                }
+//                if(log.isWarnEnabled()){
+//                    log.warn("Authentication failed on FixedMembershipToken");
+//                }
                 return false;
             }
         }

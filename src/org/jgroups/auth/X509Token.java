@@ -183,9 +183,9 @@ public class X509Token extends AuthToken {
                 }
             }
         }
-        if(log.isWarnEnabled()){
-            log.warn("X509 authentication failed");
-        }
+//        if(log.isWarnEnabled()){
+//            log.warn("X509 authentication failed");
+//        }
         return false;
     }
 
