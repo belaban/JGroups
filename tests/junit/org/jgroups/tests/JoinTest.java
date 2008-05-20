@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.20 2008/05/14 12:50:58 vlada Exp $
+ * @version $Id: JoinTest.java,v 1.21 2008/05/20 15:54:26 belaban Exp $
  * 
  * TODO make possibly parallel 
  */
@@ -26,8 +26,8 @@ public class JoinTest extends ChannelTestBase {
 
     @BeforeMethod
     public void setUp() throws Exception {
-        c1=createChannel("A");
-        c2=createChannel("A");
+        c1=createChannel(true);
+        c2=createChannelWithProps(c1.getProperties());
     }
 
 
@@ -145,7 +145,7 @@ public class JoinTest extends ChannelTestBase {
 
 
     void _testDelayedJoinResponse(long discovery_timeout, long join_timeout,
-                                         long delay_join_req, long tolerance) throws Exception {
+                                  long delay_join_req, long tolerance) throws Exception {
         c1.connect("JoinTest");
         c2.connect("JoinTest");
 
