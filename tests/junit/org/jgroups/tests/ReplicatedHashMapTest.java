@@ -27,7 +27,7 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        Channel c1=createChannel(true);
+        Channel c1=createChannel(true, 2);
         this.map1=new ReplicatedHashMap<String,String>(c1, false);
         map1.setBlockingUpdates(true);
         c1.connect("ReplicatedHashMapTest");
