@@ -94,9 +94,9 @@ public class MD5Token extends AuthToken {
                 }
                 return true;
             }else{
-                if(log.isWarnEnabled()){
-                    log.warn("Authentication failed on MD5Token");
-                }
+//                if(log.isWarnEnabled()){
+//                    log.warn("Authentication failed on MD5Token");
+//                }
                 return false;
             }
         }
