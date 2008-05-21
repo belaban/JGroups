@@ -14,6 +14,9 @@ import java.io.OutputStream;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * 
@@ -555,131 +558,107 @@ public class ChannelTestBase extends TestCase {
             }
         }
     }  
+    
+    /**
+     * Method for translating event traces into event strings, where each event
+     * in the trace is represented by a letter.
+     */
+    public static String translateEventTrace(List<Object> et) throws Exception {
+
+        String eventString=new String();
+
+        for(Iterator it=et.iterator();it.hasNext();) {
+
+            Object obj=it.next();
+
+            if(obj instanceof BlockEvent)
+                eventString+="b";
+            else if(obj instanceof UnblockEvent)
+                eventString+="u";
+            else if(obj instanceof SetStateEvent)
+                eventString+="s";
+            else if(obj instanceof GetStateEvent)
+                eventString+="g";
+            else if(obj instanceof View)
+                eventString+="v";
+            else
+                throw new Exception("Unrecognized event type in event trace");
+        }
+        return eventString;
+    }
+  
+    /**
+     * Method for validating event strings against event string specifications,
+     * where a specification is a regular expression involving event symbols.
+     * e.g. [b]([sgv])[u]
+     */
+    protected static boolean validateEventString(String eventString, String spec) {
+        Pattern pattern=null;
+        Matcher matcher=null;
+
+        // set up the regular expression specification
+        pattern=Pattern.compile(spec);
+        // set up the actual event string
+        matcher=pattern.matcher(eventString);
+
+        // check if the actual string satisfies the specification
+        if(matcher.find()) {
+            // a match has been found, but we need to check that the whole event string
+            // matches, and not just a substring
+            if(!(matcher.start() == 0 && matcher.end() == eventString.length())) {
+                // match on full eventString not found
+                System.err.println("event string invalid (proper substring matched): event string = " + eventString
+                                   + ", specification = "
+                                   + spec
+                                   + "matcher.start() "
+                                   + matcher.start()
+                                   + " matcher.end() "
+                                   + matcher.end());
+                return false;
+            }
+        }
+        else {          
+            return false;
+        }
+        return true;
+    }
+
+    /**
+     * Method for validating event traces.
+     */
+    public static boolean validateEventTrace(List<Object> eventTrace) {
+
+
+        final String validSequence="([b][vgs]*[u])+";
+
+        String eventString=null;
+        boolean result = false;
+
+        // translate the eventTrace to an eventString
+        try {
+            eventString=translateEventTrace(eventTrace);
+            result = validateEventString(eventString, validSequence);
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }      
+        return result;
+        
+    } 
 
     protected void checkEventStateTransferSequence(EventSequence receiver) {
-        
-        List<Object> events = receiver.getEvents();
-        String eventString = "[" + receiver.getName() + ",events:" + events;
-        log.info(eventString);        
-        assertNotNull(events);
-        assertTrue(events.size()>1);
-        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
-        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
-        int size = events.size();
-        for(int i = 0;i < size;i++){
-            Object event = events.get(i);
-            if(event instanceof BlockEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After Block should be state|unblock|view, but it is " + o.getClass() + ",events= "+ eventString,
-                               o instanceof SetStateEvent || o instanceof GetStateEvent
-                                       || o instanceof UnblockEvent
-                                       || o instanceof View);
-                }
-                if(i > 0){
-                    Object o = events.get(i - 1);
-                    assertTrue("Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString, 
-                               o instanceof UnblockEvent);
-                }
-            }
-            else if(event instanceof SetStateEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After setstate should be unblock , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent);
-                }
-                Object o = events.get(i - 1);
-                assertTrue("Before setstate should be block|view, but it is " + o.getClass() + ",events= " + eventString,
-                           o instanceof BlockEvent || o instanceof View);
-            }
-            else if(event instanceof GetStateEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After getstate should be view/unblock/getstate , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof UnblockEvent || o instanceof View || o instanceof GetStateEvent); 
-                }
-                Object o = events.get(i - 1);
-                assertTrue("Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString,
-                           o instanceof BlockEvent || o instanceof View || o instanceof GetStateEvent);
-            }
-            else if(event instanceof UnblockEvent){
-                if(i + 1 < size){
-                    Object o = events.get(i + 1);
-                    assertTrue("After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof BlockEvent);
-                }
-                if(i > 0){
-                    Object o = events.get(i - 1);
-                    assertTrue("Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString,
-                               o instanceof SetStateEvent || o instanceof GetStateEvent
-                                       || o instanceof BlockEvent
-                                       || o instanceof View);
-                }
-            }
 
+        List<Object> events=receiver.getEvents();
+        assertNotNull(events);
+        final String validSequence="([b][vgs]*[u])+";     
+        // translate the eventTrace to an eventString   
+        try {           
+            assertTrue("Invalid event sequence " + events, validateEventString(translateEventTrace(events), validSequence));          
+        }
+        catch(Exception e) {
+            fail("Invalid event sequence " + events);
         }        
-    }   
-
-    protected void checkEventSequence(PushChannelApplication receiver, boolean isMuxUsed) {
-        List<Object> events = receiver.getEvents();
-        String eventString = "[" + receiver.getName()
-                             + "|"
-                             + receiver.getLocalAddress()
-                             + ",events:"
-                             + events;
-        log.info(eventString);        
-        assertNotNull(events);
-        assertTrue(events.size()>1);
-        assertTrue("First event is not block but " + events.get(0),events.get(0) instanceof BlockEvent);
-        assertTrue("Last event not unblock but " + events.get(events.size()-1),events.get(events.size()-1) instanceof UnblockEvent);
-        int size = events.size();
-        for(int i = 0;i < size;i++){
-            Object event = events.get(i);
-            if(event instanceof BlockEvent){
-                if(i + 1 < size){
-                    Object ev = events.get(i + 1);
-                    if(isMuxUsed){
-                        assertTrue("After Block should be View or Unblock but it is " + ev.getClass() + ",events= " + eventString,
-                                   ev instanceof View || ev instanceof UnblockEvent);
-                    }else{
-                        assertTrue("After Block should be View but it is " + ev.getClass() + ",events= " + eventString,
-                                   ev instanceof View);
-                    }
-                }
-                if(i > 0){
-                    Object ev = events.get(i - 1);
-                    assertTrue("Before Block should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
-                               ev instanceof UnblockEvent);
-                }
-            }
-            else if(event instanceof View){
-                if(i + 1 < size){
-                    Object ev = events.get(i + 1);
-                    assertTrue("After View should be Unblock but it is " + ev.getClass() + ",events= " + eventString,
-                               ev instanceof UnblockEvent);
-                }
-                Object ev = events.get(i - 1);
-                assertTrue("Before View should be Block but it is " + ev.getClass() + ",events= " + eventString,
-                           ev instanceof BlockEvent);
-            }
-            else if(event instanceof UnblockEvent){
-                if(i + 1 < size){
-                    Object ev = events.get(i + 1);
-                    assertTrue("After UnBlock should be Block but it is " + ev.getClass() + ",events= " + eventString,
-                               ev instanceof BlockEvent);
-                }
-
-                Object ev = events.get(i - 1);
-                if(isMuxUsed){
-                    assertTrue("Before UnBlock should be View or Block but it is " + ev.getClass() + ",events= " + eventString,
-                               ev instanceof View || ev instanceof BlockEvent);
-                }else{
-                    assertTrue("Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString,
-                               ev instanceof View);
-                }
-            }
-        }       
-    }
+    }     
     
 
     public interface ChannelRetrievable {
