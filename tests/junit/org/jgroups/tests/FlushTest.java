@@ -39,7 +39,7 @@ import org.jgroups.util.Util;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.58.2.2 2008/02/04 03:13:20 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.58.2.3 2008/05/21 18:51:37 vlada Exp $
  */
 public class FlushTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -101,7 +101,7 @@ public class FlushTest extends ChannelTestBase {
         receivers[0].cleanup();
         Util.sleep(1000);
 
-        checkEventSequence(receivers[0], isMuxChannelUsed());
+        checkEventStateTransferSequence(receivers[0]);
 
     }
 
@@ -348,13 +348,8 @@ public class FlushTest extends ChannelTestBase {
             }
             
             // verify block/unblock/view/get|set state sequences for all members
-            for (FlushTestReceiver receiver : channels) {
-                if (connectType == FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE
-                        || connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
-                    checkEventStateTransferSequence(receiver);
-                } else {
-                    checkEventSequence(receiver, isMuxChannelUsed());
-                }
+            for(FlushTestReceiver receiver:channels) {
+                checkEventStateTransferSequence(receiver);
             }
         }
     }
