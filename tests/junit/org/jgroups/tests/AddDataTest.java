@@ -13,9 +13,9 @@ import java.util.Map;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.16 2008/04/18 09:07:01 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.17 2008/05/21 09:40:14 belaban Exp $
  */
-@Test(groups="temp",sequential=false)
+@Test(groups={"temp","single"},sequential=false)
 public class AddDataTest extends ChannelTestBase {
 
     @Test
@@ -59,7 +59,7 @@ public class AddDataTest extends ChannelTestBase {
         String GROUP=getUniqueClusterName("AddDataTest");
 
         try {
-            ch1=createChannel(true, 1);
+            ch1=createChannel(true, 2);
             ch1.down(new Event(Event.CONFIG, m));
             String props=ch1.getProperties();
 
