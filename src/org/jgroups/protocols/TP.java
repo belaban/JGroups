@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.15 2008/04/23 09:23:48 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.16 2008/05/21 13:08:00 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -135,6 +135,14 @@ public abstract class TP extends Protocol {
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */
     protected ThreadNamingPattern thread_naming_pattern=new ThreadNamingPattern("cl");
+
+
+
+    /** Keeps track of connects and disconnects, in order to start and stop threads */
+    int connect_count=0;
+
+    /** Number of times init() was called. Incremented on init(), decremented on destroy() */
+    int init_count=0;
 
 
     /** ================================== OOB thread pool ============================== */
@@ -321,6 +329,7 @@ public abstract class TP extends Protocol {
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
     public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
+    public String getSingletonName() {return singleton_name;}
 
     public ConcurrentMap<String,Protocol> getUpProtocols() {
         return up_prots;
@@ -533,6 +542,10 @@ public abstract class TP extends Protocol {
 
 
     public void init() throws Exception {
+        if(init_count++ >= 1) {
+            return;
+        }
+
         super.init();
         if(bind_addr != null) {
             Map<String,Object> m=new HashMap<String,Object>(1);
@@ -545,6 +558,14 @@ public abstract class TP extends Protocol {
         up(new Event(Event.INFO,map));
     }
 
+
+    public void destroy() {
+        if(init_count == 0)
+            return;
+        init_count=Math.max(init_count -1, 0);
+        if(init_count == 0)
+            super.destroy();
+    }
 
     /**
      * Creates the unicast and multicast sockets and starts the unicast and multicast receiver threads
@@ -644,11 +665,11 @@ public abstract class TP extends Protocol {
     }
 
     protected void handleConnect() throws Exception {
-        ;
+        connect_count++;
     }
 
     protected void handleDisconnect() {
-        ;
+        connect_count=Math.max(0, connect_count -1);
     }
 
 
