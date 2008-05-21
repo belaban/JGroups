@@ -20,7 +20,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59.2.5 2008/04/03 14:58:01 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.59.2.6 2008/05/21 13:06:58 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     
@@ -64,7 +64,7 @@ public class ProtocolStack extends Protocol implements Transport {
         this.timer_thread_factory=new IdThreadFactory(
                 newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
                 null);
-        timer= new TimeScheduler(timer_thread_factory);
+        timer=new TimeScheduler(timer_thread_factory);
     }
 
 
@@ -318,15 +318,28 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void destroy() {
+        boolean singleton=false;
+        Protocol tmp=getTransport();
+        if(tmp instanceof TP) {
+            TP transport=(TP)tmp;
+            String singleton_name=transport.getSingletonName();
+            singleton=singleton_name != null && singleton_name.trim().length() > 0;
+        }
+
         if(top_prot != null) {
             Configurator.destroyProtocolStack(getProtocols());           // destroys msg queues and threads
             top_prot=null;
-        }        
-        try {
-            timer.stop();
         }
-        catch(Exception ex) {
-        }        
+        // commented bela May 21 2008: if we hav multiple refs to timer, e.g. in the shared transport,
+        // closing of one channel will stop the timer for all others, too. This is inacceptable, as retransmission
+        // would stop for other channels too (http://jira.jboss.com/jira/browse/JGRP-737)
+        if(!singleton) {
+            try {
+                timer.stop();
+            }
+            catch(Exception ex) {
+            }
+        }
     }
 
 
