@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.27 2008/05/19 10:54:11 belaban Exp $
+// $Id: LOOPBACK.java,v 1.28 2008/05/21 11:55:50 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -63,7 +63,7 @@ public class LOOPBACK extends TP {
     }
 
     public void destroy() {
-        System.out.println("destrouy();");
+        System.out.println("destroy();");
         try {
             timer.stop();
         }
