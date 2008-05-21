@@ -488,6 +488,7 @@ public class FLUSH extends Protocol {
         Address proceedFlushCoordinator = null;        
         
         boolean proceed = flushInProgress.compareAndSet(false, true);
+        boolean sendRejectFlushMessage = false;
         synchronized (sharedLock) {                               
             if(proceed){
                 flushCoordinator = flushRequester;
@@ -496,16 +497,19 @@ public class FLUSH extends Protocol {
                     if(flushRequester.compareTo(flushCoordinator) < 0){                                                           
                         abortFlushCoordinator = flushCoordinator;
                         flushCoordinator = flushRequester;
-                        proceedFlushCoordinator = flushRequester;                    
+                        proceedFlushCoordinator = flushRequester; 
+                        sendRejectFlushMessage = true;
                     }else if(flushRequester.compareTo(flushCoordinator) > 0){                                        
                         abortFlushCoordinator = flushRequester;
                         proceedFlushCoordinator = flushCoordinator;
+                        sendRejectFlushMessage = true;
                     }else{                    
                         if(log.isDebugEnabled()){
                             log.debug("Rejecting flush at " + localAddress + ", previous flush has to finish first");
                         } 
                         abortFlushCoordinator = flushRequester;
                         proceedFlushCoordinator = flushCoordinator;
+                        sendRejectFlushMessage = false;
                     }
                 }else{
                     return;
@@ -521,8 +525,10 @@ public class FLUSH extends Protocol {
                           + abortFlushCoordinator
                           + " coordinator is "
                           + proceedFlushCoordinator);
+            }            
+            if(sendRejectFlushMessage){
+                rejectFlush(fh.viewID, abortFlushCoordinator);
             }
-            rejectFlush(fh.viewID, abortFlushCoordinator);
             onStartFlush(proceedFlushCoordinator, fh);
         }
     }
