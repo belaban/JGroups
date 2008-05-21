@@ -1,4 +1,4 @@
-// $Id: Retransmitter.java,v 1.23 2007/08/20 12:38:39 belaban Exp $
+// $Id: Retransmitter.java,v 1.23.2.1 2008/05/21 12:31:37 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -6,7 +6,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Address;
 import org.jgroups.util.TimeScheduler;
-import org.jgroups.util.Util;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -29,7 +28,7 @@ import java.util.concurrent.Future;
  * the (previous) message list linearly on removal. Performance is about the same, or slightly better in
  * informal tests.
  * @author Bela Ban
- * @version $Revision: 1.23 $
+ * @version $Revision: 1.23.2.1 $
  */
 public class Retransmitter {
 
@@ -248,62 +247,6 @@ public class Retransmitter {
         }
     }
 
-
-
-    public static void main(String[] args) {
-        Retransmitter xmitter;
-        Address sender;
-
-        try {
-            sender=new org.jgroups.stack.IpAddress("localhost", 5555);
-            xmitter=new Retransmitter(sender, new MyXmitter());
-            xmitter.setRetransmitTimeouts(new StaticInterval(1000, 2000, 4000, 8000));
-
-            xmitter.add(1, 10);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(1);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(2);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(4);
-            System.out.println("retransmitter: " + xmitter);
-
-            Util.sleep(3000);
-            xmitter.remove(3);
-            System.out.println("retransmitter: " + xmitter);
-
-            Util.sleep(1000);
-            xmitter.remove(10);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(8);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(6);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(7);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(9);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.remove(5);
-            System.out.println("retransmitter: " + xmitter);
-            xmitter.stop();
-        }
-        catch(Exception e) {
-            log.error(e);
-        }
-    }
-
-
-    static class MyXmitter implements Retransmitter.RetransmitCommand {
-
-        public void retransmit(long first_seqno, long last_seqno, Address sender) {
-            System.out.println("-- " + new java.util.Date() + ": retransmit(" + first_seqno + ", " +
-                               last_seqno + ", " + sender + ')');
-        }
-    }
-
-    static void sleep(long timeout) {
-        Util.sleep(timeout);
-    }
 
 }
 
