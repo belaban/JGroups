@@ -17,7 +17,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.20 2008/05/20 11:27:37 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.21 2008/05/21 10:22:56 belaban Exp $
  */
 @Test(groups="unknown",sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
@@ -324,6 +324,44 @@ public class SharedTransportTest extends ChannelTestBase {
         assert timer1.isShutdown();
     }
 
+
+    /** Create channels A, B and C. Close A. This will close the timer and transports threads (!), so B will
+     * not be able to send messages anymore, so C will not receive any messages
+     * Tests http://jira.jboss.com/jira/browse/JGRP-737 */
+    public void testSendingOfMessagesAfterChannelClose() throws ChannelException {
+        MyReceiver rec_a=new MyReceiver("A"), rec_b=new MyReceiver("B"), rec_c=new MyReceiver("C");
+        System.out.println("-- creating A");
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(rec_a);
+        a.connect("A");
+
+        System.out.println("-- creating B");
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(rec_b);
+        b.connect("B");
+
+        System.out.println("-- creating C");
+        c=createSharedChannel(SINGLETON_2);
+        c.setReceiver(rec_c);
+        c.connect("B");
+
+        b.send(null, null, "first");
+        Util.sleep(500); // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
+        assertSize(1, rec_b, rec_c);
+        assertSize(0, rec_a);
+        a.close();
+
+        b.send(null, null, "second");
+        Util.sleep(500);
+        assertSize(0, rec_a);
+        assertSize(2, rec_b, rec_c);
+    }
+
+    private static void assertSize(int expected, MyReceiver... receivers) {
+        for(MyReceiver recv: receivers) {
+            assertEquals(expected, recv.size());
+        }
+    }
 
     private JChannel createSharedChannel(String singleton_name) throws ChannelException {
         ProtocolStackConfigurator config=ConfiguratorFactory.getStackConfigurator(channel_conf);
