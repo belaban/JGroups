@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.41 2008/05/08 09:46:42 vlada Exp $
+// $Id: ENCRYPT.java,v 1.42 2008/05/21 17:04:15 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -123,7 +123,7 @@ public class ENCRYPT extends Protocol {
     // properties for functioning in supplied key mode
     private boolean suppliedKey = false;
     @Property
-    private String keyStoreName;
+    String keyStoreName;
     @Property
     private String storePassword ="changeit"; //JDK default    
     private String keyPassword="changeit"; //JDK default

@@ -56,22 +56,14 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageDownEncode() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
-
-        //javax.
+      
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
 
-        // use a second instance so we know we are not accidentally using internal key
-        Properties props2=new Properties();
-        props2.put("key_store_name", defaultKeystore);
-//		javax.
+     
         ENCRYPT encrypt2=new ENCRYPT();
-        encrypt2.setProperties(props2);
+        encrypt2.keyStoreName = "defaultStore.keystore";
         encrypt2.init();
 
         MockObserver observer=new MockObserver();
@@ -96,22 +88,17 @@ public class ENCRYPT14KeystoreTest {
 
 
     public static void testMessageUpDecode() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
+      
 
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
 
-        // use a second instance so we know we are not accidentally using internal key
-        Properties props2=new Properties();
-        props2.put("key_store_name", defaultKeystore);
+     
         ENCRYPT encrypt2=new ENCRYPT();
-        encrypt2.setProperties(props2);
+        encrypt2.keyStoreName = "defaultStore.keystore";
         encrypt2.init();
-
+        
         MockObserver observer=new MockObserver();
         encrypt.setObserver(observer);
 
