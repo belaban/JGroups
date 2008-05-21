@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.3 2008/04/30 05:33:03 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.4 2008/05/21 09:52:34 belaban Exp $
  */
 public class Util {
 
@@ -151,7 +151,18 @@ public class Util {
         }
     }
 
+    public static void close(Channel ch) {
+        if(ch != null) {
+            try {ch.close();} catch(Throwable t) {}
+        }
+    }
 
+    public static void close(Channel ... channels) {
+        if(channels != null) {
+            for(Channel ch: channels)
+                Util.close(ch);
+        }
+    }
 
 
     /**
