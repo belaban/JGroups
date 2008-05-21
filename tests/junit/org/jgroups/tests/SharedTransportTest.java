@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.5.2.7 2008/04/29 21:16:42 vlada Exp $
+ * @version $Id: SharedTransportTest.java,v 1.5.2.8 2008/05/21 10:24:01 belaban Exp $
  */
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
@@ -272,28 +272,67 @@ public class SharedTransportTest extends ChannelTestBase {
 
  
 
-     public void testReCreationWithSurvivingChannel() throws Exception {
+    public void testReCreationWithSurvivingChannel() throws Exception {
 
         // Create 2 channels sharing a transport
-         System.out.println("-- creating A");
-         a=createSharedChannel(SINGLETON_1);
-         a.setReceiver(new MyReceiver("A"));
-         a.connect("A");
+        System.out.println("-- creating A");
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(new MyReceiver("A"));
+        a.connect("A");
 
-         System.out.println("-- creating B");
-         b=createSharedChannel(SINGLETON_1);
-         b.setReceiver(new MyReceiver("B"));
-         b.connect("B");
+        System.out.println("-- creating B");
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(new MyReceiver("B"));
+        b.connect("B");
 
-         System.out.println("-- disconnecting A");
-         a.disconnect();
+        System.out.println("-- disconnecting A");
+        a.disconnect();
 
-         // a is disconnected so we should be able to create a new channel with group "A"
-         System.out.println("-- creating A'");
-         c=createSharedChannel(SINGLETON_1);
-         c.setReceiver(new MyReceiver("A'"));
-         c.connect("A");
-     }
+        // a is disconnected so we should be able to create a new channel with group "A"
+        System.out.println("-- creating A'");
+        c=createSharedChannel(SINGLETON_1);
+        c.setReceiver(new MyReceiver("A'"));
+        c.connect("A");
+    }
+
+
+    /** Create channels A, B and C. Close A. This will close the timer and transports threads (!), so B will
+     * not be able to send messages anymore, so C will not receive any messages 
+     * Tests http://jira.jboss.com/jira/browse/JGRP-737 */
+    public void testSendingOfMessagesAfterChannelClose() throws ChannelException {
+        MyReceiver rec_a=new MyReceiver("A"), rec_b=new MyReceiver("B"), rec_c=new MyReceiver("C");
+        System.out.println("-- creating A");
+        a=createSharedChannel(SINGLETON_1);
+        a.setReceiver(rec_a);
+        a.connect("A");
+
+        System.out.println("-- creating B");
+        b=createSharedChannel(SINGLETON_1);
+        b.setReceiver(rec_b);
+        b.connect("B");
+
+        System.out.println("-- creating C");
+        c=createSharedChannel(SINGLETON_2);
+        c.setReceiver(rec_c);
+        c.connect("B");
+
+        b.send(null, null, "first");
+        Util.sleep(500); // msg delivery is asynchronous, so give members some time to receive the msg (incl retransmission)
+        assertSize(1, rec_b, rec_c);
+        assertSize(0, rec_a);
+        a.close();
+
+        b.send(null, null, "second");
+        Util.sleep(500);
+        assertSize(0, rec_a);
+        assertSize(2, rec_b, rec_c);
+    }
+
+    private static void assertSize(int expected, MyReceiver... receivers) {
+        for(MyReceiver recv: receivers) {
+            assertEquals(expected, recv.size());
+        }
+    }
 
 
 
@@ -335,6 +374,10 @@ public class SharedTransportTest extends ChannelTestBase {
             StringBuilder sb=new StringBuilder();
             sb.append("[" + name + "]: view = " + new_view);
             System.out.println(sb);
+        }
+
+        public String toString() {
+            return size() + " message(s)";
         }
     }
 
