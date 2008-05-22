@@ -326,7 +326,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         if(spawner == null){
             ServerSocket serverSocket = Util.createServerSocket(bind_addr, bind_port);
             spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-            Thread t = getProtocolStack().getThreadFactory().newThread(spawner,"STREAMING_STATE_TRANSFER server socket acceptor");               
+            Thread t = getThreadFactory().newThread(spawner,"STREAMING_STATE_TRANSFER server socket acceptor");
             t.start();           
         }
         
@@ -371,7 +371,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         
         ThreadFactory factory = new ThreadFactory() {
             public Thread newThread(final Runnable command) {
-                return getProtocolStack().getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");                                
+                return getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");                                
             }
         };
         threadPool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(threadPool.getRejectedExecutionHandler()));

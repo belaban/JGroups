@@ -6,6 +6,7 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
 
 import java.io.*;
 import java.net.*;
@@ -29,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83.2.1 2008/04/28 08:16:29 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.83.2.2 2008/05/22 13:23:06 belaban Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -177,9 +178,9 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     public void init() throws Exception {
         srv_sock_handler=new ServerSocketHandler();
-        timer=stack != null ? stack.timer : null;
+        timer=getTransport().getTimer();
         if(timer == null)
-            throw new Exception("FD_SOCK.init(): timer == null");
+            throw new Exception("timer is null");
     }
 
 
@@ -499,7 +500,8 @@ public class FD_SOCK extends Protocol implements Runnable {
     void startPingerThread() {
         running=true;
         if(pinger_thread == null) {
-            pinger_thread=getProtocolStack().getThreadFactory().newThread(this, "FD_SOCK pinger");            
+            ThreadFactory factory=getThreadFactory();
+            pinger_thread=factory.newThread(this, "FD_SOCK pinger");
             pinger_thread.setDaemon(true);            
             pinger_thread.start();            
         }
@@ -984,7 +986,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
         final void start() {
             if(acceptor == null) {
-                acceptor=getProtocolStack().getThreadFactory().newThread(this, "FD_SOCK server socket acceptor");                
+                acceptor=getThreadFactory().newThread(this, "FD_SOCK server socket acceptor");
                 acceptor.setDaemon(true);                  
                 acceptor.start();
             }
@@ -1021,7 +1023,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(log.isTraceEnabled()) // +++ remove
                         log.trace("accepted connection from " + client_sock.getInetAddress() + ':' + client_sock.getPort());
                     ClientConnectionHandler client_conn_handler=new ClientConnectionHandler(client_sock, clients);
-                    Thread t = getProtocolStack().getThreadFactory().newThread(client_conn_handler, "FD_SOCK client connection handler");
+                    Thread t = getThreadFactory().newThread(client_conn_handler, "FD_SOCK client connection handler");
                     t.setDaemon(true);                    
                     
                     synchronized(clients) {

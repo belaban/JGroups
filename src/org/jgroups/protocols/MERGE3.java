@@ -1,4 +1,4 @@
-// $Id: MERGE3.java,v 1.17 2007/02/12 13:28:11 belaban Exp $
+// $Id: MERGE3.java,v 1.17.4.1 2008/05/22 13:23:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -92,7 +92,7 @@ public class MERGE3 extends Protocol {
     }
 
     public void init() throws Exception {
-        timer=stack.timer;
+        timer=getTransport().getTimer();
     }
 
 

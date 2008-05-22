@@ -7,10 +7,8 @@ import org.jgroups.conf.ProtocolStackConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
-import org.jgroups.util.Promise;
-import org.jgroups.util.Queue;
-import org.jgroups.util.QueueClosedException;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
+import org.jgroups.protocols.TP;
 import org.w3c.dom.Element;
 
 import java.io.File;
@@ -73,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.16 2008/04/07 06:03:56 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.17 2008/05/22 13:23:09 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -320,18 +318,18 @@ public class JChannel extends Channel {
     public long getReceivedMessages() {return received_msgs;}
     public long getReceivedBytes() {return received_bytes;}
     public int getNumberOfTasksInTimer() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.timer.size() : -1;
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.size() : -1;
     }
 
     public int getTimerThreads() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.getTimerThreads() : -1;
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.getCorePoolSize() : -1;
     }
 
     public String dumpTimerQueue() {
-        ProtocolStack ps=getProtocolStack();
-        return ps != null? ps.dumpTimerQueue() : "<n/a";
+        TimeScheduler timer=getTimer();
+        return timer != null? timer.dumpTaskQueue() : "<n/a";
     }
 
     /**
@@ -1731,6 +1729,16 @@ public class JChannel extends Channel {
             return null;
         if(!mbrs.isEmpty())
             return (Address)mbrs.firstElement();
+        return null;
+    }
+
+    private TimeScheduler getTimer() {
+        if(prot_stack != null) {
+            TP transport=prot_stack.getTransport();
+            if(transport != null) {
+                return transport.getTimer();
+            }
+        }
         return null;
     }
 

@@ -8,6 +8,7 @@ import org.jgroups.protocols.pbcast.FLUSH;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.StateTransferInfo;
 import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
 
 import java.util.*;
 import java.util.concurrent.*;
@@ -35,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.85.2.15 2008/04/21 08:44:10 vlada Exp $
+ * @version $Id: Multiplexer.java,v 1.85.2.16 2008/05/22 13:23:08 belaban Exp $
  */
 public class Multiplexer implements UpHandler {
 
@@ -212,12 +213,11 @@ public class Multiplexer implements UpHandler {
         long keep_alive=30000;
 
         Map<String,Object> m=channel.getInfo();
-        ThreadNamingPattern pattern=(ThreadNamingPattern)m.get("thread_naming_pattern");
         min_threads=Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
         max_threads=Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
         keep_alive=Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
 
-        org.jgroups.util.ThreadFactory factory = ProtocolStack.newThreadFactory(pattern, new ThreadGroup(Util.getGlobalThreadGroup(), "MultiplexerThreads"), "Multiplexer", false);
+        ThreadFactory factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Multiplexer", false, true);
         return new ThreadPoolExecutor(min_threads, max_threads, keep_alive, TimeUnit.MILLISECONDS,
                                       new SynchronousQueue<Runnable>(), 
                                       factory,

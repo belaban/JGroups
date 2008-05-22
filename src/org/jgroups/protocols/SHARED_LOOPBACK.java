@@ -13,7 +13,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * Loopback transport shared by all channels within the same VM. Property for testing is that no messages are lost. Allows
  * us to test various protocols (with ProtocolTester) at maximum speed.
  * @author Bela Ban
- * @version $Id: SHARED_LOOPBACK.java,v 1.4 2007/08/14 08:15:49 belaban Exp $
+ * @version $Id: SHARED_LOOPBACK.java,v 1.4.2.1 2008/05/22 13:23:06 belaban Exp $
  */
 public class SHARED_LOOPBACK extends TP {
     private static int next_port=10000;
@@ -71,9 +71,11 @@ public class SHARED_LOOPBACK extends TP {
     }
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+        msg.setDest(dest);
     }
 
     public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+        msg.setDest(dest);
     }
 
     /*------------------------------ Protocol interface ------------------------------ */

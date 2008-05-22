@@ -19,7 +19,7 @@ import java.io.*;
  * also maintains a table of all members (minus itself). When data or a heartbeat from P are received, we reset the
  * timestamp for P to the current time. Periodically, we check for expired members, and suspect those.
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.12.2.1 2008/02/27 13:53:43 belaban Exp $
+ * @version $Id: FD_ALL.java,v 1.12.2.2 2008/05/22 13:23:06 belaban Exp $
  */
 public class FD_ALL extends Protocol {
     /** Map of addresses and timestamps of last updates */
@@ -133,9 +133,8 @@ public class FD_ALL extends Protocol {
 
 
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
+        timer=getTransport().getTimer();
+        if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
     }
 

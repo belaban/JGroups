@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.42.2.1 2007/11/20 08:37:24 belaban Exp $
+// $Id: MERGE2.java,v 1.42.2.2 2008/05/22 13:23:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,10 +53,9 @@ public class MERGE2 extends Protocol {
     private TimeScheduler			timer;
     
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
-            throw new Exception("Discovery.init(): timer cannot be retrieved from protocol stack");
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved from protocol stack");
     }
 
 

@@ -1,4 +1,4 @@
-// $Id: ClassConfigurator.java,v 1.21.4.1 2008/01/23 15:01:31 belaban Exp $
+// $Id: ClassConfigurator.java,v 1.21.4.2 2008/05/22 13:23:05 belaban Exp $
 
 package org.jgroups.conf;
 
@@ -44,7 +44,7 @@ public class ClassConfigurator {
     protected final Log log=LogFactory.getLog(getClass());
 
 
-    private ClassConfigurator() {
+    public ClassConfigurator() {
     }
 
     public void init() throws ChannelException {
