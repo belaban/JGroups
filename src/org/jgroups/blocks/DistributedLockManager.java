@@ -20,7 +20,7 @@ import java.util.*;
  * 
  * @author Roman Rokytskyy (rrokytskyy@acm.org)
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManager.java,v 1.9.4.1 2008/01/06 06:06:07 belaban Exp $
+ * @version $Id: DistributedLockManager.java,v 1.9.4.2 2008/05/22 09:51:25 belaban Exp $
  */
 public class DistributedLockManager implements TwoPhaseVotingListener, LockManager, VoteResponseProcessor, MembershipListener {
     /**
@@ -90,9 +90,10 @@ public class DistributedLockManager implements TwoPhaseVotingListener, LockManag
         this.id = id;
         this.votingAdapter = channel;
         this.votingAdapter.addListener(this);
-        if(votingAdapter.getVoteChannel() != null)
+        if(votingAdapter.getVoteChannel() != null) {
             votingAdapter.getVoteChannel().addMembershipListener(this);
-        setInitialMembership(votingAdapter.getVoteChannel().getMembers());
+            setInitialMembership(votingAdapter.getVoteChannel().getMembers());
+        }
     }
 
     private void setInitialMembership(Collection members) {
