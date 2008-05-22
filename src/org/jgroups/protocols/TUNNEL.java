@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.45.2.2 2008/02/06 03:18:46 vlada Exp $
+// $Id: TUNNEL.java,v 1.45.2.3 2008/05/22 13:23:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -73,9 +73,7 @@ public class TUNNEL extends TP {
 
     public void init() throws Exception {        
         super.init();
-        if(stack != null && stack.timer != null)
-            timer = stack.timer;
-        else
+        if(timer == null)
             throw new Exception("TUNNEL.init(): timer cannot be retrieved from protocol stack");
     }
 
@@ -231,7 +229,7 @@ public class TUNNEL extends TP {
                 startReconnecting();
             }else if(currentState != RouterStub.STATUS_CONNECTED && newState == RouterStub.STATUS_CONNECTED){
                 stopReconnecting();
-                Thread t = getProtocolStack().getThreadFactory().newThread(new TunnelReceiver(), "TUNNEL receiver");
+                Thread t = global_thread_factory.newThread(new TunnelReceiver(), "TUNNEL receiver");
                 t.setDaemon(true);
                 t.start();
             }

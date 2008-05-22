@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.12.4.1 2008/01/21 13:53:27 belaban Exp $
+// $Id: ProtocolTester.java,v 1.12.4.2 2008/05/22 13:23:10 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -14,6 +14,7 @@ import org.jgroups.util.Util;
 
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Vector;
 
 
 /**
@@ -43,9 +44,11 @@ public class ProtocolTester {
 
         config=new Configurator();
         ProtocolStack stack=new ProtocolStack();
-        top=config.setupProtocolStack(props, stack);
+        top=Configurator.setupProtocolStack(props, stack);
         harness.setDownProtocol(top);
         top.setUpProtocol(harness); // +++
+
+        Configurator.initProtocolStack(getProtocols());
 
         bottom=getBottomProtocol(top);
 
@@ -54,6 +57,15 @@ public class ProtocolTester {
         // top.setUpProtocol(harness);
     }
 
+    public Vector<Protocol> getProtocols() {
+        Vector<Protocol> retval=new Vector<Protocol>();
+        Protocol tmp=top;
+        while(tmp != null) {
+            retval.add(tmp);
+            tmp=tmp.getDownProtocol();
+        }
+        return retval;
+    }
 
     public String getProtocolSpec() {
         return props;

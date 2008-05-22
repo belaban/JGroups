@@ -27,7 +27,7 @@ import java.util.concurrent.TimeUnit;
  * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
  * </ul>
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.32.2.4 2008/03/25 02:42:08 vlada Exp $
+ * @version $Id: Discovery.java,v 1.32.2.5 2008/05/22 13:23:06 belaban Exp $
  */
 public abstract class Discovery extends Protocol {
     final Vector<Address>	members=new Vector<Address>(11);
@@ -49,9 +49,8 @@ public abstract class Discovery extends Protocol {
 
     
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
+        timer=getTransport().getTimer();
+        if(timer == null)
             throw new Exception("timer cannot be retrieved from protocol stack");
     }
 

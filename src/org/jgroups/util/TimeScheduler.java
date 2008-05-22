@@ -39,7 +39,7 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.23.4.1 2008/04/21 08:44:09 vlada Exp $
+ * @version $Id: TimeScheduler.java,v 1.23.4.2 2008/05/22 13:23:11 belaban Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor  {
 
@@ -83,7 +83,11 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
     }
 
     public TimeScheduler(ThreadFactory factory) {
-        super(TIMER_DEFAULT_NUM_THREADS, factory);
+        this(factory, TIMER_DEFAULT_NUM_THREADS);
+    }
+
+    public TimeScheduler(ThreadFactory factory, int max_threads) {
+        super(max_threads, factory);
         setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(getRejectedExecutionHandler()));
     }
 

@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
  * <code>shun</code> is true.
  * @author Bela Ban
- * @version $Id: FD.java,v 1.58.2.2 2008/04/28 09:55:32 belaban Exp $
+ * @version $Id: FD.java,v 1.58.2.3 2008/05/22 13:23:06 belaban Exp $
  */
 public class FD extends Protocol {
     Address               local_addr=null;
@@ -134,10 +134,9 @@ public class FD extends Protocol {
 
 
     public void init() throws Exception {
-        if(stack != null && stack.timer != null)
-            timer=stack.timer;
-        else
-            throw new Exception("FD.init(): timer cannot be retrieved from protocol stack");
+        timer=getTransport().getTimer();
+        if(timer == null)
+            throw new Exception("timer cannot be retrieved from protocol stack");
     }
 
 

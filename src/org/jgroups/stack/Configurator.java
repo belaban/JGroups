@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.4 2008/02/22 16:30:20 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.5 2008/05/22 13:23:04 belaban Exp $
  */
 public class Configurator {
 
@@ -76,7 +76,8 @@ public class Configurator {
     public static void startProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) throws Exception {
         Protocol above_prot=null;
         for(final Protocol prot: protocols) {
-            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
+            if(prot instanceof TP) {
+                String singleton_name=((TP)prot).getSingletonName();
             if(singleton_name != null && singleton_name.length() > 0) {
                 TP transport=(TP)prot;
                 final Map<String, Protocol> up_prots=transport.getUpProtocols();
@@ -95,7 +96,10 @@ public class Configurator {
                     }
 
                     if(above_prot != null) {
-                        TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot);
+                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot,
+                                                                         transport.getThreadNamingPattern(),
+                                                                         transport.getLocalAddress());
+                            ad.setProtocolStack(above_prot.getProtocolStack());
                         above_prot.setDownProtocol(ad);
                         up_prots.put(cluster_name, ad);
                     }
@@ -116,6 +120,7 @@ public class Configurator {
                     }
                 }
             }
+            }
             prot.start();
             above_prot=prot;
         }
@@ -123,7 +128,8 @@ public class Configurator {
 
     public static void stopProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String,Tuple<TP,Short>> singletons) {
         for(final Protocol prot: protocols) {
-            String singleton_name=Util.getProperty(prot, Global.SINGLETON_NAME);
+            if(prot instanceof TP) {
+                String singleton_name=((TP)prot).getSingletonName();
             if(singleton_name != null && singleton_name.length() > 0) {
                 TP transport=(TP)prot;
                 final Map<String, Protocol> up_prots=transport.getUpProtocols();
@@ -144,6 +150,7 @@ public class Configurator {
                             singletons.remove(singleton_name);
                     }
                 }
+            }
             }
             prot.stop();
         }
@@ -301,7 +308,7 @@ public class Configurator {
             current_layer.setUpProtocol(next_layer);
 
              if(current_layer instanceof TP) {
-                String singleton_name=Util.getProperty(current_layer, Global.SINGLETON_NAME);
+                String singleton_name= ((TP)current_layer).getSingletonName();
                 if(singleton_name != null && singleton_name.length() > 0) {
                     ConcurrentMap<String, Protocol> up_prots=((TP)current_layer).getUpProtocols();
                     String key;

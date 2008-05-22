@@ -5,10 +5,12 @@ import org.jgroups.ChannelException;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Queue;
 import org.jgroups.util.QueueClosedException;
+import org.jgroups.util.TimeScheduler;
 
 import java.util.HashMap;
 import java.util.Iterator;
@@ -16,7 +18,7 @@ import java.util.Iterator;
 /**
  * Tests one or more protocols independently. Look at org.jgroups.tests.FCTest for an example of how to use it.
  * @author Bela Ban
- * @version $Id: Simulator.java,v 1.11 2007/10/30 17:53:05 vlada Exp $
+ * @version $Id: Simulator.java,v 1.11.2.1 2008/05/22 13:23:10 belaban Exp $
  */
 public class Simulator {
     private Protocol[] protStack=null;
@@ -201,15 +203,55 @@ public class Simulator {
         recv_queue.close(false);
         send_thread=null;
         send_queue.close(false);
+        if(ad != null) {
+            try {
+                ad.getTimer().stop();
+    }
+            catch(InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
     }
 
 
 
 
-    class ProtocolAdapter extends Protocol {
+    class ProtocolAdapter extends TP {
+
+        ProtocolAdapter() {
+            timer=new TimeScheduler();
+        }
+
+        public TimeScheduler getTimer() {
+            return timer;
+        }
+
+        public void setTimer(TimeScheduler timer) {
+            this.timer=timer;
+        }
 
         public String getName() {
             return "ProtocolAdapter";
+        }
+
+        public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+        }
+
+        public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+        }
+
+        public String getInfo() {
+            return null;
+        }
+
+        public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+        }
+
+        public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+        }
+
+        public void init() throws Exception {
+            super.init();
         }
 
         public Object up(Event evt) {

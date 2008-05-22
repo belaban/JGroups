@@ -1,4 +1,3 @@
-
 package org.jgroups.stack;
 
 import org.jgroups.*;
@@ -20,26 +19,17 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.59.2.6 2008/05/21 13:06:58 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.59.2.7 2008/05/22 13:23:04 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
-    
     public static final int ABOVE = 1; // used by insertProtocol()
     public static final int BELOW = 2; // used by insertProtocol()
 
-    protected PatternedThreadFactory thread_factory;
-    protected PatternedThreadFactory timer_thread_factory;
-    public final TimeScheduler timer;
     private Protocol top_prot = null;
     private Protocol bottom_prot = null;
     private String setup_string;
     private JChannel channel = null;
     private volatile boolean stopped = true;
-
-
-    static {
-        singleton_transports=new ConcurrentHashMap<String,Tuple<TP,Short>>();
-    }
 
 
     /** Locks acquired by protocol below, need to get released on down().
@@ -49,46 +39,50 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Holds the shared transports, keyed by 'TP.singleton_name'.
      * The values are the transport and the use count for start() (decremented by stop() */
-    private static final ConcurrentMap<String,Tuple<TP,Short>> singleton_transports;
+    private static final ConcurrentMap<String,Tuple<TP,Short>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,Short>>();
+
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
-        this(newThreadFactory(Util.getGlobalThreadGroup(),"",false),channel,setup_string);
-    }
-    
-    public ProtocolStack(ThreadFactory factory, JChannel channel, String setup_string) throws ChannelException {
-        this.thread_factory=new PatternedThreadFactory(factory,null);
         this.setup_string=setup_string;
         this.channel=channel;
         ClassConfigurator.getInstance(true); // will create the singleton
-        this.timer_thread_factory=new IdThreadFactory(
-                newThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(), "Timers"), "Timer", true),
-                null);
-        timer=new TimeScheduler(timer_thread_factory);
     }
 
 
 
     /** Only used by Simulator; don't use */
     public ProtocolStack() throws ChannelException {
-        this(null,null,null);
+        this(null,null);
     }
     
+    /**
+     * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()}  instead
+     * @return
+     */
     public ThreadFactory getThreadFactory(){
-        return thread_factory;
+        getTransport().getThreadFactory();
+        TP transport=getTransport();
+        return transport != null? transport.getThreadFactory() : null;
     }
 
-    public ThreadFactory getTimerThreadFactory() {
-        return timer_thread_factory;
+    @Deprecated
+    public static ThreadFactory getTimerThreadFactory() {
+        throw new UnsupportedOperationException("get the timer thread factory directly from the transport");
     }
 
+    /**
+     * @deprecated Use {@link org.jgroups.stack.Protocol#getThreadFactory()} instead
+     * @param f
+     */
     public void setThreadFactory(ThreadFactory f) {
-        thread_factory=new PatternedThreadFactory(f, null);
     }
 
-    public void setTimerThreadFactory(ThreadFactory f) {
-        timer_thread_factory=new PatternedThreadFactory(f, null);
-        timer.setThreadFactory(f);
+    /**
+     * @deprecated Use {@link TP#setTimerThreadFactory(org.jgroups.util.ThreadFactory)} instead
+     * @param f
+     */
+    public static void setTimerThreadFactory(ThreadFactory f) {
     }
 
     public Map<Thread,ReentrantLock> getLocks() {
@@ -99,8 +93,20 @@ public class ProtocolStack extends Protocol implements Transport {
         return channel;
     }
 
+
+    /**
+     * @deprecated Use {@link org.jgroups.protocols.TP#getTimer()} to fetch the timer and call getCorePoolSize() directly
+     * @return
+     */
     public int getTimerThreads() {
-        return timer.getCorePoolSize();
+        TP transport=getTransport();
+        TimeScheduler timer;
+        if(transport != null) {
+            timer=transport.getTimer();
+            if(timer != null)
+                return timer.getCorePoolSize();
+        }
+        return -1;
     }
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
@@ -118,9 +124,9 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     /** Returns the bottom most protocol */
-    public Protocol getTransport() {
+    public TP getTransport() {
         Vector<Protocol> prots=getProtocols();
-        return !prots.isEmpty()? prots.lastElement() : null;
+        return (TP)(!prots.isEmpty()? prots.lastElement() : null);
     }
 
     public static ConcurrentMap<String, Tuple<TP, Short>> getSingletonTransports() {
@@ -147,8 +153,20 @@ public class ProtocolStack extends Protocol implements Transport {
         return retval;
     }
 
+    /**
+     * @deprecated Use {@link org.jgroups.protocols.TP#getTimer()} instead to fetch the timer from the
+     * transport and then invoke the method on it
+     * @return
+     */
     public String dumpTimerQueue() {
-        return timer.dumpTaskQueue();
+        TP transport=getTransport();
+        TimeScheduler timer;
+        if(transport != null) {
+            timer=transport.getTimer();
+            if(timer != null)
+                return timer.dumpTaskQueue();
+        }
+        return "";
     }
 
     /**
@@ -223,6 +241,41 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         sb.append("</config>");
 
+        return sb.toString();
+    }
+
+    public String printProtocolSpecAsPlainString() {
+        StringBuilder sb=new StringBuilder();
+        Protocol      prot=bottom_prot;
+        Properties    tmpProps;
+        boolean       initialized=false;
+        Class         clazz;
+
+        while(prot != null) {
+            clazz=prot.getClass();
+            if(clazz.equals(ProtocolStack.class))
+                break;
+            if(initialized)
+                sb.append(":");
+            else
+                initialized=true;
+            sb.append(clazz.getName());
+            tmpProps=prot.getProperties();
+            if(tmpProps != null && !tmpProps.isEmpty()) {
+                sb.append("(");
+                boolean first=true;
+                for(Map.Entry<Object,Object> entry: tmpProps.entrySet()) {
+                    if(first)
+                        first=false;
+                    else
+                        sb.append(";");
+                    sb.append(entry.getKey() + "=" + entry.getValue());
+                }
+                sb.append(")");
+            }
+            sb.append("\n");
+            prot=prot.getUpProtocol();
+        }
         return sb.toString();
     }
 
@@ -318,29 +371,11 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void destroy() {
-        boolean singleton=false;
-        Protocol tmp=getTransport();
-        if(tmp instanceof TP) {
-            TP transport=(TP)tmp;
-            String singleton_name=transport.getSingletonName();
-            singleton=singleton_name != null && singleton_name.trim().length() > 0;
-        }
-
         if(top_prot != null) {
             Configurator.destroyProtocolStack(getProtocols());           // destroys msg queues and threads
             top_prot=null;
         }
-        // commented bela May 21 2008: if we hav multiple refs to timer, e.g. in the shared transport,
-        // closing of one channel will stop the timer for all others, too. This is inacceptable, as retransmission
-        // would stop for other channels too (http://jira.jboss.com/jira/browse/JGRP-737)
-        if(!singleton) {
-            try {
-                timer.stop();
             }
-            catch(Exception ex) {
-            }
-        }
-    }
 
 
 
@@ -351,8 +386,6 @@ public class ProtocolStack extends Protocol implements Transport {
      */
     public void startStack(String cluster_name) throws Exception {
         if(stopped == false) return;
-
-        timer.start();
         Configurator.startProtocolStack(getProtocols(), cluster_name, singleton_transports);
         stopped=false;
     }
@@ -405,15 +438,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public Object up(Event evt) {
-        switch(evt.getType()){
-            case Event.INFO:
-                Map<String, Object> info=(Map<String, Object>)evt.getArg();
-                if(info.containsKey("thread_naming_pattern")) {
-                    ThreadNamingPattern thread_naming_pattern=(ThreadNamingPattern)info.get("thread_naming_pattern");
-                    thread_factory.setThreadNamingPattern(thread_naming_pattern);
-                    timer_thread_factory.setThreadNamingPattern(thread_naming_pattern);
-                }
-        }
         return channel.up(evt);
     }
 
@@ -431,99 +455,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return null;
     }
     
-    public static ThreadFactory newThreadFactory(ThreadGroup group,String baseName, boolean createDaemons){
-        return new DefaultThreadFactory(group,baseName, createDaemons);
+
+
     }
-
-    public static ThreadFactory newThreadFactory(ThreadNamingPattern pattern,ThreadGroup group,String baseName, boolean createDaemons){
-        return new PatternedThreadFactory(new DefaultThreadFactory(group,baseName, createDaemons),pattern);
-    }
-    
-    public static ThreadFactory newIDThreadFactory(ThreadNamingPattern pattern,ThreadGroup group,String baseName, boolean createDaemons) {
-        return new IdThreadFactory(new DefaultThreadFactory(group,baseName, createDaemons),pattern);
-    }
-
-
-    static class DefaultThreadFactory implements ThreadFactory{
-        
-        private final ThreadGroup group;
-        private final String baseName;
-        private final boolean createDaemons;   
-        
-        public DefaultThreadFactory(ThreadGroup group,String baseName, boolean createDaemons){
-            this.group = group;
-            this.baseName = baseName;
-            this.createDaemons = createDaemons;               
-        }
-              
-        public Thread newThread(Runnable r, String name) {
-            return newThread(group, r, name);
-        }      
-
-        public Thread newThread(Runnable r) {
-            return newThread(group, r, baseName);                      
-        }
-        
-        public Thread newThread(ThreadGroup group, Runnable r, String name) {
-            Thread thread = new Thread(group, r, name);
-            thread.setDaemon(createDaemons);
-            return thread;
-        }
-    }
-    
-    protected static class PatternedThreadFactory implements ThreadFactory {
-        protected final ThreadFactory f;
-        protected ThreadNamingPattern pattern;
-
-        public PatternedThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern){
-            f = factory;
-            this.pattern = pattern;           
-        }
-        
-        public void setThreadNamingPattern(ThreadNamingPattern pattern) {
-            this.pattern = pattern;           
-        }
-
-        public Thread newThread(Runnable r, String name) {
-            Thread newThread = f.newThread(r, name);
-            renameThread(newThread);
-            return newThread;
-        }
-
-        public Thread newThread(Runnable r) {
-            Thread newThread = f.newThread(r);
-            renameThread(newThread);
-            return newThread;
-        }        
-        
-        public Thread newThread(ThreadGroup group, Runnable r, String name) {
-            Thread newThread = f.newThread(group, r, name);
-            renameThread(newThread);
-            return newThread;
-        }
-
-        protected void renameThread(Thread new_thread) {
-            if(pattern!=null)
-                pattern.renameThread(new_thread);
-        }
-    }
-                
-    private static class IdThreadFactory extends PatternedThreadFactory {
-        short current_id=0;
-
-        public IdThreadFactory(ThreadFactory factory, ThreadNamingPattern pattern) {
-            super(factory, pattern);
-        }              
-
-        protected void renameThread(Thread new_thread) {
-            if(pattern != null) {
-                short id;
-                synchronized(this) {
-                    id=++current_id;
-    }
-                pattern.renameThread(new_thread.getName() + "-" + id, new_thread);
-}
-        }
-    }
-}
 

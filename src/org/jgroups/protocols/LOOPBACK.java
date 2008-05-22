@@ -1,4 +1,4 @@
-// $Id: LOOPBACK.java,v 1.25 2007/08/14 08:15:20 belaban Exp $
+// $Id: LOOPBACK.java,v 1.25.2.1 2008/05/22 13:23:06 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -7,15 +7,13 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 
 /**
  Makes copies of outgoing messages, swaps sender and receiver and sends the message back up the stack.
  */
-public class LOOPBACK extends Protocol {
-    private Address local_addr=null;
+public class LOOPBACK extends TP {
     private String group_addr=null;
 
     public LOOPBACK() {
@@ -26,8 +24,21 @@ public class LOOPBACK extends Protocol {
         return "LOOPBACK(local address: " + local_addr + ')';
     }
 
+    public void sendToAllMembers(byte[] data, int offset, int length) throws Exception {
+    }
 
+    public void sendToSingleMember(Address dest, byte[] data, int offset, int length) throws Exception {
+    }
 
+    public String getInfo() {
+        return null;
+    }
+
+    public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+    }
+
+    public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+    }
 
     /*------------------------------ Protocol interface ------------------------------ */
 
@@ -38,6 +49,7 @@ public class LOOPBACK extends Protocol {
 
 
     public void init() throws Exception {
+        super.init();
 //        local_addr=new IpAddress("localhost", 10000) { // fake address
 //            public String toString() {
 //                return "<fake>";
@@ -46,6 +58,16 @@ public class LOOPBACK extends Protocol {
 
           //local_addr=new org.jgroups.stack.IpAddress("localhost", 10000); // fake address
        local_addr = new IpAddress(12345);
+    }
+
+    public void destroy() {
+        System.out.println("destroy();");
+        try {
+            timer.stop();
+        }
+        catch(InterruptedException e) {
+            e.printStackTrace();
+        }
     }
 
     public void start() throws Exception {
@@ -81,10 +103,6 @@ public class LOOPBACK extends Protocol {
         case Event.CONNECT:
         case Event.CONNECT_WITH_STATE_TRANSFER:    
             group_addr=(String)evt.getArg();
-            break;
-
-        case Event.PERF:
-            up_prot.up(evt);
             break;
         }
         return null;
