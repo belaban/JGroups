@@ -16,7 +16,7 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.22 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: TCP_NIO.java,v 1.23 2008/05/22 10:49:46 belaban Exp $
  */
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
@@ -44,7 +44,7 @@ public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
            }
            retval = new ConnectionTableNIO(this, b_addr, bc_addr, s_port, e_port, pm, ri, cet, false);
        }
-       retval.setThreadFactory(getProtocolStack().getThreadFactory());
+       retval.setThreadFactory(getThreadFactory());
        retval.setProcessorMaxThreads(getProcessorMaxThreads());
        retval.setProcessorQueueSize(getProcessorQueueSize());
        retval.setProcessorMinThreads(getProcessorMinThreads());
