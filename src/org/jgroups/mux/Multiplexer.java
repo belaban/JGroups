@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.103 2008/05/20 11:27:35 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.104 2008/05/22 12:32:09 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
@@ -216,7 +216,6 @@ public class Multiplexer implements UpHandler {
         long keep_alive=30000;
 
         Map<String,Object> m=channel.getInfo();
-        ThreadNamingPattern pattern=(ThreadNamingPattern)m.get("thread_naming_pattern");
         min_threads=Global.getPropertyAsInteger(Global.MUX_MIN_THREADS, min_threads);
         max_threads=Global.getPropertyAsInteger(Global.MUX_MAX_THREADS, max_threads);
         keep_alive=Global.getPropertyAsLong(Global.MUX_KEEPALIVE, keep_alive);
