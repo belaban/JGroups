@@ -1197,10 +1197,9 @@
                                 <row>
                                     <entry>thread_naming_pattern</entry>
                                     <entry>Determines how threads are named that are running from thread pools in 
-                                    concurrent stack. Valid values include any combination of "pcsl" letters, where 
-                                    p includes a pool name in a compound thread name, c includes cluster name, s 
-                                    includes sender address, and finally l includes local address of the channel. 
-                                    By default, thread names are composed of corresponding pool name and a thread id.
+                                    concurrent stack. Valid values include any combination of "cl" letters, where
+                                    "c" includes the cluster name and "l" includes local address of the channel.
+                                        The default is "cl"
                                     </entry>
                                 </row>
                             </tbody>
@@ -1273,7 +1272,79 @@
         <section>
             <title>Replacing the default and OOB thread pools</title>
             <para>
-                In 2.7, both the OOB and the default thread pools can be replaced by a user's own thread pool. This is
+                In 2.7, there are 3 thread pools and 4 thread factories in TP:
+                <table>
+                    <title>Thread pools and factories in TP</title>
+
+                    <tgroup cols="2">
+                        <colspec align="left" />
+
+                        <thead>
+                            <row>
+                                <entry align="center">Name</entry>
+                                <entry align="center">Description</entry>
+                            </row>
+                        </thead>
+
+                        <tbody>
+                            <row>
+                                <entry>Default thread pool</entry>
+                                <entry>This is the pools for handling incoming messages. It can be fetched using
+                                    getDefaultThreadPool() and replaced using setDefaultThreadPool(). When setting a
+                                    thread pool, the old thread pool (if any) will be shutdown and all of it tasks
+                                    cancelled first
+                                </entry>
+                            </row>
+                            <row>
+                                <entry>OOB thread pool</entry>
+                                <entry>This is the pool for handling incoming OOB messages. Methods to get and set
+                                    it are getOOBThreadPool() and setOOBThreadPool()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Timer thread pool</entry>
+                                <entry>This is the thread pool for the timer. The max number of threads is set through
+                                the timer.max_threads property. The timer thread pool cannot be set, it can only
+                                be retrieved using getTimer(). However, the thread factory of the timer
+                                can be replaced (see below)</entry>
+                            </row>
+
+                            <row>
+                                <entry>Default thread factory</entry>
+                                <entry>This is the thread factory (org.jgroups.util.ThreadFactory) of the default
+                                    thread pool, which handles incoming messages. A thread pool factory is used to
+                                    name threads and possibly make them daemons.
+                                    It can be accessed using
+                                    getDefaultThreadPoolThreadFactory() and setDefaultThreadPoolThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>OOB thread factory</entry>
+                                <entry>This is the thread factory for the OOB thread pool. It can be retrieved
+                                using getOOBThreadPoolThreadFactory() and set using method
+                                setOOBThreadPoolThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Timer thread factory</entry>
+                                <entry>This is the thread factory for the timer thread pool. It can be accessed
+                                using getTimerThreadFactory() and setTimerThreadFactory()</entry>
+                            </row>
+
+                            <row>
+                                <entry>Global thread factory</entry>
+                                <entry>The global thread factory can get used (e.g. by protocols) to create threads
+                                which don't live in the transport, e.g. the FD_SOCK server socket handler thread.
+                                Each protocol has a method getTransport(). Once the TP is obtained, getThreadFactory()
+                                can be called to get the global thread factory. The global thread factory
+                                can be replaced with setThreadFactory()</entry>
+                            </row>
+                        </tbody>
+                    </tgroup>
+                </table>
+
+
+                the OOB and the default thread pools can be replaced by a user's own thread pool. This is
                 done programmatically and can be done at runtime, but the recommended approach is to do it right after
                 the channel creation, but before the channel is connected.
             </para>
