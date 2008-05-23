@@ -1343,27 +1343,6 @@
                     </tgroup>
                 </table>
 
-
-                the OOB and the default thread pools can be replaced by a user's own thread pool. This is
-                done programmatically and can be done at runtime, but the recommended approach is to do it right after
-                the channel creation, but before the channel is connected.
-            </para>
-            <para>
-                The code below shows how to do this:
-                <screen>
-                    Channel channel;
-                    TP transport=(TP)channel.getProtocolStack().getTransport();
-                    ExecutorService thread_pool=Executors.newCachedThreadPool();
-                    transport.setDefaultThreadPool(thread_pool);
-                </screen>
-                First we fetch the ProtocolStack from the channel and get the transport protocol. Note that this could
-                be any subclass of TP, e.g. UDP or TCP. Then we create a new ExecutorService and set it in the transport.
-                The setDefaultThreadPool(Executor) method shuts down the default thread pool and waits until all threads
-                have completed processing. Usually, there shouldn't be any work tasks as the recommended way is to
-                set the thread pool before connecting the channel.
-            </para>
-            <para>
-                The method for setting the OOB thread pool is setOOBThreadPool(Executor).
             </para>
         </section>
 
