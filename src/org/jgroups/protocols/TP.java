@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.18 2008/05/23 03:01:26 bstansberry Exp $
+ * @version $Id: TP.java,v 1.160.2.19 2008/05/23 05:30:35 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -227,21 +227,17 @@ public abstract class TP extends Protocol {
     /** ================================== Timer thread pool ================================= */
     protected TimeScheduler timer=null;
 
-    DefaultThreadFactory timer_thread_factory;
+    protected ThreadFactory timer_thread_factory;
 
     /** Max number of threads to be used by the timer thread pool */
     int  max_timer_threads=4;
 
-    public ThreadFactory getTimerThreadFactory()
-    {
-       if (timer != null)
-          return (ThreadFactory) timer.getThreadFactory();
-       return timer_thread_factory;
+    public ThreadFactory getTimerThreadFactory() {
+        return timer_thread_factory;
     }
     
     public void setTimerThreadFactory(ThreadFactory factory) {
-        if(factory instanceof DefaultThreadFactory)
-            timer_thread_factory=(DefaultThreadFactory)factory;
+        timer_thread_factory=factory;
         timer.setThreadFactory(factory);
     }
 
@@ -620,7 +616,7 @@ public abstract class TP extends Protocol {
         // timer_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
         timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
         if(singleton_name != null && singleton_name.trim().length() > 0) {
-            timer_thread_factory.setIncludeClusterName(false);
+            ((ExtendedThreadFactory)timer_thread_factory).setIncludeClusterName(false);
         }
 
         default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
@@ -1596,9 +1592,9 @@ public abstract class TP extends Protocol {
 
 
     protected void setThreadNames() {
-        if(!(global_thread_factory instanceof DefaultThreadFactory))
+        if(!(global_thread_factory instanceof ExtendedThreadFactory))
             return;
-        DefaultThreadFactory tmp=(DefaultThreadFactory)global_thread_factory;
+        ExtendedThreadFactory tmp=(ExtendedThreadFactory)global_thread_factory;
 
         if(incoming_packet_handler != null)
             tmp.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
@@ -1626,8 +1622,8 @@ public abstract class TP extends Protocol {
         boolean is_shared_transport=singleton_name != null && singleton_name.trim().length() > 0;
 
         for(ThreadFactory factory: factories) {
-            if(factory instanceof DefaultThreadFactory) {
-                DefaultThreadFactory tmp=(DefaultThreadFactory)factory;
+            if(factory instanceof ExtendedThreadFactory) {
+                ExtendedThreadFactory tmp=(ExtendedThreadFactory)factory;
                 if(pattern != null) {
                     tmp.setPattern(pattern);
                     if(is_shared_transport)
@@ -2149,7 +2145,7 @@ public abstract class TP extends Protocol {
         final String transport_name;
         final TpHeader header;
         final List<Address> members=new ArrayList<Address>();
-        final DefaultThreadFactory factory;
+        final ExtendedThreadFactory factory;
 
         public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down, String pattern, Address addr) {
             this.cluster_name=cluster_name;
