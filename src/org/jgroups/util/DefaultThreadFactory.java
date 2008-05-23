@@ -7,9 +7,9 @@ package org.jgroups.util;
  * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * @version $Id: DefaultThreadFactory.java,v 1.3 2008/05/20 11:27:23 belaban Exp $
+ * @version $Id: DefaultThreadFactory.java,v 1.4 2008/05/23 05:33:36 belaban Exp $
  */
-public class DefaultThreadFactory implements ThreadFactory {
+public class DefaultThreadFactory implements ExtendedThreadFactory {
     protected final ThreadGroup group;
     protected final String      baseName;
     protected final boolean     createDaemons;
