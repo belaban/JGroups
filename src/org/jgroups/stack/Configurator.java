@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.42 2008/05/20 11:27:39 belaban Exp $
+ * @version $Id: Configurator.java,v 1.43 2008/05/23 09:16:52 belaban Exp $
  */
 public class Configurator {
 
@@ -87,7 +87,7 @@ public class Configurator {
         for(final Protocol prot: protocols) {
             if(prot instanceof TP) {
                 String singleton_name=((TP)prot).getSingletonName();
-                if(singleton_name != null && singleton_name.length() > 0) {
+                if(singleton_name != null && singleton_name.length() > 0 && cluster_name != null) {
                     TP transport=(TP)prot;
                     final Map<String, Protocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
