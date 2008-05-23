@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.21 2008/05/23 07:16:19 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.22 2008/05/23 08:19:20 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -356,6 +356,8 @@ public abstract class TP extends Protocol {
     public void setBindAddress(String bind_addr) throws UnknownHostException {
         this.bind_addr=InetAddress.getByName(bind_addr);
     }
+    public int getBindPort() {return bind_port;}
+    public void setBindPort(int port) {this.bind_port=port;}
     /** @deprecated Use {@link #isReceiveOnAllInterfaces()} instead */
     public boolean getBindToAllInterfaces() {return receive_on_all_interfaces;}
     public void setBindToAllInterfaces(boolean flag) {this.receive_on_all_interfaces=flag;}
