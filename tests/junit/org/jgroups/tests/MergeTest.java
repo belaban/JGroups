@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.20 2008/04/21 14:35:18 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.21 2008/05/23 10:45:46 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -119,7 +119,7 @@ public class MergeTest extends ChannelTestBase {
             System.out.println("Waiting for merging to kick in....");
             
             for (int i = 0; i < count; i++) {              
-                ((JChannel)channels[i].getChannel()).getProtocolStack().removeProtocol("DISCARD");                                     
+                channels[i].getChannel().getProtocolStack().removeProtocol("DISCARD");
             }            
                        
             //Either merge properly or time out...
@@ -178,7 +178,7 @@ public class MergeTest extends ChannelTestBase {
     }
     
     
-    private void addDiscardProtocol(JChannel ch) throws Exception {
+    private static void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();
@@ -187,12 +187,12 @@ public class MergeTest extends ChannelTestBase {
         stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
     }
     
-    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+    private static void replaceDiscoveryProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol discovery=stack.removeProtocol("TCPPING");
         if(discovery != null){
             Protocol transport = stack.getTransport();
-            MPING mping =new MPING();
+            MPING mping=new MPING();
             mping.setProperties(new Properties());
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
@@ -202,7 +202,7 @@ public class MergeTest extends ChannelTestBase {
         }        
     }
 
-    private void modiftFDAndMergeSettings(JChannel ch) {
+    private static void modiftFDAndMergeSettings(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         FD fd=(FD)stack.findProtocol("FD");

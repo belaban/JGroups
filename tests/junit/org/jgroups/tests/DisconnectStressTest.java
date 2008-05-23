@@ -21,7 +21,7 @@ import java.util.Properties;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.11 2008/04/23 15:15:25 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.12 2008/05/23 10:45:44 belaban Exp $
  */
 @Test(groups="temp")
 public class DisconnectStressTest extends ChannelTestBase {
@@ -72,18 +72,17 @@ public class DisconnectStressTest extends ChannelTestBase {
 
     private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        Properties props=new Properties();
         Protocol prot=stack.findProtocol(MERGE2.class);
         if(prot != null) {
-            props.clear();
-            props.setProperty("min_interval", "3000");
-            props.setProperty("max_interval", "5000");
-            prot.setProperties(props);
+            MERGE2 merge=(MERGE2)prot;
+            merge.setMinInterval(3000);
+            merge.setMaxInterval(5000);
         }
         prot=stack.findProtocol(STABLE.class);
-        props.clear();
-        props.setProperty("desired_avg_gossip", "5000");
-        prot.setProperties(props);
+        if(prot != null) {
+            STABLE stable=(STABLE)prot;
+            stable.setDesiredAverageGossip(5000);
+        }
         NAKACK nak=(NAKACK)stack.findProtocol(NAKACK.class);
         if(nak != null) {
             nak.setLogDiscardMessages(false);

@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.101 2008/05/20 11:27:31 belaban Exp $
+// $Id: UNICAST.java,v 1.102 2008/05/23 10:45:39 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -86,6 +86,13 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     /** All protocol names have to be unique ! */
     public String  getName() {return name;}
+
+    public long[] getTimeouts() {return timeouts;}
+
+    @Property(name="timeout")
+    public void setTimeouts(String val) {
+        timeouts=Util.parseCommaDelimitedLongs(val);
+    }
 
     @ManagedAttribute
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
@@ -199,23 +206,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return m;
     }
 
-    public boolean setProperties(Properties props) {
-        String     str;
-        long[]     tmp;
 
-        super.setProperties(props);
-        str=props.getProperty("timeout");
-        if(str != null) {
-        tmp=Util.parseCommaDelimitedLongs(str);
-        if(tmp != null && tmp.length > 0)
-        timeouts=tmp;
-            props.remove("timeout");
-        }
-
-        listDeprecatedProperties(props, "window_size","min_threshold");
-     
-        return true;
-    }
 
     public void start() throws Exception {
         timer=getTransport().getTimer();

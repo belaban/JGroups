@@ -25,7 +25,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.143 2008/05/20 11:27:24 belaban Exp $
+ * @version $Id: GMS.java,v 1.144 2008/05/23 10:45:58 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 public class GMS extends Protocol {
@@ -71,7 +71,7 @@ public class GMS extends Protocol {
     @ManagedAttribute(description="View bundling toggle",writable=true)
     @Property
     private boolean           view_bundling=true;
-    @Property
+    @Property @ManagedAttribute
     private long              max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
     static final String       CLIENT="Client";
     static final String       COORD="Coordinator";
@@ -162,6 +162,8 @@ public class GMS extends Protocol {
         return sb.toString();
     }
 
+    public void setPrintLocalAddress(boolean flag) {print_local_addr=flag;}
+
     public long getViewAckCollectionTimeout() {
         return view_ack_collection_timeout;
     }
@@ -181,6 +183,7 @@ public class GMS extends Protocol {
     public long getMaxBundlingTime() {
         return max_bundling_time;
     }
+
 
     public void setMaxBundlingTime(long max_bundling_time) {
         this.max_bundling_time=max_bundling_time;
@@ -1142,7 +1145,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.143 2008/05/20 11:27:24 belaban Exp $
+     * @version $Id: GMS.java,v 1.144 2008/05/23 10:45:58 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

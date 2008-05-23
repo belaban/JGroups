@@ -7,6 +7,7 @@ import org.jgroups.blocks.RpcDispatcher;
 import org.jgroups.protocols.BasicTCP;
 import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.UDP;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.GossipRouter;
 import org.jgroups.stack.Protocol;
@@ -368,9 +369,7 @@ public class ChannelTestBase {
             ProtocolStack stack=c.getProtocolStack();
             Protocol gms=stack.findProtocol(GMS.class);
             if(gms != null) {
-                Properties props=new Properties();
-                props.setProperty("print_local_addr", "false");
-                gms.setProperties(props);
+                ((GMS)gms).setPrintLocalAddress(false);
             }
         }
 
@@ -391,32 +390,27 @@ public class ChannelTestBase {
         private void makeUnique(JChannel channel, int num) throws Exception {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
-            Properties props=new Properties();
             if(transport instanceof UDP) {
                 String mcast_addr=ResourceManager.getNextMulticastAddress();
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
-                props.setProperty("mcast_addr", mcast_addr);
-                props.setProperty("mcast_port", String.valueOf(mcast_port));
-                transport.setProperties(props);
+                ((UDP)transport).setMulticastAddress(mcast_addr);
+                ((UDP)transport).setMulticastPort(mcast_port);
             }
             else if(transport instanceof BasicTCP) {
                 List<Short> ports=ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
-
-                props.setProperty("bind_port", String.valueOf(ports.get(0)));
-                props.setProperty("port_range", String.valueOf(num));
-                transport.setProperties(props);
+                ((TP)transport).setBindPort(ports.get(0));
+                ((TP)transport).setPortRange(num);
 
                 Protocol ping=stack.findProtocol(TCPPING.class);
                 if(ping == null)
                     throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
-                props.clear();
 
                 List<String> initial_hosts=new LinkedList<String>();
                 for(short port: ports) {
                     initial_hosts.add(bind_addr + "[" + port + "]");
                 }
                 String tmp=Util.printListWithDelimiter(initial_hosts, ",");
-                props.setProperty("initial_hosts", tmp);
+                ((TCPPING)ping).setInitialHosts(tmp);
             }
             else {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");

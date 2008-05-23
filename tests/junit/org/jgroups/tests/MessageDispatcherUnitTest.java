@@ -171,11 +171,9 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
     private static void disableBundling(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=(TP)stack.findProtocol(TP.class);
+        TP transport=stack.getTransport();
         if(transport != null) {
-            Properties tmp=new Properties();
-            tmp.setProperty("enable_bundling", "false");
-            transport.setProperties(tmp);
+            transport.setEnableBundling(false);
         }
     }
 

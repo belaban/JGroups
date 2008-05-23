@@ -11,13 +11,14 @@ import org.testng.annotations.Test;
 
 import java.util.*;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.7 2008/04/21 16:18:14 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.8 2008/05/23 10:45:49 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
@@ -173,13 +174,14 @@ public class ConcurrentStackTest extends ChannelTestBase {
         Protocol tp=ch1.getProtocolStack().findProtocol(TP.class);
         if(tp == null)
             throw new IllegalStateException("Transport protocol not found");
-        Properties p=new Properties();
-        p.setProperty("use_concurrent_stack", String.valueOf(threadless));
-        p.setProperty("thread_pool.min_threads", "1");
-        p.setProperty("thread_pool.max_threads", "100");
-        p.setProperty("thread_pool.queue_enabled", "false");
-        // p.setProperty("loopback", "true");
-        tp.setProperties(p);
+        TP transport=(TP)tp;
+        transport.setUseConcurrentStack(threadless);
+        ThreadPoolExecutor default_pool=(ThreadPoolExecutor)transport.getDefaultThreadPool();
+        if(default_pool != null) {
+            default_pool.setCorePoolSize(1);
+            default_pool.setMaximumPoolSize(100);
+        }
+        transport.setThreadPoolQueueEnabled(false);
     }
 
 

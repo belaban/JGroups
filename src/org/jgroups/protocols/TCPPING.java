@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.35 2008/05/08 09:46:42 vlada Exp $
+// $Id: TCPPING.java,v 1.36 2008/05/23 10:45:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,27 +53,24 @@ public class TCPPING extends Discovery {
      * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
      */
+    @Property
     public List<Address> getInitialHosts() {
         return initial_hosts;
     }
 
-
-    public boolean setProperties(Properties props) {       
-        String str=Util.getProperty(new String[]{Global.TCPPING_INITIAL_HOSTS}, props, "initial_hosts", false, null);
-        if(str != null) {
-            props.remove("initial_hosts");
-            try {
-                initial_hosts=createInitialHosts(str);
-            }
-            catch(UnknownHostException e) {
-                log.error("failed creating initial list of hosts", e);
-                return false;
-            }
-        }
-
-        return super.setProperties(props);
+    @Property
+    public void setInitialHosts(String hosts) throws UnknownHostException {
+        initial_hosts=createInitialHosts(hosts);
     }
 
+
+    public int getPortRange() {
+        return port_range;
+    }
+
+    public void setPortRange(int port_range) {
+        this.port_range=port_range;
+    }
 
     public void localAddressSet(Address addr) {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !

@@ -32,7 +32,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.58 2008/05/20 11:27:39 belaban Exp $
+ * @version $Id: Protocol.java,v 1.59 2008/05/23 10:45:59 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -49,7 +49,7 @@ public abstract class Protocol {
      * "loopback=false;unicast_inport=4444"
      * </pre>
      */
-    public boolean setProperties(Properties props) {
+    protected boolean setProperties(Properties props) {
         if(props != null)
             this.props.putAll(props);
         return true;
