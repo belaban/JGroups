@@ -18,7 +18,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.12.4.4 2008/02/27 13:29:03 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.12.4.5 2008/05/23 15:27:00 vlada Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -186,9 +186,9 @@ public class MergeTest extends ChannelTestBase {
             MPING mping =new MPING();
             mping.setProperties(new Properties());
             mping.setProtocolStack(ch.getProtocolStack());
-            mping.init();
-            mping.start();
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
+            mping.init();
+            mping.start();            
             System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
         }        
     }
