@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.91.2.5 2008/05/22 13:23:06 belaban Exp $
+// $Id: UNICAST.java,v 1.91.2.6 2008/05/23 12:17:41 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -53,6 +53,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     /** whether to loop back messages sent to self (will be removed in the future, default=false) */
     private boolean          loopback=false;
+
+    /** If set to true, messages will not get retransmitted by the sender. This is useful when running
+     over a lossless transport, e.g. TCP. The default is false. Do not set this to true if running over UDP */
+    private boolean          xmit_off=false;
 
     /**
      * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
@@ -210,6 +214,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("use_gms");
         }
 
+        str=props.getProperty("xmit_off");
+        if(str != null) {
+            xmit_off=Boolean.valueOf(str).booleanValue();
+            props.remove("xmit_off");
+        }
+
         str=props.getProperty("immediate_ack");
         if(str != null) {
         	immediate_ack=Boolean.valueOf(str).booleanValue();
@@ -308,8 +318,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 if(!started) {
-                    if(log.isWarnEnabled())
-                        log.warn("discarded message as start() has not yet been called, message: " + msg);
+                    if(log.isTraceEnabled())
+                        log.trace("discarded message as start() has not yet been called, message: " + msg);
                     return null;
                 }
 
@@ -321,11 +331,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     num_bytes_sent+=msg.getLength();
                     return null;
                 }
-
-                //if(previous_members.contains(dst)) {
-                  //  throw new IllegalArgumentException("discarding message to " + dst + " as this member left the group," +
-                    //        " previous_members=" + previous_members);
-                //}
 
                 if(!members.contains(dst) && !enabled_members.contains(dst)) {
                     throw new IllegalArgumentException(dst + " is not a member of the group " + members + " (enabled_members=" + enabled_members + ")");
@@ -348,18 +353,24 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     try {
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
-                        if(entry.sent_msgs == null) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the protocol stack's timer
+                        if(entry.sent_msgs == null && !xmit_off) { // first msg to peer 'dst'
+                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the global timer
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled())
                             log.trace(new StringBuilder().append(local_addr).append(" --> DATA(").append(dst).append(": #").
                                     append(seqno));
-                        entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+                        if(entry.sent_msgs != null)
+                            entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
+
+                        if(xmit_off) {
+                            send(msg, evt);
+                        }
                         entry.sent_msgs_seqno++;
                     }
                     catch(Throwable t) {
-                        entry.sent_msgs.ack(seqno); // remove seqno again, so it is not transmitted
+                        if(entry.sent_msgs != null)
+                            entry.sent_msgs.ack(seqno); // remove seqno again, so it is not transmitted
                         if(t instanceof Error)
                             throw (Error)t;
                         if(t instanceof RuntimeException)
@@ -373,18 +384,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // to send unicast messages in order of sequence numbers because they will be sorted into the correct
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
                 // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
-                try {
-                    down_prot.down(evt);
-                    num_msgs_sent++;
-                    num_bytes_sent+=msg.getLength();
-                }
-                catch(Throwable t) { // eat the exception, don't pass it up the stack
-                    if(log.isWarnEnabled()) {
-                        log.warn("failure passing message down", t);
+                if(!xmit_off) {
+                    try { // we catch the exception in this case because the msg is in the XMIT table and will be retransmitted
+                        send(msg, evt);
+                    }
+                    catch(Throwable t) {
+                        log.warn("failed sending the message (will get retransmitted)", t);
                     }
                 }
-
-                msg=null;
                 return null; // we already passed the msg down
 
             case Event.VIEW_CHANGE:  // remove connections to peers that are not members anymore !
@@ -466,6 +473,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         return down_prot.down(evt);          // Pass on to the layer below us
     }
 
+
+    private void send(Message msg, Event evt) {
+        down_prot.down(evt);
+        num_msgs_sent++;
+        num_bytes_sent+=msg.getLength();
+    }
 
     /** Removes and resets from connection table (which is already locked). Returns true if member was found, otherwise false */
     private boolean removeConnection(Address mbr) {
@@ -583,7 +596,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         // http://jira.jboss.com/jira/browse/JGRP-713: // send the ack back *before* we process the message
         // to limit unnecessary retransmits
-        if(immediate_ack)
+        if(immediate_ack && !xmit_off)
             sendAck(sender, seqno);
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
