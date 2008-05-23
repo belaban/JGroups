@@ -9,6 +9,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 import org.jgroups.util.DefaultThreadFactory;
+import org.jgroups.util.ExtendedThreadFactory;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -39,7 +40,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.167 2008/05/20 11:27:32 belaban Exp $
+ * @version $Id: UDP.java,v 1.168 2008/05/23 05:33:35 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -711,8 +712,8 @@ public class UDP extends TP implements Runnable {
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
 
-            if(global_thread_factory instanceof DefaultThreadFactory)
-                ((DefaultThreadFactory)global_thread_factory).renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+            if(global_thread_factory instanceof ExtendedThreadFactory)
+                ((ExtendedThreadFactory)global_thread_factory).renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
 
             if(log.isDebugEnabled())
                 log.debug("created unicast receiver thread " + ucast_receiver.getThread());
@@ -773,9 +774,9 @@ public class UDP extends TP implements Runnable {
 
     protected void setThreadNames() {
         super.setThreadNames();
-        DefaultThreadFactory tmp=null;
-        if(global_thread_factory instanceof DefaultThreadFactory) {
-            tmp=(DefaultThreadFactory)global_thread_factory;
+        ExtendedThreadFactory tmp=null;
+        if(global_thread_factory instanceof ExtendedThreadFactory) {
+            tmp=(ExtendedThreadFactory)global_thread_factory;
             tmp.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
             if(ucast_receiver != null)
                 tmp.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
