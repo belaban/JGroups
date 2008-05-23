@@ -1,4 +1,4 @@
-// $Id: UnicastChannelTest.java,v 1.8.2.1 2008/05/23 08:20:21 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.8.2.2 2008/05/23 09:15:40 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -112,8 +112,8 @@ public class UnicastChannelTest {
             }
             msg=new Message(addr, null, line);
             ch.send(msg);
-                }
-                }
+        }
+    }
 
     void runServer() throws Exception {
         System.setProperty("jgroups.bind_addr", host);
