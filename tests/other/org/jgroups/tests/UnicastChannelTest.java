@@ -1,10 +1,11 @@
-// $Id: UnicastChannelTest.java,v 1.10 2008/05/15 06:04:55 belaban Exp $
+// $Id: UnicastChannelTest.java,v 1.11 2008/05/23 08:18:54 belaban Exp $
 
 
 package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
+import org.jgroups.util.Util;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 
@@ -116,21 +117,18 @@ public class UnicastChannelTest {
     }
 
     void runServer() throws Exception {
-        Object  obj;
-        Message msg, rsp;
-
         System.setProperty("jgroups.bind_addr", host);
         if(port > 0) {
             Protocol transport=ch.getProtocolStack().getTransport();
-            if(transport != null) {
-                Properties tmp=new Properties();
-                tmp.setProperty("bind_port", String.valueOf(port));
-                tmp.setProperty("start_port", String.valueOf(port)); // until we have merged the 2 props into one...
-                transport.setProperties(tmp);
+            if(transport instanceof TP) {
+                ((TP)transport).setBindPort(port);
             }
         }
         ch.connect(null); // this makes it a unicast channel
         System.out.println("server started at " + new java.util.Date() + ", listening on " + ch.getLocalAddress());
+        while(ch.isOpen()) {
+            Util.sleep(10000);
+        }
     }
 
     static void help() {
