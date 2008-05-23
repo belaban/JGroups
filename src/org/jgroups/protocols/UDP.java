@@ -40,7 +40,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.168 2008/05/23 05:33:35 belaban Exp $
+ * @version $Id: UDP.java,v 1.169 2008/05/23 10:45:40 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -136,6 +136,10 @@ public class UDP extends TP implements Runnable {
     }
 
 
+    public void setMulticastAddress(String addr) {this.mcast_addr_name=addr;}
+    public String getMulticastAddress() {return mcast_addr_name;}
+    public int getMulticastPort() {return mcast_port;}
+    public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
 
     /**
      * Setup the Protocol instance acording to the configuration string.

@@ -50,7 +50,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.201 2008/05/23 08:14:54 belaban Exp $
+ * @version $Id: TP.java,v 1.202 2008/05/23 10:45:39 belaban Exp $
  */
 @MBean(description="Transport protocol")
 public abstract class TP extends Protocol {
@@ -264,6 +264,9 @@ public abstract class TP extends Protocol {
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
     @Property(name="thread_pool.queue_enabled")
     boolean thread_pool_queue_enabled=true;
+
+    public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
+
     /** max number of elements in queue (bounded) */
     @ManagedAttribute
     @Property(name="thread_pool.queue_max_size")
@@ -454,14 +457,12 @@ public abstract class TP extends Protocol {
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
     public void setEnableBundling(boolean flag) {enable_bundling=flag;}
+    public boolean isEnableUnicastBundling() {return enable_unicast_bundling;}
+    public void setEnableUnicastBundling(boolean enable_unicast_bundling) {this.enable_unicast_bundling=enable_unicast_bundling;}
+    public void setPortRange(int range) {this.port_range=range;}
+    public void setUseConcurrentStack(boolean flag) {use_concurrent_stack=flag;}
 
-    public boolean isEnable_unicast_bundling() {
-        return enable_unicast_bundling;
-    }
 
-    public void setEnable_unicast_bundling(boolean enable_unicast_bundling) {
-        this.enable_unicast_bundling=enable_unicast_bundling;
-    }
 
     @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent")
     public int getMaxBundleSize() {return max_bundle_size;}

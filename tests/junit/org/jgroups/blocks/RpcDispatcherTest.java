@@ -5,6 +5,9 @@ import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.protocols.FRAG;
+import org.jgroups.protocols.FRAG2;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
@@ -35,7 +38,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.15 2008/04/23 14:11:02 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.16 2008/05/23 10:46:03 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -215,17 +218,18 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
 
     private static void setProps(JChannel ch) {
-        Properties props1=new Properties(), props2=new Properties();
-        props1.setProperty("frag_size", "12000");
-        props2.setProperty("max_bundle_size", "14000");
         Protocol prot=ch.getProtocolStack().findProtocol("FRAG2");
-        if(prot == null)
-            prot=ch.getProtocolStack().findProtocol("FRAG");
-        if(prot != null)
-            prot.setProperties(props1);
+        if(prot != null) {
+            ((FRAG2)prot).setFragSize(12000);
+        }
+        prot=ch.getProtocolStack().findProtocol("FRAG");
+        if(prot != null) {
+            ((FRAG)prot).setFragSize(12000);
+        }
+
         prot=ch.getProtocolStack().getTransport();
         if(prot != null)
-            prot.setProperties(props2);
+            ((TP)prot).setMaxBundleSize(14000);
     }
 
     /**

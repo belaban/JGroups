@@ -31,7 +31,7 @@ import org.testng.annotations.Test;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.11 2008/05/20 16:01:59 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.12 2008/05/23 10:45:51 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -233,11 +233,8 @@ public class ReconciliationTest extends ChannelTestBase {
     }
 
     private static void insertDISCARD(JChannel ch, Address exclude) throws Exception {
-        Properties prop=new Properties();
-        prop.setProperty("excludeitself", "true"); // don't discard messages to
-        // self
         DISCARD discard=new DISCARD();
-        discard.setProperties(prop);
+        discard.setExcludeItself(true);
         discard.addIgnoreMember(exclude); // ignore messages from this member
         ch.getProtocolStack().insertProtocol(discard, ProtocolStack.BELOW, "NAKACK");
     }

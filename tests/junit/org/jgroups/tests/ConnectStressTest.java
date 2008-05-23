@@ -3,10 +3,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.PING;
-import org.jgroups.protocols.TCPPING;
-import org.jgroups.protocols.MPING;
+import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
@@ -21,7 +18,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.30 2008/04/23 09:27:52 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.31 2008/05/23 10:45:50 belaban Exp $
  */
 @Test(groups={"temp"})
 public class ConnectStressTest extends ChannelTestBase {
@@ -211,23 +208,17 @@ public class ConnectStressTest extends ChannelTestBase {
 
     private static void changeProperties(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        final Properties props=new Properties();
         Protocol prot=stack.findProtocol("GMS");
         if(prot != null) {
-            props.setProperty("view_bundling", "true");
-            props.setProperty("max_bundling_time", "300");
-            // gms.setViewBundling(true);
-            // gms.setMaxBundlingTime(300);
-            prot.setProperties(props);
+            GMS gms=(GMS)prot;
+            gms.setViewBundling(true);
+            gms.setMaxBundlingTime(300);
         }
         prot=stack.findProtocol("MERGE2");
         if(prot != null) {
-            props.clear();
-            props.setProperty("min_interval", "5000");
-            props.setProperty("max_interval", "10000");
-            // merge.setMinInterval(5000);
-            // merge.setMaxInterval(10000);
-            prot.setProperties(props);
+            MERGE2 merge=(MERGE2)prot;
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
         }
 
         prot=stack.findProtocol(PING.class);
@@ -236,10 +227,9 @@ public class ConnectStressTest extends ChannelTestBase {
         if(prot == null)
             prot=stack.findProtocol(MPING.class);
         if(prot != null) {
-            props.clear();
-            props.setProperty("num_initial_members", String.valueOf(NUM));
-            props.setProperty("num_ping_requests", "3");
-            prot.setProperties(props);
+            Discovery discovery=(Discovery)prot;
+            discovery.setNumInitialMembers(NUM);
+            discovery.setNumPingRequests(3);
         }
     }
 

@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.20 2008/05/08 09:46:42 vlada Exp $
+// $Id: DISCARD.java,v 1.21 2008/05/23 10:45:38 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -49,6 +49,30 @@ public class DISCARD extends Protocol {
 
     public void setDiscardAll(boolean discard_all) {
         this.discard_all=discard_all;
+    }
+
+    public boolean isExcludeItself() {
+        return excludeItself;
+    }
+
+    public void setExcludeItself(boolean excludeItself) {
+        this.excludeItself=excludeItself;
+    }
+
+    public double getUpDiscardRate() {
+        return up;
+    }
+
+    public void setUpDiscardRate(double up) {
+        this.up=up;
+    }
+
+    public double getDownDiscardRate() {
+        return down;
+    }
+
+    public void setDownDiscardRate(double down) {
+        this.down=down;
     }
 
     /** Messages from this sender will get dropped */

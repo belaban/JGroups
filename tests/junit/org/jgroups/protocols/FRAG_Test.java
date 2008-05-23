@@ -1,19 +1,19 @@
 package org.jgroups.protocols;
 
 
-
-import org.testng.annotations.*;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.debug.Simulator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
+import org.jgroups.tests.ChannelTestBase;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
-import java.util.Properties;
 import java.util.Vector;
 
 /**
@@ -45,10 +45,8 @@ public class FRAG_Test extends ChannelTestBase {
         s.setLocalAddress(a1);
         s.setView(v);
         s.addMember(a1);
-        Protocol frag=createProtocol();
-        Properties props=new Properties();
-        props.setProperty("frag_size", "512");
-        frag.setPropertiesInternal(props);
+        FRAG frag=(FRAG)createProtocol();
+        frag.setFragSize(512);
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
         s.start();

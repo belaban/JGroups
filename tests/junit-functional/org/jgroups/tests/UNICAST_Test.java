@@ -44,9 +44,7 @@ public class UNICAST_Test {
 
     public void testReceptionOfAllMessages() throws Throwable {
         UNICAST unicast=new UNICAST();
-        Properties props=new Properties();
-        props.setProperty("timeout", "500,1000,2000,3000");
-        unicast.setProperties(props);
+        unicast.setTimeouts("500,1000,2000,3000");
         Protocol[] stack=new Protocol[]{unicast};
         createStack(stack);
         _testReceptionOfAllMessages();
@@ -55,14 +53,10 @@ public class UNICAST_Test {
 
     public void testReceptionOfAllMessagesWithDISCARD() throws Throwable {
         UNICAST unicast=new UNICAST();
-        Properties props=new Properties();
-        props.setProperty("timeout", "500,1000,2000,3000");
-        unicast.setProperties(props);
+        unicast.setTimeouts("500,1000,2000,3000");
 
         DISCARD discard=new DISCARD();
-        props.clear();
-        props.setProperty("down", "0.1"); // discard all down message with 10% probability
-        discard.setProperties(props);
+        discard.setDownDiscardRate(0.1); // discard all down message with 10% probability
 
         Protocol[] stack=new Protocol[]{unicast,discard};
         createStack(stack);

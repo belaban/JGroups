@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
+import org.jgroups.protocols.TP;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -11,7 +12,7 @@ import java.util.Properties;
 
 /**
  * @author Bela Ban
- * @version $Id: JGroupsLatencyTest.java,v 1.5 2007/08/16 08:45:40 belaban Exp $
+ * @version $Id: JGroupsLatencyTest.java,v 1.6 2008/05/23 10:46:00 belaban Exp $
  */
 public class JGroupsLatencyTest {
     JChannel ch;
@@ -58,10 +59,8 @@ public class JGroupsLatencyTest {
     private static void disableBundling(JChannel ch) {
         System.out.println("Disabling message bundling (as this would increase latency)");
         ProtocolStack stack=ch.getProtocolStack();
-        Protocol transport=stack.getTransport();
-        Properties props=new Properties();
-        props.setProperty("enable_bundling", "false");
-        transport.setProperties(props);
+        TP transport=stack.getTransport();
+        transport.setEnableBundling(false);
     }
 
 

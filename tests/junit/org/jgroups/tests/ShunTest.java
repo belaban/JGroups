@@ -27,7 +27,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.13 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.14 2008/05/23 10:45:44 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -225,13 +225,11 @@ public class ShunTest extends ChannelTestBase {
         }       
     }
     
-    private void addDiscardProtocol(JChannel ch) throws Exception {
+    private static void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();
-        Properties props = new Properties();
-        props.setProperty("up", "1.0");
-        discard.setProperties(props);
+        discard.setUpDiscardRate(1.0);
         discard.setProtocolStack(ch.getProtocolStack());
         discard.start();
         stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());

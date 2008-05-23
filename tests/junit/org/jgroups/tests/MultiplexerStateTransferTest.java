@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.testng.annotations.*;
 import org.jgroups.*;
+import org.jgroups.protocols.TCPPING;
 import org.jgroups.mux.MuxChannel;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -19,7 +20,7 @@ import java.util.*;
 /**
  * Test the multiplexer functionality provided by JChannelFactory
  * @author Bela Ban
- * @version $Id: MultiplexerStateTransferTest.java,v 1.10 2008/04/16 08:01:36 belaban Exp $
+ * @version $Id: MultiplexerStateTransferTest.java,v 1.11 2008/05/23 10:45:42 belaban Exp $
  */
 @Test(groups=Global.MULTIPLEXER)
 public class MultiplexerStateTransferTest extends ChannelTestBase {
@@ -262,21 +263,15 @@ public class MultiplexerStateTransferTest extends ChannelTestBase {
 
 
     private static void setCorrectPortRange(Channel ch) {
-        ProtocolStack stack=((MuxChannel)ch).getProtocolStack();
+        ProtocolStack stack=ch.getProtocolStack();
         Protocol tcpping=stack.findProtocol("TCPPING");
         if(tcpping == null)
             return;
 
-        Properties props=tcpping.getProperties();
-        String port_range=props.getProperty("port_range");
-        if(port_range != null) {
-            System.out.println("port_range in TCPPING: " + port_range + ", setting it to 2");
-            port_range="2";
-            Properties p=new Properties();
-            // p.putAll(props);
-            p.setProperty("port_range", port_range);
-            tcpping.setProperties(p);
-        }
+        TCPPING ping=(TCPPING)tcpping;
+        int port_range=ping.getPortRange();
+        System.out.println("port_range in TCPPING: " + port_range + ", setting it to 2");
+        ping.setPortRange(2);
     }
 
 
