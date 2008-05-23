@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.10 2008/03/04 12:42:14 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.11 2008/05/23 04:40:27 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -189,6 +189,7 @@
             <fileset dir="${conf.dir}">
                 <include name="config.txt"/>
                 <include name="udp.xml"/>
+                <include name="flush-*.xml"/>
                 <include name="tcp*.xml"/>
                 <include name="mping.xml"/>
                 <include name="sfc.xml"/>
