@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.3
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.2 2008/05/26 14:42:30 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.3 2008/05/26 15:18:41 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.3 is still API-backwards compatible with previous versions (down to 2.2.5).
@@ -15,7 +15,7 @@ Shared transport fixes
 ----------------------
 [http://jira.jboss.com/jira/browse/JGRP-737]
 
-Critical bug in the shared transport which caused channels sharing a transport to cease working as soon as
+Critical bug in the shared transport which caused channels sharing a transport to stop working as soon as
 one shared channel was closed. Fixed by introducing reference counting.
 
 
@@ -32,6 +32,20 @@ Section 5.5.5 (http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanc
 discusses the steps to be taken to replace thread pools and / or thread factories. 
 
 
+Message retransmission can be turned off in UNICAST
+---------------------------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-717]
+
+Using the xmit_off property, retransmission can be turned off. Default is on. Turning it off makes sense over'
+lossless transports like TCP.
+
+Eager ACKs for UNICAST
+----------------------
+[http://jira.jboss.com/jira/browse/JGRP-713]
+
+Optimization for heavy unicast traffic; reduces retransmissions
+
+
 Manual
 ------
 The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
@@ -42,10 +56,16 @@ The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/in
 
 Bug fixes
 ---------
-FD: messages other than from the pinged neighbor cause the missing heartbeat count to get reset. This is a regression in
-2.6.
+FD: messages other than from the pinged neighbor cause the missing heartbeat count to get reset.
+This is a regression in 2.6.
 [http://jira.jboss.com/jira/browse/JGRP-746]
 
+FLUSH: flushing spans mereges now
+[http://jira.jboss.com/jira/browse/JGRP-700]
+
+Merging of digests was incorrect
+--------------------------------
+[http://jira.jboss.com/jira/browse/JGRP-699]
 
 The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
 
