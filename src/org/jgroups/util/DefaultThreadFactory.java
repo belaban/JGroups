@@ -7,9 +7,9 @@ package org.jgroups.util;
  * THREAD-5,MyCluster,192.168.1.5:63754 or THREAD,MyCluster,192.168.1.5:63754
  * @author Vladimir Blagojevic
  * @author Bela Ban
- * @version $Id: DefaultThreadFactory.java,v 1.4 2008/05/23 05:33:36 belaban Exp $
+ * @version $Id: DefaultThreadFactory.java,v 1.5 2008/05/26 09:28:29 belaban Exp $
  */
-public class DefaultThreadFactory implements ExtendedThreadFactory {
+public class DefaultThreadFactory implements ExtendedThreadFactory, ThreadManager {
     protected final ThreadGroup group;
     protected final String      baseName;
     protected final boolean     createDaemons;
@@ -20,6 +20,7 @@ public class DefaultThreadFactory implements ExtendedThreadFactory {
     protected boolean           includeLocalAddress=false;
     protected String            clusterName=null;
     protected String            address=null;
+    protected ThreadDecorator   threadDecorator=null;
 
 
     public DefaultThreadFactory(ThreadGroup group, String baseName, boolean createDaemons) {
@@ -52,6 +53,14 @@ public class DefaultThreadFactory implements ExtendedThreadFactory {
         this.address=address;
     }
 
+    public ThreadDecorator getThreadDecorator() {
+        return threadDecorator;
+    }
+
+    public void setThreadDecorator(ThreadDecorator threadDecorator) {
+        this.threadDecorator = threadDecorator;
+    }
+
     public Thread newThread(Runnable r, String name) {
         return newThread(group, r, name);
     }
@@ -68,6 +77,8 @@ public class DefaultThreadFactory implements ExtendedThreadFactory {
         Thread retval=new Thread(group, r, name);
         retval.setDaemon(createDaemons);
         renameThread(retval, address, cluster_name);
+        if(threadDecorator != null)
+            threadDecorator.threadCreated(retval);
         return retval;
     }
 
@@ -112,6 +123,7 @@ public class DefaultThreadFactory implements ExtendedThreadFactory {
     public void renameThread(Thread thread) {
         renameThread(null, thread);
     }
+
 
 
 

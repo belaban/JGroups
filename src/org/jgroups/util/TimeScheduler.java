@@ -38,9 +38,9 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.26 2008/05/20 11:27:22 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.27 2008/05/26 09:28:29 belaban Exp $
  */
-public class TimeScheduler extends ScheduledThreadPoolExecutor  {
+public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
 
     /** The interface that submitted tasks must implement */
     public interface Task extends Runnable {
@@ -71,8 +71,7 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
         }
     }
 
-
-
+    private ThreadDecorator threadDecorator=null;
 
     /**
      * Create a scheduler that executes tasks in dynamically adjustable intervals
@@ -95,7 +94,13 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
         setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(getRejectedExecutionHandler()));
     }
 
+    public ThreadDecorator getThreadDecorator() {
+        return threadDecorator;
+    }
 
+    public void setThreadDecorator(ThreadDecorator threadDecorator) {
+        this.threadDecorator=threadDecorator;
+    }
 
     public String dumpTaskQueue() {
         return getQueue().toString();
@@ -172,6 +177,21 @@ public class TimeScheduler extends ScheduledThreadPoolExecutor  {
         }
         getQueue().clear();
         awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME, TimeUnit.MILLISECONDS);
+    }
+
+
+
+
+    @Override
+    protected void afterExecute(Runnable r, Throwable t)
+    {
+        try {
+           super.afterExecute(r, t);
+        }
+        finally {
+           if(threadDecorator != null)
+              threadDecorator.threadReleased(Thread.currentThread());
+        }
     }
 
 
