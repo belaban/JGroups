@@ -1,22 +1,23 @@
 package org.jgroups.tests;
+
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.concurrent.*;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Tests the TLS
+ * Tests the concurrent stack
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.1.4.1 2008/02/15 01:06:20 vlada Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.1.4.2 2008/05/26 11:55:07 belaban Exp $
  */
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
     final static int NUM=10, EXPECTED=NUM * 3;
-    final static long SLEEPTIME=100;
+    final static long SLEEPTIME=500;
     CyclicBarrier barrier;
 
     public ConcurrentStackTest(String name) {
@@ -32,9 +33,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
     protected void tearDown() throws Exception {
-        if(ch3 != null) ch3.close();
-        if(ch2 != null) ch2.close();
-        if(ch1 != null) ch1.close();
+        Util.close(ch3, ch2, ch1);
         barrier.reset();
         super.tearDown();
     }
@@ -50,11 +49,11 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-    private void doIt(boolean threadless) throws Exception {
+    private void doIt(boolean use_concurrent_stack) throws Exception {
         long start, stop, diff;
-        setThreadless(ch1, threadless);
-        setThreadless(ch2, threadless);
-        setThreadless(ch3, threadless);
+        setConcurrentStack(ch1, use_concurrent_stack);
+        setConcurrentStack(ch2, use_concurrent_stack);
+        setConcurrentStack(ch3, use_concurrent_stack);
 
         MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
         ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
@@ -80,7 +79,6 @@ public class ConcurrentStackTest extends ChannelTestBase {
             ex=e;
         }
 
-
         stop=System.currentTimeMillis();
         diff=stop - start;
 
@@ -89,12 +87,6 @@ public class ConcurrentStackTest extends ChannelTestBase {
         checkFIFO(r1);
         checkFIFO(r2);
         checkFIFO(r3);
-        /*
-         * TODO Vladimir Feb 15th 2007
-         * Re-enable once acceptable bounds are known for all stacks
-         * checkTime(diff, threadless);
-         * 
-         * */
 
         if(ex != null)
             throw ex;
@@ -131,13 +123,13 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-    private boolean verifyFIFO(List<Integer> list) {
+    private static boolean verifyFIFO(List<Integer> list) {
         List<Integer> list2=new LinkedList(list);
         Collections.sort(list2);
         return list.equals(list2);
     }
 
-    private void print(Address addr, List<Integer> list) {
+    private static void print(Address addr, List<Integer> list) {
         StringBuilder sb=new StringBuilder();
         sb.append(addr).append(": ");
         for(Integer i: list)
@@ -145,29 +137,15 @@ public class ConcurrentStackTest extends ChannelTestBase {
         System.out.println(sb);
     }
 
-    /** Accepts up to 30% over */
-    private void checkTime(long time, boolean threadless) {
-        long min_time, max_time;
-
-        if(threadless) {
-            min_time=NUM * SLEEPTIME;
-        }
-        else {
-            min_time=EXPECTED * SLEEPTIME;
-        }
-        max_time=(long)(min_time * 1.3); // 30%
-
-        assertTrue("time (" + time + "ms) is out of bounds (min=" + min_time + "ms, max=" + max_time + "ms)",
-                   min_time <= time && time <= max_time);
-    }
 
 
-    private void setThreadless(JChannel ch1, boolean threadless) {
-        Protocol tp=ch1.getProtocolStack().findProtocol(TP.class);
+
+    private static void setConcurrentStack(JChannel ch1, boolean use_concurrent_stack) {
+        TP tp=ch1.getProtocolStack().getTransport();
         if(tp == null)
-            throw new IllegalStateException("Protocol UDP not found in properties");
+            throw new IllegalStateException("Transport not found");
         Properties p=new Properties();
-        p.setProperty("use_concurrent_stack", String.valueOf(threadless));
+        p.setProperty("use_concurrent_stack", String.valueOf(use_concurrent_stack));
         p.setProperty("thread_pool.min_threads", "1");
         p.setProperty("thread_pool.max_threads", "100");
         p.setProperty("thread_pool.queue_enabled", "false");
