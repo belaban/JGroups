@@ -1,0 +1,59 @@
+
+Release Notes JGroups 2.6.3
+===========================
+
+Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.1 2008/05/26 13:16:55 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.3 is still API-backwards compatible with previous versions (down to 2.2.5).
+JGroups 2.6.3 is also binary backwards compatible with 2.6, 2.6.1 and 2.6.2.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.2 and 2.6.3.
+
+
+Shared transport fixes
+----------------------
+[http://jira.jboss.com/jira/browse/JGRP-737]
+
+Critical bug in the shared transport which caused channels sharing a transport to cease working as soon as
+one shared channel was closed. Fixed by introducing reference counting.
+
+
+Timer thread pool moved to transport protocol
+---------------------------------------------
+Related to above. The timer thread pool was moved from the ProtocolStack to the transport protocol. Now *all* thread
+pools are located in the transport.
+
+Thread factories, which control the creation of all threads in the JGroups system, are now also located in the
+transport. They can be replaced entirely, or - as an alternative - a listener can be registered to be called
+whenever a thread is created or released back into a thread pool.
+
+Section 5.5.5 (http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2809) in the manual
+discusses the steps to be taken to replace thread pools and / or thread factories. 
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+
+
+Bug fixes
+---------
+FD: messages other than from the pinged neighbor cause the missing heartbeat count to get reset. This is a regression in
+2.6.
+[http://jira.jboss.com/jira/browse/JGRP-746]
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Feb 2008
+
+
