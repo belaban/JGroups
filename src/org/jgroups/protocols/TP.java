@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.22 2008/05/23 08:19:20 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.23 2008/05/26 09:14:41 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -639,6 +639,35 @@ public abstract class TP extends Protocol {
 
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
+
+        // ========================================== OOB thread pool ==============================
+        
+        if(oob_thread_pool_enabled) {
+            if(oob_thread_pool_queue_enabled)
+                oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
+            else
+                oob_thread_pool_queue=new SynchronousQueue<Runnable>();
+            oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
+                                             oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
+        }
+        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+            oob_thread_pool=new DirectExecutor();
+        }
+
+        // ====================================== Regular thread pool ===========================
+        
+        if(thread_pool_enabled) {
+            if(thread_pool_queue_enabled)
+                thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
+            else
+                thread_pool_queue=new SynchronousQueue<Runnable>();
+            thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
+                                         thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
+        }
+        else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
+            thread_pool=new DirectExecutor();
+        }
+        
         if(persistent_ports){
             pm = new PortsManager(pm_expiry_time,persistent_ports_file);
         }
@@ -669,6 +698,17 @@ public abstract class TP extends Protocol {
                     log.error("failed stopping the timer", e);
                 }
             }
+
+            // 3. Stop the thread pools
+            if(oob_thread_pool instanceof ThreadPoolExecutor) {
+                shutdownThreadPool(oob_thread_pool);
+                oob_thread_pool=null;
+            }
+
+            if(thread_pool instanceof ThreadPoolExecutor) {
+                shutdownThreadPool(thread_pool);
+                thread_pool=null;
+            }
         }
     }
 
@@ -689,41 +729,6 @@ public abstract class TP extends Protocol {
             incoming_packet_handler=new IncomingPacketHandler();
             incoming_packet_handler.start();
         }
-
-
-        // ========================================== OOB thread pool ==============================
-        // create a ThreadPoolExecutor for the unmarshaller thread pool
-        if(oob_thread_pool == null) { // only create if not yet set (e.g. by a user)
-            if(oob_thread_pool_enabled) {
-                if(oob_thread_pool_queue_enabled)
-                    oob_thread_pool_queue=new LinkedBlockingQueue<Runnable>(oob_thread_pool_queue_max_size);
-                else
-                    oob_thread_pool_queue=new SynchronousQueue<Runnable>();
-                oob_thread_pool=createThreadPool(oob_thread_pool_min_threads, oob_thread_pool_max_threads, oob_thread_pool_keep_alive_time,
-                                                 oob_thread_pool_rejection_policy, oob_thread_pool_queue, oob_thread_factory);
-            }
-            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-                oob_thread_pool=new DirectExecutor();
-            }
-        }
-
-
-        // ====================================== Regular thread pool ===========================
-        // create a ThreadPoolExecutor for the unmarshaller thread pool
-        if(thread_pool == null) { // only create if not yet set (e.g.by a user)
-            if(thread_pool_enabled) {
-                if(thread_pool_queue_enabled)
-                    thread_pool_queue=new LinkedBlockingQueue<Runnable>(thread_pool_queue_max_size);
-                else
-                    thread_pool_queue=new SynchronousQueue<Runnable>();
-                thread_pool=createThreadPool(thread_pool_min_threads, thread_pool_max_threads, thread_pool_keep_alive_time,
-                                             thread_pool_rejection_policy, thread_pool_queue, default_thread_factory);
-            }
-            else { // otherwise use the caller's thread to unmarshal the byte buffer into a message
-                thread_pool=new DirectExecutor();
-            }
-        }
-
 
         if(loopback && !use_concurrent_stack) {
             incoming_msg_queue=new Queue();
@@ -754,18 +759,6 @@ public abstract class TP extends Protocol {
         // 2. Stop the incoming message handler
         if(incoming_msg_handler != null)
             incoming_msg_handler.stop();
-
-        // 3. Stop the thread pools
-
-        if(oob_thread_pool instanceof ThreadPoolExecutor) {
-            shutdownThreadPool(oob_thread_pool);
-            oob_thread_pool=null;
-        }
-
-        if(thread_pool instanceof ThreadPoolExecutor) {
-            shutdownThreadPool(thread_pool);
-            thread_pool=null;
-        }
     }
 
 
@@ -1661,7 +1654,7 @@ public abstract class TP extends Protocol {
     protected static ExecutorService createThreadPool(int min_threads, int max_threads, long keep_alive_time, String rejection_policy,
                                                       BlockingQueue<Runnable> queue, final ThreadFactory factory) {
 
-        ThreadPoolExecutor pool=new ThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
+        ThreadPoolExecutor pool=new ThreadManagerThreadPoolExecutor(min_threads, max_threads, keep_alive_time, TimeUnit.MILLISECONDS, queue);
         pool.setThreadFactory(factory);
 
         //default
