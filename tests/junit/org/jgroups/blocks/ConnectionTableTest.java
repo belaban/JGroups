@@ -14,7 +14,7 @@ import java.net.UnknownHostException;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.2 2006/09/15 12:06:43 belaban Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.2.2.1 2008/05/27 19:27:09 rachmatowicz Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
@@ -22,6 +22,8 @@ public class ConnectionTableTest extends TestCase {
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
     int active_threads=0;
+    
+    final static int PORT1=7521, PORT2=8931;
 
     static {
         try {
@@ -42,8 +44,8 @@ public class ConnectionTableTest extends TestCase {
         super.setUp();
         active_threads=Thread.activeCount();
         System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
-        addr1=new IpAddress(loopback_addr, 7500);
-        addr2=new IpAddress(loopback_addr, 8000);
+        addr1=new IpAddress(loopback_addr, PORT1);
+        addr2=new IpAddress(loopback_addr, PORT2);
     }
 
 
@@ -62,14 +64,14 @@ public class ConnectionTableTest extends TestCase {
 
 
     public void testStopConnectionTable() throws Exception {
-        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 7500, 7000, 60000, 120000);
-        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000);
+        ct1=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000);
+        ct2=new ConnectionTable(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000);
         _testStop(ct1, ct2);
     }
 
     public void testStopConnectionTableNIO() throws Exception {
-        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 7500, 7500, 60000, 120000, false);
-        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, 8000, 8000, 60000, 120000, false);
+        ct1=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT1, PORT1, 60000, 120000, false);
+        ct2=new ConnectionTableNIO(new DummyReceiver(), loopback_addr, null, PORT2, PORT2, 60000, 120000, false);
         ct1.start();
         ct2.start();
         _testStop(ct1, ct2);
