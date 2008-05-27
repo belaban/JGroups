@@ -1,13 +1,11 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.11 2008/03/26 15:50:09 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.12 2008/05/27 19:05:38 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
         build.xml file for JGroups. Needs Ant (jakarta.apache.org) to run
     </description>
-
-
 
     <property file="build.properties"/>
     <property name="root.dir" value="${basedir}"/>
@@ -515,7 +513,7 @@
 		 <antcall target="runtests">		 	
 		 	<param name="testset" value="all.tests"/>	
 		 	<param name="channel.conf" value="tcp.xml"/>
-		 	<param name="channel.conf.flush" value="tcp.xml"/>	
+		 	<param name="channel.conf.flush" value="flush-tcp.xml"/>	
 		 </antcall>
 	</target>
 	
@@ -646,7 +644,7 @@
 	
 
     <target name="findxalan">
-        <available property="xalan.available" classname="org.apache.xalan.Version"/>
+        <available property="xalan.available" classpathref="jg.classpath" classname="org.apache.xalan.Version"/>
         <fail unless="xalan.available"
               message="Xalan was not found. Please add the xalan.jar file from the lib directory to the CLASSPATH and retry"/>
     </target>
