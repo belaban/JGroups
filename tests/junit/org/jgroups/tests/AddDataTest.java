@@ -13,7 +13,7 @@ import java.util.Map;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.17 2008/05/21 09:40:14 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.18 2008/05/28 09:11:42 belaban Exp $
  */
 @Test(groups={"temp","single"},sequential=false)
 public class AddDataTest extends ChannelTestBase {
@@ -27,7 +27,7 @@ public class AddDataTest extends ChannelTestBase {
                 Map<String,Object> m=new HashMap<String,Object>();
                 m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
                 c.down(new Event(Event.CONFIG, m));
-                c.connect("bla");
+                c.connect("AddDataTest.testadditionalData()");
                 IpAddress addr=(IpAddress)c.getLocalAddress();
                 System.out.println("address is " + addr);
                 assert addr.getAdditionalData() != null;
@@ -41,22 +41,21 @@ public class AddDataTest extends ChannelTestBase {
 
     @Test
     public void testBetweenTwoChannelsMcast() throws Exception {
-        _testWithProps(true);
+        _testWithProps(true, "AddDataTest.testBetweenTwoChannelsMcast");
     }
 
     @Test
     public void testBetweenTwoChannelsUnicast() throws Exception {
-        _testWithProps(false);
+        _testWithProps(false, "AddDataTest.testBetweenTwoChannelsUnicast");
     }
 
 
 
-    private void _testWithProps(boolean mcast) throws Exception {
+    private void _testWithProps(boolean mcast, String cluster_name) throws Exception {
         Map<String,Object> m=new HashMap<String,Object>();
         m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
         byte[] buf=new byte[1000];
         JChannel ch1=null, ch2=null;
-        String GROUP=getUniqueClusterName("AddDataTest");
 
         try {
             ch1=createChannel(true, 2);
@@ -67,8 +66,8 @@ public class AddDataTest extends ChannelTestBase {
             ch2.down(new Event(Event.CONFIG, m));
             MyReceiver receiver=new MyReceiver();
             ch2.setReceiver(receiver);
-            ch1.connect(GROUP);
-            ch2.connect(GROUP);
+            ch1.connect(cluster_name);
+            ch2.connect(cluster_name);
 
             if(mcast)
                 ch1.send(new Message(null, null, buf));
