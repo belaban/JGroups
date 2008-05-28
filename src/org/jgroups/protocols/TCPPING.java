@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.36 2008/05/23 10:45:38 belaban Exp $
+// $Id: TCPPING.java,v 1.37 2008/05/28 15:31:15 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -72,11 +72,17 @@ public class TCPPING extends Discovery {
         this.port_range=port_range;
     }
 
+    public void init() throws Exception {
+        super.init();
+    }
+
     public void localAddressSet(Address addr) {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
         if(initial_hosts != null && addr != null) {
             if(initial_hosts.contains(addr)) {
-                initial_hosts.remove(addr);
+                List<Address> tmp=new ArrayList<Address>(initial_hosts);
+                tmp.remove(addr);
+                initial_hosts=Collections.unmodifiableList(tmp); // we cannot modify initial_hosts, so copy and modify it
                 if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
                                                    ") from initial_hosts; initial_hosts=" + initial_hosts);
             }
@@ -135,7 +141,7 @@ public class TCPPING extends Discovery {
             }
         }
 
-        return retval;
+        return Collections.unmodifiableList(retval);
     }
 
 }
