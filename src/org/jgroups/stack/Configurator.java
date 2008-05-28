@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.45 2008/05/28 10:38:50 belaban Exp $
+ * @version $Id: Configurator.java,v 1.46 2008/05/28 11:30:17 belaban Exp $
  */
 public class Configurator {
 
@@ -607,7 +607,7 @@ public class Configurator {
         }
     }
 
-    private static boolean isSetPropertyMethod(Method method) {
+    public static boolean isSetPropertyMethod(Method method) {
         return (method.getName().startsWith("set") &&
                 method.getReturnType() == java.lang.Void.TYPE &&
                 method.getParameterTypes().length == 1);
