@@ -9,7 +9,6 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
 import org.jgroups.util.DefaultThreadFactory;
-import org.jgroups.util.ExtendedThreadFactory;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -40,7 +39,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.169 2008/05/23 10:45:40 belaban Exp $
+ * @version $Id: UDP.java,v 1.170 2008/05/28 12:35:17 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -715,10 +714,9 @@ public class UDP extends TP implements Runnable {
             //start the listener thread of the ucast_recv_sock
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
-
-            if(global_thread_factory instanceof ExtendedThreadFactory)
-                ((ExtendedThreadFactory)global_thread_factory).renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
-
+            
+            global_thread_factory.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+                
             if(log.isDebugEnabled())
                 log.debug("created unicast receiver thread " + ucast_receiver.getThread());
         }
@@ -777,14 +775,10 @@ public class UDP extends TP implements Runnable {
 
 
     protected void setThreadNames() {
-        super.setThreadNames();
-        ExtendedThreadFactory tmp=null;
-        if(global_thread_factory instanceof ExtendedThreadFactory) {
-            tmp=(ExtendedThreadFactory)global_thread_factory;
-            tmp.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
+        super.setThreadNames();              
+            global_thread_factory.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
             if(ucast_receiver != null)
-                tmp.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
-        }
+                global_thread_factory.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());        
     }
 
     protected void unsetThreadNames() {

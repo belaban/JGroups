@@ -6,6 +6,7 @@ import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Version;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.DefaultThreadFactory;
 import org.jgroups.util.PortsManager;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.Util;
@@ -28,7 +29,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Scott Marlow
  */
 public abstract class BasicConnectionTable {
-    private ThreadFactory factory = new ConnectionTableFactory();
+    private ThreadFactory factory;
     final Map<Address,Connection>  conns=new HashMap<Address,Connection>();         // keys: Addresses (peer address), values: Connection
     Receiver              receiver=null;
     boolean               use_send_queues=false;       // max number of messages in a send queue
@@ -68,6 +69,9 @@ public abstract class BasicConnectionTable {
 
     final static long   MAX_JOIN_TIMEOUT=Global.THREAD_SHUTDOWN_WAIT_TIME;
 
+    protected BasicConnectionTable() {        
+        factory = new DefaultThreadFactory(new ThreadGroup(Util.getGlobalThreadGroup(),"ConnectionTable"),"Connection Table", false);
+    }
 
     public final void setReceiver(Receiver r) {
         receiver=r;
@@ -845,19 +849,4 @@ public abstract class BasicConnectionTable {
            t=null;
        }
    }
-   
-   private static class ConnectionTableFactory implements ThreadFactory {
-
-        public Thread newThread(Runnable r, String name) {
-            return new Thread(r, name);
-        }
-
-        public Thread newThread(ThreadGroup group, Runnable r, String name) {
-            return new Thread(group, r, name);
-        }
-        
-        public Thread newThread(Runnable r) {
-            return new Thread(r);
-        }
-    }
 }
