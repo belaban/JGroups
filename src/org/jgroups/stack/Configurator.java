@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.46 2008/05/28 11:30:17 belaban Exp $
+ * @version $Id: Configurator.java,v 1.47 2008/05/28 12:43:22 belaban Exp $
  */
 public class Configurator {
 
@@ -308,7 +308,7 @@ public class Configurator {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    private static Protocol connectProtocols(Vector protocol_list) {
+    public static Protocol connectProtocols(Vector protocol_list) {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
