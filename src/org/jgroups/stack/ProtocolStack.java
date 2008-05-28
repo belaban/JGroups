@@ -25,7 +25,7 @@ import java.lang.reflect.Method;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.73 2008/05/28 11:31:02 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.74 2008/05/28 12:43:55 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -50,7 +50,8 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
-        this.setup_string=setup_string;
+        if(setup_string != null)
+            this.setup_string=setup_string;
         this.channel=channel;
         // ClassConfigurator.getInstance(true); // will create the singleton
 
@@ -139,12 +140,15 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    public static List<Protocol> copyProtocols(List<Protocol> list) throws IllegalAccessException, InstantiationException {
-        if(list == null) return null;
-        List<Protocol> retval=new ArrayList<Protocol>(list.size());
+    public Vector<Protocol> copyProtocols() throws IllegalAccessException, InstantiationException {
+        Vector<Protocol> list=getProtocols();
+        Vector<Protocol> retval=new Vector<Protocol>(list.size());
         for(Protocol prot: list) {
             Protocol new_prot=prot.getClass().newInstance();
+            new_prot.setProtocolStack(this);
             retval.add(new_prot);
+
+            new_prot.setProperties(prot.getProperties());
 
             for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
 
@@ -367,6 +371,17 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
+    public void setup(ProtocolStack stack) throws Exception {
+        Vector<Protocol> protocols=stack.copyProtocols();
+        Collections.reverse(protocols);
+        if(top_prot == null) {
+            top_prot=Configurator.connectProtocols(protocols);
+            top_prot.setUpProtocol(this);
+            bottom_prot=Configurator.getBottommostProtocol(top_prot);
+            Collections.reverse(protocols);
+            Configurator.initProtocolStack(protocols);         // calls init() on each protocol, from bottom to top
+        }
+    }
 
 
     /**
