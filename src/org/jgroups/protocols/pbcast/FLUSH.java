@@ -80,6 +80,9 @@ public class FLUSH extends Protocol {
      */
     @GuardedBy("blockMutex")
     private volatile boolean isBlockingFlushDown = true;
+    
+    @GuardedBy("sharedLock")
+    private boolean flushCompleted = false;
 
     /**
      * Default timeout for a group member to be in
@@ -487,29 +490,27 @@ public class FLUSH extends Protocol {
         Address abortFlushCoordinator = null;
         Address proceedFlushCoordinator = null;        
         
-        boolean proceed = flushInProgress.compareAndSet(false, true);
-        boolean sendRejectFlushMessage = false;
+        boolean proceed = flushInProgress.compareAndSet(false, true);        
         synchronized (sharedLock) {                               
             if(proceed){
                 flushCoordinator = flushRequester;
-            }else{
-                if(flushCoordinator != null){
-                    if(flushRequester.compareTo(flushCoordinator) < 0){                                                           
+            }else{                
+                if(flushCoordinator != null){                    
+                    if(flushCompleted){
+                        abortFlushCoordinator = flushRequester;
+                    }
+                    else if(flushRequester.compareTo(flushCoordinator) < 0){                                                           
                         abortFlushCoordinator = flushCoordinator;
                         flushCoordinator = flushRequester;
-                        proceedFlushCoordinator = flushRequester; 
-                        sendRejectFlushMessage = true;
+                        proceedFlushCoordinator = flushRequester;                         
                     }else if(flushRequester.compareTo(flushCoordinator) > 0){                                        
                         abortFlushCoordinator = flushRequester;
-                        proceedFlushCoordinator = flushCoordinator;
-                        sendRejectFlushMessage = true;
+                        proceedFlushCoordinator = flushCoordinator;                        
                     }else{                    
                         if(log.isDebugEnabled()){
                             log.debug("Rejecting flush at " + localAddress + ", previous flush has to finish first");
                         } 
-                        abortFlushCoordinator = flushRequester;
-                        proceedFlushCoordinator = flushCoordinator;
-                        sendRejectFlushMessage = false;
+                        abortFlushCoordinator = flushRequester;                                             
                     }
                 }else{
                     return;
@@ -525,11 +526,10 @@ public class FLUSH extends Protocol {
                           + abortFlushCoordinator
                           + " coordinator is "
                           + proceedFlushCoordinator);
-            }            
-            if(sendRejectFlushMessage){
-                rejectFlush(fh.viewID, abortFlushCoordinator);
-            }
-            onStartFlush(proceedFlushCoordinator, fh);
+            }                        
+            rejectFlush(fh.viewID, abortFlushCoordinator);    
+            if(proceedFlushCoordinator != null)
+                onStartFlush(proceedFlushCoordinator, fh);
         }
     }
 
@@ -599,6 +599,7 @@ public class FLUSH extends Protocol {
             suspected.clear();
             flushCoordinator = null;
             allowMessagesToPassUp = true;
+            flushCompleted = false;
         }
 
         if(log.isDebugEnabled())
@@ -704,12 +705,11 @@ public class FLUSH extends Protocol {
         down_prot.down(new Event(Event.MSG, msg));
         if(log.isDebugEnabled())
             log.debug("Received START_FLUSH at " + localAddress
-                      + " responded with FLUSH_COMPLETED");
+                      + " responded with FLUSH_COMPLETED to " + flushStarter );
               
     }
     
-    private void onFlushCompleted(Address address, Digest digest) {
-        boolean flushCompleted = false;
+    private void onFlushCompleted(Address address, Digest digest) {        
         Message msg = null;
         boolean needsReconciliationPhase = false;
         synchronized(sharedLock){
@@ -746,6 +746,8 @@ public class FLUSH extends Protocol {
                               + " flush members are "
                               + flushMembers);
 
+                flushCompletedMap.clear();
+            } else if (flushCompleted){
                 flushCompletedMap.clear();
             }
         }

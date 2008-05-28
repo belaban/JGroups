@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.89 2008/05/20 11:27:24 belaban Exp $
+// $Id: CoordGmsImpl.java,v 1.90 2008/05/28 15:15:20 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -372,7 +372,16 @@ public class CoordGmsImpl extends GmsImpl {
         JoinRsp join_rsp=null;
         boolean hasJoiningMembers=!new_mbrs.isEmpty();
         try {            
-            gms.startFlush(new_view);
+            boolean successfulFlush = gms.startFlush(new_view);
+            if(!successfulFlush && hasJoiningMembers){
+                //see http://jira.jboss.org/jira/browse/JGRP-759
+                //We should NOT send back a join response if the flush fails. 
+                //The joiner should block until the previous FLUSH completed
+                //we still have to send potential leave responses
+                sendLeaveResponses(leaving_mbrs); 
+                //but let the joining client timeout and send another join request
+                return;
+            }
             
             // we cannot garbage collect during joining a new member *if* we're the only member
             // Example: {A}, B joins, after returning JoinRsp to B, A garbage collects messages higher than those
