@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.26 2008/05/27 15:15:10 bstansberry Exp $
+ * @version $Id: TP.java,v 1.160.2.27 2008/05/28 12:37:37 vlada Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -628,7 +628,7 @@ public abstract class TP extends Protocol {
         // timer_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
         timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
         if(singleton_name != null && singleton_name.trim().length() > 0) {
-            ((ExtendedThreadFactory)timer_thread_factory).setIncludeClusterName(false);
+            timer_thread_factory.setIncludeClusterName(false);
         }
 
         default_thread_factory=new DefaultThreadFactory(pool_thread_group, "Incoming", false, true);
@@ -1395,8 +1395,8 @@ public abstract class TP extends Protocol {
             }
 
             Address src;
-            for(Iterator it=msgs.iterator(); it.hasNext();) {
-                msg=(Message)it.next();
+            for(Iterator<Message> it=msgs.iterator(); it.hasNext();) {
+                msg=it.next();
                 src=msg.getSrc();
                 if(loopback) {
                     if(multicast && src != null && local_addr.equals(src)) { // discard own loopback multicast packets
@@ -1591,20 +1591,16 @@ public abstract class TP extends Protocol {
 
 
 
-    protected void setThreadNames() {
-        if(!(global_thread_factory instanceof ExtendedThreadFactory))
-            return;
-        ExtendedThreadFactory tmp=(ExtendedThreadFactory)global_thread_factory;
-
+    protected void setThreadNames() {       
         if(incoming_packet_handler != null)
-            tmp.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
+            global_thread_factory.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
 
         if(incoming_msg_handler != null) {
-            tmp.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
+            global_thread_factory.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
     }
 
         if(diag_handler != null) {
-            tmp.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
+            global_thread_factory.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
         }
     }
 
@@ -1621,20 +1617,17 @@ public abstract class TP extends Protocol {
         ThreadFactory[] factories={timer_thread_factory, default_thread_factory, oob_thread_factory, global_thread_factory};
         boolean is_shared_transport=singleton_name != null && singleton_name.trim().length() > 0;
 
-        for(ThreadFactory factory: factories) {
-            if(factory instanceof ExtendedThreadFactory) {
-                ExtendedThreadFactory tmp=(ExtendedThreadFactory)factory;
-                if(pattern != null) {
-                    tmp.setPattern(pattern);
-                    if(is_shared_transport)
-                        tmp.setIncludeClusterName(false);
-                }
-                if(cluster_name != null && !is_shared_transport) // only set cluster name if we don't have a shared transport
-                    tmp.setClusterName(cluster_name);
-                if(local_address != null)
-                    tmp.setAddress(local_address.toString());
+        for(ThreadFactory factory:factories) {
+            if(pattern != null) {
+                factory.setPattern(pattern);
+                if(is_shared_transport)
+                    factory.setIncludeClusterName(false);
             }
-        }
+            if(cluster_name != null && !is_shared_transport) // only set cluster name if we don't have a shared transport
+                factory.setClusterName(cluster_name);
+            if(local_address != null)
+                factory.setAddress(local_address.toString());
+        }        
     }
 
 
@@ -2122,10 +2115,10 @@ public abstract class TP extends Protocol {
             }
         }
 
-        private void bindToInterfaces(java.util.List interfaces, MulticastSocket s) {
+        private void bindToInterfaces(java.util.List<NetworkInterface> interfaces, MulticastSocket s) {
             SocketAddress group_addr=new InetSocketAddress(diagnostics_addr, diagnostics_port);
-            for(Iterator it=interfaces.iterator(); it.hasNext();) {
-                NetworkInterface i=(NetworkInterface)it.next();
+            for(Iterator<NetworkInterface> it=interfaces.iterator(); it.hasNext();) {
+                NetworkInterface i=it.next();
                 try {
                     if (i.getInetAddresses().hasMoreElements()) { // fix for VM crash - suggested by JJalenak@netopia.com
                         s.joinGroup(group_addr, i);
@@ -2145,7 +2138,7 @@ public abstract class TP extends Protocol {
         final String transport_name;
         final TpHeader header;
         final List<Address> members=new ArrayList<Address>();
-        final ExtendedThreadFactory factory;
+        final ThreadFactory factory;
 
         public ProtocolAdapter(String cluster_name, String transport_name, Protocol up, Protocol down, String pattern, Address addr) {
             this.cluster_name=cluster_name;
