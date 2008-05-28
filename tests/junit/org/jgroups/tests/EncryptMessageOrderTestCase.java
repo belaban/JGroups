@@ -15,6 +15,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Iterator;
 import java.util.Vector;
+import java.security.Security; ;
 
 /**
  * This test case checks ordering of messages using the Encrypt protocol
@@ -27,7 +28,7 @@ import java.util.Vector;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * <li><code>-cummulative</code> - debugger shows cummulative messages.
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.1.14.1 2007/04/26 21:32:06 vlada Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.1.14.2 2008/05/28 17:03:50 rachmatowicz Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
@@ -51,6 +52,11 @@ public class EncryptMessageOrderTestCase extends TestCase {
 
     public static final String properties ="EncryptNoKeyStore.xml";
 
+    
+    // We need to do this as the test cases do not modify our JVM jre/lib/security settings
+    {
+        Security.addProvider( new org.bouncycastle.jce.provider.BouncyCastleProvider());
+    }
 
     /**
      * Constructor to create test case.
@@ -87,9 +93,6 @@ public class EncryptMessageOrderTestCase extends TestCase {
     protected void setUp() throws Exception {
         super.setUp();
         printSelectedOptions();
-
-        
- 
 
         channel1=new JChannel(properties);
         System.out.print("Connecting to channel...");
