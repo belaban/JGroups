@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.75 2008/05/28 15:15:42 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.76 2008/05/28 17:11:53 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -254,35 +254,7 @@ public class ProtocolStack extends Protocol implements Transport {
      * the properties for each protocol will also be printed.
      */
     public String printProtocolSpec(boolean include_properties) {
-        StringBuilder sb=new StringBuilder();
-        Protocol     prot=top_prot;
-        Properties   tmpProps;
-        String       name;
-        Map.Entry    entry;
-
-        while(prot != null) {
-            name=prot.getName();
-            if(name != null) {
-                if("ProtocolStack".equals(name))
-                    break;
-                sb.append(name);
-                if(include_properties) {
-                    tmpProps=prot.getProperties();
-                    if(tmpProps != null) {
-                        sb.append('\n');
-                        for(Iterator it=tmpProps.entrySet().iterator(); it.hasNext();) {
-                            entry=(Map.Entry)it.next();
-                            sb.append(entry).append("\n");
-                        }
-                    }
-                }
-                sb.append('\n');
-
-                prot=prot.getDownProtocol();
-            }
-        }
-
-        return sb.toString();
+        return printProtocolSpecAsPlainString(include_properties);
     }
 
     public String printProtocolSpecAsXML() {
@@ -325,38 +297,72 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
     public String printProtocolSpecAsPlainString() {
-        StringBuilder sb=new StringBuilder();
-        Protocol      prot=bottom_prot;
-        Properties    tmpProps;
-        boolean       initialized=false;
-        Class         clazz;
+        return printProtocolSpecAsPlainString(false);
+    }
 
-        while(prot != null) {
-            clazz=prot.getClass();
-            if(clazz.equals(ProtocolStack.class))
-                break;
-            if(initialized)
-                sb.append(":");
-            else
-                initialized=true;
-            sb.append(clazz.getName());
-            tmpProps=prot.getProperties();
-            if(tmpProps != null && !tmpProps.isEmpty()) {
-                sb.append("(");
-                boolean first=true;
-                for(Map.Entry<Object,Object> entry: tmpProps.entrySet()) {
-                    if(first)
-                        first=false;
-                    else
-                        sb.append(";");
-                    sb.append(entry.getKey() + "=" + entry.getValue());
+    private String printProtocolSpecAsPlainString(boolean print_props) {
+        StringBuilder sb=new StringBuilder();
+        Vector<Protocol> protocols=getProtocols();
+
+        if(protocols == null) return null;
+
+        Collections.reverse(protocols);
+        for(Protocol prot: protocols) {
+            sb.append(prot.getClass().getName()).append("\n");
+            if(print_props) {
+                Map<String,String> tmp=getProps(prot);
+                for(Map.Entry<String,String> entry: tmp.entrySet()) {
+                    sb.append("    ").append(entry.getKey()).append("=").append(entry.getValue()).append("\n");
                 }
-                sb.append(")");
             }
-            sb.append("\n");
-            prot=prot.getUpProtocol();
         }
         return sb.toString();
+    }
+
+    static Map<String,String> getProps(Protocol prot) {
+        Map<String,String> retval=new HashMap<String,String>();
+        Properties tmp_props=prot.getProperties();
+        if(tmp_props != null && !tmp_props.isEmpty()) {
+            for(Map.Entry<Object,Object> entry: tmp_props.entrySet()) {
+                Object key=entry.getKey(), val=entry.getValue();
+                if(key != null && val != null)
+                    retval.put(key.toString(), val.toString());
+            }
+        }
+
+        for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+
+            // copy all fields marked with @Property
+            Field[] fields=clazz.getDeclaredFields();
+            for(Field field: fields) {
+                if(field.isAnnotationPresent(Property.class)) {
+                    Object value=Configurator.getField(field, prot);
+                    if(value != null)
+                        retval.put(field.getName(), value.toString());
+                }
+            }
+
+            // copy all setters marked with @Property
+            Method[] methods=clazz.getDeclaredMethods();
+            for(Method method: methods) {
+                String methodName=method.getName();
+                if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
+                    Property annotation=method.getAnnotation(Property.class);
+                    List<String> possible_names=new LinkedList<String>();
+                    if(annotation.name() != null)
+                        possible_names.add(annotation.name());
+                    possible_names.add(methodName.substring(3));
+                    possible_names.add(Configurator.renameFromJavaCodingConvention(methodName.substring(3)));
+                    Field field=findField(prot, possible_names);
+                    if(field != null) {
+                        Object value=Configurator.getField(field, prot);
+                        if(value != null)
+                            retval.put(field.getName(), value.toString());
+                    }
+                }
+            }
+        }
+        return retval;
     }
 
 
