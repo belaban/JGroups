@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.44 2008/05/28 09:08:03 belaban Exp $
+ * @version $Id: Configurator.java,v 1.45 2008/05/28 10:38:50 belaban Exp $
  */
 public class Configurator {
 
@@ -655,7 +655,7 @@ public class Configurator {
 
    
 
-    private static void setField(Field field, Object target, Object value) {
+    public static void setField(Field field, Object target, Object value) {
         if(!Modifier.isPublic(field.getModifiers())) {
             field.setAccessible(true);
         }
@@ -664,6 +664,18 @@ public class Configurator {
         }
         catch(IllegalAccessException iae) {
             throw new IllegalArgumentException("Could not set field " + field, iae);
+        }
+    }
+
+    public static Object getField(Field field, Object target) {
+        if(!Modifier.isPublic(field.getModifiers())) {
+            field.setAccessible(true);
+        }
+        try {
+            return field.get(target);
+        }
+        catch(IllegalAccessException iae) {
+            throw new IllegalArgumentException("Could not get field " + field, iae);
         }
     }
 
