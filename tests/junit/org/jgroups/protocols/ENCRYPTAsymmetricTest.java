@@ -48,7 +48,10 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		assertEquals("RSA",encrypt.getAsymAlgorithm());		
 		assertEquals(512,encrypt.getAsymInit());
 		assertEquals("RSA",encrypt.getKpair().getPublic().getAlgorithm());
-		assertEquals("X.509",encrypt.getKpair().getPublic().getFormat());
+		// format string can vary between encryption providers
+		// BouncyCastle (added to JDK1.4) or Sun (default in JDK1.5)
+		String format = encrypt.getKpair().getPublic().getFormat() ;
+		assertTrue(format.equals("X.509") || format.equals("X509"));
 
 		assertNotNull(encrypt.getKpair().getPublic().getEncoded());
 		
@@ -587,7 +590,7 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 		/* (non-Javadoc)
 		 * @see org.jgroups.stack.ProtocolObserver#down(org.jgroups.Event, int)
 		 */
-		public boolean down(Event evt)
+		public boolean down(Event evt, int num_evts)
 		{
 			System.out.println("down:"+evt.toString());
 			
@@ -637,8 +640,6 @@ public class ENCRYPTAsymmetricTest extends TestCase {
 	
 	class MockAddress implements Address{
 
-		private static final long serialVersionUID = -479331506050129599L;
-		
 		/* (non-Javadoc)
 		 * @see org.jgroups.Address#isMulticastAddress()
 		 */
