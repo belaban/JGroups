@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.17 2008/05/22 13:23:09 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.18 2008/05/28 15:09:38 vlada Exp $
  */
 public class JChannel extends Channel {
 
@@ -877,41 +877,140 @@ public class JChannel extends Channel {
 
 
     /**
-     * Retrieves the current group state. Sends GET_STATE event down to STATE_TRANSFER layer.
-     * Blocks until STATE_TRANSFER sends up a GET_STATE_OK event or until <code>timeout</code>
-     * milliseconds have elapsed. The argument of GET_STATE_OK should be a single object.
-     * @param target the target member to receive the state from. if null, state is retrieved from coordinator
-     * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0 waits until
-     * the state has been received
-     * @return true of the state was received, false if the operation timed out
+     * Retrieves a full state from the target member.
+     * <p>
+     * 
+     * State transfer is initiated by invoking getState on this channel, state
+     * receiver, and sending a GET_STATE message to a target member - state
+     * provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application
+     * state to a state receiver. Upon successful installation of a state at
+     * state receiver this method returns true.
+     * 
+     * 
+     * @param target
+     *                State provider. If null, coordinator is used
+     * @param state_id
+     *                The ID of the substate. If null, the entire state will be
+     *                transferred
+     * @param timeout
+     *                the number of milliseconds to wait for the operation to
+     *                complete successfully. 0 waits until the state has been
+     *                received  
+     * 
+     * @see ExtendedMessageListener#getState(OutputStream)
+     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState()
+     * @see MessageListener#setState(byte[])
+     * 
+     * 
+     * @return true if state transfer was successful, false otherwise
+     * @throws ChannelNotConnectedException
+     *                 if channel was not connected at the time state retrieval
+     *                 was initiated
+     * @throws ChannelClosedException
+     *                 if channel was closed at the time state retrieval was
+     *                 initiated
+     * @throws IllegalStateException
+     *                 if one of state transfer protocols is not present in this
+     *                 channel
+     * @throws IllegalStateException
+     *                 if flush is used in this channel and cluster could not be
+     *                 flushed
      */
     public boolean getState(Address target, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         return getState(target,null,timeout);
     }
 
     /**
-     * Retrieves a substate (or partial state) from the target.
-     * @param target State provider. If null, coordinator is used
-     * @param state_id The ID of the substate. If null, the entire state will be transferred
-     * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0 waits until
-     * the state has been received
-     * @return
+     * Retrieves a substate (or partial state) indicated by state_id from the target member.
+     * <p>
+     * 
+     * State transfer is initiated by invoking getState on this channel, state
+     * receiver, and sending a GET_STATE message to a target member - state
+     * provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application
+     * state to a state receiver. Upon successful installation of a state at
+     * state receiver this method returns true.
+     * 
+     * 
+     * @param target
+     *                State provider. If null, coordinator is used
+     * @param state_id
+     *                The ID of the substate. If null, the entire state will be
+     *                transferred
+     * @param timeout
+     *                the number of milliseconds to wait for the operation to
+     *                complete successfully. 0 waits until the state has been
+     *                received
+     *                    
+     * @see ExtendedMessageListener#getState(OutputStream)
+     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState()
+     * @see MessageListener#setState(byte[])
+     * 
+     * 
+     * @return true if state transfer was successful, false otherwise
      * @throws ChannelNotConnectedException
+     *                 if channel was not connected at the time state retrieval
+     *                 was initiated
      * @throws ChannelClosedException
+     *                 if channel was closed at the time state retrieval was
+     *                 initiated
+     * @throws IllegalStateException
+     *                 if one of state transfer protocols is not present in this
+     *                 channel
+     * @throws IllegalStateException
+     *                 if flush is used in this channel and cluster could not be
+     *                 flushed
      */
     public boolean getState(Address target, String state_id, long timeout) throws ChannelNotConnectedException, ChannelClosedException {
         return getState(target, state_id, timeout, true);
     }
     
     /**
-     * Retrieves a substate (or partial state) from the target.
-     * @param target State provider. If null, coordinator is used
-     * @param state_id The ID of the substate. If null, the entire state will be transferred
-     * @param timeout the number of milliseconds to wait for the operation to complete successfully. 0 waits until
-     * the state has been received
-     * @return
+     * Retrieves a substate (or partial state) indicated by state_id from the target member.
+     * <p>
+     * 
+     * State transfer is initiated by invoking getState on this channel, state
+     * receiver, and sending a GET_STATE message to a target member - state
+     * provider. State provider passes GET_STATE message to application that is
+     * using the state provider channel which in turn provides an application
+     * state to a state receiver. Upon successful installation of a state at
+     * state receiver this method returns true.
+     * 
+     * 
+     * @param target
+     *                State provider. If null, coordinator is used
+     * @param state_id
+     *                The ID of the substate. If null, the entire state will be
+     *                transferred
+     * @param timeout
+     *                the number of milliseconds to wait for the operation to
+     *                complete successfully. 0 waits until the state has been
+     *                received
+     * @param useFlushIfPresent
+     *                whether channel should be flushed prior to state retrieval
+     * 
+     * @see ExtendedMessageListener#getState(OutputStream)
+     * @see ExtendedMessageListener#setState(InputStream)
+     * @see MessageListener#getState()
+     * @see MessageListener#setState(byte[])
+     * 
+     * 
+     * @return true if state transfer was successful, false otherwise
      * @throws ChannelNotConnectedException
+     *                 if channel was not connected at the time state retrieval
+     *                 was initiated
      * @throws ChannelClosedException
+     *                 if channel was closed at the time state retrieval was
+     *                 initiated
+     * @throws IllegalStateException
+     *                 if one of state transfer protocols is not present in this
+     *                 channel
+     * @throws IllegalStateException
+     *                 if flush is used in this channel and cluster could not be
+     *                 flushed
      */
     public boolean getState(Address target, String state_id, long timeout,boolean useFlushIfPresent) throws ChannelNotConnectedException, ChannelClosedException {
         checkClosedOrNotConnected();
@@ -927,15 +1026,19 @@ public class JChannel extends Channel {
                 log.trace("cannot get state from myself (" + target + "): probably the first member");
             return false;
         }
-
         
-        StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);
         boolean initiateFlush = flushSupported() && useFlushIfPresent;
         
-        if(initiateFlush)
-            startFlush(false);
+        if(initiateFlush){
+            boolean successfulFlush = startFlush(false);
+            //http://jira.jboss.com/jira/browse/JGRP-759
+            if(!successfulFlush){
+                throw new IllegalStateException("Could not flush the cluster and proceed with state retrieaval");
+            }
+        }
 
         state_promise.reset();
+        StateTransferInfo state_info=new StateTransferInfo(target, state_id, timeout);
         down(new Event(Event.GET_STATE, state_info));
         Boolean b=state_promise.getResult(state_info.timeout);
         
