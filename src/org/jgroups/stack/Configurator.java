@@ -34,7 +34,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.43 2008/05/23 09:16:52 belaban Exp $
+ * @version $Id: Configurator.java,v 1.44 2008/05/28 09:08:03 belaban Exp $
  */
 public class Configurator {
 
@@ -523,7 +523,7 @@ public class Configurator {
             for(int j=0; j < names.size(); j++) {
                 if(name.equals(names.elementAt(j))) {
                     throw new Exception("Configurator.sanityCheck(): protocol name " + name +
-                                        " has been used more than once; protocol names have to be unique !");
+                            " has been used more than once; protocol names have to be unique !");
                 }
             }
             names.addElement(name);
@@ -539,16 +539,16 @@ public class Configurator {
             for(Integer evt_type:pr.up_reqs) {                
                 if(!providesDownServices(req_list, evt_type)) {
                     throw new Exception("Configurator.sanityCheck(): event " +
-                                        Event.type2String(evt_type) + " is required by " +
-                                        pr.name + ", but not provided by any of the layers above");
+                            Event.type2String(evt_type) + " is required by " +
+                            pr.name + ", but not provided by any of the layers above");
                 }
             } 
             
             for(Integer evt_type:pr.down_reqs) {                
                 if(!providesUpServices(req_list, evt_type)) {
                     throw new Exception("Configurator.sanityCheck(): event " +
-                                        Event.type2String(evt_type) + " is required by " +
-                                        pr.name + ", but not provided by any of the layers above");
+                            Event.type2String(evt_type) + " is required by " +
+                            pr.name + ", but not provided by any of the layers above");
                 }
             }                     
         }            
@@ -575,8 +575,115 @@ public class Configurator {
     }
 
 
+    public static void resolveAndInvokePropertyMethods(Protocol p, Properties props) throws Exception {
+        Method[] methods=p.getClass().getMethods();
+        for(Method method: methods) {
+            String methodName=method.getName();
+            if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
+                Property annotation=method.getAnnotation(Property.class);
+                String propertyName=annotation.name().length() > 0? annotation.name() : methodName.substring(3);
+                propertyName=renameFromJavaCodingConvention(propertyName);
+                String prop=props.getProperty(propertyName);
+                if(prop != null) {
+                    PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+                    if(propertyConverter == null) {
+                        throw new Exception("Could not find property converter for field " + propertyName
+                                + " in protocol " + p.getName());
+                    }
+                    Object converted=null;
+                    try {
+                        converted=propertyConverter.convert(method.getParameterTypes()[0], props, prop);
+                        method.invoke(p, converted);
+                    }
+                    catch(Exception e) {
+                        throw new Exception("Could not assign property " + propertyName + " in protocol "
+                                + p.getName() + ", method is " + methodName + ", converted value is " + converted, e);
+                    }
+                    finally {
+                        props.remove(propertyName);
+                    }
+                }
+            }
+        }
+    }
+
+    private static boolean isSetPropertyMethod(Method method) {
+        return (method.getName().startsWith("set") &&
+                method.getReturnType() == java.lang.Void.TYPE &&
+                method.getParameterTypes().length == 1);
+    }
+
+    public static void resolveAndAssignFields(Protocol p, Properties props) throws Exception {
+        //traverse class hierarchy and find all annotated fields
+        for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            Field[] fields=clazz.getDeclaredFields();
+            for(Field field: fields) {
+                if(field.isAnnotationPresent(Property.class)) {
+                    Property annotation=field.getAnnotation(Property.class);
+                    String propertyName=field.getName();
+                    if(props.containsKey(annotation.name())) {
+                        propertyName=annotation.name();
+                        boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
+                        if(isDeprecated && log.isWarnEnabled()) {
+                            log.warn(annotation.deprecatedMessage());
+                        }
+                    }
+                    String propertyValue=props.getProperty(propertyName);
+                    if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
+                        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
+                        if(propertyConverter == null) {
+                            throw new Exception("Could not find property converter for field " + propertyName
+                                    + " in protocol " + p.getName());
+                        }
+                        Object converted=null;
+                        try {
+                            converted=propertyConverter.convert(field.getType(), props, propertyValue);
+                            setField(field, p, converted);
+                        }
+                        catch(Exception e) {
+                            throw new Exception("Property assignment with value " + propertyName + " in protocol "
+                                    + p.getName() + " and converted to " + converted + " could not be assigned", e);
+                        }
+                        finally {
+                            props.remove(propertyName);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+   
+
+    private static void setField(Field field, Object target, Object value) {
+        if(!Modifier.isPublic(field.getModifiers())) {
+            field.setAccessible(true);
+        }
+        try {
+            field.set(target, value);
+        }
+        catch(IllegalAccessException iae) {
+            throw new IllegalArgumentException("Could not set field " + field, iae);
+        }
+    }
+
+    public static String renameFromJavaCodingConvention(String fieldName) {
+        Pattern p=Pattern.compile("[A-Z]");
+        Matcher m=p.matcher(fieldName.substring(1));
+        StringBuffer sb=new StringBuffer();
+        while(m.find()) {
+            m.appendReplacement(sb, "_" + fieldName.substring(m.end(), m.end() + 1).toLowerCase());
+        }
+        m.appendTail(sb);
+        sb.insert(0, fieldName.substring(0, 1).toLowerCase());
+        return sb.toString();
+    }
+
+
 
     /* --------------------------- End of Private Methods ---------------------------------- */
+
+
 
 
 
@@ -788,107 +895,6 @@ public class Configurator {
             return retval;
         }
 
-        private static void resolveAndInvokePropertyMethods(Protocol p, Properties props) throws Exception {
-            Method[] methods=p.getClass().getMethods();
-            for(Method method: methods) {
-                String methodName=method.getName();
-                if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
-                    Property annotation=method.getAnnotation(Property.class);
-                    String propertyName=annotation.name().length() > 0? annotation.name() : methodName.substring(3);
-                    propertyName=renameFromJavaCodingConvention(propertyName);
-                    String prop=props.getProperty(propertyName);
-                    if(prop != null) {
-                        PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
-                        if(propertyConverter == null) {
-                            throw new Exception("Could not find property converter for field " + propertyName
-                                    + " in protocol " + p.getName());
-                        }
-                        Object converted=null;
-                        try {
-                            converted=propertyConverter.convert(method.getParameterTypes()[0], props, prop);
-                            method.invoke(p, converted);
-                        }
-                        catch(Exception e) {
-                            throw new Exception("Could not assign property " + propertyName + " in protocol "
-                                    + p.getName() + ", method is " + methodName + ", converted value is " + converted, e);
-                        }
-                        finally {
-                            props.remove(propertyName);
-                        }
-                    }
-                }
-            }
-        }
-
-        private static boolean isSetPropertyMethod(Method method) {
-            return (method.getName().startsWith("set") &&
-                    method.getReturnType() == java.lang.Void.TYPE &&
-                    method.getParameterTypes().length == 1);
-        }
-
-        private static void resolveAndAssignFields(Protocol p, Properties props) throws Exception {
-            //traverse class hierarchy and find all annotated fields
-            for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-                Field[] fields=clazz.getDeclaredFields();
-                for(Field field: fields) {
-                    if(field.isAnnotationPresent(Property.class)) {
-                        Property annotation=field.getAnnotation(Property.class);
-                        String propertyName=field.getName();
-                        if(props.containsKey(annotation.name())) {
-                            propertyName=annotation.name();
-                            boolean isDeprecated=annotation.deprecatedMessage().length() > 0;
-                            if(isDeprecated && log.isWarnEnabled()) {
-                                log.warn(annotation.deprecatedMessage());
-                            }
-                        }
-                        String propertyValue=props.getProperty(propertyName);
-                        if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
-                            PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
-                            if(propertyConverter == null) {
-                                throw new Exception("Could not find property converter for field " + propertyName
-                                        + " in protocol " + p.getName());
-                            }
-                            Object converted=null;
-                            try {
-                                converted=propertyConverter.convert(field.getType(), props, propertyValue);
-                                setField(field, p, converted);
-                            }
-                            catch(Exception e) {
-                                throw new Exception("Property assignment with value " + propertyName + " in protocol "
-                                        + p.getName() + " and converted to " + converted + " could not be assigned", e);
-                            }
-                            finally {
-                                props.remove(propertyName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        private static void setField(Field field, Object target, Object value) {
-            if(!Modifier.isPublic(field.getModifiers())) {
-                field.setAccessible(true);
-            }
-            try {
-                field.set(target, value);
-            }
-            catch(IllegalAccessException iae) {
-                throw new IllegalArgumentException("Could not set field " + field, iae);
-            }
-        }
-
-        public static String renameFromJavaCodingConvention(String fieldName) {
-            Pattern p=Pattern.compile("[A-Z]");
-            Matcher m=p.matcher(fieldName.substring(1));
-            StringBuffer sb=new StringBuffer();
-            while(m.find()) {
-                m.appendReplacement(sb, "_" + fieldName.substring(m.end(), m.end() + 1).toLowerCase());
-            }
-            m.appendTail(sb);
-            sb.insert(0, fieldName.substring(0, 1).toLowerCase());
-            return sb.toString();
-        }
 
 
         public String toString() {

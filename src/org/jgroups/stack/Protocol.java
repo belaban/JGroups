@@ -32,7 +32,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.59 2008/05/23 10:45:59 belaban Exp $
+ * @version $Id: Protocol.java,v 1.60 2008/05/28 09:08:03 belaban Exp $
  */
 public abstract class Protocol {
     protected final Properties props=new Properties();
@@ -56,8 +56,31 @@ public abstract class Protocol {
     }
 
 
+    /**
+     * Sets a property
+     * @deprecated Use the corresponding setter instead
+     * @param key
+     * @param val
+     */
     public void setProperty(String key, String val) {
         this.props.put(key, val);
+
+        Properties tmp=new Properties();
+        tmp.setProperty(key, val);
+        try {
+            Configurator.resolveAndAssignFields(this, tmp);
+        }
+        catch(Exception e) {
+            log.error("failed assigning " + key + "=" + val, e);
+        }
+
+        tmp.setProperty(key, val); // because the above method removed the key/value pair from properties
+        try {
+            Configurator.resolveAndInvokePropertyMethods(this, tmp);
+        }
+        catch(Exception e) {
+            log.error("failed assigning " + key + "=" + val, e);
+        }
     }
 
 
