@@ -6,7 +6,6 @@ import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
-import org.jgroups.util.ExtendedThreadFactory;
 import org.jgroups.util.Util;
 
 import java.io.IOException;
@@ -41,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.7 2008/05/26 08:14:38 belaban Exp $
+ * @version $Id: UDP.java,v 1.156.2.8 2008/05/28 12:37:37 vlada Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -751,8 +750,8 @@ public class UDP extends TP implements Runnable {
             ucast_receiver=new UcastReceiver();
             ucast_receiver.start();
 
-            if(global_thread_factory instanceof ExtendedThreadFactory)
-                ((ExtendedThreadFactory)global_thread_factory).renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
+           
+           global_thread_factory.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
 
             if(log.isDebugEnabled())
                 log.debug("created unicast receiver thread " + ucast_receiver.getThread());
@@ -813,13 +812,11 @@ public class UDP extends TP implements Runnable {
 
     protected void setThreadNames() {
         super.setThreadNames();
-        ExtendedThreadFactory tmp=null;
-        if(global_thread_factory instanceof ExtendedThreadFactory) {
-            tmp=(ExtendedThreadFactory)global_thread_factory;
-            tmp.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
+
+        global_thread_factory.renameThread(MCAST_RECEIVER_THREAD_NAME, mcast_receiver);
         if(ucast_receiver != null)
-                tmp.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME, ucast_receiver.getThread());
-    }
+            global_thread_factory.renameThread(UcastReceiver.UCAST_RECEIVER_THREAD_NAME,
+                                               ucast_receiver.getThread());
     }
 
     protected void unsetThreadNames() {
