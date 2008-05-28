@@ -2,7 +2,10 @@
 package org.jgroups.stack;
 
 import org.jgroups.*;
+import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.PropertyConverters;
+import org.jgroups.conf.PropertyConverter;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.*;
 
@@ -10,6 +13,8 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 
 
 /**
@@ -20,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.72 2008/05/20 11:27:39 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.73 2008/05/28 11:31:02 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -132,6 +137,67 @@ public class ProtocolStack extends Protocol implements Transport {
         }
         return v;
     }
+
+
+    public static List<Protocol> copyProtocols(List<Protocol> list) throws IllegalAccessException, InstantiationException {
+        if(list == null) return null;
+        List<Protocol> retval=new ArrayList<Protocol>(list.size());
+        for(Protocol prot: list) {
+            Protocol new_prot=prot.getClass().newInstance();
+            retval.add(new_prot);
+
+            for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+
+                // copy all fields marked with @Property
+                Field[] fields=clazz.getDeclaredFields();
+                for(Field field: fields) {
+                    if(field.isAnnotationPresent(Property.class)) {
+                        Object value=Configurator.getField(field, prot);
+                        Configurator.setField(field, new_prot, value);
+                    }
+                }
+
+                // copy all setters marked with @Property
+                Method[] methods=clazz.getDeclaredMethods();
+                for(Method method: methods) {
+                    String methodName=method.getName();
+                    if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
+                        Property annotation=method.getAnnotation(Property.class);
+                        List<String> possible_names=new LinkedList<String>();
+                        if(annotation.name() != null)
+                            possible_names.add(annotation.name());
+                        possible_names.add(methodName.substring(3));
+                        possible_names.add(Configurator.renameFromJavaCodingConvention(methodName.substring(3)));
+                        Field field=findField(prot, possible_names);
+                        if(field != null) {
+                            Object value=Configurator.getField(field, prot);
+                            Configurator.setField(field, new_prot, value);
+                        }
+                    }
+                }
+            }
+        }
+        return retval;
+    }
+
+    private static Field findField(Object target, List<String> possible_names) {
+        if(target == null)
+            return null;
+        for(Class clazz=target.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            for(String name: possible_names) {
+                try {
+                    Field field=clazz.getDeclaredField(name);
+                    if(field != null)
+                        return field;
+                }
+                catch(NoSuchFieldException e) {
+                }
+            }
+        }
+
+        return null;
+    }
+
 
     /** Returns the bottom most protocol */
     public TP getTransport() {
