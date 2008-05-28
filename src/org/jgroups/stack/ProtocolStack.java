@@ -4,17 +4,17 @@ package org.jgroups.stack;
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.conf.PropertyConverters;
-import org.jgroups.conf.PropertyConverter;
 import org.jgroups.protocols.TP;
-import org.jgroups.util.*;
+import org.jgroups.util.ThreadFactory;
+import org.jgroups.util.TimeScheduler;
+import org.jgroups.util.Tuple;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReentrantLock;
-import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 
 
 /**
@@ -25,7 +25,7 @@ import java.lang.reflect.Method;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.74 2008/05/28 12:43:55 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.75 2008/05/28 15:15:42 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -140,12 +140,12 @@ public class ProtocolStack extends Protocol implements Transport {
     }
 
 
-    public Vector<Protocol> copyProtocols() throws IllegalAccessException, InstantiationException {
+    public Vector<Protocol> copyProtocols(ProtocolStack st) throws IllegalAccessException, InstantiationException {
         Vector<Protocol> list=getProtocols();
         Vector<Protocol> retval=new Vector<Protocol>(list.size());
         for(Protocol prot: list) {
             Protocol new_prot=prot.getClass().newInstance();
-            new_prot.setProtocolStack(this);
+            new_prot.setProtocolStack(st);
             retval.add(new_prot);
 
             new_prot.setProperties(prot.getProperties());
@@ -372,7 +372,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     public void setup(ProtocolStack stack) throws Exception {
-        Vector<Protocol> protocols=stack.copyProtocols();
+        Vector<Protocol> protocols=stack.copyProtocols(this);
         Collections.reverse(protocols);
         if(top_prot == null) {
             top_prot=Configurator.connectProtocols(protocols);
