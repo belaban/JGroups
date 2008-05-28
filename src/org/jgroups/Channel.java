@@ -1,4 +1,4 @@
-// $Id: Channel.java,v 1.45 2008/04/23 14:00:21 belaban Exp $
+// $Id: Channel.java,v 1.46 2008/05/28 15:32:42 belaban Exp $
 
 package org.jgroups;
 
@@ -63,9 +63,6 @@ public abstract class Channel implements Transport {
 
     protected abstract Log getLog();
 
-    public Channel copy() throws ChannelException {
-        throw new UnsupportedOperationException();
-    }
 
     public abstract ProtocolStack getProtocolStack();
 
