@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.187 2008/05/20 11:27:28 belaban Exp $
+ * @version $Id: JChannel.java,v 1.188 2008/05/28 12:43:35 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -285,6 +285,20 @@ public class JChannel extends Channel {
             throw new ChannelException("unable to load protocol stack", x);
         }
         init(c);
+    }
+
+
+    /**
+     * Creates a channel with the same configuration as the channel passed to this constructor
+     * @param ch
+     * @throws ChannelException
+     */
+    public JChannel(JChannel ch) throws ChannelException {
+        init(ch);
+        auto_reconnect=ch.auto_reconnect;
+        auto_getstate=ch.auto_getstate;
+        receive_blocks=ch.receive_blocks;
+        receive_local_msgs=ch.receive_local_msgs;
     }
 
     /**
@@ -1457,6 +1471,20 @@ public class JChannel extends Channel {
         prot_stack=new ProtocolStack(this, tmp);
         try {
             prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
+        }
+        catch(Throwable e) {
+            throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
+        }
+    }
+
+    protected final void init(JChannel ch) throws ChannelException {
+        if(ch == null)
+            throw new IllegalArgumentException("channel is null");
+        if(log.isInfoEnabled())
+            log.info("JGroups version: " + Version.description);
+        prot_stack=new ProtocolStack(this, null);
+        try {
+            prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
         }
         catch(Throwable e) {
             throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
