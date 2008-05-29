@@ -1,6 +1,8 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -13,7 +15,7 @@ import java.util.Map;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.18 2008/05/28 09:11:42 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.19 2008/05/29 10:17:59 belaban Exp $
  */
 @Test(groups={"temp","single"},sequential=false)
 public class AddDataTest extends ChannelTestBase {
@@ -22,7 +24,7 @@ public class AddDataTest extends ChannelTestBase {
     public void testAdditionalData() throws Exception {
         for(int i=1;i <= 2;i++) {
             System.out.println("-- attempt # " + i + "/2");
-            Channel c=createChannel(true, 1);
+            Channel c=createChannel(true);
             try {
                 Map<String,Object> m=new HashMap<String,Object>();
                 m.put("additional_data", new byte[] { 'b', 'e', 'l', 'a' });
@@ -60,9 +62,7 @@ public class AddDataTest extends ChannelTestBase {
         try {
             ch1=createChannel(true, 2);
             ch1.down(new Event(Event.CONFIG, m));
-            String props=ch1.getProperties();
-
-            ch2=createChannelWithProps(props); // same props as ch1 above
+            ch2=createChannel(ch1); // same props as ch1 above
             ch2.down(new Event(Event.CONFIG, m));
             MyReceiver receiver=new MyReceiver();
             ch2.setReceiver(receiver);
