@@ -4,6 +4,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
@@ -41,8 +42,9 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.173 2008/05/29 11:13:15 belaban Exp $
+ * @version $Id: UDP.java,v 1.174 2008/05/29 14:17:37 vlada Exp $
  */
+@DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP implements Runnable {
 
     /** Socket used for
@@ -159,8 +161,7 @@ public class UDP extends TP implements Runnable {
 
 
         super.setProperties(props);
-        listDeprecatedProperties(props, "num_last_ports","null_src_addresses");
-
+        
         String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
                              "mcast_addr", false, "228.8.8.8");
         if(str != null)

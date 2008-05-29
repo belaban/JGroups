@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -25,9 +26,10 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.144 2008/05/23 10:45:58 belaban Exp $
+ * @version $Id: GMS.java,v 1.145 2008/05/29 14:17:38 vlada Exp $
  */
 @MBean(description="Group membership protocol")
+@DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
     Address                   local_addr=null;
@@ -905,16 +907,6 @@ public class GMS extends Protocol {
         return down_prot.down(evt);
     }
 
-
-    /** Setup the Protocol instance according to the configuration string */
-    public boolean setProperties(Properties props) {      
-        super.setProperties(props);
-        listDeprecatedProperties(props, "join_retry_timeout","digest_timeout","use_flush","flush_timeout");      
-        return true;
-    }
-
-
-
     /* ------------------------------- Private Methods --------------------------------- */
 
     final void initState() {
@@ -1145,7 +1137,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.144 2008/05/23 10:45:58 belaban Exp $
+     * @version $Id: GMS.java,v 1.145 2008/05/29 14:17:38 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;

@@ -1,9 +1,10 @@
-// $Id: HTOTAL.java,v 1.9 2008/04/08 14:51:21 belaban Exp $
+// $Id: HTOTAL.java,v 1.10 2008/05/29 14:17:37 vlada Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
+import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
@@ -19,7 +20,7 @@ import java.util.Vector;
  * etc.<p/>
  * This protocol has not yet been completed and is experimental at best !
  * @author Bela Ban
- * @version $Id: HTOTAL.java,v 1.9 2008/04/08 14:51:21 belaban Exp $
+ * @version $Id: HTOTAL.java,v 1.10 2008/05/29 14:17:37 vlada Exp $
  */
 @Experimental
 public class HTOTAL extends Protocol {
@@ -28,6 +29,7 @@ public class HTOTAL extends Protocol {
     Address local_addr=null;
     Vector  mbrs=new Vector();
     boolean is_coord=false;
+    @Property
     private boolean use_multipoint_forwarding=false;
 
 
@@ -38,23 +40,6 @@ public class HTOTAL extends Protocol {
 
     public final String getName() {
         return "HTOTAL";
-    }
-
-     public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("use_multipoint_forwarding");
-        if(str != null) {
-            use_multipoint_forwarding=Boolean.valueOf(str).booleanValue();
-            props.remove("use_multipoint_forwarding");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("TCP.setProperties(): the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
     }
 
     public Object down(Event evt) {
