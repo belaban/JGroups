@@ -1,7 +1,5 @@
 package org.jgroups.tests;
 
-import java.util.Properties;
-
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -35,7 +33,7 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         ch=createChannel();
         disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
-        ch.connect("x");
+        ch.connect("MessageDispatcherUnitTest");
     }
 
     @AfterClass
@@ -80,12 +78,12 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
     public void testNullMessageToAll() throws Exception {
         disp.setRequestHandler(new MyHandler(null));
 
-        ch2=createChannel();
+        ch2=createChannel(ch);
         disableBundling(ch2);
         long stop, start=System.currentTimeMillis();
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(null));
         stop=System.currentTimeMillis();
-        ch2.connect("x");
+        ch2.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2, ch2.getView().size());
         System.out.println("view: " + ch2.getView());
 
@@ -142,10 +140,10 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
         long start, stop;
         disp.setRequestHandler(new MyHandler(new byte[size]));
 
-        ch2=createChannel();
+        ch2=createChannel(ch);
         disableBundling(ch2);
         disp2=new MessageDispatcher(ch2, null, null, new MyHandler(new byte[size]));
-        ch2.connect("x");
+        ch2.connect("MessageDispatcherUnitTest");
         Assert.assertEquals(2, ch2.getView().size());
 
         System.out.println("casting message");
