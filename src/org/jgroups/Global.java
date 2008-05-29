@@ -4,17 +4,9 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.38 2008/05/29 08:50:11 belaban Exp $
+ * @version $Id: Global.java,v 1.39 2008/05/29 13:48:28 belaban Exp $
  */
 public class Global {
-    /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
-	(if recompiled) when this flag is set to false. Therefore, code that should be removed from the final
-	product should use if(log.isTraceEnabled()) rather than .
-    */
-    public static final boolean debug=false;
-
-    public static final String THREAD_PREFIX=" (channel=";
-    
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
     public static final int SHORT_SIZE = Short.SIZE   / 8; // 2
     public static final int INT_SIZE   = Integer.SIZE / 8; // 4
