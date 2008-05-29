@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.190 2008/05/28 15:32:42 belaban Exp $
+ * @version $Id: JChannel.java,v 1.191 2008/05/29 10:18:24 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -299,6 +299,7 @@ public class JChannel extends Channel {
         auto_getstate=ch.auto_getstate;
         receive_blocks=ch.receive_blocks;
         receive_local_msgs=ch.receive_local_msgs;
+        receive_blocks=ch.receive_blocks;
     }
 
  
