@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.39 2008/05/29 13:48:28 belaban Exp $
+ * @version $Id: Global.java,v 1.40 2008/05/29 14:00:36 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -54,6 +54,8 @@ public class Global {
     public static final long THREADPOOL_SHUTDOWN_WAIT_TIME=3000;
     public static final long THREAD_SHUTDOWN_WAIT_TIME=300;
     public static final String DUMMY="dummy-";
+
+    public static final String PREFIX="org.jgroups.protocols.";
 
     // for TestNG
     public static final String FUNCTIONAL="functional";
