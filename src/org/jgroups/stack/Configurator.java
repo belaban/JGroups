@@ -5,6 +5,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.Global;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
@@ -34,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.47 2008/05/28 12:43:22 belaban Exp $
+ * @version $Id: Configurator.java,v 1.48 2008/05/29 13:53:05 vlada Exp $
  */
 public class Configurator {
 
@@ -652,6 +653,25 @@ public class Configurator {
             }
         }
     }
+    
+    public static void removeDeprecatedProperties(Protocol p, Properties props) throws Exception {
+        //traverse class hierarchy and find all deprecated properties
+        for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            if(clazz.isAnnotationPresent(DeprecatedProperty.class)){
+                DeprecatedProperty declaredAnnotation=clazz.getAnnotation(DeprecatedProperty.class);
+                String [] deprecatedProperties = declaredAnnotation.names();               
+                for(String propertyName:deprecatedProperties){
+                    String propertyValue = props.getProperty(propertyName);
+                    if(propertyValue != null){
+                        if(log.isWarnEnabled()){
+                            log.warn(propertyName + " was deprecated and will be ignored");
+                        }
+                        props.remove(propertyName);
+                    }
+                }     
+            }
+        }
+    }
 
    
 
@@ -888,7 +908,8 @@ public class Configurator {
                 if(retval == null)
                     throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
                 retval.setProtocolStack(prot_stack);
-                resolveAndAssignFields(retval, properties);
+                removeDeprecatedProperties(retval, properties);               
+                resolveAndAssignFields(retval, properties);               
                 resolveAndInvokePropertyMethods(retval, properties);
                 if(!retval.setPropertiesInternal(properties))
                     throw new IllegalArgumentException("the following properties in " + protocol_name
