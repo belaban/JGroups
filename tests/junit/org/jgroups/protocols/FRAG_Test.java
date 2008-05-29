@@ -20,7 +20,7 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-@Test(groups={"temp", "protocols"})
+@Test(groups={"temp", "protocols", "single"})
 public class FRAG_Test extends ChannelTestBase {
     private IpAddress a1;
     private Vector members;
@@ -45,8 +45,13 @@ public class FRAG_Test extends ChannelTestBase {
         s.setLocalAddress(a1);
         s.setView(v);
         s.addMember(a1);
-        FRAG frag=(FRAG)createProtocol();
-        frag.setFragSize(512);
+        Protocol frag=createProtocol();
+        if(frag instanceof FRAG)
+            ((FRAG)frag).setFragSize(512);
+        else if(frag instanceof FRAG2)
+            ((FRAG2)frag).setFragSize(512);
+        else
+            throw new IllegalStateException("fragmentation protocol is neither FRAG nor FRAG2");
         Protocol[] stack=new Protocol[]{frag};
         s.setProtocolStack(stack);
         s.start();
