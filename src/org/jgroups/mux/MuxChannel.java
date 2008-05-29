@@ -27,10 +27,11 @@ import java.util.Map;
  * @see JChannelFactory#createMultiplexerChannel(String, String)
  * @see Multiplexer
  * @since 2.4
- * @version $Id: MuxChannel.java,v 1.53 2008/04/08 14:49:05 belaban Exp $
+ * @version $Id: MuxChannel.java,v 1.54 2008/05/29 08:22:05 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
+@Deprecated
 public class MuxChannel extends JChannel {
 
     /*

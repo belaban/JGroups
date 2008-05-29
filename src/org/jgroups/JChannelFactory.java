@@ -1,4 +1,4 @@
-// $Id: JChannelFactory.java,v 1.54 2008/03/13 02:00:12 vlada Exp $
+// $Id: JChannelFactory.java,v 1.55 2008/05/29 08:22:06 belaban Exp $
 
 package org.jgroups;
 
@@ -142,11 +142,21 @@ public class JChannelFactory implements ChannelFactory {
         configurator=ConfiguratorFactory.getStackConfigurator(properties);
     }
 
-
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @throws Exception
+     */
     public void setMultiplexerConfig(Object properties) throws Exception {
         setMultiplexerConfig(properties, true);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @param replace
+     * @throws Exception
+     */
     public void setMultiplexerConfig(Object properties, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
         if(input == null)
@@ -162,10 +172,21 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param file
+     * @throws Exception
+     */
     public void setMultiplexerConfig(File file) throws Exception {
         setMultiplexerConfig(file, true);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param file
+     * @param replace
+     * @throws Exception
+     */
     public void setMultiplexerConfig(File file, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(file);
         if(input == null)
@@ -181,18 +202,40 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @throws Exception
+     */
     public void setMultiplexerConfig(Element properties) throws Exception {
         parse(properties, true);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @param replace
+     * @throws Exception
+     */
     public void setMultiplexerConfig(Element properties, boolean replace) throws Exception {
         parse(properties, replace);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param url
+     * @throws Exception
+     */
     public void setMultiplexerConfig(URL url) throws Exception {
         setMultiplexerConfig(url, true);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param url
+     * @param replace
+     * @throws Exception
+     */
     public void setMultiplexerConfig(URL url, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(url);
         if(input == null)
@@ -208,11 +251,22 @@ public class JChannelFactory implements ChannelFactory {
         }
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @throws Exception
+     */
     @ManagedOperation
     public void setMultiplexerConfig(String properties) throws Exception {
         setMultiplexerConfig(properties, true);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param properties
+     * @param replace
+     * @throws Exception
+     */
     @ManagedOperation
     public void setMultiplexerConfig(String properties, boolean replace) throws Exception {
         InputStream input=ConfiguratorFactory.getConfigStream(properties);
@@ -243,6 +297,7 @@ public class JChannelFactory implements ChannelFactory {
      }
 
     /**
+     * @deprecated Use a shared transport instead of the multiplexer
      * @return Returns all configurations
      */
     @ManagedOperation(description="Returns all configurations")
@@ -336,11 +391,27 @@ public class JChannelFactory implements ChannelFactory {
         return new JChannel(props);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param stack_name
+     * @param id
+     * @return
+     * @throws Exception
+     */
     @ManagedOperation(description="Create multiplexed channel")
     public Channel createMultiplexerChannel(String stack_name, String id) throws Exception {
         return createMultiplexerChannel(stack_name, id, false, null);
     }
 
+    /**
+     * @deprecated Use a shared transport instead of the multiplexer
+     * @param stack_name
+     * @param id
+     * @param register_for_state_transfer
+     * @param substate_id
+     * @return
+     * @throws Exception
+     */
     @ManagedOperation(description="Create multiplexed channel with state transfer reguistration")
     public Channel createMultiplexerChannel(final String stack_name,
                                             String id,
@@ -374,7 +445,7 @@ public class JChannelFactory implements ChannelFactory {
     /**
      * Returns true if this factory has already registered MuxChannel with given
      * stack_name and an id, false otherwise.
-     * 
+     * @deprecated Use a shared transport instead of the multiplexer
      * @param stack_name
      *            name of the stack used
      * @param id
