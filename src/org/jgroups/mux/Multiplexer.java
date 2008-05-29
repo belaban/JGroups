@@ -37,10 +37,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * @author Bela Ban, Vladimir Blagojevic
  * @see MuxChannel
  * @see Channel
- * @version $Id: Multiplexer.java,v 1.104 2008/05/22 12:32:09 belaban Exp $
+ * @version $Id: Multiplexer.java,v 1.105 2008/05/29 08:22:05 belaban Exp $
  */
 @Experimental(comment="because of impedance mismatches between a MuxChannel and JChannel, this might get deprecated " +
         "in the future. The replacement would be a shared transport (see the documentation for details)")
+@Deprecated
 public class Multiplexer implements UpHandler {
 
     private static final Log log=LogFactory.getLog(Multiplexer.class);
