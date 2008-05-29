@@ -1,11 +1,9 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.RpcDispatcher;
-import org.jgroups.mux.MuxChannel;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.FD;
 import org.jgroups.stack.Protocol;
@@ -15,19 +13,18 @@ import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.Semaphore;
 
 /**
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.14 2008/05/23 10:45:44 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.15 2008/05/29 09:08:07 belaban Exp $
  */
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -92,12 +89,8 @@ public class ShunTest extends ChannelTestBase {
         transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
 
         System.out.println(">> shunning C2:");
-        if(c2 instanceof MuxChannel) {
-            ((MuxChannel)c2).getChannel().up(new Event(Event.EXIT));
-        }
-        else {
-            c2.up(new Event(Event.EXIT));
-        }
+
+        c2.up(new Event(Event.EXIT));
 
         Util.sleep(1000); // give the closer thread time to close the channel
         System.out.println("waiting for C2 to come back");
@@ -134,12 +127,8 @@ public class ShunTest extends ChannelTestBase {
     protected void connectAndShun(int shunChannelIndex, boolean useDispatcher) {
         String[] names = null;
 
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
+
+        names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
 
@@ -157,9 +146,6 @@ public class ShunTest extends ChannelTestBase {
                               
 
                JChannel c = (JChannel) channels[i].getChannel();
-               if(c instanceof MuxChannel){
-                   c = ((MuxChannel)c).getChannel();
-               }
                c.addChannelListener(new MyChannelListener(channels));
                // Release one ticket at a time to allow the thread to start
                // working
@@ -170,12 +156,9 @@ public class ShunTest extends ChannelTestBase {
             }           
 
             // block until we all have a valid view         
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
-            
+
+            blockUntilViewsReceived(channels, 60000);
+
             ShunChannel shun = channels[shunChannelIndex];
             log.info("Start shun attempt");
             addDiscardProtocol((JChannel)shun.getChannel());               
@@ -183,14 +166,9 @@ public class ShunTest extends ChannelTestBase {
             //allow shunning to kick in
             Util.sleep(20000);
             
-            //and then block until we all have a valid view  
-            // or fail with timeout
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
-            
+            //and then block until we all have a valid view or fail with timeout
+            blockUntilViewsReceived(channels, 60000);
+
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             assert false : ex.getLocalizedMessage();
@@ -210,7 +188,7 @@ public class ShunTest extends ChannelTestBase {
         }
     }
     
-    private void modifyStack(JChannel ch) {
+    private static void modifyStack(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         try {
