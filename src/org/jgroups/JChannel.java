@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.191 2008/05/29 10:18:24 belaban Exp $
+ * @version $Id: JChannel.java,v 1.192 2008/05/29 14:01:09 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -289,7 +289,8 @@ public class JChannel extends Channel {
 
 
     /**
-     * Creates a channel with the same configuration as the channel passed to this constructor
+     * Creates a channel with the same configuration as the channel passed to this constructor. This is used by
+     * testing code, and should not be used by any other code !
      * @param ch
      * @throws ChannelException
      */
@@ -573,8 +574,10 @@ public class JChannel extends Channel {
         try {
             mq.reset();
 
+            String old_props=prot_stack != null? prot_stack.getSetupString() : null;
+
             // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this, getProperties());
+            prot_stack=new ProtocolStack(this, old_props);
             prot_stack.setup();
             closed=false;
         }
