@@ -2,6 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -35,9 +36,10 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.90 2008/05/20 11:27:32 belaban Exp $
+ * @version $Id: FD_SOCK.java,v 1.91 2008/05/29 14:17:37 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
+@DeprecatedProperty(names={"srv_sock_bind_addr"})
 public class FD_SOCK extends Protocol implements Runnable {
     @Property
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -128,13 +130,6 @@ public class FD_SOCK extends Protocol implements Runnable {
         }
         return sb.toString();
     }
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        
-        listDeprecatedProperties(props, "srv_sock_bind_addr");
-        return true;
-    }    
     
     public void init() throws Exception {
         srv_sock_handler=new ServerSocketHandler();

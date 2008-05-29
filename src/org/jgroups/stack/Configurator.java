@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.48 2008/05/29 13:53:05 vlada Exp $
+ * @version $Id: Configurator.java,v 1.49 2008/05/29 14:17:42 vlada Exp $
  */
 public class Configurator {
 
@@ -664,7 +664,7 @@ public class Configurator {
                     String propertyValue = props.getProperty(propertyName);
                     if(propertyValue != null){
                         if(log.isWarnEnabled()){
-                            log.warn(propertyName + " was deprecated and will be ignored");
+                            log.warn(p.getName() + " specifies property " + propertyName + " which was deprecated and will be ignored");
                         }
                         props.remove(propertyName);
                     }

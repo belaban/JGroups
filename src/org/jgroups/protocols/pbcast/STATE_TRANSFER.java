@@ -2,6 +2,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.stack.Protocol;
@@ -22,9 +23,10 @@ import java.util.*;
  * sets its digest to D and then returns the state to the application.
  * 
  * @author Bela Ban
- * @version $Id: STATE_TRANSFER.java,v 1.80 2008/05/08 09:46:48 vlada Exp $
+ * @version $Id: STATE_TRANSFER.java,v 1.81 2008/05/29 14:17:38 vlada Exp $
  */
 @MBean(description="State transfer protocol based on byte array transfer")
+@DeprecatedProperty(names={"use_flush","flush_timeout"})
 public class STATE_TRANSFER extends Protocol {
     Address        local_addr=null;
     final Vector<Address>   members=new Vector<Address>();
@@ -69,13 +71,6 @@ public class STATE_TRANSFER extends Protocol {
         num_state_reqs=0;
         num_bytes_sent=0;
         avg_state_size=0;
-    }
-
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);        
-        listDeprecatedProperties(props, "use_flush","flush_timeout");      
-        return true;
     }
 
     public void init() throws Exception {

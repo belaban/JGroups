@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -68,6 +69,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  */
 @MBean(description="State trasnfer protocol based on streaming state transfer")
+@DeprecatedProperty(names={"use_flush","flush_timeout","use_reading_thread"})
 public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private final static String NAME = "STREAMING_STATE_TRANSFER";
@@ -149,13 +151,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         num_bytes_sent.set(0);
         avg_state_size = 0;
     }
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        listDeprecatedProperties(props, "use_flush","flush_timeout","use_reading_thread");       
-        return true;
-    }
-
+  
     public void init() throws Exception {}
 
     public void start() throws Exception {

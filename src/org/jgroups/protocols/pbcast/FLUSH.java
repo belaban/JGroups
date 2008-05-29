@@ -1,6 +1,7 @@
 package org.jgroups.protocols.pbcast;
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -45,6 +46,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * @since 2.4
  */
 @MBean(description="Flushes the cluster")
+@DeprecatedProperty(names={"auto_flush_conf"})
 public class FLUSH extends Protocol {
     public static final String NAME = "FLUSH";
 
@@ -136,12 +138,6 @@ public class FLUSH extends Protocol {
 
     public String getName() {
         return NAME;
-    }
-
-    public boolean setProperties(Properties props) {
-        super.setProperties(props);
-        listDeprecatedProperties(props, "auto_flush_conf");              
-        return true;
     }
 
     public void start() throws Exception {

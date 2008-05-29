@@ -8,6 +8,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.protocols.TP;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 
 import java.util.Map;
@@ -32,8 +33,9 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.60 2008/05/28 09:08:03 belaban Exp $
+ * @version $Id: Protocol.java,v 1.61 2008/05/29 14:17:42 vlada Exp $
  */
+@DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
     protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
@@ -88,23 +90,9 @@ public abstract class Protocol {
      *	calls setProperties(), which might invoke the setProperties() method of the actual protocol instance.
      */
     public boolean setPropertiesInternal(Properties props) {
-        this.props.putAll(props);
-        listDeprecatedProperties(props,"down_thread","down_thread_prio","up_thread","up_thread_prio");              
+        this.props.putAll(props);         
         return setProperties(props);
     }
-    
-    protected void listDeprecatedProperties(Properties props, String... deprecatedProperties){
-        for(String propertyName:deprecatedProperties){
-            String propertyValue = props.getProperty(propertyName);
-            if(propertyValue != null){
-                if(log.isWarnEnabled()){
-                    log.warn(propertyName + " was deprecated and will be ignored");
-                }
-                props.remove(propertyName);
-            }
-        }        
-    }
-
 
     public Properties getProperties() {
         return props;

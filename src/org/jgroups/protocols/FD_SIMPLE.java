@@ -1,4 +1,4 @@
-// $Id: FD_SIMPLE.java,v 1.24 2008/05/20 11:27:30 belaban Exp $
+// $Id: FD_SIMPLE.java,v 1.25 2008/05/29 14:17:37 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * suspected. When a message or a heartbeat are received, the counter is reset to 0.
  *
  * @author Bela Ban Aug 2002
- * @version $Revision: 1.24 $
+ * @version $Revision: 1.25 $
  */
 @Unsupported
 public class FD_SIMPLE extends Protocol {
@@ -60,36 +60,6 @@ public class FD_SIMPLE extends Protocol {
     public void init() throws Exception {
         timer=getTransport().getTimer();
     }
-
-    public boolean setProperties(Properties props) {
-        String str;
-
-        super.setProperties(props);
-        str=props.getProperty("timeout");
-        if(str != null) {
-            timeout=Long.parseLong(str);
-            props.remove("timeout");
-        }
-
-        str=props.getProperty("interval");
-        if(str != null) {
-            interval=Long.parseLong(str);
-            props.remove("interval");
-        }
-
-        str=props.getProperty("max_missed_hbs");
-        if(str != null) {
-            max_missed_hbs=Integer.parseInt(str);
-            props.remove("max_missed_hbs");
-        }
-
-        if(!props.isEmpty()) {
-            log.error("the following properties are not recognized: " + props);
-            return false;
-        }
-        return true;
-    }
-
 
     public void stop() {
         heartbeat_lock.lock();

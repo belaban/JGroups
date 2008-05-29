@@ -4,6 +4,7 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.GuardedBy;
@@ -34,9 +35,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.184 2008/05/20 11:27:27 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.185 2008/05/29 14:17:38 vlada Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
+@DeprecatedProperty(names={"max_xmit_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
     private boolean             is_server=false;
@@ -346,8 +348,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         String str;
         long[] tmp;
 
-        super.setProperties(props);
-        listDeprecatedProperties(props, "max_xmit_size");
+        super.setProperties(props);       
         str=props.getProperty("retransmit_timeout");
         if(str != null) {
             tmp=Util.parseCommaDelimitedLongs(str);

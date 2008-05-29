@@ -4,11 +4,11 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
-import java.util.Properties;
 
 
 /**
@@ -18,6 +18,9 @@ import java.util.Properties;
 public class AUTH extends Protocol{
 
     static final String NAME = "AUTH";
+    
+    @Property
+    private String authClass;
 
     /**
      * used on the coordinator to authentication joining member requests against
@@ -27,26 +30,18 @@ public class AUTH extends Protocol{
     public AUTH(){
     }
 
-    public boolean setProperties(Properties props) {
-
-        String authClassString = props.getProperty("auth_class");
-
-        if(authClassString != null){
-            props.remove("auth_class");
-
-            try{
-                Object obj = Class.forName(authClassString).newInstance();
-                serverSideToken = (AuthToken) obj;
+    public void init() throws Exception {
+        if(authClass != null) {
+            try {
+                Object obj=Class.forName(authClass).newInstance();
+                serverSideToken=(AuthToken)obj;
                 serverSideToken.setValue(props);
-            }catch(Exception e){
-                if(log.isFatalEnabled()){
-                    log.fatal("Failed to create server side token (" + authClassString + ")");
-                    log.fatal(e);
-                }
-                return false;
             }
-        }        
-        return true;
+            catch(Exception e) {
+                log.fatal("Failed to create server side token (" + authClass + ")");
+                throw e;
+            }
+        }
     }
 
     public final String getName() {

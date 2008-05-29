@@ -2,6 +2,7 @@ package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -31,9 +32,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
  * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.90 2008/05/20 11:27:24 belaban Exp $
+ * @version $Id: STABLE.java,v 1.91 2008/05/29 14:17:38 vlada Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
+@DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
 public class STABLE extends Protocol {
     private Address               local_addr=null;
     private final Set<Address>    mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
@@ -146,14 +148,6 @@ public class STABLE extends Protocol {
         return retval;
     }
 
-    public boolean setProperties(Properties props) {        
-        super.setProperties(props);
-        listDeprecatedProperties(props, "digest_timeout","max_gossip_runs","max_suspend_time");    
-        Util.checkBufferSize("STABLE.max_bytes", max_bytes);      
-        return true;
-    }
-
-
     private void suspend(long timeout) {
         if(!suspended) {
             suspended=true;
@@ -176,6 +170,11 @@ public class STABLE extends Protocol {
         if(log.isDebugEnabled())
             log.debug("resuming message garbage collection");
         stopResumeTask();
+    }
+    
+    public void init() throws Exception {
+        super.init();
+        Util.checkBufferSize("STABLE.max_bytes", max_bytes);      
     }
 
     public void start() throws Exception {
