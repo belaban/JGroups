@@ -15,12 +15,11 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.20 2008/04/23 14:11:01 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.21 2008/05/29 11:38:51 belaban Exp $
  */
 @Test(groups="temp",sequential=false)
 public class ChannelTest extends ChannelTestBase {
-    private final ThreadLocal<Channel> ch=new ThreadLocal<Channel>();
-    private final ThreadLocal<String>  PROPS=new ThreadLocal<String>();
+    private final ThreadLocal<JChannel> ch=new ThreadLocal<JChannel>();
     private final ThreadLocal<String>  GROUP=new ThreadLocal<String>();
 
 
@@ -28,9 +27,7 @@ public class ChannelTest extends ChannelTestBase {
     void init() throws Exception {
         String cluster_name=getUniqueClusterName("ChannelTest");
         GROUP.set(cluster_name);
-        Channel tmp=createChannel(true, 2);
-        String tmp_props=tmp.getProperties();
-        PROPS.set(tmp_props);
+        JChannel tmp=createChannel(true, 2);
         tmp.connect(GROUP.get());
         ch.set(tmp);
     }
@@ -42,13 +39,12 @@ public class ChannelTest extends ChannelTestBase {
         Util.close(tmp_ch);
         ch.set(null);
         GROUP.set(null);
-        PROPS.set(null);
     }
 
 
     @Test
     public void testBasicOperations() throws Exception {
-        Channel c1 = createChannelWithProps(PROPS.get());
+        Channel c1 = createChannel(ch.get());
         Channel c2=null;
 
         try {
@@ -87,9 +83,9 @@ public class ChannelTest extends ChannelTestBase {
        
             assert c1.getClusterName() == null;
        
-            c1 = createChannelWithProps(PROPS.get());
+            c1 = createChannel(ch.get());
             c1.connect(GROUP.get());
-            c2 = createChannelWithProps(PROPS.get());
+            c2 = createChannel(ch.get());
             c2.connect(GROUP.get());
        
             Util.sleep(1000);
@@ -145,7 +141,7 @@ public class ChannelTest extends ChannelTestBase {
         ViewChecker checker=new ViewChecker(ch.get());
         ch.get().setReceiver(checker);
 
-        Channel ch2=createChannelWithProps(PROPS.get());
+        Channel ch2=createChannel(ch.get());
         try {
             ch2.connect(GROUP.get());
             assertTrue(checker.getReason(), checker.isSuccess());
@@ -160,7 +156,7 @@ public class ChannelTest extends ChannelTestBase {
 
     @Test
     public void testIsConnectedOnFirstViewChange() throws Exception {
-        Channel ch2=createChannelWithProps(PROPS.get());
+        Channel ch2=createChannel(ch.get());
         ConnectedChecker tmp=new ConnectedChecker(ch2);
         ch2.setReceiver(tmp);
         try {
@@ -177,7 +173,7 @@ public class ChannelTest extends ChannelTestBase {
 
     @Test
     public void testNoViewIsReceivedAferDisconnect() throws Exception {
-        final Channel ch2 = createChannelWithProps(PROPS.get());
+        final Channel ch2 = createChannel(ch.get());
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 
@@ -195,7 +191,7 @@ public class ChannelTest extends ChannelTestBase {
     
     @Test
     public void testNoViewIsReceivedAferClose() throws Exception {
-        final Channel ch2 = createChannelWithProps(PROPS.get());
+        final Channel ch2 = createChannel(ch.get());
         MyViewChecker ra = new MyViewChecker(ch2);
         ch2.setReceiver(ra);
 

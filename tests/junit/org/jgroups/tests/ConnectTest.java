@@ -2,10 +2,7 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Channel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -16,11 +13,11 @@ import org.testng.annotations.Test;
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.18 2008/04/23 14:53:47 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.19 2008/05/29 11:38:54 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConnectTest extends ChannelTestBase {
-    Channel channel, coordinator;
+    JChannel channel, coordinator;
 
 
     @AfterMethod
@@ -63,13 +60,12 @@ public class ConnectTest extends ChannelTestBase {
         View     view;
         coordinator=createChannel(true);
         changeProps(coordinator);
-        final String props=coordinator.getProperties();
         coordinator.connect("ConnectTest.testgroup-3");
         view=coordinator.getView();
         System.out.println("-- view for coordinator: " + view);
         assert view.size() == 1;
 
-        channel=createChannelWithProps(props);
+        channel=createChannel(coordinator);
         changeProps(channel);
         channel.connect("ConnectTest.testgroup-4");
         view=channel.getView();
@@ -100,11 +96,10 @@ public class ConnectTest extends ChannelTestBase {
         final Promise<Message> msgPromise=new Promise<Message>();
         coordinator=createChannel(true);
         changeProps(coordinator);
-        final String props=coordinator.getProperties();
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
         coordinator.connect("ConnectTest.testgroup-5");
 
-        channel=createChannelWithProps(props);
+        channel=createChannel(coordinator);
         changeProps(channel);
         channel.connect("ConnectTest.testgroup-6");
         channel.disconnect();
@@ -118,7 +113,7 @@ public class ConnectTest extends ChannelTestBase {
 
     private static void changeProps(Channel ch) {
         ProtocolStack stack=ch.getProtocolStack();
-        TP transport=(TP)stack.getTransport();
+        TP transport=stack.getTransport();
         transport.setLogDiscardMessages(false);
     }
 

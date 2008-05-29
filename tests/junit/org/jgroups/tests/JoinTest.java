@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.21 2008/05/20 15:54:26 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.22 2008/05/29 11:38:53 belaban Exp $
  * 
  * TODO make possibly parallel 
  */
@@ -27,7 +27,7 @@ public class JoinTest extends ChannelTestBase {
     @BeforeMethod
     public void setUp() throws Exception {
         c1=createChannel(true);
-        c2=createChannelWithProps(c1.getProperties());
+        c2=createChannel(c1);
     }
 
 

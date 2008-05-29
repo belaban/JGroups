@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.25 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.26 2008/05/29 11:38:53 belaban Exp $
  */
 @Test(sequential=true)
 public class StateTransferTest extends ChannelTestBase {
@@ -53,10 +53,7 @@ public class StateTransferTest extends ChannelTestBase {
         semaphore.acquire(APP_COUNT);
 
         int from=0, to=MSG_SEND_COUNT;
-        String[] names=createApplicationNames(APP_COUNT);
-        if(isMuxChannelUsed()) {
-            names=createMuxApplicationNames(2, 2);
-        }
+        String[] names={"A", "B"};
 
         for(int i=0; i < apps.length; i++) {
             apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
@@ -72,12 +69,8 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         // Make sure everyone is in sync
-        if(isMuxChannelUsed()) {
-            blockUntilViewsReceived(apps, getMuxFactoryCount(), 60000);
-        }
-        else {
-            blockUntilViewsReceived(apps, 60000);
-        }
+
+        blockUntilViewsReceived(apps, 60000);
 
         Util.sleep(1000);
 
@@ -110,10 +103,6 @@ public class StateTransferTest extends ChannelTestBase {
         }
     }
 
-    protected int getMuxFactoryCount() {
-        // one MuxChannel per real Channel
-        return APP_COUNT;
-    }
 
     protected class StateTransferApplication extends PushChannelApplicationWithSemaphore {
         private final ReentrantLock mapLock=new ReentrantLock();

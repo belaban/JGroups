@@ -19,7 +19,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.12 2008/04/09 14:34:50 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.13 2008/05/29 11:38:54 belaban Exp $
  */
 @Test
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -36,8 +36,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        provider=createChannel("A");
-        requester=createChannel("A");
+        provider=createChannel(true);
+        requester=createChannel(provider);
     }
 
     @AfterMethod
@@ -68,11 +68,12 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
 
     private void _testStateTransfer(int size) throws ChannelException {
+        final String GROUP=getUniqueClusterName("LargeStateTransferTest");
         provider.setReceiver(new Provider(size));
-        provider.connect("X");
+        provider.connect(GROUP);
         p.reset();
         requester.setReceiver(new Requester(p));
-        requester.connect("X");
+        requester.connect(GROUP);
         log("requesting state of " + size + " bytes");
         start=System.currentTimeMillis();
         requester.getState(null, 20000);
