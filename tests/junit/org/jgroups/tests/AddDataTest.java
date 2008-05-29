@@ -15,9 +15,9 @@ import java.util.Map;
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.19 2008/05/29 10:17:59 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.20 2008/05/29 12:28:09 belaban Exp $
  */
-@Test(groups={"temp","single"},sequential=false)
+@Test(groups={"temp"},sequential=false)
 public class AddDataTest extends ChannelTestBase {
 
     @Test
