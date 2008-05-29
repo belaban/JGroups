@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.22 2008/05/29 11:38:53 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.23 2008/05/29 11:48:40 belaban Exp $
  * 
  * TODO make possibly parallel 
  */
@@ -75,10 +75,10 @@ public class JoinTest extends ChannelTestBase {
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         Message m1=new Message(null, null, "message-1"), m2=new Message(null, null, "message-2");
-        c1.connect("X");
+        c1.connect("JoinTest-2");
         View view=c1.getView();
         assert view.size() == 2 : "c1's view: " + view;
-        c2.connect("X");
+        c2.connect("JoinTest-2");
         view=c2.getView();
         assert view.size() == 2 : "c2's view: " + view;
         Util.sleep(200);
@@ -168,7 +168,7 @@ public class JoinTest extends ChannelTestBase {
 
         System.out.println(new Date() + ": joining c2");
         long start=System.currentTimeMillis(), stop;
-        c2.connect("x");
+        c2.connect("JoinTest-2");
         stop=System.currentTimeMillis();
         long join_time=stop-start;
         long tolerated_join_time=discovery_timeout + delay_join_req + tolerance; // 1 sec more is okay (garbage collection etc)
