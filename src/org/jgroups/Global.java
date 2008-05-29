@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.37 2008/04/21 13:35:31 belaban Exp $
+ * @version $Id: Global.java,v 1.38 2008/05/29 08:50:11 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -68,7 +68,6 @@ public class Global {
     public static final String STACK_DEPENDENT="stack-dependent";
     public static final String STACK_INDEPENDENT="stack-independent";
     public static final String FLUSH="flush";
-    public static final String MULTIPLEXER="multiplexer";
     public static final String INITIAL_MCAST_ADDR="INITIAL_MCAST_ADDR";
     public static final String INITIAL_MCAST_PORT="INITIAL_MCAST_PORT";
     public static final String INITIAL_TCP_PORT="INITIAL_TCP_PORT";
