@@ -32,32 +32,15 @@ import java.util.concurrent.TimeUnit;
 @Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class ChannelTestBase {
 
-    protected final static Random RANDOM=new Random();
-
-    private static final int LETTER_A=64;
-
     protected String channel_conf="udp.xml";
 
-    protected boolean mux_on=false;
-
-    protected String mux_conf="stacks.xml";
-
-    protected String mux_conf_stack="udp";
-
-    protected int mux_factorycount=4;
-
     protected int active_threads=0;
-
-    protected JChannelFactory muxFactory[]=null;
-    protected final Object muxFactoryMutex=new Object();
 
     protected boolean compare_thread_count=false;
 
     protected String before_threads=null;
 
     protected boolean use_blocking=false;
-
-    protected int currentChannelGeneratedName=LETTER_A;
 
     private int router_port=12001;
 
@@ -71,29 +54,12 @@ public class ChannelTestBase {
 
 
     @BeforeClass
-    @Parameters(value={"channel.conf", "mux.on", "mux.conf", "mux.conf.stack",
-            "mux.factorycount", "compare_thread_count", "use_blocking"})
+    @Parameters(value={"channel.conf", "compare_thread_count", "use_blocking"})
     protected void initialize(@Optional("udp.xml") String channel_conf,
-                              @Optional("false") String mux_on,
-                              @Optional("stacks.xml") String mux_conf,
-                              @Optional("udp") String mux_conf_stack,
-                              @Optional("4") String mux_factorycount,
                               @Optional("false") String compare_thread_count,
                               @Optional("false") String use_blocking) throws Exception {
         if(channel_conf != null)
             this.channel_conf=channel_conf;
-
-        if(mux_on != null)
-            this.mux_on=Boolean.parseBoolean(mux_on);
-
-        if(mux_conf != null)
-            this.mux_conf=mux_conf;
-
-        if(mux_conf_stack != null)
-            this.mux_conf_stack=mux_conf_stack;
-
-        if(mux_factorycount != null)
-            this.mux_factorycount=Integer.parseInt(mux_factorycount);
 
         if(compare_thread_count != null)
             this.compare_thread_count=Boolean.parseBoolean(compare_thread_count);
@@ -101,19 +67,9 @@ public class ChannelTestBase {
         if(use_blocking != null)
             this.use_blocking=Boolean.parseBoolean(use_blocking);
 
-        currentChannelGeneratedName=LETTER_A;
-
         if(isTunnelUsed()) {
             router=new GossipRouter(router_port, bind_addr);
             router.start();
-        }
-
-        if(isMuxChannelUsed()) {
-            muxFactory=new JChannelFactory[getMuxFactoryCount()];
-            for(int i=0; i < muxFactory.length; i++) {
-                muxFactory[i]=new JChannelFactory();
-                muxFactory[i].setMultiplexerConfig(mux_conf);
-            }
         }
 
         if(shouldCompareThreadCount()) {
@@ -129,12 +85,6 @@ public class ChannelTestBase {
     
     @AfterClass
     protected void terminate() throws Exception {
-        if(isMuxChannelUsed()) {
-            for(int i=0; i < muxFactory.length; i++) {
-                muxFactory[i].destroy();
-            }
-        }
-
         if(router != null) {
             router.stop();
             Util.sleep(100);
@@ -202,91 +152,7 @@ public class ChannelTestBase {
     }
 
 
-    /**
-     * Returns an array of mux application/service names with a guarantee that:
-     * <p> - there are no application/service name collissions on top of one
-     * channel (i.e cannot have two application/service(s) with the same name on
-     * top of one channel)
-     * <p> - each generated application/service name is guaranteed to have a
-     * corresponding pair application/service with the same name on another
-     * channel
-     * @param muxApplicationstPerChannelCount
-     *
-     * @return
-     */
-    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount) {
-        return createMuxApplicationNames(muxApplicationstPerChannelCount, getMuxFactoryCount());
-    }
 
-    /**
-     * Returns an array of mux application/service names with a guarantee that:
-     * <p> - there are no application/service name collissions on top of one
-     * channel (i.e cannot have two application/service(s) with the same name on
-     * top of one channel)
-     * <p> - each generated application/service name is guaranteed to have a
-     * corresponding pair application/service with the same name on another
-     * channel
-     * @param muxApplicationstPerChannelCount
-     *
-     * @param muxFactoryCount how many mux factories should be used (has to be less than
-     *                        getMuxFactoryCount())
-     * @return array of mux application id's represented as String objects
-     */
-    protected String[] createMuxApplicationNames(int muxApplicationstPerChannelCount, int muxFactoryCount) {
-        if(muxFactoryCount > getMuxFactoryCount()) {
-            throw new IllegalArgumentException("Parameter muxFactoryCount hs to be less than or equal to getMuxFactoryCount()");
-        }
-
-        int startLetter=LETTER_A;
-        String names[]=null;
-        int totalMuxAppCount=muxFactoryCount * muxApplicationstPerChannelCount;
-        names=new String[totalMuxAppCount];
-
-        boolean pickNextLetter=false;
-        for(int i=0; i < totalMuxAppCount; i++) {
-            pickNextLetter=(i % muxFactoryCount == 0);
-            if(pickNextLetter) {
-                startLetter++;
-            }
-            names[i]=Character.toString((char)startLetter);
-        }
-        return names;
-    }
-
-    /**
-     * Returns channel name as String next in alphabetic sequence since
-     * getNextChannelName() has been called last. Sequence is restarted to
-     * letter "A" after each setUp call.
-     * @return
-     */
-    protected String getNextChannelName() {
-        return Character.toString((char)++currentChannelGeneratedName);
-    }
-
-    protected String[] createApplicationNames(int applicationCount) {
-        String names[]=new String[applicationCount];
-        for(int i=0; i < applicationCount; i++) {
-            names[i]=getNextChannelName();
-        }
-        return names;
-    }
-
-
-    protected JChannel createChannel(String id) throws Exception {
-        return createChannel(id, null, false, 1);
-    }
-
-    protected JChannel createChannelWithProps(String props) throws Exception {
-        return createChannelWithProps("A", props);
-    }
-
-    protected JChannel createChannelWithProps(String id, String props) throws Exception {
-        return createChannel(id, props, false, 1);
-    }
-
-    protected JChannel createChannel() throws Exception {
-        return createChannel("A");
-    }
 
     /**
      * Creates a channel and modifies the configuration such that no other channel will able to join this
@@ -297,16 +163,16 @@ public class ChannelTestBase {
      * @return
      * @throws Exception
      */
-    protected JChannel createChannel(String id, String props, boolean unique, int num) throws Exception {
-        return (JChannel)new DefaultChannelTestFactory().createChannel(id, props, unique, num);
+    protected JChannel createChannel(boolean unique, int num) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel(unique, num);
     }
 
-    protected JChannel createChannel(boolean unique, int num) throws Exception {
-        return createChannel("A", null, unique, num);
+    protected JChannel createChannel() throws Exception {
+        return new DefaultChannelTestFactory().createChannel();
     }
 
     protected JChannel createChannel(boolean unique) throws Exception {
-        return createChannel("A", null, unique, 1);
+        return createChannel(unique, 1);
     }
 
     protected static String getUniqueClusterName() {
@@ -323,54 +189,19 @@ public class ChannelTestBase {
     /**
      * Default channel factory used in junit tests
      */
-    protected class DefaultChannelTestFactory implements ChannelTestFactory {
+    protected class DefaultChannelTestFactory {
         
-        public Channel createChannel(String id) throws Exception {
-            return createChannel(id, null, false, 1);
+        public JChannel createChannel() throws Exception {
+            return createChannel(channel_conf, useBlocking());
         }
 
-        public JChannel createChannel(String id, String props) throws Exception {
-            JChannel c=null;
-            if(props == null)
-                props=channel_conf;
-            if(isMuxChannelUsed()) {
-                log.info("Using configuration file " + mux_conf + ", stack is " + mux_conf_stack);
-                synchronized(muxFactoryMutex) {
-                    for(int i=0; i < muxFactory.length; i++) {
-                        if(!muxFactory[i].hasMuxChannel(mux_conf_stack, id)) {
-                            c=(JChannel)muxFactory[i].createMultiplexerChannel(mux_conf_stack, id);
-                            if(useBlocking()) {
-                                c.setOpt(Channel.BLOCK, Boolean.TRUE);
-                            }
-                            return c;
-                        }
-                    }
-                }
-                throw new Exception("Cannot create mux channel with id " + id
-                        + " since an existing channel has already registered a service with that id");
-            }
-            else {
-                c=createChannel(props, useBlocking());
-            }
-            return c;
-        }
-
-
-        public Channel createChannel(String id, String props, boolean unique, int num) throws Exception {
-            JChannel c=createChannel(id, props);
-            if(unique && !isMuxChannelUsed()) {
+        public Channel createChannel(boolean unique, int num) throws Exception {
+            JChannel c=createChannel(channel_conf, useBlocking());
+            if(unique) {
                 makeUnique(c, num);
             }
             muteLocalAddress(c);
             return c;
-        }
-
-        private void muteLocalAddress(JChannel c) {
-            ProtocolStack stack=c.getProtocolStack();
-            Protocol gms=stack.findProtocol(GMS.class);
-            if(gms != null) {
-                ((GMS)gms).setPrintLocalAddress(false);
-            }
         }
 
         private JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
@@ -387,7 +218,15 @@ public class ChannelTestBase {
             return ch;
         }
 
-        private void makeUnique(JChannel channel, int num) throws Exception {
+        private void muteLocalAddress(Channel c) {
+            ProtocolStack stack=c.getProtocolStack();
+            Protocol gms=stack.findProtocol(GMS.class);
+            if(gms != null) {
+                ((GMS)gms).setPrintLocalAddress(false);
+            }
+        }
+
+        private void makeUnique(Channel channel, int num) throws Exception {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
             if(transport instanceof UDP) {
@@ -424,20 +263,6 @@ public class ChannelTestBase {
 
 
 
-
-    public class NextAvailableMuxChannelTestFactory implements ChannelTestFactory {
-        public Channel createChannel(String id) throws Exception {
-            return ChannelTestBase.this.createChannel(id);
-        }
-    }
-
-    /**
-     * Decouples channel creation for junit tests
-     */
-    protected interface ChannelTestFactory {
-        public Channel createChannel(String id) throws Exception;
-    }
-
     interface EventSequence {
         List<Object> getEvents();
         String getName();
@@ -452,19 +277,15 @@ public class ChannelTestBase {
         protected Throwable exception;
         protected String    name;
 
-        public ChannelApplication(String name) throws Exception {
-            ChannelTestBase.this.createChannel(name);
-        }
 
         /**
          * Creates a unconnected channel and assigns a name to it.
          * @param name    name of this channel
-         * @param factory factory to create Channel
          * @throws ChannelException
          */
-        public ChannelApplication(String name, ChannelTestFactory factory) throws Exception {
+        public ChannelApplication(String name) throws Exception {
             this.name=name;
-            channel=factory.createChannel(name);
+            channel=createChannel();
         }
 
         /**
@@ -545,12 +366,9 @@ public class ChannelTestBase {
         RpcDispatcher dispatcher;
         List<Object> events;
 
-        public PushChannelApplication(String name, boolean useDispatcher) throws Exception {
-            this(name, new DefaultChannelTestFactory(), useDispatcher);
-        }
 
-        public PushChannelApplication(String name, ChannelTestFactory factory, boolean useDispatcher) throws Exception {
-            super(name, factory);
+        public PushChannelApplication(String name,  boolean useDispatcher) throws Exception {
+            super(name);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
                 dispatcher=new RpcDispatcher(channel, this, this, this);
@@ -657,10 +475,9 @@ public class ChannelTestBase {
         protected Semaphore semaphore;
 
         public PushChannelApplicationWithSemaphore(String name,
-                                                   ChannelTestFactory factory,
                                                    Semaphore semaphore,
                                                    boolean useDispatcher) throws Exception {
-            super(name, factory, useDispatcher);
+            super(name, useDispatcher);
             this.semaphore=semaphore;
         }
 
@@ -668,11 +485,6 @@ public class ChannelTestBase {
             this(name, semaphore, false);
         }
 
-        protected PushChannelApplicationWithSemaphore(String name,
-                                                      Semaphore semaphore,
-                                                      boolean useDispatcher) throws Exception {
-            this(name, new DefaultChannelTestFactory(), semaphore, useDispatcher);
-        }
 
         public void run() {
             boolean acquired=false;
@@ -765,19 +577,8 @@ public class ChannelTestBase {
         public Address getLocalAddress();
     }
 
-    /**
-     * Returns true if JVM has been started with mux.on system property set to true, false otherwise
-     */
-    protected boolean isMuxChannelUsed() {
-        return mux_on;
-    }
-
     protected boolean shouldCompareThreadCount() {
         return compare_thread_count;
-    }
-
-    protected int getMuxFactoryCount() {
-        return mux_factorycount;
     }
 
     protected boolean useBlocking() {
