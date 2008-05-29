@@ -17,9 +17,9 @@ import java.util.concurrent.locks.ReentrantLock;
 /**
  * Test case modelling http://jira.jboss.com/jira/browse/JGRP-659
  * @author unknown
- * @version $Id: ConcurrentMemberTest.java,v 1.2 2008/04/25 07:07:58 belaban Exp $
+ * @version $Id: ConcurrentMemberTest.java,v 1.3 2008/05/29 12:28:35 belaban Exp $
  */
-@Test(groups="temp", sequential=true)
+@Test(groups="vladimir", sequential=true)
 public class ConcurrentMemberTest extends ChannelTestBase {
     private GroupManager coordinator=null;
     private List<GroupManager> managers=null;
