@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.77 2008/05/29 11:13:17 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.78 2008/05/29 14:00:49 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -69,6 +69,11 @@ public class ProtocolStack extends Protocol implements Transport {
     /** Only used by Simulator; don't use */
     public ProtocolStack() throws ChannelException {
         this(null,null);
+    }
+
+
+    public String getSetupString() {
+        return setup_string;
     }
 
     /**
@@ -254,7 +259,45 @@ public class ProtocolStack extends Protocol implements Transport {
      * the properties for each protocol will also be printed.
      */
     public String printProtocolSpec(boolean include_properties) {
-        return printProtocolSpecAsPlainString(include_properties);
+        StringBuilder sb=new StringBuilder();
+        Vector<Protocol> protocols=getProtocols();
+
+        if(protocols == null) return null;
+        boolean first_colon_printed=false;
+
+        Collections.reverse(protocols);
+        for(Protocol prot: protocols) {
+            String prot_name=prot.getClass().getName();
+            int index=prot_name.indexOf(Global.PREFIX);
+            if(index >= 0)
+                prot_name=prot_name.substring(Global.PREFIX.length());
+            if(first_colon_printed) {
+                sb.append(":");
+            }
+            else {
+                first_colon_printed=true;
+            }
+
+            sb.append(prot_name);
+            if(include_properties) {
+                Map<String,String> tmp=getProps(prot);
+                if(!tmp.isEmpty()) {
+                    boolean printed=false;
+                    sb.append("(");
+                    for(Map.Entry<String,String> entry: tmp.entrySet()) {
+                        if(printed) {
+                            sb.append(";");
+                        }
+                        else {
+                            printed=true;
+                        }
+                        sb.append(entry.getKey()).append("=").append(entry.getValue());
+                    }
+                    sb.append(")\n");
+                }
+            }
+        }
+        return sb.toString();
     }
 
     public String printProtocolSpecAsXML() {
