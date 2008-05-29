@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
 
-import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
@@ -13,9 +12,11 @@ import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.util.Map;
-import java.util.Properties;
 import java.util.Vector;
 
 /**
@@ -38,7 +39,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.16 2008/05/23 10:46:03 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.17 2008/05/29 11:38:55 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -54,16 +55,15 @@ public class RpcDispatcherTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         c1=createChannel(true);
-        final String props=c1.getProperties();
         final String GROUP=getUniqueClusterName("RpcDispatcherTest");
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
         c1.connect(GROUP);
 
-        c2=createChannelWithProps(props);
+        c2=createChannel(c1);
         disp2=new RpcDispatcher(c2, null, null, new ServerObject(2));
         c2.connect(GROUP);
 
-        c3=createChannelWithProps(props);
+        c3=createChannel(c1);
         disp3=new RpcDispatcher(c3, null, null, new ServerObject(3));
         c3.connect(GROUP);
     }

@@ -34,40 +34,23 @@ public class StreamingStateTransferTest extends ChannelTestBase {
 
     @Test
     public void testTransfer() {
-        String channelNames[] = null;
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            channelNames = createMuxApplicationNames(1);
-        }else{
-            channelNames = new String[] { "A", "B", "C", "D" };
-        }
+        String channelNames[] = { "A", "B", "C", "D" };
         transferHelper(channelNames, false);
     }
 
     @Test
     public void testRpcChannelTransfer() {
-        // do this test for regular channels only
-        if(!isMuxChannelUsed()){
-            String channelNames[] = new String[] { "A", "B", "C", "D" };
-            transferHelper(channelNames, true);
-        }
+        String channelNames[] = { "A", "B", "C", "D" };
+        transferHelper(channelNames, true);
     }
 
-    @Test
-    public void testMultipleServiceMuxChannel() {
-        String channelNames[] = null;
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            channelNames = createMuxApplicationNames(2);
-            transferHelper(channelNames, false);
-        }
-    }
 
-    void transferHelper(String channelNames[], boolean useDispatcher) {
+
+    private void transferHelper(String channelNames[], boolean useDispatcher) {
         transferHelper(channelNames, false, false, useDispatcher);
     }
 
-    void transferHelper(String channelNames[],
+    private void transferHelper(String channelNames[],
                                boolean crash,
                                boolean largeTransfer,
                                boolean useDispatcher) {
@@ -103,11 +86,8 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                 }
             }
 
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+
+            blockUntilViewsReceived(channels, 60000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -145,18 +125,11 @@ public class StreamingStateTransferTest extends ChannelTestBase {
                     Assert.assertEquals(size, StreamingStateTransferApplication.COUNT, "Correct element count in map ");
                 }
             }
-            if(isMuxChannelUsed()){
-                int factor = channelCount / getMuxFactoryCount();
-                Assert.assertEquals(getStateInvokedCount, 1 * factor, "Correct invocation count of getState ");
-                Assert.assertEquals(setStateInvokedCount / factor, (channelCount / factor) - 1, "Correct invocation count of setState ");
-                Assert.assertEquals(partialGetStateInvokedCount, 1 * factor, "Correct invocation count of partial getState ");
-                Assert.assertEquals(partialSetStateInvokedCount / factor, (channelCount / factor) - 1, "Correct invocation count of partial setState ");
-            }else{
-                Assert.assertEquals(getStateInvokedCount, 1, "Correct invocation count of getState ");
-                Assert.assertEquals(setStateInvokedCount, channelCount - 1, "Correct invocation count of setState ");
-                Assert.assertEquals(partialGetStateInvokedCount, 1, "Correct invocation count of partial getState ");
-                Assert.assertEquals(partialSetStateInvokedCount, channelCount - 1, "Correct invocation count of partial setState ");
-            }
+
+            Assert.assertEquals(getStateInvokedCount, 1, "Correct invocation count of getState ");
+            Assert.assertEquals(setStateInvokedCount, channelCount - 1, "Correct invocation count of setState ");
+            Assert.assertEquals(partialGetStateInvokedCount, 1, "Correct invocation count of partial getState ");
+            Assert.assertEquals(partialSetStateInvokedCount, channelCount - 1, "Correct invocation count of partial setState ");
 
         }catch(Exception ex){
             log.warn(ex);

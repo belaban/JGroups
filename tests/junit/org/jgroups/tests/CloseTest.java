@@ -1,11 +1,8 @@
-// $Id: CloseTest.java,v 1.20 2008/04/23 14:23:40 belaban Exp $
+// $Id: CloseTest.java,v 1.21 2008/05/29 11:38:53 belaban Exp $
 
 package org.jgroups.tests;
 
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelClosedException;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
@@ -20,11 +17,11 @@ import java.util.Vector;
  */
 @Test(groups="temp", sequential=false)
 public class CloseTest extends ChannelTestBase {
-    private final ThreadLocal<Channel> ch=new ThreadLocal<Channel>(),
-            channel1=new ThreadLocal<Channel>(),
-            c1=new ThreadLocal<Channel>(),
-            c2=new ThreadLocal<Channel>(),
-            c3=new ThreadLocal<Channel>();
+    private final ThreadLocal<JChannel> ch=new ThreadLocal<JChannel>(),
+            channel1=new ThreadLocal<JChannel>(),
+            c1=new ThreadLocal<JChannel>(),
+            c2=new ThreadLocal<JChannel>(),
+            c3=new ThreadLocal<JChannel>();
 
 
     @AfterMethod
@@ -41,7 +38,7 @@ public class CloseTest extends ChannelTestBase {
     }
 
 
-    private static void closeChannel(ThreadLocal<Channel> local) {
+    private static void closeChannel(ThreadLocal<JChannel> local) {
         Channel c=local.get();
         if(c != null && (c.isOpen() || c.isConnected())) {
             c.close();
@@ -84,14 +81,13 @@ public class CloseTest extends ChannelTestBase {
         Address a1, a2;
         Vector members;
         c1.set(createChannel(true));
-        final String props=c1.get().getProperties();
         System.out.println("-- connecting c1");
         final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByParticipant");
         c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1.get());
         a1=c1.get().getLocalAddress();
-        c2.set(createChannelWithProps(props));
+        c2.set(createChannel(c1.get()));
         System.out.println("-- connecting c2");
         c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
@@ -127,12 +123,11 @@ public class CloseTest extends ChannelTestBase {
         View v;
         final String GROUP=getUniqueClusterName("CloseTest.testViewChangeReceptionOnChannelCloseByCoordinator");
         c1.set(createChannel(true));
-        final String props=c1.get().getProperties();
         c1.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
         dumpMessages("c1", c1.get());
         a1=c1.get().getLocalAddress();
-        c2.set(createChannelWithProps(props));
+        c2.set(createChannel(c1.get()));
         c2.get().connect(GROUP);
         Util.sleep(500); // time to receive its own view
         a2=c2.get().getLocalAddress();
@@ -193,14 +188,13 @@ public class CloseTest extends ChannelTestBase {
     public void testConnectCloseSequenceWith2Members() throws Exception {
         System.out.println("-- creating channel --");
         ch.set(createChannel(true));
-        final String props=ch.get().getProperties();
         System.out.println("-- connecting channel --");
         final String GROUP=getUniqueClusterName("CloseTest.testConnectCloseSequenceWith2Members");
         ch.get().connect(GROUP);
         System.out.println("view is " + ch.get().getView());
 
         System.out.println("-- creating channel1 --");
-        channel1.set(createChannelWithProps(props));
+        channel1.set(createChannel(ch.get()));
         System.out.println("-- connecting channel1 --");
         channel1.get().connect(GROUP);
         System.out.println("view is " + channel1.get().getView());
@@ -265,7 +259,6 @@ public class CloseTest extends ChannelTestBase {
     @Test
     public void testMultipleConnectsAndDisconnects() throws Exception {
         c1.set(createChannel(true));
-        final String props=c1.get().getProperties();
         assertTrue(c1.get().isOpen());
         assertFalse(c1.get().isConnected());
         final String GROUP=getUniqueClusterName("CloseTest.testMultipleConnectsAndDisconnects");
@@ -275,7 +268,7 @@ public class CloseTest extends ChannelTestBase {
         assertTrue(c1.get().isConnected());
         assertServiceAndClusterView(c1.get(), 1);
 
-        c2.set(createChannelWithProps(props));
+        c2.set(createChannel(c1.get()));
         assertTrue(c2.get().isOpen());
         assertFalse(c2.get().isConnected());
 
@@ -303,7 +296,7 @@ public class CloseTest extends ChannelTestBase {
         assertServiceAndClusterView(c1.get(), 2);
 
         // Now see what happens if we reconnect the first channel
-        c3.set(createChannelWithProps(props));
+        c3.set(createChannel(c1.get()));
         assertTrue(c3.get().isOpen());
         assertFalse(c3.get().isConnected());
         assertServiceAndClusterView(c1.get(), 2);

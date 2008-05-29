@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.17 2008/04/23 11:36:19 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.18 2008/05/29 11:38:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -23,7 +23,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.17 $
+ * @version $Revision: 1.18 $
  */
 @Test(groups="temp",sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
@@ -89,13 +89,12 @@ public class Deadlock2Test extends ChannelTestBase {
         ServerObject obj1, obj2 = null;
 
         c1 = createChannel(true);
-        final String props=c1.getProperties();
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        c2 = createChannelWithProps(props);
+        c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);
@@ -114,13 +113,12 @@ public class Deadlock2Test extends ChannelTestBase {
         ServerObject obj1, obj2 = null;
 
         c1 = createChannel(true);
-        final String props=c1.getProperties();
         obj1 = new ServerObject("obj1");
         RpcDispatcher disp1=new RpcDispatcher(c1, null, null, obj1, DEADLOCK_DETECTION);
         obj1.setRpcDispatcher(disp1);
         c1.connect(name);
 
-        c2 = createChannelWithProps(props);
+        c2 = createChannel(c1);
         obj2 = new ServerObject("obj2");
         RpcDispatcher disp2=new RpcDispatcher(c2, null, null, obj2, DEADLOCK_DETECTION);
         obj2.setRpcDispatcher(disp2);

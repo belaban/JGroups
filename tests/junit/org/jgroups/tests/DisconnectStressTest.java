@@ -2,26 +2,24 @@
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.MERGE2;
-import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.ProtocolStack;
+import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
+import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
-import java.util.Properties;
 
 
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.12 2008/05/23 10:45:44 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.13 2008/05/29 11:38:53 belaban Exp $
  */
 @Test(groups="temp")
 public class DisconnectStressTest extends ChannelTestBase {
@@ -44,15 +42,15 @@ public class DisconnectStressTest extends ChannelTestBase {
         all_disconnected=new CyclicBarrier(NUM+1);
         start_disconnecting=new CyclicBarrier(NUM+1);
 
-        String props=null;
+        JChannel first=null;
         for(int i=0; i < threads.length; i++) {
             JChannel ch;
-            if(props == null) {
+            if(first == null) {
                 ch=createChannel(true);
-                props=ch.getProperties();
+                first=ch;
             }
             else {
-                ch=createChannelWithProps(props);
+                ch=createChannel(first);
             }
             modifyStack(ch);
             threads[i]=new MyThread(i, ch);

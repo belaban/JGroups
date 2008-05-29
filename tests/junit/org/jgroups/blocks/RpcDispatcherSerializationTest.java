@@ -1,11 +1,14 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 import java.io.*;
 import java.util.Iterator;
@@ -13,7 +16,7 @@ import java.util.Vector;
 
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
-    private Channel channel, channel2;
+    private JChannel channel, channel2;
     private RpcDispatcher disp, disp2;
     private final Target target=new Target();
 
@@ -22,12 +25,11 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         channel=createChannel(true);
-        final String props=channel.getProperties();
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         disp=new RpcDispatcher(channel, null, null, target);
         channel.connect("RpcDispatcherSerializationTest");
 
-        channel2=createChannelWithProps(props);
+        channel2=createChannel(channel);
         disp2=new RpcDispatcher(channel2, null, null, target);
         channel2.connect("RpcDispatcherSerializationTest");
     }
