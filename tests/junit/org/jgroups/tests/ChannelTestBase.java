@@ -175,6 +175,10 @@ public class ChannelTestBase {
         return createChannel(unique, 1);
     }
 
+    protected JChannel createChannel(JChannel ch) throws Exception {
+        return (JChannel)new DefaultChannelTestFactory().createChannel(ch);
+    }
+
     protected static String getUniqueClusterName() {
         return getUniqueClusterName(null);
     }
@@ -202,6 +206,21 @@ public class ChannelTestBase {
             }
             muteLocalAddress(c);
             return c;
+        }
+
+        public Channel createChannel(final JChannel ch) throws Exception {
+            Map<Integer, Object> channelOptions=new HashMap<Integer, Object>();
+            boolean useBlocking=(Boolean)ch.getOpt(Channel.BLOCK);
+            channelOptions.put(Channel.BLOCK, useBlocking);
+
+            log.info("Using configuration file " + channel_conf);
+            JChannel retval=new JChannel(ch);
+            for(Map.Entry<Integer, Object> entry : channelOptions.entrySet()) {
+                Integer key=entry.getKey();
+                Object value=entry.getValue();
+                retval.setOpt(key, value);
+            }
+            return retval;
         }
 
         private JChannel createChannel(String configFile, boolean useBlocking) throws Exception {
