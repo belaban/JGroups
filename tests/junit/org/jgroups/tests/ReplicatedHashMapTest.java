@@ -1,6 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
@@ -27,13 +27,13 @@ public class ReplicatedHashMapTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        Channel c1=createChannel(true, 2);
+        JChannel c1=createChannel(true, 2);
         this.map1=new ReplicatedHashMap<String,String>(c1, false);
         map1.setBlockingUpdates(true);
         c1.connect("ReplicatedHashMapTest");
         this.map1.start(5000);
 
-        Channel c2=createChannelWithProps(c1.getProperties());
+        JChannel c2=createChannel(c1);
         this.map2=new ReplicatedHashMap<String,String>(wrap, c2, false);
         map2.setBlockingUpdates(true);
         c2.connect("ReplicatedHashMapTest");

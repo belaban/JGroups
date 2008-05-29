@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.21 2008/05/23 10:45:46 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.22 2008/05/29 11:13:08 belaban Exp $
  */
 public class MergeTest extends ChannelTestBase {
    
@@ -32,23 +32,13 @@ public class MergeTest extends ChannelTestBase {
    
     @Test
     public void testMerging2Members() {
-        String[] names = null;
-        if(isMuxChannelUsed()){           
-            names = createMuxApplicationNames(1, 2);            
-        }else{
-            names = createApplicationNames(2);            
-        }
+        String[] names = {"A", "B"};
         mergeHelper(names);
     }
     
     @Test
     public void testMerging4Members() {
-        String[] names = null;
-        if(isMuxChannelUsed()){            
-            names = createMuxApplicationNames(1, 4);            
-        }else{
-            names = createApplicationNames(4);            
-        }
+        String[] names = {"A", "B", "C", "D"};
         mergeHelper(names);
     }
 

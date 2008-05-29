@@ -2,18 +2,20 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.Address;
-import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.BoundedList;
 import org.jgroups.util.Util;
-import org.jgroups.util.DefaultThreadFactory;
 
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 
 
@@ -39,7 +41,7 @@ import java.util.*;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.172 2008/05/28 13:23:36 belaban Exp $
+ * @version $Id: UDP.java,v 1.173 2008/05/29 11:13:15 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 

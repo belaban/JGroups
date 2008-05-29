@@ -9,7 +9,7 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.9 2008/04/24 07:37:01 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.10 2008/05/29 11:13:10 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentCloseTest extends ChannelTestBase {
@@ -29,8 +29,7 @@ public class ConcurrentCloseTest extends ChannelTestBase {
         c1=createChannel(true);
         c1.setReceiver(new MyReceiver("C1"));
 
-        final String props=c1.getProperties();
-        c2=createChannelWithProps(props);
+        c2=createChannel(c1);
         c2.setReceiver(new MyReceiver("C2"));
 
         final String GROUP=getUniqueClusterName("ConcurrentCloseTest");

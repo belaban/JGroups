@@ -18,7 +18,7 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.19 2008/04/23 14:53:47 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.20 2008/05/29 11:13:06 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DiscardTest extends ChannelTestBase {
@@ -55,9 +55,8 @@ public class DiscardTest extends ChannelTestBase {
         long start, stop;
 
         ch1=createChannel(true);
-        final String props=ch1.getProperties();
         ch1.setReceiver(new MyReceiver(ch1_all_received, NUM_MSGS, "ch1"));
-        ch2=createChannelWithProps(props);
+        ch2=createChannel(ch1);
         ch2.setReceiver(new MyReceiver(ch2_all_received, NUM_MSGS, "ch2"));
 
         if(discard) {

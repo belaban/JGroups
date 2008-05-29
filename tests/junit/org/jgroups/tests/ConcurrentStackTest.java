@@ -2,9 +2,7 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
-import org.jgroups.stack.Protocol;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
@@ -18,7 +16,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.8 2008/05/23 10:45:49 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.9 2008/05/29 11:13:09 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
@@ -32,16 +30,13 @@ public class ConcurrentStackTest extends ChannelTestBase {
     void setUp() throws Exception {
         barrier=new CyclicBarrier(4);
         ch1=createChannel(true);
-        final String props=ch1.getProperties();
-        ch2=createChannelWithProps(props);
-        ch3=createChannelWithProps(props);
+        ch2=createChannel(ch1);
+        ch3=createChannel(ch1);
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        if(ch3 != null) ch3.close();
-        if(ch2 != null) ch2.close();
-        if(ch1 != null) ch1.close();
+        Util.close(ch3, ch2, ch1);
         barrier.reset();
     }
 
@@ -58,11 +53,11 @@ public class ConcurrentStackTest extends ChannelTestBase {
     }
 
 
-    private void doIt(boolean threadless) throws Exception {
+    private void doIt(boolean concurrent) throws Exception {
         long start, stop, diff;
-        setThreadless(ch1, threadless);
-        setThreadless(ch2, threadless);
-        setThreadless(ch3, threadless);
+        setConcurrent(ch1, concurrent);
+        setConcurrent(ch2, concurrent);
+        setConcurrent(ch3, concurrent);
 
         MyReceiver r1=new MyReceiver("R1"), r2=new MyReceiver("R2"), r3=new MyReceiver("R3");
         ch1.setReceiver(r1); ch2.setReceiver(r2); ch3.setReceiver(r3);
@@ -71,7 +66,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
         ch2.connect("ConcurrentStackTest");
         ch3.connect("ConcurrentStackTest");
         View v=ch3.getView();
-        Assert.assertEquals(3, v.size());
+        assert v.size() == 3 : "view is " + v;
 
         new Thread(new Sender(ch1)) {}.start();
         new Thread(new Sender(ch2)) {}.start();
@@ -153,29 +148,11 @@ public class ConcurrentStackTest extends ChannelTestBase {
         System.out.println(sb);
     }
 
-    /** Accepts up to 30% over */
-    private static void checkTime(long time, boolean threadless) {
-        long min_time, max_time;
-
-        if(threadless) {
-            min_time=NUM * SLEEPTIME;
-        }
-        else {
-            min_time=EXPECTED * SLEEPTIME;
-        }
-        max_time=(long)(min_time * 1.3); // 30%
-
-        assertTrue("time (" + time + "ms) is out of bounds (min=" + min_time + "ms, max=" + max_time + "ms)",
-                   min_time <= time && time <= max_time);
-    }
 
 
-    private static void setThreadless(JChannel ch1, boolean threadless) {
-        Protocol tp=ch1.getProtocolStack().findProtocol(TP.class);
-        if(tp == null)
-            throw new IllegalStateException("Transport protocol not found");
-        TP transport=(TP)tp;
-        transport.setUseConcurrentStack(threadless);
+    private static void setConcurrent(JChannel ch1, boolean concurrent) {
+        TP transport=ch1.getProtocolStack().getTransport();
+        transport.setUseConcurrentStack(concurrent);
         ThreadPoolExecutor default_pool=(ThreadPoolExecutor)transport.getDefaultThreadPool();
         if(default_pool != null) {
             default_pool.setCorePoolSize(1);

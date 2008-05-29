@@ -1,24 +1,6 @@
 package org.jgroups.tests;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.Event;
-import org.jgroups.ExtendedReceiverAdapter;
-import org.jgroups.Global;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
@@ -26,12 +8,18 @@ import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.io.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * Tests the FLUSH protocol, requires flush-udp.xml in ./conf to be present and
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.12 2008/05/23 10:45:51 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.13 2008/05/29 11:13:09 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -79,7 +67,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 }
             };
         };
-        String apps[]=createApplicationNames(3);
+        String apps[]={"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
@@ -106,7 +94,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 channel.stopFlush();
             };
         };
-        String apps[]=createApplicationNames(3);
+        String apps[]={"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
@@ -131,7 +119,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 channel.shutdown();
             };
         };
-        String apps[]=createApplicationNames(3);
+        String apps[]={"A", "B", "C"};
         reconciliationHelper(apps, t);
     }
 
