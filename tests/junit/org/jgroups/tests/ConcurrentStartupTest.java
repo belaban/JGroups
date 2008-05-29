@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.44 2008/05/13 10:36:24 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.45 2008/05/29 11:13:10 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartupTest extends ChannelTestBase {
@@ -59,12 +59,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
     protected void concurrentStartupHelper(boolean largeState, boolean useDispatcher) {
         String[] names = null;
 
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
+
+        names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
 
@@ -95,11 +91,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
 
             // Make sure everyone is in sync
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+
+            blockUntilViewsReceived(channels, 60000);
 
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(2000);

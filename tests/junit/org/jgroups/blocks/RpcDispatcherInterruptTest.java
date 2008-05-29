@@ -1,12 +1,14 @@
 package org.jgroups.blocks;
 
 
-import org.testng.annotations.*;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.Iterator;
 import java.util.Map;
@@ -14,22 +16,21 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.7 2008/04/23 14:11:02 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.8 2008/05/29 11:13:14 belaban Exp $
  */
 @Test(groups="temp")
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     private RpcDispatcher disp, disp2;
-    private Channel ch, ch2;
+    private JChannel ch, ch2;
 
     @BeforeMethod
     void setUp() throws Exception {
         ch=createChannel(true);
-        final String props=ch.getProperties();
         ServerObject obj=new ServerObject();
         disp=new RpcDispatcher(ch, null, null, obj);
         ch.connect("RpcDispatcherInterruptTest");
 
-        ch2=createChannelWithProps(props);
+        ch2=createChannel(ch);
         ServerObject obj2=new ServerObject();
         disp2=new RpcDispatcher(ch2, null, null, obj2);
         ch2.connect("RpcDispatcherInterruptTest");

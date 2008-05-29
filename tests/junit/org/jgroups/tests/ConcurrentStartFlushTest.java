@@ -13,12 +13,12 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.8 2008/05/13 10:40:18 vlada Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.9 2008/05/29 11:13:10 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartFlushTest extends ChannelTestBase {
     private Receiver r1, r2, r3;
-    Channel c1,c2,c3;
+    JChannel c1,c2,c3;
     private static final long TIMEOUT=10000L;
 
 
@@ -26,12 +26,11 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
     void init() throws Exception {
         c1 = createChannel(true);
         r1=new Receiver("C1", c1);
-        final String props=c1.getProperties();
 
-        c2 = createChannelWithProps(props);
+        c2 = createChannel(c1);
         r2=new Receiver("C2", c2);
 
-        c3 = createChannelWithProps(props);
+        c3 = createChannel(c1);
         r3=new Receiver("C3", c3);
         c1.setReceiver(r1);
         c2.setReceiver(r2);

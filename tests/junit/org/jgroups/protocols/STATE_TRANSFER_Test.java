@@ -15,7 +15,7 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.14 2008/04/23 14:07:36 belaban Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.15 2008/05/29 11:13:12 belaban Exp $
  */
 @Test(groups="temp")
 public class STATE_TRANSFER_Test extends ChannelTestBase {
@@ -47,6 +47,10 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         private volatile boolean closed=false;
         String getProps() {
             return channel.getProperties();
+        }
+
+        public JChannel getChannel() {
+            return channel;
         }
 
         protected Coordinator() throws Exception {
@@ -139,7 +143,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
     }
 
     public void testBasicStateSync() throws Exception {
-        Channel channel=createChannelWithProps(coord.getProps());
+        Channel channel=createChannel(coord.getChannel());
         channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 
         channel.connect(GROUP_NAME);

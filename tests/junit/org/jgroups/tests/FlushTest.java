@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.68 2008/04/21 14:00:10 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.69 2008/05/29 11:13:07 belaban Exp $
  */
 @Test(groups=Global.FLUSH)
 public class FlushTest extends ChannelTestBase {
@@ -30,20 +30,7 @@ public class FlushTest extends ChannelTestBase {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        if(c2 != null){
-            c2.close();
-            assertFalse(c2.isOpen());
-            assertFalse(c2.isConnected());
-            c2 = null;
-        }
-
-        if(c1 != null){
-            c1.close();
-            assertFalse(c1.isOpen());
-            assertFalse(c1.isConnected());
-            c1 = null;
-        }
-        Util.sleep(500);
+        Util.close(c2, c1);
     }
 
     protected boolean useBlocking() {
@@ -72,7 +59,7 @@ public class FlushTest extends ChannelTestBase {
         receivers[0].cleanup();
         Util.sleep(1000);
 
-        checkEventSequence(receivers[0], isMuxChannelUsed());
+        checkEventSequence(receivers[0]);
     }
 
     /**
@@ -154,51 +141,13 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testBlockingNoStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_ONLY);
-        }
+        String[] names = {"A", "B", "C", "D"};
+        _testChannels(names, FlushTestReceiver.CONNECT_ONLY);
     }
 
-    /**
-     * Tests emition of block/unblock/get|set state events in mux mode. In this
-     * test all mux applications share the same "real" channel. This test runs
-     * only when mux.on=true. This test does not take into account
-     * -Dmux.factorycount parameter.
-     * 
-     */
-    @Test
-    public void testBlockingSharedMuxFactory() {
-        String[] names = null;
-        int muxFactoryCount = 1;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(4, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
-        }
-    }
 
-    /**
-     * Tests emition of block/unblock/get|set state events in mux mode. In this
-     * test there will be exactly two real channels created where each real
-     * channel has two mux applications on top of it. This test runs only when
-     * mux.on=true. This test does not take into account -Dmux.factorycount
-     * parameter.
-     * 
-     */
-    @Test
-    public void testBlockingUnsharedMuxFactoryMultipleService() {
-        String[] names = null;
-        int muxFactoryCount = 2;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(2, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_ONLY);
-        }
-    }
+
+
 
     /**
      * Tests emition of block/unblock/set|get state events for both mux and bare
@@ -209,15 +158,8 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testBlockingWithStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
-        }
+        String[] names = {"A", "B", "C", "D"};
+        _testChannels(names, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
     }
     
     /**
@@ -229,38 +171,13 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testBlockingWithConnectAndStateTransfer() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            int muxFactoryCount = 2;
-            names = createMuxApplicationNames(1, muxFactoryCount);
-            _testChannels(names, muxFactoryCount, FlushTestReceiver.CONNECT_AND_GET_STATE);
-        }else{
-            names = createApplicationNames(4);
-            _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
-        }
+        String[] names = {"A", "B", "C", "D"};
+        _testChannels(names, FlushTestReceiver.CONNECT_AND_GET_STATE);
     }
 
-    /**
-     * Tests emition of block/unblock/set|get state events in mux mode setup
-     * where each "real" channel has two mux service on top of it. The number of
-     * real channels created is getMuxFactoryCount(). This test runs only when
-     * mux.on=true.
-     * 
-     */
-    @Test
-    public void testBlockingWithStateTransferAndMultipleServiceMuxChannel() {
-        String[] names = null;
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(2, 2);
-            _testChannels(names, 2, FlushTestReceiver.CONNECT_AND_SEPARATE_GET_STATE);
-        }
-    }
 
-    private void _testChannels(String names[], int connectType){
-        _testChannels(names, getMuxFactoryCount(),connectType);
-        
-    }
-    private void _testChannels(String names[],int muxFactoryCount, int connectType) {
+
+    private void _testChannels(String names[], int connectType) {
         int count = names.length;
 
         ArrayList<FlushTestReceiver> channels = new ArrayList<FlushTestReceiver>(count);
@@ -282,12 +199,8 @@ public class FlushTest extends ChannelTestBase {
                 Util.sleep(1000);
             }
 
-            if(isMuxChannelUsed()) {
-                blockUntilViewsReceived(channels, muxFactoryCount, 10000);
-            }
-            else {
-                blockUntilViewsReceived(channels, 10000);
-            }          
+            blockUntilViewsReceived(channels, 10000);
+
             // Sleep to ensure the threads get all the semaphore tickets
             Util.sleep(1000);
 
@@ -312,13 +225,13 @@ public class FlushTest extends ChannelTestBase {
                         || connectType == FlushTestReceiver.CONNECT_AND_GET_STATE) {
                     checkEventStateTransferSequence(receiver);
                 } else {
-                    checkEventSequence(receiver, isMuxChannelUsed());
+                    checkEventSequence(receiver);
                 }
             }
         }
     }
 
-    private void checkEventSequence(PushChannelApplication receiver, boolean isMuxUsed) {
+    private void checkEventSequence(PushChannelApplication receiver) {
             List<Object> events=receiver.getEvents();
             String eventString="[" + receiver.getName() + "|" + receiver.getLocalAddress() + ",events:" + events;
             log.info(eventString);
@@ -333,14 +246,8 @@ public class FlushTest extends ChannelTestBase {
                 if(event instanceof BlockEvent) {
                     if(i + 1 < size) {
                         Object ev=events.get(i + 1);
-                        if(isMuxUsed) {
-                            assert ev instanceof View || ev instanceof UnblockEvent
-                                    : "After Block should be View or Unblock but it is " + ev.getClass() + ",events= " + eventString;
-                        }
-                        else {
-                            assert ev instanceof View
-                                    : "After Block should be View but it is " + ev.getClass() + ",events= " + eventString;
-                        }
+                        assert ev instanceof View
+                                : "After Block should be View but it is " + ev.getClass() + ",events= " + eventString;
                     }
                     if(i > 0) {
                         Object ev=events.get(i - 1);
@@ -366,14 +273,9 @@ public class FlushTest extends ChannelTestBase {
                     }
 
                     Object ev=events.get(i - 1);
-                    if(isMuxUsed) {
-                        assert ev instanceof View || ev instanceof BlockEvent
-                                : "Before UnBlock should be View or Block but it is " + ev.getClass() + ",events= " + eventString;
-                    }
-                    else {
-                        assert ev instanceof View
-                                : "Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString;
-                    }
+
+                    assert ev instanceof View
+                            : "Before UnBlock should be View but it is " + ev.getClass() + ",events= " + eventString;
                 }
             }
         }

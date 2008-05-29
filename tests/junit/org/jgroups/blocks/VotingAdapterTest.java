@@ -2,6 +2,8 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.util.Util;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -10,8 +12,8 @@ import org.testng.annotations.Test;
 
 @Test(groups="temp")
 public class VotingAdapterTest extends ChannelTestBase {
-    private Channel channel1;
-    private Channel channel2;
+    private JChannel channel1;
+    private JChannel channel2;
 
     protected VotingAdapter adapter1;
     protected VotingAdapter adapter2;
@@ -31,19 +33,17 @@ public class VotingAdapterTest extends ChannelTestBase {
         listener4=new TestVoteChannelListener(false);
 
         channel1=createChannel(true);
-        final String props=channel1.getProperties();
         adapter1=new VotingAdapter(channel1);
         channel1.connect("VotingAdapterTest");
 
-        channel2=createChannelWithProps(props);
+        channel2=createChannel(channel1);
         adapter2=new VotingAdapter(channel2);
         channel2.connect("VotingAdapterTest");
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        channel2.close();
-        channel1.close();
+        Util.close(channel2, channel1);
     }
 
     public void testVoteAll() throws Exception {

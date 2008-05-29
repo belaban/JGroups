@@ -1,11 +1,11 @@
 package org.jgroups.blocks;
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 @Test(groups="temp", sequential=true)
 public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
@@ -16,11 +16,11 @@ public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
     void init() throws Exception {
         targets=new RpcDispatcherAnycastServerObject[NUM];
         final String GROUP="RpcDispatcherAnycastMultipleCallsTest";
-        String props=null;
+        JChannel first_channel=null;
         for(int i=0; i < NUM; i++) {
-            Channel c=props == null? createChannel(true) : createChannelWithProps(props);
-            if(props == null)
-                props=c.getProperties();
+            JChannel c=first_channel == null? createChannel(true) : createChannel(first_channel);
+            if(first_channel == null)
+                first_channel=c;
             c.connect(GROUP);
             targets[i]=new RpcDispatcherAnycastServerObject(c);
         }

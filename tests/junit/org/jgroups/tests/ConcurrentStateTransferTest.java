@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.11 2008/05/14 08:12:19 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.12 2008/05/29 11:13:10 belaban Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
@@ -56,14 +56,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
      * 
      */
     protected void concurrentStateTranferHelper(boolean largeState, boolean useDispatcher) {
-        String[] names = null;
-
-        // mux applications on top of same channel have to have unique name
-        if(isMuxChannelUsed()){
-            names = createMuxApplicationNames(1);
-        }else{
-            names = new String[] { "A", "B", "C", "D" };
-        }
+        String[] names = new String[] { "A", "B", "C", "D" };
 
         int count = names.length;
         ConcurrentStateTransfer[] channels = new ConcurrentStateTransfer[count];
@@ -92,11 +85,8 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             }
 
             // Make sure everyone is in sync
-            if(isMuxChannelUsed()){
-                blockUntilViewsReceived(channels, getMuxFactoryCount(), 60000);
-            }else{
-                blockUntilViewsReceived(channels, 60000);
-            }
+
+            blockUntilViewsReceived(channels, 60000);
 
             Util.sleep(2000);
             // Unleash hell !

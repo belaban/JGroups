@@ -1,24 +1,24 @@
 package org.jgroups.blocks;
 
-import java.util.Vector;
-
-
-import org.testng.annotations.*;
-
 import org.jgroups.Address;
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
+
+import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.8 2008/04/21 11:59:11 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.9 2008/05/29 11:13:14 belaban Exp $
  */
 @Test(groups="temp")
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
-    Channel ch, ch2, ch3;  
+    JChannel ch, ch2, ch3;
 
     @BeforeMethod
     void setUp() throws Exception {
@@ -28,14 +28,13 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
         ch.connect("RpcDispatcherAnycastTest");
         obj.setAddress(ch.getLocalAddress());
 
-        final String props=ch.getProperties();
-        ch2=createChannelWithProps(props);
+        ch2=createChannel(ch);
         ServerObject obj2=new ServerObject(null);
         disp2=new RpcDispatcher(ch2, null, null, obj2);
         ch2.connect("RpcDispatcherAnycastTest");
         obj2.setAddress(ch2.getLocalAddress());
 
-        ch3=createChannelWithProps(props);
+        ch3=createChannel(ch);
         ServerObject obj3=new ServerObject(null);
         disp3=new RpcDispatcher(ch3, null, null, obj3);
         ch3.connect("RpcDispatcherAnycastTest");

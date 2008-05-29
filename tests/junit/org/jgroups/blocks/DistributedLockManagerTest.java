@@ -1,6 +1,6 @@
 package org.jgroups.blocks;
 
-import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -15,12 +15,12 @@ import java.util.Map;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.9 2008/04/21 07:39:22 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.10 2008/05/29 11:13:13 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {
-    private Channel channel1;
-    private Channel channel2;
+    private JChannel channel1;
+    private JChannel channel2;
 
     protected VotingAdapter adapter1;
     protected VotingAdapter adapter2;
@@ -33,13 +33,12 @@ public class DistributedLockManagerTest extends ChannelTestBase {
     void setUp() throws Exception {
         channel1=createChannel(true);
         adapter1=new VotingAdapter(channel1);
-        final String props=channel1.getProperties();
         channel1.connect("DistributedLockManagerTest");
 
         lockManager1=new DistributedLockManager(adapter1, "1");
         Util.sleep(1000);  // give some time for the channel to become a coordinator
 
-        channel2=createChannelWithProps(props);
+        channel2=createChannel(channel1);
         adapter2=new VotingAdapter(channel2);
         lockManager2=new DistributedLockManager(adapter2, "2");
 

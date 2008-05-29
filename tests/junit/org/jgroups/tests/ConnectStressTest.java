@@ -11,14 +11,13 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.util.Vector;
-import java.util.Properties;
 import java.util.concurrent.CyclicBarrier;
 
 
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.31 2008/05/23 10:45:50 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.32 2008/05/29 11:13:09 belaban Exp $
  */
 @Test(groups={"temp"})
 public class ConnectStressTest extends ChannelTestBase {
@@ -31,7 +30,6 @@ public class ConnectStressTest extends ChannelTestBase {
     final MyThread[] threads=new MyThread[NUM];
     JChannel         channel=null;
     static final String    groupname="ConnectStressTest";
-    String           PROPS=null;
 
 
 
@@ -54,7 +52,6 @@ public class ConnectStressTest extends ChannelTestBase {
         channel=createChannel(true);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         changeProperties(channel);
-        PROPS=channel.getProperties();
 
         start=System.currentTimeMillis();
         channel.connect(groupname);
@@ -156,7 +153,7 @@ public class ConnectStressTest extends ChannelTestBase {
             View view;
 
             try {
-                ch=createChannelWithProps(PROPS);
+                ch=createChannel(channel);
                 // changeProperties(ch);
                 ch.setOpt(Channel.AUTO_RECONNECT, true);
 
