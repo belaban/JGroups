@@ -1,4 +1,4 @@
-// $Id: TCPPING.java,v 1.37 2008/05/28 15:31:15 belaban Exp $
+// $Id: TCPPING.java,v 1.38 2008/05/30 15:42:28 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,7 +6,6 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.Global;
 import org.jgroups.util.Util;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
@@ -38,7 +37,7 @@ public class TCPPING extends Discovery {
     int                 port_range=1;        // number of ports to be probed for initial membership
 
     /** List<IpAddress> */
-    List<Address>       initial_hosts=null;  // hosts to be contacted for the initial membership
+    List<IpAddress>       initial_hosts=null;  // hosts to be contacted for the initial membership
     final static String name="TCPPING";
 
 
@@ -54,13 +53,13 @@ public class TCPPING extends Discovery {
      * set Properties() has been called
      */
     @Property
-    public List<Address> getInitialHosts() {
+    public List<IpAddress> getInitialHosts() {
         return initial_hosts;
     }
 
     @Property
     public void setInitialHosts(String hosts) throws UnknownHostException {
-        initial_hosts=createInitialHosts(hosts);
+        initial_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);
     }
 
 
@@ -80,7 +79,7 @@ public class TCPPING extends Discovery {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
         if(initial_hosts != null && addr != null) {
             if(initial_hosts.contains(addr)) {
-                List<Address> tmp=new ArrayList<Address>(initial_hosts);
+                List<IpAddress> tmp=new ArrayList<IpAddress>(initial_hosts);
                 tmp.remove(addr);
                 initial_hosts=Collections.unmodifiableList(tmp); // we cannot modify initial_hosts, so copy and modify it
                 if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
@@ -91,7 +90,7 @@ public class TCPPING extends Discovery {
     
     public void sendGetMembersRequest(String cluster_name) {
 
-        for(Iterator<Address> it = initial_hosts.iterator();it.hasNext();){
+        for(Iterator<IpAddress> it = initial_hosts.iterator();it.hasNext();){
             final Address addr = it.next();
             final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
@@ -111,38 +110,5 @@ public class TCPPING extends Discovery {
             });
         }
     }
-
-
-
-    /* -------------------------- Private methods ---------------------------- */
-
-    /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
-     */
-    private List<Address> createInitialHosts(String l) throws UnknownHostException {
-        StringTokenizer tok=new StringTokenizer(l, ",");
-        String          t;
-        IpAddress       addr;
-        List<Address>   retval=new ArrayList<Address>();
-
-        while(tok.hasMoreTokens()) {
-            try {
-                t=tok.nextToken().trim();
-                String host=t.substring(0, t.indexOf('['));
-                host=host.trim();
-                int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-                for(int i=port; i < port + port_range; i++) {
-                    addr=new IpAddress(host, i);
-                    retval.add(addr);
-                }
-            }
-            catch(NumberFormatException e) {
-                if(log.isErrorEnabled()) log.error("exeption is " + e);
-            }
-        }
-
-        return Collections.unmodifiableList(retval);
-    }
-
 }
 

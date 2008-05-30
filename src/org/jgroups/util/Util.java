@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.152 2008/05/11 14:16:33 vlada Exp $
+ * @version $Id: Util.java,v 1.153 2008/05/30 15:42:29 vlada Exp $
  */
 public class Util {
 
@@ -1849,6 +1849,29 @@ public class Util {
     /** e.g. "bela,jeannette,michelle" --> List{"bela", "jeannette", "michelle"} */
     public static List<String> parseCommaDelimitedStrings(String l) {
         return parseStringList(l, ",");
+    }
+    
+    /**
+     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of
+     * IpAddresses
+     */
+    public static List<IpAddress> parseCommaDelimetedHosts(String hosts, int port_range) throws UnknownHostException {
+        StringTokenizer tok=new StringTokenizer(hosts, ",");
+        String t;
+        IpAddress addr;
+        List<IpAddress> retval=new ArrayList<IpAddress>();
+
+        while(tok.hasMoreTokens()) {
+            t=tok.nextToken().trim();
+            String host=t.substring(0, t.indexOf('['));
+            host=host.trim();
+            int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
+            for(int i=port;i < port + port_range;i++) {
+                addr=new IpAddress(host, i);
+                retval.add(addr);
+            }
+        }
+        return Collections.unmodifiableList(retval);
     }
 
 

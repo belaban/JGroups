@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * (using GossipData PDUs) based on TCP to connect to GossipRouter.<p>
  * 
  * @author Bela Ban Oct 4 2001
- * @version $Id: GossipClient.java,v 1.24 2008/03/28 12:15:44 belaban Exp $
+ * @version $Id: GossipClient.java,v 1.25 2008/05/30 15:42:29 vlada Exp $
  */
 public class GossipClient {
     TimeScheduler timer=null;
@@ -49,7 +49,7 @@ public class GossipClient {
      @param gossip_hosts List of IpAddresses
      @param expiry Interval (in msecs) for the refresher task
      */
-    public GossipClient(Vector<IpAddress> gossip_hosts, long expiry, int sock_conn_timeout, TimeScheduler timer) {
+    public GossipClient(List<IpAddress> gossip_hosts, long expiry, int sock_conn_timeout, TimeScheduler timer) {
         this.sock_conn_timeout=sock_conn_timeout;
         setTimer(timer);
         if(gossip_hosts == null) {
