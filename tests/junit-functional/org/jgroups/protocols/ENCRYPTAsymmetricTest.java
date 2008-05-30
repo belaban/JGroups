@@ -62,12 +62,10 @@ public class ENCRYPTAsymmetricTest {
     }
 
     public static void testInitBCAsymProperties() throws Exception {
-        Properties props=new Properties();
-        props.put("asym_provider", "BC");
-        props.put("asym_algorithm", "RSA");
-        //javax.
+        
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.asymAlgorithm = "RSA";
+        encrypt.asymProvider = "BC";
         encrypt.init();
 
         // test the default asymetric key
