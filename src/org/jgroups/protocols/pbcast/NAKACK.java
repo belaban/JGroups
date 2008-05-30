@@ -10,6 +10,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.*;
 import org.jgroups.util.*;
 
@@ -35,12 +36,17 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.185 2008/05/29 14:17:38 vlada Exp $
+ * @version $Id: NAKACK.java,v 1.186 2008/05/30 20:39:31 vlada Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
+    @Property(name="retransmit_timeout",converter=PropertyConverters.LongArray.class)
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
+    
+    @Property
+    boolean enable_xmit_time_stats = false;
+    
     private boolean             is_server=false;
     private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -266,6 +272,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     public void init() throws Exception {
+        if(enable_xmit_time_stats) {
+            if(log.isWarnEnabled())
+                log.warn("enable_xmit_time_stats is experimental, and may be removed in any release");
+            xmit_time_stats=new ConcurrentHashMap<Long,XmitTimeStat>();
+            xmit_time_stats_start=System.currentTimeMillis();
+        }
+        
+        if(xmit_from_random_member) {
+            if(discard_delivered_msgs) {
+                discard_delivered_msgs=false;
+                log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
+            }
+        }
+        
         if(stats) {
             send_history=new BoundedList<XmitRequest>(stats_list_size);
             receive_history=new BoundedList<MissingMessage>(stats_list_size);
@@ -342,42 +362,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
     public boolean getLogDiscardMessages() {
         return log_discard_msgs;
-    }
-
-    public boolean setProperties(Properties props) {
-        String str;
-        long[] tmp;
-
-        super.setProperties(props);       
-        str=props.getProperty("retransmit_timeout");
-        if(str != null) {
-            tmp=Util.parseCommaDelimitedLongs(str);
-            props.remove("retransmit_timeout");
-            if(tmp != null && tmp.length > 0) {
-                retransmit_timeouts=tmp;
-            }
-        }
-
-        str=props.getProperty("enable_xmit_time_stats");
-        if(str != null) {
-            boolean enable_xmit_time_stats=Boolean.valueOf(str);
-            props.remove("enable_xmit_time_stats");
-            if(enable_xmit_time_stats) {
-                if(log.isWarnEnabled())
-                    log.warn("enable_xmit_time_stats is experimental, and may be removed in any release");
-                xmit_time_stats=new ConcurrentHashMap<Long,XmitTimeStat>();
-                xmit_time_stats_start=System.currentTimeMillis();
-            }
-        }    
-
-        if(xmit_from_random_member) {
-            if(discard_delivered_msgs) {
-                discard_delivered_msgs=false;
-                log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
-            }
-        }
-
-        return true;
     }
 
     public Map<String,Object> dumpStats() {
