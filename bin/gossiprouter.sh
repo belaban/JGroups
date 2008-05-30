@@ -22,7 +22,7 @@ while [ "$1" != "" ]; do
     shift
 done
 
-CLASSPATH="$relpath/../classes$SEP$relpath/../conf$SEP$relpath/../lib/commons-logging.jar$SEP$relpath/../lib/log4j-1.2.6.jar$SEP$relpath/../lib/concurrent.jar"
+CLASSPATH="$relpath/../classes$SEP$relpath/../conf$SEP$relpath/../lib/commons-logging.jar$SEP$relpath/../lib/log4j.jar"
 
 if [ "$debug" = "true" ]; then
     JAVA_OPTS="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_shmem,server=y,suspend=y,address=router"
