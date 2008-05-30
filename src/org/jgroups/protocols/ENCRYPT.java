@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.42 2008/05/21 17:04:15 vlada Exp $
+// $Id: ENCRYPT.java,v 1.43 2008/05/30 16:07:39 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -125,7 +125,8 @@ public class ENCRYPT extends Protocol {
     @Property
     String keyStoreName;
     @Property
-    private String storePassword ="changeit"; //JDK default    
+    private String storePassword ="changeit"; //JDK default
+    @Property
     private String keyPassword="changeit"; //JDK default
     @Property
     private String alias="mykey"; // JDK default
@@ -198,33 +199,14 @@ public class ENCRYPT extends Protocol {
         return s.substring(0, index);
     }
 
-
-    public boolean setProperties(Properties props)
-    {       
-        super.setProperties(props);       
-
-        //symmetric algorithm name
-        String str = props.getProperty("key_password");
-        if (str != null)
-        {
-            keyPassword = str;
-            props.remove("key_password");
-
-            if (log.isInfoEnabled())
-                log.info("key_password used is not null");
-        } else if (storePassword != null)
-        {
-            keyPassword = storePassword;
-
-            if (log.isInfoEnabled())
-                log.info("key_password used is same as store_password");
-        }       
-        return true;
-    }
-
-
     public void init() throws Exception
     {
+        if(keyPassword == null && storePassword != null) {
+            keyPassword=storePassword;
+
+            if(log.isInfoEnabled())
+                log.info("key_password used is same as store_password");
+        }       
         if (keyStoreName == null)
         {
             initSymKey();
