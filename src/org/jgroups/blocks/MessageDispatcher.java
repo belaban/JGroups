@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.74.2.2 2008/03/12 15:11:26 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.74.2.3 2008/05/30 11:36:53 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -64,6 +64,9 @@ public class MessageDispatcher implements RequestHandler {
      */
     protected boolean concurrent_processing=false;
 
+
+    public MessageDispatcher() {
+    }
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2) {
         this.channel=channel;
@@ -255,11 +258,16 @@ public class MessageDispatcher implements RequestHandler {
         }
     }
 
+    public boolean getDeadlockDetection() {return deadlock_detection;}
+
     public void setDeadlockDetection(boolean flag) {
         deadlock_detection=flag;
         if(corr != null)
             corr.setDeadlockDetection(flag);
     }
+
+
+    public boolean getConcurrentProcessing() {return concurrent_processing;}
 
     public void setConcurrentProcessing(boolean flag) {
         this.concurrent_processing=flag;
@@ -328,6 +336,16 @@ public class MessageDispatcher implements RequestHandler {
      */
     public Channel getChannel() {
         return channel;
+    }
+
+    public void setChannel(Channel ch) {
+        if(ch == null)
+            return;
+        this.channel=ch;
+        local_addr=channel.getLocalAddress();
+        if(prot_adapter == null)
+            prot_adapter=new ProtocolAdapter();
+        channel.setUpHandler(prot_adapter);
     }
 
 
