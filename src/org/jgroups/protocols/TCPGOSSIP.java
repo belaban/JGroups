@@ -7,6 +7,7 @@ import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
 import java.util.*;
 import java.net.UnknownHostException;
@@ -23,10 +24,10 @@ import java.net.UnknownHostException;
  * FIND_INITIAL_MBRS_OK event up the stack.
  *
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.30 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.31 2008/05/30 15:42:28 vlada Exp $
  */
 public class TCPGOSSIP extends Discovery {
-    Vector<IpAddress>   initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
+    List<IpAddress>   initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
     GossipClient        gossip_client=null;  // accesses the GossipRouter(s) to find initial mbrship
 
     // we need to refresh the registration with the GossipRouter(s) periodically,
@@ -41,39 +42,25 @@ public class TCPGOSSIP extends Discovery {
     public String getName() {
         return name;
     }
-
-
-
-    public boolean setProperties(Properties props) {
-        
-        String str=props.getProperty("initial_hosts");
-        if(str != null) {
-            props.remove("initial_hosts");
-            try {
-                initial_hosts=createInitialHosts(str);
-            }
-            catch(UnknownHostException ex) {
-                if(log.isErrorEnabled())
-                    log.error("failed creating initial hosts", ex);
-                return false;
-            }
-        }
-
+    
+    public void init() throws Exception {
+        super.init();
         if(initial_hosts == null || initial_hosts.isEmpty()) {
-            if(log.isErrorEnabled()) log.error("initial_hosts must contain the address of at least one GossipRouter");
-            return false;
+            throw new IllegalArgumentException("initial_hosts must contain the address of at least one GossipRouter");
         }
 
         if(timeout <= sock_conn_timeout) {
-            throw new IllegalArgumentException("timeout (" + timeout + ") must be greater than sock_conn_timeout (" +
-                    sock_conn_timeout + ")");
+            throw new IllegalArgumentException("timeout (" + timeout
+                                               + ") must be greater than sock_conn_timeout ("
+                                               + sock_conn_timeout
+                                               + ")");
         }
-
-
-        return super.setProperties(props);
     }
-
-
+    
+    @Property
+    public void setInitialHosts(String hosts) throws UnknownHostException {
+        initial_hosts=Util.parseCommaDelimetedHosts(hosts,1);       
+    }
 
     public void start() throws Exception {
         super.start();
@@ -142,39 +129,5 @@ public class TCPGOSSIP extends Discovery {
             down_prot.down(new Event(Event.MSG, copy));
         }
     }
-
-
-
-    /* -------------------------- Private methods ---------------------------- */
-
-
-    /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return list of IpAddresses
-     */
-    private Vector<IpAddress> createInitialHosts(String l) throws UnknownHostException {
-        Vector<IpAddress> tmp=new Vector<IpAddress>();
-        String host;
-        int port;
-        IpAddress addr;
-        StringTokenizer tok=new StringTokenizer(l, ",");
-        String t;
-
-        while(tok.hasMoreTokens()) {
-            try {
-                t=tok.nextToken();
-                host=t.substring(0, t.indexOf('['));
-                port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-                addr=new IpAddress(host, port);
-                tmp.addElement(addr);
-            }
-            catch(NumberFormatException e) {
-                if(log.isErrorEnabled()) log.error("exeption is " + e);
-            }
-        }
-
-        return tmp;
-    }
-
-
 }
 

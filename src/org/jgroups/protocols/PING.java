@@ -25,12 +25,12 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.42 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: PING.java,v 1.43 2008/05/30 15:42:28 vlada Exp $
  */
 public class PING extends Discovery {
     @Property
     String             gossip_host=null;
-    Vector<IpAddress>  gossip_hosts=null;
+    List<IpAddress>  gossip_hosts=null;
     @Property
     int                gossip_port=0;
     @Property
@@ -38,70 +38,40 @@ public class PING extends Discovery {
     GossipClient       client;
     @Property
     int                port_range=1;        // number of ports to be probed for initial membership
-    private List<Address> initial_hosts=null;  // hosts to be contacted for the initial membership
+    private List<IpAddress> initial_hosts=null;  // hosts to be contacted for the initial membership
     public static final String name="PING";
 
 
     public String getName() {
         return name;
     }
-
-
-
-    /**
-     * sets the properties of the PING protocol.
-     * The following properties are available
-     * property: timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
-     * property: num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
-     * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
-     * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
-     *
-     * @param props - a property set containing only PING properties
-     * @return returns true if all properties were parsed properly
-     *         returns false if there are unrecnogized properties in the property set
-     */
-    public boolean setProperties(Properties props) {        
-        String str=props.getProperty("gossip_hosts");
-        if(str != null) {
-            try {
-                gossip_hosts=createInitialHosts(str);
-            }
-            catch(UnknownHostException e) {
-                throw new IllegalArgumentException(e);
-            }
-            props.remove("gossip_hosts");
-        }
-
+    
+    public void init() throws Exception {
+        super.init();
         if(gossip_hosts != null) {
             client=new GossipClient(gossip_hosts, gossip_refresh, 1000, timer);
         }
         else if(gossip_host != null && gossip_port != 0) {
             try {
-                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host), gossip_port), gossip_refresh,
-                                        1000, timer);
+                client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host),
+                                                      gossip_port), gossip_refresh, 1000, timer);
             }
             catch(Exception e) {
-                if(log.isErrorEnabled()) log.error("creation of GossipClient failed, exception=" + e);
-                return false; // will cause stack creation to abort
-            }
-        }       
-
-        str=props.getProperty("initial_hosts");
-        if(str != null) {
-            props.remove("initial_hosts");
-            try {
-                initial_hosts=new ArrayList<Address>();
-                List<IpAddress> tmp=createInitialHosts(str);
-                initial_hosts.addAll(tmp);
-            }
-            catch(UnknownHostException e) {
                 if(log.isErrorEnabled())
-                    log.error("failed constructing initial list of hosts", e);
-                return false;
+                    log.error("creation of GossipClient failed, exception=" + e);
+                throw e;
             }
         }
+    }
+    
+    @Property
+    public void setInitialHosts(String hosts) throws UnknownHostException {
+        initial_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);
+    }
 
-        return super.setProperties(props);
+    @Property
+    public void setGossipHosts(String hosts) throws UnknownHostException {
+        gossip_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);
     }
 
 
@@ -196,38 +166,4 @@ public class PING extends Discovery {
     void sendMcastDiscoveryRequest(Message discovery_request) {
         down_prot.down(new Event(Event.MSG, discovery_request));
     }
-
-    /* -------------------------- Private methods ---------------------------- */
-
-
-
-    /**
-     * Input is "daddy[8880],sindhu[8880],camille[5555]. Return List of IpAddresses
-     */
-    private Vector<IpAddress> createInitialHosts(String l) throws UnknownHostException {
-        StringTokenizer   tok=new StringTokenizer(l, ",");
-        String            t;
-        IpAddress         addr;
-        Vector<IpAddress> retval=new Vector<IpAddress>();
-
-        while(tok.hasMoreTokens()) {
-            try {
-                t=tok.nextToken().trim();
-                String host=t.substring(0, t.indexOf('['));
-                host=host.trim();
-                int port=Integer.parseInt(t.substring(t.indexOf('[') + 1, t.indexOf(']')));
-                for(int i=port; i < port + port_range; i++) {
-                    addr=new IpAddress(host, i);
-                    retval.add(addr);
-                }
-            }
-            catch(NumberFormatException e) {
-                if(log.isErrorEnabled()) log.error("exeption is " + e);
-            }
-        }
-
-        return retval;
-    }
-
-
 }
