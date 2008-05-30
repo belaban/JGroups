@@ -35,7 +35,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.7.4.4 2008/04/29 21:16:41 vlada Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.7.4.5 2008/05/30 11:36:54 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -70,7 +70,66 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c1.close();
     }
 
-    public void foo() {
+    public void testEmptyConstructor() throws Exception {
+        RpcDispatcher d1=new RpcDispatcher(), d2=new RpcDispatcher();
+        JChannel channel1=null, channel2=null;
+
+        Util.close(c3, c2, c1); // we don't want traffic from these
+
+        final String GROUP="RpcDispatcherTest.testEmptyConstructor";
+        try {
+            channel1=createChannel();
+            channel2=createChannel();
+            d1.setChannel(channel1);
+            d2.setChannel(channel2);
+            d1.setServerObject(new ServerObject(1));
+            d2.setServerObject(new ServerObject(2));
+            d1.start();
+            d2.start();
+            channel1.connect(GROUP);
+            channel2.connect(GROUP);
+
+            Util.sleep(500);
+
+            View view=channel2.getView();
+            System.out.println("view channel 2= " + view);
+
+            view=channel1.getView();
+            System.out.println("view channel 1= " + view);
+
+            assert view.size() == 2;
+            RspList rsps=d1.callRemoteMethods(null, "foo", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+            System.out.println("rsps:\n" + rsps);
+            assert rsps.size() == 2;
+            for(Rsp rsp: rsps.values()) {
+                assert rsp.wasReceived();
+                assert !rsp.wasSuspected();
+                assert rsp.getValue() != null;
+    }
+
+
+            Object server_object=new Object() {
+                public long foobar() {
+                    return System.currentTimeMillis();
+                }
+            };
+            d1.setServerObject(server_object);
+            d2.setServerObject(server_object);
+
+            rsps=d2.callRemoteMethods(null, "foobar", null, (Class[])null, GroupRequest.GET_ALL, 5000);
+            System.out.println("rsps:\n" + rsps);
+            assert rsps.size() == 2;
+            for(Rsp rsp: rsps.values()) {
+                assert rsp.wasReceived();
+                assert !rsp.wasSuspected();
+                assert rsp.getValue() != null;
+            }
+        }
+        finally {
+            d2.stop();
+            d1.stop();
+            Util.close(channel2, channel1);
+        }
     }
 
 
