@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.162 2008/05/29 08:32:25 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.163 2008/05/30 13:52:04 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -353,6 +353,10 @@
 
     <!-- =============================== TestNG ======================================== -->
 
+    <target name="all-tests-cc">
+        <antcall target="all-new-tests"/>
+    </target>
+
     <target name="all-new-tests">
         <sequential>
             <antcall target="functional"/>
@@ -470,6 +474,9 @@
                 />
     </target>
 
+    <target name="report">
+        <antcall target="reports"/>
+    </target>
 
     <target name="reports">
         <mkdir dir="${tmp.dir}/test-results/html"/>
