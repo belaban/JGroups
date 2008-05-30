@@ -25,30 +25,23 @@ import java.util.Properties;
 public class ENCRYPT14KeystoreTest {
 
 
-    public static void testInitWrongKeystoreProperties() {
-        Properties props=new Properties();
-        String defaultKeystore="unkownKeystore.keystore";
-        props.put("key_store_name", defaultKeystore);
+    public static void testInitWrongKeystoreProperties() {        
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "unkownKeystore.keystore";
         try {
             encrypt.init();
         }
         catch(Exception e) {
             System.out.println("didn't find incorrect keystore (as expected): " + e.getMessage());
-            assert e.getMessage().equals("Unable to load keystore " + defaultKeystore + " ensure file is on classpath");
+            assert e.getMessage().equals("Unable to load keystore " +  "unkownKeystore.keystore" + " ensure file is on classpath");
         }
     }
 
     public static void testInitKeystoreProperties() throws Exception {
 
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
-
         //javax.
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
         assert encrypt.getSymDecodingCipher() != null;
         assert encrypt.getSymEncodingCipher() != null;
@@ -126,23 +119,17 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpWrongKey() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        String defaultKeystore2="defaultStore2.keystore";
-        props.put("key_store_name", defaultKeystore);
+        // initialise the encryption       
 
         //javax.
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
         // use a second instance so we know we are not accidentally using internal key
+        
+        ENCRYPT encrypt2=new ENCRYPT();       
 
-        Properties props2=new Properties();
-        ENCRYPT encrypt2=new ENCRYPT();
-        props2.setProperty("key_store_name", defaultKeystore2);
-
-        encrypt2.setProperties(props2);
+        encrypt.keyStoreName = "defaultStore2.keystore";
         encrypt2.init();
 
         MockObserver observer=new MockObserver();
@@ -169,22 +156,14 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpNoEncryptHeader() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
-
+       
         //javax.
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
 
-        // use a second instance so we know we are not accidentally using internal key
-        Properties props2=new Properties();
-        props2.put("key_store_name", defaultKeystore);
-//		javax.
         ENCRYPT encrypt2=new ENCRYPT();
-        encrypt2.setProperties(props2);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt2.init();
 
         MockObserver observer=new MockObserver();
@@ -205,14 +184,10 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testEventUpNoMessage() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
-
+     
         //javax.
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
 
         MockObserver observer=new MockObserver();
@@ -227,14 +202,9 @@ public class ENCRYPT14KeystoreTest {
     }
 
     public static void testMessageUpNoBuffer() throws Exception {
-        // initialise the encryption
-        Properties props=new Properties();
-        String defaultKeystore="defaultStore.keystore";
-        props.put("key_store_name", defaultKeystore);
-
-        //javax.
+    
         ENCRYPT encrypt=new ENCRYPT();
-        encrypt.setProperties(props);
+        encrypt.keyStoreName = "defaultStore.keystore";
         encrypt.init();
 
         MockObserver observer=new MockObserver();
