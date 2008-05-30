@@ -6,6 +6,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.AckMcastSenderWindow;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.Protocol;
@@ -43,11 +44,12 @@ import java.util.*;
  * </ul>
  * Advantage of this protocol: no group membership necessary, fast.
  * @author Bela Ban Aug 2002
- * @version $Id: SMACK.java,v 1.29 2008/05/14 12:29:07 belaban Exp $
+ * @version $Id: SMACK.java,v 1.30 2008/05/30 20:39:30 vlada Exp $
  * <BR> Fix membershop bug: start a, b, kill b, restart b: b will be suspected by a.
  */
 @Experimental @Unsupported
 public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCommand {
+    @Property(converter=PropertyConverters.LongArray.class)
     long[]                 timeout=new long[]{1000,2000,3000};  // retransmit timeouts (for AckMcastSenderWindow)
     @Property
     int                    max_xmits=10;              // max retransmissions (if still no ack, member will be removed)
@@ -72,24 +74,6 @@ public class SMACK extends Protocol implements AckMcastSenderWindow.RetransmitCo
     public String getName() {
         return name;
     }
-
-
-    public boolean setProperties(Properties props) {               
-        super.setProperties(props);
-       
-        String str=props.getProperty("timeout");
-        long[] tmp;
-        if(str != null) {
-            tmp=Util.parseCommaDelimitedLongs(str);
-            props.remove("timeout");
-            if(tmp != null && tmp.length > 0)
-                timeout=tmp;
-        }
-
-
-        return true;
-    }
-
 
     public void stop() {
         AckReceiverWindow win;
