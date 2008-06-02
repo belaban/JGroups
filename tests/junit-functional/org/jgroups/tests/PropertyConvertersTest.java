@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.2 2008/06/02 08:13:09 belaban Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.3 2008/06/02 11:03:01 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {
@@ -39,12 +39,16 @@ public class PropertyConvertersTest {
         check(InetAddress.class, "127.0.0.1", addr, conv);
     }
 
+    /** Cannot really test list of eth0,eth1,lo, because the list differs from host to host
+     *
+     * @throws Exception
+     */
     public static void testNetworkList() throws Exception {
         PropertyConverter conv=new PropertyConverters.NetworkInterfaceList();
-        Object tmp=conv.convert(List.class, new Properties(), "eth0,lo");
+        Object tmp=conv.convert(List.class, new Properties(), "lo");
         Object str=conv.toString(tmp);
         System.out.println("str = " + str);
-        assert str.equals("eth0,lo");
+        assert str.equals("lo");
     }
 
 

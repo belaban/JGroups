@@ -1,4 +1,4 @@
-// $Id: NakackTest.java,v 1.5 2008/05/19 10:54:50 belaban Exp $
+// $Id: NakackTest.java,v 1.6 2008/06/02 11:00:03 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -34,7 +34,7 @@ public class NakackTest {
     public void test0() throws Exception {
         Object mutex=new Object();
         CheckNoGaps check=new CheckNoGaps(1, this, mutex);
-        ProtocolTester t=new ProtocolTester("pbcast.NAKACK", check);
+        ProtocolTester t=new ProtocolTester("pbcast.NAKACK(retransmit_timeouts=300,600,1200)", check);
         Address my_addr=new IpAddress("localhost", 10000);
         ViewId vid=new ViewId(my_addr, 322649);
         Vector mbrs=new Vector();
