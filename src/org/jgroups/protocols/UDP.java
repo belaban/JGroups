@@ -40,7 +40,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.156.2.8 2008/05/28 12:37:37 vlada Exp $
+ * @version $Id: UDP.java,v 1.156.2.9 2008/06/02 05:59:49 belaban Exp $
  */
 public class UDP extends TP implements Runnable {
 
@@ -302,10 +302,16 @@ public class UDP extends TP implements Runnable {
 
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
+         if(multicast)
+            msg.setDest(null);
+        else
         msg.setDest(dest);
     }
 
     public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
+         if(multicast)
+            msg.setDest(null);
+        else
         msg.setDest(dest);
     }
 
