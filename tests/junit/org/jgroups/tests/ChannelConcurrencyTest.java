@@ -17,6 +17,7 @@ import org.jgroups.Global;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
 import org.jgroups.protocols.*;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
@@ -24,7 +25,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.3 2008/06/02 14:55:35 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.4 2008/06/02 15:05:22 belaban Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest {
@@ -49,6 +50,7 @@ public class ChannelConcurrencyTest {
                 channels[i]=new JChannel(ref);
             }
             changeMergeInterval(channels[i]);
+            changeViewBundling(channels[i]);
         }
 
 		for (int i = 0; i < count; i++) {
@@ -85,13 +87,22 @@ public class ChannelConcurrencyTest {
 			}
 		}
 
-        for(final Channel ch: channels) {
-            System.out.println(ch.getView());
+        for(int i=0; i < channels.length; i++) {
+            System.out.println("#" + i+1 + ": " + channels[i].getView());
         }
 
         final long duration = System.currentTimeMillis() - start;
 		System.out.println("Converged to a single group after " + duration + " ms");
 	}
+
+    private static void changeViewBundling(JChannel channel) {
+        ProtocolStack stack=channel.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        if(gms != null) {
+            gms.setViewBundling(true);
+            gms.setMaxBundlingTime(500);
+        }
+    }
 
     private static void changeMergeInterval(JChannel channel) {
         ProtocolStack stack=channel.getProtocolStack();
