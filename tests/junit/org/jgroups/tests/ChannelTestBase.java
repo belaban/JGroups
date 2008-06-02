@@ -245,7 +245,7 @@ public class ChannelTestBase {
             }
         }
 
-        private void makeUnique(Channel channel, int num) throws Exception {
+        protected void makeUnique(Channel channel, int num) throws Exception {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
             Properties props=new Properties();
