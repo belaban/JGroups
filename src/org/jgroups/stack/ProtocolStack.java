@@ -4,10 +4,12 @@ package org.jgroups.stack;
 import org.jgroups.*;
 import org.jgroups.annotations.Property;
 import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.conf.PropertyConverter;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Tuple;
+import org.testng.internal.annotations.Converter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -25,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.78 2008/05/29 14:00:49 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.79 2008/06/02 09:56:15 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -262,7 +264,7 @@ public class ProtocolStack extends Protocol implements Transport {
         StringBuilder sb=new StringBuilder();
         Vector<Protocol> protocols=getProtocols();
 
-        if(protocols == null) return null;
+        if(protocols == null || protocols.isEmpty()) return null;
         boolean first_colon_printed=false;
 
         Collections.reverse(protocols);
@@ -377,11 +379,22 @@ public class ProtocolStack extends Protocol implements Transport {
 
             // copy all fields marked with @Property
             Field[] fields=clazz.getDeclaredFields();
+            Property annotation;
             for(Field field: fields) {
                 if(field.isAnnotationPresent(Property.class)) {
                     Object value=Configurator.getField(field, prot);
-                    if(value != null)
-                        retval.put(field.getName(), value.toString());
+                    if(value != null) {
+                        annotation=field.getAnnotation(Property.class);
+                        Class<?> conv_class=annotation.converter();
+                        PropertyConverter conv=null;
+                        try {
+                            conv=(PropertyConverter)conv_class.newInstance();
+                        }
+                        catch(Exception e) {
+                        }
+                        String tmp=conv != null? conv.toString(value) : value.toString();
+                        retval.put(field.getName(), tmp);
+                    }
                 }
             }
 
@@ -390,7 +403,7 @@ public class ProtocolStack extends Protocol implements Transport {
             for(Method method: methods) {
                 String methodName=method.getName();
                 if(method.isAnnotationPresent(Property.class) && Configurator.isSetPropertyMethod(method)) {
-                    Property annotation=method.getAnnotation(Property.class);
+                    annotation=method.getAnnotation(Property.class);
                     List<String> possible_names=new LinkedList<String>();
                     if(annotation.name() != null)
                         possible_names.add(annotation.name());
@@ -399,8 +412,17 @@ public class ProtocolStack extends Protocol implements Transport {
                     Field field=findField(prot, possible_names);
                     if(field != null) {
                         Object value=Configurator.getField(field, prot);
-                        if(value != null)
-                            retval.put(field.getName(), value.toString());
+                        if(value != null) {
+                            Class<?> conv_class=annotation.converter();
+                            PropertyConverter conv=null;
+                            try {
+                                conv=(PropertyConverter)conv_class.newInstance();
+                            }
+                            catch(Exception e) {
+                            }
+                            String tmp=conv != null? conv.toString(value) : value.toString();
+                            retval.put(field.getName(), tmp);
+                        }
                     }
                 }
             }
