@@ -9,7 +9,7 @@ import org.jgroups.util.Promise ;
  * Tests unicasts to self (loopback of transport protocol)
  * @author Richard Achmatowicz 12 May 2008
  * @author Bela Ban Dec 31 2003
- * @version $Id: UnicastLoopbackTest.java,v 1.7.20.1 2008/05/12 15:41:32 rachmatowicz Exp $
+ * @version $Id: UnicastLoopbackTest.java,v 1.7.20.2 2008/06/02 07:49:05 belaban Exp $
  */
 public class UnicastLoopbackTest extends TestCase {
     JChannel channel=null;
@@ -44,8 +44,7 @@ public class UnicastLoopbackTest extends TestCase {
      * @throws TimeoutException
      * @throws Exception
      */
-    public void testUnicastMsgsWithLoopback() throws ChannelException, ChannelClosedException, ChannelNotConnectedException, TimeoutException, Exception {
-
+    public void testUnicastMsgsWithLoopback() throws Exception {
     	final long TIMEOUT = 2 * 1000 ;
     	final int NUM=1000;
     	long num_msgs_sent_before = 0 ;
@@ -66,12 +65,6 @@ public class UnicastLoopbackTest extends TestCase {
     	// send NUM UNICAST messages to ourself 
     	for(int i=1; i <= NUM; i++) {
     		channel.send(new Message(local_addr, null, new Integer(i)));
-//  		try {
-//  		Thread.sleep(1);
-//  		}
-//  		catch(InterruptedException e) {
-//  		e.printStackTrace();
-//  		}
     		if(i % 100 == 0)
     			System.out.println("-- sent " + i);
     	}
@@ -83,7 +76,7 @@ public class UnicastLoopbackTest extends TestCase {
 
     	try { 
     		// wait for all messages to be received
-    		Boolean result = p.getResultWithTimeout(TIMEOUT) ;
+    		p.getResultWithTimeout(TIMEOUT) ;
     	}
     	catch(TimeoutException te) {
     		// timeout exception occurred 
@@ -100,9 +93,8 @@ public class UnicastLoopbackTest extends TestCase {
      * @return the number of messages sent across the network
      * @throws Exception
      */
-    private long getNumMessagesSentViaNetwork(JChannel ch) throws Exception {
-
-    	TP transport = (TP) ch.getProtocolStack().getTransport();
+    private static long getNumMessagesSentViaNetwork(JChannel ch) throws Exception {
+    	TP transport=ch.getProtocolStack().getTransport();
     	if (transport == null) {
     		throw new Exception("transport layer is not present - check default stack configuration") ;
     	}
@@ -117,9 +109,8 @@ public class UnicastLoopbackTest extends TestCase {
      * @param loopback
      * @throws Exception
      */
-    private void setLoopbackProperty(JChannel ch, boolean loopback) throws Exception {
-
-    	TP transport =  (TP) ch.getProtocolStack().getTransport() ;
+    private static void setLoopbackProperty(JChannel ch, boolean loopback) throws Exception {
+    	TP transport=ch.getProtocolStack().getTransport();
     	if (transport == null) {
     		throw new Exception("transport layer is not present - check default stack configuration") ;
     	}
@@ -166,9 +157,5 @@ public class UnicastLoopbackTest extends TestCase {
     	}
     }
     
-    
-    public static void main(String[] args) {
-        String[] testCaseName={UnicastLoopbackTest.class.getName()};
-        junit.textui.TestRunner.main(testCaseName);
-    }
+   
 }
