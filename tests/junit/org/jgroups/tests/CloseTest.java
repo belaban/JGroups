@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.21 2008/05/29 11:38:53 belaban Exp $
+// $Id: CloseTest.java,v 1.22 2008/06/02 10:01:40 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -251,6 +251,7 @@ public class CloseTest extends ChannelTestBase {
 
             System.out.println("-- reopening channel --");
             ch.get().open();
+            new DefaultChannelTestFactory().makeUnique(ch.get(), 1);
         }
         ch.get().close();
     }
