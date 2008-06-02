@@ -2,9 +2,9 @@
 package org.jgroups.tests;
 
 import org.jgroups.Event;
+import org.jgroups.Global;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.Global;
 import org.jgroups.debug.Simulator;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.UNICAST;
@@ -15,7 +15,6 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.nio.ByteBuffer;
-import java.util.Properties;
 import java.util.Vector;
 
 
@@ -44,7 +43,7 @@ public class UNICAST_Test {
 
     public void testReceptionOfAllMessages() throws Throwable {
         UNICAST unicast=new UNICAST();
-        unicast.setTimeouts("500,1000,2000,3000");
+        unicast.setTimeout(new long[] {500,1000,2000,3000});
         Protocol[] stack=new Protocol[]{unicast};
         createStack(stack);
         _testReceptionOfAllMessages();
@@ -53,7 +52,7 @@ public class UNICAST_Test {
 
     public void testReceptionOfAllMessagesWithDISCARD() throws Throwable {
         UNICAST unicast=new UNICAST();
-        unicast.setTimeouts("500,1000,2000,3000");
+        unicast.setTimeout(new long[] {500,1000,2000,3000});
 
         DISCARD discard=new DISCARD();
         discard.setDownDiscardRate(0.1); // discard all down message with 10% probability
