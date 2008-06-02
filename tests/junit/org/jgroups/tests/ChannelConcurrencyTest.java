@@ -10,13 +10,14 @@ import junit.framework.TestCase;
 
 import org.jgroups.JChannel;
 import org.jgroups.Channel;
+import org.jgroups.protocols.MERGE2;
+import org.jgroups.stack.ProtocolStack;
 
 /**
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.1 2008/05/31 05:03:38
- *          belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.3 2008/06/02 14:52:41 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -30,6 +31,7 @@ public class ChannelConcurrencyTest extends TestCase {
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
             channels[i]=new JChannel("flush-udp.xml");
+            changeMergeInterval(channels[i]);
         }
 
         for(final Channel c:channels) {
@@ -73,5 +75,14 @@ public class ChannelConcurrencyTest extends TestCase {
 
         final long duration=System.currentTimeMillis() - start;
         System.out.println("Converged to a single group after " + duration + " ms");
+    }
+
+    private static void changeMergeInterval(JChannel channel) {
+        ProtocolStack stack=channel.getProtocolStack();
+        MERGE2 merge=(MERGE2)stack.findProtocol(MERGE2.class);
+        if(merge != null) {
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
+        }
     }
 }
