@@ -1,6 +1,9 @@
 package org.jgroups.conf;
 
 import java.util.Properties;
+import java.util.List;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
 
 import org.jgroups.util.Util;
 
@@ -14,7 +17,7 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.4 2008/05/30 20:39:31 vlada Exp $
+ * @version $Id: PropertyConverters.java,v 1.5 2008/06/02 08:01:49 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -23,12 +26,31 @@ public class PropertyConverters {
         public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             return Util.parseInterfaceList(propertyValue);
         }
+
+        public String toString(Object value) {
+            List<NetworkInterface> list=(List<NetworkInterface>)value;
+            StringBuilder sb=new StringBuilder();
+            boolean first=true;
+            for(NetworkInterface intf: list) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(",");
+                sb.append(intf.getInetAddresses());
+            }
+            return sb.toString();
+        }
     }
     
     public static class BindAddress implements PropertyConverter {
 
         public Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception {
             return Util.getBindAddress(props);
+        }
+
+        public String toString(Object value) {
+            InetAddress val=(InetAddress)value;
+            return val.getHostAddress();
         }
     }
     
@@ -41,6 +63,22 @@ public class PropertyConverters {
             }else{
                 throw new Exception ("Invalid long array specified in " + propertyValue);
             }
+        }
+
+        public String toString(Object value) {
+            if(value == null)
+                return null;
+            long[] val=(long[])value;
+            StringBuilder sb=new StringBuilder();
+            boolean first=true;
+            for(long l: val) {
+                if(first)
+                    first=false;
+                else
+                    sb.append(",");
+                sb.append(l);
+            }
+            return sb.toString();
         }
     }
 
@@ -71,6 +109,10 @@ public class PropertyConverters {
                 return Float.parseFloat(propertyValue);
             }
             return propertyValue;
+        }
+
+        public String toString(Object value) {
+            return value != null? value.toString() : null;
         }
     }
 }
