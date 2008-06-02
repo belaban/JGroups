@@ -8,7 +8,7 @@ import org.testng.annotations.Test;
  * Tests the fragmentation (FRAG2) protocol for http://jira.jboss.com/jira/browse/JGRP-216
  * @author Bela Ban
  */
-@Test(groups={"temp", "protocols", "single"})
+@Test(groups={"temp", "protocols"})
 public class FRAG2_Test extends FRAG_Test {
 
     protected Protocol createProtocol() {
