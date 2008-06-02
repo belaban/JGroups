@@ -6,6 +6,7 @@ import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.protocols.TP;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -30,7 +31,10 @@ public class MessageDispatcherUnitTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        ch=createChannel();
+        ch=createChannel(true);
+        GMS gms=(GMS)ch.getProtocolStack().findProtocol(GMS.class);
+        if(gms != null)
+            gms.setPrintLocalAddress(false);
         disableBundling(ch);
         disp=new MessageDispatcher(ch, null, null, null);
         ch.connect("MessageDispatcherUnitTest");
