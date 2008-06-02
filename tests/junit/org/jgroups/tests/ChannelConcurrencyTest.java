@@ -25,7 +25,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.4 2008/06/02 15:05:22 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.5 2008/06/02 15:08:47 belaban Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest {
@@ -88,7 +88,7 @@ public class ChannelConcurrencyTest {
 		}
 
         for(int i=0; i < channels.length; i++) {
-            System.out.println("#" + i+1 + ": " + channels[i].getView());
+            System.out.println("#" + (i+1) + ": " + channels[i].getView());
         }
 
         final long duration = System.currentTimeMillis() - start;
