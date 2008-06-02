@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.193 2008/06/02 08:14:16 belaban Exp $
+ * @version $Id: JChannel.java,v 1.194 2008/06/02 09:55:08 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -84,6 +84,8 @@ public class JChannel extends Channel {
     public static final String DEFAULT_PROTOCOL_STACK="udp.xml";
 
     static final String FORCE_PROPS="force.properties";
+
+    protected String properties=null;
 
     /*the address of this JChannel instance*/
     private Address local_addr=null;
@@ -323,7 +325,10 @@ public class JChannel extends Channel {
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
      */
     public String getProperties() {
-        return prot_stack != null? prot_stack.printProtocolSpec(true) : "n/a";
+        String retval=prot_stack != null? prot_stack.printProtocolSpec(true) : null;
+        if(retval != null)
+            properties=retval;
+        return properties;
     }
 
     public boolean statsEnabled() {
@@ -574,10 +579,10 @@ public class JChannel extends Channel {
         try {
             mq.reset();
 
-            String old_props=prot_stack != null? prot_stack.getSetupString() : null;
+            String props=getProperties();
 
             // new stack is created on open() - bela June 12 2003
-            prot_stack=new ProtocolStack(this, old_props);
+            prot_stack=new ProtocolStack(this, props);
             prot_stack.setup();
             closed=false;
         }
@@ -1564,6 +1569,7 @@ public class JChannel extends Channel {
         prot_stack=new ProtocolStack(this, tmp);
         try {
             prot_stack.setup(); // Setup protocol stack (creates protocol, calls init() on them)
+            properties=tmp;
         }
         catch(Throwable e) {
             throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
@@ -1578,6 +1584,7 @@ public class JChannel extends Channel {
         prot_stack=new ProtocolStack(this, null);
         try {
             prot_stack.setup(ch.getProtocolStack()); // Setup protocol stack (creates protocol, calls init() on them)
+            getProperties();
         }
         catch(Throwable e) {
             throw new ChannelException("unable to setup the protocol stack: " + e.getMessage(), e);
