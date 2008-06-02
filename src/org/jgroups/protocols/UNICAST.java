@@ -1,8 +1,9 @@
-// $Id: UNICAST.java,v 1.103 2008/05/23 12:11:01 belaban Exp $
+// $Id: UNICAST.java,v 1.104 2008/06/02 09:56:38 belaban Exp $
 
 package org.jgroups.protocols;
 
 import org.jgroups.*;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
@@ -43,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address>         members=new Vector<Address>(11);
     private final HashMap<Address,Entry>  connections=new HashMap<Address,Entry>(11);
-    private long[]                        timeouts={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
+    private long[] timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
     private Address                       local_addr=null;
     private TimeScheduler                 timer=null;                    // used for retransmissions (passed to AckSenderWindow)
     private Map<Thread,ReentrantLock>     locks;
@@ -91,11 +92,12 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     /** All protocol names have to be unique ! */
     public String  getName() {return name;}
 
-    public long[] getTimeouts() {return timeouts;}
+    public long[] getTimeout() {return timeout;}
 
-    @Property(name="timeout")
-    public void setTimeouts(String val) {
-        timeouts=Util.parseCommaDelimitedLongs(val);
+    @Property(name="timeout",converter=PropertyConverters.LongArray.class)
+    public void setTimeout(long[] val) {
+        if(val != null)
+            timeout=val;
     }
 
     @ManagedAttribute
@@ -321,7 +323,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
                         if(entry.sent_msgs == null && !xmit_off) { // first msg to peer 'dst'
-                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the global timer
+                            entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeout), timer, this.local_addr); // use the global timer
                         }
                         msg.putHeader(name, hdr);
                         if(log.isTraceEnabled())
