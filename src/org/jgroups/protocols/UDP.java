@@ -42,7 +42,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.174 2008/05/29 14:17:37 vlada Exp $
+ * @version $Id: UDP.java,v 1.175 2008/06/02 05:56:46 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP implements Runnable {
@@ -259,11 +259,17 @@ public class UDP extends TP implements Runnable {
 
 
     public void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast) {
-        msg.setDest(dest);
+         if(multicast)
+            msg.setDest(null);
+        else
+            msg.setDest(dest);
     }
 
     public void postUnmarshallingList(Message msg, Address dest, boolean multicast) {
-        msg.setDest(dest);
+         if(multicast)
+            msg.setDest(null);
+        else
+            msg.setDest(dest);
     }
 
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
