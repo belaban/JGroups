@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.23.2.2 2008/04/12 12:29:54 belaban Exp $
+ * @version $Id: Global.java,v 1.23.2.3 2008/06/02 14:56:23 belaban Exp $
  */
 public class Global {
     /** Allows for conditional compilation; e.g., if(log.isTraceEnabled()) if(log.isInfoEnabled()) log.info(...) would be removed from the code
@@ -65,35 +65,38 @@ public class Global {
     public static final int IPV6_SIZE=16;
 
     public static boolean getPropertyAsBoolean(String property, boolean defaultValue) {
-	boolean result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Boolean.parseBoolean(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        boolean result=defaultValue;
+        try {
+            String tmp=System.getProperty(property);
+            if(tmp != null)
+                result=Boolean.parseBoolean(tmp);
+        }
+        catch(Throwable t) {
+        }
+        return result;
     }
 
     public static long getPropertyAsLong(String property, long defaultValue) {
-	long result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Long.parseLong(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        long result=defaultValue;
+        try {
+            String tmp=System.getProperty(property);
+            if(tmp != null)
+                result=Long.parseLong(tmp);
+        }
+        catch(Throwable t) {
+        }
+        return result;
     }
 
     public static int getPropertyAsInteger(String property, int defaultValue) {
-	int result = defaultValue;
-	try{
-	    String tmp = System.getProperty(property);
-	    if(tmp != null)
-		result = Integer.parseInt(tmp);
-	}catch(Throwable t){
-	}
-	return result;
+        int result=defaultValue;
+        try {
+            String tmp=System.getProperty(property);
+            if(tmp != null)
+                result=Integer.parseInt(tmp);
+        }
+        catch(Throwable t) {
+        }
+        return result;
     }
 }
