@@ -23,7 +23,7 @@ import java.util.Random;
  *
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * @author Bela Ban
- * @version $Id: RouterStubTest.java,v 1.3 2006/10/23 16:16:20 belaban Exp $
+ * @version $Id: RouterStubTest.java,v 1.3.2.1 2008/06/02 22:05:01 rachmatowicz Exp $
  * @since 2.2.1
  */
 public class RouterStubTest extends TestCase {
@@ -116,13 +116,16 @@ public class RouterStubTest extends TestCase {
 
         stub2=new RouterStub("127.0.0.1", routerPort);
 
-
         stub.connect(groupName);  // register the first member
         Address addr=stub.getLocalAddress();
 
         stub2.connect(groupName); // register the second member
         addr=stub2.getLocalAddress();
 
+        // Allow the GossipClient a moment to initialize the SocketThreads
+        // for each peer
+        Thread.sleep(1000) ;
+        
         String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
 
         // the first member sends a simple routing request to all members (null dest address)
@@ -152,6 +155,11 @@ public class RouterStubTest extends TestCase {
 
         stub2.connect(groupName);
         Address localAddrTwo=stub2.getLocalAddress();
+        
+        // Allow the GossipClient a moment to initialize the SocketThreads
+        // for each peer
+        Thread.sleep(1000) ;
+        
         String payload="THIS IS A MESSAGE PAYLOAD " + random.nextLong();
 
         // first member send a simple routing request to the second member
@@ -184,6 +192,10 @@ public class RouterStubTest extends TestCase {
         stub2=new RouterStub("127.0.0.1", routerPort);
         stub2.connect(groupName);
 
+        // Allow the GossipClient a moment to initialize the SocketThreads
+        // for each peer
+        Thread.sleep(1000) ;
+        
         // send a series of stress routing requests to all members
         final int count=20000; // total number of messages to be sent
         int timeout=50; // nr of secs to wait for all messages to arrive
