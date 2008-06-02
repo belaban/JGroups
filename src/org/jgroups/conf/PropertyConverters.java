@@ -17,7 +17,7 @@ import org.jgroups.util.Util;
  * method instance.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverters.java,v 1.5 2008/06/02 08:01:49 belaban Exp $
+ * @version $Id: PropertyConverters.java,v 1.6 2008/06/02 08:13:25 belaban Exp $
  */
 public class PropertyConverters {
 
@@ -36,7 +36,7 @@ public class PropertyConverters {
                     first=false;
                 else
                     sb.append(",");
-                sb.append(intf.getInetAddresses());
+                sb.append(intf.getName());
             }
             return sb.toString();
         }

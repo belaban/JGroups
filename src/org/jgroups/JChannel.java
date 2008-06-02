@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.192 2008/05/29 14:01:09 belaban Exp $
+ * @version $Id: JChannel.java,v 1.193 2008/06/02 08:14:16 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -323,7 +323,7 @@ public class JChannel extends Channel {
      * "UDP:PING:FD:STABLE:NAKACK:UNICAST:FRAG:FLUSH:GMS:VIEW_ENFORCER:STATE_TRANSFER:QUEUE"
      */
     public String getProperties() {
-        return prot_stack != null? prot_stack.printProtocolSpecAsPlainString() : "n/a";
+        return prot_stack != null? prot_stack.printProtocolSpec(true) : "n/a";
     }
 
     public boolean statsEnabled() {
