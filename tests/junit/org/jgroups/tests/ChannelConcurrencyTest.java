@@ -16,10 +16,7 @@ import org.jgroups.Channel;
 import org.jgroups.Global;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
-import org.jgroups.protocols.UDP;
-import org.jgroups.protocols.BasicTCP;
-import org.jgroups.protocols.TP;
-import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.*;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
 import org.testng.annotations.Test;
@@ -27,7 +24,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.2 2008/05/31 05:19:18 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.3 2008/06/02 14:55:35 belaban Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest {
@@ -51,6 +48,7 @@ public class ChannelConcurrencyTest {
             else {
                 channels[i]=new JChannel(ref);
             }
+            changeMergeInterval(channels[i]);
         }
 
 		for (int i = 0; i < count; i++) {
@@ -95,6 +93,14 @@ public class ChannelConcurrencyTest {
 		System.out.println("Converged to a single group after " + duration + " ms");
 	}
 
+    private static void changeMergeInterval(JChannel channel) {
+        ProtocolStack stack=channel.getProtocolStack();
+        MERGE2 merge=(MERGE2)stack.findProtocol(MERGE2.class);
+        if(merge != null) {
+            merge.setMinInterval(5000);
+            merge.setMaxInterval(10000);
+        }
+    }
 
     private static void makeUnique(Channel channel, int num) throws Exception {
         ProtocolStack stack=channel.getProtocolStack();
