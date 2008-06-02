@@ -13,8 +13,16 @@ import org.jgroups.annotations.Property;
  * @see Property
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertyConverter.java,v 1.2 2008/05/08 09:46:49 vlada Exp $
+ * @version $Id: PropertyConverter.java,v 1.3 2008/06/02 08:01:49 belaban Exp $
  */
 public interface PropertyConverter {
     Object convert(Class<?> propertyFieldType, Properties props, String propertyValue) throws Exception;
+
+    /**
+     * Converts the value to a string. The default is to simply invoke Object.toString(), however, some objects need
+     * to be printed specially, e.g. a long array etc.
+     * @param value
+     * @return
+     */
+    String toString(Object value);
 }
