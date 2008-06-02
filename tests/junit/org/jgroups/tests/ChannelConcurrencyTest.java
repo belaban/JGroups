@@ -11,13 +11,14 @@ import junit.framework.TestCase;
 import org.jgroups.JChannel;
 import org.jgroups.Channel;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 
 /**
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.3 2008/06/02 14:52:41 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.4 2008/06/02 15:10:37 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -32,6 +33,7 @@ public class ChannelConcurrencyTest extends TestCase {
         for(int i=0;i < count;i++) {
             channels[i]=new JChannel("flush-udp.xml");
             changeMergeInterval(channels[i]);
+            changeViewBundling(channels[i]);
         }
 
         for(final Channel c:channels) {
@@ -65,7 +67,7 @@ public class ChannelConcurrencyTest extends TestCase {
                 break;
             }
             else {
-                SECONDS.sleep(100);
+                SECONDS.sleep(1);
             }
         }
 
@@ -74,7 +76,20 @@ public class ChannelConcurrencyTest extends TestCase {
         }
 
         final long duration=System.currentTimeMillis() - start;
-        System.out.println("Converged to a single group after " + duration + " ms");
+        System.out.println("Converged to a single group after " + duration + " ms; group is:\n");
+        for(int i=0; i < channels.length; i++) {
+            System.out.println("#" + (i+1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
+        }
+    }
+
+
+    private static void changeViewBundling(JChannel channel) {
+        ProtocolStack stack=channel.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        if(gms != null) {
+            gms.setViewBundling(true);
+            gms.setMaxBundlingTime(500);
+        }
     }
 
     private static void changeMergeInterval(JChannel channel) {
