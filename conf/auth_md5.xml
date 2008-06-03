@@ -31,7 +31,7 @@
         max_bytes="0"/>
     <FRAG frag_size="8192"/>
     <VIEW_SYNC avg_send_interval="60000"   />
-    <AUTH auth_class="org.jgroups.auth.SimpleToken"
+    <AUTH auth_class="org.jgroups.auth.MD5Token"
         auth_value="chris"
         token_hash="MD5"/>
     <pbcast.GMS print_local_addr="true"

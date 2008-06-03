@@ -1,6 +1,7 @@
 package org.jgroups.auth;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
 import java.io.DataInputStream;
@@ -27,24 +28,27 @@ public class MD5Token extends AuthToken {
     public static final String TOKEN_ATTR = "auth_value";
     public static final String TOKEN_TYPE = "token_hash";
 
-    private String token = null;
+    @Property
+    private String auth_value= null;
+
+    @Property(name="token_hash")
     private String hash_type = "MD5";
 
     public MD5Token(){
         //need an empty constructor
     }
 
-    public MD5Token(String token){
-        this.token = hash(token);
+    public MD5Token(String authvalue){
+        this.auth_value= hash(authvalue);
     }
 
-    public MD5Token(String token, String hash_type){
-        this.token = hash(token);
+    public MD5Token(String authvalue, String hash_type){
+        this.auth_value= hash(authvalue);
         this.hash_type = hash_type;
     }
 
     public void setValue(Properties properties){
-        this.token = hash((String)properties.get(MD5Token.TOKEN_ATTR));
+        this.auth_value= hash((String)properties.get(MD5Token.TOKEN_ATTR));
         properties.remove(MD5Token.TOKEN_ATTR);
 
         if(properties.containsKey(MD5Token.TOKEN_TYPE)){
@@ -87,7 +91,7 @@ public class MD5Token extends AuthToken {
             //Found a valid Token to authenticate against
             MD5Token serverToken = (MD5Token) token;
 
-            if((this.token != null) && (serverToken.token != null) && (this.token.equalsIgnoreCase(serverToken.token))){
+            if((this.auth_value != null) && (serverToken.auth_value != null) && (this.auth_value.equalsIgnoreCase(serverToken.auth_value))){
                 //validated
                 if(log.isDebugEnabled()){
                     log.debug("MD5Token match");
@@ -111,13 +115,13 @@ public class MD5Token extends AuthToken {
         if(log.isDebugEnabled()){
             log.debug("MD5Token writeTo()");
         }
-        Util.writeString(this.token, out);
+        Util.writeString(this.auth_value, out);
     }
 
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
         if(log.isDebugEnabled()){
             log.debug("MD5Token readFrom()");
         }
-        this.token = Util.readString(in);
+        this.auth_value= Util.readString(in);
     }
 }
