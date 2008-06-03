@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.50 2008/06/03 14:37:02 belaban Exp $
+ * @version $Id: Configurator.java,v 1.51 2008/06/03 15:27:32 belaban Exp $
  */
 public class Configurator {
 
@@ -576,8 +576,8 @@ public class Configurator {
     }
 
 
-    public static void resolveAndInvokePropertyMethods(Protocol p, Properties props) throws Exception {
-        Method[] methods=p.getClass().getMethods();
+    public static void resolveAndInvokePropertyMethods(Object obj, Properties props) throws Exception {
+        Method[] methods=obj.getClass().getMethods();
         for(Method method: methods) {
             String methodName=method.getName();
             if(method.isAnnotationPresent(Property.class) && isSetPropertyMethod(method)) {
@@ -588,17 +588,19 @@ public class Configurator {
                 if(prop != null) {
                     PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                     if(propertyConverter == null) {
+                        String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
                         throw new Exception("Could not find property converter for field " + propertyName
-                                + " in protocol " + p.getName());
+                                + " in " + name);
                     }
                     Object converted=null;
                     try {
                         converted=propertyConverter.convert(method.getParameterTypes()[0], props, prop);
-                        method.invoke(p, converted);
+                        method.invoke(obj, converted);
                     }
                     catch(Exception e) {
-                        throw new Exception("Could not assign property " + propertyName + " in protocol "
-                                + p.getName() + ", method is " + methodName + ", converted value is " + converted, e);
+                        String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+                        throw new Exception("Could not assign property " + propertyName + " in "
+                                + name + ", method is " + methodName + ", converted value is " + converted, e);
                     }
                     finally {
                         props.remove(propertyName);
@@ -614,9 +616,9 @@ public class Configurator {
                 method.getParameterTypes().length == 1);
     }
 
-    public static void resolveAndAssignFields(Protocol p, Properties props) throws Exception {
+    public static void resolveAndAssignFields(Object obj, Properties props) throws Exception {
         //traverse class hierarchy and find all annotated fields
-        for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+        for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
             Field[] fields=clazz.getDeclaredFields();
             for(Field field: fields) {
                 if(field.isAnnotationPresent(Property.class)) {
@@ -633,17 +635,19 @@ public class Configurator {
                     if(propertyValue != null || !annotation.converter().equals(PropertyConverters.Default.class)){
                         PropertyConverter propertyConverter=(PropertyConverter)annotation.converter().newInstance();
                         if(propertyConverter == null) {
+                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
                             throw new Exception("Could not find property converter for field " + propertyName
-                                    + " in protocol " + p.getName());
+                                    + " in " + name);
                         }
                         Object converted=null;
                         try {
                             converted=propertyConverter.convert(field.getType(), props, propertyValue);
-                            setField(field, p, converted);
+                            setField(field, obj, converted);
                         }
                         catch(Exception e) {
-                            throw new Exception("Property assignment with value " + propertyName + " in protocol "
-                                    + p.getName() + " and converted to " + converted + " could not be assigned", e);
+                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+                            throw new Exception("Property assignment with value " + propertyName + " in "
+                                    + name + " and converted to " + converted + " could not be assigned", e);
                         }
                         finally {
                             props.remove(propertyName);
@@ -653,22 +657,23 @@ public class Configurator {
             }
         }
     }
-    
-    public static void removeDeprecatedProperties(Protocol p, Properties props) throws Exception {
+
+    public static void removeDeprecatedProperties(Object obj, Properties props) throws Exception {
         //traverse class hierarchy and find all deprecated properties
-        for(Class<?> clazz=p.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
-            if(clazz.isAnnotationPresent(DeprecatedProperty.class)){
+        for(Class<?> clazz=obj.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
+            if(clazz.isAnnotationPresent(DeprecatedProperty.class)) {
                 DeprecatedProperty declaredAnnotation=clazz.getAnnotation(DeprecatedProperty.class);
-                String [] deprecatedProperties = declaredAnnotation.names();               
-                for(String propertyName:deprecatedProperties){
-                    String propertyValue = props.getProperty(propertyName);
-                    if(propertyValue != null){
-                        if(log.isWarnEnabled()){
-                            log.warn(p.getName() + " specifies property " + propertyName + " which was deprecated and will be ignored");
+                String[] deprecatedProperties=declaredAnnotation.names();
+                for(String propertyName : deprecatedProperties) {
+                    String propertyValue=props.getProperty(propertyName);
+                    if(propertyValue != null) {
+                        if(log.isWarnEnabled()) {
+                            String name=obj instanceof Protocol? ((Protocol)obj).getName() : obj.getClass().getName();
+                            log.warn(name + " property " + propertyName + " was deprecated and is ignored");
                         }
                         props.remove(propertyName);
                     }
-                }     
+                }
             }
         }
     }
@@ -909,8 +914,18 @@ public class Configurator {
                     throw new Exception("creation of instance for protocol " + protocol_name + "failed !");
                 retval.setProtocolStack(prot_stack);
                 removeDeprecatedProperties(retval, properties);               
-                resolveAndAssignFields(retval, properties);               
+                resolveAndAssignFields(retval, properties);
                 resolveAndInvokePropertyMethods(retval, properties);
+
+                List<Object> additional_objects=retval.getConfigurableObjects();
+                if(additional_objects != null && !additional_objects.isEmpty()) {
+                    for(Object obj: additional_objects) {
+                        resolveAndAssignFields(obj, properties);
+                        resolveAndInvokePropertyMethods(obj, properties);
+                    }
+                }
+
+
                 if(!properties.isEmpty()) {
                     throw new IllegalArgumentException("the following properties in " + protocol_name
                             + " are not recognized: " + properties);

@@ -11,9 +11,7 @@ import org.jgroups.protocols.TP;
 import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Property;
 
-import java.util.Map;
-import java.util.Properties;
-import java.util.Vector;
+import java.util.*;
 
 
 /**
@@ -33,7 +31,7 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.62 2008/06/03 14:37:02 belaban Exp $
+ * @version $Id: Protocol.java,v 1.63 2008/06/03 15:27:32 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -87,6 +85,17 @@ public abstract class Protocol {
     
     public ProtocolStack getProtocolStack(){
         return stack;
+    }
+
+    /**
+     * After configuring the protocol itself from the properties defined in the XML config, a protocol might have
+     * additional objects which need to be configured. This callback allows a protocol developer to configure those
+     * other objects. This call is guaranteed to be invoked <em>after</em> the protocol itself has
+     * been configured. See AUTH for an example.
+     * @return
+     */
+    protected List<Object> getConfigurableObjects() {
+        return null;
     }
 
     protected TP getTransport() {
