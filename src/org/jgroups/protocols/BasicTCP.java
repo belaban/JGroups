@@ -66,29 +66,18 @@ public abstract class BasicTCP extends TP {
     public long getConnExpireTime() {return conn_expire_time;}
     public void setConnExpireTime(long conn_expire_time) {this.conn_expire_time=conn_expire_time;}
 
-    public boolean setProperties(Properties props) {       
-        super.setProperties(props);       
+    @Property(name="external_addr")
+    public void setExternalAddress(String addr) throws UnknownHostException {
+        external_addr=InetAddress.getByName(addr);
+    }
 
-        String str=props.getProperty("external_addr");
-        if(str != null) {
-            try {
-                external_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException unknown) {
-                if(log.isFatalEnabled()) log.fatal("(external_addr): host " + str + " not known");
-                return false;
-            }
-            props.remove("external_addr");
-        }     
+
+    public void init() throws Exception {
+        super.init();
 
         Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
         Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
 
-        return true;
-    }
-
-    public void init() throws Exception {
-        super.init();
         boolean is_shared_transport=singleton_name != null && singleton_name.length() > 0;
         if(!is_shared_transport && bind_port <= 0) {
             Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
