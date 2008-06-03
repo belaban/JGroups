@@ -6,6 +6,7 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.auth.AuthToken;
+import org.jgroups.auth.X509Token;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
@@ -50,6 +51,15 @@ public class AUTH extends Protocol {
         if(auth_plugin != null)
             retval.add(auth_plugin);
         return retval;
+    }
+
+    public void init() throws Exception {
+        super.init();
+        if(auth_plugin instanceof X509Token) {
+            X509Token tmp=(X509Token)auth_plugin;
+            tmp.setCertificate();
+        }
+
     }
 
     /**
