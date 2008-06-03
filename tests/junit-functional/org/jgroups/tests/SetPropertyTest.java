@@ -11,7 +11,7 @@ import org.testng.annotations.AfterClass;
 
 /**
  * @author Bela Ban
- * @version $Id: SetPropertyTest.java,v 1.1 2008/05/28 09:17:12 belaban Exp $
+ * @version $Id: SetPropertyTest.java,v 1.2 2008/06/03 14:37:01 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SetPropertyTest {
@@ -37,10 +37,5 @@ public class SetPropertyTest {
         port=transport.getBindPort();
         System.out.println("port = " + port);
         assert old_port + 20 == port;
-
-        transport.setProperty("bind_port", "10000");
-        port=transport.getBindPort();
-        System.out.println("port = " + port);
-        assert port == 10000;
     }
 }

@@ -33,11 +33,10 @@ import java.util.Vector;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.61 2008/05/29 14:17:42 vlada Exp $
+ * @version $Id: Protocol.java,v 1.62 2008/06/03 14:37:02 belaban Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
-    protected final Properties props=new Properties();
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
     @Property
@@ -50,52 +49,40 @@ public abstract class Protocol {
      * items, separated by a ';' (semicolon), e.g.:<pre>
      * "loopback=false;unicast_inport=4444"
      * </pre>
+     * @deprecated The properties are now set through the @Property annotation on the attribute or setter
      */
     protected boolean setProperties(Properties props) {
-        if(props != null)
-            this.props.putAll(props);
-        return true;
+        throw new UnsupportedOperationException("deprecated; use a setter instead");
     }
 
 
     /**
      * Sets a property
-     * @deprecated Use the corresponding setter instead
      * @param key
      * @param val
+     * @deprecated Use the corresponding setter instead
      */
     public void setProperty(String key, String val) {
-        this.props.put(key, val);
-
-        Properties tmp=new Properties();
-        tmp.setProperty(key, val);
-        try {
-            Configurator.resolveAndAssignFields(this, tmp);
-        }
-        catch(Exception e) {
-            log.error("failed assigning " + key + "=" + val, e);
-        }
-
-        tmp.setProperty(key, val); // because the above method removed the key/value pair from properties
-        try {
-            Configurator.resolveAndInvokePropertyMethods(this, tmp);
-        }
-        catch(Exception e) {
-            log.error("failed assigning " + key + "=" + val, e);
-        }
+        throw new UnsupportedOperationException("deprecated; use a setter instead");
     }
 
 
     /** Called by Configurator. Removes 2 properties which are used by the Protocol directly and then
      *	calls setProperties(), which might invoke the setProperties() method of the actual protocol instance.
+     * @deprecated Use a setter instead
      */
     public boolean setPropertiesInternal(Properties props) {
-        this.props.putAll(props);         
-        return setProperties(props);
+        throw new UnsupportedOperationException("use a setter instead");
     }
 
+    /**
+     * @return
+     * @deprecated Use a getter to get the actual instance variable
+     */
     public Properties getProperties() {
-        return props;
+        if(log.isWarnEnabled())
+            log.warn("deprecated feature: please use a setter instead");
+        return new Properties();
     }
     
     public ProtocolStack getProtocolStack(){

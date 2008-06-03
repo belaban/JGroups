@@ -25,7 +25,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.5 2008/06/02 15:08:47 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.6 2008/06/03 14:37:00 belaban Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest {
@@ -116,22 +116,15 @@ public class ChannelConcurrencyTest {
     private static void makeUnique(Channel channel, int num) throws Exception {
         ProtocolStack stack=channel.getProtocolStack();
         TP transport=stack.getTransport();
-        Properties props=new Properties();
         InetAddress bind_addr=transport.getBindAddressAsInetAddress();
         if(transport instanceof UDP) {
             String mcast_addr=ResourceManager.getNextMulticastAddress();
             short mcast_port=ResourceManager.getNextMulticastPort(bind_addr);
-            props.setProperty("mcast_addr", mcast_addr);
-            props.setProperty("mcast_port", String.valueOf(mcast_port));
-            transport.setPropertiesInternal(props);
             ((UDP)transport).setMulticastAddress(mcast_addr);
             ((UDP)transport).setMulticastPort(mcast_port);
         }
         else if(transport instanceof BasicTCP) {
             List<Short> ports=ResourceManager.getNextTcpPorts(bind_addr, num);
-            props.setProperty("bind_port", String.valueOf(ports.get(0)));
-            props.setProperty("port_range", String.valueOf(num));
-            transport.setPropertiesInternal(props);
             transport.setBindPort(ports.get(0));
             transport.setPortRange(num);
 

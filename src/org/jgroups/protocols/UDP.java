@@ -41,7 +41,7 @@ import java.util.Map;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.176 2008/06/03 10:11:44 belaban Exp $
+ * @version $Id: UDP.java,v 1.177 2008/06/03 14:37:00 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP implements Runnable {
@@ -275,17 +275,17 @@ public class UDP extends TP implements Runnable {
         super.init();
 
         String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"},
-                                    props, "mcast_addr", false, null);
+                                    null, "mcast_addr", false, null);
         if(str != null)
             mcast_addr_name=str;
 
         str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT, "jboss.partition.udpPort"},
-                             props, "mcast_port", false, null);
+                             null, "mcast_port", false, null);
 
         if(str != null)
             mcast_port=Integer.parseInt(str);
 
-        str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, props, "ip_ttl", false, null);
+        str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, null, "ip_ttl", false, null);
         if(str != null)
             ip_ttl=Integer.parseInt(str);
 

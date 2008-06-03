@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.79 2008/06/02 09:56:15 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.80 2008/06/03 14:37:02 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -154,8 +154,6 @@ public class ProtocolStack extends Protocol implements Transport {
             Protocol new_prot=prot.getClass().newInstance();
             new_prot.setProtocolStack(st);
             retval.add(new_prot);
-
-            new_prot.setProperties(new Properties(prot.getProperties()));
 
             for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
 
@@ -305,7 +303,7 @@ public class ProtocolStack extends Protocol implements Transport {
     public String printProtocolSpecAsXML() {
         StringBuilder sb=new StringBuilder();
         Protocol     prot=bottom_prot;
-        Properties   tmpProps;
+        Map<String,String>   tmpProps;
         String       name;
         Map.Entry    entry;
         int len, max_len=30;
@@ -317,7 +315,7 @@ public class ProtocolStack extends Protocol implements Transport {
                 if("ProtocolStack".equals(name))
                     break;
                 sb.append("  <").append(name).append(" ");
-                tmpProps=prot.getProperties();
+                tmpProps=getProps(prot);
                 if(tmpProps != null) {
                     len=name.length();
                     String s;
@@ -366,14 +364,6 @@ public class ProtocolStack extends Protocol implements Transport {
 
     static Map<String,String> getProps(Protocol prot) {
         Map<String,String> retval=new HashMap<String,String>();
-        Properties tmp_props=prot.getProperties();
-        if(tmp_props != null && !tmp_props.isEmpty()) {
-            for(Map.Entry<Object,Object> entry: tmp_props.entrySet()) {
-                Object key=entry.getKey(), val=entry.getValue();
-                if(key != null && val != null)
-                    retval.put(key.toString(), val.toString());
-            }
-        }
 
         for(Class<?> clazz=prot.getClass(); clazz != null; clazz=clazz.getSuperclass()) {
 

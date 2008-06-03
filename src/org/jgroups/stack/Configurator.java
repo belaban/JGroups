@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.49 2008/05/29 14:17:42 vlada Exp $
+ * @version $Id: Configurator.java,v 1.50 2008/06/03 14:37:02 belaban Exp $
  */
 public class Configurator {
 
@@ -911,10 +911,6 @@ public class Configurator {
                 removeDeprecatedProperties(retval, properties);               
                 resolveAndAssignFields(retval, properties);               
                 resolveAndInvokePropertyMethods(retval, properties);
-                if(!retval.setPropertiesInternal(properties))
-                    throw new IllegalArgumentException("the following properties in " + protocol_name
-                            + " are not recognized: " + properties);
-
                 if(!properties.isEmpty()) {
                     throw new IllegalArgumentException("the following properties in " + protocol_name
                             + " are not recognized: " + properties);
