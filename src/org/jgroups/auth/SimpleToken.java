@@ -22,8 +22,6 @@ import java.util.Properties;
  */
 public class SimpleToken extends AuthToken {
 
-    public static final String TOKEN_ATTR="auth_value";
-
     @Property
     private String auth_value=null;
 
@@ -34,13 +32,17 @@ public class SimpleToken extends AuthToken {
         this.auth_value=authvalue;
     }
 
-    public void setValue(Properties properties) {
-        this.auth_value=(String)properties.get(SimpleToken.TOKEN_ATTR);
-        properties.remove(SimpleToken.TOKEN_ATTR);
-    }
 
     public String getName() {
         return "org.jgroups.auth.SimpleToken";
+    }
+
+    public String getAuthValue() {
+        return auth_value;
+    }
+
+    public void setAuthValue(String auth_value) {
+        this.auth_value=auth_value;
     }
 
     public boolean authenticate(AuthToken token, Message msg) {
