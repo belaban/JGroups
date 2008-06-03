@@ -18,7 +18,7 @@ import org.jgroups.stack.ProtocolStack;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.6 2008/06/03 13:29:01 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.7 2008/06/03 18:07:31 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -73,6 +73,9 @@ public class ChannelConcurrencyTest extends TestCase {
         for(int i=0; i < channels.length; i++) {
             System.out.println("#" + (i+1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
         }
+        for (final JChannel channel:channels){
+            assertTrue("View ok for channel " + channel.getLocalAddress(), count == channel.getView().size());
+        }        
     }
 
 
