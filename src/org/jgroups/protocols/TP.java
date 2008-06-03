@@ -2,11 +2,7 @@ package org.jgroups.protocols;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -50,9 +46,10 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.211 2008/06/03 13:39:03 belaban Exp $
+ * @version $Id: TP.java,v 1.212 2008/06/03 15:44:14 belaban Exp $
  */
 @MBean(description="Transport protocol")
+@DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
 public abstract class TP extends Protocol {
 
     /** The address (host and port) of this member */
