@@ -16,7 +16,6 @@ import java.net.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 
 
 
@@ -42,7 +41,7 @@ import java.util.Properties;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.175 2008/06/02 05:56:46 belaban Exp $
+ * @version $Id: UDP.java,v 1.176 2008/06/03 10:11:44 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP implements Runnable {
@@ -104,6 +103,7 @@ public class UDP extends TP implements Runnable {
     boolean         ip_mcast=true;
 
     /** The time-to-live (TTL) for multicast datagram packets */
+    @Property
     int             ip_ttl=8;
 
     /** Send buffer size of the multicast datagram socket */
@@ -139,55 +139,12 @@ public class UDP extends TP implements Runnable {
     }
 
 
+    @Property(name="mcast_addr")
     public void setMulticastAddress(String addr) {this.mcast_addr_name=addr;}
     public String getMulticastAddress() {return mcast_addr_name;}
     public int getMulticastPort() {return mcast_port;}
+    @Property(name="mcast_port")
     public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
-
-    /**
-     * Setup the Protocol instance acording to the configuration string.
-     * The following properties are read by the UDP protocol:
-     * <ul>
-     * <li> param mcast_addr - the multicast address to use default is 228.8.8.8
-     * <li> param mcast_port - (int) the port that the multicast is sent on default is 7600
-     * <li> param ip_mcast - (boolean) flag whether to use IP multicast - default is true
-     * <li> param ip_ttl - Set the default time-to-live for multicast packets sent out on this socket. default is 32
-     * </ul>
-     * @return true if no other properties are left.
-     *         false if the properties still have data in them, ie ,
-     *         properties are left over and not handled by the protocol stack
-     */
-    public boolean setProperties(Properties props) {
-
-
-        super.setProperties(props);
-        
-        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"}, props,
-                             "mcast_addr", false, "228.8.8.8");
-        if(str != null)
-            mcast_addr_name=str;
-
-        str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT, "jboss.partition.udpPort"},
-                             props, "mcast_port", false, "7600");
-        if(str != null)
-            mcast_port=Integer.parseInt(str);
-
-        str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, props, "ip_ttl", false, "64");
-        if(str != null) {
-            ip_ttl=Integer.parseInt(str);
-            props.remove("ip_ttl");
-        }
-
-        Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
-        Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
-        Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
-        Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
-        return props.isEmpty();
-    }
-
-
-
-
 
 
     /* ----------------------- Receiving of MCAST UDP packets ------------------------ */
@@ -312,6 +269,30 @@ public class UDP extends TP implements Runnable {
 
     public String getName() {
         return "UDP";
+    }
+
+    public void init() throws Exception {
+        super.init();
+
+        String str=Util.getProperty(new String[]{Global.UDP_MCAST_ADDR, "jboss.partition.udpGroup"},
+                                    props, "mcast_addr", false, null);
+        if(str != null)
+            mcast_addr_name=str;
+
+        str=Util.getProperty(new String[]{Global.UDP_MCAST_PORT, "jboss.partition.udpPort"},
+                             props, "mcast_port", false, null);
+
+        if(str != null)
+            mcast_port=Integer.parseInt(str);
+
+        str=Util.getProperty(new String[]{Global.UDP_IP_TTL}, props, "ip_ttl", false, null);
+        if(str != null)
+            ip_ttl=Integer.parseInt(str);
+
+        Util.checkBufferSize("UDP.mcast_send_buf_size", mcast_send_buf_size);
+        Util.checkBufferSize("UDP.mcast_recv_buf_size", mcast_recv_buf_size);
+        Util.checkBufferSize("UDP.ucast_send_buf_size", ucast_send_buf_size);
+        Util.checkBufferSize("UDP.ucast_recv_buf_size", ucast_recv_buf_size);
     }
 
 
