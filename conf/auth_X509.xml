@@ -31,7 +31,7 @@
     <VIEW_SYNC avg_send_interval="60000"   />
     <AUTH auth_class="org.jgroups.auth.X509Token"
         auth_value="chris"
-        keystore_path="C\:\Documents and Settings\spare1\.keystore"
+        keystore_path="/home/bela/JGroups/keystore/defaultStore.keystore"
         keystore_password="changeit"
         cert_alias="test"
         cipher_type="RSA"/>
