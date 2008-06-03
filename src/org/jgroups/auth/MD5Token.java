@@ -25,9 +25,6 @@ import java.util.Properties;
  */
 public class MD5Token extends AuthToken {
 
-    public static final String TOKEN_ATTR = "auth_value";
-    public static final String TOKEN_TYPE = "token_hash";
-
     @Property
     private String auth_value= null;
 
@@ -47,19 +44,29 @@ public class MD5Token extends AuthToken {
         this.hash_type = hash_type;
     }
 
-    public void setValue(Properties properties){
-        this.auth_value= hash((String)properties.get(MD5Token.TOKEN_ATTR));
-        properties.remove(MD5Token.TOKEN_ATTR);
 
-        if(properties.containsKey(MD5Token.TOKEN_TYPE)){
-            hash_type = (String)properties.get(MD5Token.TOKEN_TYPE);
-            properties.remove(MD5Token.TOKEN_TYPE);
-        }
+    public String getHashType() {
+        return hash_type;
+    }
+
+    public void setHashType(String hash_type) {
+        this.hash_type=hash_type;
+    }
+
+    public String getAuthValue() {
+        return auth_value;
+    }
+
+    public void setAuthValue(String auth_value) {
+        this.auth_value=auth_value;
     }
 
     public String getName(){
         return "org.jgroups.auth.MD5Token";
     }
+
+  
+
     /**
      * Called during setup to hash the auth_value string in to an MD5/SHA hash
      * @param token the string to hash

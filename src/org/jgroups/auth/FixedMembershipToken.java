@@ -50,6 +50,7 @@ public class FixedMembershipToken extends AuthToken {
     private List<String> memberList=null;
     private String token="emptyToken";
 
+    @Property
     private String fixed_members_seperator=",";
 
     public FixedMembershipToken() {
