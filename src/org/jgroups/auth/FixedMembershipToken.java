@@ -22,62 +22,63 @@
 package org.jgroups.auth;
 
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
 import org.jgroups.util.Util;
 
-import java.util.Properties;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.StringTokenizer;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.io.DataInputStream;
 
 /**
  * <p>
  * The FixedMemberShipToken object predefines a list of IP addresses and Ports that can join the group.
- *</p>
+ * </p>
  * <p>
  * Configuration parameters for this example are shown below:
  * </p>
  * <ul>
- *  <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be seperated by a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>
- *  <li>fixed_members_seperator (required) = The seperator used between IP addresses - e.g. *</li>
+ * <li>fixed_members_value (required) = List of IP addresses & ports (optionally) - ports must be seperated by a '/' e.g. 127.0.0.1/1010*127.0.0.1/4567</li>
+ * <li>fixed_members_seperator (required) = The seperator used between IP addresses - e.g. *</li>
  * </ul>
  * @author Chris Mills (millsy@jboss.com)
  */
 public class FixedMembershipToken extends AuthToken {
-    private static final String FIXED_MEMBERS_ATTR = "fixed_members_value";
-    private static final String FIXED_MEMBERS_SEPERATOR_ATTR = "fixed_members_seperator";
 
-    private List memberList = null;
-    private String token = "emptyToken";
+    private List<String> memberList=null;
+    private String token="emptyToken";
 
-    public FixedMembershipToken(){
+    private String fixed_members_seperator=",";
+
+    public FixedMembershipToken() {
     }
 
-    public String getName(){
+    public String getName() {
         return "org.jgroups.auth.FixedMembershipToken";
     }
 
-    public boolean authenticate(AuthToken token, Message msg){
-        if((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)){
+    public boolean authenticate(AuthToken token, Message msg) {
+        if((token != null) && (token instanceof FixedMembershipToken) && (this.memberList != null)) {
             //Found a valid Token to authenticate against
-            FixedMembershipToken serverToken = (FixedMembershipToken) token;
+            FixedMembershipToken serverToken=(FixedMembershipToken)token;
 
-            String sourceAddressWithPort = msg.getSrc().toString();
-            String sourceAddressWithoutPort = sourceAddressWithPort.substring(0, sourceAddressWithPort.indexOf(":"));
+            String sourceAddressWithPort=msg.getSrc().toString();
+            String sourceAddressWithoutPort=sourceAddressWithPort.substring(0, sourceAddressWithPort.indexOf(":"));
 
-            if(log.isDebugEnabled()){
+            if(log.isDebugEnabled()) {
                 log.debug("AUTHToken received from " + sourceAddressWithPort);
             }
 
-            if((this.memberList.contains(sourceAddressWithPort)) || (this.memberList.contains(sourceAddressWithoutPort))){
+            if((this.memberList.contains(sourceAddressWithPort)) || (this.memberList.contains(sourceAddressWithoutPort))) {
                 //validated
-                if(log.isDebugEnabled()){
+                if(log.isDebugEnabled()) {
                     log.debug("FixedMembershipToken match");
                 }
                 return true;
-            }else{
+            }
+            else {
 //                if(log.isWarnEnabled()){
 //                    log.warn("Authentication failed on FixedMembershipToken");
 //                }
@@ -85,33 +86,34 @@ public class FixedMembershipToken extends AuthToken {
             }
         }
 
-        if(log.isWarnEnabled()){
+        if(log.isWarnEnabled()) {
             log.warn("Invalid AuthToken instance - wrong type or null");
         }
         return false;
     }
 
-    public void setValue(Properties properties){
-        memberList = new ArrayList();
-        StringTokenizer memberListTokenizer = new StringTokenizer((String)properties.get(FixedMembershipToken.FIXED_MEMBERS_ATTR),
-                (String)properties.get(FixedMembershipToken.FIXED_MEMBERS_SEPERATOR_ATTR));
-        while(memberListTokenizer.hasMoreTokens()){
+    @Property(name="fixed_members_value")
+    public void setMemberList(String list) {
+        memberList=new ArrayList<String>();
+        StringTokenizer memberListTokenizer=new StringTokenizer(list, fixed_members_seperator);
+        while(memberListTokenizer.hasMoreTokens()) {
             memberList.add(memberListTokenizer.nextToken().replace('/', ':'));
         }
-        properties.remove(FixedMembershipToken.FIXED_MEMBERS_ATTR);
-        properties.remove(FixedMembershipToken.FIXED_MEMBERS_SEPERATOR_ATTR);
     }
+
+
     /**
      * Required to serialize the object to pass across the wire
      * @param out
      * @throws java.io.IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {
-        if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
         Util.writeString(this.token, out);
     }
+
     /**
      * Required to deserialize the object when read in from the wire
      * @param in
@@ -120,9 +122,9 @@ public class FixedMembershipToken extends AuthToken {
      * @throws InstantiationException
      */
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.token = Util.readString(in);
+        this.token=Util.readString(in);
     }
 }
