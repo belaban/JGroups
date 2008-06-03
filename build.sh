@@ -17,14 +17,8 @@ esac
 
 
 
-LIB=lib
+LIB=$PWD/lib
 
-
-#if [ "$cygwin" = "true" ]; then
-#    CP=${LIB}/ant.jar\;${LIB}/ant-launcher.jar\;${LIB}/ant-junit.jar\;${LIB}/xalan.jar\;${LIB}/junit.jar
-#else
-#    CP=${LIB}/ant.jar:${LIB}/ant-launcher.jar:${LIB}/ant-junit.jar:${LIB}/xalan.jar:${LIB}/junit.jar
-#fi
 
 
 if [ "$cygwin" = "true" ]; then
@@ -56,9 +50,11 @@ else
     echo "  to the installation directory of java."
 fi
 
+echo "CP is ${CP}"
+
 if [ -n "$JAVA_HOME" ]; then
 	${JAVA_HOME}/bin/java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
 else
 	java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
 fi
-#echo "CP is ${CP}"
+
