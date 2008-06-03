@@ -22,7 +22,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.39 2008/05/14 07:16:43 vlada Exp $
+ * @version $Id: MPING.java,v 1.40 2008/06/03 10:26:56 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -33,11 +33,12 @@ public class MPING extends PING implements Runnable {
     @ManagedAttribute(description="Bind address for multicast socket",writable=true)
     @Property(converter=PropertyConverters.BindAddress.class)
     InetAddress            bind_addr=null;
-    @ManagedAttribute(description="Time to live for discovery packets",writable=true)
+    @Property @ManagedAttribute(description="Time to live for discovery packets",writable=true)
     int                    ip_ttl=8;
     @ManagedAttribute(description="Multicast address for discovery packets",writable=true)
     InetAddress            mcast_addr=null;
-    @ManagedAttribute(description="Multicast port for discovery packets",writable=true)
+
+    @Property @ManagedAttribute(description="Multicast port for discovery packets",writable=true)
     int                    mcast_port=7555;
 
      /** If true, the transport should use all available interfaces to receive multicast messages */
@@ -118,6 +119,11 @@ public class MPING extends PING implements Runnable {
         this.mcast_addr=mcast_addr;
     }
 
+    @Property(name="mcast_addr")
+    public void setMulticastAddress(String addr) throws UnknownHostException {
+        mcast_addr=InetAddress.getByName(addr);
+    }
+
     public int getMcastPort() {
         return mcast_port;
     }
@@ -127,43 +133,6 @@ public class MPING extends PING implements Runnable {
     }
 
 
-    public boolean setProperties(Properties props) {                 
-
-        String str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, "230.5.6.7");
-        if(str != null) {
-            try {
-                mcast_addr=InetAddress.getByName(str);
-            }
-            catch(UnknownHostException e) {
-                log.error("could not resolve " + str, e);
-                return false;
-            }
-            props.remove("mcast_addr");
-        }
-
-        str=Util.getProperty(new String[]{Global.MPING_MCAST_PORT}, props, "mcast_port", false, "7555");
-        if(str != null) {
-            mcast_port=Integer.parseInt(str);
-            props.remove("mcast_port");
-        }
-
-        str=Util.getProperty(new String[]{Global.MPING_IP_TTL}, props, "ip_ttl", false, "16");
-        if(str != null) {
-            ip_ttl=Integer.parseInt(str);
-            props.remove("ip_ttl");
-        }
-
-        if(mcast_addr == null) {
-            try {
-                mcast_addr=InetAddress.getByName("230.5.6.7");
-            }
-            catch(UnknownHostException e) {
-                log.error("failed getting default mcast address", e);
-                return false;
-            }
-        }
-        return super.setProperties(props);
-    }
 
 
     public Object up(Event evt) {
@@ -177,6 +146,26 @@ public class MPING extends PING implements Runnable {
         return super.up(evt);
     }
 
+
+    public void init() throws Exception {
+        super.init();
+
+        String str=Util.getProperty(new String[]{Global.MPING_MCAST_ADDR}, props, "mcast_addr", false, null);
+        if(str != null)
+            mcast_addr=InetAddress.getByName(str);
+
+        str=Util.getProperty(new String[]{Global.MPING_MCAST_PORT}, props, "mcast_port", false, null);
+        if(str != null)
+            mcast_port=Integer.parseInt(str);
+
+        str=Util.getProperty(new String[]{Global.MPING_IP_TTL}, props, "ip_ttl", false, null);
+        if(str != null)
+            ip_ttl=Integer.parseInt(str);
+
+        if(mcast_addr == null) {
+            mcast_addr=InetAddress.getByName("230.5.6.7");
+        }
+    }
 
     public void start() throws Exception {
         mcast_sock=new MulticastSocket(mcast_port);
