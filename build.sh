@@ -50,7 +50,6 @@ else
     echo "  to the installation directory of java."
 fi
 
-echo "CP is ${CP}"
 
 if [ -n "$JAVA_HOME" ]; then
 	${JAVA_HOME}/bin/java -classpath "${CP}" org.apache.tools.ant.Main -buildfile ${JG_HOME}/build.xml $*
