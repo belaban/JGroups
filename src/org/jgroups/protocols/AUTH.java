@@ -35,7 +35,7 @@ public class AUTH extends Protocol{
             try {
                 Object obj=Class.forName(authClass).newInstance();
                 serverSideToken=(AuthToken)obj;
-                serverSideToken.setValue(props);
+                // serverSideToken.setValue(props);
             }
             catch(Exception e) {
                 log.fatal("Failed to create server side token (" + authClass + ")");
