@@ -20,25 +20,25 @@ public class AUTH extends Protocol{
     static final String NAME = "AUTH";
     
     @Property
-    private String authClass;
+    private String auth_class;
 
     /**
      * used on the coordinator to authentication joining member requests against
      */
     private AuthToken serverSideToken = null;
 
-    public AUTH(){
+    public AUTH() {
     }
 
     public void init() throws Exception {
-        if(authClass != null) {
+        if(auth_class != null) {
             try {
-                Object obj=Class.forName(authClass).newInstance();
+                Object obj=Class.forName(auth_class).newInstance();
                 serverSideToken=(AuthToken)obj;
                 // serverSideToken.setValue(props);
             }
             catch(Exception e) {
-                log.fatal("Failed to create server side token (" + authClass + ")");
+                log.fatal("Failed to create server side token (" + auth_class + ")");
                 throw e;
             }
         }
