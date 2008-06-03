@@ -18,7 +18,7 @@ import org.jgroups.stack.ProtocolStack;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.4 2008/06/02 15:10:37 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.5 2008/06/03 10:59:18 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -69,10 +69,6 @@ public class ChannelConcurrencyTest extends TestCase {
             else {
                 SECONDS.sleep(1);
             }
-        }
-
-        for(final Channel ch:channels) {
-            System.out.println(ch.getView());
         }
 
         final long duration=System.currentTimeMillis() - start;
