@@ -1,80 +1,86 @@
 package org.jgroups.auth;
 
-import org.jgroups.util.Util;
 import org.jgroups.Message;
+import org.jgroups.annotations.Property;
+import org.jgroups.util.Util;
 
+import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.DataInputStream;
 import java.util.Properties;
+
 /**
  * <p>
  * This is an example of using a preshared token for authentication purposes.  All members of the group have to have the same string value in the JGroups config.
  * </p>
  * <p>JGroups config parameters:</p>
- *<ul>
- *  <li>auth_value (required) = the string to encrypt</li>
+ * <ul>
+ * <li>auth_value (required) = the string to encrypt</li>
  * </ul>
- * @see org.jgroups.auth.AuthToken
  * @author Chris Mills
+ * @see org.jgroups.auth.AuthToken
  */
 public class SimpleToken extends AuthToken {
 
-    public static final String TOKEN_ATTR = "auth_value";
-    private String token = null;
+    public static final String TOKEN_ATTR="auth_value";
 
-    public SimpleToken(){
-        //need an empty constructor
+    @Property
+    private String auth_value=null;
+
+    public SimpleToken() { // need an empty constructor
     }
 
-    public SimpleToken(String token){
-        this.token = token;
+    public SimpleToken(String authvalue) {
+        this.auth_value=authvalue;
     }
 
-    public void setValue(Properties properties){
-        this.token = (String)properties.get(SimpleToken.TOKEN_ATTR);
+    public void setValue(Properties properties) {
+        this.auth_value=(String)properties.get(SimpleToken.TOKEN_ATTR);
         properties.remove(SimpleToken.TOKEN_ATTR);
     }
 
-    public String getName(){
+    public String getName() {
         return "org.jgroups.auth.SimpleToken";
     }
 
-    public boolean authenticate(AuthToken token, Message msg){
-        if((token != null) && (token instanceof SimpleToken)){
+    public boolean authenticate(AuthToken token, Message msg) {
+        if((token != null) && (token instanceof SimpleToken)) {
             //Found a valid Token to authenticate against
-            SimpleToken serverToken = (SimpleToken) token;
+            SimpleToken serverToken=(SimpleToken)token;
 
-            if((this.token != null) && (serverToken.token != null) && (this.token.equalsIgnoreCase(serverToken.token))){
+            if((this.auth_value != null) && (serverToken.auth_value != null) && (this.auth_value.equalsIgnoreCase(serverToken.auth_value))) {
                 //validated
-                if(log.isDebugEnabled()){
+                if(log.isDebugEnabled()) {
                     log.debug("SimpleToken match");
                 }
                 return true;
-            }else{
+            }
+            else {
                 //if(log.isWarnEnabled()){
-                  //  log.warn("Authentication failed on SimpleToken");
+                //  log.warn("Authentication failed on SimpleToken");
                 //}
                 return false;
             }
         }
 
-        if(log.isWarnEnabled()){
+        if(log.isWarnEnabled()) {
             log.warn("Invalid AuthToken instance - wrong type or null");
         }
         return false;
     }
+
     /**
      * Required to serialize the object to pass across the wire
      * @param out
      * @throws IOException
      */
     public void writeTo(DataOutputStream out) throws IOException {
-        if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()) {
             log.debug("SimpleToken writeTo()");
         }
-        Util.writeString(this.token, out);
+        Util.writeString(this.auth_value, out);
     }
+
     /**
      * Required to deserialize the object when read in from the wire
      * @param in
@@ -83,9 +89,9 @@ public class SimpleToken extends AuthToken {
      * @throws InstantiationException
      */
     public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-        if(log.isDebugEnabled()){
+        if(log.isDebugEnabled()) {
             log.debug("SimpleToken readFrom()");
         }
-        this.token = Util.readString(in);
+        this.auth_value=Util.readString(in);
     }
 }

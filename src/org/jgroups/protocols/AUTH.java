@@ -10,43 +10,48 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.JoinRsp;
 import org.jgroups.stack.Protocol;
 
+import java.util.List;
+import java.util.LinkedList;
+
 
 /**
  * The AUTH protocol adds a layer of authentication to JGroups
  * @author Chris Mills
+ * @autho Bela Ban
  */
-public class AUTH extends Protocol{
+public class AUTH extends Protocol {
 
     static final String NAME = "AUTH";
     
-    @Property
-    private String auth_class;
 
     /**
      * used on the coordinator to authentication joining member requests against
      */
-    private AuthToken serverSideToken = null;
+    private AuthToken auth_plugin=null;
 
+    
     public AUTH() {
     }
 
-    public void init() throws Exception {
-        if(auth_class != null) {
-            try {
-                Object obj=Class.forName(auth_class).newInstance();
-                serverSideToken=(AuthToken)obj;
-                // serverSideToken.setValue(props);
-            }
-            catch(Exception e) {
-                log.fatal("Failed to create server side token (" + auth_class + ")");
-                throw e;
-            }
-        }
+   
+
+    @Property(name="auth_class")
+    public void setAuthClass(String class_name) throws Exception {
+        Object obj=Class.forName(class_name).newInstance();
+        auth_plugin=(AuthToken)obj;
     }
 
     public final String getName() {
         return AUTH.NAME;
     }
+
+    protected List<Object> getConfigurableObjects() {
+        List<Object> retval=new LinkedList<Object>();
+        if(auth_plugin != null)
+            retval.add(auth_plugin);
+        return retval;
+    }
+
     /**
      * Used to create a failed JOIN_RSP message to pass back down the stack
      * @param joiner The Address of the requesting member
@@ -95,7 +100,7 @@ public class AUTH extends Protocol{
 
                 if(authHeader != null){
                     //Now we have the AUTH Header we need to validate it
-                    if(this.serverSideToken.authenticate(authHeader.getToken(), msg)){
+                    if(this.auth_plugin.authenticate(authHeader.getToken(), msg)){
                         //valid token
                         if(log.isDebugEnabled()){
                             log.debug("AUTH passing up event");
@@ -160,7 +165,7 @@ public class AUTH extends Protocol{
             //we found a join request message - now add an AUTH Header
             Message msg = (Message)evt.getArg();
             AuthHeader authHeader = new AuthHeader();
-            authHeader.setToken(this.serverSideToken);
+            authHeader.setToken(this.auth_plugin);
             msg.putHeader(AUTH.NAME, authHeader);
 
             if(log.isDebugEnabled()){
