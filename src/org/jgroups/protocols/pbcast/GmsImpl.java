@@ -1,4 +1,4 @@
-// $Id: GmsImpl.java,v 1.28 2007/09/04 18:39:06 vlada Exp $
+// $Id: GmsImpl.java,v 1.28.2.1 2008/06/03 22:20:58 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -96,8 +96,7 @@ public abstract class GmsImpl {
         static final int JOIN    = 1;
         static final int LEAVE   = 2;
         static final int SUSPECT = 3;
-        static final int MERGE   = 4;
-        static final int VIEW    = 5;
+        static final int MERGE   = 4;        
         static final int JOIN_WITH_STATE_TRANSFER    = 6;
 
 
@@ -130,8 +129,7 @@ public abstract class GmsImpl {
                 case JOIN_WITH_STATE_TRANSFER:    return "JOIN_WITH_STATE_TRANSFER(" + mbr + ")";
                 case LEAVE:   return "LEAVE(" + mbr + ", " + suspected + ")";
                 case SUSPECT: return "SUSPECT(" + mbr + ")";
-                case MERGE:   return "MERGE(" + coordinators + ")";
-                case VIEW:    return "VIEW (" + view.getVid() + ")";
+                case MERGE:   return "MERGE(" + coordinators + ")";               
             }
             return "<invalid (type=" + type + ")";
         }

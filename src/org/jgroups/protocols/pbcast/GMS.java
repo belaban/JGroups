@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.10 2008/05/22 13:23:10 belaban Exp $
+ * @version $Id: GMS.java,v 1.126.2.11 2008/06/03 22:20:58 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -82,6 +82,10 @@ public class GMS extends Protocol {
 
     /** To collect VIEW_ACKs from all members */
     final AckCollector        ack_collector=new AckCollector();
+      
+    //[JGRP-700] - FLUSH: flushing should span merge
+    final AckCollector        merge_ack_collector=new AckCollector();
+
 
     /** Time in ms to wait for all VIEW acks (0 == wait forever) */
     long                      view_ack_collection_timeout=2000;
@@ -387,7 +391,7 @@ public class GMS extends Protocol {
         }
         catch(TimeoutException e) {
             log.warn("failed to collect all ACKs (" + ack_collector.size()
-                     + ") for view "
+                     + ") for mcasted view "
                      + new_view
                      + " after "
                      + view_ack_collection_timeout
@@ -413,7 +417,7 @@ public class GMS extends Protocol {
             }
             catch(TimeoutException e) {
                 log.warn("failed to collect all ACKs (" + ack_collector.size()
-                         + ") for view "
+                         + ") for unicasted view "
                          + new_view
                          + " after "
                          + view_ack_collection_timeout
@@ -472,6 +476,7 @@ public class GMS extends Protocol {
         }
 
         ack_collector.handleView(new_view);
+        merge_ack_collector.handleView(new_view);
 
         ltime=Math.max(vid.getId(), ltime);  // compute Lamport logical time
 
@@ -731,6 +736,11 @@ public class GMS extends Protocol {
                         impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
+                     
+                    case GmsHeader.INSTALL_MERGE_VIEW_OK:                        
+                        //[JGRP-700] - FLUSH: flushing should span merge
+                        merge_ack_collector.ack(msg.getSrc());                   
+                        break;    
 
                     case GmsHeader.CANCEL_MERGE:
                         //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
@@ -757,6 +767,7 @@ public class GMS extends Protocol {
                 Address suspected=(Address)evt.getArg();
                 view_handler.add(new Request(Request.SUSPECT, suspected, true, null));
                 ack_collector.suspect(suspected);
+                merge_ack_collector.suspect(suspected);
                 break;                               // pass up
 
             case Event.UNSUSPECT:
@@ -1004,6 +1015,7 @@ public class GMS extends Protocol {
         public static final byte CANCEL_MERGE=9;
         public static final byte VIEW_ACK=10;
         public static final byte JOIN_REQ_WITH_STATE_TRANSFER = 11;
+        public static final byte INSTALL_MERGE_VIEW_OK=12;
 
         byte type=0;
         View view=null;            // used when type=VIEW or MERGE_RSP or INSTALL_MERGE_VIEW
@@ -1198,7 +1210,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.10 2008/05/22 13:23:10 belaban Exp $
+     * @version $Id: GMS.java,v 1.126.2.11 2008/06/03 22:20:58 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1387,20 +1399,7 @@ public class GMS extends Protocol {
                     if(requests.size() > 1)
                         log.error("more than one MERGE request to process, ignoring the others");
                     impl.merge(firstReq.coordinators);
-                    break;
-                case Request.VIEW:
-                    if(requests.size() > 1)
-                        log.error("more than one VIEW request to process, ignoring the others");
-                    
-                    try {                       
-                        castViewChangeWithDest(firstReq.view, firstReq.digest, null, null);
-                    }
-                    finally {
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        if(flushProtocolInStack)
-                            stopFlush(firstReq.target_members);
-                    }
-                    break;
+                    break;                
                 default:
                     log.error("request " + firstReq.type + " is unknown; discarded");
             }
