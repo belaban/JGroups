@@ -2,6 +2,8 @@ package org.jgroups.tests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -13,22 +15,23 @@ import org.jgroups.Channel;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.Util;
 
 /**
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.7 2008/06/03 18:07:31 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.8 2008/06/03 18:31:38 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
     public void test() throws Throwable {
         final int count=8;
 
-        final Executor       executor=Executors.newFixedThreadPool(count);
+        final Executor executor=Executors.newFixedThreadPool(count);
         final CountDownLatch latch=new CountDownLatch(count);
-        final JChannel[]     channels=new JChannel[count];
-        final Task[]         tasks=new Task[count];
+        final JChannel[] channels=new JChannel[count];
+        final Task[] tasks=new Task[count];
 
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
@@ -38,44 +41,54 @@ public class ChannelConcurrencyTest extends TestCase {
             changeViewBundling(channels[i]);
         }
 
-        for(final Task t: tasks) {
+        for(final Task t:tasks) {
             executor.execute(t);
         }
 
-        // Wait for all channels to finish connecting
-        latch.await();
+        try {
+            // Wait for all channels to finish connecting
+            latch.await();
 
-        for(Task t: tasks) {
-            Throwable ex=t.getException();
-            if(ex != null)
-                throw ex;
-        }
+            for(Task t:tasks) {
+                Throwable ex=t.getException();
+                if(ex != null)
+                    throw ex;
+            }
 
-        // Wait for all channels to have the correct number of members in their
-        // current view
-        for(;;) {
-            boolean done=true;
+            // Wait for all channels to have the correct number of members in their
+            // current view
+            boolean converged=false;
+            for(int timeoutToConverge=60,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
+                for(final JChannel channel:channels) {
+                    converged = channel.getView().size() == count;
+                    if(!converged)
+                        break;
+                }                
+            }
+
+            final long duration=System.currentTimeMillis() - start;
+            System.out.println("Converged to a single group after " + duration + " ms; group is:\n");
+            for(int i=0;i < channels.length;i++) {
+                System.out.println("#" + (i + 1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
+            }
+
             for(final JChannel channel:channels) {
-                if(channel.getView().size() < count) {
-                    done=false;
-                }
-            }
-            if(done) {
-                break;
-            }
-            else {
-                SECONDS.sleep(1);
+                assertTrue("View ok for channel " + channel.getLocalAddress(),
+                           count == channel.getView().size());
             }
         }
+        finally {
+            Util.sleep(1000);
+            Collections.reverse(Arrays.asList(channels));
+            for(final JChannel channel:channels) {
+                channel.close();
+                Util.sleep(250);
+            }
 
-        final long duration=System.currentTimeMillis() - start;
-        System.out.println("Converged to a single group after " + duration + " ms; group is:\n");
-        for(int i=0; i < channels.length; i++) {
-            System.out.println("#" + (i+1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
+            for(final JChannel channel:channels) {
+                assertFalse("Channel connected", channel.isConnected());
+            }
         }
-        for (final JChannel channel:channels){
-            assertTrue("View ok for channel " + channel.getLocalAddress(), count == channel.getView().size());
-        }        
     }
 
 
