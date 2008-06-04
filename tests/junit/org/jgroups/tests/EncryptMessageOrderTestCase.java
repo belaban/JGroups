@@ -2,13 +2,11 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.blocks.PullPushAdapter;
-import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
-import org.testng.annotations.BeforeClass;
 
 import java.io.IOException;
 import java.io.ObjectInput;
@@ -26,7 +24,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.13 2008/04/14 08:18:39 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.14 2008/06/04 06:41:11 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class EncryptMessageOrderTestCase {
@@ -46,10 +44,7 @@ public class EncryptMessageOrderTestCase {
 
 
     protected JChannel channel1;
-    protected PullPushAdapter adapter1;
-
     protected JChannel channel2;
-    protected PullPushAdapter adapter2;
 
     /**
      * Print selected options before test starts.
@@ -82,17 +77,9 @@ public class EncryptMessageOrderTestCase {
         channel1.connect(groupName);
         System.out.println("channel1 connected, view is " + channel1.getView());
 
-        adapter1=new PullPushAdapter(channel1);
-
-        Util.sleep(1000);
-
         channel2=new JChannel(properties);
         channel2.connect(groupName);
         System.out.println("channel2 connected, view is " + channel2.getView());
-
-        adapter2=new PullPushAdapter(channel2);
-
-        Util.sleep(1000);
     }
 
     /**
@@ -100,14 +87,11 @@ public class EncryptMessageOrderTestCase {
      */
     @AfterMethod
     protected void tearDown() throws Exception {
-        adapter2.stop();
         channel2.close();
-
-        adapter1.stop();
         channel1.close();
     }
 
-    protected boolean finishedReceiving;
+    protected volatile boolean finishedReceiving;
 
     /**
      * Test method. This method adds a message listener to the PullPushAdapter
@@ -130,24 +114,17 @@ public class EncryptMessageOrderTestCase {
 
             final Object mutex=new Object();
 
-            final Vector receivedTimes=new Vector(MESSAGE_NUMBER);
-            final Vector normalMessages=new Vector(MESSAGE_NUMBER);
-            final Vector tooQuickMessages=new Vector();
-            final Vector tooSlowMessages=new Vector();
+            final Vector<Long> receivedTimes=new Vector<Long>(MESSAGE_NUMBER);
+            final Vector<Object> normalMessages=new Vector<Object>(MESSAGE_NUMBER);
+            final Vector<Object> tooQuickMessages=new Vector<Object>();
+            final Vector<Object> tooSlowMessages=new Vector<Object>();
 
-            adapter1.setListener(new MessageListener() {
+            channel1.setReceiver(new ReceiverAdapter() {
                 private boolean started=false;
                 private boolean stopped=false;
 
                 private long counter = 0L;
                 
-                public byte[] getState() {
-                    return null;
-                }
-
-                public void setState(byte[] state) {
-                }
-
                 public void receive(Message jgMessage) {
                     Object message=jgMessage.getObject();
 
@@ -176,7 +153,7 @@ public class EncryptMessageOrderTestCase {
                         }
                         if(!started)
                             tooQuickMessages.add(message);
-                        else if(started && !stopped) {
+                        else if(!stopped) {
                             receivedTimes.add(travelTime);
                             normalMessages.add(message);
                         }
@@ -201,12 +178,9 @@ public class EncryptMessageOrderTestCase {
 
             for(int i=0; i < MESSAGE_NUMBER; i++) {
                 Long message=new Long(System.currentTimeMillis());
-
-                
                 Message jgMessage=new Message();
                 jgMessage.putHeader("EncryptOrderTest", new EncryptOrderTestHeader(i));
                 jgMessage.setObject(message);
-
                 sender.send(jgMessage);
 
                 if(i % 1000 == 0)
@@ -233,7 +207,6 @@ public class EncryptMessageOrderTestCase {
 
                     if(receivedTimes.size() != received) {
                         received=receivedTimes.size();
-
                         System.out.println();
                         System.out.print("Received " + receivedTimes.size() + " messages.");
                     }
@@ -309,13 +282,13 @@ public class EncryptMessageOrderTestCase {
     }
     
     public static class EncryptOrderTestHeader extends Header{
-
       long seqno = -1; // either reg. NAK_ACK_MSG or first_seqno in retransmissions
+        private static final long serialVersionUID=-7995117434876250849L;
 
-      public EncryptOrderTestHeader(){}
+        public EncryptOrderTestHeader() {
+      }
 
       public EncryptOrderTestHeader(long seqno){
-
          this.seqno = seqno;
       }
 
@@ -324,19 +297,15 @@ public class EncryptMessageOrderTestCase {
       }
 
       public void writeExternal(ObjectOutput out) throws IOException{
-
          out.writeLong(seqno);
       }
 
       public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
-
          seqno = in.readLong();
-
       }
 
       public EncryptOrderTestHeader copy(){
-         EncryptOrderTestHeader ret = new EncryptOrderTestHeader(seqno);
-         return ret;
+          return new EncryptOrderTestHeader(seqno);
       }
 
       public String toString(){
