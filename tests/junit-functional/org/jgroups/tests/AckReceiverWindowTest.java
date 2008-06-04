@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.3 2008/04/08 12:17:07 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.4 2008/06/04 15:10:27 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class AckReceiverWindowTest {
@@ -75,10 +75,62 @@ public class AckReceiverWindowTest {
         assert !(rc);
     }
 
-    private static Message msg() {
-        return new Message();
+    public static void testMessageReadyForRemoval() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        System.out.println("win = " + win);
+        assert !win.hasMessagesToRemove();
+        win.add(2, msg());
+        System.out.println("win = " + win);
+        assert !win.hasMessagesToRemove();
+        win.add(3, msg());
+        System.out.println("win = " + win);
+        assert !win.hasMessagesToRemove();
+        win.add(1, msg());
+        System.out.println("win = " + win);
+        assert win.hasMessagesToRemove();
+
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.hasMessagesToRemove();
+
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.hasMessagesToRemove();
+
+        win.remove();
+        System.out.println("win = " + win);
+        assert !win.hasMessagesToRemove();
     }
 
+
+    public static void testRemoveOOBMessage() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        System.out.println("win = " + win);
+        win.add(2, msg());
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() == null;
+        assert win.remove() == null;
+        win.add(1, msg(true));
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() != null;
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() == null;
+        assert win.remove() != null;
+        assert win.remove() == null;
+        assert win.removeOOBMessage() == null;
+    }
+
+
+    private static Message msg() {
+        return msg(false);
+    }
+
+    private static Message msg(boolean oob) {
+        Message retval=new Message();
+        if(oob)
+            retval.setFlag(Message.OOB);
+        return retval;
+    }
 
 
 
