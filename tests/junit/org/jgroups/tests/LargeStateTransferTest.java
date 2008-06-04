@@ -19,9 +19,9 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.13 2008/05/29 11:38:54 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.14 2008/06/04 07:21:37 belaban Exp $
  */
-@Test
+@Test(groups={"temp2", "single"})
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
     Promise<Integer> p=new Promise<Integer>();    
@@ -36,7 +36,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        provider=createChannel(true);
+        provider=createChannel(true, 2);
         requester=createChannel(provider);
     }
 
@@ -144,8 +144,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
                byte []stateReceived= new byte[size];
                ois.read(stateReceived);
             }
-            catch (IOException e){                        }
-            finally{
+            catch (IOException e) {}
+            finally {
                Util.close(ois);
             }
             p.setResult(new Integer(size));
