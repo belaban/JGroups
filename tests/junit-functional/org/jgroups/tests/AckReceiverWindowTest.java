@@ -10,7 +10,7 @@ import org.jgroups.stack.AckReceiverWindow;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.1.4.3 2008/06/04 14:39:23 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.1.4.4 2008/06/04 15:02:51 belaban Exp $
  */
 public class AckReceiverWindowTest extends TestCase {
     AckReceiverWindow win;
@@ -90,34 +90,59 @@ public class AckReceiverWindowTest extends TestCase {
     public void testMessageReadyForRemoval() {
         win=new AckReceiverWindow(1);
         System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
+        assertFalse(win.hasMessagesToRemove());
         win.add(2, msg());
         System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
+        assertFalse(win.hasMessagesToRemove());
         win.add(3, msg());
         System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
+        assertFalse(win.hasMessagesToRemove());
         win.add(1, msg());
         System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
+        assertTrue(win.hasMessagesToRemove());
 
         win.remove();
         System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
+        assertTrue(win.hasMessagesToRemove());
 
         win.remove();
         System.out.println("win = " + win);
-        assert win.hasMessagesToRemove();
+        assertTrue(win.hasMessagesToRemove());
 
         win.remove();
         System.out.println("win = " + win);
-        assert !win.hasMessagesToRemove();
+        assertFalse(win.hasMessagesToRemove());
     }
+
+
+    public void testRemoveOOBMessage() {
+        win=new AckReceiverWindow(1);
+        System.out.println("win = " + win);
+        win.add(2, msg());
+        System.out.println("win = " + win);
+        assertNull(win.removeOOBMessage());
+        assertNull(win.remove());
+        win.add(1, msg(true));
+        System.out.println("win = " + win);
+        assertNotNull(win.removeOOBMessage());
+        System.out.println("win = " + win);
+        assertNull(win.removeOOBMessage());
+        assertNotNull(win.remove());
+        assertNull(win.remove());
+        assertNull(win.removeOOBMessage());
+    }
+
 
     private static Message msg() {
-        return new Message();
+        return msg(false);
     }
 
+    private static Message msg(boolean oob) {
+        Message retval=new Message();
+        if(oob)
+            retval.setFlag(Message.OOB);
+        return retval;
+    }
 
     public static Test suite() {
         return new TestSuite(AckReceiverWindowTest.class);
