@@ -22,7 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.25.2.2 2008/06/04 14:39:23 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.25.2.3 2008/06/04 14:45:59 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
@@ -76,6 +76,21 @@ public class AckReceiverWindow {
             if(retval != null) {
                 if(log.isTraceEnabled())
                     log.trace("removed seqno=" + next_to_remove);
+                next_to_remove++;
+            }
+        }
+        return retval;
+    }
+
+    public Message removeOOBMessage() {
+        Message retval;
+
+        synchronized(msgs) {
+            retval=msgs.get(next_to_remove);
+            if(retval != null && retval.isFlagSet(Message.OOB)) {
+                msgs.remove(next_to_remove);
+                if(log.isTraceEnabled())
+                    log.trace("removed OOB message with seqno=" + next_to_remove);
                 next_to_remove++;
             }
         }
