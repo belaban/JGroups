@@ -1,4 +1,3 @@
-// $Id: UNICAST.java,v 1.91.2.7 2008/06/04 15:11:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -34,6 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
+ * @version $Id: UNICAST.java,v 1.91.2.8 2008/06/04 15:28:32 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
