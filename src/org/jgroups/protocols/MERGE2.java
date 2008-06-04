@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.42.2.2 2008/05/22 13:23:07 belaban Exp $
+// $Id: MERGE2.java,v 1.42.2.3 2008/06/04 14:17:34 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -151,12 +151,12 @@ public class MERGE2 extends Protocol {
         
             case Event.VIEW_CHANGE:
                 Object ret=down_prot.down(evt);
-                Vector mbrs=((View)evt.getArg()).getMembers();
+                Vector<Address> mbrs=((View)evt.getArg()).getMembers();
                 if(mbrs == null || mbrs.isEmpty() || local_addr == null) {
                     task.stop();
                     return ret;
                 }
-                Address coord=(Address)mbrs.elementAt(0);
+                Address coord=mbrs.elementAt(0);
                 if(coord.equals(local_addr)) {
                     is_coord=true;
                     task.start(); // start task if we became coordinator (doesn't start if already running)
@@ -184,7 +184,7 @@ public class MERGE2 extends Protocol {
 	 */
     private class FindSubgroupsTask {
         @GuardedBy("this")
-        private Future future;
+        private Future<?> future;
 
         public synchronized void start() {
             if(future == null || future.isDone()) {
@@ -192,7 +192,7 @@ public class MERGE2 extends Protocol {
                     public void run() {
                         findAndNotify();
                     }
-                }, 0, (long)computeInterval(), TimeUnit.MILLISECONDS);
+                }, 0, computeInterval(), TimeUnit.MILLISECONDS);
             }
         }
 
@@ -205,12 +205,13 @@ public class MERGE2 extends Protocol {
 
         public void findAndNotify() {
             List<PingRsp> initial_mbrs=findInitialMembers();
-            if(log.isDebugEnabled())
-                log.debug("initial_mbrs=" + initial_mbrs);
+            if(log.isTraceEnabled())
+                log.trace(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
+            
             Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
-            if(coords != null && coords.size() > 1) {
+            if(coords.size() > 1) {
                 if(log.isDebugEnabled())
-                    log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
+                    log.debug(local_addr + " found multiple coordinators: " + coords + "; sending up MERGE event");
                 final Event evt=new Event(Event.MERGE, coords);
                 if(use_separate_thread) {
                     Thread merge_notifier=new Thread() {
@@ -255,18 +256,16 @@ public class MERGE2 extends Protocol {
          *         membership, and more than 1 for multiple coordinators
          */
         Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
-            if(initial_mbrs == null || initial_mbrs.isEmpty())
-                return null;
-
             Vector<Address> ret=new Vector<Address>(11);
-            for(PingRsp response : initial_mbrs) {
-                if(!response.is_server)
-                    continue;
-                Address coord=response.getCoordAddress();
-                if(!ret.contains(coord))
-                    ret.add(coord);
+            if(initial_mbrs != null) {
+                for(PingRsp response:initial_mbrs) {
+                    if(response.isServer()) {
+                        Address coord=response.getCoordAddress();
+                        if(!ret.contains(coord))
+                            ret.add(coord);
+                    }
+                }
             }
-
             return ret;
         }
     }
