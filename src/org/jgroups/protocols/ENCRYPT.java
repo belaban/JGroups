@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.44 2008/06/04 06:47:57 belaban Exp $
+// $Id: ENCRYPT.java,v 1.45 2008/06/04 06:48:33 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -8,7 +8,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.QueueClosedException;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-
 
 import javax.crypto.*;
 import javax.crypto.spec.SecretKeySpec;
@@ -20,7 +19,6 @@ import java.security.*;
 import java.security.cert.CertificateException;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Map;
-import java.util.Properties;
 import java.util.WeakHashMap;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -660,7 +658,7 @@ public class ENCRYPT extends Protocol {
         //we do not synchronize here as we only have one up thread so we should never get an issue
         //synchronized(upLock){
         Event tmp =null;
-        while ((tmp = (Event)upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
+        while ((tmp =upMessageQueue.poll(0L, TimeUnit.MILLISECONDS)) != null){
             Message msg = decryptMessage(symDecodingCipher, ((Message)tmp.getArg()).copy());
 
             if (msg != null){
@@ -720,7 +718,7 @@ public class ENCRYPT extends Protocol {
         EncryptHeader hdr = (EncryptHeader)msg.getHeader(EncryptHeader.KEY);
         if (!hdr.getVersion().equals(getSymVersion())){
             log.warn("attempting to use stored cipher as message does not uses current encryption version ");
-            cipher = (Cipher)keyMap.get(hdr.getVersion());
+            cipher =keyMap.get(hdr.getVersion());
             if (cipher == null) {
                 log.warn("Unable to find a matching cipher in previous key map");
                 return null;
@@ -936,7 +934,7 @@ public class ENCRYPT extends Protocol {
         //	we do not synchronize here as we only have one down thread so we should never get an issue
         //  first lets replay any oustanding events
         Event tmp =null;
-        while((tmp = (Event)downMessageQueue.poll(0L, TimeUnit.MILLISECONDS) )!= null){
+        while((tmp =downMessageQueue.poll(0L, TimeUnit.MILLISECONDS))!= null){
             sendDown(tmp);
         }
     }
@@ -1246,6 +1244,7 @@ public class ENCRYPT extends Protocol {
         String version;
 
         boolean encrypt_entire_msg=false;
+        private static final long serialVersionUID=-776547091297455976L;
 
 
         public EncryptHeader()
