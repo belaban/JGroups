@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.9 2008/06/04 23:23:04 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.10 2008/06/04 23:31:15 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -189,6 +189,12 @@ public class CoordGmsImpl extends GmsImpl {
         setMergeId(merge_id);
         if(log.isDebugEnabled()) log.debug(gms.local_addr + " got merge request from " + sender + ", merge_id=" + merge_id);
         view=new View(gms.view_id.copy(), gms.members.getMembers());
+        
+        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+        //[JGRP-770] - Concurrent startup of many channels doesn't stabilize
+        //[JGRP-700] - FLUSH: flushing should span merge
+        
+        /*if flush is in stack, let this coordinator flush its cluster island */
         boolean suceesfulFlush = gms.startFlush(view);
         if(suceesfulFlush) {
             digest=gms.getDigest();
@@ -201,7 +207,7 @@ public class CoordGmsImpl extends GmsImpl {
             gms.getViewHandler().resume(merge_id);
             merging=false;
             if(log.isWarnEnabled())
-                log.warn("Since flush failed at " + gms.local_addr + " rejecting merge to "+ sender+ ", merge_id="+ merge_id);
+                log.warn("Since flush failed at " + gms.local_addr + " rejected merge to "+ sender+ ", merge_id="+ merge_id);
         }
     }
 
@@ -849,7 +855,7 @@ public class CoordGmsImpl extends GmsImpl {
                 gms.getViewHandler().resume(merge_id);
                 stopMergeCanceller(); // this is probably not necessary
 
-                /*5. if flush is stack stop the flush for entire cluster 
+                /*5. if flush is in stack stop the flush for entire cluster 
                  [JGRP-700] - FLUSH: flushing should span merge */
 
                 gms.stopFlush();
