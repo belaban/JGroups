@@ -10,7 +10,7 @@ import org.jgroups.stack.AckReceiverWindow;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.1.4.2 2008/06/04 14:28:17 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.1.4.3 2008/06/04 14:39:23 belaban Exp $
  */
 public class AckReceiverWindowTest extends TestCase {
     AckReceiverWindow win;
@@ -90,28 +90,28 @@ public class AckReceiverWindowTest extends TestCase {
     public void testMessageReadyForRemoval() {
         win=new AckReceiverWindow(1);
         System.out.println("win = " + win);
-        assert !win.hasMessagesReadyToRemove();
+        assert !win.hasMessagesToRemove();
         win.add(2, msg());
         System.out.println("win = " + win);
-        assert !win.hasMessagesReadyToRemove();
+        assert !win.hasMessagesToRemove();
         win.add(3, msg());
         System.out.println("win = " + win);
-        assert !win.hasMessagesReadyToRemove();
+        assert !win.hasMessagesToRemove();
         win.add(1, msg());
         System.out.println("win = " + win);
-        assert win.hasMessagesReadyToRemove();
+        assert win.hasMessagesToRemove();
 
         win.remove();
         System.out.println("win = " + win);
-        assert win.hasMessagesReadyToRemove();
+        assert win.hasMessagesToRemove();
 
         win.remove();
         System.out.println("win = " + win);
-        assert win.hasMessagesReadyToRemove();
+        assert win.hasMessagesToRemove();
 
         win.remove();
         System.out.println("win = " + win);
-        assert !win.hasMessagesReadyToRemove();
+        assert !win.hasMessagesToRemove();
     }
 
     private static Message msg() {
