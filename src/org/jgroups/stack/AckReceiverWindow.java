@@ -1,4 +1,3 @@
-// $Id: AckReceiverWindow.java,v 1.25 2007/11/02 13:16:00 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -23,6 +22,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
+ * @version $Id: AckReceiverWindow.java,v 1.25.2.1 2008/06/04 14:16:16 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
@@ -80,6 +80,13 @@ public class AckReceiverWindow {
             }
         }
         return retval;
+    }
+
+
+    public boolean hasMessagesReadyToRemove() {
+        synchronized(msgs) {
+            return msgs.containsKey(next_to_remove);
+        }
     }
 
 
