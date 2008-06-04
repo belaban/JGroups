@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.163 2008/05/30 13:52:04 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.164 2008/06/04 06:51:58 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -30,7 +30,7 @@
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
     <property name="unittest.timeout.low" value="240000"/>
-    <property name="version" value="2.7.0.Beta1"/>
+    <property name="version" value="2.7.0.ALPHA1"/>
 
     <!-- default properties used in all test targets -->
     <property name="channel.conf" value="udp.xml"/>
