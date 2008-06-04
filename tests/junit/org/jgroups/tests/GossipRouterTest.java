@@ -18,7 +18,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * @author Bela Ban
- * @version $Id: GossipRouterTest.java,v 1.6 2008/04/14 08:05:42 belaban Exp $
+ * @version $Id: GossipRouterTest.java,v 1.7 2008/06/04 06:54:26 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT, sequential=true)
 public class GossipRouterTest {
@@ -33,12 +33,7 @@ public class GossipRouterTest {
             router.stop();
             router=null;
         }
-        if(c2 != null) {
-            c2.close();
-        }
-        if(c1 != null) {
-            c1.close();
-        }
+        Util.close(c2, c1);
     }
 
     /**
