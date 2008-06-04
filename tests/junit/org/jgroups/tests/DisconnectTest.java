@@ -18,7 +18,7 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.21 2008/06/04 06:32:49 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.22 2008/06/04 06:49:01 belaban Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class DisconnectTest {
@@ -170,7 +170,7 @@ public class DisconnectTest {
       * multicast messages.
       **/
      public void testDisconnectConnectSendTwo_TUNNEL() throws Exception {
-        final Promise msgPromise=new Promise();
+        final Promise<Message> msgPromise=new Promise<Message>();
         coordinator=new JChannel(props);
         coordinator.connect(GROUP);
         coordinator.setReceiver(new PromisedMessageListener(msgPromise));
@@ -182,7 +182,7 @@ public class DisconnectTest {
 
         channel.send(new Message(null, null, "payload"));
 
-        Message msg=(Message)msgPromise.getResult(20000);
+        Message msg=msgPromise.getResult(20000);
         assert msg != null;
         assert "payload".equals(msg.getObject());
     }
