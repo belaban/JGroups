@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.43 2008/05/30 16:07:39 vlada Exp $
+// $Id: ENCRYPT.java,v 1.44 2008/06/04 06:47:57 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -108,27 +108,36 @@ public class ENCRYPT extends Protocol {
     boolean keyServer = false;
 
     // encryption properties in no supplied key mode
-    @Property
+    @Property(name="asym_provider")
     String asymProvider = null;
+    
     static final String symProvider = null;
-    @Property
+
+    @Property(name="asym_algorithm")
     String asymAlgorithm = "RSA";
-    @Property
+
+    @Property(name="sym_algorithm")
     String symAlgorithm = DEFAULT_SYM_ALGO;
-    @Property
+
+    @Property(name="asym_init")
     int asymInit = 512; // initial public/private key length
-    @Property
+
+    @Property(name="sym_init")
     int symInit = 56; // initial shared key length
 
     // properties for functioning in supplied key mode
     private boolean suppliedKey = false;
-    @Property
+
+    @Property(name="key_store_name")
     String keyStoreName;
-    @Property
+    
+    @Property(name="store_password")
     private String storePassword ="changeit"; //JDK default
-    @Property
+    
+    @Property(name="key_password")
     private String keyPassword="changeit"; //JDK default
-    @Property
+
+    @Property(name="alias")
     private String alias="mykey"; // JDK default
 
 
