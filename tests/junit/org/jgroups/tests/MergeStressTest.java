@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.12 2008/05/23 10:45:43 belaban Exp $
+// $Id: MergeStressTest.java,v 1.13 2008/06/04 07:21:37 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -21,8 +21,9 @@ import java.util.Properties;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.12 2008/05/23 10:45:43 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.13 2008/06/04 07:21:37 belaban Exp $
  */
+@Test(groups="temp2")
 public class MergeStressTest extends ChannelTestBase {
     CyclicBarrier           start_connecting=null;
     CyclicBarrier           received_all_views=null;
@@ -40,7 +41,6 @@ public class MergeStressTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testConcurrentStartupAndMerging() throws Exception {
         start_connecting=new CyclicBarrier(NUM+1);
         received_all_views=new CyclicBarrier(NUM+1);
@@ -108,9 +108,7 @@ public class MergeStressTest extends ChannelTestBase {
         }
 
         public void closeChannel() {
-            if(ch != null) {
-                ch.close();
-            }
+            Util.close(ch);
         }
 
         public int numMembers() {
