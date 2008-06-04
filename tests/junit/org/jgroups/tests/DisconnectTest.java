@@ -3,15 +3,13 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.blocks.PullPushAdapter;
 import org.jgroups.tests.stack.Utilities;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
-import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 
 
 /**
@@ -20,7 +18,7 @@ import org.testng.annotations.AfterClass;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.20 2008/04/23 15:12:40 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.21 2008/06/04 06:32:49 belaban Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class DisconnectTest {
@@ -57,12 +55,7 @@ public class DisconnectTest {
     }
 
     /**
-     * Tests if the channel has a null local address after disconnect (using
-     * TUNNEL).
-     *
-     * TO_DO: uncomment or delete after clarifying the semantics of
-     * getLocalAddress() on a disconnected channel.
-     *
+     * Tests if the channel has a null local address after disconnect (using TUNNEL).
      **/
     public void testNullLocalAddress_TUNNEL() throws Exception {
         channel = new JChannel(props);
@@ -83,7 +76,7 @@ public class DisconnectTest {
         channel.disconnect();
         channel.connect("DisconnectTest.testgroup-2");
         View view=channel.getView();
-        Assert.assertEquals(1, view.size());
+        assert view.size() == 1;
         assert view.containsMember(channel.getLocalAddress());
     }
 
@@ -94,13 +87,13 @@ public class DisconnectTest {
      **/
     public void testDisconnectConnectTwo_Default() throws Exception {
         coordinator=new JChannel(props);
-        coordinator.connect(GROUP);
         channel=new JChannel(props);
+        coordinator.connect(GROUP);
         channel.connect("DisconnectTest.testgroup-1");
         channel.disconnect();
         channel.connect(GROUP);
         View view=channel.getView();
-        Assert.assertEquals(2, view.size());
+        assert view.size() == 2;
         assert view.containsMember(channel.getLocalAddress());
         assert view.containsMember(coordinator.getLocalAddress());
     }
@@ -115,13 +108,10 @@ public class DisconnectTest {
      * to multicast messages.
      **/
     public void testDisconnectConnectSendTwo_Default() throws Exception {
-
         final Promise msgPromise=new Promise();
         coordinator=new JChannel(props);
         coordinator.connect(GROUP);
-        PullPushAdapter ppa= new PullPushAdapter(coordinator,
-                                                 new PromisedMessageListener(msgPromise));
-        ppa.start();
+        coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel=new JChannel(props);
         channel.connect("DisconnectTest.testgroup-1");
@@ -132,9 +122,7 @@ public class DisconnectTest {
 
         Message msg=(Message)msgPromise.getResult(20000);
         assert msg != null;
-        Assert.assertEquals("payload", msg.getObject());
-
-        ppa.stop();
+        assert "payload".equals(msg.getObject());
     }
 
 
@@ -148,7 +136,7 @@ public class DisconnectTest {
         channel.disconnect();
         channel.connect("DisconnectTest.testgroup-2");
         View view=channel.getView();
-        Assert.assertEquals(1, view.size());
+        assert view.size() == 1;
         assert view.containsMember(channel.getLocalAddress());
     }
 
@@ -168,7 +156,7 @@ public class DisconnectTest {
          Thread.sleep(1000);
 
          View view=channel.getView();
-         Assert.assertEquals(2, view.size());
+         assert view.size() == 2;
          assert view.containsMember(channel.getLocalAddress());
          assert view.containsMember(coordinator.getLocalAddress());
      }
@@ -185,8 +173,7 @@ public class DisconnectTest {
         final Promise msgPromise=new Promise();
         coordinator=new JChannel(props);
         coordinator.connect(GROUP);
-        PullPushAdapter ppa=new PullPushAdapter(coordinator, new PromisedMessageListener(msgPromise));
-        ppa.start();
+        coordinator.setReceiver(new PromisedMessageListener(msgPromise));
 
         channel=new JChannel(props);
         channel.connect("DisconnectTest.testgroup-1");
@@ -197,30 +184,20 @@ public class DisconnectTest {
 
         Message msg=(Message)msgPromise.getResult(20000);
         assert msg != null;
-        Assert.assertEquals("payload", msg.getObject());
-
-        ppa.stop();
+        assert "payload".equals(msg.getObject());
     }
 
 
 
-    private static class PromisedMessageListener implements MessageListener {
-
-        private Promise promise;
+    private static class PromisedMessageListener extends ReceiverAdapter {
+        private final Promise promise;
 
         public PromisedMessageListener(Promise promise) {
             this.promise=promise;
         }
 
-        public byte[] getState() {
-            return null;
-        }
-
         public void receive(Message msg) {
             promise.setResult(msg);
-        }
-
-        public void setState(byte[] state) {
         }
     }
 
