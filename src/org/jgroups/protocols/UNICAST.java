@@ -1,4 +1,4 @@
-// $Id: UNICAST.java,v 1.91.2.6 2008/05/23 12:17:41 belaban Exp $
+// $Id: UNICAST.java,v 1.91.2.7 2008/06/04 15:11:40 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -597,13 +597,22 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // http://jira.jboss.com/jira/browse/JGRP-713: // send the ack back *before* we process the message
         // to limit unnecessary retransmits
         if(immediate_ack && !xmit_off)
-            sendAck(sender, seqno);
+            sendAck(sender, seqno); // send an ack regardless of whether the message was added (stops retransmission)
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-377
-        if(msg.isFlagSet(Message.OOB) && added) {
-            up_prot.up(new Event(Event.MSG, msg));
+        if(msg.isFlagSet(Message.OOB)) {
+            if(added)
+                up_prot.up(new Event(Event.MSG, msg));
+            win.removeOOBMessage(); // if we only have OOB messages, we'd never remove them !
+            return true;
         }
+
+        // only regular messages from this point on
+        if(!added && !win.hasMessagesToRemove()) { // no ack if we didn't add the msg (e.g. duplicate)
+            return true; // ack the message, because this will stop retransmission (which are unreliable) !
+        }
+
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         Message  m;
