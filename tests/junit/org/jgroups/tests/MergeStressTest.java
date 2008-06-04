@@ -1,27 +1,25 @@
-// $Id: MergeStressTest.java,v 1.13 2008/06/04 07:21:37 belaban Exp $
+// $Id: MergeStressTest.java,v 1.14 2008/06/04 08:05:13 belaban Exp $
 
 package org.jgroups.tests;
 
 
-
-import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.STABLE;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
+import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
-import java.util.Properties;
 
 
 /**
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.13 2008/06/04 07:21:37 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.14 2008/06/04 08:05:13 belaban Exp $
  */
 @Test(groups="temp2")
 public class MergeStressTest extends ChannelTestBase {
@@ -48,9 +46,19 @@ public class MergeStressTest extends ChannelTestBase {
         disconnected=new CyclicBarrier(NUM+1);
 
         long start, stop;
+        JChannel first=null;
 
         for(int i=0; i < threads.length; i++) {
-            threads[i]=new MyThread(i);
+            JChannel tmp;
+            if(i == 0) {
+                first=createChannel(true, threads.length);
+                modifyStack(first);
+                tmp=first;
+            }
+            else {
+                tmp=createChannel(first);
+            }
+            threads[i]=new MyThread(i, tmp);
             threads[i].start();
         }
 
@@ -84,21 +92,35 @@ public class MergeStressTest extends ChannelTestBase {
     }
 
 
-
+    private static void modifyStack(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol prot=stack.findProtocol(MERGE2.class);
+        if(prot != null) {
+            MERGE2 merge=(MERGE2)prot;
+            merge.setMinInterval(3000);
+            merge.setMaxInterval(5000);
+        }
+        prot=stack.findProtocol(STABLE.class);
+        if(prot != null) {
+            STABLE stable=(STABLE)prot;
+            stable.setDesiredAverageGossip(5000);
+        }
+    }
 
 
     public class MyThread extends ReceiverAdapter implements Runnable {
-        int                 index=-1;
-        long                total_connect_time=0, total_disconnect_time=0;
-        private JChannel    ch=null;
-        private Address     my_addr=null;
-        private View        current_view;
-        private Thread      thread;
-        private int         num_members=0;
+        int                    index=-1;
+        long                   total_connect_time=0, total_disconnect_time=0;
+        private final Channel  ch;
+        private Address        my_addr=null;
+        private View           current_view;
+        private Thread         thread;
+        private int            num_members=0;
 
 
 
-        public MyThread(int i) {
+        public MyThread(int i, Channel ch) {
+            this.ch=ch;
             thread=new Thread(this, "thread #" + i);
             index=i;
         }
@@ -117,20 +139,8 @@ public class MergeStressTest extends ChannelTestBase {
 
 
         public void viewAccepted(View new_view) {
-            String type="view";
-            if(new_view instanceof MergeView)
-                type="merge view";
-            if(current_view == null) {
-                current_view=new_view;
-                log(type + " accepted: " + current_view.getVid() + " :: " + current_view.getMembers());
-            }
-            else {
-                if(!current_view.equals(new_view)) {
-                    current_view=new_view;
-                    log(type + " accepted: " + current_view.getVid() + " :: " + current_view.getMembers());
-                }
-            }
-
+            current_view=new_view;
+            log("accepted " + new_view);
             num_members=current_view.getMembers().size();
             if(num_members == NUM) {
                 synchronized(this) {
@@ -145,8 +155,6 @@ public class MergeStressTest extends ChannelTestBase {
 
             try {
                 start_connecting.await();
-                ch=createChannel();
-                modifyStack(ch);
                 ch.setReceiver(this);
                 log("connecting to channel");
                 long start=System.currentTimeMillis(), stop;
@@ -181,21 +189,7 @@ public class MergeStressTest extends ChannelTestBase {
         }
 
 
-        private void modifyStack(JChannel ch) {
-            ProtocolStack stack=ch.getProtocolStack();
-            Properties props=new Properties();
-            Protocol prot=stack.findProtocol(MERGE2.class);
-            if(prot != null) {
-                MERGE2 merge=(MERGE2)prot;
-                merge.setMinInterval(3000);
-                merge.setMaxInterval(5000);
-            }
-            prot=stack.findProtocol(STABLE.class);
-            if(prot != null) {
-                STABLE stable=(STABLE)prot;
-                stable.setDesiredAverageGossip(5000);
-            }
-        }
+
 
 
     }
