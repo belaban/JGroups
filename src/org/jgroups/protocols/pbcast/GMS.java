@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.11 2008/06/03 22:20:58 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.12 2008/06/04 22:55:40 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -40,7 +40,7 @@ public class GMS extends Protocol {
     private long              ltime=0;
     long                      join_timeout=5000;
     long                      leave_timeout=5000;
-    long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
+    long                      merge_timeout=5000;           // time to wait for all MERGE_RSPS
     private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
     private final Hashtable<String,GmsImpl>   impls=new Hashtable<String,GmsImpl>(3);
     private boolean           shun=false;
@@ -721,14 +721,21 @@ public class GMS extends Protocol {
                     case GmsHeader.MERGE_REQ:
                         down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
                         
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process                        
-                        startFlush(new View(view_id.copy(), members.getMembers()));                                                                                                              
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+                        if(log.isDebugEnabled()){
+                        	log.debug("Merge participant " + local_addr + " got merge request from " + msg.getSrc());
+                        }                                                                                                                                    
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
                     case GmsHeader.MERGE_RSP:
                         MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
                         merge_data.merge_rejected=hdr.merge_rejected;
+                        if (log.isDebugEnabled()) {
+							log.debug("Got merge response at " + local_addr + " from "
+									+ msg.getSrc() + ", merge_id=" + hdr.view
+									+ ", merge data is " + merge_data);
+                        } 
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
 
@@ -1210,7 +1217,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.11 2008/06/03 22:20:58 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.12 2008/06/04 22:55:40 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1322,7 +1329,7 @@ public class GMS extends Protocol {
         public void run() {
             long end_time, wait_time;
             List<Request> requests=new LinkedList<Request>();
-            while(Thread.currentThread().equals(thread)) {
+            while(Thread.currentThread().equals(thread) && !suspended) {
                 try {
                     boolean keepGoing=false;
                     end_time=System.currentTimeMillis() + max_bundling_time;

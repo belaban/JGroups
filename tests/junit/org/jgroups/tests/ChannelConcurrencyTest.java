@@ -2,14 +2,18 @@ package org.jgroups.tests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
+import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import junit.framework.TestCase;
 
+import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Channel;
 import org.jgroups.protocols.MERGE2;
@@ -21,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.8 2008/06/03 18:31:38 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.9 2008/06/04 22:56:03 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -78,12 +82,17 @@ public class ChannelConcurrencyTest extends TestCase {
             }
         }
         finally {
-            Util.sleep(1000);
-            Collections.reverse(Arrays.asList(channels));
-            for(final JChannel channel:channels) {
-                channel.close();
-                Util.sleep(250);
-            }
+            Util.sleep(2000);  
+            List<Address> members = new ArrayList<Address>(channels[0].getView().getMembers());
+            Collections.reverse(members);
+            for(Address member:members){
+            	for(final JChannel channel:channels) {            
+                    if(member.equals(channel.getLocalAddress())){
+                    	channel.close();
+                    	Util.sleep(300);  
+                    }
+                }	
+            }            
 
             for(final JChannel channel:channels) {
                 assertFalse("Channel connected", channel.isConnected());
