@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+
+   <modelVersion>4.0.0</modelVersion>
+   <groupId>jgroups</groupId>
+   <artifactId>jgroups</artifactId>
+   <name>JGroups</name>
+   <version>2.4.3</version>
+   <url>http://www.jgroups.org</url>
+   
+   <repositories>
+      <repository>
+         <id>jboss</id>
+         <name>JBoss Inc. Repository</name>
+         <url>http://repository.jboss.com/maven2/</url>
+         <snapshots>
+            <enabled>true</enabled>
+         </snapshots>
+      </repository>
+   </repositories>
+   
+   <dependencies>
+      
+      <dependency>
+         <groupId>bouncycastle</groupId>
+         <artifactId>bcprov-jdk14</artifactId>
+         <version>117</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>beanshell</groupId>
+         <artifactId>beanshell</artifactId>
+         <version>1.2b3</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>commons-logging</groupId>
+         <artifactId>commons-logging</artifactId>
+         <version>1.0.3</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>concurrent</groupId>
+         <artifactId>concurrent</artifactId>
+         <version>1.3.4</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>javax.jms</groupId>
+         <artifactId>jms</artifactId>
+         <version>1.02b</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>javax.management</groupId>
+         <artifactId>jmxri</artifactId>
+         <version>1.2.1</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>junit</groupId>
+         <artifactId>junit</artifactId>
+         <version>3.8.1</version>
+         <scope>test</scope>
+      </dependency>
+      
+      <dependency>
+         <groupId>log4j</groupId>
+         <artifactId>log4j</artifactId>
+         <version>1.2.6</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>apache-xalan</groupId>
+         <artifactId>serializer</artifactId>
+         <version>j_2.7.0</version>
+      </dependency>
+      
+      <dependency>
+         <groupId>apache-xalan</groupId>
+         <artifactId>xalan</artifactId>
+         <version>j_2.7.0</version>
+      </dependency>
+      
+   </dependencies>
+</project>
