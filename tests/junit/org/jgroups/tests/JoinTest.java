@@ -16,11 +16,9 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.23 2008/05/29 11:48:40 belaban Exp $
- * 
- * TODO make possibly parallel 
+ * @version $Id: JoinTest.java,v 1.24 2008/06/04 06:54:26 belaban Exp $
  */
-@Test(groups={"temp"},sequential=true)
+@Test(groups="temp",sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
