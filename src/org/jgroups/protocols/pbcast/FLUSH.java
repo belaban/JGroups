@@ -192,18 +192,20 @@ public class FLUSH extends Protocol {
         return startFlush(new Event(Event.SUSPEND));
     }
     
-    private boolean startFlush(Event evt){        
-        return startFlush(evt, flush_retry_count, false);
+    private boolean startFlush(Event evt){
+    	if(log.isDebugEnabled())
+            log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
+    	
+    	List<Address> flushParticipants = (List<Address>) evt.getArg();
+        return startFlush(flushParticipants, flush_retry_count, false);
     }
     
-    private boolean startFlush(Event evt, int numberOfAttempts, boolean force) {
+    private boolean startFlush(List<Address> flushParticipants, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
         if(!flushInProgress.get() || force){
             flush_promise.reset();                                 
-            if(log.isDebugEnabled())
-                log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
-
-            onSuspend((List<Address>) evt.getArg());
+                       
+            onSuspend(flushParticipants);
             try{
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
@@ -219,13 +221,11 @@ public class FLUSH extends Protocol {
         if(!successfulFlush && numberOfAttempts > 0){                  
             waitForFlushCompletion(retry_timeout);      
             if(log.isDebugEnabled()){               
-                log.debug("Retrying FLUSH at " + localAddress
-                          + ", "
-                          + evt
+                log.debug("Retrying FLUSH at " + localAddress                                                  
                           + ". Attempts left "
                           + numberOfAttempts);
             }
-            successfulFlush = startFlush(evt, --numberOfAttempts, true);
+            successfulFlush = startFlush(flushParticipants, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
