@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.46 2008/04/14 07:04:10 belaban Exp $
+// $Id: IpAddress.java,v 1.47 2008/06/05 12:45:18 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -194,7 +194,6 @@ public class IpAddress implements Address {
 
     public final boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
-        if(obj == null) return false;
         if(!(obj instanceof Address))
             throw new ClassCastException(obj + " is not an Address");
         Address other=(Address)obj;
