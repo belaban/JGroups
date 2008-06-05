@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.13 2008/06/05 04:24:15 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.14 2008/06/05 21:38:55 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -255,26 +255,29 @@ public class CoordGmsImpl extends GmsImpl {
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
-        
+
         //[JGRP-700] - FLUSH: flushing should span merge        
-        gms.timer.execute(new Runnable() {
-            public void run() {
-                
-                gms.castViewChangeWithDest(data.view, data.digest, null, null);                
-                /*
-                 * if we have flush in stack send ack back to merge coordinator                 
-                 * */
-                if(gms.flushProtocolInStack) {
-                    Message ack=new Message(data.getSender(), null, null);
-                    GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
-                    ack.putHeader(gms.getName(), ack_hdr);
-                    gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, data.getSender()));
-                    gms.getDownProtocol().down(new Event(Event.MSG, ack));                   
-                }
-                merging=false;
-                gms.getViewHandler().resume(merge_id);
-            }
-        });             
+
+        //we have to send new view only to current members and we should not wait 
+        //for view acks from newly merged mebers
+        List<Address> newViewMembers=new Vector<Address>(data.view.getMembers());
+        newViewMembers.removeAll(gms.members.getMembers());
+        
+        
+        gms.castViewChangeWithDest(data.view, data.digest, null, newViewMembers);
+        /*
+         * if we have flush in stack send ack back to merge coordinator                 
+         * */
+        if(gms.flushProtocolInStack) {
+            Message ack=new Message(data.getSender(), null, null);
+            ack.setFlag(Message.OOB);
+            GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
+            ack.putHeader(gms.getName(), ack_hdr);
+            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, data.getSender()));
+            gms.getDownProtocol().down(new Event(Event.MSG, ack));
+        }
+        merging=false;
+        gms.getViewHandler().resume(merge_id);
     }
 
     public void handleMergeCancelled(ViewId merge_id) {
@@ -661,9 +664,13 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
 
-        if(log.isTraceEnabled())
-            log.trace("sending merge view " + v.getVid() + " to coordinators " + coords);
-
+        if(log.isDebugEnabled())
+            log.debug(gms.local_addr + " is sending merge view " + v.getVid() + " to coordinators " + coords);
+        
+        gms.merge_ack_collector.reset(v.getVid(), coords);
+        int size=gms.merge_ack_collector.size();
+        long timeout=gms.view_ack_collection_timeout;         
+        
         long start = System.currentTimeMillis();
         for(Address coord:coords) {            
             Message msg=new Message(coord, null, null);
@@ -677,10 +684,7 @@ public class CoordGmsImpl extends GmsImpl {
         
         //[JGRP-700] - FLUSH: flushing should span merge
         //if flush is in stack wait for acks from separated island coordinators
-        if(gms.flushProtocolInStack) {
-            gms.merge_ack_collector.reset(v.getVid(), coords);
-            int size=gms.merge_ack_collector.size();
-            long timeout=gms.view_ack_collection_timeout;
+        if(gms.flushProtocolInStack) {          
             try {
                 gms.merge_ack_collector.waitForAllAcks(timeout);
                 long stop=System.currentTimeMillis();
@@ -693,7 +697,7 @@ public class CoordGmsImpl extends GmsImpl {
                               + "ms");
             }
             catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs for merge (" + size
+                log.warn("Merge coordinator " + gms.local_addr + " failed to collect all ACKs for merge (" + size
                          + ") for view "
                          + v
                          + " after "
