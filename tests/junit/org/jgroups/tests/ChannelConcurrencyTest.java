@@ -3,10 +3,8 @@ package org.jgroups.tests;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Vector;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -25,7 +23,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.12 2008/06/05 03:15:41 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.13 2008/06/05 04:24:40 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
