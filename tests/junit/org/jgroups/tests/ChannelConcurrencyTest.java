@@ -23,7 +23,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.13 2008/06/05 04:24:40 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.14 2008/06/05 06:53:06 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -75,22 +75,23 @@ public class ChannelConcurrencyTest extends TestCase {
             }
 
             for(final JChannel channel:channels) {
-                assertTrue("View ok for channel " + channel.getLocalAddress(),
-                           count == channel.getView().size());
+                assertSame("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
             }
         }
         finally {
-            Util.sleep(2000);  
+            // Util.sleep(2000);
             List<Address> members = new ArrayList<Address>(channels[0].getView().getMembers());
             Collections.reverse(members);
+            System.out.print("closing channels: ");
             for(Address member:members){
             	for(final JChannel channel:channels) {            
                     if(member.equals(channel.getLocalAddress())){
                     	channel.close();
-                    	Util.sleep(300);  
+                    	// Util.sleep(300);  
                     }
                 }	
-            }            
+            }
+            System.out.println("OK");
 
             for(final JChannel channel:channels) {
                 assertFalse("Channel connected", channel.isConnected());
