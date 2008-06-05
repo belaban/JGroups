@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.10 2008/06/05 00:22:50 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.11 2008/06/05 03:14:19 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -39,7 +39,7 @@ public class ChannelConcurrencyTest extends TestCase {
 
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
-            channels[i]=new JChannel("flush-udp.xml");
+            channels[i]=new JChannel("udp.xml");
             tasks[i]=new Task(latch, channels[i]);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
