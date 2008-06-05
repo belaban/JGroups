@@ -5,6 +5,7 @@ import org.testng.annotations.*;
 import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -19,7 +20,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.14 2008/06/04 07:21:37 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.15 2008/06/05 07:55:07 belaban Exp $
  */
 @Test(groups={"temp2", "single"})
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -42,10 +43,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        if(provider != null)
-            provider.close();
-        if(requester != null)
-            requester.close();
+        Util.close(requester, provider);
     }
 
 
@@ -76,7 +74,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
         requester.connect(GROUP);
         log("requesting state of " + size + " bytes");
         start=System.currentTimeMillis();
-        requester.getState(null, 20000);
+        boolean rc=requester.getState(provider.getLocalAddress(), 20000);
+        System.out.println("getState(): result=" + rc);
         Object result=p.getResult(10000);
         stop=System.currentTimeMillis();
         log("result=" + result + " bytes (in " + (stop-start) + "ms)");
@@ -102,6 +101,10 @@ public class LargeStateTransferTest extends ChannelTestBase {
         public byte[] getState() {
             return state;
         }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[provider] new_view = " + new_view);
+        }
         
         public void getState(OutputStream ostream){      
             ObjectOutputStream oos =null;
@@ -126,6 +129,10 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
         public Requester(Promise<Integer> p) {
             this.p=p;
+        }
+
+        public void viewAccepted(View new_view) {
+            System.out.println("[requester] new_view = " + new_view);
         }
 
         public byte[] getState() {
