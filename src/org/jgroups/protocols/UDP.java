@@ -41,7 +41,7 @@ import java.util.Map;
  * input buffer overflow, consider setting this property to true.
  * </ul>
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.177 2008/06/03 14:37:00 belaban Exp $
+ * @version $Id: UDP.java,v 1.178 2008/06/05 09:40:53 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP implements Runnable {
@@ -84,9 +84,11 @@ public class UDP extends TP implements Runnable {
     IpAddress       mcast_addr=null;
 
     /** The multicast address used for sending and receiving packets */
+    @Property(name="mcast_addr")
     String          mcast_addr_name="228.8.8.8";
 
     /** The multicast port used for sending and receiving packets */
+    @Property
     int             mcast_port=7600;
 
     /** The multicast receiver thread */
@@ -139,11 +141,9 @@ public class UDP extends TP implements Runnable {
     }
 
 
-    @Property(name="mcast_addr")
     public void setMulticastAddress(String addr) {this.mcast_addr_name=addr;}
     public String getMulticastAddress() {return mcast_addr_name;}
     public int getMulticastPort() {return mcast_port;}
-    @Property(name="mcast_port")
     public void setMulticastPort(int mcast_port) {this.mcast_port=mcast_port;}
 
 
