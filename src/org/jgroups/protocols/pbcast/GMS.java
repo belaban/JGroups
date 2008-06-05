@@ -21,7 +21,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.126.2.13 2008/06/04 23:31:15 vlada Exp $
+ * @version $Id: GMS.java,v 1.126.2.14 2008/06/05 20:46:51 vlada Exp $
  */
 public class GMS extends Protocol {
     private GmsImpl           impl=null;
@@ -390,7 +390,7 @@ public class GMS extends Protocol {
                           + new_view.getVid());
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + ack_collector.size()
+            log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
                      + ") for mcasted view "
                      + new_view
                      + " after "
@@ -416,7 +416,7 @@ public class GMS extends Protocol {
                               + new_view.getVid());
             }
             catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs (" + ack_collector.size()
+                log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
                          + ") for unicasted view "
                          + new_view
                          + " after "
@@ -730,10 +730,9 @@ public class GMS extends Protocol {
                     case GmsHeader.MERGE_RSP:
                         MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
                         merge_data.merge_rejected=hdr.merge_rejected;
-                        if (log.isDebugEnabled()) {
-							log.debug("Got merge response at " + local_addr + " from "
-									+ msg.getSrc() + ", merge_id=" + hdr.view
-									+ ", merge data is " + merge_data);
+                        if(log.isDebugEnabled()) {
+                            log.debug("Got merge response at " + local_addr + " from " + msg.getSrc() + 
+                                      ", merge_id=" + hdr.view+ ", merge data is "+ merge_data);
                         } 
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
@@ -1216,7 +1215,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.126.2.13 2008/06/04 23:31:15 vlada Exp $
+     * @version $Id: GMS.java,v 1.126.2.14 2008/06/05 20:46:51 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
