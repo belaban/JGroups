@@ -1,18 +1,13 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.11 2008/06/05 00:24:19 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.12 2008/06/05 03:14:46 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
 
 import org.jgroups.*;
-import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.Digest;
 import org.jgroups.util.MutableDigest;
 
 import java.util.*;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
