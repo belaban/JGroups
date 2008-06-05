@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.106 2008/06/04 15:33:34 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.107 2008/06/05 12:51:40 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -567,7 +567,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // http://jira.jboss.com/jira/browse/JGRP-377
         if(msg.isFlagSet(Message.OOB)) {
             if(added)
-            up_prot.up(new Event(Event.MSG, msg));
+                up_prot.up(new Event(Event.MSG, msg));
             win.removeOOBMessage(); // if we only have OOB messages, we'd never remove them !
             return true;
         }
