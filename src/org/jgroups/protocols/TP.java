@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.27 2008/05/28 12:37:37 vlada Exp $
+ * @version $Id: TP.java,v 1.160.2.28 2008/06/05 07:39:26 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -238,7 +238,7 @@ public abstract class TP extends Protocol {
     protected ThreadFactory timer_thread_factory;
 
     /** Max number of threads to be used by the timer thread pool */
-    int  max_timer_threads=4;
+    int num_timer_threads=4;
 
     public ThreadFactory getTimerThreadFactory() {
         return timer_thread_factory;
@@ -637,7 +637,7 @@ public abstract class TP extends Protocol {
 
         setInAllThreadFactories(channel_name, local_addr, thread_naming_pattern);
 
-        timer=new TimeScheduler(timer_thread_factory, max_timer_threads);
+        timer=new TimeScheduler(timer_thread_factory, num_timer_threads);
 
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
@@ -1080,8 +1080,15 @@ public abstract class TP extends Protocol {
 
         str=props.getProperty("timer.max_threads");
         if(str != null) {
-            max_timer_threads=Integer.parseInt(str);
+            num_timer_threads=Integer.parseInt(str);
             props.remove("timer.max_threads");
+            log.warn("timer.max_threads is deprecated; use timer.num_threads instead");
+        }
+
+        str=props.getProperty("timer.num_threads");
+        if(str != null) {
+            num_timer_threads=Integer.parseInt(str);
+            props.remove("timer.num_threads");
         }
 
         str=props.getProperty(Global.SINGLETON_NAME);
