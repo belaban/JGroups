@@ -1,29 +1,24 @@
 package org.jgroups.tests;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
-
 import junit.framework.TestCase;
-
-import org.jgroups.Address;
-import org.jgroups.JChannel;
 import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
+import java.util.Collections;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 /**
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.14 2008/06/05 06:53:06 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.15 2008/06/05 07:06:06 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -79,21 +74,18 @@ public class ChannelConcurrencyTest extends TestCase {
             }
         }
         finally {
-            // Util.sleep(2000);
-            List<Address> members = new ArrayList<Address>(channels[0].getView().getMembers());
-            Collections.reverse(members);
             System.out.print("closing channels: ");
-            for(Address member:members){
-            	for(final JChannel channel:channels) {            
-                    if(member.equals(channel.getLocalAddress())){
-                    	channel.close();
-                    	// Util.sleep(300);  
-                    }
-                }	
+            for(int i=channels.length -1; i>= 0; i--) {
+                Channel channel=channels[i];
+                channel.close();
+                int tries=0;
+                while((channel.isConnected() || channel.isOpen()) && tries++ < 10) {
+                    Util.sleep(1000);
+                }
             }
             System.out.println("OK");
 
-            for(final JChannel channel:channels) {
+            for(final JChannel channel: channels) {
                 assertFalse("Channel connected", channel.isConnected());
             }
         }
