@@ -8,7 +8,6 @@ import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 
-import java.util.Collections;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -18,7 +17,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.15 2008/06/05 07:06:06 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.16 2008/06/05 07:06:27 belaban Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
