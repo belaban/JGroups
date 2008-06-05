@@ -25,7 +25,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.9 2008/06/04 22:56:03 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.10 2008/06/05 00:22:50 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
@@ -62,7 +62,7 @@ public class ChannelConcurrencyTest extends TestCase {
             // Wait for all channels to have the correct number of members in their
             // current view
             boolean converged=false;
-            for(int timeoutToConverge=60,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
+            for(int timeoutToConverge=120,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
                 for(final JChannel channel:channels) {
                     converged = channel.getView().size() == count;
                     if(!converged)
