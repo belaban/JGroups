@@ -19,7 +19,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.14 2008/06/04 07:21:37 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.15 2008/06/05 07:54:43 belaban Exp $
  */
 @Test(groups="temp2")
 public class DisconnectStressTest extends ChannelTestBase {
