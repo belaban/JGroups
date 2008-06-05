@@ -1304,7 +1304,7 @@
                             <row>
                                 <entry>Timer thread pool</entry>
                                 <entry>This is the thread pool for the timer. The max number of threads is set through
-                                the timer.max_threads property. The timer thread pool cannot be set, it can only
+                                the timer.num_threads property. The timer thread pool cannot be set, it can only
                                 be retrieved using getTimer(). However, the thread factory of the timer
                                 can be replaced (see below)</entry>
                             </row>
