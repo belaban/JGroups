@@ -3,9 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.testng.annotations.*;
 
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -13,9 +11,10 @@ import java.util.List;
 import java.util.LinkedList;
 
 /**
- * Tests whether OOB mcast messages are blocked by regular messages (which block) - should NOT be the case
+ * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
+ * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBMcastTest.java,v 1.2 2008/06/06 15:41:56 belaban Exp $
+ * @version $Id: OOBMcastTest.java,v 1.3 2008/06/06 16:04:35 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBMcastTest extends ChannelTestBase {
@@ -36,33 +35,39 @@ public class OOBMcastTest extends ChannelTestBase {
         lock.lock();
     }
 
-    private static void setOOBPoolSize(JChannel channel) {
-        TP transport=channel.getProtocolStack().getTransport();
-        transport.setOOBMinPoolSize(1);
-        transport.setOOBMaxPoolSize(2);
-    }
 
     @AfterMethod
     private void cleanup() {
-        Util.close(c2, c1);
         if(lock.isHeldByCurrentThread())
             lock.unlock();
+        Util.sleep(1000);
+        Util.close(c2, c1);
     }
+
 
     /**
      * A and B. A multicasts a regular message, which blocks in B. Then A multicasts an OOB message, which must be
      * received by B.
      */
-    public void testNonBlockingOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
+    public void testNonBlockingUnicastOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
+        Address dest=c2.getLocalAddress();
+        send(dest);
+    }
+
+    public void testNonBlockingMulticastOOBMessage() throws ChannelNotConnectedException, ChannelClosedException {
+        send(null);
+    }
+
+    private void send(Address dest) throws ChannelNotConnectedException, ChannelClosedException {
         final BlockingReceiver receiver=new BlockingReceiver(lock);
         final int NUM=10;
         c2.setReceiver(receiver);
 
-        c1.send(new Message(null, null, 1L));
+        c1.send(new Message(dest, null, 1L));
         Util.sleep(1000); // this (regular) message needs to be received first
 
         for(int i=2; i <= NUM; i++) {
-            Message msg=new Message(null, null, (long)i);
+            Message msg=new Message(dest, null, (long)i);
             msg.setFlag(Message.OOB);
             c1.send(msg);
         }
@@ -83,6 +88,12 @@ public class OOBMcastTest extends ChannelTestBase {
             assert list.contains(i);
     }
 
+
+     private static void setOOBPoolSize(JChannel channel) {
+        TP transport=channel.getProtocolStack().getTransport();
+        transport.setOOBMinPoolSize(1);
+        transport.setOOBMaxPoolSize(2);
+    }
 
     private static class BlockingReceiver extends ReceiverAdapter {
         final Lock lock;
