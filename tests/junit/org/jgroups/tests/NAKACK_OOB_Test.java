@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.9 2008/06/06 08:25:12 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.10 2008/06/06 13:46:32 belaban Exp $
  */
 public class NAKACK_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2, ch3;
@@ -33,12 +33,7 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
 
     @AfterMethod
     public void tearDown() throws Exception {
-        if(ch1 != null)
-            ch1.close();
-        if(ch2 != null)
-            ch2.close();
-        if(ch3 != null)
-            ch3.close();
+        Util.close(ch3, ch2, ch1);
     }
 
 
