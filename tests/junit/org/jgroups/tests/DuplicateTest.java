@@ -6,9 +6,8 @@ import org.jgroups.protocols.DUPL;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
-import org.testng.annotations.BeforeMethod;
-import org.testng.annotations.Test;
+import org.jgroups.util.Tuple;
+import org.testng.annotations.*;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -22,33 +21,63 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.2 2008/06/06 09:43:16 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.3 2008/06/06 10:20:58 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DuplicateTest extends ChannelTestBase {
     private JChannel c1, c2, c3;
+    protected Address a1, a2, a3;
     private MyReceiver r1, r2, r3;
+
+
+    @BeforeClass
+    void classInit() throws Exception {
+        createChannels(true, true, (short)2, (short)2);
+        a1=c1.getLocalAddress();
+        a2=c2.getLocalAddress();
+        a3=c3.getLocalAddress();
+    }
 
     @BeforeMethod
     void init() throws Exception {
         r1=new MyReceiver("C1");
         r2=new MyReceiver("C2");
         r3=new MyReceiver("C3");
-
-        createChannels(true, true, (short)2, (short)2);
+        c1.setReceiver(r1);
+        c2.setReceiver(r2);
+        c3.setReceiver(r3);
     }
 
-    @AfterMethod
+    @AfterClass
     void tearDown() throws Exception {
         Util.close(c3, c2, c1);
     }
 
 
 
-    public void testRegularUnicasts() throws Exception {
+    public void testRegularUnicastsToSelf() throws Exception {
         send(c1, c1.getLocalAddress(), false, 10);
+        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
     }
 
+    public void testOOBUnicastsToSelf() throws Exception {
+        send(c1, c1.getLocalAddress(), true, 10);
+        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
+    }
+
+    public void testRegularUnicastsToOthers() throws Exception {
+        send(c1, c2.getLocalAddress(), false, 10);
+        send(c1, c3.getLocalAddress(), false, 10);
+        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+    }
+
+    public void testOOBUnicastsToOthers() throws Exception {
+        send(c1, c2.getLocalAddress(), true, 10);
+        send(c1, c3.getLocalAddress(), true, 10);
+        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+    }
 
     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
         long seqno=1;
@@ -58,6 +87,9 @@ public class DuplicateTest extends ChannelTestBase {
                 msg.setFlag(Message.OOB);
             sender_channel.send(msg);
         }
+        // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
+        // can for example delay message delivery
+        Util.sleep(500);
     }
 
 
@@ -74,19 +106,23 @@ public class DuplicateTest extends ChannelTestBase {
         c2.connect("DuplicateTest");
         c3.connect("DuplicateTest");
 
-        c1.setReceiver(r1);
-        c2.setReceiver(r2);
-        c3.setReceiver(r3);
+        assert c3.getView().size() == 3 : "view was " + c1.getView() + " but should have been 3";
     }
-    
 
-    private static void check(Map<Address,List<Long>> msgs) {
-        for(Map.Entry<Address,List<Long>> entry: msgs.entrySet()) {
-            Address addr=entry.getKey();
-            List<Long> list=entry.getValue();
+
+    private static void check(MyReceiver receiver, int expected_size, Tuple<Address,Integer>... vals) {
+        Map<Address, List<Long>> msgs=receiver.getMsgs();
+        assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
+        for(Tuple<Address,Integer> tuple: vals) {
+            Address addr=tuple.getVal1();
+            List<Long> list=msgs.get(addr);
+            System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
+            assert list != null : "no list available for " + addr;
+            assert list.size() == tuple.getVal2() : "list's size is not " + tuple.getVal2() +", list: " + list;
             check(addr, list);
         }
     }
+
 
     private static void check(Address addr, List<Long> list) {
         long id=list.get(0);
@@ -97,12 +133,18 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
+
+
     private static class MyReceiver extends ReceiverAdapter {
         final String name;
         private final ConcurrentMap<Address, List<Long>> msgs=new ConcurrentHashMap<Address,List<Long>>();
 
         public MyReceiver(String name) {
             this.name=name;
+        }
+
+        public String getName() {
+            return name;
         }
 
         public ConcurrentMap<Address, List<Long>> getMsgs() {
@@ -125,8 +167,6 @@ public class DuplicateTest extends ChannelTestBase {
         public void clear() {
             msgs.clear();
         }
-
-
 
 
         public String toString() {

@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.52 2008/06/06 09:10:27 belaban Exp $
+ * @version $Id: Configurator.java,v 1.53 2008/06/06 10:20:38 belaban Exp $
  */
 public class Configurator {
 
@@ -259,7 +259,7 @@ public class Configurator {
     }
 
 
-    public static void insertProtocol(Protocol prot, int position, Class<Protocol> neighbor_prot, ProtocolStack stack) throws Exception {
+    public static void insertProtocol(Protocol prot, int position, Class<? extends Protocol> neighbor_prot, ProtocolStack stack) throws Exception {
         if(neighbor_prot == null) throw new Exception("Configurator.insertProtocol(): neighbor_prot is null");
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new Exception("position has to be ABOVE or BELOW");

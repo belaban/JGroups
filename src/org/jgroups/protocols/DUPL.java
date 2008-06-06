@@ -9,7 +9,7 @@ import org.jgroups.Address;
 
 /** Duplicates outgoing or incoming messages by copying them
  * @author Bela Ban
- * @version $Id: DUPL.java,v 1.2 2008/06/06 08:06:26 belaban Exp $
+ * @version $Id: DUPL.java,v 1.3 2008/06/06 10:20:51 belaban Exp $
  */
 public class DUPL extends Protocol {
 
@@ -17,16 +17,27 @@ public class DUPL extends Protocol {
 
 
     @Property @ManagedAttribute(description="Number of copies of each incoming message (0=no copies)",writable=true)
-    protected short incoming_copies=1;
+    protected int incoming_copies=1;
 
     @Property @ManagedAttribute(description="Number of copies of each outgoing message (0=no copies)",writable=true)
-    protected short outgoing_copies=1;
+    protected int outgoing_copies=1;
 
     @Property @ManagedAttribute(description="Whether or not to copy unicast messages",writable=true)
     protected boolean copy_unicast_msgs=true;
 
     @Property @ManagedAttribute(description="Whether or not to copy multicast messages",writable=true)
     protected boolean copy_multicast_msgs=true;
+
+
+    public DUPL() {
+    }
+
+    public DUPL(boolean copy_multicast_msgs, boolean copy_unicast_msgs, int incoming_copies, int outgoing_copies) {
+        this.copy_multicast_msgs=copy_multicast_msgs;
+        this.copy_unicast_msgs=copy_unicast_msgs;
+        this.incoming_copies=incoming_copies;
+        this.outgoing_copies=outgoing_copies;
+    }
 
     public String getName() {
         return "DUPL";
