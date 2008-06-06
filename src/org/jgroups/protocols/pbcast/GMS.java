@@ -26,7 +26,7 @@ import org.jgroups.protocols.pbcast.GmsImpl.Request;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.145 2008/05/29 14:17:38 vlada Exp $
+ * @version $Id: GMS.java,v 1.146 2008/06/06 14:34:49 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -402,9 +402,6 @@ public class GMS extends Protocol {
     }
 
 
-   
-
-
     /**
      * Broadcasts the new view and digest, and waits for acks from all members in the list given as argument.
      * If the list is null, we take the members who are part of new_view
@@ -443,8 +440,8 @@ public class GMS extends Protocol {
                           + new_view.getVid());
         }
         catch(TimeoutException e) {
-            log.warn("failed to collect all ACKs (" + ack_collector.size()
-                     + ") for view "
+            log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
+                     + ") for mcasted view "
                      + new_view
                      + " after "
                      + view_ack_collection_timeout
@@ -469,8 +466,8 @@ public class GMS extends Protocol {
                               + new_view.getVid());
             }
             catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs (" + ack_collector.size()
-                         + ") for view "
+                log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
+                         + ") for unicasted view "
                          + new_view
                          + " after "
                          + view_ack_collection_timeout
@@ -773,15 +770,20 @@ public class GMS extends Protocol {
 
                     case GmsHeader.MERGE_REQ:
                         down_prot.down(new Event(Event.SUSPEND_STABLE, 20000)); 
-                        
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process                        
-                        startFlush(new View(view_id.copy(), members.getMembers()));                                                                                                                 
+                                                
+                        if(log.isDebugEnabled()){
+                        	log.debug("Merge participant " + local_addr + " got merge request from " + msg.getSrc());
+                        }                                                                                                                                    
                         impl.handleMergeRequest(msg.getSrc(), hdr.merge_id);
                         break;
 
                     case GmsHeader.MERGE_RSP:
                         MergeData merge_data=new MergeData(msg.getSrc(), hdr.view, hdr.my_digest);
                         merge_data.merge_rejected=hdr.merge_rejected;
+                        if(log.isDebugEnabled()) {
+                            log.debug("Got merge response at " + local_addr + " from " + msg.getSrc() + 
+                                      ", merge_id=" + hdr.view+ ", merge data is "+ merge_data);
+                        } 
                         impl.handleMergeResponse(merge_data, hdr.merge_id);
                         break;
 
@@ -789,7 +791,7 @@ public class GMS extends Protocol {
                         impl.handleMergeView(new MergeData(msg.getSrc(), hdr.view, hdr.my_digest), hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
-                        
+                     
                     case GmsHeader.INSTALL_MERGE_VIEW_OK:                        
                         //[JGRP-700] - FLUSH: flushing should span merge
                         merge_ack_collector.ack(msg.getSrc());                   
@@ -1137,7 +1139,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.145 2008/05/29 14:17:38 vlada Exp $
+     * @version $Id: GMS.java,v 1.146 2008/06/06 14:34:49 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1249,7 +1251,7 @@ public class GMS extends Protocol {
         public void run() {
             long end_time, wait_time;
             List<Request> requests=new LinkedList<Request>();
-            while(Thread.currentThread().equals(thread)) {
+            while(Thread.currentThread().equals(thread) && !suspended) {
                 try {
                     boolean keepGoing=false;
                     end_time=System.currentTimeMillis() + max_bundling_time;

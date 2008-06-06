@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.90 2008/05/28 15:15:20 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.91 2008/06/06 14:34:49 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -26,8 +26,6 @@ public class CoordGmsImpl extends GmsImpl {
     private final Vector<MergeData> merge_rsps=new Vector<MergeData>(11);
     // for MERGE_REQ/MERGE_RSP correlation, contains MergeData elements
     private ViewId                  merge_id=null;
-
-    private Address                 merge_leader=null;
 
     @GuardedBy("merge_canceller_lock")
     private Future<?>                  merge_canceller_future=null;
@@ -137,8 +135,7 @@ public class CoordGmsImpl extends GmsImpl {
         if(merging) {
             if(log.isWarnEnabled()) log.warn("merge already in progress, discarded MERGE event (I am " + gms.local_addr + ")");
             return;
-        }
-        merge_leader=null;
+        }       
         if(other_coords == null) {
             if(log.isWarnEnabled()) log.warn("list of other coordinators is null. Will not start merge.");
             return;
@@ -153,15 +150,16 @@ public class CoordGmsImpl extends GmsImpl {
         /* Establish deterministic order, so that coords can elect leader */
         tmp=new Membership(other_coords);
         tmp.sort();
-        merge_leader=tmp.elementAt(0);        
+        Address  merge_leader=tmp.elementAt(0);
+        if(log.isDebugEnabled()) log.debug("Determining merge leader from coordinators: " + tmp);
         if(merge_leader.equals(gms.local_addr) || gms.merge_leader) {
-            if(log.isTraceEnabled())
-                log.trace("I (" + gms.local_addr + ") will be the leader. Starting the merge task");
+            if(log.isDebugEnabled())
+                log.debug("I (" + gms.local_addr + ") will be the leader. Starting the merge task for " + other_coords);
             startMergeTask(other_coords);
         }
         else {
-            if(log.isTraceEnabled()) log.trace("I (" + gms.local_addr + ") am not the merge leader, " +
-                    "waiting for merge leader (" + merge_leader + ")to initiate merge");
+            if(log.isDebugEnabled()) log.debug("I (" + gms.local_addr + ") am not the merge leader, " +
+                    "waiting for merge leader (" + merge_leader + ") to initiate merge");
         }
     }
 
@@ -178,28 +176,43 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
         if(merging) {
-            if(log.isErrorEnabled()) log.error("merge already in progress");
+            if(log.isErrorEnabled()) log.error("For merge participant " + gms.local_addr +" merge is already in progress");
             sendMergeRejectedResponse(sender, merge_id);
             return;
         }
         merging=true;
 
+        if(log.isDebugEnabled()) log.debug("Suspending view handler at " + gms.local_addr);
         /* Clears the view handler queue and discards all JOIN/LEAVE/MERGE requests until after the MERGE  */
         gms.getViewHandler().suspend(merge_id);
 
         setMergeId(merge_id);
-        if(log.isDebugEnabled()) log.debug("sender=" + sender + ", merge_id=" + merge_id);
-        digest=gms.getDigest();
+        if(log.isDebugEnabled()) log.debug(gms.local_addr + " got merge request from " + sender + ", merge_id=" + merge_id);
         view=new View(gms.view_id.copy(), gms.members.getMembers());
-        sendMergeResponse(sender, view, digest);
+        
+        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
+        //[JGRP-770] - Concurrent startup of many channels doesn't stabilize
+        //[JGRP-700] - FLUSH: flushing should span merge
+        
+        /*if flush is in stack, let this coordinator flush its cluster island */
+        boolean suceesfulFlush = gms.startFlush(view);
+        if(suceesfulFlush) {
+            digest=gms.getDigest();
+            sendMergeResponse(sender, view, digest);
+            if(log.isDebugEnabled())
+                log.debug(gms.local_addr + " responded to " + sender + ", merge_id=" + merge_id);
+        }
+        else {
+            sendMergeRejectedResponse(sender, merge_id);
+            gms.getViewHandler().resume(merge_id);
+            merging=false;
+            if(log.isWarnEnabled())
+                log.warn("Since flush failed at " + gms.local_addr + " rejected merge to "+ sender+ ", merge_id="+ merge_id);
+        }
     }
 
-    public void handleMergeResponse(MergeData data, ViewId merge_id) {
-        if(data == null) {
-            if(log.isErrorEnabled()) log.error("merge data is null");
-            return;
-        }
-        if(merge_id == null || this.merge_id == null) {
+    public void handleMergeResponse(MergeData data, ViewId merge_id) {                     
+    	if(merge_id == null || this.merge_id == null) {
             if(log.isErrorEnabled())
                 log.error("merge_id ("
                     + merge_id
@@ -232,7 +245,7 @@ public class CoordGmsImpl extends GmsImpl {
      * If merge_id is not equal to this.merge_id then discard.
      * Else cast the view/digest to all members of this group.
      */
-    public void handleMergeView(final MergeData data, ViewId merge_id) {
+    public void handleMergeView(final MergeData data,final ViewId merge_id) {
         if(merge_id == null
                 || this.merge_id == null
                 || !this.merge_id.equals(merge_id)) {
@@ -242,38 +255,46 @@ public class CoordGmsImpl extends GmsImpl {
 
         // only send to our *current* members, if we have A and B being merged (we are B), then we would *not*
         // receive a VIEW_ACK from A because A doesn't see us in the pre-merge view yet and discards the view
+
+        //[JGRP-700] - FLUSH: flushing should span merge        
+
+        //we have to send new view only to current members and we should not wait 
+        //for view acks from newly merged mebers
+        List<Address> newViewMembers=new Vector<Address>(data.view.getMembers());
+        newViewMembers.removeAll(gms.members.getMembers());
         
-        //[JGRP-700] - FLUSH: flushing should span merge
-        gms.timer.execute(new Runnable() {
-            public void run() {
-                
-                gms.castViewChangeWithDest(data.view, data.digest, null, null);                
-                /*
-                 * if we have flush in stack send ack back to merge coordinator                 
-                 * */
-                if(gms.flushProtocolInStack) {
-                    Message ack=new Message(data.getSender(), null, null);
-                    GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
-                    ack.putHeader(gms.getName(), ack_hdr);
-                    gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, data.getSender()));
-                    gms.getDownProtocol().down(new Event(Event.MSG, ack));                   
-                }
-            }
-        });
         
+        gms.castViewChangeWithDest(data.view, data.digest, null, newViewMembers);
+        /*
+         * if we have flush in stack send ack back to merge coordinator                 
+         * */
+        if(gms.flushProtocolInStack) {
+            Message ack=new Message(data.getSender(), null, null);
+            ack.setFlag(Message.OOB);
+            GMS.GmsHeader ack_hdr=new GMS.GmsHeader(GMS.GmsHeader.INSTALL_MERGE_VIEW_OK);
+            ack.putHeader(gms.getName(), ack_hdr);
+            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, data.getSender()));
+            gms.getDownProtocol().down(new Event(Event.MSG, ack));
+        }
         merging=false;
+        gms.getViewHandler().resume(merge_id);
     }
 
     public void handleMergeCancelled(ViewId merge_id) {
-        if(merge_id != null
-                && this.merge_id != null
-                && this.merge_id.equals(merge_id)) {
-            if(log.isDebugEnabled()) log.debug("merge was cancelled (merge_id=" + merge_id + ", local_addr=" +
-                    gms.local_addr +")");
+        if(merge_id != null && this.merge_id != null && this.merge_id.equals(merge_id)) {
+            if(log.isDebugEnabled())
+                log.debug("merge was cancelled at merge participant " + gms.local_addr+ " (merge_id="+ merge_id+ ")");
+
             setMergeId(null);
-            this.merge_leader=null;
             merging=false;
             gms.getViewHandler().resume(merge_id);
+        } 
+        else {
+            if(log.isWarnEnabled())
+                log.warn("merge was supposed to be cancelled at merge participant " + gms.local_addr
+                         + " (merge_id="
+                         + merge_id
+                         + "), but it is not since merge ids do not match");
         }
     }
 
@@ -281,8 +302,7 @@ public class CoordGmsImpl extends GmsImpl {
     private void cancelMerge() {
         Object tmp=merge_id;
         if(merge_id != null && log.isDebugEnabled()) log.debug("cancelling merge (merge_id=" + merge_id + ')');
-        setMergeId(null);
-        this.merge_leader=null;
+        setMergeId(null);        
         stopMergeTask();
         merging=false;
         synchronized(merge_rsps) {
@@ -482,55 +502,56 @@ public class CoordGmsImpl extends GmsImpl {
      * @param coords A list of Addresses of subgroup coordinators (inluding myself)
      * @param timeout Max number of msecs to wait for the merge responses from the subgroup coords
      */
-    private void getMergeDataFromSubgroupCoordinators(Vector<Address> coords, long timeout) {
-        Message msg;
-        GMS.GmsHeader hdr;
-
-        long curr_time, time_to_wait, end_time, start, stop;
-        int num_rsps_expected;        
-
-        start=System.currentTimeMillis();        
+    private boolean getMergeDataFromSubgroupCoordinators(final Vector<Address> coords, long timeout) {        
+           
+    	boolean gotAllResponses = false;
+        long start=System.currentTimeMillis();        
         synchronized(merge_rsps) {
             merge_rsps.removeAllElements();
-            if(log.isDebugEnabled()) log.debug("sending MERGE_REQ to " + coords);            
+            if(log.isDebugEnabled())
+                log.debug("Merge leader " + gms.local_addr + " sending MERGE_REQ to " + coords);            
+            
             for(Address coord:coords) {               
                 // this allows UNICAST to remove coord from previous_members in case of a merge
                 gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
 
-                msg=new Message(coord, null, null);
+                Message msg=new Message(coord, null, null);
                 msg.setFlag(Message.OOB);
-                hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
+                GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_REQ);
                 hdr.mbr=gms.local_addr;
                 hdr.merge_id=merge_id;
                 msg.putHeader(gms.getName(), hdr);
                 gms.getDownProtocol().down(new Event(Event.MSG, msg));
+                
+                if(log.isDebugEnabled())
+                    log.debug("Merge leader " + gms.local_addr + " sent MERGE_REQ to " + coord);
             }
 
             // wait until num_rsps_expected >= num_rsps or timeout elapsed
-            num_rsps_expected=coords.size();
-            curr_time=System.currentTimeMillis();
-            end_time=curr_time + timeout;
-            while(end_time > curr_time) {
-                time_to_wait=end_time - curr_time;
-                if(log.isDebugEnabled()) log.debug("waiting " + time_to_wait + " msecs for merge responses");
+            int num_rsps_expected=coords.size();
+            long curr_time=System.currentTimeMillis();
+            long end_time=curr_time + timeout;
+            while(end_time > curr_time && !gotAllResponses) {
+                long time_to_wait=end_time - curr_time;
+                if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr +" waiting " + time_to_wait + " msecs for merge responses");
                 if(merge_rsps.size() < num_rsps_expected) {
                     try {
-                        merge_rsps.wait(time_to_wait);
+                        merge_rsps.wait(500);
                     }
                     catch(Exception ex) {
                     }
                 }
                 if(log.isDebugEnabled())
-                    log.debug("num_rsps_expected=" + num_rsps_expected + ", actual responses=" + merge_rsps.size());
+                    log.debug("Merge leader " + gms.local_addr +" expects " + num_rsps_expected + " responses, so far got " + merge_rsps.size() + " responses");
 
-                if(merge_rsps.size() >= num_rsps_expected)
-                    break;
+                gotAllResponses = merge_rsps.size() >= num_rsps_expected;               
                 curr_time=System.currentTimeMillis();
             }
-            stop=System.currentTimeMillis();
-            if(log.isTraceEnabled())
-                log.trace("collected " + merge_rsps.size() + " merge response(s) in " + (stop-start) + "ms");
+            long stop=System.currentTimeMillis();
+            if(log.isDebugEnabled())
+                log.debug("Merge leader " + gms.local_addr + " collected " + merge_rsps.size() + " merge response(s) in " + (stop-start) + " ms");
         }
+        return gotAllResponses;
     }
 
     /**
@@ -563,7 +584,7 @@ public class CoordGmsImpl extends GmsImpl {
         // contains a list of Views, each View is a subgroup
 
         for(MergeData tmp_data:merge_rsps) {           
-            if(log.isDebugEnabled()) log.debug("merge data is " + tmp_data);
+            if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + " is consolidating merge data " + tmp_data);
             tmp_view=tmp_data.getView();
             if(tmp_view != null) {
                 tmp_vid=tmp_view.getVid();
@@ -589,15 +610,16 @@ public class CoordGmsImpl extends GmsImpl {
 
         // determine the new view
         new_view=new MergeView(new_vid, new_mbrs.getMembers(), subgroups);
-        if(log.isDebugEnabled()) log.debug("new merged view will be " + new_view);
+        if(log.isDebugEnabled())
+            log.debug("Merge leader " + gms.local_addr + " computed new merged view that will be " + new_view);
 
         // determine the new digest
         Digest new_digest=consolidateDigests(merge_rsps, new_mbrs.size());
         if(new_digest == null) {
-            if(log.isErrorEnabled()) log.error("digest could not be consolidated");
+            if(log.isErrorEnabled()) log.error("Merge leader " + gms.local_addr + "could not consolidate digest for merge");
             return null;
         }
-        if(log.isDebugEnabled()) log.debug("consolidated digest=" + new_digest);
+        if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + "consolidated digest=" + new_digest);
         ret=new MergeData(gms.local_addr, new_view, new_digest);
         return ret;
     }
@@ -642,9 +664,13 @@ public class CoordGmsImpl extends GmsImpl {
             return;
         }
 
-        if(log.isTraceEnabled())
-            log.trace("sending merge view " + v.getVid() + " to coordinators " + coords);
-
+        if(log.isDebugEnabled())
+            log.debug(gms.local_addr + " is sending merge view " + v.getVid() + " to coordinators " + coords);
+        
+        gms.merge_ack_collector.reset(v.getVid(), coords);
+        int size=gms.merge_ack_collector.size();
+        long timeout=gms.view_ack_collection_timeout;         
+        
         long start = System.currentTimeMillis();
         for(Address coord:coords) {            
             Message msg=new Message(coord, null, null);
@@ -658,10 +684,7 @@ public class CoordGmsImpl extends GmsImpl {
         
         //[JGRP-700] - FLUSH: flushing should span merge
         //if flush is in stack wait for acks from separated island coordinators
-        if(gms.flushProtocolInStack) {
-            gms.merge_ack_collector.reset(v.getVid(), coords);
-            int size=gms.merge_ack_collector.size();
-            long timeout=gms.merge_timeout;
+        if(gms.flushProtocolInStack) {          
             try {
                 gms.merge_ack_collector.waitForAllAcks(timeout);
                 long stop=System.currentTimeMillis();
@@ -674,7 +697,7 @@ public class CoordGmsImpl extends GmsImpl {
                               + "ms");
             }
             catch(TimeoutException e) {
-                log.warn("failed to collect all ACKs for merge(" + size
+                log.warn("Merge coordinator " + gms.local_addr + " failed to collect all ACKs for merge (" + size
                          + ") for view "
                          + v
                          + " after "
@@ -694,7 +717,7 @@ public class CoordGmsImpl extends GmsImpl {
      */
     private void sendMergeResponse(Address sender, View view, Digest digest) {
         Message msg=new Message(sender, null, null);
-        // msg.setFlag(Message.OOB);
+        msg.setFlag(Message.OOB);
         GMS.GmsHeader hdr=new GMS.GmsHeader(GMS.GmsHeader.MERGE_RSP);
         hdr.merge_id=merge_id;
         hdr.view=view;
@@ -718,6 +741,7 @@ public class CoordGmsImpl extends GmsImpl {
             hdr.merge_id=merge_id;
             msg.putHeader(gms.getName(), hdr);
             gms.getDownProtocol().down(new Event(Event.MSG, msg));
+            if(log.isDebugEnabled()) log.debug("Merge leader " + gms.local_addr + " send cancel merge to " + coord);
         }
     }
 
@@ -762,8 +786,7 @@ public class CoordGmsImpl extends GmsImpl {
                 t=null;
                 tmp.interrupt();
             }
-            t=null;
-            coords=null;
+            t=null;            
         }
 
         public boolean isRunning() {
@@ -775,76 +798,79 @@ public class CoordGmsImpl extends GmsImpl {
          */
         public void run() {
             if(merging) {
-                if(log.isWarnEnabled()) log.warn("merge is already in progress, terminating");
-                return;
-            }
-            
-            if(coords == null || coords.size() <= 1) {
-                if(log.isErrorEnabled()) log.error("coords == null or size <= 1");
+                if(log.isWarnEnabled())
+                    log.warn(gms.local_addr + " running merge task, but merge is is already in progress, terminating");
                 return;
             }
 
-            if(log.isDebugEnabled()) log.debug("merge task started, coordinators are " + this.coords);
+            if(coords == null || coords.size() <= 1) {
+                if(log.isErrorEnabled())
+                    log.error("coords == null or size <= 1");
+                return;
+            }
+
+            if(log.isDebugEnabled())
+                log.debug(gms.local_addr + " running merge task, coordinators are " + this.coords);
+            Vector<Address> coordsCopy=new Vector<Address>(coords);
             try {
 
                 /* 1. Generate a merge_id that uniquely identifies the merge in progress */
                 setMergeId(generateMergeId());
 
                 /* 2. Fetch the current Views/Digests from all subgroup coordinators */
-                getMergeDataFromSubgroupCoordinators(coords, gms.merge_timeout);
+                boolean success=getMergeDataFromSubgroupCoordinators(coords, gms.merge_timeout);
 
-                /* 3. Remove rejected MergeData elements from merge_rsp and coords (so we'll send the new view only
-                   to members who accepted the merge request) */
+                if(!success) {
+                    throw new Exception("Merge aborted. Merge leader did not get MergeData from all subgroup coordinators " + coords);
+                }
+
+                /*
+                 * 3. Remove rejected MergeData elements from merge_rsp and
+                 * coords (so we'll send the new view only to members who
+                 * accepted the merge request)
+                 */
                 MergeData combined_merge_data=null;
-                boolean abort_merge=false;
                 synchronized(merge_rsps) {
                     removeRejectedMergeRequests(coords);
                     if(merge_rsps.size() <= 1) {
-                        if(log.isWarnEnabled())
-                            log.warn("merge responses from subgroup coordinators <= 1 (" + merge_rsps + "). Cancelling merge");
-                        abort_merge=true;
+                        throw new Exception("Merge leader " + gms.local_addr
+                                            + " did not get all merge responses from subgroup coordinators  ("
+                                            + merge_rsps + ")");
                     }
                     else {
                         /* 4. Combine all views and digests into 1 View/1 Digest */
                         combined_merge_data=consolidateMergeData(merge_rsps);
                         if(combined_merge_data == null) {
-                            if(log.isErrorEnabled()) log.error("combined_merge_data == null");
-                            abort_merge=true;
+                            throw new Exception("Merge leader " + gms.local_addr
+                                                + " could not consolidate merge");
                         }
                     }
                 }
-
-                if(abort_merge) {
-                    sendMergeCancelledMessage(coords, merge_id);
-                    return;
-                }
-             
-                /* 5. Send the new View/Digest to all coordinators (including myself). On reception, they will
+                /* 4. Send the new View/Digest to all coordinators (including myself). On reception, they will
                    install the digest and view in all of their subgroup members */
                 sendMergeView(coords, combined_merge_data);
             }
-            catch(Throwable ex) {                
-                if(log.isErrorEnabled()) log.error("exception while merging", ex);
-                sendMergeCancelledMessage(coords, merge_id);
+            catch(Throwable ex) {
+                if(log.isWarnEnabled())
+                    log.warn(ex.getLocalizedMessage());
+                sendMergeCancelledMessage(coordsCopy, merge_id);
             }
-            finally {       
+            finally {
                 gms.getViewHandler().resume(merge_id);
                 stopMergeCanceller(); // this is probably not necessary
-                
-                /*6. if flush is stack stop the flush for entire cluster 
-                 *[JGRP-700] - FLUSH: flushing should span merge
-                 * 
-                 * */
-                
+
+                /*5. if flush is in stack stop the flush for entire cluster 
+                 [JGRP-700] - FLUSH: flushing should span merge */
+
                 gms.stopFlush();
-                
+
                 merging=false;
-                merge_leader=null;
-                if(log.isDebugEnabled()) log.debug("merge task terminated");
-                t=null;                
+                if(log.isDebugEnabled())
+                    log.debug("Merge leader " + gms.local_addr + " completed merge task");
+                t=null;
             }
         }
-    }
+    }   
 
 
     private class MergeCanceller implements Runnable {
