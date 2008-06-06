@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.80 2008/06/03 14:37:02 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.81 2008/06/06 09:10:27 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -478,6 +478,10 @@ public class ProtocolStack extends Protocol implements Transport {
         Configurator.insertProtocol(prot, position, neighbor_prot, this);
     }
 
+
+    public void insertProtocol(Protocol prot, int position, Class<Protocol> neighbor_prot) throws Exception {
+        Configurator.insertProtocol(prot, position, neighbor_prot, this);
+    }
 
 
 
