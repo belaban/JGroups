@@ -1,9 +1,10 @@
-// $Id: MERGE3.java,v 1.20 2008/05/20 11:27:32 belaban Exp $
+// $Id: MERGE3.java,v 1.21 2008/06/06 15:57:54 vlada Exp $
 
 package org.jgroups.protocols;
 
 
 import org.jgroups.*;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
@@ -34,6 +35,7 @@ import java.util.concurrent.Future;
  * @author Bela Ban, Oct 16 2001
  */
 @Experimental
+@DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE3 extends Protocol {
     Address local_addr=null;
     @Property
@@ -46,12 +48,6 @@ public class MERGE3 extends Protocol {
     Future<?> announcer_task_future=null;
     CoordinatorAnnouncer announcer_task=null;
     final Set<Address> announcements=Collections.synchronizedSet(new HashSet<Address>());
-
-    /** Use a new thread to send the MERGE event up the stack */
-    @Property
-    boolean use_separate_thread=false;
-
-
 
 
     public String getName() {
@@ -184,19 +180,9 @@ public class MERGE3 extends Protocol {
             if(coords.size() > 1) {
                 if(log.isDebugEnabled())
                     log.debug("passing up MERGE event, coords=" + coords);
-                final Event evt=new Event(Event.MERGE, coords);
-                if(use_separate_thread) {
-                    Thread merge_notifier=new Thread(Util.getGlobalThreadGroup(), "merge notifier thread") {
-                        public void run() {
-                            up_prot.up(evt);
-                        }
-                    };
-                    merge_notifier.setDaemon(true);
-                    merge_notifier.start();
-                }
-                else {
-                    up_prot.up(evt);
-                }
+                
+                Event evt=new Event(Event.MERGE, coords);
+                up_prot.up(evt);               
             }
             announcements.clear();
             announcements.add(local_addr);

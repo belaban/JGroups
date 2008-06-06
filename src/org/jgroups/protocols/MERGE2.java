@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.48 2008/06/06 14:34:49 vlada Exp $
+// $Id: MERGE2.java,v 1.49 2008/06/06 15:57:54 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,6 +6,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.View;
+import org.jgroups.annotations.DeprecatedProperty;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
@@ -46,6 +47,7 @@ import java.util.concurrent.TimeUnit;
  * @author Bela Ban, Oct 16 2001
  */
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
+@DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE2 extends Protocol {
     private Address					local_addr=null;   
     private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator
@@ -55,9 +57,7 @@ public class MERGE2 extends Protocol {
     @ManagedAttribute(description="Maximum time between runs to discover other clusters",writable=true)
     @Property
     private long					max_interval=20000;    // maximum time between executions of the FindSubgroups task
-    private volatile boolean		is_coord=false;  
-    @Property
-    private volatile boolean		use_separate_thread=false; // Use a new thread to send the MERGE event up the stack    
+    private volatile boolean		is_coord=false;    
     private TimeScheduler			timer;
     
     public void init() throws Exception {
@@ -188,20 +188,9 @@ public class MERGE2 extends Protocol {
             if(coords.size() > 1) {
                 if(log.isDebugEnabled())
                     log.debug(local_addr + " found multiple coordinators: " + coords + "; sending up MERGE event");
-                final Event evt=new Event(Event.MERGE, coords);
-                if(use_separate_thread) {
-                    Thread merge_notifier=new Thread() {
-                        public void run() {
-                            up_prot.up(evt);
-                        }
-                    };
-                    merge_notifier.setDaemon(true);
-                    merge_notifier.setName("merge notifier thread");
-                    merge_notifier.start();
-                }
-                else {
-                    up_prot.up(evt);
-                }
+                
+                Event evt=new Event(Event.MERGE, coords);              
+                up_prot.up(evt);               
             }
             if(log.isTraceEnabled())
                 log.trace("MERGE2.FindSubgroups thread terminated (local_addr=" + local_addr + ")");
