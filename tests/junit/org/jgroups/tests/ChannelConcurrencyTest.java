@@ -24,7 +24,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.7 2008/06/06 14:48:48 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.8 2008/06/06 14:51:21 vlada Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -49,6 +49,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             else {
                 channels[i]=new JChannel(ref);
             }
+            tasks[i]=new Task(latch, channels[i]);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
         }
