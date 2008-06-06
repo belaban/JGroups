@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.3 2008/06/06 10:20:58 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.4 2008/06/06 10:31:49 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -78,6 +78,42 @@ public class DuplicateTest extends ChannelTestBase {
         check(r2, 1, new Tuple<Address,Integer>(a1, 10));
         check(r3, 1, new Tuple<Address,Integer>(a1, 10));
     }
+
+
+    public void testRegularMulticastToAll() throws Exception {
+        send(c1, null /** multicast */, false, 10);
+        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+    }
+
+
+    public void testOOBMulticastToAll() throws Exception {
+        send(c1, null /** multicast */, true, 10);
+        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+    }
+
+
+    public void testRegularMulticastToAll3Senders() throws Exception {
+        send(c1, null /** multicast */, false, 10);
+        send(c2, null /** multicast */, false, 10);
+        send(c3, null /** multicast */, false, 10);
+        check(r1, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+    }
+
+    public void testOOBMulticastToAll3Senders() throws Exception {
+        send(c1, null /** multicast */, true, 10);
+        send(c2, null /** multicast */, true, 10);
+        send(c3, null /** multicast */, true, 10);
+        check(r1, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+    }
+
 
     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
         long seqno=1;
