@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.47 2008/05/20 11:27:32 belaban Exp $
+// $Id: MERGE2.java,v 1.48 2008/06/06 14:34:49 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -181,12 +181,13 @@ public class MERGE2 extends Protocol {
 
         public void findAndNotify() {
             List<PingRsp> initial_mbrs=findInitialMembers();
-            if(log.isDebugEnabled())
-                log.debug("initial_mbrs=" + initial_mbrs);
+            if(log.isTraceEnabled())
+                log.trace(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
+            
             Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
-            if(coords != null && coords.size() > 1) {
+            if(coords.size() > 1) {
                 if(log.isDebugEnabled())
-                    log.debug("found multiple coordinators: " + coords + "; sending up MERGE event");
+                    log.debug(local_addr + " found multiple coordinators: " + coords + "; sending up MERGE event");
                 final Event evt=new Event(Event.MERGE, coords);
                 if(use_separate_thread) {
                     Thread merge_notifier=new Thread() {
@@ -231,18 +232,16 @@ public class MERGE2 extends Protocol {
          *         membership, and more than 1 for multiple coordinators
          */
         Vector<Address> detectMultipleCoordinators(List<PingRsp> initial_mbrs) {
-            if(initial_mbrs == null || initial_mbrs.isEmpty())
-                return null;
-
             Vector<Address> ret=new Vector<Address>(11);
-            for(PingRsp response : initial_mbrs) {
-                if(!response.is_server)
-                    continue;
-                Address coord=response.getCoordAddress();
-                if(!ret.contains(coord))
-                    ret.add(coord);
+            if(initial_mbrs != null) {
+                for(PingRsp response:initial_mbrs) {
+                    if(response.isServer()) {
+                        Address coord=response.getCoordAddress();
+                        if(!ret.contains(coord))
+                            ret.add(coord);
+                    }
+                }
             }
-
             return ret;
         }
     }
