@@ -172,7 +172,7 @@ public class ChannelTestBase {
     }
 
     protected JChannel createChannel(boolean unique) throws Exception {
-        return createChannel(unique, 1);
+        return createChannel(unique, 2);
     }
 
     protected JChannel createChannel(JChannel ch) throws Exception {
