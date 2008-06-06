@@ -15,7 +15,7 @@ import java.util.LinkedList;
 /**
  * Tests whether OOB mcast messages are blocked by regular messages (which block) - should NOT be the case
  * @author Bela Ban
- * @version $Id: OOBMcastTest.java,v 1.1 2008/06/06 14:29:52 belaban Exp $
+ * @version $Id: OOBMcastTest.java,v 1.2 2008/06/06 15:41:56 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBMcastTest extends ChannelTestBase {
@@ -31,6 +31,7 @@ public class OOBMcastTest extends ChannelTestBase {
         c1.connect("OOBMcastTest");
         c2.connect("OOBMcastTest");
         View view=c2.getView();
+        System.out.println("view = " + view);
         assert view.size() == 2 : "view is " + view;
         lock.lock();
     }
@@ -58,6 +59,8 @@ public class OOBMcastTest extends ChannelTestBase {
         c2.setReceiver(receiver);
 
         c1.send(new Message(null, null, 1L));
+        Util.sleep(1000); // this (regular) message needs to be received first
+
         for(int i=2; i <= NUM; i++) {
             Message msg=new Message(null, null, (long)i);
             msg.setFlag(Message.OOB);
@@ -66,8 +69,11 @@ public class OOBMcastTest extends ChannelTestBase {
         Util.sleep(1000); // give the asynchronous msgs some time to be received
         List<Long> list=receiver.getMsgs();
         System.out.println("list = " + list);
-        assert list.size() == NUM : "list is " + list;
+        assert list.size() == NUM-1 : "list is " + list;
         assert list.contains(2L);
+
+        Util.sleep(2000);
+        System.out.println("[" + Thread.currentThread().getName() + "]: unlocking lock");
         lock.unlock();
         Util.sleep(10);
 
@@ -91,12 +97,12 @@ public class OOBMcastTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            System.out.println("got " + (msg.isFlagSet(Message.OOB)? "OOB" : "regular") + " message "
+            System.out.println("[" + Thread.currentThread().getName() + "]: got " + (msg.isFlagSet(Message.OOB)? "OOB" : "regular") + " message "
                     + "from " + msg.getSrc() + ": " + msg.getObject());
             if(!msg.isFlagSet(Message.OOB)) {
-                System.out.println("acquiring lock");
+                System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
                 lock.lock();
-                System.out.println("acquired lock successfully");
+                System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
             }
 
             msgs.add((Long)msg.getObject());
