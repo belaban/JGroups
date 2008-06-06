@@ -55,9 +55,9 @@ public class ChannelTestBase {
 
     @BeforeClass
     @Parameters(value={"channel.conf", "compare_thread_count", "use_blocking"})
-    protected void initialize(@Optional("udp.xml") String channel_conf,
-                              @Optional("false") String compare_thread_count,
-                              @Optional("false") String use_blocking) throws Exception {
+    protected void initializeBase(@Optional("udp.xml") String channel_conf,
+                                  @Optional("false") String compare_thread_count,
+                                  @Optional("false") String use_blocking) throws Exception {
         if(channel_conf != null)
             this.channel_conf=channel_conf;
 
@@ -84,7 +84,7 @@ public class ChannelTestBase {
 
     
     @AfterClass
-    protected void terminate() throws Exception {
+    protected void terminateBase() throws Exception {
         if(router != null) {
             router.stop();
             Util.sleep(100);
