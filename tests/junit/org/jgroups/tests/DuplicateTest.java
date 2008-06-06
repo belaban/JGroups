@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.4 2008/06/06 10:31:49 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.5 2008/06/06 10:45:16 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -57,42 +57,42 @@ public class DuplicateTest extends ChannelTestBase {
 
     public void testRegularUnicastsToSelf() throws Exception {
         send(c1, c1.getLocalAddress(), false, 10);
-        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToSelf() throws Exception {
         send(c1, c1.getLocalAddress(), true, 10);
-        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testRegularUnicastsToOthers() throws Exception {
         send(c1, c2.getLocalAddress(), false, 10);
         send(c1, c3.getLocalAddress(), false, 10);
-        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
     public void testOOBUnicastsToOthers() throws Exception {
         send(c1, c2.getLocalAddress(), true, 10);
         send(c1, c3.getLocalAddress(), true, 10);
-        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
 
     public void testRegularMulticastToAll() throws Exception {
         send(c1, null /** multicast */, false, 10);
-        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, false, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, false, new Tuple<Address,Integer>(a1, 10));
     }
 
 
     public void testOOBMulticastToAll() throws Exception {
         send(c1, null /** multicast */, true, 10);
-        check(r1, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r2, 1, new Tuple<Address,Integer>(a1, 10));
-        check(r3, 1, new Tuple<Address,Integer>(a1, 10));
+        check(r1, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r2, 1, true, new Tuple<Address,Integer>(a1, 10));
+        check(r3, 1, true, new Tuple<Address,Integer>(a1, 10));
     }
 
 
@@ -100,18 +100,18 @@ public class DuplicateTest extends ChannelTestBase {
         send(c1, null /** multicast */, false, 10);
         send(c2, null /** multicast */, false, 10);
         send(c3, null /** multicast */, false, 10);
-        check(r1, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r2, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r3, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r1, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, false, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
     public void testOOBMulticastToAll3Senders() throws Exception {
         send(c1, null /** multicast */, true, 10);
         send(c2, null /** multicast */, true, 10);
         send(c3, null /** multicast */, true, 10);
-        check(r1, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r2, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
-        check(r3, 3, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
 
@@ -146,7 +146,7 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
-    private static void check(MyReceiver receiver, int expected_size, Tuple<Address,Integer>... vals) {
+    private static void check(MyReceiver receiver, int expected_size, boolean oob, Tuple<Address,Integer>... vals) {
         Map<Address, List<Long>> msgs=receiver.getMsgs();
         assert msgs.size() == expected_size : "expected size=" + expected_size + ", msgs: " + msgs.keySet();
         for(Tuple<Address,Integer> tuple: vals) {
@@ -155,7 +155,10 @@ public class DuplicateTest extends ChannelTestBase {
             System.out.println("[" + receiver.getName() + "]: " + addr + ": " + list);
             assert list != null : "no list available for " + addr;
             assert list.size() == tuple.getVal2() : "list's size is not " + tuple.getVal2() +", list: " + list;
-            check(addr, list);
+            if(!oob) // if OOB messages, ordering is not guaranteed
+                check(addr, list);
+            else
+                checkPresence(addr, list);
         }
     }
 
@@ -165,6 +168,12 @@ public class DuplicateTest extends ChannelTestBase {
         for(long val: list) {
             assert val == id : "[" + addr + "]: val=" + val + " (expected " + id + "): list is " + list;
             id++;
+        }
+    }
+
+    private static void checkPresence(Address addr, List<Long> list) {
+        for(long l=1; l <= 10; l++) {
+            assert list.contains(l) : l + " is not in the list " + list;
         }
     }
 
