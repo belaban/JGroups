@@ -5,7 +5,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.Properties;
 import java.util.List;
 import java.util.LinkedList;
 import java.net.InetAddress;
@@ -25,24 +24,25 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.6 2008/06/03 14:37:00 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.7 2008/06/06 14:48:48 vlada Exp $
  */
 @Test(groups=Global.FLUSH)
-public class ChannelConcurrencyTest {
+public class ChannelConcurrencyTest  extends ChannelTestBase{
 
 
-    public static void test() throws Exception {
-		final int count = 8;
+    public void test() throws Throwable {
+        final int count=8;
 
-		final Executor executor = Executors.newFixedThreadPool(count);
-		final CountDownLatch latch = new CountDownLatch(count);
-		final JChannel[] channels = new JChannel[count];
-        JChannel ref=null;
+        final Executor executor=Executors.newFixedThreadPool(count);
+        final CountDownLatch latch=new CountDownLatch(count);
+        final JChannel[] channels=new JChannel[count];
+        final Task[] tasks=new Task[count];
 
-        final long start = System.currentTimeMillis();
-		for (int i = 0; i < count; i++) {
+        JChannel ref = null;
+        final long start=System.currentTimeMillis();
+        for(int i=0;i < count;i++) {
             if(ref == null) {
-                channels[i] = new JChannel("flush-udp.xml");
+                channels[i]=new JChannel("flush-udp.xml");
                 makeUnique(channels[i], count);
                 ref=channels[i];
             }
@@ -53,47 +53,59 @@ public class ChannelConcurrencyTest {
             changeViewBundling(channels[i]);
         }
 
-		for (int i = 0; i < count; i++) {
-			final int me = i;
-			executor.execute(new Runnable() {
-
-				public void run() {
-					try {
-						channels[me].connect("test");
-						latch.countDown();
-					} catch (final Exception e) {
-						e.printStackTrace();
-					}
-				}
-			});
-		}
-
-		// Wait for all channels to finish connecting
-		latch.await();
-
-		// Wait for all channels to have the correct number of members in their
-		// current view
-		for (;;) {
-			boolean done = true;
-			for (final JChannel channel : channels) {
-				if (channel.getView().size() < count) {
-					done = false;
-				}
-			}
-			if (done) {
-				break;
-			} else {
-				SECONDS.sleep(1);
-			}
-		}
-
-        for(int i=0; i < channels.length; i++) {
-            System.out.println("#" + (i+1) + ": " + channels[i].getView());
+        for(final Task t:tasks) {
+            executor.execute(t);
         }
 
-        final long duration = System.currentTimeMillis() - start;
-		System.out.println("Converged to a single group after " + duration + " ms");
-	}
+        try {
+            // Wait for all channels to finish connecting
+            latch.await();
+
+            for(Task t:tasks) {
+                Throwable ex=t.getException();
+                if(ex != null)
+                    throw ex;
+            }
+
+            // Wait for all channels to have the correct number of members in their
+            // current view
+            boolean converged=false;
+            for(int timeoutToConverge=120,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
+                for(final JChannel channel:channels) {
+                    converged = channel.getView().size() == count;
+                    if(!converged)
+                        break;
+                }                
+            }
+
+            final long duration=System.currentTimeMillis() - start;
+            System.out.println("Converged to a single group after " + duration + " ms; group is:\n");
+            for(int i=0;i < channels.length;i++) {
+                System.out.println("#" + (i + 1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
+            }
+
+            for(final JChannel channel:channels) {
+                assertEquals("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
+            }
+        }
+        finally {
+            System.out.print("closing channels: ");
+            for(int i=channels.length -1; i>= 0; i--) {
+                Channel channel=channels[i];
+                channel.close();
+                Util.sleep(250);
+                int tries=0;
+                while((channel.isConnected() || channel.isOpen()) && tries++ < 10) {
+                    Util.sleep(1000);
+                }
+            }
+            System.out.println("OK");
+
+            for(final JChannel channel: channels) {
+                assertFalse("Channel connected", channel.isConnected());
+            }
+        }
+    }
 
     private static void changeViewBundling(JChannel channel) {
         ProtocolStack stack=channel.getProtocolStack();
@@ -141,6 +153,35 @@ public class ChannelConcurrencyTest {
         }
         else {
             throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
+        }
+    }
+    
+    private static class Task implements Runnable {
+        private final Channel c;
+        private final CountDownLatch latch;
+        private Throwable exception=null;
+
+
+        public Task(CountDownLatch latch, Channel c) {
+            this.latch=latch;
+            this.c=c;
+        }
+
+        public Throwable getException() {
+            return exception;
+        }
+
+        public void run() {
+            try {
+                c.connect("test");
+            }
+            catch(final Exception e) {
+                exception=e;
+                e.printStackTrace();
+            }
+            finally {
+                latch.countDown();
+            }
         }
     }
 }
