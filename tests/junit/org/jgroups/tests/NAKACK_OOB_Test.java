@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.8 2008/04/14 08:18:40 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.9 2008/06/06 08:25:12 belaban Exp $
  */
 public class NAKACK_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2, ch3;
@@ -91,10 +91,9 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         System.out.println("ch3: " + seqnos3);
 
         // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
-        Long[] expected_seqnos=new Long[]{new Long(1), new Long(2), new Long(4), new Long(3), new Long(5)};
+        Long[] expected_seqnos=new Long[]{1L,2L,4L,3L,5L};
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
-
             Long received_seqno=(Long)seqnos1.get(i);
             Assert.assertEquals(expected_seqno, received_seqno);
             received_seqno=(Long)seqnos2.get(i);
