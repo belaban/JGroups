@@ -14,12 +14,12 @@ import java.util.LinkedList;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBMcastTest.java,v 1.3 2008/06/06 16:04:35 belaban Exp $
+ * @version $Id: OOBMcastTest.java,v 1.4 2008/06/07 13:04:51 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBMcastTest extends ChannelTestBase {
     private JChannel c1, c2;
-    private final ReentrantLock lock=new ReentrantLock();
+    private ReentrantLock lock;
 
     @BeforeMethod
     void init() throws Exception {
@@ -32,6 +32,7 @@ public class OOBMcastTest extends ChannelTestBase {
         View view=c2.getView();
         System.out.println("view = " + view);
         assert view.size() == 2 : "view is " + view;
+        lock=new ReentrantLock();
         lock.lock();
     }
 
@@ -114,6 +115,7 @@ public class OOBMcastTest extends ChannelTestBase {
                 System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
                 lock.lock();
                 System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
+                lock.unlock();
             }
 
             msgs.add((Long)msg.getObject());
