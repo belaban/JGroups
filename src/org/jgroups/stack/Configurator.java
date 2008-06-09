@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentMap;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.28.4.6 2008/05/23 09:16:36 belaban Exp $
+ * @version $Id: Configurator.java,v 1.28.4.7 2008/06/09 09:40:56 belaban Exp $
  */
 public class Configurator {
 
@@ -238,11 +238,28 @@ public class Configurator {
         if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
             throw new Exception("position has to be ABOVE or BELOW");
 
+        Protocol neighbor=stack.findProtocol(neighbor_prot);
+        if(neighbor == null)
+            throw new Exception("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
+
+        insertProtocol(prot, neighbor,  position);
+    }
+
+
+    public static void insertProtocol(Protocol prot, int position, Class<? extends Protocol> neighbor_prot, ProtocolStack stack) throws Exception {
+        if(neighbor_prot == null) throw new Exception("Configurator.insertProtocol(): neighbor_prot is null");
+        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
+            throw new Exception("position has to be ABOVE or BELOW");
 
         Protocol neighbor=stack.findProtocol(neighbor_prot);
         if(neighbor == null)
             throw new Exception("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
 
+        insertProtocol(prot, neighbor,  position);
+    }
+
+
+    protected static void insertProtocol(Protocol prot, Protocol neighbor, int position) {
          // connect to the protocol layer below and above
         if(position == ProtocolStack.BELOW) {
             prot.setUpProtocol(neighbor);
