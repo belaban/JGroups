@@ -1,15 +1,13 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
-import org.jgroups.Address;
-import org.jgroups.Channel;
-import org.jgroups.ChannelException;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.Assert;
-import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -21,27 +19,20 @@ import java.util.Vector;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.5 2008/04/09 15:01:35 belaban Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.6 2008/06/09 13:03:06 belaban Exp $
  */
+@Test(groups={"temp"},sequential=true)
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
-    private static final int FACTORY_COUNT = 8;
-
-
-    protected int getMuxFactoryCount() {
-        return FACTORY_COUNT;
-    }
 
     protected boolean useBlocking() {
         return true;
     }
 
-    @Test
     public void testConcurrentStartup4Members() {
         concurrentStartupHelper(4);
     }
 
-    @Test
     public void testConcurrentStartup8Members() {
         concurrentStartupHelper(8);
     }
@@ -49,10 +40,18 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
     protected void concurrentStartupHelper(int channelCount) {
         List<ReplicatedHashMap<Address, Integer>> channels = new ArrayList<ReplicatedHashMap<Address, Integer>>(channelCount);        
         MyNotification<Address, Integer> n = new MyNotification<Address, Integer>();
-       
+
+        JChannel first=null;
         for (int i = 0; i < channelCount; i++) {
             try {
-                Channel c = createChannel();
+                JChannel c;
+                if(i == 0) {
+                    c = createChannel(true, channelCount);
+                    modifyGMS(c);
+                    first=c;
+                }
+                else
+                    c=createChannel(first);
                 c.setOpt(Channel.AUTO_RECONNECT, true);                
                 ReplicatedHashMap<Address, Integer> map = new ReplicatedHashMap<Address, Integer>(c);
                 channels.add(map);
@@ -96,6 +95,14 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
         }
               
     }
+
+    private static void modifyGMS(JChannel c) {
+        ProtocolStack stack=c.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        if(gms != null)
+            gms.setLogCollectMessages(false);
+    }
+
     private static class MyNotification<K extends Serializable, V extends Serializable>
             implements org.jgroups.blocks.ReplicatedHashMap.Notification<K, V> {
 
