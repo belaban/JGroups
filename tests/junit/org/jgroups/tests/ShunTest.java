@@ -24,8 +24,9 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.15 2008/05/29 09:08:07 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.16 2008/06/09 13:28:42 belaban Exp $
  */
+@Test(groups="vlad",sequential=true)
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
     RpcDispatcher disp1, disp2;
@@ -36,19 +37,15 @@ public class ShunTest extends ChannelTestBase {
     protected void tearDown() throws Exception {
         if(disp2 != null)
             disp2.stop();
-        if(c2 != null)
-            c2.close();
         if(disp1 != null)
             disp1.stop();
-        if(c1 != null)
-            c1.close();
+        Util.close(c2, c1);
     }
 
     protected boolean useBlocking() {
         return true;
     }
 
-    @Test
     public void testShunning() {
         connectAndShun(2,false);
     }
@@ -63,19 +60,18 @@ public class ShunTest extends ChannelTestBase {
      * After B has rejoined, it invokes an RPC and it should get valid return values from both A and B.
      * @throws Exception
      */
-    @Test
     public void testTwoMembersShun() throws Exception {
         View view;
-        c1=createChannel();
+        c1=createChannel(true, 2);
         c1.setOpt(Channel.AUTO_GETSTATE, false);
         c1.addChannelListener(new BelasChannelListener("C1"));
-        c2=createChannel();
+        c2=createChannel(c1);
         c2.setOpt(Channel.AUTO_GETSTATE, false);
         c2.addChannelListener(new BelasChannelListener("C2"));
         disp1=new RpcDispatcher(c1, null, new BelasReceiver("C1"), this);
         disp2=new RpcDispatcher(c2, null, new BelasReceiver("C2"), this);
-        c1.connect("demo");
-        c2.connect("demo");
+        c1.connect("ShunTest");
+        c2.connect("ShunTest");
         Assert.assertEquals(2, c1.getView().size());
         
         RspList rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
