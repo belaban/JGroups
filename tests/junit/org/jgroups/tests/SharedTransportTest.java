@@ -5,11 +5,19 @@ import org.jgroups.conf.ConfiguratorFactory;
 import org.jgroups.conf.ProtocolData;
 import org.jgroups.conf.ProtocolParameter;
 import org.jgroups.conf.ProtocolStackConfigurator;
+import org.jgroups.protocols.BasicTCP;
+import org.jgroups.protocols.TCPPING;
+import org.jgroups.protocols.TP;
+import org.jgroups.protocols.UDP;
+import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.ResourceManager;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.LinkedList;
 import java.util.List;
 
@@ -17,9 +25,9 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.21 2008/05/21 10:22:56 belaban Exp $
+ * @version $Id: SharedTransportTest.java,v 1.22 2008/06/09 13:23:56 belaban Exp $
  */
-@Test(groups="unknown",sequential=true)
+@Test(groups="temp2",sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver r1, r2, r3;
@@ -34,8 +42,8 @@ public class SharedTransportTest extends ChannelTestBase {
 
 
     public void testCreationNonSharedTransport() throws Exception {
-        a=createChannel();
-        a.connect("x");
+        a=createChannel(true);
+        a.connect("SharedTransportTest.testCreationNonSharedTransport");
         View view=a.getView();
         System.out.println("view = " + view);
         assert view.size() == 1;
@@ -44,6 +52,7 @@ public class SharedTransportTest extends ChannelTestBase {
 
     public void testCreationOfDuplicateCluster() throws Exception {
         a=createSharedChannel(SINGLETON_1);
+        // makeUnique(a, 2);
         b=createSharedChannel(SINGLETON_1);
         a.connect("x");
         try {
@@ -370,6 +379,40 @@ public class SharedTransportTest extends ChannelTestBase {
         transport.getParameters().put(Global.SINGLETON_NAME, new ProtocolParameter(Global.SINGLETON_NAME, singleton_name));
         return new JChannel(config);
     }
+
+
+    protected static void makeUnique(Channel channel, int num) throws Exception {
+        ProtocolStack stack=channel.getProtocolStack();
+        TP transport=stack.getTransport();
+        InetAddress bind_addr=transport.getBindAddressAsInetAddress();
+
+        if(transport instanceof UDP) {
+            String mcast_addr=ResourceManager.getNextMulticastAddress();
+            short mcast_port=ResourceManager.getNextMulticastPort(bind_addr);
+            ((UDP)transport).setMulticastAddress(mcast_addr);
+            ((UDP)transport).setMulticastPort(mcast_port);
+        }
+        else if(transport instanceof BasicTCP) {
+            List<Short> ports=ResourceManager.getNextTcpPorts(bind_addr, num);
+            transport.setBindPort(ports.get(0));
+            transport.setPortRange(num);
+
+            Protocol ping=stack.findProtocol(TCPPING.class);
+            if(ping == null)
+                throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
+
+            List<String> initial_hosts=new LinkedList<String>();
+            for(short port: ports) {
+                initial_hosts.add(bind_addr + "[" + port + "]");
+            }
+            String tmp=Util.printListWithDelimiter(initial_hosts, ",");
+            ((TCPPING)ping).setInitialHosts(tmp);
+        }
+        else {
+            throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
+        }
+    }
+
 
 
     private static class MyReceiver extends ReceiverAdapter {
