@@ -6,7 +6,9 @@ import org.jgroups.protocols.Discovery;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -16,15 +18,15 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.25 2008/06/04 07:21:37 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.26 2008/06/09 11:54:59 belaban Exp $
  */
-@Test(groups="temp2",sequential=true)
+@Test(groups="temp",sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
     @BeforeMethod
     public void setUp() throws Exception {
-        c1=createChannel(true);
+        c1=createChannel(true, 2);
         c2=createChannel(c1);
     }
 
