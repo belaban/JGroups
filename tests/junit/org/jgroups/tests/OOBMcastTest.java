@@ -3,18 +3,20 @@ package org.jgroups.tests;
 import org.jgroups.*;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.List;
-import java.util.LinkedList;
 
 /**
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBMcastTest.java,v 1.5 2008/06/09 09:19:49 belaban Exp $
+ * @version $Id: OOBMcastTest.java,v 1.6 2008/06/09 11:04:45 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBMcastTest extends ChannelTestBase {

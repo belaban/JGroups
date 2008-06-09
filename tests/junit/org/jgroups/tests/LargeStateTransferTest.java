@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
@@ -10,6 +9,7 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.io.*;
 
@@ -20,9 +20,9 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.15 2008/06/05 07:55:07 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.16 2008/06/09 11:05:36 belaban Exp $
  */
-@Test(groups={"temp2", "single"})
+@Test(groups={"temp"}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
     Promise<Integer> p=new Promise<Integer>();    
@@ -48,30 +48,32 @@ public class LargeStateTransferTest extends ChannelTestBase {
 
 
     public void testStateTransfer1() throws ChannelException {
-        _testStateTransfer(SIZE_1);
+        _testStateTransfer(SIZE_1, "testStateTransfer1");
     }
 
     public void testStateTransfer2() throws ChannelException {
-        _testStateTransfer(SIZE_2);
+        _testStateTransfer(SIZE_2, "testStateTransfer2");
     }
 
     public void testStateTransfer3() throws ChannelException {
-        _testStateTransfer(SIZE_3);
+        _testStateTransfer(SIZE_3, "testStateTransfer3");
     }
 
     public void testStateTransfer4() throws ChannelException {
-        _testStateTransfer(SIZE_4);
+        _testStateTransfer(SIZE_4, "testStateTransfer4");
     }
 
 
 
-    private void _testStateTransfer(int size) throws ChannelException {
-        final String GROUP=getUniqueClusterName("LargeStateTransferTest");
+    private void _testStateTransfer(int size, String suffix) throws ChannelException {
+        final String GROUP="LargeStateTransferTest-" + suffix;
         provider.setReceiver(new Provider(size));
         provider.connect(GROUP);
         p.reset();
         requester.setReceiver(new Requester(p));
         requester.connect(GROUP);
+        View view=requester.getView();
+        assert view.size() == 2 : "view is " + view + ", but should have 2 members";
         log("requesting state of " + size + " bytes");
         start=System.currentTimeMillis();
         boolean rc=requester.getState(provider.getLocalAddress(), 20000);

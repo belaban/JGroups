@@ -2,11 +2,14 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.JChannel;
+import org.jgroups.View;
 import org.jgroups.protocols.*;
 import org.jgroups.protocols.pbcast.GMS;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.stack.Protocol;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
@@ -17,9 +20,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.34 2008/06/05 07:55:14 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.35 2008/06/09 11:09:44 belaban Exp $
  */
-@Test(groups={"temp2"})
+@Test(groups={"temp"})
 public class ConnectStressTest extends ChannelTestBase {
     CyclicBarrier    start_connecting=null;
     CyclicBarrier    connected=null;
@@ -49,7 +52,7 @@ public class ConnectStressTest extends ChannelTestBase {
         long start, stop;
 
         //  create main channel - will be coordinator for JOIN requests
-        channel=createChannel(true);
+        channel=createChannel(true, NUM);
         channel.setOpt(Channel.AUTO_RECONNECT, Boolean.TRUE);
         changeProperties(channel);
 
