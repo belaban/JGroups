@@ -19,13 +19,13 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.15 2008/06/05 07:54:43 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.16 2008/06/09 11:29:16 belaban Exp $
  */
-@Test(groups="temp2")
+@Test(groups="temp")
 public class DisconnectStressTest extends ChannelTestBase {
     CyclicBarrier           all_disconnected=null;
     CyclicBarrier           start_disconnecting=null;
-    static final int        NUM=30;
+    static final int        NUM=20;
     static final long       TIMEOUT=50000;
     final MyThread[]        threads=new MyThread[NUM];
     static String           groupname="DisconnectStressTest";
@@ -37,7 +37,6 @@ public class DisconnectStressTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testConcurrentStartupAndMerging() throws Exception {
         all_disconnected=new CyclicBarrier(NUM+1);
         start_disconnecting=new CyclicBarrier(NUM+1);
