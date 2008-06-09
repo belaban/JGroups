@@ -2,12 +2,7 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.GuardedBy;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
+import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -36,7 +31,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.91 2008/05/29 14:17:37 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.92 2008/06/09 12:11:43 belaban Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -97,6 +92,8 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     private volatile boolean    running=false;
 
+    private boolean             log_suspected_msgs=true;
+
 
     public String getName() {
         return name;
@@ -112,7 +109,15 @@ public class FD_SOCK extends Protocol implements Runnable {
     public String getPingDest() {return ping_dest != null? ping_dest.toString() : "null";}
     @ManagedAttribute(description="Number of suspect event generated")
     public int getNumSuspectEventsGenerated() {return num_suspect_events;}
-    
+
+    public boolean isLog_SuspectedMessages() {
+        return log_suspected_msgs;
+    }
+
+    public void setLogSuspectedMessages(boolean log_suspected_msgs) {
+        this.log_suspected_msgs=log_suspected_msgs;
+    }
+
     @ManagedOperation(description="Print suspect history")
     public String printSuspectHistory() {
         StringBuilder sb=new StringBuilder();
@@ -180,7 +185,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     if(log.isDebugEnabled()) log.debug("[SUSPECT] hdr=" + hdr);
                     for(Address m: hdr.mbrs) {
                         if(local_addr != null && m.equals(local_addr)) {
-                            if(log.isWarnEnabled())
+                            if(log.isWarnEnabled() && log_suspected_msgs)
                                 log.warn("I was suspected by " + msg.getSrc() + "; ignoring the SUSPECT message");
                             continue;
                         }
