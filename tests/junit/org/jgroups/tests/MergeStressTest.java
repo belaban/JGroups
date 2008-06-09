@@ -1,10 +1,12 @@
-// $Id: MergeStressTest.java,v 1.14 2008/06/04 08:05:13 belaban Exp $
+// $Id: MergeStressTest.java,v 1.15 2008/06/09 12:13:44 belaban Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.*;
+import org.jgroups.protocols.FD_SOCK;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
@@ -19,9 +21,9 @@ import java.util.concurrent.CyclicBarrier;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.14 2008/06/04 08:05:13 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.15 2008/06/09 12:13:44 belaban Exp $
  */
-@Test(groups="temp2")
+@Test(groups={"temp"})
 public class MergeStressTest extends ChannelTestBase {
     CyclicBarrier           start_connecting=null;
     CyclicBarrier           received_all_views=null;
@@ -52,12 +54,12 @@ public class MergeStressTest extends ChannelTestBase {
             JChannel tmp;
             if(i == 0) {
                 first=createChannel(true, threads.length);
-                modifyStack(first);
                 tmp=first;
             }
             else {
                 tmp=createChannel(first);
             }
+            modifyStack(tmp);
             threads[i]=new MyThread(i, tmp);
             threads[i].start();
         }
@@ -104,6 +106,14 @@ public class MergeStressTest extends ChannelTestBase {
         if(prot != null) {
             STABLE stable=(STABLE)prot;
             stable.setDesiredAverageGossip(5000);
+        }
+        prot=stack.findProtocol(NAKACK.class);
+        if(prot != null) {
+            ((NAKACK)prot).setLogDiscardMessages(false);
+        }
+        prot=stack.findProtocol(FD_SOCK.class);
+        if(prot != null) {
+            ((FD_SOCK)prot).setLogSuspectedMessages(false);
         }
     }
 
