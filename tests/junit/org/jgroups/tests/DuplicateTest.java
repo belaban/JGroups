@@ -5,9 +5,12 @@ import org.jgroups.*;
 import org.jgroups.protocols.DUPL;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.util.Util;
 import org.jgroups.util.Tuple;
-import org.testng.annotations.*;
+import org.jgroups.util.Util;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -21,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.5 2008/06/06 10:45:16 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.6 2008/06/09 09:59:18 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -114,8 +117,41 @@ public class DuplicateTest extends ChannelTestBase {
         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
     }
 
+    public void testMixedMulticastsToAll3Members() throws Exception {
+         send(c1, null /** multicast */, false, true, 10);
+         send(c2, null /** multicast */, false, true, 10);
+         send(c3, null /** multicast */, false, true, 10);
+         check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+         check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+         check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+     }
 
-    private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
+
+     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
+         send(sender_channel, dest, oob, false, num_msgs);
+     }
+
+     private static void send(Channel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
+         long seqno=1;
+         for(int i=0; i < num_msgs; i++) {
+             Message msg=new Message(dest, null, seqno++);
+             if(mixed) {
+                 if(i % 2 == 0)
+                     msg.setFlag(Message.OOB);
+             }
+             else if(oob) {
+                 msg.setFlag(Message.OOB);
+             }
+
+             sender_channel.send(msg);
+         }
+         // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
+         // can for example delay message delivery
+         Util.sleep(500);
+     }
+
+
+   /* private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
         long seqno=1;
         for(int i=0; i < num_msgs; i++) {
             Message msg=new Message(dest, null, seqno++);
@@ -126,7 +162,7 @@ public class DuplicateTest extends ChannelTestBase {
         // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
         // can for example delay message delivery
         Util.sleep(500);
-    }
+    }*/
 
 
     private void createChannels(boolean copy_multicasts, boolean copy_unicasts, int num_outgoing_copies, int num_incoming_copies) throws Exception {
