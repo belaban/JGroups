@@ -43,7 +43,6 @@ public class VirtualSynchronyTest {
 	
 	
 
-	@Test
     public void testVSynch() throws Exception
 	{
 		long start = System.currentTimeMillis();
