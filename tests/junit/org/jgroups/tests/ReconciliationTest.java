@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.14 2008/06/09 12:51:19 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.15 2008/06/09 12:54:13 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -130,7 +130,11 @@ public class ReconciliationTest extends ChannelTestBase {
         channels=new ArrayList<JChannel>(names.length);
         receivers=new ArrayList<MyReceiver>(names.length);
         for(int i=0;i < channelCount;i++) {
-            JChannel channel=createChannel();
+            JChannel channel;
+            if(i == 0)
+                channel=createChannel(true, names.length);
+            else
+                channel=createChannel(channels.get(0));
             MyReceiver r=new MyReceiver(channel, names[i]);
             receivers.add(r);
             channels.add(channel);
