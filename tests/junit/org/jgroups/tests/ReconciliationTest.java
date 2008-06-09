@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.13 2008/05/29 11:13:09 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.14 2008/06/09 12:51:19 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -29,7 +29,7 @@ public class ReconciliationTest extends ChannelTestBase {
     private List<MyReceiver> receivers;
 
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         if(channels != null) {
             for(JChannel channel:channels) {
                 channel.close();
