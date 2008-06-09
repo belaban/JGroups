@@ -4,6 +4,8 @@ package org.jgroups.protocols.pbcast;
 
 import org.apache.commons.logging.Log;
 import org.jgroups.*;
+import org.jgroups.annotations.*;
+import org.jgroups.protocols.pbcast.GmsImpl.Request;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.*;
 import org.jgroups.util.Queue;
@@ -13,20 +15,13 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.jgroups.annotations.DeprecatedProperty;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.ManagedOperation;
-import org.jgroups.annotations.Property;
-import org.jgroups.protocols.pbcast.GmsImpl.Request;
-
 
 /**
  * Group membership protocol. Handles joins/leaves/crashes (suspicions) and emits new views
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.146 2008/06/06 14:34:49 vlada Exp $
+ * @version $Id: GMS.java,v 1.147 2008/06/09 11:26:33 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -407,7 +402,8 @@ public class GMS extends Protocol {
      * If the list is null, we take the members who are part of new_view
      * @param new_view
      * @param digest
-     * @param members
+     * @param jr
+     * @param newMembers
      */
     public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {           
         if(log.isTraceEnabled())
@@ -440,17 +436,18 @@ public class GMS extends Protocol {
                           + new_view.getVid());
         }
         catch(TimeoutException e) {
-            log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
-                     + ") for mcasted view "
-                     + new_view
-                     + " after "
-                     + view_ack_collection_timeout
-                     + "ms, missing ACKs from "
-                     + ack_collector.printMissing()
-                     + " (received="
-                     + ack_collector.printReceived()
-                     + "), local_addr="
-                     + local_addr);
+            if(log_collect_msgs && log.isWarnEnabled())
+                log.warn(local_addr + " failed to collect all ACKs (" + ack_collector.size()
+                        + ") for view "
+                        + new_view
+                        + " after "
+                        + view_ack_collection_timeout
+                        + "ms, missing ACKs from "
+                        + ack_collector.printMissing()
+                        + " (received="
+                        + ack_collector.printReceived()
+                        + "), local_addr="
+                        + local_addr);
         }   
         
         if(jr != null && (newMembers != null && !newMembers.isEmpty())) {
@@ -1139,7 +1136,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.146 2008/06/06 14:34:49 vlada Exp $
+     * @version $Id: GMS.java,v 1.147 2008/06/09 11:26:33 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
