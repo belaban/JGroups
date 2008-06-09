@@ -14,21 +14,21 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.6 2008/05/13 08:30:29 belaban Exp $
- */
+ * @version $Id: UnicastEnableToTest.java,v 1.7 2008/06/09 13:45:51 belaban Exp $
+ */@Test(groups="temp",sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
-    JChannel channel=null, channel2=null;
-
+    private JChannel c1=null, c2=null;
+    private static final String GROUP="UnicastEnableToTest";
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        channel=createChannel();
-        channel.connect("demo-group");
+        c1=createChannel(true);
+        c1.connect(GROUP);
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        Util.close(channel2, channel);
+        Util.close(c2, c1);
     }
 
 
@@ -37,7 +37,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
         IpAddress addr=new IpAddress("127.0.0.1", 8976);
         System.out.println("sending message to non-existing destination " + addr);
         try {
-            channel.send(new Message(addr, null, "Hello world"));
+            c1.send(new Message(addr, null, "Hello world"));
             assert false : "we should not get here; sending of message to " + addr + " should have failed";
         }
         catch(IllegalArgumentException ex) {
@@ -48,13 +48,13 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
     @Test
     public void testUnicastMessageToExistingMember() throws Exception {
-        channel2=createChannel();
-        channel2.connect("demo-group");
-        Assert.assertEquals(2, channel2.getView().size());
+        c2=createChannel(c1);
+        c2.connect(GROUP);
+        Assert.assertEquals(2, c2.getView().size());
         MyReceiver receiver=new MyReceiver();
-        channel2.setReceiver(receiver);
-        Address dest=channel2.getLocalAddress();
-        channel.send(new Message(dest, null, "hello"));
+        c2.setReceiver(receiver);
+        Address dest=c2.getLocalAddress();
+        c1.send(new Message(dest, null, "hello"));
         Util.sleep(500);
         List list=receiver.getMsgs();
         System.out.println("channel2 received the following msgs: " + list);
@@ -65,14 +65,14 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
     @Test
     public void testUnicastMessageToLeftMember() throws Exception {
-        channel2=createChannel();
-        channel2.connect("demo-group");
-        Assert.assertEquals(2, channel2.getView().size());
-        Address dest=channel2.getLocalAddress();
-        channel2.close();
+        c2=createChannel(c1);
+        c2.connect(GROUP);
+        Assert.assertEquals(2, c2.getView().size());
+        Address dest=c2.getLocalAddress();
+        c2.close();
         Util.sleep(100);
         try {
-            channel.send(new Message(dest, null, "hello"));
+            c1.send(new Message(dest, null, "hello"));
             assert false : "we should not come here as message to previous member " + dest + " should throw exception";
         }
         catch(IllegalArgumentException ex) {
@@ -83,14 +83,14 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
     @Test
     public void testUnicastMessageToLeftMemberWithEnableUnicastToEvent() throws Exception {
-        channel2=createChannel();
-        channel2.connect("demo-group");
-        Assert.assertEquals(2, channel2.getView().size());
-        Address dest=channel2.getLocalAddress();
-        channel2.close();
+        c2=createChannel(c1);
+        c2.connect(GROUP);
+        Assert.assertEquals(2, c2.getView().size());
+        Address dest=c2.getLocalAddress();
+        c2.close();
         Util.sleep(100);
-        channel.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
-        channel.send(new Message(dest, null, "hello"));
+        c1.down(new Event(Event.ENABLE_UNICASTS_TO, dest));
+        c1.send(new Message(dest, null, "hello"));
     }
 
 
