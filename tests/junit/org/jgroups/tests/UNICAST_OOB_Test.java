@@ -1,17 +1,17 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.DISCARD_PAYLOAD;
+import org.jgroups.protocols.UNICAST;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -19,33 +19,29 @@ import java.util.List;
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.7 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.8 2008/06/09 13:38:18 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2;
 
 
     @BeforeMethod
     void setUp() throws Exception {
-        ch1=createChannel();
-        ch2=createChannel();
+        ch1=createChannel(true, 2);
+        ch2=createChannel(ch1);
     }
 
     @AfterMethod
     void tearDown() throws Exception {
-        if(ch1 != null)
-            ch1.close();
-        if(ch2 != null)
-            ch2.close();
+        Util.close(ch2, ch1);
     }
 
 
-    @Test
     public void testRegularMessages() throws Exception {
         sendMessages(false);
     }
 
-    @Test
     public void testOutOfBandMessages() throws Exception {
         sendMessages(true);
     }
@@ -59,11 +55,11 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         ch2.setReceiver(receiver);
 
         // the second channel will discard the unicast messages with seqno #3 two times, the let them pass
-        ch2.getProtocolStack().insertProtocol(prot1, ProtocolStack.BELOW, "UNICAST");
+        ch2.getProtocolStack().insertProtocol(prot1, ProtocolStack.BELOW, UNICAST.class);
 
-        ch1.connect("x");
-        ch2.connect("x");
-        Assert.assertEquals(2, ch2.getView().getMembers().size());
+        ch1.connect("UNICAST_OOB_Test");
+        ch2.connect("UNICAST_OOB_Test");
+        assert ch2.getView().size() == 2 : "ch2.view is " + ch2.getView();
 
         Address dest=ch2.getLocalAddress();
         for(int i=1; i <=5; i++) {
@@ -87,7 +83,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
             Long received_seqno=(Long)seqnos.get(i);
-            Assert.assertEquals(expected_seqno, received_seqno);
+            assert expected_seqno.equals(received_seqno);
         }
     }
 

@@ -5,7 +5,9 @@ import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
 import org.jgroups.protocols.TP;
 import org.jgroups.util.Util;
-import org.testng.annotations.*;
+import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -14,21 +16,21 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.6 2008/05/20 11:27:36 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.7 2008/06/09 13:34:38 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        c1=createChannel();
-        c2=createChannel();
+        c1=createChannel(true, 2);
+        c2=createChannel(c1);
     }
 
     @AfterMethod
     protected void tearDown() throws Exception {
-        c2.close();
-        c1.close();
+        Util.close(c2, c1);
     }
 
 
@@ -37,8 +39,8 @@ public class TransportThreadPoolTest extends ChannelTestBase {
         Receiver r1=new Receiver(), r2=new Receiver();
         c1.setReceiver(r1);
         c2.setReceiver(r2);
-        c1.connect("x");
-        c2.connect("x");
+        c1.connect("TransportThreadPoolTest");
+        c2.connect("TransportThreadPoolTest");
 
         c1.send(null, null, "hello world");
         c2.send(null, null, "bela");
