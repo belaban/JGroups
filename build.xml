@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.165 2008/06/04 07:20:49 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.166 2008/06/09 14:12:00 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -354,7 +354,7 @@
     <!-- =============================== TestNG ======================================== -->
 
     <target name="all-tests-cc">
-        <antcall target="all-new-tests"/>
+        <antcall target="temp"/>
     </target>
 
     <target name="all-new-tests">
