@@ -14,7 +14,7 @@ import java.util.List;
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.7 2008/06/09 13:45:51 belaban Exp $
+ * @version $Id: UnicastEnableToTest.java,v 1.8 2008/06/09 14:24:12 belaban Exp $
  */@Test(groups="temp",sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
     private JChannel c1=null, c2=null;
@@ -32,7 +32,6 @@ public class UnicastEnableToTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testUnicastMessageToUnknownMember() throws Exception {
         IpAddress addr=new IpAddress("127.0.0.1", 8976);
         System.out.println("sending message to non-existing destination " + addr);
@@ -46,7 +45,6 @@ public class UnicastEnableToTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testUnicastMessageToExistingMember() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
@@ -63,7 +61,6 @@ public class UnicastEnableToTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testUnicastMessageToLeftMember() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
@@ -81,7 +78,6 @@ public class UnicastEnableToTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testUnicastMessageToLeftMemberWithEnableUnicastToEvent() throws Exception {
         c2=createChannel(c1);
         c2.connect(GROUP);
