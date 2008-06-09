@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.54 2008/05/15 10:49:09 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.55 2008/06/09 06:25:04 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -354,6 +354,32 @@ public class NakReceiverWindow {
         }
     }
 
+
+    public Message removeOOBMessage() {
+        lock.writeLock().lock();
+        try {
+            long next_to_remove=highest_delivered +1;
+            Message retval=xmit_table.get(next_to_remove);
+            if(retval != null && retval.isFlagSet(Message.OOB)) {
+                return remove();
+            }
+            return null;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public boolean hasMessagesToRemove() {
+        lock.readLock().lock();
+        try {
+            Message retval=xmit_table.get(highest_delivered + 1);
+            return retval != null && !retval.equals(NULL_MSG);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
 
 
     /**
