@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.107 2008/06/05 12:51:40 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.108 2008/06/09 05:43:19 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -293,7 +293,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 // if the dest is self --> pass the message back up
-                if(local_addr != null && loopback && local_addr.equals(dst)) {
+                if(loopback && local_addr != null && local_addr.equals(dst)) {
                     msg.setSrc(local_addr);
                     up_prot.up(evt);
                     num_msgs_sent++;
