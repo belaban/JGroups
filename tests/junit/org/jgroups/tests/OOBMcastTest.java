@@ -14,7 +14,7 @@ import java.util.LinkedList;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBMcastTest.java,v 1.4 2008/06/07 13:04:51 belaban Exp $
+ * @version $Id: OOBMcastTest.java,v 1.5 2008/06/09 09:19:49 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBMcastTest extends ChannelTestBase {
@@ -109,12 +109,12 @@ public class OOBMcastTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            System.out.println("[" + Thread.currentThread().getName() + "]: got " + (msg.isFlagSet(Message.OOB)? "OOB" : "regular") + " message "
-                    + "from " + msg.getSrc() + ": " + msg.getObject());
+            // System.out.println("[" + Thread.currentThread().getName() + "]: got " + (msg.isFlagSet(Message.OOB)? "OOB" : "regular") + " message "
+               //     + "from " + msg.getSrc() + ": " + msg.getObject());
             if(!msg.isFlagSet(Message.OOB)) {
-                System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
+                //System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
                 lock.lock();
-                System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
+                //System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
                 lock.unlock();
             }
 
