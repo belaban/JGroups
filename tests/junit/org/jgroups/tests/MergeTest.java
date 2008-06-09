@@ -14,7 +14,6 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -22,8 +21,9 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.23 2008/06/03 13:34:16 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.24 2008/06/09 12:31:04 belaban Exp $
  */
+@Test(groups="vlad")
 public class MergeTest extends ChannelTestBase {
    
     protected boolean useBlocking() {
