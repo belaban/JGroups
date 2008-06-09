@@ -16,14 +16,13 @@ import java.util.concurrent.*;
 /**
  * Tests ConnectionTable
  * @author Bela Ban
- * @version $Id: ConnectionTableTest.java,v 1.7.2.2 2007/11/27 12:45:45 vlada Exp $
+ * @version $Id: ConnectionTableTest.java,v 1.7.2.3 2008/06/09 14:43:41 belaban Exp $
  */
 public class ConnectionTableTest extends TestCase {
     private BasicConnectionTable ct1, ct2;
     static InetAddress loopback_addr=null;
     static byte[] data=new byte[]{'b', 'e', 'l', 'a'};
     Address addr1, addr2;
-    int active_threads=0;
 
     final static int PORT1=7521, PORT2=8931;
 
@@ -44,8 +43,6 @@ public class ConnectionTableTest extends TestCase {
 
     protected void setUp() throws Exception {
         super.setUp();
-        active_threads=Thread.activeCount();
-        System.out.println("active threads before (" + active_threads + "):\n" + Util.activeThreads());
         addr1=new IpAddress(loopback_addr, PORT1);
         addr2=new IpAddress(loopback_addr, PORT2);
     }
@@ -229,9 +226,6 @@ public class ConnectionTableTest extends TestCase {
         table1.stop();
         assertEquals(0, table1.getNumConnections());
         assertEquals(0, table2.getNumConnections());
-        int current_active_threads=Thread.activeCount();
-        System.out.println("active threads after (" + current_active_threads + "):\n" + Util.activeThreads());
-        assertEquals("threads:\n" + Util.dumpThreads(), active_threads, current_active_threads);
     }
 
 
