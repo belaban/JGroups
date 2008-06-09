@@ -14,6 +14,7 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
 import org.jgroups.util.Util;
+import org.testng.AssertJUnit;
 import org.testng.annotations.*;
 
 import java.io.InputStream;
@@ -22,6 +23,8 @@ import java.net.InetAddress;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * @author Bela Ban
@@ -297,20 +300,10 @@ public class ChannelTestBase {
         protected String    name;
         protected RpcDispatcher dispatcher;
         protected List<Object> events;
-
-
-        /**
-         * Creates a unconnected channel and assigns a name to it.
-         * @param name    name of this channel
-         * @throws ChannelException
-         */
-        public ChannelApplication(String name) throws Exception {
+       
+        public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
             this.name=name;
             channel=createChannel();
-        }
-        
-        public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
-            this(name);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
                 dispatcher=new RpcDispatcher(channel, this, this, this);
@@ -336,8 +329,8 @@ public class ChannelTestBase {
             }
         }
 
-        public List getMembers() {
-            List result=null;
+        public List<Address> getMembers() {
+            List<Address> result=null;
             View v=channel.getView();
             if(v != null) {
                 result=v.getMembers();
@@ -522,73 +515,87 @@ public class ChannelTestBase {
             }
         }
     }
-
-    protected void checkEventStateTransferSequence(EventSequence receiver) {
-        List<Object> events=receiver.getEvents();
-        String eventString="[" + receiver.getName() + ",events:" + events;
-        log.info(eventString);
-        assert events != null;
-        assert events.size() > 1;
-        assert events.get(0) instanceof BlockEvent : "First event is not block but " + events.get(0);
-        assert events.get(events.size() - 1) instanceof UnblockEvent : "Last event not unblock but " + events.get(events.size() - 1);
-        int size=events.size();
-
-        for(int i=0; i < size; i++) {
-            Object event=events.get(i);
-            if(event instanceof BlockEvent) {
-                if(i + 1 < size) {
-                    Object o=events.get(i + 1);
-                    assert o instanceof SetStateEvent || o instanceof GetStateEvent || o instanceof UnblockEvent
-                            || o instanceof View
-                            : "After Block should be state|unblock|view, but it is " + o.getClass() + ",events= " + eventString;
-                }
-                if(i > 0) {
-                    Object o=events.get(i - 1);
-                    assert o instanceof UnblockEvent
-                            : "Before Block should be state or Unblock , but it is " + o.getClass() + ",events= " + eventString;
-                }
-            }
-            else if(event instanceof SetStateEvent) {
-                if(i + 1 < size) {
-                    Object o=events.get(i + 1);
-                    assert o instanceof UnblockEvent
-                            : "After setstate should be unblock , but it is " + o.getClass() + ",events= " + eventString;
-                }
-                Object o=events.get(i - 1);
-                assert o instanceof BlockEvent || o instanceof View
-                        : "Before setstate should be block|view, but it is " + o.getClass() + ",events= " + eventString;
-            }
-            else if(event instanceof GetStateEvent) {
-                if(i + 1 < size) {
-                    Object o=events.get(i + 1);
-                    assert o instanceof UnblockEvent || o instanceof View || o instanceof GetStateEvent
-                            : "After getstate should be view/unblock/getstate , but it is " + o.getClass() + ",events= " + eventString;
-                }
-                Object o=events.get(i - 1);
-                assert o instanceof BlockEvent || o instanceof View || o instanceof GetStateEvent
-                        : "Before state should be block/view/getstate , but it is " + o.getClass() + ",events= " + eventString;
-            }
-            else if(event instanceof UnblockEvent) {
-                if(i + 1 < size) {
-                    Object o=events.get(i + 1);
-                    assert o instanceof BlockEvent
-                            : "After UnBlock should be Block , but it is " + o.getClass() + ",events= " + eventString;
-                }
-                if(i > 0) {
-                    Object o=events.get(i - 1);
-                    assert o instanceof SetStateEvent || o instanceof GetStateEvent || o instanceof BlockEvent
-                            || o instanceof View
-                            : "Before UnBlock should be block|state|view , but it is " + o.getClass() + ",events= " + eventString;
-                }
-            }
-
-        }
-    }
-
     
+    protected void checkEventStateTransferSequence(EventSequence receiver) {
 
+        List<Object> events=receiver.getEvents();
+        assertNotNull(events);
+        final String validSequence="([b][vgs]*[u])+";     
+        // translate the eventTrace to an eventString   
+        try {           
+            assertTrue("Invalid event sequence " + events, validateEventString(translateEventTrace(events), validSequence));          
+        }
+        catch(Exception e) {
+            AssertJUnit.fail("Invalid event sequence " + events);
+        }        
+    }     
+    
+    /**
+     * Method for translating event traces into event strings, where each event
+     * in the trace is represented by a letter.
+     */
+    protected static String translateEventTrace(List<Object> et) throws Exception {
+
+        String eventString=new String();
+
+        for(Iterator it=et.iterator();it.hasNext();) {
+
+            Object obj=it.next();
+
+            if(obj instanceof BlockEvent)
+                eventString+="b";
+            else if(obj instanceof UnblockEvent)
+                eventString+="u";
+            else if(obj instanceof SetStateEvent)
+                eventString+="s";
+            else if(obj instanceof GetStateEvent)
+                eventString+="g";
+            else if(obj instanceof View)
+                eventString+="v";
+            else
+                throw new Exception("Unrecognized event type in event trace");
+        }
+        return eventString;
+    }
+  
+    /**
+     * Method for validating event strings against event string specifications,
+     * where a specification is a regular expression involving event symbols.
+     * e.g. [b]([sgv])[u]
+     */
+    protected static boolean validateEventString(String eventString, String spec) {
+        Pattern pattern=null;
+        Matcher matcher=null;
+
+        // set up the regular expression specification
+        pattern=Pattern.compile(spec);
+        // set up the actual event string
+        matcher=pattern.matcher(eventString);
+
+        // check if the actual string satisfies the specification
+        if(matcher.find()) {
+            // a match has been found, but we need to check that the whole event string
+            // matches, and not just a substring
+            if(!(matcher.start() == 0 && matcher.end() == eventString.length())) {
+                // match on full eventString not found
+                System.err.println("event string invalid (proper substring matched): event string = " + eventString
+                                   + ", specification = "
+                                   + spec
+                                   + "matcher.start() "
+                                   + matcher.start()
+                                   + " matcher.end() "
+                                   + matcher.end());
+                return false;
+            }
+        }
+        else {          
+            return false;
+        }
+        return true;
+    }
+    
     protected interface MemberRetrievable {
-        public List getMembers();
+        public List<Address> getMembers();
         public Address getLocalAddress();
     }
 
