@@ -20,7 +20,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.5.2.2 2008/06/09 09:41:19 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.5.2.3 2008/06/09 09:59:35 belaban Exp $
  */
 public class DuplicateTest extends ChannelTestBase {
     private JChannel c1, c2, c3;
@@ -111,12 +111,32 @@ public class DuplicateTest extends ChannelTestBase {
     }
 
 
+    public void testMixedMulticastsToAll3Members() throws Exception {
+        send(c1, null /** multicast */, false, true, 10);
+        send(c2, null /** multicast */, false, true, 10);
+        send(c3, null /** multicast */, false, true, 10);
+        check(r1, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r2, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+        check(r3, 3, true, new Tuple<Address,Integer>(a1, 10), new Tuple<Address,Integer>(a2, 10), new Tuple<Address,Integer>(a3, 10));
+    }
+
+
     private static void send(Channel sender_channel, Address dest, boolean oob, int num_msgs) throws Exception {
+        send(sender_channel, dest, oob, false, num_msgs);
+    }
+
+    private static void send(Channel sender_channel, Address dest, boolean oob, boolean mixed, int num_msgs) throws Exception {
         long seqno=1;
         for(int i=0; i < num_msgs; i++) {
             Message msg=new Message(dest, null, seqno++);
-            if(oob)
+            if(mixed) {
+                if(i % 2 == 0)
+                    msg.setFlag(Message.OOB);
+            }
+            else if(oob) {
                 msg.setFlag(Message.OOB);
+            }
+            
             sender_channel.send(msg);
         }
         // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
