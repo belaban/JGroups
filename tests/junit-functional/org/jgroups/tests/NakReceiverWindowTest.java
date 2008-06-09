@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.1.4.1 2008/06/09 09:23:15 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -462,7 +462,38 @@ public class NakReceiverWindowTest extends TestCase {
     }
 
 
-    void add(int num_msgs) {
+    public void testHasMessagesToRemove() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        assertFalse(win.hasMessagesToRemove());
+        win.add(2, new Message());
+        assertFalse(win.hasMessagesToRemove());
+        win.add(1, oob());
+        assertTrue(win.hasMessagesToRemove());
+        win.remove();
+        assertTrue(win.hasMessagesToRemove());
+        win.remove();
+        assertFalse(win.hasMessagesToRemove());
+    }
+
+    public void testRemoveOOBMessage() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0);
+        System.out.println("win = " + win);
+        win.add(2, new Message());
+        System.out.println("win = " + win);
+        assertNull(win.removeOOBMessage());
+        assertNull(win.remove());
+        win.add(1, oob());
+        System.out.println("win = " + win);
+        assertNotNull(win.removeOOBMessage());
+        System.out.println("win = " + win);
+        assertNull(win.removeOOBMessage());
+        assertNotNull(win.remove());
+        assertNull(win.remove());
+        assertNull(win.removeOOBMessage());
+    }
+
+
+    private void add(int num_msgs) {
         long start, stop;
         double time_per_msg;
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1);
@@ -481,6 +512,7 @@ public class NakReceiverWindowTest extends TestCase {
         retval.setFlag(Message.OOB);
         return retval;
     }
+
 
 
     private void check(NakReceiverWindow win, long lowest, long highest_received, long highest_delivered) {
