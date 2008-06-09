@@ -31,17 +31,17 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.187 2008/06/09 07:41:48 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.188 2008/06/09 08:34:33 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     @Property(name="retransmit_timeout",converter=PropertyConverters.LongArray.class)
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
-    
+
     @Property
     boolean enable_xmit_time_stats = false;
-    
+
     private boolean             is_server=false;
     private Address             local_addr=null;
     private final List<Address> members=new CopyOnWriteArrayList<Address>();
@@ -49,7 +49,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @GuardedBy("seqno_lock")
     private long                seqno=0;                                  // current message sequence number (starts with 1)
     private final Lock          seqno_lock=new ReentrantLock();
-    
+
     @ManagedAttribute(description = "Garbage collection lag", writable = true)
     @Property
     private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
@@ -189,6 +189,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private ConcurrentMap<Long,XmitTimeStat> xmit_time_stats=null;
     private long xmit_time_stats_start;
 
+    /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
+    private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
+
     private final Lock rebroadcast_lock=new ReentrantLock();
 
     private final Condition rebroadcast_done=rebroadcast_lock.newCondition();
@@ -270,14 +273,14 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             xmit_time_stats=new ConcurrentHashMap<Long,XmitTimeStat>();
             xmit_time_stats_start=System.currentTimeMillis();
         }
-        
+
         if(xmit_from_random_member) {
             if(discard_delivered_msgs) {
                 discard_delivered_msgs=false;
                 log.warn("xmit_from_random_member set to true: changed discard_delivered_msgs to false");
             }
         }
-        
+
         if(stats) {
             send_history=new BoundedList<XmitRequest>(stats_list_size);
             receive_history=new BoundedList<MissingMessage>(stats_list_size);
@@ -496,6 +499,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     public void stop() {
         started=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
+        oob_loopback_msgs.clear();
     }
 
 
@@ -706,6 +710,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         }
 
         try { // moved down_prot.down() out of synchronized clause (bela Sept 7 2006) http://jira.jboss.com/jira/browse/JGRP-300
+            if(msg.isFlagSet(Message.OOB))
+                oob_loopback_msgs.add(msg_id);
             if(log.isTraceEnabled())
                 log.trace("sending " + local_addr + "#" + msg_id);
             down_prot.down(evt); // if this fails, since msg is in sent_msgs, it can be retransmitted
@@ -723,7 +729,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
      * Finds the corresponding NakReceiverWindow and adds the message to it (according to seqno). Then removes as many
      * messages as possible from the NRW and passes them up the stack. Discards messages from non-members.
      */
-    private void handleMessage(Message msg, NakAckHeader hdr) {
+    private void  handleMessage(Message msg, NakAckHeader hdr) {
         Address sender=msg.getSrc();
         if(sender == null) {
             if(log.isErrorEnabled())
@@ -748,17 +754,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
-        if(msg.isFlagSet(Message.OOB)) {
-            if(added) {
+        if(msg.isFlagSet(Message.OOB) && added) {
+            if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
                 up_prot.up(new Event(Event.MSG, msg));
             }
-            win.removeOOBMessage();
-            return;
-        }
-
-        // only regular messages from this point on
-        if(!added && !win.hasMessagesToRemove()) { // no ack if we didn't add the msg (e.g. duplicate)
-            return;
         }
         
         //AtomicBoolean busy=in_progress.get(sender);
