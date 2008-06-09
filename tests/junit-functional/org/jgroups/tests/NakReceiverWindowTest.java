@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.5 2008/05/15 10:49:13 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.6 2008/06/09 06:25:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -10,6 +10,7 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
+import org.jgroups.stack.AckReceiverWindow;
 import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -476,9 +477,6 @@ public class NakReceiverWindowTest {
     }
 
 
-
-
-
     public void testUpdateHighestSeen() {
         add(1000);
         add(2000);
@@ -502,7 +500,39 @@ public class NakReceiverWindowTest {
     }
 
 
-    void add(int num_msgs) {
+    public void testHasMessagesToRemove() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        assert !win.hasMessagesToRemove();
+        win.add(2, new Message());
+        assert !win.hasMessagesToRemove();
+        win.add(1, oob());
+        assert win.hasMessagesToRemove();
+        win.remove();
+
+        assert win.hasMessagesToRemove();
+        win.remove();
+        assert ! win.hasMessagesToRemove();
+    }
+
+    public void testRemoveOOBMessage() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        System.out.println("win = " + win);
+        win.add(2, msg());
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() == null;
+        assert win.remove() == null;
+        win.add(1, oob());
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() != null;
+        System.out.println("win = " + win);
+        assert win.removeOOBMessage() == null;
+        assert win.remove() != null;
+        assert win.remove() == null;
+        assert win.removeOOBMessage() == null;
+    }
+
+
+    private void add(int num_msgs) {
         long start, stop;
         double time_per_msg;
         NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 1, timer);
@@ -520,6 +550,10 @@ public class NakReceiverWindowTest {
         Message retval=new Message();
         retval.setFlag(Message.OOB);
         return retval;
+    }
+
+    private static Message msg() {
+        return new Message();
     }
 
 
