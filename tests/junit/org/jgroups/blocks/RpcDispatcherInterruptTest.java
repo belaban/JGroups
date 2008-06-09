@@ -2,6 +2,8 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.JChannel;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
 import org.jgroups.util.RspList;
@@ -16,7 +18,7 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.8 2008/05/29 11:13:14 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.9 2008/06/09 11:48:18 belaban Exp $
  */
 @Test(groups="temp")
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
@@ -26,6 +28,7 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     @BeforeMethod
     void setUp() throws Exception {
         ch=createChannel(true);
+        modifyStack(ch);
         ServerObject obj=new ServerObject();
         disp=new RpcDispatcher(ch, null, null, obj);
         ch.connect("RpcDispatcherInterruptTest");
@@ -71,6 +74,12 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     }
 
 
+    private static void modifyStack(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        if(gms != null)
+            gms.setLogCollectMessages(false);
+    }
 
     private RspList call(long timeout, long block_time) {
         long start, stop, diff;

@@ -5,6 +5,8 @@ import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -20,7 +22,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.16 2008/06/09 11:05:36 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.17 2008/06/09 11:48:39 belaban Exp $
  */
 @Test(groups={"temp"}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -38,6 +40,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     @BeforeMethod
     protected void setUp() throws Exception {
         provider=createChannel(true, 2);
+        modifyStack(provider);
         requester=createChannel(provider);
     }
 
@@ -91,6 +94,12 @@ public class LargeStateTransferTest extends ChannelTestBase {
         System.out.println(Thread.currentThread() + " -- "+ msg);
     }
 
+    private static void modifyStack(JChannel ch) {
+        ProtocolStack stack=ch.getProtocolStack();
+        GMS gms=(GMS)stack.findProtocol(GMS.class);
+        if(gms != null)
+            gms.setLogCollectMessages(false);
+    }
 
 
     private static class Provider extends ExtendedReceiverAdapter {
