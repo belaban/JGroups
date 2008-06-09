@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.69 2008/05/29 11:13:07 belaban Exp $
+ * @version $Id: FlushTest.java,v 1.70 2008/06/09 14:30:43 vlada Exp $
  */
 @Test(groups=Global.FLUSH)
 public class FlushTest extends ChannelTestBase {
@@ -231,7 +231,7 @@ public class FlushTest extends ChannelTestBase {
         }
     }
 
-    private void checkEventSequence(PushChannelApplication receiver) {
+    private void checkEventSequence(ChannelApplication receiver) {
             List<Object> events=receiver.getEvents();
             String eventString="[" + receiver.getName() + "|" + receiver.getLocalAddress() + ",events:" + events;
             log.info(eventString);

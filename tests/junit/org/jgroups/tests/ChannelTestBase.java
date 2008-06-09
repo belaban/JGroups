@@ -290,11 +290,13 @@ public class ChannelTestBase {
     /**
      * Base class for all aplications using channel
      */
-    protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable {
+    protected abstract class ChannelApplication implements EventSequence, Runnable, MemberRetrievable,ExtendedReceiver {
         protected Channel   channel;
         protected Thread    thread;
         protected Throwable exception;
         protected String    name;
+        protected RpcDispatcher dispatcher;
+        protected List<Object> events;
 
 
         /**
@@ -305,6 +307,17 @@ public class ChannelTestBase {
         public ChannelApplication(String name) throws Exception {
             this.name=name;
             channel=createChannel();
+        }
+        
+        public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
+            this(name);
+            events=Collections.synchronizedList(new LinkedList<Object>());
+            if(useDispatcher) {
+                dispatcher=new RpcDispatcher(channel, this, this, this);
+            }
+            else {
+                channel.setReceiver(this);
+            }
         }
 
         /**
@@ -379,24 +392,7 @@ public class ChannelTestBase {
                 log.warn("Got exception while closing channel " + a + "[" + getName() + "]");
             }
         }
-    }
-
-    protected abstract class PushChannelApplication extends ChannelApplication implements ExtendedReceiver {
-        RpcDispatcher dispatcher;
-        List<Object> events;
-
-
-        public PushChannelApplication(String name,  boolean useDispatcher) throws Exception {
-            super(name);
-            events=Collections.synchronizedList(new LinkedList<Object>());
-            if(useDispatcher) {
-                dispatcher=new RpcDispatcher(channel, this, this, this);
-            }
-            else {
-                channel.setReceiver(this);
-            }
-        }
-
+        
         public List<Object> getEvents() {
             return events;
         }
@@ -490,7 +486,7 @@ public class ChannelTestBase {
      * completes the acquired permit will be released. Test driver should
      * control how semaphore tickets are given and acquired.
      */
-    protected abstract class PushChannelApplicationWithSemaphore extends PushChannelApplication {
+    protected abstract class PushChannelApplicationWithSemaphore extends ChannelApplication {
         protected Semaphore semaphore;
 
         public PushChannelApplicationWithSemaphore(String name,
