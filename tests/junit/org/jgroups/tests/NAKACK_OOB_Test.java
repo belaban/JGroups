@@ -1,7 +1,6 @@
 package org.jgroups.tests;
 
 
-import org.testng.annotations.*;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -11,6 +10,7 @@ import org.jgroups.util.Util;
 import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -18,17 +18,18 @@ import java.util.List;
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.10 2008/06/06 13:46:32 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.11 2008/06/09 12:47:33 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class NAKACK_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2, ch3;
 
 
     @BeforeMethod
     public void setUp() throws Exception {
-        ch1=createChannel();
-        ch2=createChannel();
-        ch3=createChannel();
+        ch1=createChannel(true, 3);
+        ch2=createChannel(ch1);
+        ch3=createChannel(ch1);
     }
 
     @AfterMethod
@@ -59,9 +60,9 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         ch2.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
         ch3.getProtocolStack().insertProtocol(new DISCARD_PAYLOAD(), ProtocolStack.BELOW, "NAKACK");
 
-        ch1.connect("x");
-        ch2.connect("x");
-        ch3.connect("x");
+        ch1.connect("NAKACK_OOB_Test");
+        ch2.connect("NAKACK_OOB_Test");
+        ch3.connect("NAKACK_OOB_Test");
 
         Assert.assertEquals(3, ch3.getView().getMembers().size());
 

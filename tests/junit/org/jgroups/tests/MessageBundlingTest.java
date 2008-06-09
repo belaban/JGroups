@@ -16,8 +16,9 @@ import java.util.*;
 /**
  * Measure the latency between messages with message bundling enabled at the transport level
  * @author Bela Ban
- * @version $Id: MessageBundlingTest.java,v 1.15 2008/05/23 10:45:53 belaban Exp $
+ * @version $Id: MessageBundlingTest.java,v 1.16 2008/06/09 12:43:03 belaban Exp $
  */
+@Test(groups="temp",sequential=true)
 public class MessageBundlingTest extends ChannelTestBase {
     private JChannel ch1, ch2;
     private MyReceiver r2;
@@ -29,7 +30,7 @@ public class MessageBundlingTest extends ChannelTestBase {
 
     
     @AfterMethod
-    public void tearDown() throws Exception {
+    void tearDown() throws Exception {
         closeChannel(ch2);
         closeChannel(ch1);
     }
@@ -39,27 +40,11 @@ public class MessageBundlingTest extends ChannelTestBase {
        return false;
     }
     
-    private void prepareChannels() throws Exception {
-        ch1=createChannel();
-        setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
-        setLoopback(ch1, false);
-        ch1.setReceiver(new NullReceiver());
-        ch1.connect("x");
-        ch2=createChannel();
-        setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
-        setLoopback(ch2, false);
-        r2=new MyReceiver();
-        ch2.setReceiver(r2);
-        ch2.connect("x");
-
-        View view=ch2.getView();
-        Assert.assertEquals(2, view.size());
-    }
 
 
-    @Test
+
     public void testLatencyWithoutMessageBundling() throws Exception {
-        prepareChannels();
+        createChannels("testLatencyWithoutMessageBundling");
         Message tmp=new Message();
         setBundling(ch1, false, 20000, 30);
         r2.setNumExpectedMesssages(1);
@@ -78,9 +63,8 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testLatencyWithMessageBundling() throws Exception {
-        prepareChannels();
+        createChannels("testLatencyWithMessageBundling");
         Message tmp=new Message();
         r2.setNumExpectedMesssages(1);
         Promise<Integer> promise=new Promise<Integer>();
@@ -100,9 +84,8 @@ public class MessageBundlingTest extends ChannelTestBase {
 
 
 
-    @Test
     public void testLatencyWithMessageBundlingAndLoopback() throws Exception {
-        prepareChannels();
+        createChannels("testLatencyWithMessageBundlingAndLoopback");
         Message tmp=new Message();
         setLoopback(ch1, true);
         setLoopback(ch2, true);
@@ -123,9 +106,8 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testLatencyWithMessageBundlingAndMaxBytes() throws Exception {
-        prepareChannels();
+        createChannels("testLatencyWithMessageBundlingAndMaxBytes");
         setLoopback(ch1, true);
         setLoopback(ch2, true);
         r2.setNumExpectedMesssages(10);
@@ -147,14 +129,31 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
 
-    @Test
     public void testSimple() throws Exception {
-        prepareChannels();
+        createChannels("testSimple");
         Message tmp=new Message();
         ch2.setReceiver(new SimpleReceiver());
         ch1.send(tmp);
         System.out.println(">>> sent message at " + new Date());
         Util.sleep(5000);
+    }
+
+
+    private void createChannels(String cluster) throws Exception {
+        ch1=createChannel(true, 2);
+        setBundling(ch1, BUNDLING, MAX_BYTES, LATENCY);
+        setLoopback(ch1, false);
+        ch1.setReceiver(new NullReceiver());
+        ch1.connect("MessageBundlingTest-" + cluster);
+        ch2=createChannel(ch1);
+        // setBundling(ch2, BUNDLING, MAX_BYTES, LATENCY);
+        // setLoopback(ch2, false);
+        r2=new MyReceiver();
+        ch2.setReceiver(r2);
+        ch2.connect("MessageBundlingTest-" + cluster);
+
+        View view=ch2.getView();
+        assert view.size() == 2 : " view=" + view;
     }
 
     private static void setLoopback(JChannel ch, boolean b) {
@@ -189,10 +188,6 @@ public class MessageBundlingTest extends ChannelTestBase {
     }
 
     private static class NullReceiver extends ReceiverAdapter {
-
-        public void receive(Message msg) {
-            ;
-        }
     }
 
 
@@ -214,11 +209,9 @@ public class MessageBundlingTest extends ChannelTestBase {
             return times;
         }
 
-
         public void setNumExpectedMesssages(int num_expected_msgs) {
             this.num_expected_msgs=num_expected_msgs;
         }
-
 
         public void setPromise(Promise<Integer> promise) {
             this.promise=promise;
