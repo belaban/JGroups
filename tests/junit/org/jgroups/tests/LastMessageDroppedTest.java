@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
  * @author Bela Ban
- * @version $Id: LastMessageDroppedTest.java,v 1.2 2008/06/10 10:35:39 belaban Exp $
+ * @version $Id: LastMessageDroppedTest.java,v 1.3 2008/06/10 10:38:49 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class LastMessageDroppedTest extends ChannelTestBase {
@@ -57,17 +57,16 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         c1.send(m2);
         discard.setDropDownMulticasts(1); // drop the next multicast
         c1.send(m3);
+        Util.sleep(100);
 
         List<Integer> list=receiver.getMsgs();
-
         for(int i=0; i < 10; i++)  {
+            System.out.println("list=" + list);
             if(list.size() == 3)
                 break;
-            System.out.println("list=" + list);
             Util.sleep(1000);
         }
 
-        System.out.println("list=" + list);
         assert list.size() == 3 : "list=" + list;
     }
 
@@ -91,7 +90,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         }
 
         public void receive(Message msg) {
-            System.out.println("<< " + msg.getObject());
+            // System.out.println("<< " + msg.getObject());
             msgs.add((Integer)msg.getObject());
         }
     }
