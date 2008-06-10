@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.21 2008/05/23 10:45:38 belaban Exp $
+// $Id: DISCARD.java,v 1.22 2008/06/10 08:20:25 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -12,7 +12,10 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -34,7 +37,9 @@ public class DISCARD extends Protocol {
     final Set<Address> ignoredMembers = new HashSet<Address>();
     boolean discard_all=false;
 
+    int drop_down_unicasts=0;
 
+    
     /**
      * All protocol names have to be unique !
      */
@@ -73,6 +78,18 @@ public class DISCARD extends Protocol {
 
     public void setDownDiscardRate(double down) {
         this.down=down;
+    }
+
+    public int getDropDownUnicasts() {
+        return drop_down_unicasts;
+    }
+
+    /**
+     * Drop the next N unicasts down the stack
+     * @param drop_down_unicasts
+     */
+    public void setDropDownUnicasts(int drop_down_unicasts) {
+        this.drop_down_unicasts=drop_down_unicasts;
     }
 
     /** Messages from this sender will get dropped */
@@ -152,6 +169,11 @@ public class DISCARD extends Protocol {
                     //System.out.println("[" + localAddress + "] down(): looping back " + msg + ", hdrs:\n" + msg.getHeaders());
                     loopback(msg);
                 }
+                return null;
+            }
+
+            if(drop_down_unicasts > 0) {
+                drop_down_unicasts=Math.max(0, drop_down_unicasts -1);
                 return null;
             }
 
