@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.23 2008/06/10 08:42:22 belaban Exp $
+// $Id: DISCARD.java,v 1.24 2008/06/10 08:43:07 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -94,6 +94,14 @@ public class DISCARD extends Protocol {
      */
     public void setDropDownUnicasts(int drop_down_unicasts) {
         this.drop_down_unicasts=drop_down_unicasts;
+    }
+
+    public int getDropDownMulticasts() {
+        return drop_down_multicasts;
+    }
+
+    public void setDropDownMulticasts(int drop_down_multicasts) {
+        this.drop_down_multicasts=drop_down_multicasts;
     }
 
     /** Messages from this sender will get dropped */
