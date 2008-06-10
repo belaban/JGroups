@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.6 2008/06/09 06:25:17 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.7 2008/06/10 09:03:52 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -6,16 +6,15 @@ package org.jgroups.tests;
 import org.jgroups.Address;
 import org.jgroups.Global;
 import org.jgroups.Message;
-import org.jgroups.util.TimeScheduler;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.NakReceiverWindow;
 import org.jgroups.stack.Retransmitter;
-import org.jgroups.stack.AckReceiverWindow;
+import org.jgroups.util.TimeScheduler;
 import org.testng.Assert;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
-import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.AfterMethod;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeMethod;
+import org.testng.annotations.Test;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -529,6 +528,26 @@ public class NakReceiverWindowTest {
         assert win.remove() != null;
         assert win.remove() == null;
         assert win.removeOOBMessage() == null;
+    }
+
+    public void testRemoveRegularAndOOBMessages() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        win.add(1, msg());
+        System.out.println("win = " + win);
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.getHighestDelivered() == 1;
+
+        win.add(3, msg());
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.getHighestDelivered() == 1;
+
+        win.add(2, oob());
+        win.removeOOBMessage();
+        System.out.println("win = " + win);
+
+        assert win.getHighestDelivered() == 2;
     }
 
 
