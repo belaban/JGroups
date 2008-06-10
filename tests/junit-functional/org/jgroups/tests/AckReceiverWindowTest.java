@@ -1,8 +1,8 @@
 package org.jgroups.tests;
 
 
-import org.jgroups.Message;
 import org.jgroups.Global;
+import org.jgroups.Message;
 import org.jgroups.stack.AckReceiverWindow;
 import org.testng.Assert;
 import org.testng.annotations.Test;
@@ -10,7 +10,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: AckReceiverWindowTest.java,v 1.4 2008/06/04 15:10:27 belaban Exp $
+ * @version $Id: AckReceiverWindowTest.java,v 1.5 2008/06/10 09:03:53 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class AckReceiverWindowTest {
@@ -118,6 +118,26 @@ public class AckReceiverWindowTest {
         assert win.remove() != null;
         assert win.remove() == null;
         assert win.removeOOBMessage() == null;
+    }
+
+    public static void testRemoveRegularAndOOBMessages() {
+        AckReceiverWindow win=new AckReceiverWindow(1);
+        win.add(1, msg());
+        System.out.println("win = " + win);
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.size() == 0;
+
+        win.add(3, msg());
+        win.remove();
+        System.out.println("win = " + win);
+        assert win.size() == 1;
+
+        win.add(2, msg(true));
+        win.removeOOBMessage();
+        System.out.println("win = " + win);
+
+        assert win.size() == 1;
     }
 
 
