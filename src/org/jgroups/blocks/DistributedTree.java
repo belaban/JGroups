@@ -1,4 +1,4 @@
-// $Id: DistributedTree.java,v 1.18 2007/11/19 16:07:54 belaban Exp $
+// $Id: DistributedTree.java,v 1.19 2008/06/10 10:25:49 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,6 +6,7 @@ package org.jgroups.blocks;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
+import org.jgroups.annotations.Unsupported;
 import org.jgroups.util.Util;
 
 import java.io.Serializable;
@@ -21,6 +22,7 @@ import java.util.Vector;
  * @author Bela Ban
  * @author <a href="mailto:aolias@yahoo.com">Alfonso Olias-Sanz</a>
  */
+@Unsupported
 public class DistributedTree implements MessageListener, MembershipListener {
     private Node root=null;
     final Vector listeners=new Vector();
