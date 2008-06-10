@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.22 2008/06/10 08:20:25 belaban Exp $
+// $Id: DISCARD.java,v 1.23 2008/06/10 08:42:22 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -37,7 +37,11 @@ public class DISCARD extends Protocol {
     final Set<Address> ignoredMembers = new HashSet<Address>();
     boolean discard_all=false;
 
+    // number of subsequent unicasts to drop in the down direction
     int drop_down_unicasts=0;
+
+    // number of subsequent multicasts to drop in the down direction
+    int drop_down_multicasts=0;
 
     
     /**
@@ -160,6 +164,7 @@ public class DISCARD extends Protocol {
         if(evt.getType() == Event.MSG) {
             msg=(Message)evt.getArg();
             Address dest=msg.getDest();
+            boolean multicast=dest == null || dest.isMulticastAddress();
 
             if(msg.getSrc() == null)
                 msg.setSrc(localAddress);
@@ -172,8 +177,13 @@ public class DISCARD extends Protocol {
                 return null;
             }
 
-            if(drop_down_unicasts > 0) {
+            if(!multicast && drop_down_unicasts > 0) {
                 drop_down_unicasts=Math.max(0, drop_down_unicasts -1);
+                return null;
+            }
+
+            if(multicast && drop_down_multicasts > 0) {
+                drop_down_multicasts=Math.max(0, drop_down_multicasts -1);
                 return null;
             }
 
