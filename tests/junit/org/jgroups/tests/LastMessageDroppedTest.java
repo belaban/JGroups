@@ -1,9 +1,6 @@
 package org.jgroups.tests;
 
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.ReceiverAdapter;
-import org.jgroups.View;
+import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.protocols.pbcast.STABLE;
@@ -19,7 +16,7 @@ import java.util.List;
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
  * @author Bela Ban
- * @version $Id: LastMessageDroppedTest.java,v 1.1 2008/06/10 10:26:17 belaban Exp $
+ * @version $Id: LastMessageDroppedTest.java,v 1.2 2008/06/10 10:35:39 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class LastMessageDroppedTest extends ChannelTestBase {
@@ -48,13 +45,14 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
+        c1.setOpt(Channel.LOCAL, false);
 
         Message m1=new Message(null, null, 1);
         Message m2=new Message(null, null, 2);
         Message m3=new Message(null, null, 3);
 
         MyReceiver receiver=new MyReceiver();
-        c1.setReceiver(receiver);
+        c2.setReceiver(receiver);
         c1.send(m1);
         c1.send(m2);
         discard.setDropDownMulticasts(1); // drop the next multicast
