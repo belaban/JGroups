@@ -3,9 +3,14 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.jgroups.Channel;
 import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
 import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
+import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
 
 import java.util.concurrent.CountDownLatch;
@@ -17,11 +22,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Tests concurrent startup
  * 
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.16 2008/06/05 07:06:27 belaban Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.1.2.17 2008/06/10 03:13:52 vlada Exp $
  */
 public class ChannelConcurrencyTest extends TestCase {
 
-    public void test() throws Throwable {
+    public void testPlainChannel () throws Throwable{
+        testhelper(false);
+    }
+    
+    public void testwithDispatcher () throws Throwable{
+        testhelper(true);
+    }
+    
+    protected  void testhelper(boolean useDispatcher) throws Throwable {
         final int count=8;
 
         final Executor executor=Executors.newFixedThreadPool(count);
@@ -32,7 +45,7 @@ public class ChannelConcurrencyTest extends TestCase {
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
             channels[i]=new JChannel("flush-udp.xml");
-            tasks[i]=new Task(latch, channels[i]);
+            tasks[i]=new Task(latch, channels[i],useDispatcher);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
         }
@@ -77,6 +90,10 @@ public class ChannelConcurrencyTest extends TestCase {
             for(int i=channels.length -1; i>= 0; i--) {
                 Channel channel=channels[i];
                 channel.close();
+                
+                //there are sometimes big delays until entire cluster shuts down
+                //use sleep to make a smoother shutdown so we avoid false positives
+                Util.sleep(300);
                 int tries=0;
                 while((channel.isConnected() || channel.isOpen()) && tries++ < 10) {
                     Util.sleep(1000);
@@ -113,11 +130,13 @@ public class ChannelConcurrencyTest extends TestCase {
         private final Channel c;
         private final CountDownLatch latch;
         private Throwable exception=null;
+        private boolean useDispatcher = false;
 
 
-        public Task(CountDownLatch latch, Channel c) {
+        public Task(CountDownLatch latch, Channel c,boolean useDispatcher) {
             this.latch=latch;
             this.c=c;
+            this.useDispatcher = useDispatcher;
         }
 
         public Throwable getException() {
@@ -127,6 +146,18 @@ public class ChannelConcurrencyTest extends TestCase {
         public void run() {
             try {
                 c.connect("test");
+                if(useDispatcher) {
+                    final MessageDispatcher md=new MessageDispatcher(c, null, null, new MyHandler());
+                    for(int i=0;i < 10;i++) {
+                        final RspList rsp=md.castMessage(null,
+                                                         new Message(null, null, i),
+                                                         GroupRequest.GET_ALL,
+                                                         2500);
+                        for(Object o:rsp.getResults()) {
+                            assertEquals("Wrong result received at " + c.getLocalAddress(), i, o);
+                        }
+                    }
+                }
             }
             catch(final Exception e) {
                 exception=e;
@@ -136,5 +167,12 @@ public class ChannelConcurrencyTest extends TestCase {
                 latch.countDown();
             }
         }
+    }
+    private static class MyHandler implements RequestHandler {
+
+        public Object handle(Message msg) {
+            return msg.getObject();
+        }
+
     }
 }
