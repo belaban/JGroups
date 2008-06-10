@@ -4,6 +4,7 @@ import org.jgroups.*;
 import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST;
+import org.jgroups.protocols.pbcast.NAKACK;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -20,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.1 2008/06/10 08:45:29 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.2 2008/06/10 09:15:40 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -97,7 +98,7 @@ public class OOBTest extends ChannelTestBase {
     public void testRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
-        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
+        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
         c1.setOpt(Channel.LOCAL, false);
 
         Address dest=null; // send to all
@@ -113,8 +114,9 @@ public class OOBTest extends ChannelTestBase {
         c1.send(m2);
         c1.send(m3);
 
-        Util.sleep(500); // time for potential retransmission
+        Util.sleep(1000); // time for potential retransmission
         List<Integer> list=receiver.getMsgs();
+        System.out.println("list = " + list);
         assert list.size() == 3 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3);
     }
