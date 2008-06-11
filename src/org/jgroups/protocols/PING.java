@@ -1,7 +1,9 @@
 
 package org.jgroups.protocols;
 
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.Event;
+import org.jgroups.Message;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.IpAddress;
@@ -9,7 +11,9 @@ import org.jgroups.util.Util;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Vector;
 
 
 /**
@@ -25,7 +29,7 @@ import java.util.*;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.43 2008/05/30 15:42:28 vlada Exp $
+ * @version $Id: PING.java,v 1.44 2008/06/11 13:04:55 belaban Exp $
  */
 public class PING extends Discovery {
     @Property
@@ -85,13 +89,13 @@ public class PING extends Discovery {
 
     public void localAddressSet(Address addr) {
         // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-        if(initial_hosts != null && addr != null) {
-            if(initial_hosts.contains(addr)) {
-                initial_hosts.remove(addr);
-                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
-                        ") from initial_hosts; initial_hosts=" + initial_hosts);
-            }
-        }
+//        if(initial_hosts != null && addr != null) {
+//            if(initial_hosts.contains(addr)) {
+//                initial_hosts.remove(addr);
+//                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
+//                        ") from initial_hosts; initial_hosts=" + initial_hosts);
+//            }
+//        }
     }
 
 
@@ -141,6 +145,8 @@ public class PING extends Discovery {
         else {
             if(initial_hosts != null && !initial_hosts.isEmpty()) {
                 for(Address addr: initial_hosts) {
+                    if(addr.equals(local_addr))
+                        continue;
                     // if(tmpMbrs.contains(addr)) {
                     // ; // continue; // changed as suggested by Mark Kopec
                     // }
