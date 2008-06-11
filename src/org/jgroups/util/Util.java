@@ -8,7 +8,6 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.stack.Protocol;
 
 import javax.management.MBeanServer;
 import javax.management.MBeanServerFactory;
@@ -27,7 +26,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.153 2008/05/30 15:42:29 vlada Exp $
+ * @version $Id: Util.java,v 1.154 2008/06/11 12:50:03 belaban Exp $
  */
 public class Util {
 
@@ -1859,7 +1858,7 @@ public class Util {
         StringTokenizer tok=new StringTokenizer(hosts, ",");
         String t;
         IpAddress addr;
-        List<IpAddress> retval=new ArrayList<IpAddress>();
+        Set<IpAddress> retval=new HashSet<IpAddress>();
 
         while(tok.hasMoreTokens()) {
             t=tok.nextToken().trim();
@@ -1871,7 +1870,7 @@ public class Util {
                 retval.add(addr);
             }
         }
-        return Collections.unmodifiableList(retval);
+        return Collections.unmodifiableList(new LinkedList<IpAddress>(retval));
     }
 
 
