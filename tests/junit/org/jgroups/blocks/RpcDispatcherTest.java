@@ -39,7 +39,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.19 2008/06/11 11:25:30 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.20 2008/06/11 13:06:48 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -54,7 +54,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
     @BeforeClass
     protected void setUp() throws Exception {
-        c1=createChannel(true);
+        c1=createChannel(true, 3);
         final String GROUP="RpcDispatcherTest";
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
         c1.connect(GROUP);
@@ -66,16 +66,18 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c3=createChannel(c1);
         disp3=new RpcDispatcher(c3, null, null, new ServerObject(3));
         c3.connect(GROUP);
+
+        System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());
+        View view=c3.getView();
+        assert view.size() == 3 : "view=" + view;
     }
 
     @AfterClass
     protected void tearDown() throws Exception {
         disp3.stop();
-        c3.close();
         disp2.stop();
-        c2.close();
         disp1.stop();
-        c1.close();
+        Util.close(c3, c2, c1);
     }
 
     @Test(groups="first")
@@ -191,7 +193,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     @Test(groups="first")
     public void testLargeReturnValue() {
-        setProperties();
+        setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValue(SIZES[i]);
         }
@@ -212,7 +214,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     @Test(groups="first")
     public void testHugeReturnValue() {
-        setProperties();
+        setProps(c1, c2, c3);
         for(int i=0; i < HUGESIZES.length; i++) {
             _testHugeValue(HUGESIZES[i]);
         }
@@ -265,30 +267,28 @@ public class RpcDispatcherTest extends ChannelTestBase {
      */
     @Test(groups="first")
     public void testLargeReturnValueUnicastCall() throws Throwable {
-        setProperties();
+        setProps(c1, c2, c3);
         for(int i=0; i < SIZES.length; i++) {
             _testLargeValueUnicastCall(c1.getLocalAddress(), SIZES[i]);
         }
     }
 
-    private void setProperties() {
-        setProps(c1); setProps(c2); setProps(c3);
-    }
 
+    private static void setProps(JChannel... channels) {
+        for(JChannel ch: channels) {
+            Protocol prot=ch.getProtocolStack().findProtocol("FRAG2");
+            if(prot != null) {
+                ((FRAG2)prot).setFragSize(12000);
+            }
+            prot=ch.getProtocolStack().findProtocol("FRAG");
+            if(prot != null) {
+                ((FRAG)prot).setFragSize(12000);
+            }
 
-    private static void setProps(JChannel ch) {
-        Protocol prot=ch.getProtocolStack().findProtocol("FRAG2");
-        if(prot != null) {
-            ((FRAG2)prot).setFragSize(12000);
+            prot=ch.getProtocolStack().getTransport();
+            if(prot != null)
+                ((TP)prot).setMaxBundleSize(14000);
         }
-        prot=ch.getProtocolStack().findProtocol("FRAG");
-        if(prot != null) {
-            ((FRAG)prot).setFragSize(12000);
-        }
-
-        prot=ch.getProtocolStack().getTransport();
-        if(prot != null)
-            ((TP)prot).setMaxBundleSize(14000);
     }
 
     /**
@@ -427,6 +427,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
 
         public static byte[] largeReturnValue(int size) {
+            System.out.println("returning " + size + " bytes");
             return new byte[size];
         }
     }
