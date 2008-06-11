@@ -5,6 +5,7 @@ import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
 import org.jgroups.JChannel;
 import org.jgroups.View;
+import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Promise;
@@ -22,7 +23,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.17 2008/06/09 11:48:39 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.18 2008/06/11 06:45:05 belaban Exp $
  */
 @Test(groups={"temp"}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -42,6 +43,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         provider=createChannel(true, 2);
         modifyStack(provider);
         requester=createChannel(provider);
+        setOOBPoolSize(provider, requester);
     }
 
     @AfterMethod
@@ -88,6 +90,14 @@ public class LargeStateTransferTest extends ChannelTestBase {
         assertEquals(result, new Integer(size));
     }
 
+
+    private static void setOOBPoolSize(JChannel... channels) {
+        for(JChannel channel: channels) {
+            TP transport=channel.getProtocolStack().getTransport();
+            transport.setOOBMinPoolSize(1);
+            transport.setOOBMaxPoolSize(2);
+        }
+    }
 
 
     static void log(String msg) {
