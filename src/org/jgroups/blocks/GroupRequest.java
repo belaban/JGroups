@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to do so.<p>
  * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.33 2008/01/22 10:44:31 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.34 2008/06/11 10:39:28 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -84,8 +84,8 @@ public class GroupRequest implements RspCollector, Command {
 
     /** keep suspects vector bounded */
     private static final int max_suspects=40;
-    protected Message request_msg;
-    protected RequestCorrelator corr; // either use RequestCorrelator or ...
+    final protected Message request_msg;
+    final protected RequestCorrelator corr; // either use RequestCorrelator or ...
     protected Transport transport;    // Transport (one of them has to be non-null)
 
     protected RspFilter rsp_filter=null;
@@ -157,6 +157,7 @@ public class GroupRequest implements RspCollector, Command {
 
 
     public GroupRequest(Message m, Transport transport, Vector<Address> members, int rsp_mode) {
+        corr = null;
         request_msg=m;
         this.transport=transport;
         this.rsp_mode=rsp_mode;
@@ -204,10 +205,31 @@ public class GroupRequest implements RspCollector, Command {
             return false;
         }
 
+        Vector<Address> targets=null;
+        lock.lock();
+        try {
+            targets=new Vector<Address>(members);
+            req_id=getRequestId();
+            reset(null); // clear 'responses' array
+
+            for(Address suspect: suspects) { // mark all suspects in 'received' array
+                Rsp rsp=requests.get(suspect);
+                if(rsp != null) {
+                    rsp.setSuspected(true);
+                    break; // we can break here because we ensure there are no duplicate members
+                }
+            }
+        }
+        finally {
+            lock.unlock();
+        }
+
+        sendRequest(targets, req_id, use_anycasting);
+        
         lock.lock();
         try {
             done=false;
-            boolean retval=doExecute(use_anycasting, timeout);
+            boolean retval=collectResponses(timeout);
             if(retval == false && log.isTraceEnabled())
                 log.trace("call did not execute correctly, request is " + this.toString());
             return retval;
@@ -463,53 +485,8 @@ public class GroupRequest implements RspCollector, Command {
 
     /** This method runs with lock locked (called by <code>execute()</code>). */
     @GuardedBy("lock")
-    private boolean doExecute(boolean use_anycasting, long timeout) throws Exception {
-        long start_time=0;
-        req_id=getRequestId();
-        reset(null); // clear 'responses' array
-
-        for(Address suspect: suspects) {  // mark all suspects in 'received' array
-            Rsp rsp=requests.get(suspect);
-            if(rsp != null) {
-                rsp.setSuspected(true);
-                break; // we can break here because we ensure there are no duplicate members
-            }
-        }
-
-        try {
-            if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
-            if(corr != null) {
-                List<Address> tmp=new Vector<Address>(members);
-                corr.sendRequest(req_id, tmp, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);
-            }
-            else {
-                if(use_anycasting) {
-                    List<Address> tmp=new ArrayList<Address>(members);
-                    Message copy;
-                    Address mbr;
-                    for(Iterator it=tmp.iterator(); it.hasNext();) {
-                        mbr=(Address)it.next();
-                        copy=request_msg.copy(true);
-                        copy.setDest(mbr);
-                        transport.send(copy);
-                    }
-                }
-                else {
-                    transport.send(request_msg);
-                }
-            }
-        }
-        catch(Exception ex) {
-            if(corr != null)
-                corr.done(req_id);
-            throw ex;
-        }
-
+    private boolean collectResponses(long timeout) throws Exception {
         if(timeout <= 0) {
-        	
-            if(log.isTraceEnabled()) 
-                log.trace("doExecute: waiting for responses without timeout ");
-            
             while(true) { /* Wait for responses: */
                 adjustMembership(); // may not be necessary, just to make sure...
                 if(responsesComplete()) {
@@ -529,11 +506,7 @@ public class GroupRequest implements RspCollector, Command {
             }
         }
         else {
-        	
-            if(log.isTraceEnabled()) 
-                log.trace("doExecute: waiting for responses with timeout = " + timeout + "msecs");        	
-        	
-            start_time=System.currentTimeMillis();
+            long start_time=System.currentTimeMillis();
             long timeout_time=start_time + timeout;
             while(timeout > 0) { /* Wait for responses: */
                 if(responsesComplete()) {
@@ -556,11 +529,37 @@ public class GroupRequest implements RspCollector, Command {
             if(corr != null) {
                 corr.done(req_id);
             }
-            
             if(log.isTraceEnabled())
-                log.trace("call to doExecute() timed out waiting for responses");
-            
+                log.trace("timed out waiting for responses");
+
             return false;
+        }
+    }
+
+
+    private void sendRequest(Vector<Address> targetMembers, long requestId,boolean use_anycasting) throws Exception {
+        try {
+            if(log.isTraceEnabled()) log.trace(new StringBuilder("sending request (id=").append(req_id).append(')'));
+            if(corr != null) {                
+                corr.sendRequest(requestId, targetMembers, request_msg, rsp_mode == GET_NONE? null : this, use_anycasting);
+            }
+            else {
+                if(use_anycasting) {                                                          
+                    for(Address mbr: targetMembers) {
+                        Message copy=request_msg.copy(true);
+                        copy.setDest(mbr);
+                        transport.send(copy);
+                    }
+                }
+                else {
+                    transport.send(request_msg);
+                }
+            }
+        }
+        catch(Exception ex) {
+            if(corr != null)
+                corr.done(requestId);
+            throw ex;
         }
     }
 
@@ -585,11 +584,6 @@ public class GroupRequest implements RspCollector, Command {
                     num_not_received++;
                 }
             }
-        }
-        
-        if(log.isTraceEnabled()) {
-            log.trace("checking if responses complete: " +  " num_received = " + num_received + 
-     			   	", num_suspected = " + num_suspected + ", num_not_received = " + num_not_received);
         }
 
         switch(rsp_mode) {
