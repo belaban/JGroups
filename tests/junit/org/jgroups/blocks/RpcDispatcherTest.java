@@ -35,7 +35,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.7.4.5 2008/05/30 11:36:54 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.7.4.6 2008/06/11 12:29:49 belaban Exp $
  */
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
@@ -58,6 +58,10 @@ public class RpcDispatcherTest extends ChannelTestBase {
         c3=createChannel("A");
         disp3=new RpcDispatcher(c3, null, null, new ServerObject(3));
         c3.connect("demo");
+
+        System.out.println("c1.view=" + c1.getView() + "\nc2.view=" + c2.getView() + "\nc3.view=" + c3.getView());
+        View view=c3.getView();
+        assert view.size() == 3 : "view=" + view;
     }
 
     protected void tearDown() throws Exception {
