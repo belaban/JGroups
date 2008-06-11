@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.2 2008/06/10 09:15:40 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.3 2008/06/11 10:35:33 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -114,9 +114,14 @@ public class OOBTest extends ChannelTestBase {
         c1.send(m2);
         c1.send(m3);
 
-        Util.sleep(1000); // time for potential retransmission
+        Util.sleep(500);
         List<Integer> list=receiver.getMsgs();
-        System.out.println("list = " + list);
+        for(int i=0; i < 10; i++) {
+            System.out.println("list = " + list);
+            if(list.size() == 3)
+                break;
+            Util.sleep(1000); // give the asynchronous msgs some time to be received
+        }
         assert list.size() == 3 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3);
     }
@@ -135,9 +140,16 @@ public class OOBTest extends ChannelTestBase {
             msg.setFlag(Message.OOB);
             c1.send(msg);
         }
-        Util.sleep(1000); // give the asynchronous msgs some time to be received
+
+        Util.sleep(500);
         List<Long> list=receiver.getMsgs();
-        System.out.println("list = " + list);
+        for(int i=0; i < 10; i++) {
+            System.out.println("list = " + list);
+            if(list.size() == NUM -1)
+                break;
+            Util.sleep(1000); // give the asynchronous msgs some time to be received
+        }
+
         assert list.size() == NUM-1 : "list is " + list;
         assert list.contains(2L);
 
