@@ -13,7 +13,7 @@ import java.util.List;
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
  * @author Bela Ban
- * @version $Id: LastMessageDroppedTest.java,v 1.3.2.2 2008/06/11 07:10:09 belaban Exp $
+ * @version $Id: LastMessageDroppedTest.java,v 1.3.2.3 2008/06/11 22:32:44 vlada Exp $
  */
 public class LastMessageDroppedTest extends ChannelTestBase {
     JChannel c1, c2;
@@ -21,8 +21,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
     protected void setUp() throws Exception {
         super.setUp();
         c1=createChannel();
-        c2=createChannel(c1);
-        // c1.setOpt(Channel.LOCAL, false);
+        c2=createChannel(); 
         modifyStack(c1, c2);
         c1.connect("LastMessageDroppedTest");
         c2.connect("LastMessageDroppedTest");
