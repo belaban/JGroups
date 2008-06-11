@@ -1,4 +1,4 @@
-// $Id: DISCARD.java,v 1.17.2.1 2008/01/08 07:40:30 vlada Exp $
+// $Id: DISCARD.java,v 1.17.2.2 2008/06/11 07:02:59 belaban Exp $
 
 package org.jgroups.protocols;
 
@@ -29,6 +29,12 @@ public class DISCARD extends Protocol {
     
     final Set<Address> ignoredMembers = new HashSet<Address>();
     boolean discard_all=false;
+
+    // number of subsequent unicasts to drop in the down direction
+    int drop_down_unicasts=0;
+
+    // number of subsequent multicasts to drop in the down direction
+    int drop_down_multicasts=0;
 
 
     /**
@@ -76,6 +82,25 @@ public class DISCARD extends Protocol {
         return true;
     }
 
+    public int getDropDownUnicasts() {
+        return drop_down_unicasts;
+    }
+
+    /**
+     * Drop the next N unicasts down the stack
+     * @param drop_down_unicasts
+     */
+    public void setDropDownUnicasts(int drop_down_unicasts) {
+        this.drop_down_unicasts=drop_down_unicasts;
+    }
+
+    public int getDropDownMulticasts() {
+        return drop_down_multicasts;
+    }
+
+    public void setDropDownMulticasts(int drop_down_multicasts) {
+        this.drop_down_multicasts=drop_down_multicasts;
+    }
 
     /** Messages from this sender will get dropped */
     public void addIgnoreMember(Address sender) {ignoredMembers.add(sender);}
