@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.14 2008/06/05 21:38:55 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.15 2008/06/11 14:38:26 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -812,10 +812,11 @@ public class CoordGmsImpl extends GmsImpl {
             if(log.isDebugEnabled())
                 log.debug(gms.local_addr + " running merge task, coordinators are " + this.coords);
             Vector<Address> coordsCopy=new Vector<Address>(coords);
-            try {
-
-                /* 1. Generate a merge_id that uniquely identifies the merge in progress */
-                setMergeId(generateMergeId());
+            /* 1. Generate a merge_id that uniquely identifies the merge in progress */
+            ViewId generatedMergeId=generateMergeId();
+            
+            try {               
+                setMergeId(generatedMergeId);
 
                 /* 2. Fetch the current Views/Digests from all subgroup coordinators */
                 boolean success=getMergeDataFromSubgroupCoordinators(coords, gms.merge_timeout);
@@ -853,10 +854,10 @@ public class CoordGmsImpl extends GmsImpl {
             catch(Throwable ex) {
                 if(log.isWarnEnabled())
                     log.warn(ex.getLocalizedMessage());
-                sendMergeCancelledMessage(coordsCopy, merge_id);
+                sendMergeCancelledMessage(coordsCopy, generatedMergeId);
             }
             finally {
-                gms.getViewHandler().resume(merge_id);
+                gms.getViewHandler().resume(generatedMergeId);
                 stopMergeCanceller(); // this is probably not necessary
 
                 /*5. if flush is in stack stop the flush for entire cluster 
@@ -885,13 +886,13 @@ public class CoordGmsImpl extends GmsImpl {
 
         public void run() {
             if(merge_id != null && my_merge_id.equals(merge_id)) {
-                if(log.isTraceEnabled())
-                    log.trace("cancelling merge due to timer timeout (" + timeout + " ms)");
+                if(log.isDebugEnabled())
+                    log.debug("At " + gms.local_addr + " cancelling merge due to timer timeout (" + timeout + " ms)");
                 cancelMerge();
             }
             else {
-                if(log.isTraceEnabled())
-                    log.trace("timer kicked in after " + timeout + " ms, but no (or different) merge was in progress: " +
+                if(log.isWarnEnabled())
+                    log.warn("At " + gms.local_addr +" timer kicked in after " + timeout + " ms, but no (or different) merge was in progress: " +
                               "merge_id=" + merge_id + ", my_merge_id=" + my_merge_id);
             }
         }
