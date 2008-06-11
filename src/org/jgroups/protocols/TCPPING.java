@@ -1,4 +1,3 @@
-// $Id: TCPPING.java,v 1.38 2008/05/30 15:42:28 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -6,12 +5,12 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
-import org.jgroups.util.Util;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
 
-import java.util.*;
 import java.net.UnknownHostException;
+import java.util.List;
 
 
 /**
@@ -31,6 +30,7 @@ import java.net.UnknownHostException;
  * the initial membership.
  *
  * @author Bela Ban
+ * @version $Id: TCPPING.java,v 1.39 2008/06/11 13:04:55 belaban Exp $
  */
 public class TCPPING extends Discovery {
     @Property
@@ -75,23 +75,12 @@ public class TCPPING extends Discovery {
         super.init();
     }
 
-    public void localAddressSet(Address addr) {
-        // Add own address to initial_hosts if not present: we must always be able to ping ourself !
-        if(initial_hosts != null && addr != null) {
-            if(initial_hosts.contains(addr)) {
-                List<IpAddress> tmp=new ArrayList<IpAddress>(initial_hosts);
-                tmp.remove(addr);
-                initial_hosts=Collections.unmodifiableList(tmp); // we cannot modify initial_hosts, so copy and modify it
-                if(log.isDebugEnabled()) log.debug("[SET_LOCAL_ADDRESS]: removing my own address (" + addr +
-                                                   ") from initial_hosts; initial_hosts=" + initial_hosts);
-            }
-        }
-    }   
+   
     
     public void sendGetMembersRequest(String cluster_name) {
-
-        for(Iterator<IpAddress> it = initial_hosts.iterator();it.hasNext();){
-            final Address addr = it.next();
+        for(final Address addr: initial_hosts) {
+            if(addr.equals(local_addr))
+                continue;
             final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
@@ -100,9 +89,10 @@ public class TCPPING extends Discovery {
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
             timer.submit(new Runnable() {
                 public void run() {
-                    try{                        
+                    try {
                         down_prot.down(new Event(Event.MSG, msg));
-                    }catch(Exception ex){
+                    }
+                    catch(Exception ex){
                         if(log.isErrorEnabled())
                             log.error("failed sending discovery request to " + addr, ex);
                     }
