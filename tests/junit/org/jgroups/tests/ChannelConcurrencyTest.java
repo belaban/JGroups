@@ -5,32 +5,39 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.List;
-import java.util.LinkedList;
-import java.net.InetAddress;
 
-
-import org.jgroups.JChannel;
 import org.jgroups.Channel;
 import org.jgroups.Global;
-import org.jgroups.util.ResourceManager;
-import org.jgroups.util.Util;
-import org.jgroups.protocols.*;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.blocks.GroupRequest;
+import org.jgroups.blocks.MessageDispatcher;
+import org.jgroups.blocks.RequestHandler;
+import org.jgroups.protocols.MERGE2;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
-import org.jgroups.stack.Protocol;
+import org.jgroups.util.RspList;
+import org.jgroups.util.Util;
+import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.8 2008/06/06 14:51:21 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.9 2008/06/11 15:09:27 vlada Exp $
  */
 @Test(groups=Global.FLUSH)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
 
-
-    public void test() throws Throwable {
+    public void testPlainChannel () throws Throwable{
+        testhelper(false);
+    }
+    
+    public void testwithDispatcher () throws Throwable{
+        testhelper(true);
+    }
+    
+    protected  void testhelper(boolean useDispatcher) throws Throwable {
         final int count=8;
 
         final Executor executor=Executors.newFixedThreadPool(count);
@@ -38,18 +45,10 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         final JChannel[] channels=new JChannel[count];
         final Task[] tasks=new Task[count];
 
-        JChannel ref = null;
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
-            if(ref == null) {
-                channels[i]=new JChannel("flush-udp.xml");
-                makeUnique(channels[i], count);
-                ref=channels[i];
-            }
-            else {
-                channels[i]=new JChannel(ref);
-            }
-            tasks[i]=new Task(latch, channels[i]);
+            channels[i]=new JChannel("flush-udp.xml");
+            tasks[i]=new Task(latch, channels[i],useDispatcher);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
         }
@@ -86,7 +85,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             }
 
             for(final JChannel channel:channels) {
-                assertEquals("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
+                AssertJUnit.assertSame("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
             }
         }
         finally {
@@ -94,7 +93,10 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             for(int i=channels.length -1; i>= 0; i--) {
                 Channel channel=channels[i];
                 channel.close();
-                Util.sleep(250);
+                
+                //there are sometimes big delays until entire cluster shuts down
+                //use sleep to make a smoother shutdown so we avoid false positives
+                Util.sleep(300);
                 int tries=0;
                 while((channel.isConnected() || channel.isOpen()) && tries++ < 10) {
                     Util.sleep(1000);
@@ -107,6 +109,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             }
         }
     }
+
 
     private static void changeViewBundling(JChannel channel) {
         ProtocolStack stack=channel.getProtocolStack();
@@ -126,46 +129,17 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         }
     }
 
-    private static void makeUnique(Channel channel, int num) throws Exception {
-        ProtocolStack stack=channel.getProtocolStack();
-        TP transport=stack.getTransport();
-        InetAddress bind_addr=transport.getBindAddressAsInetAddress();
-        if(transport instanceof UDP) {
-            String mcast_addr=ResourceManager.getNextMulticastAddress();
-            short mcast_port=ResourceManager.getNextMulticastPort(bind_addr);
-            ((UDP)transport).setMulticastAddress(mcast_addr);
-            ((UDP)transport).setMulticastPort(mcast_port);
-        }
-        else if(transport instanceof BasicTCP) {
-            List<Short> ports=ResourceManager.getNextTcpPorts(bind_addr, num);
-            transport.setBindPort(ports.get(0));
-            transport.setPortRange(num);
-
-            Protocol ping=stack.findProtocol(TCPPING.class);
-            if(ping == null)
-                throw new IllegalStateException("TCP stack must consist of TCP:TCPPING - other config are not supported");
-
-            List<String> initial_hosts=new LinkedList<String>();
-            for(short port: ports) {
-                initial_hosts.add(bind_addr + "[" + port + "]");
-            }
-            String tmp=Util.printListWithDelimiter(initial_hosts, ",");
-            ((TCPPING)ping).setInitialHosts(tmp);
-        }
-        else {
-            throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
-        }
-    }
-    
     private static class Task implements Runnable {
         private final Channel c;
         private final CountDownLatch latch;
         private Throwable exception=null;
+        private boolean useDispatcher = false;
 
 
-        public Task(CountDownLatch latch, Channel c) {
+        public Task(CountDownLatch latch, Channel c,boolean useDispatcher) {
             this.latch=latch;
             this.c=c;
+            this.useDispatcher = useDispatcher;
         }
 
         public Throwable getException() {
@@ -175,6 +149,18 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         public void run() {
             try {
                 c.connect("test");
+                if(useDispatcher) {
+                    final MessageDispatcher md=new MessageDispatcher(c, null, null, new MyHandler());
+                    for(int i=0;i < 10;i++) {
+                        final RspList rsp=md.castMessage(null,
+                                                         new Message(null, null, i),
+                                                         GroupRequest.GET_ALL,
+                                                         2500);
+                        for(Object o:rsp.getResults()) {
+                            assertEquals("Wrong result received at " + c.getLocalAddress(), i, o);
+                        }
+                    }
+                }
             }
             catch(final Exception e) {
                 exception=e;
@@ -184,5 +170,12 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
                 latch.countDown();
             }
         }
+    }
+    private static class MyHandler implements RequestHandler {
+
+        public Object handle(Message msg) {
+            return msg.getObject();
+        }
+
     }
 }
