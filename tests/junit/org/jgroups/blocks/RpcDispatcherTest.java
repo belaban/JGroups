@@ -39,7 +39,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.20 2008/06/11 13:06:48 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.21 2008/06/11 13:13:30 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -427,7 +427,6 @@ public class RpcDispatcherTest extends ChannelTestBase {
 
 
         public static byte[] largeReturnValue(int size) {
-            System.out.println("returning " + size + " bytes");
             return new byte[size];
         }
     }
