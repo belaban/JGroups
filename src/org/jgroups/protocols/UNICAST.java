@@ -2,11 +2,11 @@
 package org.jgroups.protocols;
 
 import org.jgroups.*;
-import org.jgroups.conf.PropertyConverters;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
+import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.AckReceiverWindow;
 import org.jgroups.stack.AckSenderWindow;
 import org.jgroups.stack.Protocol;
@@ -17,7 +17,11 @@ import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -38,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.108 2008/06/09 05:43:19 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.109 2008/06/11 06:48:11 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -87,6 +91,10 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
     private long num_acks_sent=0, num_acks_received=0, num_xmit_requests_received=0;
+
+
+    /** <em>Regular</em> messages which have been added, but not removed */
+    private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
 
 
     /** All protocol names have to be unique ! */
@@ -569,7 +577,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             if(added)
                 up_prot.up(new Event(Event.MSG, msg));
             win.removeOOBMessage(); // if we only have OOB messages, we'd never remove them !
-            return true;
+            if(!(win.hasMessagesToRemove() && undelivered_msgs.get() > 0))
+                return true;
         }
 
         // only regular messages from this point on
@@ -592,12 +601,26 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         try {
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
+            short removed_regular_msgs=0;
             while((m=win.remove()) != null) {
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
                     continue;
                 }
+                removed_regular_msgs++;
                 up_prot.up(new Event(Event.MSG, m));
+            }
+
+            if(added) {
+                // We keep track of regular messages that we added, but couldn't remove (because of ordering).
+                // When we have such messages pending, then even OOB threads will remove and process them.
+                // http://jira.jboss.com/jira/browse/JGRP-780
+                if(removed_regular_msgs == 0) {
+                    undelivered_msgs.incrementAndGet();
+                }
+                else if(removed_regular_msgs > 1) {
+                    undelivered_msgs.addAndGet(-(removed_regular_msgs -1));
+                }
             }
         }
         finally {
