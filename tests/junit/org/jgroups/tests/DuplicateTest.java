@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentMap;
  * unicast, (2) multicast, (3) regular and (4) OOB messages. The receiver(s) then check for the presence of duplicate
  * messages. 
  * @author Bela Ban
- * @version $Id: DuplicateTest.java,v 1.6 2008/06/09 09:59:18 belaban Exp $
+ * @version $Id: DuplicateTest.java,v 1.7 2008/06/11 06:54:46 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class DuplicateTest extends ChannelTestBase {
@@ -147,7 +147,7 @@ public class DuplicateTest extends ChannelTestBase {
          }
          // sending is asynchronous, we need to give the receivers some time to receive all msgs. Retransmission
          // can for example delay message delivery
-         Util.sleep(500);
+         Util.sleep(1000);
      }
 
 
