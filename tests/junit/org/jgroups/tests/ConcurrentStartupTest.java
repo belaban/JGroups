@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.32.2.2 2007/12/11 16:22:55 vlada Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.32.2.3 2008/06/11 14:46:36 vlada Exp $
  */
 public class ConcurrentStartupTest extends ChannelTestBase {
 
@@ -98,7 +98,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                 channels[i].start();
                 semaphore.release(1);
                 //sleep at least a second and max second and a half
-                sleepRandom(1000,1500);
+                Util.sleep(500);
             }
 
             // Make sure everyone is in sync
@@ -109,7 +109,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
 
             // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
+            Util.sleep(1000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -120,7 +120,7 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             }
 
             // Sleep to ensure async message arrive
-            Util.sleep(3000);
+            Util.sleep(1000);
 
             // do test verification            
             for (ConcurrentStartupChannel channel : channels) {
@@ -134,18 +134,18 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             for (ConcurrentStartupChannel channel : channels) {
                 assertEquals(channel.getName() + " should have " + count + " elements", count, channel.getList().size());
             }
-        }catch(Exception ex){
-            log.warn("Exception encountered during test", ex);
-            fail(ex.getLocalizedMessage());
-        }finally{
-            for(ConcurrentStartupChannel channel:channels){
-                channel.cleanup();
-                Util.sleep(2000); // remove before 2.6 GA
-            }
             
             for(ConcurrentStartupChannel channel:channels){                
                 checkEventStateTransferSequence(channel);
             }
+        }catch(Exception ex){
+            log.warn("Exception encountered during test", ex);
+            fail(ex.getLocalizedMessage());
+        }finally{
+            for(int i = count-1;i >=0;i--){
+                channels[i].cleanup();
+                Util.sleep(250);
+            }                
         }
     }
 

@@ -26,7 +26,7 @@ import org.jgroups.util.Util;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.2 2007/12/11 16:22:55 vlada Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.2.2.3 2008/06/11 14:46:37 vlada Exp $
  */
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
@@ -92,7 +92,7 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
                 // Start threads and let them join the channel
                 channels[i].start();
-                Util.sleep(2000);
+                Util.sleep(500);
             }
 
             // Make sure everyone is in sync
@@ -102,12 +102,12 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
                 blockUntilViewsReceived(channels, 60000);
             }
 
-            Util.sleep(2000);
+            Util.sleep(1000);
             // Unleash hell !
             semaphore.release(count);
 
             // Sleep to ensure the threads get all the semaphore tickets
-            Util.sleep(2000);
+            Util.sleep(1000);
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
@@ -132,17 +132,18 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
             for (ConcurrentStateTransfer channel : channels) {
                 assertEquals(channel.getName() + " should have " + count + " elements", count, channel.getList().size());
             }
+            
+            for(ConcurrentStateTransfer channel:channels){                
+                checkEventStateTransferSequence(channel);
+            }   
         }catch(Exception ex){
             log.warn("Exception encountered during test", ex);
             fail(ex.getLocalizedMessage());
         }finally{
-            for(ConcurrentStateTransfer channel:channels){
-                channel.cleanup();
-                Util.sleep(2000); // remove before 2.6 GA
-            }
-            for(ConcurrentStateTransfer channel:channels){                
-                checkEventStateTransferSequence(channel);
-            }            
+            for(int i = count-1;i >=0;i--){
+                channels[i].cleanup();
+                Util.sleep(250);
+            }                               
         }
     }
     
