@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.189 2008/06/09 09:14:29 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.190 2008/06/11 06:47:25 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -219,6 +219,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @ManagedAttribute(description="If true, logs messages discarded because received from other members",writable=true)
     private boolean log_discard_msgs=true;
 
+
+    /** <em>Regular</em> messages which have been added, but not removed */
+    private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
+
+    
 
     public NAKACK() {
     }
@@ -758,7 +763,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
                 up_prot.up(new Event(Event.MSG, msg));
                 win.removeOOBMessage();
-                return;
+                if(!(win.hasMessagesToRemove() && undelivered_msgs.get() > 0))
+                    return;
             }
         }
         
@@ -784,16 +790,29 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         try {
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
+            short removed_regular_msgs=0;
             while((msg_to_deliver=win.remove()) != null) {
 
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
                 if(msg_to_deliver.isFlagSet(Message.OOB)) {
                     continue;
                 }
+                removed_regular_msgs++;
 
                 // Changed by bela Jan 29 2003: not needed (see above)
                 //msg_to_deliver.removeHeader(getName());
                 up_prot.up(new Event(Event.MSG, msg_to_deliver));
+            }
+            if(added) {
+                // We keep track of regular messages that we added, but couldn't remove (because of ordering).
+                // When we have such messages pending, then even OOB threads will remove and process them
+                // http://jira.jboss.com/jira/browse/JGRP-781
+                if(removed_regular_msgs == 0) {
+                    undelivered_msgs.incrementAndGet();
+                }
+                else if(removed_regular_msgs > 1) {
+                    undelivered_msgs.addAndGet(-(removed_regular_msgs -1));
+                }
             }
         }
         finally {
