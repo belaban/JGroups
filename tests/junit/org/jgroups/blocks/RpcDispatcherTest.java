@@ -39,7 +39,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.18 2008/05/30 11:28:35 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.19 2008/06/11 11:25:30 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -55,7 +55,7 @@ public class RpcDispatcherTest extends ChannelTestBase {
     @BeforeClass
     protected void setUp() throws Exception {
         c1=createChannel(true);
-        final String GROUP=getUniqueClusterName("RpcDispatcherTest");
+        final String GROUP="RpcDispatcherTest";
         disp1=new RpcDispatcher(c1, null, null, new ServerObject(1));
         c1.connect(GROUP);
 
