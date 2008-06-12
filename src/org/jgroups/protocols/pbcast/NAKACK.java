@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.11 2008/06/11 08:10:01 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.12 2008/06/12 15:24:57 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -821,10 +821,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         boolean loopback=local_addr.equals(sender);
         boolean added=loopback || win.add(hdr.seqno, msg);
+        boolean regular_msg_added=added && !msg.isFlagSet(Message.OOB);
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
-        if(msg.isFlagSet(Message.OOB) && added) {
+        if(added && msg.isFlagSet(Message.OOB)) {
             if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
                 up_prot.up(new Event(Event.MSG, msg));
                 win.removeOOBMessage();
@@ -833,22 +834,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
         
-        //AtomicBoolean busy=in_progress.get(sender);
-        //if(busy == null) {
-          //  in_progress.putIfAbsent(sender, busy=new AtomicBoolean(false));
-        //}
-
-        // check whether a thread is already active for the same sender, if so, terminate. This prevents lots of
-        // threads blocking on the same lock and then - when that lock is released - from terminating anyway, because
-        // the previous thread has already processed all messages (http://jira.jboss.com/jira/browse/JGRP-457)
-        // if(busy.compareAndSet(false, true)) {
-        // try {
-            // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
-            // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
-            // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
-            // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
-            // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
-            // order in which they were sent by the sender
+        // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
+        // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
+        // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
+        // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
+        // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
+        // order in which they were sent by the sender
         Message msg_to_deliver;
         ReentrantLock lock=win.getLock();
         lock.lock();
@@ -868,16 +859,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 //msg_to_deliver.removeHeader(getName());
                 up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
-            if(added) {
-                // We keep track of regular messages that we added, but couldn't remove (because of ordering).
-                // When we have such messages pending, then even OOB threads will remove and process them
-                // http://jira.jboss.com/jira/browse/JGRP-781
-                if(removed_regular_msgs == 0) {
-                    undelivered_msgs.incrementAndGet();
-                }
-                else if(removed_regular_msgs > 1) {
-                    undelivered_msgs.addAndGet(-(removed_regular_msgs -1));
-                }
+
+            // We keep track of regular messages that we added, but couldn't remove (because of ordering).
+            // When we have such messages pending, then even OOB threads will remove and process them
+            // http://jira.jboss.com/jira/browse/JGRP-781
+            if(regular_msg_added && removed_regular_msgs == 0) {
+                undelivered_msgs.incrementAndGet();
+            }
+            if(removed_regular_msgs > 0) { // regardless of whether a message was added or not !
+                int num_msgs_added=regular_msg_added? 1 : 0;
+                undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
             }
         }
         finally {
@@ -1621,6 +1612,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             win.reset();
         }
         xmit_table.clear();
+        undelivered_msgs.set(0);
     }
 
 
@@ -1637,6 +1629,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             win.destroy();
         }
         xmit_table.clear();
+        undelivered_msgs.set(0);
     }
 
 
