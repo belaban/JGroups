@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.213 2008/06/05 07:37:20 belaban Exp $
+ * @version $Id: TP.java,v 1.214 2008/06/12 11:34:50 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -194,11 +194,14 @@ public abstract class TP extends Protocol {
     @ManagedAttribute
     public boolean isOOBThreadPoolEnabled() { return oob_thread_pool_enabled; }
 
+    @ManagedAttribute
     @Property(name="oob_thread_pool.min_threads")
     int oob_thread_pool_min_threads=2;
+    @ManagedAttribute
     @Property(name="oob_thread_pool.max_threads")
     int oob_thread_pool_max_threads=10;
     /** Number of milliseconds after which an idle thread is removed */
+    @ManagedAttribute
     @Property(name="oob_thread_pool.keep_alive_time")
     long oob_thread_pool_keep_alive_time=30000;
 
@@ -208,7 +211,7 @@ public abstract class TP extends Protocol {
     /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
     BlockingQueue<Runnable> oob_thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with direct executor) */
-    @Property(name="oob_thread_pool.queue_enabled")
+    @ManagedAttribute @Property(name="oob_thread_pool.queue_enabled")
     boolean oob_thread_pool_queue_enabled=true;
     /** max number of elements in queue (bounded) */
     @ManagedAttribute    
@@ -216,7 +219,7 @@ public abstract class TP extends Protocol {
     int oob_thread_pool_queue_max_size=500;
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
-    @Property(name="oob_thread_pool.rejection_policy")
+    @ManagedAttribute @Property(name="oob_thread_pool.rejection_policy")
     String oob_thread_pool_rejection_policy="Run";
 
     public Executor getOOBThreadPool() {
@@ -245,19 +248,19 @@ public abstract class TP extends Protocol {
     /** Factory which is used by oob_thread_pool */
     ThreadFactory default_thread_factory=null;
 
-    @Property(name="thread_pool.enabled")
+    @ManagedAttribute @Property(name="thread_pool.enabled")
     boolean thread_pool_enabled=true;
 
     @ManagedAttribute
     public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }
     
-    @Property(name="thread_pool.min_threads")
+    @ManagedAttribute @Property(name="thread_pool.min_threads")
     int thread_pool_min_threads=2;
     
-    @Property(name="thread_pool.max_threads")
+    @ManagedAttribute @Property(name="thread_pool.max_threads")
     int thread_pool_max_threads=10;
     /** Number of milliseconds after which an idle thread is removed */
-    @Property(name="thread_pool.keep_alive_time")
+    @ManagedAttribute @Property(name="thread_pool.keep_alive_time")
     long thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute
@@ -266,7 +269,7 @@ public abstract class TP extends Protocol {
     /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     BlockingQueue<Runnable> thread_pool_queue=null;
     /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
-    @Property(name="thread_pool.queue_enabled")
+    @ManagedAttribute @Property(name="thread_pool.queue_enabled")
     boolean thread_pool_queue_enabled=true;
 
     public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
@@ -278,7 +281,7 @@ public abstract class TP extends Protocol {
     /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
      * JDK 5's java.util.concurrent package */
     
-    @Property(name="thread_pool.rejection_policy")
+    @ManagedAttribute @Property(name="thread_pool.rejection_policy")
     String thread_pool_rejection_policy="Run";
 
     public Executor getDefaultThreadPool() {
@@ -304,7 +307,7 @@ public abstract class TP extends Protocol {
 
     protected ThreadFactory timer_thread_factory;
 
-    @ManagedAttribute(name="timer.num_threads", description="Number of threads to be used by the timer thread pool")
+    @ManagedAttribute(description="Number of threads to be used by the timer thread pool")
     @Property(name="timer.num_threads")
     int num_timer_threads=4;
 
@@ -508,39 +511,39 @@ public abstract class TP extends Protocol {
         return up_prots;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getOOBMinPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getCorePoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setOOBMinPoolSize(int size) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setCorePoolSize(size);
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getOOBMaxPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getMaximumPoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setOOBMaxPoolSize(int size) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setMaximumPoolSize(size);
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getOOBPoolSize() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getPoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public long getOOBKeepAliveTime() {
         return oob_thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)oob_thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setOOBKeepAliveTime(long time) {
         if(oob_thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)oob_thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
@@ -550,7 +553,7 @@ public abstract class TP extends Protocol {
         return num_oob_msgs_received;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getOOBQueueSize() {
         return oob_thread_pool_queue.size();
     }
@@ -559,41 +562,39 @@ public abstract class TP extends Protocol {
         return oob_thread_pool_queue_max_size;
     }
 
-
-
-    @ManagedOperation
+    @ManagedAttribute
     public int getIncomingMinPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getCorePoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setIncomingMinPoolSize(int size) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setCorePoolSize(size);
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getIncomingMaxPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getMaximumPoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setIncomingMaxPoolSize(int size) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setMaximumPoolSize(size);
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getIncomingPoolSize() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getPoolSize() : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public long getIncomingKeepAliveTime() {
         return thread_pool instanceof ThreadPoolExecutor? ((ThreadPoolExecutor)thread_pool).getKeepAliveTime(TimeUnit.MILLISECONDS) : 0;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public void setIncomingKeepAliveTime(long time) {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setKeepAliveTime(time, TimeUnit.MILLISECONDS);
@@ -603,7 +604,7 @@ public abstract class TP extends Protocol {
         return num_incoming_msgs_received;
     }
 
-    @ManagedOperation
+    @ManagedAttribute
     public int getIncomingQueueSize() {
         return thread_pool_queue.size();
     }
