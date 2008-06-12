@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.190 2008/06/11 06:47:25 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.191 2008/06/12 08:56:15 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -759,7 +759,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
         // http://jira.jboss.com/jira/browse/JGRP-379
-        if(msg.isFlagSet(Message.OOB) && added) {
+        if(added && msg.isFlagSet(Message.OOB)) {
             if(!loopback || oob_loopback_msgs.remove(hdr.seqno)) {
                 up_prot.up(new Event(Event.MSG, msg));
                 win.removeOOBMessage();
