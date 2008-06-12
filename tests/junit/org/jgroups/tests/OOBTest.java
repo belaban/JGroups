@@ -21,7 +21,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.3 2008/06/11 10:35:33 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.4 2008/06/12 09:39:26 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -89,10 +89,42 @@ public class OOBTest extends ChannelTestBase {
         c1.send(m2);
         c1.send(m3);
 
-        Util.sleep(500); // time for potential retransmission
+        Util.sleep(1000); // time for potential retransmission
         List<Integer> list=receiver.getMsgs();
         assert list.size() == 3 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3);
+    }
+
+    public void testRegularAndOOBUnicasts2() throws Exception {
+        DISCARD discard=new DISCARD();
+        ProtocolStack stack=c1.getProtocolStack();
+        stack.insertProtocol(discard, ProtocolStack.BELOW, UNICAST.class);
+
+        Address dest=c2.getLocalAddress();
+        Message m1=new Message(dest, null, 1);
+        Message m2=new Message(dest, null, 2);
+        m2.setFlag(Message.OOB);
+        Message m3=new Message(dest, null, 3);
+        m3.setFlag(Message.OOB);
+        Message m4=new Message(dest, null, 4);
+
+        MyReceiver receiver=new MyReceiver();
+        c2.setReceiver(receiver);
+        c1.send(m1);
+
+        discard.setDropDownUnicasts(1);
+        c1.send(m3);
+
+        discard.setDropDownUnicasts(1);
+        c1.send(m2);
+        
+        c1.send(m4);
+
+        Util.sleep(1000); // time for potential retransmission
+        List<Integer> list=receiver.getMsgs();
+        System.out.println("list = " + list);
+        assert list.size() == 4 : "list is " + list;
+        assert list.contains(1) && list.contains(2) && list.contains(3) && list.contains(4);
     }
 
     public void testRegularAndOOBMulticasts() throws Exception {
