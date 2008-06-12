@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.109 2008/06/11 06:48:11 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.110 2008/06/12 14:34:54 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -563,6 +563,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         }
 
         boolean added=win.add(seqno, msg); // entry.received_msgs is guaranteed to be non-null if we get here
+        boolean regular_msg_added=added && !msg.isFlagSet(Message.OOB);
         num_msgs_received++;
         num_bytes_received+=msg.getLength();
 
@@ -581,14 +582,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 return true;
         }
 
-        // only regular messages from this point on
         if(!added && !win.hasMessagesToRemove()) { // no ack if we didn't add the msg (e.g. duplicate)
-            return true; // ack the message, because this will stop retransmission (which are unreliable) !
+            return true; // ack the message, because this will stop retransmissions (which are unreliable) !
         }
 
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         Message  m;
+        short removed_regular_msgs=0;
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
         // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
@@ -601,7 +602,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         try {
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
-            short removed_regular_msgs=0;
             while((m=win.remove()) != null) {
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
@@ -611,16 +611,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 up_prot.up(new Event(Event.MSG, m));
             }
 
-            if(added) {
+            if(regular_msg_added && removed_regular_msgs == 0) {
                 // We keep track of regular messages that we added, but couldn't remove (because of ordering).
                 // When we have such messages pending, then even OOB threads will remove and process them.
                 // http://jira.jboss.com/jira/browse/JGRP-780
-                if(removed_regular_msgs == 0) {
-                    undelivered_msgs.incrementAndGet();
-                }
-                else if(removed_regular_msgs > 1) {
-                    undelivered_msgs.addAndGet(-(removed_regular_msgs -1));
-                }
+                undelivered_msgs.incrementAndGet();
+            }
+
+            if(removed_regular_msgs > 0) { // regardless of whether a message was added or not !
+                int num_msgs_added=regular_msg_added? 1 : 0;
+                undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
             }
         }
         finally {
