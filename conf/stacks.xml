@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.35.2.5 2008/04/14 08:33:12 belaban Exp $
+  Version: $Id: stacks.xml,v 1.35.2.6 2008/06/13 13:48:52 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -183,7 +183,7 @@
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
-            <UNICAST timeout="300,600,1200"/>
+            <UNICAST timeout="300,600,1200" xmit_off="true"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
@@ -247,7 +247,7 @@
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
-            <UNICAST timeout="300,600,1200"/>
+            <UNICAST timeout="300,600,1200" xmit_off="true"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
@@ -300,7 +300,7 @@
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
-            <UNICAST timeout="300,600,1200"/>
+            <UNICAST timeout="300,600,1200" xmit_off="true"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  
@@ -354,7 +354,7 @@
                            use_mcast_xmit="false" gc_lag="0"
                            retransmit_timeout="300,600,1200,2400,4800"
                            discard_delivered_msgs="false"/>
-            <UNICAST timeout="300,600,1200"/>
+            <UNICAST timeout="300,600,1200" xmit_off="true"/>
             <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                            max_bytes="400000"/>
             <pbcast.GMS print_local_addr="true" join_timeout="5000"  

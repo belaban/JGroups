@@ -7,7 +7,7 @@
     We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
     due to threadless stack support)
     author: Bela Ban
-    version: $Id: flush-tcp-nio.xml,v 1.1.2.2 2008/04/14 08:33:14 belaban Exp $
+    version: $Id: flush-tcp-nio.xml,v 1.1.2.3 2008/06/13 13:48:52 belaban Exp $
 -->
 <config>
     <TCP_NIO
@@ -62,7 +62,7 @@
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="true"/>
-    <UNICAST timeout="300,600,1200"/>
+    <UNICAST timeout="300,600,1200" xmit_off="true"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
     <VIEW_SYNC avg_send_interval="60000"/>
