@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.91.2.10 2008/06/12 14:42:30 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.91.2.11 2008/06/13 08:20:11 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
@@ -261,6 +261,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
     public void stop() {
         started=false;
         removeAllConnections();
+        undelivered_msgs.set(0);
     }
 
 
@@ -643,11 +644,16 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 removed_regular_msgs++;
                 up_prot.up(new Event(Event.MSG, m));
             }
-
+        }
+        finally {
+            if(eager_lock_release)
+                locks.remove(Thread.currentThread());
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
+            // We keep track of regular messages that we added, but couldn't remove (because of ordering).
+            // When we have such messages pending, then even OOB threads will remove and process them.
+            // http://jira.jboss.com/jira/browse/JGRP-780
             if(regular_msg_added && removed_regular_msgs == 0) {
-                // We keep track of regular messages that we added, but couldn't remove (because of ordering).
-                // When we have such messages pending, then even OOB threads will remove and process them.
-                // http://jira.jboss.com/jira/browse/JGRP-780
                 undelivered_msgs.incrementAndGet();
             }
 
@@ -655,12 +661,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 int num_msgs_added=regular_msg_added? 1 : 0;
                 undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
             }
-        }
-        finally {
-            if(eager_lock_release)
-                locks.remove(Thread.currentThread());
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
         }
         return true; // msg was successfully received - send an ack back to the sender
     }
