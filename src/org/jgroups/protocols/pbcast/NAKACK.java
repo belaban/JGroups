@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.12 2008/06/12 15:24:57 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.13 2008/06/13 08:21:57 belaban Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -841,12 +841,13 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
         Message msg_to_deliver;
+        short removed_regular_msgs=0;
         ReentrantLock lock=win.getLock();
         lock.lock();
         try {
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
-            short removed_regular_msgs=0;
+
             while((msg_to_deliver=win.remove()) != null) {
 
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
@@ -859,7 +860,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 //msg_to_deliver.removeHeader(getName());
                 up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
-
+        }
+        finally {
+            if(eager_lock_release)
+                locks.remove(Thread.currentThread());
+            if(lock.isHeldByCurrentThread())
+                lock.unlock();
             // We keep track of regular messages that we added, but couldn't remove (because of ordering).
             // When we have such messages pending, then even OOB threads will remove and process them
             // http://jira.jboss.com/jira/browse/JGRP-781
@@ -870,12 +876,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 int num_msgs_added=regular_msg_added? 1 : 0;
                 undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
             }
-        }
-        finally {
-            if(eager_lock_release)
-                locks.remove(Thread.currentThread());
-            if(lock.isHeldByCurrentThread())
-                lock.unlock();
         }
     }
 
