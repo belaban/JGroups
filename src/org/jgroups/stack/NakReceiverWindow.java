@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.55 2008/06/09 06:25:04 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.56 2008/06/13 11:16:06 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -241,7 +241,6 @@ public class NakReceiverWindow {
      */
     public boolean add(long seqno, Message msg) {
         long old_next, next_to_add;
-        boolean retval=true;
 
         lock.writeLock().lock();
         try {
@@ -302,7 +301,7 @@ public class NakReceiverWindow {
             // setSmoothedLossRate();
             lock.writeLock().unlock();
         }
-        return retval;
+        return true;
     }
 
 
