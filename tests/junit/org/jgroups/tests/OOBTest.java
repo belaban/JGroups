@@ -5,6 +5,7 @@ import org.jgroups.protocols.DISCARD;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.UNICAST;
 import org.jgroups.protocols.pbcast.NAKACK;
+import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterMethod;
@@ -16,12 +17,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.4 2008/06/12 09:39:26 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.5 2008/06/13 08:11:01 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -31,9 +33,10 @@ public class OOBTest extends ChannelTestBase {
     @BeforeMethod
     void init() throws Exception {
         c1=createChannel(true, 2);
-        c1.setOpt(Channel.LOCAL, false);
+        // c1.setOpt(Channel.LOCAL, false);
         c2=createChannel(c1);
-        setOOBPoolSize(c2);
+        setOOBPoolSize(c1, c2);
+        setStableGossip(c1, c2);
         c1.connect("OOBMcastTest");
         c2.connect("OOBMcastTest");
         View view=c2.getView();
@@ -159,6 +162,102 @@ public class OOBTest extends ChannelTestBase {
     }
 
 
+    @Test(invocationCount=5)
+    public void testRandomRegularAndOOBMulticasts() throws Exception {
+        DISCARD discard=new DISCARD();
+        ProtocolStack stack=c1.getProtocolStack();
+        stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
+        Address dest=null; // send to all
+        MyReceiver r1=new MyReceiver(), r2=new MyReceiver();
+        c1.setReceiver(r1);
+        c2.setReceiver(r2);
+        final int NUM_MSGS=100;
+        final int NUM_THREADS=10;
+        send(dest, NUM_MSGS, NUM_THREADS, 0.5, 0.5, discard);
+        List<Integer> one=r1.getMsgs(), two=r2.getMsgs();
+        for(int i=0; i < 20; i++) {
+            if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
+                break;
+            System.out.print(".");
+            Util.sleep(1000);
+        }
+        System.out.println("");
+        check(NUM_MSGS, one, two);
+    }
+
+
+    private void send(final Address dest, final int num_msgs, final int num_threads,
+                      final double oob_prob, final double drop_prob, final DISCARD discard) throws Exception {
+        Channel sender;
+        boolean oob, drop;
+        final boolean multicast=dest == null || dest.isMulticastAddress();
+        Message msg;
+
+        if(num_threads <= 0)
+            throw new IllegalArgumentException("number of threads <= 0");
+
+        if(num_msgs % num_threads != 0)
+            throw new IllegalArgumentException("number of messages ( " + num_msgs + ") needs to be divisible by " +
+                    "the number o threads (" + num_threads + ")");
+
+        if(num_threads > 1) {
+            final int msgs_per_thread=num_msgs / num_threads;
+            Thread[] threads=new Thread[num_threads];
+            final AtomicInteger counter=new AtomicInteger(0);
+            for(int i=0; i < threads.length; i++) {
+                threads[i]=new Thread() {
+                    public void run() {
+                        for(int i=0; i < msgs_per_thread; i++) {
+                            Channel sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
+                            boolean oob=Util.tossWeightedCoin(oob_prob);
+                            boolean drop=Util.tossWeightedCoin(drop_prob);
+                            Message msg=new Message(dest, null, counter.getAndIncrement());
+                            if(oob)
+                                msg.setFlag(Message.OOB);
+                            if(drop) {
+                                if(multicast)
+                                    discard.setDropDownMulticasts(1);
+                                else
+                                    discard.setDropDownUnicasts(1);
+                            }
+                            try {
+                                sender.send(msg);
+                            }
+                            catch(Exception e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+                };
+            }
+            for(int i=0; i < threads.length; i++) {
+                threads[i].start();
+            }
+            for(int i=0; i < threads.length; i++) {
+                threads[i].join(20000);
+            }
+            return;
+        }
+
+
+        for(int i=0; i < num_msgs; i++) {
+            sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
+            oob=Util.tossWeightedCoin(oob_prob);
+            drop=Util.tossWeightedCoin(drop_prob);
+            msg=new Message(dest, null, i);
+            if(oob)
+                msg.setFlag(Message.OOB);
+            if(drop) {
+                if(multicast)
+                    discard.setDropDownMulticasts(1);
+                else
+                    discard.setDropDownUnicasts(1);
+            }
+            sender.send(msg);
+        }
+    }
+
+
     private void send(Address dest) throws ChannelNotConnectedException, ChannelClosedException {
         final BlockingReceiver receiver=new BlockingReceiver(lock);
         final int NUM=10;
@@ -196,11 +295,34 @@ public class OOBTest extends ChannelTestBase {
             assert list.contains(i);
     }
 
+    private static void check(final int num_expected_msgs, List<Integer>... lists) {
+        for(List<Integer> list: lists) {
+            System.out.println("list: " + list);
+        }
 
-     private static void setOOBPoolSize(JChannel channel) {
-        TP transport=channel.getProtocolStack().getTransport();
-        transport.setOOBMinPoolSize(1);
-        transport.setOOBMaxPoolSize(2);
+        for(List<Integer> list: lists) {
+            assert list.size() == num_expected_msgs : "expected " + num_expected_msgs + " elements, but got " +
+                    list.size() + " (list=" + list + ")";
+            for(int i=0; i < num_expected_msgs; i++)
+                assert list.contains(i);
+        }
+    }
+
+
+    private static void setOOBPoolSize(JChannel... channels) {
+        for(Channel channel: channels) {
+            TP transport=channel.getProtocolStack().getTransport();
+            transport.setOOBMinPoolSize(1);
+            transport.setOOBMaxPoolSize(2);
+        }
+    }
+
+    private static void setStableGossip(JChannel... channels) {
+        for(Channel channel: channels) {
+            ProtocolStack stack=channel.getProtocolStack();
+            STABLE stable=(STABLE)stack.findProtocol(STABLE.class);
+            stable.setDesiredAverageGossip(2000);
+        }
     }
 
     private static class BlockingReceiver extends ReceiverAdapter {
