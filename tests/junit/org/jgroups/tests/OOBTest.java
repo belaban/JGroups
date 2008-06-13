@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.5 2008/06/13 08:11:01 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.6 2008/06/13 08:14:20 belaban Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -162,7 +162,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
 
-    @Test(invocationCount=5)
+    // @Test(invocationCount=5)
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
         ProtocolStack stack=c1.getProtocolStack();
