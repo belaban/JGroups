@@ -50,7 +50,7 @@
                    use_mcast_xmit="false" gc_lag="0"
                    retransmit_timeout="300,600,1200,2400,4800"
                    discard_delivered_msgs="false"/>
-    <UNICAST timeout="300,600,1200" xmit_off="true"/>
+    <UNICAST timeout="300,600,1200" xmit_off="false"/>
     <pbcast.STABLE stability_delay="1000" desired_avg_gossip="50000"
                    max_bytes="400000"/>
     <pbcast.GMS print_local_addr="true" join_timeout="7000" 
