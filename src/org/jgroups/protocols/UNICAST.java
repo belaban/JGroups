@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.91.2.12 2008/06/16 07:57:14 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.91.2.13 2008/06/16 08:29:57 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
@@ -353,9 +353,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     }
                 }
 
+                long seqno=-2;
                 synchronized(entry) { // threads will only sync if they access the same entry
-                    long seqno=-2;
-
                     try {
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
@@ -368,10 +367,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                                     append(seqno));
                         if(entry.sent_msgs != null)
                             entry.sent_msgs.add(seqno, msg);  // add *including* UnicastHeader, adds to retransmitter
-
-                        if(xmit_off) {
-                            send(msg, evt);
-                        }
                         entry.sent_msgs_seqno++;
                     }
                     catch(Throwable t) {
@@ -390,13 +385,11 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 // to send unicast messages in order of sequence numbers because they will be sorted into the correct
                 // order at the receiver anyway. Of course, most of the time, the order will be correct (FIFO), so
                 // the cost of reordering is minimal. This is part of http://jira.jboss.com/jira/browse/JGRP-303
-                if(!xmit_off) {
-                    try { // we catch the exception in this case because the msg is in the XMIT table and will be retransmitted
-                        send(msg, evt);
-                    }
-                    catch(Throwable t) {
-                        log.warn("failed sending the message (will get retransmitted)", t);
-                    }
+                try { // we catch the exception in this case because the msg is in the XMIT table and will be retransmitted
+                    send(msg, evt);
+                }
+                catch(Throwable t) {
+                    log.warn("failed sending the message", t);
                 }
                 return null; // we already passed the msg down
 
@@ -510,18 +503,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 entry.reset();
             }
             connections.clear();
-        }
-    }
-
-
-    private void removeConnections(List<Address> mbrs) {
-        Entry entry;
-        synchronized(connections) {
-            for(Address mbr: mbrs) {
-                entry=connections.remove(mbr);
-                if(entry != null)
-                    entry.reset();
-            }
         }
     }
 
