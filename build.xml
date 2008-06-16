@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.123.2.13 2008/06/13 12:42:08 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.123.2.14 2008/06/16 06:35:03 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -78,7 +78,8 @@
     <patternset id="junit.mux.excludes">
     	<exclude name="**/DistributedQueueTest*"/>
     	<exclude name="**/ChannelTestBase*"/>
-        <exclude name="**/SharedTransportTest*"/>        
+        <exclude name="**/SharedTransportTest*"/>
+        <exclude name="**/OOBTest*"/>
     </patternset>
 
 
