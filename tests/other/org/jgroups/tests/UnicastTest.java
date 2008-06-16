@@ -1,4 +1,4 @@
-// $Id: UnicastTest.java,v 1.10 2007/10/30 09:20:56 belaban Exp $
+// $Id: UnicastTest.java,v 1.11 2008/06/16 08:06:43 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -327,10 +327,6 @@ public class UnicastTest implements Runnable {
 
 
         for(int i=0; i < args.length; i++) {
-            if("-help".equals(args[i])) {
-                help();
-                return;
-            }
             if("-props".equals(args[i])) {
                 props=args[++i];
                 continue;
@@ -345,7 +341,10 @@ public class UnicastTest implements Runnable {
             }
             if("-busy_sleep".equals(args[i])) {
                 busy_sleep=true;
+                continue;
             }
+            help();
+            return;
         }
 
 
