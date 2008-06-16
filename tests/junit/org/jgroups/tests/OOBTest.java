@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.2.2.4 2008/06/13 16:01:10 vlada Exp $
+ * @version $Id: OOBTest.java,v 1.2.2.5 2008/06/16 06:07:38 belaban Exp $
  */
 public class OOBTest extends ChannelTestBase {
     private JChannel c1, c2;
@@ -122,8 +122,8 @@ public class OOBTest extends ChannelTestBase {
         Util.sleep(1000); // time for potential retransmission
         List<Integer> list=receiver.getMsgs();
         System.out.println("list = " + list);
-        assert list.size() == 4 : "list is " + list;
-        assert list.contains(1) && list.contains(2) && list.contains(3) && list.contains(4);
+        assertSame("list is " + list, list.size(), 4);
+        assertTrue(list.contains(1) && list.contains(2) && list.contains(3) && list.contains(4));
     }
 
     public void testRegularAndOOBMulticasts() throws Exception {
