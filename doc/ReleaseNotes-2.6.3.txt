@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.3
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.4 2008/06/13 14:28:14 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.5 2008/06/17 08:21:27 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.3 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -35,14 +35,6 @@ whenever a thread is created or released back into a thread pool.
 
 Section 5.5.5 (http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2809) in the manual
 discusses the steps to be taken to replace thread pools and / or thread factories. 
-
-
-Message retransmission can be turned off in UNICAST
----------------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-717]
-
-Using the xmit_off property, retransmission can be turned off. Default is on. Turning it off makes sense over
-lossless transports like TCP.
 
 
 Eager ACKs for UNICAST

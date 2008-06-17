@@ -2,7 +2,7 @@
 
 <!--
 TCP-based stack with IP multicast-based discovery
-Version: $Id: mping.xml,v 1.7.2.4 2008/06/16 15:56:32 belaban Exp $
+Version: $Id: mping.xml,v 1.7.2.5 2008/06/17 08:22:36 belaban Exp $
 Author: Bela Ban
  -->
 
@@ -27,7 +27,7 @@ Author: Bela Ban
     <pbcast.NAKACK gc_lag="50" 
                    retransmit_timeout="600,1200,2400,4800"
                    />
-    <UNICAST timeout="300,600,1200" xmit_off="false"/>
+    <UNICAST timeout="300,600,1200" />
     <pbcast.STABLE stability_delay="1000" 
                    desired_avg_gossip="20000" 
                    max_bytes="0"/>
