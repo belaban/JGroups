@@ -34,7 +34,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.91.2.13 2008/06/16 08:29:57 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.91.2.14 2008/06/17 08:21:26 belaban Exp $
  */
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
     private final Vector<Address> members=new Vector<Address>(11);
@@ -54,10 +54,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
     /** whether to loop back messages sent to self (will be removed in the future, default=false) */
     private boolean          loopback=false;
-
-    /** If set to true, messages will not get retransmitted by the sender. This is useful when running
-     over a lossless transport, e.g. TCP. The default is false. Do not set this to true if running over UDP */
-    private boolean          xmit_off=false;
 
     /**
      * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
@@ -219,12 +215,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             props.remove("use_gms");
         }
 
-        str=props.getProperty("xmit_off");
-        if(str != null) {
-            xmit_off=Boolean.valueOf(str).booleanValue();
-            props.remove("xmit_off");
-        }
-
         str=props.getProperty("immediate_ack");
         if(str != null) {
         	immediate_ack=Boolean.valueOf(str).booleanValue();
@@ -289,7 +279,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             case UnicastHeader.DATA:      // received regular message
                 // only send an ACK if added to the received_msgs table (bela Aug 2006)
                 // if in immediate_ack mode, send ack inside handleDataReceived
-            	if(handleDataReceived(src, hdr.seqno, msg) && !immediate_ack && !xmit_off)
+            	if(handleDataReceived(src, hdr.seqno, msg) && !immediate_ack)
                     sendAck(src, hdr.seqno);
                 return null; // we pass the deliverable message up in handleDataReceived()
             case UnicastHeader.ACK:  // received ACK for previously sent message
@@ -358,7 +348,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                     try {
                         seqno=entry.sent_msgs_seqno;
                         UnicastHeader hdr=new UnicastHeader(UnicastHeader.DATA, seqno);
-                        if(entry.sent_msgs == null && !xmit_off) { // first msg to peer 'dst'
+                        if(entry.sent_msgs == null) { // first msg to peer 'dst'
                             entry.sent_msgs=new AckSenderWindow(this, new StaticInterval(timeouts), timer, this.local_addr); // use the global timer
                         }
                         msg.putHeader(name, hdr);
@@ -584,7 +574,7 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
         // http://jira.jboss.com/jira/browse/JGRP-713: // send the ack back *before* we process the message
         // to limit unnecessary retransmits
-        if(immediate_ack && !xmit_off)
+        if(immediate_ack)
             sendAck(sender, seqno); // send an ack regardless of whether the message was added (stops retransmission)
 
         // message is passed up if OOB. Later, when remove() is called, we discard it. This affects ordering !
