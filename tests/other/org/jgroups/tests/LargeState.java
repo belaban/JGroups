@@ -1,4 +1,4 @@
-// $Id: LargeState.java,v 1.29 2007/09/17 07:03:03 belaban Exp $
+// $Id: LargeState.java,v 1.29.2.1 2008/06/17 10:22:05 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -213,10 +213,6 @@ public class LargeState extends ExtendedReceiverAdapter {
 
 
         for(int i=0; i < args.length; i++) {
-            if("-help".equals(args[i])) {
-                help();
-                return;
-            }
             if("-provider".equals(args[i])) {
             	provider=true;
                 continue;
@@ -231,7 +227,10 @@ public class LargeState extends ExtendedReceiverAdapter {
             }
             if("-props".equals(args[i])) {
                 props=args[++i];
+                continue;
             }
+            help();
+            return;
         }
 
 
