@@ -1,17 +1,17 @@
 package org.jgroups.util;
 
 import java.lang.ref.WeakReference;
-import java.util.List;
-import java.util.LinkedList;
+import java.util.Collection;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 /**
  * Lazily names threads: whenever the address or cluster name is changed, all threads are renamed
  * @author Bela Ban
- * @version $Id: LazyThreadFactory.java,v 1.1 2008/05/20 11:27:23 belaban Exp $
+ * @version $Id: LazyThreadFactory.java,v 1.2 2008/06/17 15:31:35 belaban Exp $
  */
 public class LazyThreadFactory extends DefaultThreadFactory {
-    private List<WeakReference<Thread>> threads=new LinkedList<WeakReference<Thread>>();
+    private Collection<WeakReference<Thread>> threads=new ConcurrentLinkedQueue<WeakReference<Thread>>();
     private static final StringBuilder ADDR=new StringBuilder("<ADDR>");
     private static final StringBuilder CL_NAME=new StringBuilder("<CL-NAME>");
 
