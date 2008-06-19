@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
  * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
  * any messages until they are members
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.148 2008/06/09 11:49:41 belaban Exp $
+ * @version $Id: GMS.java,v 1.149 2008/06/19 15:48:11 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -402,8 +402,7 @@ public class GMS extends Protocol {
      * If the list is null, we take the members who are part of new_view
      * @param new_view
      * @param digest
-     * @param jr
-     * @param newMembers
+     * @param members
      */
     public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {           
         if(log.isTraceEnabled())
@@ -798,8 +797,7 @@ public class GMS extends Protocol {
                         break;    
 
                     case GmsHeader.CANCEL_MERGE:
-                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process
-                        stopFlush();
+                        //[JGRP-524] - FLUSH and merge: flush doesn't wrap entire merge process                        
                         impl.handleMergeCancelled(hdr.merge_id);
                         down_prot.down(new Event(Event.RESUME_STABLE));
                         break;
@@ -908,6 +906,8 @@ public class GMS extends Protocol {
 
         return down_prot.down(evt);
     }
+
+
 
     /* ------------------------------- Private Methods --------------------------------- */
 
@@ -1139,7 +1139,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.148 2008/06/09 11:49:41 belaban Exp $
+     * @version $Id: GMS.java,v 1.149 2008/06/19 15:48:11 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
@@ -1191,6 +1191,8 @@ public class GMS extends Protocol {
                 catch(InterruptedException e) {
                     Thread.currentThread().interrupt(); // set interrupt flag again
                 }
+                //Added after Brian noticed that ViewHandler leaks class loaders 
+                thread = null;
             }
             if(resume)
                 resumeForce();
@@ -1201,43 +1203,49 @@ public class GMS extends Protocol {
          * requests from now on
          */
         public synchronized void suspend(Object merge_id) {
-            if(suspended)
-                return;
-            suspended=true;
-            this.merge_id=merge_id;
-            q.clear();
-            waitUntilCompleted(MAX_COMPLETION_TIME);
-            q.close(true);
-            if(log.isTraceEnabled())
-                log.trace("suspended ViewHandler");
-            Resumer resumer=new Resumer(merge_id, resume_tasks, this);
-            Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
-            Future<?> old_future=resume_tasks.put(merge_id, future);
-            if(old_future != null)
-                old_future.cancel(true);
-
+            if(!suspended) {
+                suspended=true;
+                this.merge_id=merge_id;
+                q.clear();
+                waitUntilCompleted(MAX_COMPLETION_TIME);
+                q.close(true);
+                
+                if(log.isDebugEnabled())
+                    log.debug("suspended ViewHandler at " + local_addr);
+                Resumer resumer=new Resumer(merge_id, resume_tasks, this);
+                Future<?> future=timer.schedule(resumer, resume_task_timeout, TimeUnit.MILLISECONDS);
+                Future<?> old_future=resume_tasks.put(merge_id, future);
+                if(old_future != null)
+                    old_future.cancel(true);
+            }
+            else {
+                if(log.isWarnEnabled()) {
+                    log.warn("attempted suspend on ViewHandler at  " + local_addr+ ", however, it is already suspended");
+                }
+            }
         }
 
 
         public synchronized void resume(Object merge_id) {
-            if(!suspended)
-                return;
-            boolean same_merge_id=this.merge_id != null && merge_id != null && this.merge_id.equals(merge_id);
-            same_merge_id=same_merge_id || (this.merge_id == null && merge_id == null);
+            if(suspended) {
+                boolean same_merge_id=this.merge_id != null && merge_id != null && this.merge_id.equals(merge_id);
+                same_merge_id=same_merge_id || (this.merge_id == null && merge_id == null);
 
-            if(!same_merge_id) {
-                if(log.isWarnEnabled())
-                    log.warn("resume(" +merge_id+ ") does not match " + this.merge_id + ", ignoring resume()");
-                return;
-            }
-            synchronized(resume_tasks) {
-                Future future=resume_tasks.get(merge_id);
-                if(future != null) {
-                    future.cancel(false);
-                    resume_tasks.remove(merge_id);
+                if(same_merge_id) {
+                    synchronized(resume_tasks) {
+                        Future<?> future=resume_tasks.get(merge_id);
+                        if(future != null) {
+                            future.cancel(false);
+                            resume_tasks.remove(merge_id);
+                        }
+                    }
                 }
-            }
-            resumeForce();
+                else{
+                    if(log.isWarnEnabled())
+                        log.warn("resume(" + merge_id+ ") does not match "+ this.merge_id);                   
+                }                
+                resumeForce();
+            }            
         }
 
         public synchronized void resumeForce() {
@@ -1342,7 +1350,7 @@ public class GMS extends Protocol {
                 q.reset();
             if(unsuspend) {
                 suspended=false;
-                Future future;
+                Future<?> future;
                 synchronized(resume_tasks) {
                     future=resume_tasks.remove(merge_id);
                 }
@@ -1360,7 +1368,7 @@ public class GMS extends Protocol {
         synchronized void stop(boolean flush) {
             q.close(flush);
             synchronized(resume_tasks) {
-                for(Future future: resume_tasks.values()) {
+                for(Future<?> future: resume_tasks.values()) {
                     future.cancel(true);
                 }
                 resume_tasks.clear();
