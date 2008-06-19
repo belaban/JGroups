@@ -1,4 +1,4 @@
-// $Id: CoordGmsImpl.java,v 1.82.2.15 2008/06/11 14:38:26 vlada Exp $
+// $Id: CoordGmsImpl.java,v 1.82.2.16 2008/06/19 15:39:11 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -281,6 +281,7 @@ public class CoordGmsImpl extends GmsImpl {
     }
 
     public void handleMergeCancelled(ViewId merge_id) {
+        gms.stopFlush();
         if(merge_id != null && this.merge_id != null && this.merge_id.equals(merge_id)) {
             if(log.isDebugEnabled())
                 log.debug("merge was cancelled at merge participant " + gms.local_addr+ " (merge_id="+ merge_id+ ")");
