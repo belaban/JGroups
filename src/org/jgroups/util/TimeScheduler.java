@@ -39,17 +39,14 @@ import java.util.concurrent.*;
  * added tasks will not restart it: <tt>start()</tt> has to be called to
  * restart the scheduler.
  * @author Bela Ban
- * @version $Id: TimeScheduler.java,v 1.23.4.3 2008/05/26 09:14:40 belaban Exp $
+ * @version $Id: TimeScheduler.java,v 1.23.4.4 2008/06/19 15:36:28 vlada Exp $
  */
 public class TimeScheduler extends ScheduledThreadPoolExecutor implements ThreadManager  {
 
     /** The interface that submitted tasks must implement */
     public interface Task extends Runnable {
         /** @return the next schedule interval. If <= 0 the task will not be re-scheduled */
-        long nextInterval();
-
-        /** Execute the task */
-        void run();
+        long nextInterval();       
     }   
 
     /** How many core threads */
