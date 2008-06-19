@@ -21,9 +21,9 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.25 2008/06/19 16:58:50 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.26 2008/06/19 17:13:46 vlada Exp $
  */
-@Test(groups={"temp"},sequential=true)
+@Test(groups="vlad")
 public class MergeTest extends ChannelTestBase {
    
     protected boolean useBlocking() {
@@ -56,16 +56,9 @@ public class MergeTest extends ChannelTestBase {
             Semaphore semaphore = new Semaphore(count);
             semaphore.acquire(count);
 
-            //start first channel
-            channels[0] = new MergeApplication(names[0],semaphore,false);
-            channels[0].start();
-            semaphore.release(1);
-            //sleep at least a second and max second and a half
-            Util.sleepRandom(1500);
-            
-            // make other channels copy of first and start them
-            for(int i = 1;i < count;i++){               
-                channels[i] = new MergeApplication((JChannel)channels[0].getChannel(),names[i],semaphore,false);                    
+            // Create activation threads that will block on the semaphore
+            for(int i = 0;i < count;i++){               
+                channels[i] = new MergeApplication(names[i],semaphore,false);                    
                 // Release one ticket at a time to allow the thread to start
                 // working
                 channels[i].start();
@@ -154,13 +147,6 @@ public class MergeTest extends ChannelTestBase {
 
         public MergeApplication(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
-            replaceDiscoveryProtocol((JChannel)channel);
-            addDiscardProtocol((JChannel)channel); 
-            modiftFDAndMergeSettings((JChannel)channel);
-        }
-        
-        public MergeApplication(JChannel otherChannel, String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
-            super(otherChannel,name, semaphore, useDispatcher);
             replaceDiscoveryProtocol((JChannel)channel);
             addDiscardProtocol((JChannel)channel); 
             modiftFDAndMergeSettings((JChannel)channel);
