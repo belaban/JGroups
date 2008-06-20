@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * to everyone instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.170.2.13 2008/06/13 08:21:57 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.170.2.14 2008/06/20 15:22:32 vlada Exp $
  */
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
     private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
@@ -115,10 +115,10 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private long missing_msgs_received;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
-    private HashMap<Address,StatsEntry> sent=new HashMap<Address,StatsEntry>();
+    private Map<Address,StatsEntry> sent=new ConcurrentHashMap<Address,StatsEntry>();
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
-    private HashMap<Address,StatsEntry> received=new HashMap<Address,StatsEntry>();
+    private Map<Address,StatsEntry> received=new ConcurrentHashMap<Address,StatsEntry>();
 
     private int stats_list_size=20;
 
@@ -969,15 +969,21 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
 
-    private static void updateStats(HashMap<Address,StatsEntry> map, Address key, int req, int rsp, int missing) {
-        StatsEntry entry=map.get(key);
-        if(entry == null) {
-            entry=new StatsEntry();
-            map.put(key, entry);
+    private static void updateStats(Map<Address,StatsEntry> map,
+                                    Address key,
+                                    int req,
+                                    int rsp,
+                                    int missing) {
+        if(key != null) {
+            StatsEntry entry=map.get(key);
+            if(entry == null) {
+                entry=new StatsEntry();
+                map.put(key, entry);
+            }
+            entry.xmit_reqs+=req;
+            entry.xmit_rsps+=rsp;
+            entry.missing_msgs_rcvd+=missing;
         }
-        entry.xmit_reqs+=req;
-        entry.xmit_rsps+=rsp;
-        entry.missing_msgs_rcvd+=missing;
     }
 
 
