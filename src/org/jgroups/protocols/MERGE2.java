@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.42.2.3 2008/06/04 14:17:34 vlada Exp $
+// $Id: MERGE2.java,v 1.42.2.4 2008/06/24 15:47:38 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -205,8 +205,8 @@ public class MERGE2 extends Protocol {
 
         public void findAndNotify() {
             List<PingRsp> initial_mbrs=findInitialMembers();
-            if(log.isTraceEnabled())
-                log.trace(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
+            if(log.isDebugEnabled())
+                log.debug(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
             
             Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
             if(coords.size() > 1) {
