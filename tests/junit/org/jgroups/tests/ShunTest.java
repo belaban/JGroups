@@ -24,14 +24,12 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.16 2008/06/09 13:28:42 belaban Exp $
+ * @version $Id: ShunTest.java,v 1.17 2008/06/25 22:50:41 vlada Exp $
  */
-@Test(groups="vlad",sequential=true)
+@Test(groups="temp",sequential=false)
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
     RpcDispatcher disp1, disp2;
-
-
 
     @AfterMethod
     protected void tearDown() throws Exception {
@@ -70,8 +68,8 @@ public class ShunTest extends ChannelTestBase {
         c2.addChannelListener(new BelasChannelListener("C2"));
         disp1=new RpcDispatcher(c1, null, new BelasReceiver("C1"), this);
         disp2=new RpcDispatcher(c2, null, new BelasReceiver("C2"), this);
-        c1.connect("ShunTest");
-        c2.connect("ShunTest");
+        c1.connect("testTwoMembersShun");
+        c2.connect("testTwoMembersShun");
         Assert.assertEquals(2, c1.getView().size());
         
         RspList rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
@@ -121,59 +119,64 @@ public class ShunTest extends ChannelTestBase {
     }
     
     protected void connectAndShun(int shunChannelIndex, boolean useDispatcher) {
-        String[] names = null;
+        String[] names=null;
 
+        names=new String[] { "A", "B", "C", "D" };
 
-        names = new String[] { "A", "B", "C", "D" };
+        int count=names.length;
 
-        int count = names.length;
-
-        ShunChannel[] channels = new ShunChannel[count];
-        try{
+        ShunChannel[] channels=new ShunChannel[count];
+        try {
             // Create a semaphore and take all its permits
-            Semaphore semaphore = new Semaphore(count);
+            Semaphore semaphore=new Semaphore(count);
             semaphore.acquire(count);
 
             // Create activation threads that will block on the semaphore
-            for(int i = 0;i < count;i++){               
-               channels[i] = new ShunChannel(names[i],
-                                             semaphore,
-                                             useDispatcher);  
-                              
+            for(int i=0;i < count;i++) {
+                if(i == 0)
+                    channels[i]=new ShunChannel(names[i], semaphore, useDispatcher);
 
-               JChannel c = (JChannel) channels[i].getChannel();
-               c.addChannelListener(new MyChannelListener(channels));
-               // Release one ticket at a time to allow the thread to start
-               // working
-               channels[i].start();                 
-               semaphore.release(1);
-               //sleep at least a second and max second and a half
-               Util.sleep(2000);                                                                                                          
-            }           
+                else
+                    channels[i]=new ShunChannel((JChannel)channels[0].getChannel(),
+                                                names[i],
+                                                semaphore,
+                                                useDispatcher);
+
+                JChannel c=(JChannel)channels[i].getChannel();
+                c.addChannelListener(new MyChannelListener(channels));
+                // Release one ticket at a time to allow the thread to start
+                // working
+                channels[i].start();
+                semaphore.release(1);
+                //sleep at least a second and max second and a half
+                Util.sleep(2000);
+            }
 
             // block until we all have a valid view         
 
             blockUntilViewsReceived(channels, 60000);
 
-            ShunChannel shun = channels[shunChannelIndex];
+            ShunChannel shun=channels[shunChannelIndex];
             log.info("Start shun attempt");
-            addDiscardProtocol((JChannel)shun.getChannel());               
-            
+            addDiscardProtocol((JChannel)shun.getChannel());
+
             //allow shunning to kick in
             Util.sleep(20000);
-            
+
             //and then block until we all have a valid view or fail with timeout
             blockUntilViewsReceived(channels, 60000);
 
-        }catch(Exception ex){
+        }
+        catch(Exception ex) {
             log.warn("Exception encountered during test", ex);
-            assert false : ex.getLocalizedMessage();
-        }finally{
-            for(ShunChannel channel:channels){
+            assert false:ex.getLocalizedMessage();
+        }
+        finally {
+            for(ShunChannel channel:channels) {
                 channel.cleanup();
-                Util.sleep(2000); 
+                Util.sleep(2000);
             }
-            
+
             /* we sometimes have double BLOCK events for tcp stack
              * TODO investigate why
             for(ShunChannel channel:channels){
@@ -286,9 +289,14 @@ public class ShunTest extends ChannelTestBase {
             super(name, semaphore, useDispatcher);
             modifyStack((JChannel)channel);
         }
+        
+        public ShunChannel(JChannel ch,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+            super(ch,name, semaphore, useDispatcher);
+            modifyStack((JChannel)channel);
+        }        
 
         public void useChannel() throws Exception {           
-            channel.connect("test");
+            channel.connect("ShunChannel");
             channel.getState(null,5000);
             channel.send(null, null, channel.getLocalAddress());            
         }     

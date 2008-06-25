@@ -1,16 +1,20 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="udp-flush"
-       parallel="tests"
-       thread-count="1"
+       parallel="methods"
+       thread-count="25"
         >
 
 
+	<parameter name="channel.conf" value="flush-udp.xml"/>
+	<parameter name="use_blocking" value="true"/>
     <test name="udp-flush" junit="false">
-        <parameter name="channel.conf" value="flush-udp.xml"/>
+        
         <groups>
             <run>
                 <include name="stack-dependent"/>
                 <include name="flush"/>
+                <exclude name="temp"/>
+                <exclude name="temp2"/>
                 <exclude name="vlad"/>
             </run>
         </groups>

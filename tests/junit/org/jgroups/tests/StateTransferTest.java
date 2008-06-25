@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Channel;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
@@ -18,23 +19,18 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.26 2008/05/29 11:38:53 belaban Exp $
+ * @version $Id: StateTransferTest.java,v 1.27 2008/06/25 22:50:41 vlada Exp $
  */
-@Test(sequential=true)
+@Test(groups="temp",sequential=false)
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT=10000;
 
     private static final int APP_COUNT=2;
 
-    protected boolean useBlocking() {
-        return true;
-    }
-
-
     @Test
     public void testStateTransferFromSelfWithRegularChannel() throws Exception {
         Channel ch=createChannel();
-        ch.connect("test");
+        ch.connect("StateTransferTest");
         try {
             boolean rc=ch.getState(null, 2000);
             assert !rc : "getState() on singleton should return false";
@@ -47,59 +43,68 @@ public class StateTransferTest extends ChannelTestBase {
     @Test
     public void testStateTransferWhileSending() throws Exception {
         StateTransferApplication[] apps=new StateTransferApplication[APP_COUNT];
+        try {
+            // Create a semaphore and take all its permits
+            Semaphore semaphore=new Semaphore(APP_COUNT);
+            semaphore.acquire(APP_COUNT);
 
-        // Create a semaphore and take all its permits
-        Semaphore semaphore=new Semaphore(APP_COUNT);
-        semaphore.acquire(APP_COUNT);
+            int from=0, to=MSG_SEND_COUNT;
+            String[] names= { "A", "B" };
 
-        int from=0, to=MSG_SEND_COUNT;
-        String[] names={"A", "B"};
+            for(int i=0;i < apps.length;i++) {
+                if(i == 0)
+                    apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
+                else
+                    apps[i]=new StateTransferApplication((JChannel)apps[0].getChannel(),
+                                                         semaphore,
+                                                         names[i],
+                                                         from,
+                                                         to);
+                from+=MSG_SEND_COUNT;
+                to+=MSG_SEND_COUNT;
+            }
 
-        for(int i=0; i < apps.length; i++) {
-            apps[i]=new StateTransferApplication(semaphore, names[i], from, to);
-            from+=MSG_SEND_COUNT;
-            to+=MSG_SEND_COUNT;
+            for(int i=0;i < apps.length;i++) {
+                StateTransferApplication app=apps[i];
+                app.start();
+                semaphore.release();
+                Util.sleep(4000);
+            }
+
+            // Make sure everyone is in sync
+
+            blockUntilViewsReceived(apps, 60000);
+
+            Util.sleep(1000);
+
+            // Reacquire the semaphore tickets; when we have them all
+            // we know the threads are done
+            boolean acquired=semaphore.tryAcquire(apps.length, 30, TimeUnit.SECONDS);
+            if(!acquired) {
+                log.warn("Most likely a bug, analyse the stack below:");
+                log.warn(Util.dumpThreads());
+            }
+
+            // have we received all and the correct messages?
+            for(int i=0;i < apps.length;i++) {
+                StateTransferApplication w=apps[i];
+                Map m=w.getMap();
+                log.info("map has " + m.size() + " elements");
+                assert m.size() == MSG_SEND_COUNT * APP_COUNT;
+            }
+
+            Set keys=apps[0].getMap().keySet();
+            for(int i=0;i < apps.length;i++) {
+                StateTransferApplication app=apps[i];
+                Map m=app.getMap();
+                Set s=m.keySet();
+                assert keys.equals(s);
+            }
         }
-
-        for(int i=0; i < apps.length; i++) {
-            StateTransferApplication app=apps[i];
-            app.start();
-            semaphore.release();
-            Util.sleep(4000);
-        }
-
-        // Make sure everyone is in sync
-
-        blockUntilViewsReceived(apps, 60000);
-
-        Util.sleep(1000);
-
-        // Reacquire the semaphore tickets; when we have them all
-        // we know the threads are done
-        boolean acquired=semaphore.tryAcquire(apps.length, 30, TimeUnit.SECONDS);
-        if(!acquired) {
-            log.warn("Most likely a bug, analyse the stack below:");
-            log.warn(Util.dumpThreads());
-        }
-
-        // have we received all and the correct messages?
-        for(int i=0; i < apps.length; i++) {
-            StateTransferApplication w=apps[i];
-            Map m=w.getMap();
-            log.info("map has " + m.size() + " elements");
-            assert m.size() == MSG_SEND_COUNT * APP_COUNT;
-        }
-
-        Set keys=apps[0].getMap().keySet();
-        for(int i=0; i < apps.length; i++) {
-            StateTransferApplication app=apps[i];
-            Map m=app.getMap();
-            Set s=m.keySet();
-            assert keys.equals(s);
-        }
-
-        for(StateTransferApplication app : apps) {
-            app.cleanup();
+        finally {
+            for(StateTransferApplication app:apps) {
+                app.cleanup();
+            }
         }
     }
 
@@ -113,6 +118,12 @@ public class StateTransferTest extends ChannelTestBase {
 
         public StateTransferApplication(Semaphore semaphore, String name, int from, int to) throws Exception {
             super(name, semaphore);
+            this.from=from;
+            this.to=to;
+        }
+        
+        public StateTransferApplication(JChannel copySource,Semaphore semaphore, String name, int from, int to) throws Exception {
+            super(copySource,name, semaphore,false);
             this.from=from;
             this.to=to;
         }

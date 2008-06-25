@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.testng.annotations.*;
 import org.jgroups.Address;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.Global;
@@ -23,9 +24,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent startup with state transfer.
  * 
  * @author bela
- * @version $Id: ConcurrentStartupTest.java,v 1.45 2008/05/29 11:13:10 belaban Exp $
+ * @version $Id: ConcurrentStartupTest.java,v 1.46 2008/06/25 22:50:36 vlada Exp $
  */
-@Test(groups={Global.FLUSH},sequential=true)
+@Test(groups={Global.FLUSH},sequential=false)
 public class ConcurrentStartupTest extends ChannelTestBase {
     private AtomicInteger mod = new AtomicInteger(1);
 
@@ -57,29 +58,39 @@ public class ConcurrentStartupTest extends ChannelTestBase {
      * 
      */
     protected void concurrentStartupHelper(boolean largeState, boolean useDispatcher) {
-        String[] names = null;
+        String[] names=null;
 
+        names=new String[] { "A", "B", "C", "D" };
 
-        names = new String[] { "A", "B", "C", "D" };
+        int count=names.length;
 
-        int count = names.length;
-
-        ConcurrentStartupChannel[] channels = new ConcurrentStartupChannel[count];
-        try{
+        ConcurrentStartupChannel[] channels=new ConcurrentStartupChannel[count];
+        try {
             // Create a semaphore and take all its permits
-            Semaphore semaphore = new Semaphore(count);
+            Semaphore semaphore=new Semaphore(count);
             semaphore.acquire(count);
 
             // Create activation threads that will block on the semaphore
-            for(int i = 0;i < count;i++){
-                if(largeState){
-                    channels[i] = new ConcurrentStartupChannelWithLargeState(semaphore,
-                                                                             names[i],
-                                                                             useDispatcher);                    
-                }else{
-                    channels[i] = new ConcurrentStartupChannel(names[i],
-                                                               semaphore,
-                                                               useDispatcher);                    
+            for(int i=0;i < count;i++) {
+                if(largeState) {
+                    if(i == 0)
+                        channels[i]=new ConcurrentStartupChannelWithLargeState(semaphore,
+                                                                               names[i],
+                                                                               useDispatcher);
+                    else
+                        channels[i]=new ConcurrentStartupChannelWithLargeState((JChannel)channels[0].getChannel(),
+                                                                               semaphore,
+                                                                               names[i],
+                                                                               useDispatcher);
+                }
+                else {
+                    if(i == 0)
+                        channels[i]=new ConcurrentStartupChannel(names[i], semaphore, useDispatcher);
+                    else
+                        channels[i]=new ConcurrentStartupChannel((JChannel)channels[0].getChannel(),
+                                                                 names[i],
+                                                                 semaphore,
+                                                                 useDispatcher);
                 }
 
                 // Release one ticket at a time to allow the thread to start
@@ -99,8 +110,8 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
-            boolean acquired = semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
-            if(!acquired){
+            boolean acquired=semaphore.tryAcquire(count, 20, TimeUnit.SECONDS);
+            if(!acquired) {
                 log.warn("Most likely a bug, analyse the stack below:");
                 log.warn(Util.dumpThreads());
             }
@@ -109,27 +120,30 @@ public class ConcurrentStartupTest extends ChannelTestBase {
             Util.sleep(3000);
 
             // do test verification            
-            for (ConcurrentStartupChannel channel : channels) {
-                log.info(channel.getName() +"=" +channel.getList());  
+            for(ConcurrentStartupChannel channel:channels) {
+                log.info(channel.getName() + "=" + channel.getList());
             }
-            for (ConcurrentStartupChannel channel : channels) {
-                log.info(channel.getName() +"=" +channel.getModifications());  
+            for(ConcurrentStartupChannel channel:channels) {
+                log.info(channel.getName() + "=" + channel.getModifications());
             }
-            
-            
-            for (ConcurrentStartupChannel channel : channels) {
-                Assert.assertEquals(channel.getList().size(), count, channel.getName() + " should have " + count + " elements");
+
+            for(ConcurrentStartupChannel channel:channels) {
+                Assert.assertEquals(channel.getList().size(),
+                                    count,
+                                    channel.getName() + " should have " + count + " elements");
             }
-        }catch(Exception ex){
+        }
+        catch(Exception ex) {
             log.warn("Exception encountered during test", ex);
-            assert false : ex.getLocalizedMessage();
-        }finally{
-            for(ConcurrentStartupChannel channel:channels){
+            assert false:ex.getLocalizedMessage();
+        }
+        finally {
+            for(ConcurrentStartupChannel channel:channels) {
                 channel.cleanup();
                 Util.sleep(2000); // remove before 2.6 GA
             }
-            
-            for(ConcurrentStartupChannel channel:channels){                
+
+            for(ConcurrentStartupChannel channel:channels) {
                 checkEventStateTransferSequence(channel);
             }
         }
@@ -145,6 +159,12 @@ public class ConcurrentStartupTest extends ChannelTestBase {
                                                       String name,
                                                       boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
+        }
+        
+        public ConcurrentStartupChannelWithLargeState(JChannel ch, Semaphore semaphore,
+                                                      String name,
+                                                      boolean useDispatcher) throws Exception{
+            super(ch,name, semaphore, useDispatcher);
         }
       
         public void setState(byte[] state) {
@@ -175,6 +195,10 @@ public class ConcurrentStartupTest extends ChannelTestBase {
 
         public ConcurrentStartupChannel(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
+        }
+        
+        public ConcurrentStartupChannel(JChannel ch,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+            super(ch,name, semaphore, useDispatcher);
         }
 
         public void useChannel() throws Exception {

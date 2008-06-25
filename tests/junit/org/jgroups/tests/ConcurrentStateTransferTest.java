@@ -5,6 +5,7 @@ import org.testng.annotations.*;
 import org.jgroups.Address;
 import org.jgroups.Channel;
 import org.jgroups.Global;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.View;
 import org.jgroups.util.Util;
@@ -24,9 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests concurrent state transfer with flush.
  * 
  * @author bela
- * @version $Id: ConcurrentStateTransferTest.java,v 1.12 2008/05/29 11:13:10 belaban Exp $
+ * @version $Id: ConcurrentStateTransferTest.java,v 1.13 2008/06/25 22:50:36 vlada Exp $
  */
-@Test(groups={Global.FLUSH},sequential=true)
+@Test(groups={Global.FLUSH},sequential=false)
 public class ConcurrentStateTransferTest extends ChannelTestBase {
 
     private final AtomicInteger mod = new AtomicInteger(1);
@@ -56,27 +57,39 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
      * 
      */
     protected void concurrentStateTranferHelper(boolean largeState, boolean useDispatcher) {
-        String[] names = new String[] { "A", "B", "C", "D" };
+        String[] names=new String[] { "A", "B", "C", "D" };
 
-        int count = names.length;
-        ConcurrentStateTransfer[] channels = new ConcurrentStateTransfer[count];
+        int count=names.length;
+        ConcurrentStateTransfer[] channels=new ConcurrentStateTransfer[count];
 
         // Create a semaphore and take all its tickets
-        Semaphore semaphore = new Semaphore(count);
+        Semaphore semaphore=new Semaphore(count);
 
-        try{
+        try {
 
             semaphore.acquire(count);
             // Create activation threads that will block on the semaphore
-            for(int i = 0;i < count;i++){
-                if(largeState){
-                    channels[i] = new ConcurrentLargeStateTransfer(names[i],
-                                                                   semaphore,
-                                                                   useDispatcher);                                     
-                }else{                   
-                    channels[i] = new ConcurrentStateTransfer(names[i],
-                                                              semaphore,
-                                                              useDispatcher);                   
+            for(int i=0;i < count;i++) {
+                if(largeState) {
+                    if(i == 0)
+                        channels[i]=new ConcurrentLargeStateTransfer(names[i],
+                                                                     semaphore,
+                                                                     useDispatcher);
+                    else
+                        channels[i]=new ConcurrentLargeStateTransfer((JChannel)channels[0].getChannel(),
+                                                                     names[i],
+                                                                     semaphore,
+                                                                     useDispatcher);
+
+                }
+                else {
+                    if(i == 0)
+                        channels[i]=new ConcurrentStateTransfer(names[i], semaphore, useDispatcher);
+                    else
+                        channels[i]=new ConcurrentStateTransfer((JChannel)channels[0].getChannel(),
+                                                                names[i],
+                                                                semaphore,
+                                                                useDispatcher);
                 }
 
                 // Start threads and let them join the channel
@@ -97,38 +110,41 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
             // Reacquire the semaphore tickets; when we have them all
             // we know the threads are done
-            boolean acquired = semaphore.tryAcquire(count, 30, TimeUnit.SECONDS);
-            if(!acquired){
+            boolean acquired=semaphore.tryAcquire(count, 30, TimeUnit.SECONDS);
+            if(!acquired) {
                 log.warn("Most likely a bug, analyse the stack below:");
                 log.warn(Util.dumpThreads());
             }
 
             // Sleep to ensure async message arrive
             Util.sleep(2000);
-            
+
             // do test verification            
-            for (ConcurrentStateTransfer channel : channels) {
-                log.info(channel.getName() +"=" +channel.getList());  
+            for(ConcurrentStateTransfer channel:channels) {
+                log.info(channel.getName() + "=" + channel.getList());
             }
-            for (ConcurrentStateTransfer channel : channels) {
-                log.info(channel.getName() +"=" +channel.getModifications());  
+            for(ConcurrentStateTransfer channel:channels) {
+                log.info(channel.getName() + "=" + channel.getModifications());
             }
-            
-            
-            for (ConcurrentStateTransfer channel : channels) {
-                Assert.assertEquals(channel.getList().size(), count, channel.getName() + " should have " + count + " elements");
+
+            for(ConcurrentStateTransfer channel:channels) {
+                Assert.assertEquals(channel.getList().size(),
+                                    count,
+                                    channel.getName() + " should have " + count + " elements");
             }
-        }catch(Exception ex){
+        }
+        catch(Exception ex) {
             log.warn("Exception encountered during test", ex);
-            assert false : ex.getLocalizedMessage();
-        }finally{
-            for(ConcurrentStateTransfer channel:channels){
+            assert false:ex.getLocalizedMessage();
+        }
+        finally {
+            for(ConcurrentStateTransfer channel:channels) {
                 channel.cleanup();
                 Util.sleep(2000); // remove before 2.6 GA
             }
-            for(ConcurrentStateTransfer channel:channels){                
+            for(ConcurrentStateTransfer channel:channels) {
                 checkEventStateTransferSequence(channel);
-            }            
+            }
         }
     }
     
@@ -146,7 +162,12 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
 
         public ConcurrentStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
-            channel.connect("test");
+            channel.connect("ConcurrentStateTransfer");
+        }
+        
+        public ConcurrentStateTransfer(JChannel ch, String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+            super(ch,name, semaphore, useDispatcher);
+            channel.connect("ConcurrentStateTransfer");
         }
 
         public void useChannel() throws Exception {
@@ -267,6 +288,10 @@ public class ConcurrentStateTransferTest extends ChannelTestBase {
         private static final long TRANSFER_TIME = 2500;
         public ConcurrentLargeStateTransfer(String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
             super(name, semaphore, useDispatcher);
+        }
+        
+        public ConcurrentLargeStateTransfer(JChannel channel,String name,Semaphore semaphore,boolean useDispatcher) throws Exception{
+            super(channel,name, semaphore, useDispatcher);
         }
         
         public void setState(byte[] state) {

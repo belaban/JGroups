@@ -24,9 +24,9 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.9 2008/06/11 15:09:27 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.10 2008/06/25 22:50:36 vlada Exp $
  */
-@Test(groups=Global.FLUSH)
+@Test(groups=Global.FLUSH,sequential=false)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
 
     public void testPlainChannel () throws Throwable{
@@ -47,7 +47,11 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
 
         final long start=System.currentTimeMillis();
         for(int i=0;i < count;i++) {
-            channels[i]=new JChannel("flush-udp.xml");
+            if(i == 0)
+                channels[i]=createChannel(true, count);
+            else
+                channels[i]=createChannel(channels[0]);
+            
             tasks[i]=new Task(latch, channels[i],useDispatcher);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
