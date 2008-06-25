@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.27 2008/06/25 22:50:41 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.28 2008/06/25 23:16:35 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=false)
 public class MergeTest extends ChannelTestBase {
@@ -166,17 +166,7 @@ public class MergeTest extends ChannelTestBase {
 
         public void useChannel() throws Exception {
             channel.connect("MergeApplication");           
-        }  
-        
-        @Override
-        public void viewAccepted(View new_view) {
-            events.add(new_view);
-            System.out.println("Channel " + getLocalAddress()
-                      + "["
-                      + getName()
-                      + "] accepted view "
-                      + new_view);
-        }
+        }         
     }
     
     
