@@ -11,16 +11,17 @@ import java.util.List;
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.5 2008/04/14 08:42:56 belaban Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.6 2008/06/25 20:07:46 vlada Exp $
  */
+@Test(groups="temp",sequential=false)
 public class UnicastUnitTest extends ChannelTestBase {
     JChannel ch1, ch2=null;
 
 
     @BeforeMethod
     protected void setUp() throws Exception {
-        ch1=createChannel();
-        ch2=createChannel();
+        ch1=createChannel(true,2);
+        ch2=createChannel(ch1);
     }
 
     @AfterMethod
@@ -35,10 +36,10 @@ public class UnicastUnitTest extends ChannelTestBase {
 
     @Test
     public void testUnicastMessageInCallbackExistingMember() throws Exception {
-        ch1.connect("x");
+        ch1.connect("UnicastUnitTest");
         MyReceiver receiver=new MyReceiver(ch1);
         ch1.setReceiver(receiver);
-        ch2.connect("x");
+        ch2.connect("UnicastUnitTest");
         Exception ex=receiver.getEx();
         if(ex != null)
             throw ex;
@@ -80,6 +81,4 @@ public class UnicastUnitTest extends ChannelTestBase {
             }
         }
     }
-
-
 }
