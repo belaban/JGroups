@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.16 2008/06/25 19:58:23 vlada Exp $
+ * @version $Id: ReconciliationTest.java,v 1.17 2008/06/25 22:50:41 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -283,13 +283,13 @@ public class ReconciliationTest extends ChannelTestBase {
     }
 
     public void testVirtualSynchrony() throws Exception {
-        Channel c1 = createChannel();
+        JChannel c1 = createChannel(true,2);
         Cache cache_1 = new Cache(c1, "cache-1");
-        c1.connect("bla");
+        c1.connect("testVirtualSynchrony");
 
-        Channel c2 = createChannel();
+        JChannel c2 = createChannel(c1);
         Cache cache_2 = new Cache(c2, "cache-2");
-        c2.connect("bla");
+        c2.connect("testVirtualSynchrony");
         Assert.assertEquals(c2.getView().size(), 2, "view: " + c1.getView());
 
         // start adding messages

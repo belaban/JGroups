@@ -9,9 +9,9 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.9 2008/04/21 11:59:11 belaban Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.10 2008/06/25 22:50:43 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups="temp",sequential=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;

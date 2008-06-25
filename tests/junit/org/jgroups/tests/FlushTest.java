@@ -3,7 +3,6 @@ package org.jgroups.tests;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.Test;
 
 import java.io.IOException;
@@ -21,22 +20,11 @@ import java.util.concurrent.TimeUnit;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: FlushTest.java,v 1.70 2008/06/09 14:30:43 vlada Exp $
+ * @version $Id: FlushTest.java,v 1.71 2008/06/25 22:50:36 vlada Exp $
  */
-@Test(groups=Global.FLUSH)
+@Test(groups=Global.FLUSH,sequential=false)
 public class FlushTest extends ChannelTestBase {
-    private JChannel c1, c2;
-
-
-    @AfterMethod
-    public void tearDown() throws Exception {
-        Util.close(c2, c1);
-    }
-
-    protected boolean useBlocking() {
-        return true;
-    }
-
+    
     @Test
     public void testSingleChannel() throws Exception {
         Semaphore s = new Semaphore(1);
@@ -68,20 +56,27 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testJoinFollowedByUnicast() throws Exception {
-        c1 = createChannel();
-        c1.setReceiver(new SimpleReplier(c1, true));
-        c1.connect("test");
+        JChannel c1=null;
+        JChannel c2=null;
+        try {
+            c1=createChannel(true, 2);
+            c1.setReceiver(new SimpleReplier(c1, true));
+            c1.connect("testJoinFollowedByUnicast");
 
-        Address target = c1.getLocalAddress();
-        Message unicast_msg = new Message(target);
+            Address target=c1.getLocalAddress();
+            Message unicast_msg=new Message(target);
 
-        c2 = createChannel();
-        c2.setReceiver(new SimpleReplier(c2, false));
-        c2.connect("test");
+            c2=createChannel(c1);
+            c2.setReceiver(new SimpleReplier(c2, false));
+            c2.connect("testJoinFollowedByUnicast");
 
-        // now send unicast, this might block as described in the case
-        c2.send(unicast_msg);
-        // if we don't get here this means we'd time out
+            // now send unicast, this might block as described in the case
+            c2.send(unicast_msg);
+            // if we don't get here this means we'd time out
+        }
+        finally {
+            Util.close(c2, c1);
+        }
     }
 
     /**
@@ -90,21 +85,29 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testStateTransferFollowedByUnicast() throws Exception {
-        c1 = createChannel();
-        c1.setReceiver(new SimpleReplier(c1, true));
-        c1.connect("test");
+        JChannel c1=null;
+        JChannel c2=null;
+        try {
 
-        Address target = c1.getLocalAddress();
-        Message unicast_msg = new Message(target);
+            c1=createChannel(true, 2);
+            c1.setReceiver(new SimpleReplier(c1, true));
+            c1.connect("testStateTransferFollowedByUnicast");
 
-        c2 = createChannel();
-        c2.setReceiver(new SimpleReplier(c2, false));
-        c2.connect("test");
+            Address target=c1.getLocalAddress();
+            Message unicast_msg=new Message(target);
 
-        log.info("\n** Getting the state **");
-        c2.getState(null, 10000);
-        // now send unicast, this might block as described in the case
-        c2.send(unicast_msg);
+            c2=createChannel(c1);
+            c2.setReceiver(new SimpleReplier(c2, false));
+            c2.connect("testStateTransferFollowedByUnicast");
+
+            log.info("\n** Getting the state **");
+            c2.getState(null, 10000);
+            // now send unicast, this might block as described in the case
+            c2.send(unicast_msg);
+        }
+        finally {
+            Util.close(c2, c1);
+        }
     }
     
     /**
@@ -113,23 +116,28 @@ public class FlushTest extends ChannelTestBase {
      */
     @Test
     public void testPartialFlush() throws Exception {
-        c1 = createChannel();
-        c1.setReceiver(new SimpleReplier(c1, true));
-        c1.connect("test");
-    
-        c2 = createChannel();
-        c2.setReceiver(new SimpleReplier(c2, false));
-        c2.connect("test");
-       
-        List<Address> members = new ArrayList<Address>();
-        members.add(c2.getLocalAddress());       
-        boolean flushedOk = c2.startFlush(members, false);
-        
-        assertTrue("Partial flush worked", flushedOk);
-        
-        c2.stopFlush(members);
-               
+        JChannel c1=null;
+        JChannel c2=null;
+        try {
+            c1=createChannel(true, 2);
+            c1.setReceiver(new SimpleReplier(c1, true));
+            c1.connect("testPartialFlush");
 
+            c2=createChannel(c1);
+            c2.setReceiver(new SimpleReplier(c2, false));
+            c2.connect("testPartialFlush");
+
+            List<Address> members=new ArrayList<Address>();
+            members.add(c2.getLocalAddress());
+            boolean flushedOk=c2.startFlush(members, false);
+
+            assertTrue("Partial flush worked", flushedOk);
+
+            c2.stopFlush(members);
+        }
+        finally {
+            Util.close(c2, c1);
+        }
     }
 
     /**
@@ -188,9 +196,16 @@ public class FlushTest extends ChannelTestBase {
 
             // Create channels and their threads that will block on the
             // semaphore
+            boolean first = true;
             for(String channelName:names){
-                FlushTestReceiver channel = new FlushTestReceiver(channelName, semaphore, 0, connectType);                
+                FlushTestReceiver channel = null;
+                if(first)
+                    channel=new FlushTestReceiver(channelName, semaphore, 0, connectType);
+                else{
+                    channel=new FlushTestReceiver((JChannel)channels.get(0).getChannel(),channelName, semaphore, 0, connectType);
+                }
                 channels.add(channel);
+                first = false;
 
                 // Release one ticket at a time to allow the thread to start
                 // working
@@ -304,10 +319,26 @@ public class FlushTest extends ChannelTestBase {
             this.msgCount = msgCount;
             events = Collections.synchronizedList(new LinkedList<Object>());
             if(connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
-            	channel.connect("test");
+            	channel.connect("FlushTestReceiver");
             
             if(connectMethod == CONNECT_AND_GET_STATE){
-                channel.connect("test",null,null, 25000);
+                channel.connect("FlushTestReceiver",null,null, 25000);
+            }
+        }        
+        
+        protected FlushTestReceiver(JChannel ch, String name,
+                                    Semaphore semaphore,
+                                    int msgCount,
+                                    int connectMethod) throws Exception{
+            super(ch,name, semaphore,false);
+            this.connectMethod = connectMethod;
+            this.msgCount = msgCount;
+            events = Collections.synchronizedList(new LinkedList<Object>());
+            if(connectMethod == CONNECT_ONLY || connectMethod == CONNECT_AND_SEPARATE_GET_STATE)
+                channel.connect("FlushTestReceiver");
+            
+            if(connectMethod == CONNECT_AND_GET_STATE){
+                channel.connect("FlushTestReceiver",null,null, 25000);
             }
         }        
 

@@ -303,7 +303,19 @@ public class ChannelTestBase {
        
         public ChannelApplication(String name,  boolean useDispatcher) throws Exception {
             this.name=name;
-            channel=createChannel();
+            channel=createChannel(true,4);
+            events=Collections.synchronizedList(new LinkedList<Object>());
+            if(useDispatcher) {
+                dispatcher=new RpcDispatcher(channel, this, this, this);
+            }
+            else {
+                channel.setReceiver(this);
+            }
+        }
+        
+        public ChannelApplication(JChannel copySource,String name,  boolean useDispatcher) throws Exception {
+            this.name=name;
+            channel=createChannel(copySource);
             events=Collections.synchronizedList(new LinkedList<Object>());
             if(useDispatcher) {
                 dispatcher=new RpcDispatcher(channel, this, this, this);
@@ -486,6 +498,13 @@ public class ChannelTestBase {
                                                    Semaphore semaphore,
                                                    boolean useDispatcher) throws Exception {
             super(name, useDispatcher);
+            this.semaphore=semaphore;
+        }
+        
+        public PushChannelApplicationWithSemaphore(JChannel copySource, String name,
+                                                   Semaphore semaphore,
+                                                   boolean useDispatcher) throws Exception {
+            super(copySource,name, useDispatcher);
             this.semaphore=semaphore;
         }
 
