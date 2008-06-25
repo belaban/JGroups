@@ -19,7 +19,7 @@ import java.util.Map;
  * configured to use FLUSH
  * 
  * @author Bela Ban
- * @version $Id: ReconciliationTest.java,v 1.15 2008/06/09 12:54:13 belaban Exp $
+ * @version $Id: ReconciliationTest.java,v 1.16 2008/06/25 19:58:23 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ReconciliationTest extends ChannelTestBase {
@@ -58,7 +58,7 @@ public class ReconciliationTest extends ChannelTestBase {
                 log.info("Joining D, this will trigger FLUSH and a subsequent view change to {A,B,C,D}");
                 JChannel newChannel;
                 try {
-                    newChannel=createChannel();
+                    newChannel=createChannel(channels.get(0));
                     newChannel.connect("x");
                     channels.add(newChannel);
                 }
