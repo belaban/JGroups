@@ -13,7 +13,7 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Tests flush phases started concurrently by different members
  * @author Bela Ban
- * @version $Id: ConcurrentStartFlushTest.java,v 1.10 2008/06/25 22:50:36 vlada Exp $
+ * @version $Id: ConcurrentStartFlushTest.java,v 1.11 2008/06/25 23:11:52 vlada Exp $
  */
 @Test(groups={Global.FLUSH},sequential=true)
 public class ConcurrentStartFlushTest extends ChannelTestBase {
@@ -54,17 +54,12 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
 
         flusher_one.start();
         Util.sleep(1000);
-
-        System.out.println("starting flush at C1");
+        
         barrier.await();
         flusher_one.join();
 
         //let async events propagate up
-        Util.sleep(500);
-        
-        System.out.println("events for C1: " + r1.getEvents());
-        System.out.println("events for C2: " + r2.getEvents());
-        System.out.println("events for C3: " + r3.getEvents());
+        Util.sleep(500);       
         
         checkEventStateTransferSequence(r1);
         checkEventStateTransferSequence(r2);
@@ -82,7 +77,6 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
         flusher_three.start();
         Util.sleep(1000);
 
-        System.out.println("starting concurrent flush at C1 and C3");
         barrier.await();
         flusher_one.join();
         flusher_three.join();
@@ -90,41 +84,29 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
         //let async events propagate up
         Util.sleep(500);
         
-        System.out.println("events for C1: " + r1.getEvents());
-        System.out.println("events for C2: " + r2.getEvents());
-        System.out.println("events for C3: " + r3.getEvents());
-        
         checkEventStateTransferSequence(r1);
         checkEventStateTransferSequence(r2);
         checkEventStateTransferSequence(r3);
     }
 
 
-    public void testFlushStartedByOneButCompletedByOther() throws Exception {
-        System.out.println("starting flush at C1");
+    public void testFlushStartedByOneButCompletedByOther() throws Exception {        
         boolean rc=c1.startFlush(TIMEOUT, false);
         assertTrue(rc);
         Util.sleep(500);
         
-        Util.sleep(1000);
-        System.out.println("Stopping flush at C2");
+        Util.sleep(1000);     
         c2.stopFlush();
         
-        System.out.println("starting flush at C2");
         rc=c2.startFlush(TIMEOUT, false);
         assertTrue(rc);
         
 
         Util.sleep(1000);
-        System.out.println("Stopping flush at C1");
         c1.stopFlush();
 
         //let async events propagate up
         Util.sleep(500);
-        System.out.println("events for C1: " + r1.getEvents());
-        System.out.println("events for C2: " + r2.getEvents());
-        System.out.println("events for C3: " + r3.getEvents());
-        
         checkEventStateTransferSequence(r1);
         checkEventStateTransferSequence(r2);
         checkEventStateTransferSequence(r3);
@@ -141,12 +123,9 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
 
         public void run() {
             try {
-                barrier.await();
-                System.out.println("Flusher " + channel.getLocalAddress() + ": starting flush");
-                boolean rc=channel.startFlush(TIMEOUT, false);
-                System.out.println("flush was " + (rc? "successful" : "unsuccessful"));
-                Util.sleep(500);
-                System.out.println("Flusher " + channel.getLocalAddress() + ": stopping flush");
+                barrier.await();                
+                boolean rc=channel.startFlush(TIMEOUT, false);                
+                Util.sleep(500);                
                 channel.stopFlush();
             }
             catch(Throwable t) {
@@ -170,25 +149,20 @@ public class ConcurrentStartFlushTest extends ChannelTestBase {
             return events;
         }
 
-        public void block() {
-            System.out.println("[" + name + ", " + channel.getLocalAddress() + "] block()");
+        public void block() {            
             events.add(new BlockEvent());
         }
 
-        public void unblock() {
-            System.out.println("[" + name + ", " + channel.getLocalAddress() + "] unblock()");
+        public void unblock() {            
             events.add(new UnblockEvent());
         }
 
-        public void viewAccepted(View new_view) {
-            System.out.println("[" + name + ", " + channel.getLocalAddress() + "] view=" + new_view);
+        public void viewAccepted(View new_view) {            
             events.add(new_view);
         }
 
         public String getName() {
             return name;
         }
-
     }
-
 }
