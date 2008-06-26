@@ -1,15 +1,18 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="tcp-flush"
-       parallel="tests"
-       thread-count="1"
+       parallel="methods"
+       thread-count="25"
         >
 
-    <test name="tcp-flush" junit="false">
-        <parameter name="channel.conf" value="flush-tcp.xml"/>
+	<parameter name="channel.conf" value="flush-tcp.xml"/>
+	<parameter name="use_blocking" value="true"/>
+    <test name="tcp-flush" junit="false">        
         <groups>
             <run>
                 <include name="stack-dependent"/>
                 <include name="flush"/>
+                <exclude name="temp"/>
+                <exclude name="temp2"/>
                 <exclude name="vlad"/>
             </run>
         </groups>

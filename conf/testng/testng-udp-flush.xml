@@ -7,8 +7,7 @@
 
 	<parameter name="channel.conf" value="flush-udp.xml"/>
 	<parameter name="use_blocking" value="true"/>
-    <test name="udp-flush" junit="false">
-        
+    <test name="udp-flush" junit="false">        
         <groups>
             <run>
                 <include name="stack-dependent"/>
