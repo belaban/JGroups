@@ -14,14 +14,15 @@ import org.jgroups.stack.ProtocolStack;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
 
 
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.16 2008/06/09 11:29:16 belaban Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.17 2008/06/26 20:20:15 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups="vlad")
 public class DisconnectStressTest extends ChannelTestBase {
     CyclicBarrier           all_disconnected=null;
     CyclicBarrier           start_disconnecting=null;
@@ -61,8 +62,8 @@ public class DisconnectStressTest extends ChannelTestBase {
         }
 
         log("DISCONNECTING");
-        start_disconnecting.await(); // causes all channels to disconnect
-        all_disconnected.await();  // notification when all threads have disconnected
+        start_disconnecting.await(120,TimeUnit.SECONDS); // causes all channels to disconnect
+        all_disconnected.await(120,TimeUnit.SECONDS);  // notification when all threads have disconnected
     }
 
 
