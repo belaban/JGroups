@@ -1,6 +1,8 @@
 package org.jgroups.protocols;
 
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import org.jgroups.*;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
@@ -15,7 +17,7 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.15 2008/05/29 11:13:12 belaban Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.16 2008/06/26 20:06:00 vlada Exp $
  */
 @Test(groups="temp")
 public class STATE_TRANSFER_Test extends ChannelTestBase {
@@ -25,10 +27,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
 
 
     @BeforeMethod
-    protected void setUp() throws Exception {
-        // System.setProperty("org.apache.commons.logging.Log", "org.apache.commons.logging.impl.SimpleLog");
-        // System.setProperty("org.apache.commons.logging.simplelog.defaultlog", "error");
-
+    protected void setUp() throws Exception {      
         coord=new Coordinator();
         coord.recvLoop();
         coord.sendLoop();
@@ -143,51 +142,56 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
     }
 
     public void testBasicStateSync() throws Exception {
-        Channel channel=createChannel(coord.getChannel());
-        channel.setOpt(Channel.LOCAL, Boolean.FALSE);
+        Channel channel= null;
+        int timeout=120; //seconds
+        int counter=0;
+        try {
+            channel = createChannel(coord.getChannel());
+            channel.setOpt(Channel.LOCAL, Boolean.FALSE);
 
-        channel.connect(GROUP_NAME);
+            channel.connect(GROUP_NAME);
 
-        Thread.sleep(1000);
+            Thread.sleep(1000);
 
-        boolean join=false;
-        join=channel.getState(null, 100000l);
-        assertTrue(join);
+            boolean join=false;
+            join=channel.getState(null, 100000l);
+            assertTrue(join);
 
-        Object tmp;
-        int cnt=-1;
-        while(true) {
-            try {
-                tmp=channel.receive(0);
-                if(tmp instanceof ExitEvent) {
-                    break;
-                }
-                if(tmp instanceof SetStateEvent) {
-                    cnt=((Integer)Util.objectFromByteBuffer(((SetStateEvent)tmp).getArg())).intValue();
-                    // System.err.println("--  SetStateEvent, cnt=" + cnt);
-                    continue;
-                }
-                if(tmp instanceof Message) {
-                    if(cnt != -1) {
-                        int msg=((Integer)((Message)tmp).getObject()).intValue();
-                        assertEquals(cnt, msg - 1);
-                        break;  // done
+            Object tmp;
+            int cnt=-1;
+            for(;counter < timeout;SECONDS.sleep(1),counter++) {
+                try {
+                    tmp=channel.receive(0);
+                    if(tmp instanceof ExitEvent) {
+                        break;
+                    }
+                    if(tmp instanceof SetStateEvent) {
+                        cnt=((Integer)Util.objectFromByteBuffer(((SetStateEvent)tmp).getArg())).intValue();
+                        // System.err.println("--  SetStateEvent, cnt=" + cnt);
+                        continue;
+                    }
+                    if(tmp instanceof Message) {
+                        if(cnt != -1) {
+                            int msg=((Integer)((Message)tmp).getObject()).intValue();
+                            assertEquals(cnt, msg - 1);
+                            break; // done
+                        }
                     }
                 }
-            }
-            catch(ChannelNotConnectedException not) {
-                break;
-            }
-            catch(ChannelClosedException closed) {
-                break;
-            }
-            catch(Exception e) {
-                System.err.println(e);
+                catch(ChannelNotConnectedException not) {
+                    break;
+                }
+                catch(ChannelClosedException closed) {
+                    break;
+                }
+                catch(Exception e) {
+                    System.err.println(e);
+                }
             }
         }
-
-        channel.close();
+        finally {
+            channel.close();
+            assertTrue("Timeout reached", counter < 120);
+        }
     }
-
-
 }
