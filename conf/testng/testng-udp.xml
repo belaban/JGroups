@@ -1,15 +1,15 @@
 <!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
 <suite name="udp"
-       parallel="tests"
-       thread-count="1"
+       parallel="methods"
+       thread-count="15"
         >
-
 
     <test name="udp" junit="false">
         <parameter name="channel.conf" value="udp.xml"/>
         <groups>
             <run>
-                <include name="stack-dependent"/>
+            	<include name="stack-dependent"/>
+                <include name="temp"/>
                 <exclude name="flush"/>
                 <exclude name="vlad"/>
             </run>
