@@ -48,8 +48,33 @@ import java.util.concurrent.atomic.AtomicInteger;
 @MBean(description="Flushes the cluster")
 @DeprecatedProperty(names={"auto_flush_conf"})
 public class FLUSH extends Protocol {
-    public static final String NAME = "FLUSH";
+    
+    /* ----------------------------- Properties and managed attributes ------------------------------------ */
+    @Property
+    private long timeout = 8000;
+     
+    @Property
+    private long start_flush_timeout = 2500;
+    
+    @Property
+    private long retry_timeout = 3000;
 
+    @Property
+    private boolean enable_reconciliation = true;
+    
+    @Property
+    private int flush_retry_count = 4;
+    
+    private long startFlushTime;
+
+    private long totalTimeInFlush;
+
+    private int numberOfFlushes;
+
+    private double averageFlushDuration;
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
     @GuardedBy("sharedLock")
     private View currentView;
 
@@ -85,37 +110,8 @@ public class FLUSH extends Protocol {
     
     @GuardedBy("sharedLock")
     private boolean flushCompleted = false;
-
-    /**
-     * Default timeout for a group member to be in
-     * <code>isBlockingFlushDown</code>
-     */    
-    @Property
-    private long timeout = 8000;
-     
-    @Property
-    private long start_flush_timeout = 2500;
-    
-    @Property
-    private long retry_timeout = 3000;
-
-    @Property
-    private boolean enable_reconciliation = true;
-    
-    @Property
-    private int flush_retry_count = 4;
-    
-    private final AtomicInteger viewCounter = new AtomicInteger(0);   
     
     private volatile boolean allowMessagesToPassUp = false;
-
-    private long startFlushTime;
-
-    private long totalTimeInFlush;
-
-    private int numberOfFlushes;
-
-    private double averageFlushDuration;
 
     private final Promise<Boolean> flush_promise = new Promise<Boolean>();    
     
@@ -137,7 +133,7 @@ public class FLUSH extends Protocol {
     }
 
     public String getName() {
-        return NAME;
+        return "FLUSH";
     }
 
     public void start() throws Exception {
@@ -145,8 +141,7 @@ public class FLUSH extends Protocol {
         map.put("flush_supported", Boolean.TRUE);
         up_prot.up(new Event(Event.CONFIG, map));
         down_prot.down(new Event(Event.CONFIG, map));
-
-        viewCounter.set(0);       
+        
         synchronized(blockMutex){
             isBlockingFlushDown = true;
         }
@@ -184,19 +179,21 @@ public class FLUSH extends Protocol {
     public boolean startFlush() {        
         return startFlush(new Event(Event.SUSPEND));
     }
-        
-    private boolean startFlush(Event evt){        
-        return startFlush(evt, flush_retry_count,false);
+    
+    private boolean startFlush(Event evt){
+    	if(log.isDebugEnabled())
+            log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");
+    	
+    	List<Address> flushParticipants = (List<Address>) evt.getArg();
+        return startFlush(flushParticipants, flush_retry_count, false);
     }
     
-    private boolean startFlush(Event evt, int numberOfAttempts, boolean force) {
+    private boolean startFlush(List<Address> flushParticipants, int numberOfAttempts, boolean force) {
         boolean successfulFlush = false;
         if(!flushInProgress.get() || force){
             flush_promise.reset();                                 
-            if(log.isDebugEnabled())
-                log.debug("Received " + evt + " at " + localAddress + ". Running FLUSH...");           
-
-            onSuspend((List<Address>) evt.getArg());
+                       
+            onSuspend(flushParticipants);
             try{
                 Boolean r = flush_promise.getResultWithTimeout(start_flush_timeout);
                 successfulFlush = r.booleanValue();
@@ -212,13 +209,11 @@ public class FLUSH extends Protocol {
         if(!successfulFlush && numberOfAttempts > 0){                  
             waitForFlushCompletion(retry_timeout);      
             if(log.isDebugEnabled()){               
-                log.debug("Retrying FLUSH at " + localAddress
-                          + ", "
-                          + evt
+                log.debug("Retrying FLUSH at " + localAddress                                                  
                           + ". Attempts left "
                           + numberOfAttempts);
             }
-            successfulFlush = startFlush(evt, --numberOfAttempts, true);
+            successfulFlush = startFlush(flushParticipants, --numberOfAttempts, true);
         }
         return successfulFlush;
     }
@@ -355,22 +350,18 @@ public class FLUSH extends Protocol {
                         if(isCurrentFlushMessage(fh))
                             onFlushCompleted(msg.getSrc(), fh.digest);
                         break;
-                }
-                return null; // do not pass FLUSH msg up
+                }                
             }else{               
                 // http://jira.jboss.com/jira/browse/JGRP-575
                 // for processing of application messages after we join, 
                 // lets wait for STOP_FLUSH to complete
                 // before we start allowing message up.
-                Address dest=msg.getDest();
-                if(dest != null && !dest.isMulticastAddress()) {
-                    return up_prot.up(evt); // allow unicasts to pass, virtual synchrony olny applies to multicasts
-                }
-
-                if(!allowMessagesToPassUp)
-                    return null;
+                // also, allow unicasts to pass, virtual synchrony only applies to multicasts          
+                if(allowMessagesToPassUp || msg.getDest() != null && !msg.getDest().isMulticastAddress()) {
+                    return up_prot.up(evt); 
+                }              
             }
-            break;
+            return null;
 
         case Event.VIEW_CHANGE:                       
             /*
@@ -380,14 +371,17 @@ public class FLUSH extends Protocol {
              */
             up_prot.up(evt);            
             View newView = (View) evt.getArg();
+            boolean inPreviousView = false;
+            synchronized(sharedLock) {
+                inPreviousView = currentView.getMembers().contains(localAddress);
+            }            
             boolean coordinatorLeft = onViewChange(newView);
-            boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);
-            boolean isThisOurFirstView = viewCounter.addAndGet(1) == 1;
+            boolean singletonMember = newView.size() == 1 && newView.containsMember(localAddress);            
             // if this is channel's first view and its the only member of the group - no flush was run
             // but the channel application should still receive BLOCK,VIEW,UNBLOCK 
             
             //also if coordinator of flush left each member should run stopFlush individually.
-            if((isThisOurFirstView && singletonMember) || coordinatorLeft){                
+            if((!inPreviousView && singletonMember) || coordinatorLeft){                
                 onStopFlush();              
             }
             return null;            
@@ -710,7 +704,7 @@ public class FLUSH extends Protocol {
         boolean needsReconciliationPhase = false;
         synchronized(sharedLock){
             flushCompletedMap.put(address, digest);
-            flushCompleted=flushCompletedMap.size() >= flushMembers.size() && flushCompletedMap.keySet().containsAll(flushMembers);
+            flushCompleted=flushCompletedMap.size() >= flushMembers.size() && flushCompletedMap.keySet().containsAll(flushMembers);           
 
             if(log.isDebugEnabled())
                 log.debug("At " + localAddress
