@@ -48,7 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 @MBean(description="Flushes the cluster")
 @DeprecatedProperty(names={"auto_flush_conf"})
 public class FLUSH extends Protocol {
-    
+    public static final String NAME = "FLUSH";
     /* ----------------------------- Properties and managed attributes ------------------------------------ */
     @Property
     private long timeout = 8000;
@@ -133,7 +133,7 @@ public class FLUSH extends Protocol {
     }
 
     public String getName() {
-        return "FLUSH";
+        return NAME;
     }
 
     public void start() throws Exception {
