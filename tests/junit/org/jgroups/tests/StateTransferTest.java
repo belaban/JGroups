@@ -19,7 +19,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.27 2008/06/25 22:50:41 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.28 2008/06/27 02:53:53 vlada Exp $
  */
 @Test(groups="temp",sequential=false)
 public class StateTransferTest extends ChannelTestBase {
@@ -29,7 +29,7 @@ public class StateTransferTest extends ChannelTestBase {
 
     @Test
     public void testStateTransferFromSelfWithRegularChannel() throws Exception {
-        Channel ch=createChannel();
+        Channel ch=createChannel(true);
         ch.connect("StateTransferTest");
         try {
             boolean rc=ch.getState(null, 2000);
@@ -235,7 +235,7 @@ public class StateTransferTest extends ChannelTestBase {
         }
 
         protected void useChannel() throws Exception {
-            channel.connect("test", null, null, 10000);
+            channel.connect("StateTransferTest", null, null, 10000);
             Object[] data=new Object[2];
             for(int i=from; i < to; i++) {
                 data[0]=new Integer(i);
