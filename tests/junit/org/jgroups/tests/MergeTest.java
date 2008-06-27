@@ -12,6 +12,7 @@ import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
+import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -22,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.29 2008/06/27 03:23:15 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.30 2008/06/27 20:59:16 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -185,6 +186,7 @@ public class MergeTest extends ChannelTestBase {
         if(discovery != null){
             Protocol transport = stack.getTransport();
             MPING mping=new MPING();
+            mping.setBindAddr(InetAddress.getLocalHost());
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
