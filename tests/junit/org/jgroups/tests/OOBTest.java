@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.6 2008/06/13 08:14:20 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.7 2008/06/27 23:38:50 vlada Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -40,7 +40,7 @@ public class OOBTest extends ChannelTestBase {
         c1.connect("OOBMcastTest");
         c2.connect("OOBMcastTest");
         View view=c2.getView();
-        System.out.println("view = " + view);
+        log.info("view = " + view);
         assert view.size() == 2 : "view is " + view;
         lock=new ReentrantLock();
         lock.lock();
@@ -125,7 +125,7 @@ public class OOBTest extends ChannelTestBase {
 
         Util.sleep(1000); // time for potential retransmission
         List<Integer> list=receiver.getMsgs();
-        System.out.println("list = " + list);
+        log.info("list = " + list);
         assert list.size() == 4 : "list is " + list;
         assert list.contains(1) && list.contains(2) && list.contains(3) && list.contains(4);
     }
@@ -152,7 +152,7 @@ public class OOBTest extends ChannelTestBase {
         Util.sleep(500);
         List<Integer> list=receiver.getMsgs();
         for(int i=0; i < 10; i++) {
-            System.out.println("list = " + list);
+            log.info("list = " + list);
             if(list.size() == 3)
                 break;
             Util.sleep(1000); // give the asynchronous msgs some time to be received
@@ -178,10 +178,10 @@ public class OOBTest extends ChannelTestBase {
         for(int i=0; i < 20; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            System.out.print(".");
+            log.info(".");
             Util.sleep(1000);
         }
-        System.out.println("");
+        log.info("");
         check(NUM_MSGS, one, two);
     }
 
@@ -275,7 +275,7 @@ public class OOBTest extends ChannelTestBase {
         Util.sleep(500);
         List<Long> list=receiver.getMsgs();
         for(int i=0; i < 10; i++) {
-            System.out.println("list = " + list);
+            log.info("list = " + list);
             if(list.size() == NUM -1)
                 break;
             Util.sleep(1000); // give the asynchronous msgs some time to be received
@@ -285,7 +285,7 @@ public class OOBTest extends ChannelTestBase {
         assert list.contains(2L);
 
         Util.sleep(2000);
-        System.out.println("[" + Thread.currentThread().getName() + "]: unlocking lock");
+        log.info("[" + Thread.currentThread().getName() + "]: unlocking lock");
         lock.unlock();
         Util.sleep(10);
 
@@ -295,9 +295,9 @@ public class OOBTest extends ChannelTestBase {
             assert list.contains(i);
     }
 
-    private static void check(final int num_expected_msgs, List<Integer>... lists) {
+    private  void check(final int num_expected_msgs, List<Integer>... lists) {
         for(List<Integer> list: lists) {
-            System.out.println("list: " + list);
+            log.info("list: " + list);
         }
 
         for(List<Integer> list: lists) {
