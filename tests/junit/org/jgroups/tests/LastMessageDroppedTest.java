@@ -16,7 +16,7 @@ import java.util.List;
 /**
  * Tests the last message dropped problem in NAKACK (see doc/design/varia2.txt)
  * @author Bela Ban
- * @version $Id: LastMessageDroppedTest.java,v 1.3 2008/06/10 10:38:49 belaban Exp $
+ * @version $Id: LastMessageDroppedTest.java,v 1.4 2008/06/27 23:38:51 vlada Exp $
  */
 @Test(groups="temp",sequential=true)
 public class LastMessageDroppedTest extends ChannelTestBase {
@@ -31,7 +31,7 @@ public class LastMessageDroppedTest extends ChannelTestBase {
         c1.connect("LastMessageDroppedTest");
         c2.connect("LastMessageDroppedTest");
         View view=c2.getView();
-        System.out.println("view = " + view);
+        log.info("view = " + view);
         assert view.size() == 2 : "view is " + view;
     }
 

@@ -23,7 +23,7 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.18 2008/06/11 06:45:05 belaban Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.19 2008/06/27 23:38:51 vlada Exp $
  */
 @Test(groups={"temp"}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
@@ -82,7 +82,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         log("requesting state of " + size + " bytes");
         start=System.currentTimeMillis();
         boolean rc=requester.getState(provider.getLocalAddress(), 20000);
-        System.out.println("getState(): result=" + rc);
+        log.info("getState(): result=" + rc);
         Object result=p.getResult(10000);
         stop=System.currentTimeMillis();
         log("result=" + result + " bytes (in " + (stop-start) + "ms)");
@@ -100,8 +100,8 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    static void log(String msg) {
-        System.out.println(Thread.currentThread() + " -- "+ msg);
+    void log(String msg) {
+        log.info(Thread.currentThread() + " -- "+ msg);
     }
 
     private static void modifyStack(JChannel ch) {
@@ -112,7 +112,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Provider extends ExtendedReceiverAdapter {
+    private  class Provider extends ExtendedReceiverAdapter {
         byte[] state;
 
         public Provider(int size) {
@@ -124,7 +124,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[provider] new_view = " + new_view);
+            log.info("[provider] new_view = " + new_view);
         }
         
         public void getState(OutputStream ostream){      
@@ -145,7 +145,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
     }
 
 
-    private static class Requester extends ExtendedReceiverAdapter {
+    private  class Requester extends ExtendedReceiverAdapter {
         Promise<Integer> p;
 
         public Requester(Promise<Integer> p) {
@@ -153,7 +153,7 @@ public class LargeStateTransferTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[requester] new_view = " + new_view);
+            log("[requester] new_view = " + new_view);
         }
 
         public byte[] getState() {

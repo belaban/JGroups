@@ -24,7 +24,7 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.18 2008/06/26 20:08:48 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.19 2008/06/27 23:38:51 vlada Exp $
  */
 @Test(groups="vlad",sequential=false)
 public class ShunTest extends ChannelTestBase {
@@ -73,16 +73,16 @@ public class ShunTest extends ChannelTestBase {
         Assert.assertEquals(2, c1.getView().size());
         
         RspList rsps=disp2.callRemoteMethods(null, "getCurrentTime", null, (Class[])null, GroupRequest.GET_ALL, 10000);
-        System.out.println(">> rsps:\n" + rsps);
+        log.info(">> rsps:\n" + rsps);
         Assert.assertEquals(2, rsps.size());
 
         ProtocolStack stack=c1.getProtocolStack();
         stack.removeProtocol("VERIFY_SUSPECT");
         Protocol transport=stack.getTransport();
-        System.out.println(">> suspecting C2:");
+        log.info(">> suspecting C2:");
         transport.up(new Event(Event.SUSPECT, c2.getLocalAddress()));
 
-        System.out.println(">> shunning C2:");
+        log.info(">> shunning C2:");
 
         c2.up(new Event(Event.EXIT));
 
@@ -98,7 +98,7 @@ public class ShunTest extends ChannelTestBase {
             Util.sleep(1000);
         }
         view=c2.getView();
-        System.out.println(">>> view is " + view + " <<<< (should have 2 members)");
+        log.info(">>> view is " + view + " <<<< (should have 2 members)");
         Assert.assertEquals(2, view.size());
 
         Util.sleep(1000);
@@ -243,7 +243,7 @@ public class ShunTest extends ChannelTestBase {
         }       
     }
 
-    private static class BelasChannelListener extends ChannelListenerAdapter {
+    private  class BelasChannelListener extends ChannelListenerAdapter {
         final String name;
 
         public BelasChannelListener(String name) {
@@ -251,27 +251,27 @@ public class ShunTest extends ChannelTestBase {
         }
 
         public void channelClosed(Channel channel) {
-            System.out.println("[" + name + "] channelClosed()");
+            log.info("[" + name + "] channelClosed()");
         }
 
         public void channelConnected(Channel channel) {
-            System.out.println("[" + name + "] channelConnected()");
+            log.info("[" + name + "] channelConnected()");
         }
 
         public void channelDisconnected(Channel channel) {
-            System.out.println("[" + name + "] channelDisconnected()");
+            log.info("[" + name + "] channelDisconnected()");
         }
 
         public void channelReconnected(Address addr) {
-            System.out.println("[" + name + "] channelReconnected(" + addr + ")");
+            log.info("[" + name + "] channelReconnected(" + addr + ")");
         }
 
         public void channelShunned() {
-            System.out.println("[" + name + "] channelShunned()");
+            log.info("[" + name + "] channelShunned()");
         }
     }
 
-    private static class BelasReceiver extends ReceiverAdapter {
+    private  class BelasReceiver extends ReceiverAdapter {
         final String name;
 
         public BelasReceiver(String name) {
@@ -279,7 +279,7 @@ public class ShunTest extends ChannelTestBase {
         }
 
         public void viewAccepted(View new_view) {
-            System.out.println("[" + name + "] new_view = " + new_view);
+            log.info("[" + name + "] new_view = " + new_view);
         }
     }
     
