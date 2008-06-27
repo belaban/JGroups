@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import java.net.InetAddress;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -14,7 +15,9 @@ import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MessageDispatcher;
 import org.jgroups.blocks.RequestHandler;
 import org.jgroups.protocols.MERGE2;
+import org.jgroups.protocols.MPING;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
@@ -24,7 +27,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.11 2008/06/27 03:23:15 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.12 2008/06/27 21:29:31 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -55,6 +58,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             tasks[i]=new Task(latch, channels[i],useDispatcher);
             changeMergeInterval(channels[i]);
             changeViewBundling(channels[i]);
+            replaceDiscoveryProtocol(channels[i]);
         }
 
         for(final Task t:tasks) {
@@ -131,6 +135,21 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             merge.setMinInterval(5000);
             merge.setMaxInterval(10000);
         }
+    }
+    
+    private static void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+        ProtocolStack stack=ch.getProtocolStack();
+        Protocol discovery=stack.removeProtocol("TCPPING");
+        if(discovery != null){
+            Protocol transport = stack.getTransport();
+            MPING mping=new MPING();
+            mping.setBindAddr(InetAddress.getLocalHost());
+            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
+            mping.setProtocolStack(ch.getProtocolStack());
+            mping.init();
+            mping.start();            
+            System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
+        }        
     }
 
     private static class Task implements Runnable {
