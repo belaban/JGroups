@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.169 2008/06/27 02:53:29 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.170 2008/06/27 04:21:31 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -359,13 +359,14 @@
     </target>
 
     <target name="all-new-tests">
-        <parallel>            
+        <sequential>   
         	<antcall target="functional"/>
+        	<antcall target="stack-independent"/>
             <antcall target="udp"/>
             <antcall target="tcp"/>   
-        	<antcall target="udp-flush"/>
+        	<antcall target="udp-flush"/>        	
         	<antcall target="tcp-flush"/>
-        </parallel>
+        </sequential>
     </target>
 
     <target name="functional" depends="compile, makeKeystore">
