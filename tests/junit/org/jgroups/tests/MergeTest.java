@@ -22,9 +22,9 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.28 2008/06/25 23:16:35 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.29 2008/06/27 03:23:15 vlada Exp $
  */
-@Test(groups=Global.FLUSH,sequential=false)
+@Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
    
     @Test
@@ -184,11 +184,11 @@ public class MergeTest extends ChannelTestBase {
         Protocol discovery=stack.removeProtocol("TCPPING");
         if(discovery != null){
             Protocol transport = stack.getTransport();
-            MPING mping=new MPING();            
+            MPING mping=new MPING();
+            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
-            mping.start();
-            stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
+            mping.start();            
             System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
         }        
     }
