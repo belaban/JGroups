@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.218 2008/06/30 09:10:31 belaban Exp $
+ * @version $Id: TP.java,v 1.219 2008/06/30 12:06:53 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -178,9 +178,6 @@ public abstract class TP extends Protocol {
 
     /** Keeps track of connects and disconnects, in order to start and stop threads */
     int connect_count=0;
-
-    /** Number of times init() was called. Incremented on init(), decremented on destroy() */
-    int init_count=0;
 
 
     /** ================================== OOB thread pool ============================== */
@@ -749,10 +746,6 @@ public abstract class TP extends Protocol {
 
 
     public void init() throws Exception {
-        if(init_count++ >= 1) {
-            return;
-        }
-
         super.init();
 
         // Create the default thread factory
@@ -816,30 +809,25 @@ public abstract class TP extends Protocol {
 
 
     public void destroy() {
-        if(init_count == 0)
-            return;
-        init_count=Math.max(init_count -1, 0);
-        if(init_count == 0) {
-            super.destroy();
-            if(timer != null) {
-                try {
-                    timer.stop();
-                }
-                catch(InterruptedException e) {
-                    log.error("failed stopping the timer", e);
-                }
+        super.destroy();
+        if(timer != null) {
+            try {
+                timer.stop();
             }
+            catch(InterruptedException e) {
+                log.error("failed stopping the timer", e);
+            }
+        }
 
-            // 3. Stop the thread pools
-            if(oob_thread_pool instanceof ThreadPoolExecutor) {
-                shutdownThreadPool(oob_thread_pool);
-                oob_thread_pool=null;
-            }
+        // 3. Stop the thread pools
+        if(oob_thread_pool instanceof ThreadPoolExecutor) {
+            shutdownThreadPool(oob_thread_pool);
+            oob_thread_pool=null;
+        }
 
-            if(thread_pool instanceof ThreadPoolExecutor) {
-                shutdownThreadPool(thread_pool);
-                thread_pool=null;
-            }
+        if(thread_pool instanceof ThreadPoolExecutor) {
+            shutdownThreadPool(thread_pool);
+            thread_pool=null;
         }
     }
 
@@ -890,7 +878,7 @@ public abstract class TP extends Protocol {
         // 2. Stop the incoming message handler
         if(incoming_msg_handler != null)
             incoming_msg_handler.stop();
-        }
+    }
 
 
 

@@ -9,7 +9,6 @@ import org.jgroups.protocols.TP;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.util.TimeScheduler;
 import org.jgroups.util.Tuple;
-import org.testng.internal.annotations.Converter;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -27,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.82 2008/06/06 10:20:23 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.83 2008/06/30 12:02:47 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -46,8 +45,8 @@ public class ProtocolStack extends Protocol implements Transport {
 
 
     /** Holds the shared transports, keyed by 'TP.singleton_name'.
-     * The values are the transport and the use count for start() (decremented by stop() */
-    private static final ConcurrentMap<String,Tuple<TP,Short>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,Short>>();
+     * The values are the transport and the use count for init() (decremented by destroy()) and start() (decremented by stop() */
+    private static final ConcurrentMap<String, Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
 
 
 
@@ -214,7 +213,7 @@ public class ProtocolStack extends Protocol implements Transport {
         return (TP)(!prots.isEmpty()? prots.lastElement() : null);
     }
 
-    public static ConcurrentMap<String, Tuple<TP, Short>> getSingletonTransports() {
+    public static ConcurrentMap<String, Tuple<TP,RefCounter>> getSingletonTransports() {
         return singleton_transports;
     }
 
@@ -427,7 +426,7 @@ public class ProtocolStack extends Protocol implements Transport {
             top_prot.setUpProtocol(this);
             bottom_prot=Configurator.getBottommostProtocol(top_prot);
             List<Protocol> protocols=getProtocols();
-            Configurator.initProtocolStack(protocols);         // calls init() on each protocol, from bottom to top
+            Configurator.initProtocolStack(protocols, singleton_transports);         // calls init() on each protocol, from bottom to top
         }
     }
 
@@ -440,7 +439,7 @@ public class ProtocolStack extends Protocol implements Transport {
             top_prot.setUpProtocol(this);
             bottom_prot=Configurator.getBottommostProtocol(top_prot);
             Collections.reverse(protocols);
-            Configurator.initProtocolStack(protocols);         // calls init() on each protocol, from bottom to top
+            Configurator.initProtocolStack(protocols, singleton_transports);         // calls init() on each protocol, from bottom to top
         }
     }
 
@@ -528,7 +527,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     public void destroy() {
         if(top_prot != null) {
-            Configurator.destroyProtocolStack(getProtocols());           // destroys msg queues and threads
+            Configurator.destroyProtocolStack(getProtocols(), singleton_transports);           // destroys msg queues and threads
             top_prot=null;
         }        
     }
@@ -610,7 +609,49 @@ public class ProtocolStack extends Protocol implements Transport {
             return top_prot.down(evt);
         return null;
     }
-    
+
+
+    /**
+     * Keeps track of the number os times init()/destroy() and start()/stop have been called. The variables
+     * init_count and start_count are incremented or decremented accoordingly. Note that this class is not synchronized
+     */
+    public static class RefCounter {
+        private short init_count=0;
+        private short start_count=0;
+
+        public RefCounter(short init_count, short start_count) {
+            this.init_count=init_count;
+            this.start_count=start_count;
+        }
+
+        public short getInitCount() {
+            return init_count;
+        }
+
+        public short getStartCount() {
+            return start_count;
+        }
+
+        public void incrementInitCount() {
+            init_count++;
+        }
+
+        public void incrementStartCount() {
+            start_count++;
+        }
+
+        public void decrementInitCount() {
+            init_count=(short)Math.max(init_count -1, 0);
+        }
+
+        public void decrementStartCount() {
+            start_count=(short)Math.max(start_count -1, 0);
+        }
+
+        public String toString() {
+            return "init_count=" + init_count + ", start_count=" + start_count;
+        }
+    }
     
 
 }
