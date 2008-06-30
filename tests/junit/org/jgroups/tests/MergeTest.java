@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.30 2008/06/27 20:59:16 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.31 2008/06/30 15:02:03 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -97,12 +97,11 @@ public class MergeTest extends ChannelTestBase {
                 }
             }
 
-            System.out.println("Waiting for split to be detected...");
+            log.info("Waiting for split to be detected...");
             View view;
             long stop=System.currentTimeMillis() + 35 * 1000;
             do {
-                view=channels[0].channel.getView();
-                // System.out.println("view = " + view);
+                view=channels[0].channel.getView();               
                 if(view.size() == 1)
                     break;
                 else
@@ -111,7 +110,7 @@ public class MergeTest extends ChannelTestBase {
 
             // Util.sleep(35*1000);
 
-            System.out.println("Waiting for merging to kick in....");
+            log.info("Waiting for merging to kick in....");
 
             for(int i=0;i < count;i++) {
                 channels[i].getChannel().getProtocolStack().removeProtocol("DISCARD");
@@ -147,7 +146,7 @@ public class MergeTest extends ChannelTestBase {
                 }
             }
         }
-    }   
+    }
     
     protected class MergeApplication extends PushChannelApplicationWithSemaphore {      
 
@@ -171,7 +170,7 @@ public class MergeTest extends ChannelTestBase {
     }
     
     
-    private static void addDiscardProtocol(JChannel ch) throws Exception {
+    private void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();
@@ -180,7 +179,7 @@ public class MergeTest extends ChannelTestBase {
         stack.insertProtocol(discard, ProtocolStack.ABOVE, transport.getName());
     }
     
-    private static void replaceDiscoveryProtocol(JChannel ch) throws Exception {
+    private void replaceDiscoveryProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol discovery=stack.removeProtocol("TCPPING");
         if(discovery != null){
@@ -191,11 +190,11 @@ public class MergeTest extends ChannelTestBase {
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
             mping.start();            
-            System.out.println("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
+            log.info("Replaced TCPPING with MPING. See http://wiki.jboss.org/wiki/Wiki.jsp?page=JGroupsMERGE2");            
         }        
     }
 
-    private static void modiftFDAndMergeSettings(JChannel ch) {
+    private void modiftFDAndMergeSettings(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         FD fd=(FD)stack.findProtocol("FD");
