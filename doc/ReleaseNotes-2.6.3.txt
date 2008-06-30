@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.3
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.5 2008/06/17 08:21:27 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.3.txt,v 1.1.2.6 2008/06/30 06:00:37 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.3 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -85,6 +85,6 @@ Bela Ban, Kreuzlingen, Switzerland
 Vladimir Blagojevic, Toronto, Canada
 Richard Achmatowicz, Montreal, Canada
 
-June 2008
+July 2008
 
 
