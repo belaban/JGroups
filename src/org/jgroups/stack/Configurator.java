@@ -35,7 +35,7 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.54 2008/06/30 12:01:33 belaban Exp $
+ * @version $Id: Configurator.java,v 1.55 2008/06/30 18:13:33 vlada Exp $
  */
 public class Configurator {
 
@@ -68,9 +68,7 @@ public class Configurator {
         Vector<Protocol> protocols;
 
         protocol_configs=parseConfigurations(configuration);
-        protocols=createProtocols(protocol_configs, st);
-        if(protocols == null)
-            return null;
+        protocols=createProtocols(protocol_configs, st);        
         protocol_stack=connectProtocols(protocols);
         return protocol_stack;
     }
@@ -81,18 +79,15 @@ public class Configurator {
         for(Protocol prot: protocols) {
             if(prot instanceof TP) {
                 TP transport=(TP)prot;
-                if(transport.isSingleton()) {
-                    String singleton_name=transport.getSingletonName();
+                if(transport.isSingleton()) {                   
                     synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
+                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(transport.getSingletonName());
                         if(val == null) {
-                            singletons.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>(transport,new ProtocolStack.RefCounter((short)1, (short)0)));
+                            singletons.put(transport.getSingletonName(), new Tuple<TP, ProtocolStack.RefCounter>(transport,new ProtocolStack.RefCounter((short)1, (short)0)));
                         }
                         else {
                             ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_inits=counter.getInitCount();
-                            counter.incrementInitCount();
-                            if(num_inits >= 1) {
+                            if(counter.incrementAndGetInitCount() > 1) {
                                 continue;
                             }
                         }
@@ -107,9 +102,8 @@ public class Configurator {
         Protocol above_prot=null;        
         for(final Protocol prot: protocols) {
             if(prot instanceof TP) {
-                String singleton_name=((TP)prot).getSingletonName();
-                if(singleton_name != null && singleton_name.length() > 0 && cluster_name != null) {
-                    TP transport=(TP)prot;
+                TP transport=(TP)prot;                
+                if(transport.isSingleton() && cluster_name != null) {                    
                     final Map<String, Protocol> up_prots=transport.getUpProtocols();
                     synchronized(up_prots) {
                         Set<String> keys=up_prots.keySet();
@@ -135,12 +129,10 @@ public class Configurator {
                         }
                     }
                     synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
+                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(transport.getSingletonName());
                         if(val != null) {
-                            ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_starts=counter.getStartCount();
-                            counter.incrementStartCount();
-                            if(num_starts >= 1) {
+                            ProtocolStack.RefCounter counter=val.getVal2();                                                        
+                            if(counter.incrementAndGetStartCount() > 1) {
                                 if(above_prot != null)
                                     above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
                                 continue;
@@ -157,27 +149,20 @@ public class Configurator {
     public static void stopProtocolStack(List<Protocol> protocols, String cluster_name,
                                          final Map<String, Tuple<TP, ProtocolStack.RefCounter>> singletons) {
         for(final Protocol prot: protocols) {
-            if(prot instanceof TP) {
-                String singleton_name=((TP)prot).getSingletonName();
-                if(singleton_name != null && singleton_name.length() > 0) {
-                    TP transport=(TP)prot;
+            if(prot instanceof TP) {       
+                TP transport=(TP)prot;
+                if(transport.isSingleton()) {                    
                     final Map<String,Protocol> up_prots=transport.getUpProtocols();
-
                     synchronized(up_prots) {
                         up_prots.remove(cluster_name);
-                    }
-
+                    }                    
                     synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
+                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(transport.getSingletonName());
                         if(val != null) {
                             ProtocolStack.RefCounter counter=val.getVal2();
-                            counter.decrementStartCount();
-                            short num_starts=counter.getStartCount();
-                            if(num_starts > 0) {
+                            if(counter.decrementAndGetStartCount() > 0) {
                                 continue; // don't call TP.stop() if we still have references to the transport
-                            }
-                            //else
-                                // singletons.remove(singleton_name); // do the removal in destroyProtocolStack()
+                            }                            
                         }
                     }
                 }
@@ -197,9 +182,7 @@ public class Configurator {
                         Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
                         if(val != null) {
                             ProtocolStack.RefCounter counter=val.getVal2();
-                            counter.decrementInitCount();
-                            short num_inits=counter.getInitCount();
-                            if(num_inits >= 1) {
+                            if(counter.decrementAndGetInitCount() > 0) {
                                 continue;
                             }
                             else
@@ -468,16 +451,13 @@ public class Configurator {
      */
     public static Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
         Vector<ProtocolConfiguration> retval=new Vector<ProtocolConfiguration>();
-        Vector protocol_string=parseProtocols(configuration);
-        String component_string;
-        ProtocolConfiguration protocol_config;
+        Vector<String> protocol_string=parseProtocols(configuration);                
 
         if(protocol_string == null)
-            return null;
-        for(int i=0; i < protocol_string.size(); i++) {
-            component_string=(String)protocol_string.elementAt(i);
-            protocol_config=new ProtocolConfiguration(component_string);
-            retval.addElement(protocol_config);
+            throw new Exception("Configuration " + configuration + " could not be parsed");
+        
+        for(String component_string:protocol_string) {                      
+            retval.addElement(new ProtocolConfiguration(component_string));
         }
         return retval;
     }
@@ -521,39 +501,30 @@ public class Configurator {
      * @return Vector of Protocols
      */
     private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
-        Vector<Protocol> retval=new Vector<Protocol>();
-        ProtocolConfiguration protocol_config;
+        Vector<Protocol> retval=new Vector<Protocol>();       
         Protocol layer;
-        String singleton_name;
 
-        for(int i=0; i < protocol_configs.size(); i++) {
-            protocol_config=protocol_configs.elementAt(i);
-            singleton_name=protocol_config.getProperties().getProperty(Global.SINGLETON_NAME);
-            if(singleton_name != null && singleton_name.trim().length() > 0) {
+        for(ProtocolConfiguration protocol_config:protocol_configs) {            
+            String singleton_name=protocol_config.getProperties().getProperty(Global.SINGLETON_NAME);
+            boolean is_singleton_protocol  = singleton_name != null && singleton_name.trim().length() > 0;
+            if(is_singleton_protocol) {
                 synchronized(stack) {
-                    if(i > 0) { // crude way to check whether protocol is a transport
+                    if(protocol_config != protocol_configs.firstElement()) { // crude way to check whether protocol is a transport
                         throw new IllegalArgumentException("Property 'singleton_name' can only be used in a transport" +
                                 " protocol (was used in " + protocol_config.getProtocolName() + ")");
                     }
                     Map<String,Tuple<TP, ProtocolStack.RefCounter>> singleton_transports=ProtocolStack.getSingletonTransports();
                     Tuple<TP, ProtocolStack.RefCounter> val=singleton_transports.get(singleton_name);
                     layer=val != null? val.getVal1() : null;
-                    if(layer != null) {
-                        retval.add(layer);
-                    }
-                    else {
+                    if(layer == null) {
                         layer=protocol_config.createLayer(stack);
-                        if(layer == null)
-                            return null;
                         singleton_transports.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>((TP)layer,new ProtocolStack.RefCounter((short)0,(short)0)));
-                        retval.addElement(layer);
                     }
-                }
-                continue;
+                }                
             }
-            layer=protocol_config.createLayer(stack);
-            if(layer == null)
-                return null;
+            else{
+                layer=protocol_config.createLayer(stack);            
+            }
             retval.addElement(layer);
         }
         sanityCheck(retval);
@@ -936,8 +907,8 @@ public class Configurator {
 
         private Protocol createLayer(ProtocolStack prot_stack) throws Exception {
             Protocol retval=null;
-            if(protocol_name == null)
-                return null;
+            if(protocol_name == null || protocol_name.length() ==0)
+                throw new Exception("Invalid protocol name " + protocol_name);                
 
             String defaultProtocolName=protocol_prefix + '.' + protocol_name;
             Class<?> clazz=null;
