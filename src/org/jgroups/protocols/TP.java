@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.216 2008/06/27 07:39:50 belaban Exp $
+ * @version $Id: TP.java,v 1.217 2008/06/30 09:09:57 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -676,7 +676,7 @@ public abstract class TP extends Protocol {
 
 
     private void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request) {
-        if(singleton_name != null && singleton_name.length() > 0) {
+        if(isSingleton()) {
             for(Protocol prot: up_prots.values()) {
                 ProtocolStack st=prot.getProtocolStack();
                 handleDiagnosticProbe(sender, sock, request, st);
@@ -761,7 +761,7 @@ public abstract class TP extends Protocol {
         // Create the timer and the associated thread factory - depends on singleton_name
         // timer_thread_factory=new DefaultThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
         timer_thread_factory=new LazyThreadFactory(Util.getGlobalThreadGroup(), "Timer", true, true);
-        if(singleton_name != null && singleton_name.trim().length() > 0) {
+        if(isSingleton()) {
             timer_thread_factory.setIncludeClusterName(false);
         }
 
@@ -906,6 +906,9 @@ public abstract class TP extends Protocol {
         return singleton_name;
     }
 
+      public boolean isSingleton(){
+          return singleton_name != null && singleton_name.length() >0;
+      }
 
 
     /**
@@ -915,7 +918,7 @@ public abstract class TP extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
         case Event.CONFIG:
-            if(singleton_name != null)
+            if(isSingleton())
                 passToAllUpProtocols(evt);
             else
                 up_prot.up(evt);
@@ -923,7 +926,7 @@ public abstract class TP extends Protocol {
             handleConfigEvent((Map<String,Object>)evt.getArg());
             return null;
         }
-        if(singleton_name != null) {
+        if(isSingleton()) {
             passToAllUpProtocols(evt);
             return null;
         }
@@ -1020,7 +1023,7 @@ public abstract class TP extends Protocol {
         if(hdr == null) {
             if(channel_name == null) {
                 Event evt=new Event(Event.MSG, msg);
-                if(singleton_name != null) {
+                if(isSingleton()) {
                     passMessageToAll(evt);
                 }
                 else {
@@ -1036,7 +1039,7 @@ public abstract class TP extends Protocol {
         }
 
         String ch_name=hdr.channel_name;
-        if(singleton_name != null) {
+        if(isSingleton()) {
             Protocol tmp_prot=up_prots.get(ch_name);
             if(tmp_prot != null) {
                 Event evt=new Event(Event.MSG, msg);
@@ -1358,7 +1361,7 @@ public abstract class TP extends Protocol {
                 view=(View)evt.getArg();
                 members.clear();
 
-                if(singleton_name == null) {
+                if(!isSingleton()) {
                     Vector<Address> tmpvec=view.getMembers();
                     members.addAll(tmpvec);
                 }
@@ -1434,7 +1437,7 @@ public abstract class TP extends Protocol {
                                     oob_thread_factory,
                                     global_thread_factory };
         
-        boolean is_shared_transport=singleton_name != null && singleton_name.trim().length() > 0;
+        boolean is_shared_transport=isSingleton();
 
         for(ThreadFactory factory:factories) {
             if(pattern != null) {
