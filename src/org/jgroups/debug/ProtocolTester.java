@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.14 2008/05/20 11:27:38 belaban Exp $
+// $Id: ProtocolTester.java,v 1.15 2008/06/30 12:03:23 belaban Exp $
 
 package org.jgroups.debug;
 
@@ -49,7 +49,7 @@ public class ProtocolTester {
         harness.setDownProtocol(top);
         top.setUpProtocol(harness); // +++
 
-        Configurator.initProtocolStack(getProtocols());
+        Configurator.initProtocolStack(getProtocols(), null);
 
         bottom=getBottomProtocol(top);
 
@@ -109,7 +109,7 @@ public class ProtocolTester {
                 p.stop();
                 p=p.getDownProtocol();
             }
-            Configurator.destroyProtocolStack(protocols);
+            Configurator.destroyProtocolStack(protocols, null);
         }
         else if(top != null) {
             p=top;
@@ -119,7 +119,7 @@ public class ProtocolTester {
                 p.stop();
                 p=p.getDownProtocol();
             }
-            Configurator.destroyProtocolStack(protocols);
+            Configurator.destroyProtocolStack(protocols, null);
         }
     }
 
