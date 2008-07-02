@@ -3,7 +3,7 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.7 2008/07/02 09:44:33 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.8 2008/07/02 10:03:53 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
@@ -90,4 +90,10 @@ Identity
 - If we use TCP plus bin_port (7800), then every member starts at 7800
 - If we happen to use IP local addresses in both SFO and NYC (e.g. 192.168.1.1), then
   we run into this issue
-  
+
+Reception of message sent by self
+---------------------------------
+- Because we relay messages only on *reception*, NOT on sending, a relay might not receive it own message
+- This is possible when the relay (e.g. E) calls RpcDispatcher.callRemoteMethods() with a target list which excludes
+  itself
+==> Solution: catch the message when sending, *not* receiving !
