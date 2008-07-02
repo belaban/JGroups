@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.31 2008/06/30 15:02:03 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.32 2008/07/02 06:16:09 belaban Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -170,7 +170,7 @@ public class MergeTest extends ChannelTestBase {
     }
     
     
-    private void addDiscardProtocol(JChannel ch) throws Exception {
+    private static void addDiscardProtocol(JChannel ch) throws Exception {
         ProtocolStack stack=ch.getProtocolStack();
         Protocol transport=stack.getTransport();
         DISCARD discard=new DISCARD();
@@ -194,7 +194,7 @@ public class MergeTest extends ChannelTestBase {
         }        
     }
 
-    private void modiftFDAndMergeSettings(JChannel ch) {
+    private static void modiftFDAndMergeSettings(JChannel ch) {
         ProtocolStack stack=ch.getProtocolStack();
 
         FD fd=(FD)stack.findProtocol("FD");
