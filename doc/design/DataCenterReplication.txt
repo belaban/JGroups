@@ -3,7 +3,7 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.6 2008/04/25 15:54:30 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.7 2008/07/02 09:44:33 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
@@ -67,3 +67,27 @@ Example walkthrough
 - T, U, V, W and S receive M and deliver it
 - Y does not relay M because M has a header
 - Should some member reply (to X), then RELAY at Y will drop the message
+
+
+Issues
+------
+
+Cluster RPCs in JBossCache
+--------------------------
+- When we invoke a cluster RPC in JBossCache, the destination list is (for example) {A,C,D,E}
+- This list is sent with the RPC (as a header)
+- The receiver drops the request if its local address is not part of the destination list
+==> This would cause all nodes in the SFO cluster to drop the cluster RPC request !
+
+Buddy Replication
+-----------------
+- When we replicate from B to C, the relay (e.g. E) doesn't know about this and will not replicate !
+- How do we determine to whom we should replicate in SFO if we use buddy replication ?
+
+Identity
+--------
+- What if we have members that have the same address in NYC and SFO ?
+- If we use TCP plus bin_port (7800), then every member starts at 7800
+- If we happen to use IP local addresses in both SFO and NYC (e.g. 192.168.1.1), then
+  we run into this issue
+  
