@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.42 2008/01/22 10:44:31 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.43 2008/07/02 06:56:33 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -601,7 +601,7 @@ public class RequestCorrelator {
      *
      * @param req the request msg
      */
-    private void handleRequest(Message req, Header hdr) {
+    protected void handleRequest(Message req, Header hdr) {
         Object        retval;
         byte[]        rsp_buf;
         Header        rsp_hdr;
