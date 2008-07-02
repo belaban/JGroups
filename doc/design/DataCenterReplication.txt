@@ -3,7 +3,7 @@ Replication between data centers
 ================================
 
 Author: Bela Ban
-Version: $Id: DataCenterReplication.txt,v 1.8 2008/07/02 10:03:53 belaban Exp $
+Version: $Id: DataCenterReplication.txt,v 1.9 2008/07/02 11:24:37 belaban Exp $
 
 We have data centers in New York (NYC) and San Francisco (SFO). The idea is to replicate traffic from NYC to SFO
 asynchronously. In case of a site failure of NYC, all clients can be switched over to SFO and continue working with
@@ -97,3 +97,7 @@ Reception of message sent by self
 - This is possible when the relay (e.g. E) calls RpcDispatcher.callRemoteMethods() with a target list which excludes
   itself
 ==> Solution: catch the message when sending, *not* receiving !
+
+No, doesn't work ! The relay would have to be active on every node ! This is not feasible as this would require
+every node to have a TCP connection to NYC ! We still need to do it on reception not sending. However, messages
+cannot exclude the sender
