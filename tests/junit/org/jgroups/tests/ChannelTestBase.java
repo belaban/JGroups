@@ -249,12 +249,31 @@ public class ChannelTestBase {
         }
 
         protected void makeUnique(Channel channel, int num) throws Exception {
+            String str=Util.getProperty(new String[] { Global.UDP_MCAST_ADDR,
+                                                      "jboss.partition.udpGroup" },
+                                        null,
+                                        "mcast_addr",
+                                        false,
+                                        null);
+            if(str != null)
+                makeUnique(channel, num, str);
+            else
+                makeUnique(channel, num, null);
+
+        }
+        
+        protected void makeUnique(Channel channel, int num, String mcast_address) throws Exception {
             ProtocolStack stack=channel.getProtocolStack();
             Protocol transport=stack.getTransport();
             if(transport instanceof UDP) {
-                String mcast_addr=ResourceManager.getNextMulticastAddress();
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
-                ((UDP)transport).setMulticastAddress(mcast_addr);
+                if(mcast_address != null) {
+                    ((UDP)transport).setMulticastAddress(mcast_address);
+                }
+                else {
+                    String mcast_addr=ResourceManager.getNextMulticastAddress();
+                    ((UDP)transport).setMulticastAddress(mcast_addr);
+                }
                 ((UDP)transport).setMulticastPort(mcast_port);
             }
             else if(transport instanceof BasicTCP) {
