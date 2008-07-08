@@ -267,6 +267,7 @@ public class ChannelTestBase {
             Protocol transport=stack.getTransport();
             if(transport instanceof UDP) {
                 short mcast_port=ResourceManager.getNextMulticastPort(InetAddress.getByName(bind_addr));
+                ((UDP)transport).setMulticastPort(mcast_port);
                 if(mcast_address != null) {
                     ((UDP)transport).setMulticastAddress(mcast_address);
                 }
@@ -274,7 +275,6 @@ public class ChannelTestBase {
                     String mcast_addr=ResourceManager.getNextMulticastAddress();
                     ((UDP)transport).setMulticastAddress(mcast_addr);
                 }
-                ((UDP)transport).setMulticastPort(mcast_port);
             }
             else if(transport instanceof BasicTCP) {
                 List<Short> ports=ResourceManager.getNextTcpPorts(InetAddress.getByName(bind_addr), num);
