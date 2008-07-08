@@ -7,14 +7,13 @@ import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
-import java.net.NetworkInterface;
 import java.util.Arrays;
 import java.util.Properties;
 import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.4 2008/07/08 14:36:11 vlada Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.5 2008/07/08 14:36:33 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {
