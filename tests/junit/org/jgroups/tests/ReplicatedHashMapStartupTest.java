@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import org.jgroups.*;
 import org.jgroups.blocks.ReplicatedHashMap;
@@ -19,81 +20,98 @@ import java.util.Vector;
  * Tests concurrent startup or replicated hashmap.
  * 
  * @author vlada
- * @version $Id: ReplicatedHashMapStartupTest.java,v 1.6 2008/06/09 13:03:06 belaban Exp $
+ * @version $Id: ReplicatedHashMapStartupTest.java,v 1.6 2008/06/09 13:03:06
+ *          belaban Exp $
  */
-@Test(groups={"temp"},sequential=true)
+@Test(groups= { Global.FLUSH }, sequential=true)
 public class ReplicatedHashMapStartupTest extends ChannelTestBase {
 
-
-    protected boolean useBlocking() {
-        return true;
-    }
-
     public void testConcurrentStartup4Members() {
-        concurrentStartupHelper(4);
+        List<ReplicatedHashMap<Address,Integer>> channels=new ArrayList<ReplicatedHashMap<Address,Integer>>(4);
+        try {
+            concurrentStartupHelper(channels, 4);
+        }
+        catch(Exception e) {
+            log.warn("Exception while running testConcurrentStartup4Members", e);
+            for(ReplicatedHashMap<Address,Integer> map:channels) {
+                map.stop();
+                Util.sleep(1000);
+            }
+        }
     }
 
     public void testConcurrentStartup8Members() {
-        concurrentStartupHelper(8);
-    }
-
-    protected void concurrentStartupHelper(int channelCount) {
-        List<ReplicatedHashMap<Address, Integer>> channels = new ArrayList<ReplicatedHashMap<Address, Integer>>(channelCount);        
-        MyNotification<Address, Integer> n = new MyNotification<Address, Integer>();
-
-        JChannel first=null;
-        for (int i = 0; i < channelCount; i++) {
-            try {
-                JChannel c;
-                if(i == 0) {
-                    c = createChannel(true, channelCount);
-                    modifyGMS(c);
-                    first=c;
-                }
-                else
-                    c=createChannel(first);
-                c.setOpt(Channel.AUTO_RECONNECT, true);                
-                ReplicatedHashMap<Address, Integer> map = new ReplicatedHashMap<Address, Integer>(c);
-                channels.add(map);
-                map.addNotifier(n);
-                map.setBlockingUpdates(true);                              
-            } catch (Exception e) {
-                e.printStackTrace();
-            } 
+        List<ReplicatedHashMap<Address,Integer>> channels=new ArrayList<ReplicatedHashMap<Address,Integer>>(8);
+        try {
+            concurrentStartupHelper(channels, 8);
         }
-        
-        //do a very concurrent startup
-        for (ReplicatedHashMap<Address, Integer> map : channels) {
-            try {
-                map.getChannel().connect("bla");
-                map.start(0);
-                map.put(map.getChannel().getLocalAddress(), new Integer(1));
+        catch(Exception e) {
+            log.warn("Exception while running testConcurrentStartup8Members", e);
+            for(ReplicatedHashMap<Address,Integer> map:channels) {
+                map.stop();
                 Util.sleep(1000);
-            } catch (ChannelException e) {               
-                e.printStackTrace();
             }
         }
-        
+    }
+
+    protected void concurrentStartupHelper(List<ReplicatedHashMap<Address,Integer>> channels,
+                                           int channelCount) throws Exception {
+        MyNotification<Address,Integer> n=new MyNotification<Address,Integer>();
+
+        JChannel first=null;
+        for(int i=0;i < channelCount;i++) {
+            JChannel c;
+            if(i == 0) {
+                c=createChannel(true, channelCount);
+                modifyGMS(c);
+                first=c;
+            }
+            else {
+                c=createChannel(first);
+            }
+            c.setOpt(Channel.AUTO_RECONNECT, true);
+            ReplicatedHashMap<Address,Integer> map=new ReplicatedHashMap<Address,Integer>(c);
+            channels.add(map);
+            map.addNotifier(n);
+            map.setBlockingUpdates(true);
+        }
+
+        //do a very concurrent startup
+        for(ReplicatedHashMap<Address,Integer> map:channels) {
+            map.getChannel().connect("ReplicatedHashMapStartupTest");
+            map.start(0);
+            map.put(map.getChannel().getLocalAddress(), new Integer(1));
+            Util.sleep(100);
+        }
+
+        boolean converged=false;
+        for(int timeoutToConverge=120,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
+            for(ReplicatedHashMap<Address,Integer> map:channels) {
+                converged=map.getChannel().getView().size() == channelCount;
+                if(!converged)
+                    break;
+            }
+        }
+
         //verify all view are correct
-        for (ReplicatedHashMap<Address, Integer> map : channels) {
+        for(ReplicatedHashMap<Address,Integer> map:channels) {
             Assert.assertEquals(map.getChannel().getView().size(), channelCount, "Correct view");
         }
-               
-        for (ReplicatedHashMap<Address, Integer> map : channels) {
+
+        for(ReplicatedHashMap<Address,Integer> map:channels) {
             map.removeNotifier(n);
         }
-        
+
         //verify all maps have all elements
-        for (ReplicatedHashMap<Address, Integer> map : channels) {
+        for(ReplicatedHashMap<Address,Integer> map:channels) {
             Assert.assertEquals(map.size(), channelCount, "Correct size");
         }
-       
-        System.out.println("stopping");
-        for (ReplicatedHashMap<Address, Integer> map : channels) {
+
+        log.info("stopping replicated hash maps...");
+        for(ReplicatedHashMap<Address,Integer> map:channels) {
             map.stop();
             Util.sleep(1000);
         }
-              
     }
 
     private static void modifyGMS(JChannel c) {
@@ -103,27 +121,19 @@ public class ReplicatedHashMapStartupTest extends ChannelTestBase {
             gms.setLogCollectMessages(false);
     }
 
-    private static class MyNotification<K extends Serializable, V extends Serializable>
-            implements org.jgroups.blocks.ReplicatedHashMap.Notification<K, V> {
+    private class MyNotification<K extends Serializable, V extends Serializable> implements
+            org.jgroups.blocks.ReplicatedHashMap.Notification<K,V> {
 
-        public void contentsCleared() {           
+        public void contentsCleared() {}
+
+        public void contentsSet(Map<K,V> new_entries) {}
+
+        public void entryRemoved(K key) {}
+
+        public void entrySet(K key, V value) {}
+
+        public void viewChange(View view, Vector<Address> new_mbrs, Vector<Address> old_mbrs) {
+            log.info("Got view in ReplicatedHashMap notifier " + view);
         }
-
-        public void contentsSet(Map<K, V> new_entries) {       
-        }
-
-        public void entryRemoved(K key) {     
-        }
-
-        public void entrySet(K key, V value) {                    
-        }
-
-        public void viewChange(View view, Vector<Address> new_mbrs,
-                Vector<Address> old_mbrs) {
-            System.out.println("Got view " + view);                      
-        }
-
-      
     }
-
 }
