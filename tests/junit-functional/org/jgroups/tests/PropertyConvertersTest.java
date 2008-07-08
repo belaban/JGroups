@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import org.jgroups.Global;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
+import org.jgroups.util.Util;
 import org.testng.annotations.Test;
 
 import java.net.InetAddress;
@@ -13,7 +14,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PropertyConvertersTest.java,v 1.3 2008/06/02 11:03:01 belaban Exp $
+ * @version $Id: PropertyConvertersTest.java,v 1.4 2008/07/08 14:36:11 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL, sequential=false)
 public class PropertyConvertersTest {
@@ -35,8 +36,8 @@ public class PropertyConvertersTest {
 
     public static void testBindAddress() throws Exception {
         PropertyConverter conv=new PropertyConverters.BindAddress();
-        InetAddress addr=InetAddress.getByName("127.0.0.1");
-        check(InetAddress.class, "127.0.0.1", addr, conv);
+        InetAddress addr=Util.getBindAddress(new Properties());
+        check(InetAddress.class, addr.getHostAddress(),addr, conv);
     }
 
     /** Cannot really test list of eth0,eth1,lo, because the list differs from host to host
