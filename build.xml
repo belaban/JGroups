@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.171 2008/06/27 04:23:46 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.172 2008/07/10 20:31:40 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -78,6 +78,7 @@
         <mkdir dir="${compile.dir}"/>
         <mkdir dir="${dist.dir}"/>
         <mkdir dir="${javadoc.dir}"/>
+    	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
 
     <target name="prepare.test">
@@ -326,8 +327,8 @@
     </target>
 
 
-    <target name="makeKeystore"
-            depends="compile"
+    <target name="makeKeystore" unless="isKeyStoreGenerated"
+            depends="keyStoreGenerated, compile"
             description="Generates an appropriate temporary keystore file for the unit tests and the JVM in use">
         <mkdir dir="${keystore.dir}"/>
         <java classname="org.jgroups.demos.KeyStoreGenerator" fork="false">
@@ -340,16 +341,19 @@
             <arg value="keystore/defaultStore2.keystore"/>
             <classpath refid="jg.classpath"/>
         </java>
-    </target>
+    </target>        	
 
-
-
-
-    <target name="copy-build-properties">
-        <copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
-    </target>
-
-  
+	<target name="keyStoreGenerated">
+	    <condition property="isKeyStoreGenerated">
+	        <and>
+	            <available filepath="${keystore.dir}" file="defaultStore.keystore"/>
+	    		<available filepath="${keystore.dir}" file="defaultStore2.keystore"/>
+	        </and>
+	    </condition>
+	</target>
+	
+	<target name="postcompile" depends="makeKeystore">	
+	</target>
 
     <!-- =============================== TestNG ======================================== -->
 
@@ -368,7 +372,7 @@
         </sequential>
     </target>
 
-    <target name="functional" depends="compile, makeKeystore">
+    <target name="functional" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
         <testng classpathref="jg.classpath"
                 usedefaultlisteners="false"
@@ -381,7 +385,7 @@
         </testng>
     </target>
 
-    <target name="stack-independent" depends="compile, makeKeystore, copy-build-properties">
+    <target name="stack-independent" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
         <runtest testname.ext="ind"
                  threadcount="1"
@@ -390,7 +394,7 @@
                 />
     </target>
 
-    <target name="temp" depends="compile, makeKeystore, copy-build-properties">
+    <target name="temp" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="10"
@@ -402,7 +406,7 @@
                 />
     </target>
 
-    <target name="temp2" depends="compile, makeKeystore, copy-build-properties">
+    <target name="temp2" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="10"
@@ -414,7 +418,7 @@
                 />
     </target>
 
-    <target name="protocols" depends="compile, makeKeystore, copy-build-properties">
+    <target name="protocols" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="10"
@@ -426,7 +430,7 @@
                 />
     </target>
 
-    <target name="single" depends="compile, makeKeystore, copy-build-properties">
+    <target name="single" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="10"
@@ -438,7 +442,7 @@
                 />
     </target>
 
-    <target name="udp" depends="compile, makeKeystore, copy-build-properties">
+    <target name="udp" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"
                  threadcount="1"
@@ -450,7 +454,7 @@
                 />
     </target>
 
-    <target name="udp-flush" depends="compile, makeKeystore, copy-build-properties">
+    <target name="udp-flush" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
         <runtest testname.ext="udp-flush"
                  threadcount="1"
@@ -462,7 +466,7 @@
                 />
     </target>
 
-    <target name="tcp" depends="compile, makeKeystore, copy-build-properties">
+    <target name="tcp" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="1"
@@ -474,7 +478,7 @@
                 />
     </target>
 
-    <target name="tcp-flush" depends="compile, makeKeystore, copy-build-properties">
+    <target name="tcp-flush" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
         <runtest testname.ext="tcp-flush"
                  threadcount="1"
