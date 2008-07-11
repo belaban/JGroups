@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.221 2008/07/11 10:10:40 belaban Exp $
+ * @version $Id: TP.java,v 1.222 2008/07/11 10:15:57 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -346,7 +346,7 @@ public abstract class TP extends Protocol {
     /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
         than the largest datagram packet size in case of UDP */
         
-    int max_bundle_size=65535;
+    int max_bundle_size=64000;
 
     /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
      * max_bundle_timeout has been exceeded (whichever occurs faster)
