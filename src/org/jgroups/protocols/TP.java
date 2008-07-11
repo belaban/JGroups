@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.220 2008/07/02 07:40:50 belaban Exp $
+ * @version $Id: TP.java,v 1.221 2008/07/11 10:10:40 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -479,11 +479,6 @@ public abstract class TP extends Protocol {
     @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent",writable=true)
     @Property(name="max_bundle_size")
     public void setMaxBundleSize(int size) {
-        if(size > max_bundle_size) {
-            throw new IllegalArgumentException("max_bundle_size (" + size
-                                               + ") is greater than largest TP fragmentation size ("
-                                               + max_bundle_size + ')');
-        }
         if(size <= 0) {
             throw new IllegalArgumentException("max_bundle_size (" + size + ") is <= 0");
         }
