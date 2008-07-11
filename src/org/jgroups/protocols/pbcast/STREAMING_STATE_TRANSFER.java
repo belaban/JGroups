@@ -69,55 +69,54 @@ import java.util.concurrent.atomic.AtomicLong;
  * 
  */
 @MBean(description="State trasnfer protocol based on streaming state transfer")
-@DeprecatedProperty(names={"use_flush","flush_timeout","use_reading_thread"})
+@DeprecatedProperty(names= { "use_flush", "flush_timeout", "use_reading_thread" })
 public class STREAMING_STATE_TRANSFER extends Protocol {
 
-    private final static String NAME = "STREAMING_STATE_TRANSFER";
+    private final static String NAME="STREAMING_STATE_TRANSFER";
 
-    private Address local_addr = null;
+    /* -----------------------------    Properties      ------------------------------------ */
 
-    @GuardedBy("members")
-    private final Vector<Address> members = new Vector<Address>();
-
-    /*
-     * set to true while waiting for a STATE_RSP
-     */
-    private boolean waiting_for_state_response = false;
-
-    /*
-     * JMX statistics
-     * 
-     */
-    private AtomicInteger num_state_reqs = new AtomicInteger(0);
-
-    private AtomicLong num_bytes_sent = new AtomicLong(0);
-
-    private volatile double avg_state_size = 0;
-
-    @Property(converter=PropertyConverters.BindAddress.class)
+    @Property(converter=PropertyConverters.BindAddress.class,description="The interface (NIC) used to accept state requests")
     private InetAddress bind_addr;
 
-    @Property
-    private int bind_port = 0;
+    @Property(description="The port listening for state requests. Default value of 0 binds to any (ephemeral) port")
+    private int bind_port=0;
 
-    @Property
-    private int max_pool = 5;
+    @Property(description="Maximum number of pool threads serving state requests. Default is 5")
+    private int max_pool=5;
 
-    @Property
-    private long pool_thread_keep_alive;
+    @Property(description="Keep alive for pool threads serving state requests. Default is 20000 msec")
+    private long pool_thread_keep_alive = 20*1000;
 
-    @Property
-    private int socket_buffer_size = 8 * 1024;   
+    @Property(description="Buffer size for state transfer sockets. Default is 8 KB")
+    private int socket_buffer_size=8 * 1024;
 
-    private volatile boolean flushProtocolInStack = false;
+    
+    /* --------------------------------------------- JMX statistics ------------------------------------------------------ */
+
+    private final AtomicInteger num_state_reqs=new AtomicInteger(0);
+
+    private final AtomicLong num_bytes_sent=new AtomicLong(0);
+
+    private volatile double avg_state_size=0;
+
+
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    private Address local_addr=null;
+
+    @GuardedBy("members")
+    private final Vector<Address> members=new Vector<Address>();
 
     /*
-     * plumbing to provide state
-     * 
+     * Runnable that listens for state requests and spawns threads to serve those requests     
      */
     private StateProviderThreadSpawner spawner;
 
-    public STREAMING_STATE_TRANSFER(){}
+    private volatile boolean flushProtocolInStack=false;
+    
+
+    public STREAMING_STATE_TRANSFER() {}
 
     public final String getName() {
         return NAME;
@@ -139,7 +138,7 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     public Vector<Integer> requiredDownServices() {
-        Vector<Integer> retval = new Vector<Integer>();
+        Vector<Integer> retval=new Vector<Integer>();
         retval.addElement(new Integer(Event.GET_DIGEST));
         retval.addElement(new Integer(Event.SET_DIGEST));
         return retval;
@@ -149,13 +148,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         super.resetStats();
         num_state_reqs.set(0);
         num_bytes_sent.set(0);
-        avg_state_size = 0;
+        avg_state_size=0;
     }
-  
+
     public void init() throws Exception {}
 
     public void start() throws Exception {
-        Map<String,Object> map = new HashMap<String,Object>();
+        Map<String,Object> map=new HashMap<String,Object>();
         map.put("state_transfer", Boolean.TRUE);
         map.put("protocol_class", getClass().getName());
         up_prot.up(new Event(Event.CONFIG, map));
@@ -163,113 +162,113 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     public void stop() {
         super.stop();
-        waiting_for_state_response = false;
-        if(spawner != null){
+        if(spawner != null) {
             spawner.stop();
         }
     }
 
     public Object up(Event evt) {
-        switch(evt.getType()){
+        switch(evt.getType()) {
 
-        case Event.MSG:
-            Message msg = (Message) evt.getArg();
-            StateHeader hdr = (StateHeader) msg.getHeader(getName());
-            if(hdr != null){
-                switch(hdr.type){
-                case StateHeader.STATE_REQ:
-                    handleStateReq(hdr);
-                    break;
-                case StateHeader.STATE_RSP:
-                    handleStateRsp(hdr);
-                    break;                
-                default:
-                    if(log.isErrorEnabled())
-                        log.error("type " + hdr.type + " not known in StateHeader");
-                    break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                StateHeader hdr=(StateHeader)msg.getHeader(getName());
+                if(hdr != null) {
+                    switch(hdr.type) {
+                        case StateHeader.STATE_REQ:
+                            handleStateReq(hdr);
+                            break;
+                        case StateHeader.STATE_RSP:
+                            handleStateRsp(hdr);
+                            break;
+                        default:
+                            if(log.isErrorEnabled())
+                                log.error("type " + hdr.type + " not known in StateHeader");
+                            break;
+                    }
+                    return null;
                 }
-                return null;
-            }
-            break;
+                break;
 
-        case Event.SET_LOCAL_ADDRESS:
-            local_addr = (Address) evt.getArg();
-            break;
+            case Event.SET_LOCAL_ADDRESS:
+                local_addr=(Address)evt.getArg();
+                break;
 
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            handleViewChange((View) evt.getArg());
-            break;
+            case Event.TMP_VIEW:
+            case Event.VIEW_CHANGE:
+                handleViewChange((View)evt.getArg());
+                break;
 
-        case Event.CONFIG:
-            Map<String,Object> config = (Map<String,Object>) evt.getArg();
-            if(bind_addr == null && (config != null && config.containsKey("bind_addr"))){
-                bind_addr = (InetAddress) config.get("bind_addr");
-                if(log.isDebugEnabled())
-                    log.debug("using bind_addr from CONFIG event " + bind_addr);
-            }
-            if(config != null && config.containsKey("state_transfer")){
-                log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
-            }
-            break;       
+            case Event.CONFIG:
+                Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                if(bind_addr == null && (config != null && config.containsKey("bind_addr"))) {
+                    bind_addr=(InetAddress)config.get("bind_addr");
+                    if(log.isDebugEnabled())
+                        log.debug("using bind_addr from CONFIG event " + bind_addr);
+                }
+                if(config != null && config.containsKey("state_transfer")) {
+                    log.error("Protocol stack cannot contain two state transfer protocols. Remove either one of them");
+                }
+                break;
         }
         return up_prot.up(evt);
     }
 
     public Object down(Event evt) {
 
-        switch(evt.getType()){
+        switch(evt.getType()) {
 
-        case Event.TMP_VIEW:
-        case Event.VIEW_CHANGE:
-            handleViewChange((View) evt.getArg());
-            break;
+            case Event.TMP_VIEW:
+            case Event.VIEW_CHANGE:
+                handleViewChange((View)evt.getArg());
+                break;
 
-        case Event.GET_STATE:
-            StateTransferInfo info = (StateTransferInfo) evt.getArg();
-            Address target;
-            if(info.target == null){
-                target = determineCoordinator();
-            }else{
-                target = info.target;
-                if(target.equals(local_addr)){
-                    if(log.isErrorEnabled())
-                        log.error("GET_STATE: cannot fetch state from myself !");
-                    target = null;
+            case Event.GET_STATE:
+                StateTransferInfo info=(StateTransferInfo)evt.getArg();
+                Address target;
+                if(info.target == null) {
+                    target=determineCoordinator();
                 }
-            }
-            if(target == null){
+                else {
+                    target=info.target;
+                    if(target.equals(local_addr)) {
+                        if(log.isErrorEnabled())
+                            log.error("GET_STATE: cannot fetch state from myself !");
+                        target=null;
+                    }
+                }
+                if(target == null) {
+                    if(log.isDebugEnabled())
+                        log.debug("GET_STATE: first member (no state)");
+                    up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
+                }
+                else {
+                    Message state_req=new Message(target, null, null);
+                    state_req.putHeader(getName(), new StateHeader(StateHeader.STATE_REQ,
+                                                              local_addr,
+                                                              info.state_id));
+                    if(log.isDebugEnabled())
+                        log.debug("GET_STATE: asking " + target
+                                  + " for state, passing down a SUSPEND_STABLE event, timeout="
+                                  + info.timeout);
+
+                    down_prot.down(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
+                    down_prot.down(new Event(Event.MSG, state_req));
+                }
+                return null; // don't pass down any further !
+
+            case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:
                 if(log.isDebugEnabled())
-                    log.debug("GET_STATE: first member (no state)");
-                up_prot.up(new Event(Event.GET_STATE_OK, new StateTransferInfo()));
-            }else{               
-                Message state_req = new Message(target, null, null);
-                state_req.putHeader(NAME, new StateHeader(StateHeader.STATE_REQ,
-                                                          local_addr,
-                                                          info.state_id));
-                if(log.isDebugEnabled())
-                    log.debug("GET_STATE: asking " + target
-                              + " for state, passing down a SUSPEND_STABLE event, timeout="
-                              + info.timeout);
+                    log.debug("STATE_TRANSFER_INPUTSTREAM_CLOSED received,passing down a RESUME_STABLE event");
 
-                down_prot.down(new Event(Event.SUSPEND_STABLE, new Long(info.timeout)));
-                waiting_for_state_response = true;
-                down_prot.down(new Event(Event.MSG, state_req));
-            }
-            return null; // don't pass down any further !
-
-        case Event.STATE_TRANSFER_INPUTSTREAM_CLOSED:           
-            if(log.isDebugEnabled())
-                log.debug("STATE_TRANSFER_INPUTSTREAM_CLOSED received,passing down a RESUME_STABLE event");
-
-            down_prot.down(new Event(Event.RESUME_STABLE));
-            return null;
-        case Event.CONFIG:
-            Map<String,Object> config = (Map<String,Object>) evt.getArg();
-            if(config != null && config.containsKey("flush_supported")){
-                flushProtocolInStack = true;
-            }
-            break;
+                down_prot.down(new Event(Event.RESUME_STABLE));
+                return null;
+            case Event.CONFIG:
+                Map<String,Object> config=(Map<String,Object>)evt.getArg();
+                if(config != null && config.containsKey("flush_supported")) {
+                    flushProtocolInStack=true;
+                }
+                break;
 
         }
 
@@ -296,28 +295,23 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     private void respondToStateRequester(String id, Address stateRequester, boolean open_barrier) {
 
         // setup the plumbing if needed
-        if(spawner == null){
-            ServerSocket serverSocket = Util.createServerSocket(bind_addr, bind_port);
-            spawner = new StateProviderThreadSpawner(setupThreadPool(), serverSocket);
-            Thread t = getThreadFactory().newThread(spawner,"STREAMING_STATE_TRANSFER server socket acceptor");               
-            t.start();           
+        if(spawner == null) {           
+            spawner=new StateProviderThreadSpawner(setupThreadPool(), Util.createServerSocket(bind_addr, bind_port));
+            Thread t=getThreadFactory().newThread(spawner,
+                                                  "STREAMING_STATE_TRANSFER server socket acceptor");
+            t.start();
         }
-        
-        Digest digest = null;
-        if(isDigestNeeded()){
-            if(log.isDebugEnabled())
-                log.debug("passing down GET_DIGEST");
-            digest = (Digest) down_prot.down(Event.GET_DIGEST_EVT);
-        }
-        
-        Message state_rsp = new Message(stateRequester);
-        StateHeader hdr = new StateHeader(StateHeader.STATE_RSP,
-                                          local_addr,
-                                          spawner.getServerSocketAddress(),
-                                          digest,
-                                          id);
-        state_rsp.putHeader(NAME, hdr);
-        
+
+        Digest digest=isDigestNeeded()? (Digest)down_prot.down(Event.GET_DIGEST_EVT) : null;
+      
+        Message state_rsp=new Message(stateRequester);
+        StateHeader hdr=new StateHeader(StateHeader.STATE_RSP,
+                                        local_addr,
+                                        spawner.getServerSocketAddress(),
+                                        digest,
+                                        id);
+        state_rsp.putHeader(getName(), hdr);
+
         if(log.isDebugEnabled())
             log.debug("Responding to state requester " + state_rsp.getDest()
                       + " with address "
@@ -325,26 +319,24 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                       + " and digest "
                       + digest);
         down_prot.down(new Event(Event.MSG, state_rsp));
-        if(stats){
+        if(stats) {
             num_state_reqs.incrementAndGet();
         }
 
-       
         if(open_barrier)
-            down_prot.down(new Event(Event.OPEN_BARRIER));      
+            down_prot.down(new Event(Event.OPEN_BARRIER));
     }
 
     private ThreadPoolExecutor setupThreadPool() {
-        ThreadPoolExecutor threadPool = new ThreadPoolExecutor(0,
-                                                               max_pool,
-                                                               pool_thread_keep_alive,
-                                                               TimeUnit.MILLISECONDS,
-                                                               new SynchronousQueue<Runnable>());
-        
-        
-        ThreadFactory factory = new ThreadFactory() {
+        ThreadPoolExecutor threadPool=new ThreadPoolExecutor(0,
+                                                             max_pool,
+                                                             pool_thread_keep_alive,
+                                                             TimeUnit.MILLISECONDS,
+                                                             new SynchronousQueue<Runnable>());
+
+        ThreadFactory factory=new ThreadFactory() {
             public Thread newThread(final Runnable command) {
-                return getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");                                
+                return getThreadFactory().newThread(command, "STREAMING_STATE_TRANSFER sender");
             }
         };
         threadPool.setRejectedExecutionHandler(new ShutdownRejectedExecutionHandler(threadPool.getRejectedExecutionHandler()));
@@ -353,9 +345,9 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private Address determineCoordinator() {
-        synchronized(members){
-            for(Address member:members){
-                if(!local_addr.equals(member)){
+        synchronized(members) {
+            for(Address member:members) {
+                if(!local_addr.equals(member)) {
                     return member;
                 }
             }
@@ -364,45 +356,30 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private void handleViewChange(View v) {
-        Address old_coord;
-        Vector<Address> new_members = v.getMembers();
-        boolean send_up_null_state_rsp = false;
-
-        synchronized(members){
-            old_coord = (!members.isEmpty() ? members.firstElement() : null);
+        Vector<Address> new_members=v.getMembers();
+        synchronized(members) {
             members.clear();
             members.addAll(new_members);
-
-            if(waiting_for_state_response && old_coord != null && !members.contains(old_coord)){
-                send_up_null_state_rsp = true;
-            }
-        }
-
-        if(send_up_null_state_rsp){
-            log.warn("discovered that the state provider (" + old_coord
-                     + ") crashed; will return null state to application");
         }
     }
 
     private void handleStateReq(StateHeader hdr) {
-        Address sender = hdr.sender;
-        String id = hdr.state_id;
-        if(sender == null){
+        Address sender=hdr.sender;
+        String id=hdr.state_id;
+        if(sender == null) {
             if(log.isErrorEnabled())
                 log.error("sender is null !");
             return;
-        }        
-
-        if(isDigestNeeded()) // FLUSH protocol is not present
-        {
-            down_prot.down(new Event(Event.CLOSE_BARRIER)); // drain (and block)
-            // incoming msgs
-            // until after state
-            // has been returned
         }
-        try{
-            respondToStateRequester(id,sender,isDigestNeeded());
-        }catch(Throwable t){
+
+        if(isDigestNeeded()) {
+            down_prot.down(new Event(Event.CLOSE_BARRIER)); 
+            // drain (and block) incoming msgs until after state has been returned
+        }
+        try {
+            respondToStateRequester(id, sender, isDigestNeeded());
+        }
+        catch(Throwable t) {
             if(log.isErrorEnabled())
                 log.error("failed fetching state from application", t);
             if(isDigestNeeded())
@@ -411,15 +388,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     void handleStateRsp(StateHeader hdr) {
-        Digest tmp_digest = hdr.my_digest;
-
-        waiting_for_state_response = false;
-        if(isDigestNeeded()){
-            if(tmp_digest == null){
+        Digest tmp_digest=hdr.my_digest;
+        if(isDigestNeeded()) {
+            if(tmp_digest == null) {
                 if(log.isWarnEnabled())
                     log.warn("digest received from " + hdr.sender
                              + " is null, skipping setting digest !");
-            }else{
+            }
+            else {
                 down_prot.down(new Event(Event.SET_DIGEST, tmp_digest));
             }
         }
@@ -427,14 +403,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private void connectToStateProvider(StateHeader hdr) {
-        IpAddress address = hdr.bind_addr;
-        String tmp_state_id = hdr.getStateId();
-        StreamingInputStreamWrapper wrapper = null;
-        StateTransferInfo sti = null;
-        Socket socket = new Socket();
-        try{
+        IpAddress address=hdr.bind_addr;
+        String tmp_state_id=hdr.getStateId();
+        StreamingInputStreamWrapper wrapper=null;
+        StateTransferInfo sti=null;
+        Socket socket=new Socket();
+        try {
             socket.bind(new InetSocketAddress(bind_addr, 0));
-            int bufferSize = socket.getReceiveBufferSize();
+            int bufferSize=socket.getReceiveBufferSize();
             socket.setReceiveBufferSize(socket_buffer_size);
             if(log.isDebugEnabled())
                 log.debug("Connecting to state provider " + address.getIpAddress()
@@ -452,31 +428,33 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                           + " passing inputstream up...");
 
             // write out our state_id and address
-            ObjectOutputStream out = new ObjectOutputStream(socket.getOutputStream());
+            ObjectOutputStream out=new ObjectOutputStream(socket.getOutputStream());
             out.writeObject(tmp_state_id);
             out.writeObject(local_addr);
 
-            wrapper = new StreamingInputStreamWrapper(socket);
-            sti = new StateTransferInfo(hdr.sender, wrapper, tmp_state_id);
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti)); 
-        }catch(IOException e){
-            if(log.isWarnEnabled()){
+            wrapper=new StreamingInputStreamWrapper(socket);
+            sti=new StateTransferInfo(hdr.sender, wrapper, tmp_state_id);
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+        }
+        catch(IOException e) {
+            if(log.isWarnEnabled()) {
                 log.warn("State reader socket thread spawned abnormaly", e);
             }
 
             // pass null stream up so that JChannel.getState() returns false
-            InputStream is = null;
-            sti = new StateTransferInfo(hdr.sender, is, tmp_state_id);
-            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti)); 
-        }finally{
-            if(!socket.isConnected()){
+            InputStream is=null;
+            sti=new StateTransferInfo(hdr.sender, is, tmp_state_id);
+            up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM, sti));
+        }
+        finally {
+            if(!socket.isConnected()) {
                 if(log.isWarnEnabled())
-                    log.warn("Could not connect to state provider. Closing socket...");                   
+                    log.warn("Could not connect to state provider. Closing socket...");
             }
             Util.close(wrapper);
             Util.close(socket);
-        }        
-    }  
+        }
+    }
 
     /*
      * ------------------------ End of Private Methods
@@ -484,33 +462,33 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
      */
 
     private class StateProviderThreadSpawner implements Runnable {
-        ExecutorService pool;
+        private final ExecutorService pool;
 
-        ServerSocket serverSocket;
+        private final ServerSocket serverSocket;
 
-        IpAddress address;
+        private final IpAddress address;
 
         Thread runner;
 
-        volatile boolean running = true;
+        private volatile boolean running=true;
 
-        public StateProviderThreadSpawner(ExecutorService pool,ServerSocket stateServingSocket){
+        public StateProviderThreadSpawner(ExecutorService pool,ServerSocket stateServingSocket) {
             super();
-            this.pool = pool;
-            this.serverSocket = stateServingSocket;
-            this.address = new IpAddress(STREAMING_STATE_TRANSFER.this.bind_addr,
-                                         serverSocket.getLocalPort());
+            this.pool=pool;
+            this.serverSocket=stateServingSocket;
+            this.address=new IpAddress(STREAMING_STATE_TRANSFER.this.bind_addr,
+                                       serverSocket.getLocalPort());
         }
 
         public void run() {
-            runner = Thread.currentThread();
-            for(;running;){
-                try{
+            runner=Thread.currentThread();
+            for(;running;) {
+                try {
                     if(log.isDebugEnabled())
                         log.debug("StateProviderThreadSpawner listening at " + getServerSocketAddress()
                                   + "...");
 
-                    final Socket socket = serverSocket.accept();
+                    final Socket socket=serverSocket.accept();
                     pool.execute(new Runnable() {
                         public void run() {
                             if(log.isDebugEnabled())
@@ -522,11 +500,12 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                         }
                     });
 
-                }catch(IOException e){
-                    if(log.isWarnEnabled()){
+                }
+                catch(IOException e) {
+                    if(log.isWarnEnabled()) {
                         // we get this exception when we close server socket
                         // exclude that case
-                        if(serverSocket != null && !serverSocket.isClosed()){
+                        if(serverSocket != null && !serverSocket.isClosed()) {
                             log.warn("Spawning socket from server socket finished abnormaly", e);
                         }
                     }
@@ -539,20 +518,20 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
 
         public void stop() {
-            running = false;
-            try{
-                if(serverSocket != null && !serverSocket.isClosed()){
-                    serverSocket.close();
-                }
-            }catch(IOException e){
-            }finally{
+            running=false;
+            try {
+                serverSocket.close();               
+            }
+            catch(Exception ignored) {}
+            finally {
                 if(log.isDebugEnabled())
                     log.debug("Waiting for StateProviderThreadSpawner to die ... ");
 
-                if(runner != null){
-                    try{
-                        runner.join(3000);
-                    }catch(InterruptedException ignored){
+                if(runner != null) {
+                    try {
+                        runner.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+                    }
+                    catch(InterruptedException ignored) {
                         Thread.currentThread().interrupt();
                     }
                 }
@@ -561,10 +540,11 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                     log.debug("Shutting the thread pool down... ");
 
                 pool.shutdownNow();
-                try{
+                try {
                     pool.awaitTermination(Global.THREADPOOL_SHUTDOWN_WAIT_TIME,
                                           TimeUnit.MILLISECONDS);
-                }catch(InterruptedException ignored){
+                }
+                catch(InterruptedException ignored) {
                     Thread.currentThread().interrupt();
                 }
             }
@@ -575,10 +555,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
     private class StateProviderHandler {
         public void process(Socket socket) {
-            StreamingOutputStreamWrapper wrapper = null;
-            ObjectInputStream ois = null;
-            try{
-                int bufferSize = socket.getSendBufferSize();
+            StreamingOutputStreamWrapper wrapper=null;
+            ObjectInputStream ois=null;
+            try {
+                int bufferSize=socket.getSendBufferSize();
                 socket.setSendBufferSize(socket_buffer_size);
                 if(log.isDebugEnabled())
                     log.debug("Running on " + Thread.currentThread()
@@ -591,43 +571,46 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
                               + " and was reset to "
                               + socket.getSendBufferSize()
                               + ", passing outputstream up... ");
-                
-                ois = new ObjectInputStream(socket.getInputStream());
-                String state_id = (String) ois.readObject();
-                Address stateRequester = (Address) ois.readObject();               
-                wrapper = new StreamingOutputStreamWrapper(socket);
-                StateTransferInfo sti = new StateTransferInfo(stateRequester, wrapper, state_id);
+
+                ois=new ObjectInputStream(socket.getInputStream());
+                String state_id=(String)ois.readObject();
+                Address stateRequester=(Address)ois.readObject();
+                wrapper=new StreamingOutputStreamWrapper(socket);
+                StateTransferInfo sti=new StateTransferInfo(stateRequester, wrapper, state_id);
                 up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM, sti));
-            }catch(IOException e){
-                if(log.isWarnEnabled()){
+            }
+            catch(IOException e) {
+                if(log.isWarnEnabled()) {
                     log.warn("State writer socket thread spawned abnormaly", e);
                 }
-            }catch(ClassNotFoundException e){
+            }
+            catch(ClassNotFoundException e) {
                 // thrown by ois.readObject()
                 // should never happen since String/Address are core classes
-            }finally{
-               if(!socket.isConnected()){
+            }
+            finally {
+                if(!socket.isConnected()) {
                     if(log.isWarnEnabled())
-                        log.warn("Could not receive connection from state receiver. Closing socket...");                   
-               }
-               Util.close(wrapper);
-               Util.close(socket);
+                        log.warn("Could not receive connection from state receiver. Closing socket...");
+                }
+                Util.close(wrapper);
+                Util.close(socket);
             }
         }
     }
 
-    private class StreamingInputStreamWrapper extends InputStream {       
+    private class StreamingInputStreamWrapper extends InputStream {
 
-        private InputStream delegate;  
-        
-        private Socket inputStreamOwner;
-                      
-        private final AtomicBoolean closed = new AtomicBoolean(false);
+        private final InputStream delegate;
 
-        public StreamingInputStreamWrapper(Socket inputStreamOwner) throws IOException{
-            super();      
-            this.inputStreamOwner = inputStreamOwner;
-            this.delegate = new BufferedInputStream(inputStreamOwner.getInputStream());            
+        private final Socket inputStreamOwner;
+
+        private final AtomicBoolean closed=new AtomicBoolean(false);
+
+        public StreamingInputStreamWrapper(Socket inputStreamOwner) throws IOException {
+            super();
+            this.inputStreamOwner=inputStreamOwner;
+            this.delegate=new BufferedInputStream(inputStreamOwner.getInputStream());
         }
 
         public int available() throws IOException {
@@ -635,14 +618,14 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
 
         public void close() throws IOException {
-            if (closed.compareAndSet(false, true)) {
-                if (log.isDebugEnabled()) {
+            if(closed.compareAndSet(false, true)) {
+                if(log.isDebugEnabled()) {
                     log.debug("State reader is closing the socket ");
                 }
                 Util.close(delegate);
                 Util.close(inputStreamOwner);
                 up_prot.up(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
-                down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));                
+                down(new Event(Event.STATE_TRANSFER_INPUTSTREAM_CLOSED));
             }
         }
 
@@ -676,33 +659,33 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
     }
 
     private class StreamingOutputStreamWrapper extends OutputStream {
-        private Socket outputStreamOwner;
+        private final Socket outputStreamOwner;
 
-        private OutputStream delegate;
-        
-        private final AtomicBoolean closed = new AtomicBoolean(false);
+        private final OutputStream delegate;
 
-        private long bytesWrittenCounter = 0;
+        private final AtomicBoolean closed=new AtomicBoolean(false);
 
-        public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException{
+        private long bytesWrittenCounter=0;
+
+        public StreamingOutputStreamWrapper(Socket outputStreamOwner) throws IOException {
             super();
-            this.outputStreamOwner = outputStreamOwner;
-            this.delegate = new BufferedOutputStream(outputStreamOwner.getOutputStream());           
+            this.outputStreamOwner=outputStreamOwner;
+            this.delegate=new BufferedOutputStream(outputStreamOwner.getOutputStream());
         }
 
         public void close() throws IOException {
-            if (closed.compareAndSet(false, true)) {
-                if (log.isDebugEnabled()) {
+            if(closed.compareAndSet(false, true)) {
+                if(log.isDebugEnabled()) {
                     log.debug("State writer is closing the socket ");
                 }
 
                 Util.close(delegate);
                 Util.close(outputStreamOwner);
                 up_prot.up(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
-                down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));                
+                down(new Event(Event.STATE_TRANSFER_OUTPUTSTREAM_CLOSED));
 
-                if (stats) {
-                    avg_state_size = num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
+                if(stats) {
+                    avg_state_size=num_bytes_sent.addAndGet(bytesWrittenCounter) / num_state_reqs.doubleValue();
                 }
             }
         }
@@ -713,67 +696,64 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
         public void write(byte[] b, int off, int len) throws IOException {
             delegate.write(b, off, len);
-            bytesWrittenCounter += len;
+            bytesWrittenCounter+=len;
         }
 
         public void write(byte[] b) throws IOException {
             delegate.write(b);
-            if(b != null){
-                bytesWrittenCounter += b.length;
+            if(b != null) {
+                bytesWrittenCounter+=b.length;
             }
         }
 
         public void write(int b) throws IOException {
             delegate.write(b);
-            bytesWrittenCounter += 1;
+            bytesWrittenCounter+=1;
         }
     }
 
     public static class StateHeader extends Header implements Streamable {
-        public static final byte STATE_REQ = 1;
+        public static final byte STATE_REQ=1;
 
-        public static final byte STATE_RSP = 2;
+        public static final byte STATE_RSP=2;
 
-        long id = 0; // state transfer ID (to separate multiple state
-
-        // transfers at the same time)
-
-        byte type = 0;
+        long id=0; // state transfer ID (to separate multiple state  transfers at the same time)
+        
+        byte type=0;
 
         Address sender; // sender of state STATE_REQ or STATE_RSP
 
-        Digest my_digest = null; // digest of sender (if type is STATE_RSP)
+        Digest my_digest=null; // digest of sender (if type is STATE_RSP)
 
-        IpAddress bind_addr = null;
+        IpAddress bind_addr=null;
 
-        String state_id = null; // for partial state transfer
+        String state_id=null; // for partial state transfer
 
-        public StateHeader(){ // for externalization
+        public StateHeader() {} // for externalization        
+
+        public StateHeader(byte type,Address sender,String state_id) {
+            this.type=type;
+            this.sender=sender;
+            this.state_id=state_id;
         }
 
-        public StateHeader(byte type,Address sender,String state_id){
-            this.type = type;
-            this.sender = sender;
-            this.state_id = state_id;
-        }
-
-        public StateHeader(byte type,Address sender,long id,Digest digest){
-            this.type = type;
-            this.sender = sender;
-            this.id = id;
-            this.my_digest = digest;
+        public StateHeader(byte type,Address sender,long id,Digest digest) {
+            this.type=type;
+            this.sender=sender;
+            this.id=id;
+            this.my_digest=digest;
         }
 
         public StateHeader(byte type,
                            Address sender,
                            IpAddress bind_addr,
                            Digest digest,
-                           String state_id){
-            this.type = type;
-            this.sender = sender;
-            this.my_digest = digest;
-            this.bind_addr = bind_addr;
-            this.state_id = state_id;
+                           String state_id) {
+            this.type=type;
+            this.sender=sender;
+            this.my_digest=digest;
+            this.bind_addr=bind_addr;
+            this.state_id=state_id;
         }
 
         public int getType() {
@@ -791,10 +771,10 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         public boolean equals(Object o) {
             StateHeader other;
 
-            if(sender != null && o != null){
+            if(sender != null && o != null) {
                 if(!(o instanceof StateHeader))
                     return false;
-                other = (StateHeader) o;
+                other=(StateHeader)o;
                 return sender.equals(other.sender) && id == other.id;
             }
             return false;
@@ -802,13 +782,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
 
         public int hashCode() {
             if(sender != null)
-                return sender.hashCode() + (int) id;
+                return sender.hashCode() + (int)id;
             else
-                return (int) id;
+                return (int)id;
         }
 
         public String toString() {
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb=new StringBuilder();
             sb.append("type=").append(type2Str(type));
             if(sender != null)
                 sb.append(", sender=").append(sender).append(" id=").append(id);
@@ -818,13 +798,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         }
 
         static String type2Str(int t) {
-            switch(t){
-            case STATE_REQ:
-                return "STATE_REQ";
-            case STATE_RSP:
-                return "STATE_RSP";           
-            default:
-                return "<unknown>";
+            switch(t) {
+                case STATE_REQ:
+                    return "STATE_REQ";
+                case STATE_RSP:
+                    return "STATE_RSP";
+                default:
+                    return "<unknown>";
             }
         }
 
@@ -837,13 +817,13 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
             out.writeUTF(state_id);
         }
 
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-            sender = (Address) in.readObject();
-            id = in.readLong();
-            type = in.readByte();
-            my_digest = (Digest) in.readObject();
-            bind_addr = (IpAddress) in.readObject();
-            state_id = in.readUTF();
+        public void readExternal(ObjectInput in) throws IOException,ClassNotFoundException {
+            sender=(Address)in.readObject();
+            id=in.readLong();
+            type=in.readByte();
+            my_digest=(Digest)in.readObject();
+            bind_addr=(IpAddress)in.readObject();
+            state_id=in.readUTF();
         }
 
         public void writeTo(DataOutputStream out) throws IOException {
@@ -858,28 +838,28 @@ public class STREAMING_STATE_TRANSFER extends Protocol {
         public void readFrom(DataInputStream in) throws IOException,
                                                 IllegalAccessException,
                                                 InstantiationException {
-            type = in.readByte();
-            id = in.readLong();
-            sender = Util.readAddress(in);
-            my_digest = (Digest) Util.readStreamable(Digest.class, in);
-            bind_addr = (IpAddress) Util.readStreamable(IpAddress.class, in);
-            state_id = Util.readString(in);
+            type=in.readByte();
+            id=in.readLong();
+            sender=Util.readAddress(in);
+            my_digest=(Digest)Util.readStreamable(Digest.class, in);
+            bind_addr=(IpAddress)Util.readStreamable(IpAddress.class, in);
+            state_id=Util.readString(in);
         }
 
         public int size() {
-            int retval = Global.LONG_SIZE + Global.BYTE_SIZE; // id and type
+            int retval=Global.LONG_SIZE + Global.BYTE_SIZE; // id and type
 
-            retval += Util.size(sender);
+            retval+=Util.size(sender);
 
-            retval += Global.BYTE_SIZE; // presence byte for my_digest
+            retval+=Global.BYTE_SIZE; // presence byte for my_digest
             if(my_digest != null)
-                retval += my_digest.serializedSize();
-            
-            retval += Util.size(bind_addr);                        
+                retval+=my_digest.serializedSize();
 
-            retval += Global.BYTE_SIZE; // presence byte for state_id
+            retval+=Util.size(bind_addr);
+
+            retval+=Global.BYTE_SIZE; // presence byte for state_id
             if(state_id != null)
-                retval += state_id.length() + 2;
+                retval+=state_id.length() + 2;
             return retval;
         }
     }
