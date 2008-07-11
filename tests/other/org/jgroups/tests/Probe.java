@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.13 $
+ * @version $Revision: 1.14 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -109,7 +109,7 @@ public class Probe {
         int          port=0;
         int          ttl=32;
         long         timeout=2000;
-        final String DEFAULT_DIAG_ADDR="224.0.0.75";
+        final String DEFAULT_DIAG_ADDR="224.0.75.75";
         final int    DEFAULT_DIAG_PORT=7500;
         List<String> query=new ArrayList<String>();
         String       match=null;
