@@ -48,8 +48,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 @MBean(description="Flushes the cluster")
 @DeprecatedProperty(names={"auto_flush_conf"})
 public class FLUSH extends Protocol {
+    
     public static final String NAME = "FLUSH";
-    /* ----------------------------- Properties and managed attributes ------------------------------------ */
+    
+    
+    /* ------------------------------------------ Properties  ------------------------------------------ */
     @Property
     private long timeout = 8000;
      
@@ -64,6 +67,10 @@ public class FLUSH extends Protocol {
     
     @Property
     private int flush_retry_count = 4;
+
+    
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
+    
     
     private long startFlushTime;
 
@@ -73,7 +80,10 @@ public class FLUSH extends Protocol {
 
     private double averageFlushDuration;
     
+    
+    
     /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
     
     @GuardedBy("sharedLock")
     private View currentView;
@@ -96,6 +106,9 @@ public class FLUSH extends Protocol {
 
     @GuardedBy("sharedLock")
     private final Set<Address> suspected;
+    
+    @GuardedBy("sharedLock")
+    private final List<Address> reconcileOks;
 
     private final Object sharedLock = new Object();
 
@@ -121,13 +134,11 @@ public class FLUSH extends Protocol {
     
     private final AtomicBoolean sentUnblock = new AtomicBoolean(false);
 
-    @GuardedBy("sharedLock")
-    private final List<Address> reconcileOks = new ArrayList<Address>();
-
     public FLUSH(){
         super();
         currentView = new View(new ViewId(), new Vector<Address>());      
         flushCompletedMap = new HashMap<Address, Digest>();        
+        reconcileOks = new ArrayList<Address>();
         flushMembers = new ArrayList<Address>();
         suspected = new TreeSet<Address>();
     }
@@ -584,7 +595,8 @@ public class FLUSH extends Protocol {
         }
                             
         synchronized(sharedLock){                     
-            flushCompletedMap.clear();                     
+            flushCompletedMap.clear();            
+            reconcileOks.clear();            
             flushMembers.clear();
             suspected.clear();
             flushCoordinator = null;
