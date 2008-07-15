@@ -26,34 +26,54 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.20 2008/05/27 14:51:43 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.21 2008/07/15 18:20:37 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
-    /** Map of addresses and timestamps of last updates */
-    Map<Address,Long>          timestamps=new ConcurrentHashMap<Address,Long>();
-
-    @Property
-    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster",writable=true)
-    long                       interval=3000;
-
-    @Property
-    @ManagedAttribute(description="Number of milliseconds after which a " + 
-                      "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
-    long                       timeout=5000;
-
-    /** when a message is received from P, this is treated as if P sent a heartbeat */
-    @Property
-    boolean                    msg_counts_as_heartbeat=true;
-
-    Address                    local_addr=null;
-    final List<Address>        members=new ArrayList<Address>();
-
-    @Property
-    @ManagedAttribute(description="Shun switch",writable=true)
-    boolean                    shun=true;
     
-    TimeScheduler              timer=null;
+    private final static String name="FD_ALL";
+
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+
+    @Property
+    @ManagedAttribute(description="Number of milliseconds after which a HEARTBEAT is sent to the cluster", writable=true)
+    long interval=3000;
+
+    @Property
+    @ManagedAttribute(description="Number of milliseconds after which a node P is suspected if neither a heartbeat nor data were received from P", writable=true)
+    long timeout=5000;
+    
+    @Property(description="Treat messages received from members as heartebeats. Default is true")
+    boolean msg_counts_as_heartbeat=true;
+
+    @Property
+    @ManagedAttribute(description="Shun switch. Default is true", writable=true)
+    boolean shun=true;
+
+    
+    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
+
+    @ManagedAttribute(description="Number of heartbeats sent")
+    protected int num_heartbeats_sent;
+
+    @ManagedAttribute(description="Number of heartbeats received")
+    protected int num_heartbeats_received=0;
+
+    @ManagedAttribute(description="Number of suspected events received")
+    protected int num_suspect_events=0;
+
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
+    /** Map of addresses and timestamps of last updates */
+    private final Map<Address,Long> timestamps=new ConcurrentHashMap<Address,Long>();
+
+    private Address local_addr=null;
+    
+    private final List<Address> members=Collections.synchronizedList(new ArrayList<Address>());
+
+    private TimeScheduler timer=null;
 
     // task which multicasts HEARTBEAT message after 'interval' ms
     @GuardedBy("lock")
@@ -61,35 +81,25 @@ public class FD_ALL extends Protocol {
 
     // task which checks for members exceeding timeout and suspects them
     @GuardedBy("lock")
-    private ScheduledFuture<?> timeout_checker_future=null;
+    private ScheduledFuture<?> timeout_checker_future=null;    
 
-    private boolean            tasks_running=false;
-
-    @ManagedAttribute(description="Number of heartbeats sent")
-    protected int              num_heartbeats_sent;
+    private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
     
-    @ManagedAttribute(description="Number of heartbeats received")
-    protected int              num_heartbeats_received=0;
+    private final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7); // keys=Address, val=Integer (number of pings from suspected mbrs)
+
+    private final Lock lock=new ReentrantLock();
+
+
+
+
+    public FD_ALL() {}
     
-    @ManagedAttribute(description="Number of suspected events received")
-    protected int              num_suspect_events=0;
-
-    final static String        name="FD_ALL";
-
-    final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
-    final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7);  // keys=Address, val=Integer (number of pings from suspected mbrs)
-
-    final Lock                 lock=new ReentrantLock();
-
-
-
-
-
+    
     public String getName() {return FD_ALL.name;}
     @ManagedAttribute(description="Member address")    
     public String getLocalAddress() {return local_addr != null? local_addr.toString() : "null";}
     @ManagedAttribute(description="Lists members of a cluster")
-    public String getMembers() {return members != null? members.toString() : "null";}
+    public String getMembers() {return members.toString();}
     public int getHeartbeatsSent() {return num_heartbeats_sent;}
     public int getHeartbeatsReceived() {return num_heartbeats_received;}
     public int getSuspectEventsSent() {return num_suspect_events;}
@@ -101,7 +111,15 @@ public class FD_ALL extends Protocol {
     public void setShun(boolean flag) {this.shun=flag;}
     
     @ManagedAttribute(description="Are heartbeat tasks running")
-    public boolean isRunning() {return tasks_running;}
+    public boolean isRunning() {
+        lock.lock();
+        try{
+            return isTimeoutCheckerRunning() && isHeartbeatSenderRunning();
+        }
+        finally{
+            lock.unlock();
+        }        
+    }
 
     @ManagedOperation(description="Prints suspect history")
     public String printSuspectHistory() {
@@ -149,7 +167,7 @@ public class FD_ALL extends Protocol {
 
             case Event.MSG:
                 msg=(Message)evt.getArg();
-                hdr=(Header)msg.getHeader(name);
+                hdr=(Header)msg.getHeader(getName());
                 if(msg_counts_as_heartbeat)
                     update(msg.getSrc()); // update when data is received too ? maybe a bit costly
                 if(hdr == null)
@@ -165,7 +183,7 @@ public class FD_ALL extends Protocol {
 
                         // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
                         //    the sender to leave the group (and possibly rejoin it later)
-                        if(shun && members != null && !members.contains(sender)) {
+                        if(shun && !members.contains(sender)) {
                             shunInvalidHeartbeatSender(sender);
                             break;
                         }
@@ -193,10 +211,6 @@ public class FD_ALL extends Protocol {
     }
 
 
-
-
-
-
     public Object down(Event evt) {
         switch(evt.getType()) {
             case Event.VIEW_CHANGE:
@@ -211,16 +225,14 @@ public class FD_ALL extends Protocol {
 
     private void startTasks() {
         startHeartbeatSender();
-        startTimeoutChecker();
-        tasks_running=true;
+        startTimeoutChecker();        
         if(log.isTraceEnabled())
             log.trace("started heartbeat sender and timeout checker tasks");
     }
 
     private void stopTasks() {
         stopTimeoutChecker();
-        stopHeartbeatSender();
-        tasks_running=false;
+        stopHeartbeatSender();       
         if(log.isTraceEnabled())
             log.trace("stopped heartbeat sender and timeout checker tasks");
     }
@@ -228,7 +240,7 @@ public class FD_ALL extends Protocol {
     private void startTimeoutChecker() {
         lock.lock();
         try {
-            if(timeout_checker_future == null || timeout_checker_future.isDone()) {
+            if(!isTimeoutCheckerRunning()) {
                 timeout_checker_future=timer.scheduleWithFixedDelay(new TimeoutChecker(), interval, interval, TimeUnit.MILLISECONDS);
             }
         }
@@ -254,7 +266,7 @@ public class FD_ALL extends Protocol {
     private void startHeartbeatSender() {
         lock.lock();
         try {
-            if(heartbeat_sender_future == null || heartbeat_sender_future.isDone()) {
+            if(!isHeartbeatSenderRunning()) {
                 heartbeat_sender_future=timer.scheduleWithFixedDelay(new HeartbeatSender(), interval, interval, TimeUnit.MILLISECONDS);
             }
         }
@@ -275,12 +287,14 @@ public class FD_ALL extends Protocol {
             lock.unlock();
         }
     }
-
-
-
-
-
-
+     
+    private boolean isTimeoutCheckerRunning() {
+        return timeout_checker_future != null && !timeout_checker_future.isDone();
+    }
+     
+    private boolean isHeartbeatSenderRunning() {
+        return heartbeat_sender_future != null && !heartbeat_sender_future.isDone();
+    }
 
 
     private void update(Address sender) {
@@ -307,9 +321,11 @@ public class FD_ALL extends Protocol {
 
         invalid_pingers.clear();
 
-        if(!tasks_running && members.size() > 1)
+        boolean tasks_running  = isRunning();
+        boolean has_at_least_two = members.size() > 1;
+        if(!tasks_running && has_at_least_two)
             startTasks();
-        else if(tasks_running && members.size() < 2)
+        else if(tasks_running && !has_at_least_two)
             stopTasks();
     }
 
@@ -328,7 +344,7 @@ public class FD_ALL extends Protocol {
                     log.debug(sender + " is not in " + members + " ! Shunning it");
                 shun_msg=new Message(sender, null, null);
                 shun_msg.setFlag(Message.OOB);
-                shun_msg.putHeader(name, new Header(Header.NOT_MEMBER));
+                shun_msg.putHeader(getName(), new Header(Header.NOT_MEMBER));
                 down_prot.down(new Event(Event.MSG, shun_msg));
                 invalid_pingers.remove(sender);
             }
@@ -360,7 +376,7 @@ public class FD_ALL extends Protocol {
         Message suspect_msg=new Message();
         suspect_msg.setFlag(Message.OOB);
         Header hdr=new Header(Header.SUSPECT, mbr);
-        suspect_msg.putHeader(name, hdr);
+        suspect_msg.putHeader(getName(), hdr);
         down_prot.down(new Event(Event.MSG, suspect_msg));
         num_suspect_events++;
         suspect_history.add(mbr);
@@ -442,10 +458,10 @@ public class FD_ALL extends Protocol {
             Message heartbeat=new Message(); // send to all
             heartbeat.setFlag(Message.OOB);
             Header hdr=new Header(Header.HEARTBEAT);
-            heartbeat.putHeader(name, hdr);
+            heartbeat.putHeader(getName(), hdr);
             down_prot.down(new Event(Event.MSG, heartbeat));
-            //if(log.isTraceEnabled())
-              //  log.trace(local_addr + ": sent heartbeat to cluster");
+            if(log.isTraceEnabled())
+              log.trace(local_addr + " sent heartbeat to cluster");
             num_heartbeats_sent++;
         }
     }
@@ -475,11 +491,5 @@ public class FD_ALL extends Protocol {
                 }
             }
         }
-
-
     }
-
-
-
-
 }
