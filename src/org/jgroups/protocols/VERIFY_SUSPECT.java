@@ -20,25 +20,46 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.36 2008/05/20 11:27:30 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.37 2008/07/15 18:52:49 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
-    private Address                local_addr=null;
-    @Property
-    private                        long timeout=2000;   // number of millisecs to wait for an are-you-dead msg
-    @Property
-    private                        int num_msgs=1;     // number of are-you-alive msgs and i-am-not-dead responses (for redundancy)
-    final Hashtable<Address,Long>  suspects=new Hashtable<Address,Long>();  // keys=Addresses, vals=time in mcses since added
-    private Thread                 timer=null;
-    @Property
-    private boolean                use_icmp=false;     // use InetAddress.isReachable() to double-check (rather than an are-you-alive msg)
-    @Property(converter=PropertyConverters.BindAddress.class)
-    private InetAddress            bind_addr;          // interface for ICMP pings
+    
+    private static final String name="VERIFY_SUSPECT";
+    
+    /* ------------------------------------------ Properties  ------------------------------------------ */
+    
+    @Property(description="Number of millisecs to wait for a response from a suspected member")
+    private long timeout=2000; 
+    
+    @Property(description="Number of verify heartbeats sent to a suspected member")
+    private int num_msgs=1; 
+    
+    @Property(description="Use InetAddress.isReachable() to verify suspected member instead of regular messages")
+    private boolean use_icmp=false; 
+    
+    @Property(converter=PropertyConverters.BindAddress.class,description="Interface for ICMP pings. Used if use_icmp is true")
+    private InetAddress bind_addr; // interface for ICMP pings
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------ */   
+    
+    
     /** network interface to be used to send the ICMP packets */
-    private NetworkInterface       intf=null;
-    static final String            name="VERIFY_SUSPECT";
-    protected boolean              shutting_down=false;
-
+    private NetworkInterface intf=null;
+    
+    protected boolean shutting_down=false;
+    
+    private Address local_addr=null;
+    
+    /**keys=Addresses, vals=time in mcses since added **/
+    private final Hashtable<Address,Long> suspects=new Hashtable<Address,Long>();
+    
+    private Thread timer=null;
+    
+    
+    
+    public VERIFY_SUSPECT() {       
+    }
 
     public String getName() {
         return name;
@@ -131,35 +152,32 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      * time to wait (min of all timeouts) and waits(time) msecs. Will be woken up when entry is removed (in case
      * of successful verification of that member's liveness). Terminates when no entry remains in the hashtable.
      */
-    public void run() {
-        Address mbr;
-        long val, curr_time, diff;
+    public void run() {       
+        long val, diff;
 
         while(timer != null && Thread.currentThread().equals(timer) && !suspects.isEmpty()) {
             diff=0;
 
-            List<Address> tmp=null;
+            List<Address> confirmed_suspects=new LinkedList<Address>();
             synchronized(suspects) {
-                for(Enumeration e=suspects.keys(); e.hasMoreElements();) {
-                    mbr=(Address)e.nextElement();
-                    val=suspects.get(mbr).longValue();
-                    curr_time=System.currentTimeMillis();
-                    diff=curr_time - val;
+                for(Enumeration<Address> e=suspects.keys(); e.hasMoreElements();) {
+                    Address mbr=e.nextElement();
+                    val=suspects.get(mbr).longValue();                    
+                    diff=System.currentTimeMillis() - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
                         if(log.isTraceEnabled())
-                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
-                        if(tmp == null) tmp=new LinkedList<Address>();
-                        tmp.add(mbr);
+                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");                      
+                        
+                        confirmed_suspects.add(mbr);
                         suspects.remove(mbr);
                         continue;
                     }
                     diff=Math.max(diff, timeout - diff);
                 }
             }
-            if(tmp != null && !tmp.isEmpty()) {
-                for(Iterator it=tmp.iterator(); it.hasNext();)
-                    up_prot.up(new Event(Event.SUSPECT, it.next()));
-            }
+            
+            for(Address suspect:confirmed_suspects)
+                up_prot.up(new Event(Event.SUSPECT,suspect));            
 
             if(diff > 0)
                 Util.sleep(diff);
@@ -184,16 +202,19 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
         }
+        
+        //start timer before we send out are you dead messages
+        startTimer();
+        
         // moved out of synchronized statement (bela): http://jira.jboss.com/jira/browse/JGRP-302
         if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
+        
         for(int i=0; i < num_msgs; i++) {
             msg=new Message(mbr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
             down_prot.down(new Event(Event.MSG, msg));
-        }
-        if(timer == null)
-            startTimer();
+        }               
     }
 
 
