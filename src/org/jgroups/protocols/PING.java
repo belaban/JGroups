@@ -29,21 +29,35 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.44 2008/06/11 13:04:55 belaban Exp $
+ * @version $Id: PING.java,v 1.45 2008/07/15 20:39:48 vlada Exp $
  */
 public class PING extends Discovery {
-    @Property
-    String             gossip_host=null;
-    List<IpAddress>  gossip_hosts=null;
-    @Property
-    int                gossip_port=0;
-    @Property
-    long               gossip_refresh=20000; // time in msecs after which the entry in GossipRouter will be refreshed
-    GossipClient       client;
-    @Property
-    int                port_range=1;        // number of ports to be probed for initial membership
-    private List<IpAddress> initial_hosts=null;  // hosts to be contacted for the initial membership
-    public static final String name="PING";
+    
+    private static final String name="PING";
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+
+    
+    @Property(description="Gossip host")
+    private String gossip_host=null;
+    
+    @Property(description="Gossip port")
+    private int gossip_port=0;
+    
+    @Property(description="Time in msecs after which the entry in GossipRouter will be refreshed. Default is 20000 msec")
+    private long gossip_refresh=20000;
+    
+    @Property(description="Number of ports to be probed for initial membership. Default is 1")
+    private int port_range=1;
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    private GossipClient client;
+    
+    private List<IpAddress> gossip_hosts=null;
+        
+    private List<IpAddress> initial_hosts=null; // hosts to be contacted for the initial membership
 
 
     public String getName() {

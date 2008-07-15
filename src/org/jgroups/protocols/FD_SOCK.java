@@ -31,68 +31,86 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.93 2008/07/03 16:56:39 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.94 2008/07/15 20:39:48 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
 public class FD_SOCK extends Protocol implements Runnable {
-    @Property
-    long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
-    @Property
-    long                        suspect_msg_interval=5000;         // (BroadcastTask): mcast SUSPECT every 5000 msecs
-    @Property
-    int                         num_tries=3;                       // attempts coord is solicited for socket cache until we give up
-    final Vector<Address>       members=new Vector<Address>(11);            // list of group members (updated on VIEW_CHANGE)
-    volatile boolean                     srv_sock_sent=false;               // has own socket been broadcast yet ?
-    /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
-    final Promise<Map<Address,IpAddress>>  get_cache_promise=new Promise<Map<Address,IpAddress>>();
-    volatile boolean                     got_cache_from_coord=false;        // was cache already fetched ?
-    Address                     local_addr=null;                   // our own address
-    ServerSocket                srv_sock=null;                     // server socket to which another member connects to monitor me
-
-    @Property(converter=PropertyConverters.BindAddress.class)
-    InetAddress                 bind_addr=null;                    // the NIC on which the ServerSocket should listen
-
-    private ServerSocketHandler srv_sock_handler=null;             // accepts new connections on srv_sock
-    IpAddress                   srv_sock_addr=null;                // pair of server_socket:port
-    Address                     ping_dest=null;                    // address of the member we monitor
-    Socket                      ping_sock=null;                    // socket to the member we monitor
-    InputStream                 ping_input=null;                   // input stream of the socket to the member we monitor
-    @GuardedBy("this")
-    volatile Thread             pinger_thread=null;                // listens on ping_sock, suspects member if socket is closed
-
-    /** Cache of member addresses and their ServerSocket addresses */
-    final ConcurrentMap<Address,IpAddress> cache=new ConcurrentHashMap<Address,IpAddress>(11);
-
-    /** Start port for server socket (uses first available port starting at start_port). A value of 0 (default)
-     * picks a random port */
-    @Property
-    int                         start_port=0;
-    final Promise<IpAddress>    ping_addr_promise=new Promise<IpAddress>();   // to fetch the ping_addr for ping_dest
-    final Object                sock_mutex=new Object();           // for access to ping_sock, ping_input
-    TimeScheduler               timer=null;
-    private final BroadcastTask bcast_task=new BroadcastTask();    // to transmit SUSPECT message (until view change)
-    volatile boolean                     regular_sock_close=false;         // used by interruptPingerThread() when new ping_dest is computed
-    int                         num_suspect_events=0;
-    private static final int    INTERRUPT =8;
-    private static final int    NORMAL_TERMINATION=9;
-    private static final int    ABNORMAL_TERMINATION=-1;
+    
     private static final String name="FD_SOCK";
 
-    final BoundedList<Address>  suspect_history=new BoundedList<Address>(20);
+    private static final int INTERRUPT=8;
+    private static final int NORMAL_TERMINATION=9;
+    private static final int ABNORMAL_TERMINATION=-1;
 
-    /** whether to use KEEP_ALIVE on the ping socket or not */
-    @Property
-    private boolean             keep_alive=true;
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    @Property
-    @ManagedAttribute(writable=true,description="max time in millis to wait for Socket.connect() to return")
-    private int                 sock_conn_timeout=3000;
+    @Property(converter=PropertyConverters.BindAddress.class,description="The NIC on which the ServerSocket should listen on")
+    InetAddress bind_addr=null; 
 
-    private volatile boolean    running=false;
+    @Property(description="Timeout for getting socket cache from coordinator. Default is 1000 msec")
+    long get_cache_timeout=1000; 
+    
+    @Property(description="Interval for broadcasting suspect messages. Default is 5000 msec")
+    long suspect_msg_interval=5000; 
+    
+    @Property(description="Number of attempts coordinator is solicited for socket cache until we give up. Default is 3")
+    int num_tries=3; 
+    
+    @Property(description="Start port for server socket. Default value of 0 picks a random port")
+    int start_port=0;
+    
+    @Property(description="Whether to use KEEP_ALIVE on the ping socket or not. Default is true")
+    private boolean keep_alive=true;
 
-    private boolean             log_suspected_msgs=true;
+    @Property(description="Max time in millis to wait for ping Socket.connect() to return")
+    @ManagedAttribute(writable=true, description="Max time in millis to wait for ping Socket.connect() to return. Default is 3000 msec")
+    private int sock_conn_timeout=3000;
 
+    
+    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
+
+    
+    private int num_suspect_events=0;
+
+    private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
+
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
+    private final Vector<Address> members=new Vector<Address>(11); // list of group members (updated on VIEW_CHANGE)
+    volatile boolean srv_sock_sent=false; // has own socket been broadcast yet ?
+    /** Used to rendezvous on GET_CACHE and GET_CACHE_RSP */
+    private final Promise<Map<Address,IpAddress>> get_cache_promise=new Promise<Map<Address,IpAddress>>();
+    private volatile boolean got_cache_from_coord=false; // was cache already fetched ?
+    private Address local_addr=null; // our own address
+    private ServerSocket srv_sock=null; // server socket to which another member connects to monitor me
+
+    private ServerSocketHandler srv_sock_handler=null; // accepts new connections on srv_sock
+    private IpAddress srv_sock_addr=null; // pair of server_socket:port
+    private Address ping_dest=null; // address of the member we monitor
+    private Socket ping_sock=null; // socket to the member we monitor
+    private InputStream ping_input=null; // input stream of the socket to the member we monitor
+    @GuardedBy("this")
+    private volatile Thread pinger_thread=null; // listens on ping_sock, suspects member if socket is closed
+
+    /** Cache of member addresses and their ServerSocket addresses */
+    private final ConcurrentMap<Address,IpAddress> cache=new ConcurrentHashMap<Address,IpAddress>(11);
+
+    private final Promise<IpAddress> ping_addr_promise=new Promise<IpAddress>(); // to fetch the ping_addr for ping_dest
+    private final Object sock_mutex=new Object(); // for access to ping_sock, ping_input
+    private TimeScheduler timer=null;
+    private final BroadcastTask bcast_task=new BroadcastTask(); // to transmit SUSPECT message (until view change)
+    private volatile boolean regular_sock_close=false; // used by interruptPingerThread() when new ping_dest is computed
+
+    private volatile boolean running=false;
+
+    private boolean log_suspected_msgs=true;
+
+
+    public FD_SOCK() {      
+    }
 
     public String getName() {
         return name;
