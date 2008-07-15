@@ -44,7 +44,7 @@
     <PING timeout="2000" num_initial_members="3"/>
     <MERGE2 max_interval="30000" min_interval="10000"/>
     <FD_SOCK/>
-    <FD timeout="10000" max_tries="5" shun="true"/>
+    <FD_ALL/>
     <VERIFY_SUSPECT timeout="1500"/>
     <pbcast.NAKACK use_stats_for_retransmission="false"
                    exponential_backoff="150"
