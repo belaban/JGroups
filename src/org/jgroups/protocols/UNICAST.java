@@ -41,56 +41,91 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.113 2008/06/17 08:27:20 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.114 2008/07/16 18:39:19 vlada Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
-    private final Vector<Address>         members=new Vector<Address>(11);
-    private final HashMap<Address,Entry>  connections=new HashMap<Address,Entry>(11);
-    private long[] timeout={400,800,1600,3200};  // for AckSenderWindow: max time to wait for missing acks
-    private Address                       local_addr=null;
-    private TimeScheduler                 timer=null;                    // used for retransmissions (passed to AckSenderWindow)
-    private Map<Thread,ReentrantLock>     locks;
 
-    // if UNICAST is used without GMS, don't consult the membership on retransmit() if use_gms=false
-    // default is true
-    @Property
-    private boolean          use_gms=true;
-    private boolean          started=false;
+    
+    private static final String name="UNICAST";
+    
+    private static final long DEFAULT_FIRST_SEQNO=1;   
+    
+    
+    /* ------------------------------------------ Properties  ------------------------------------------ */    
+    
+    
+    @Property(description="If GMS should be consulted for the membership on retransmit. Default is true")
+    private boolean use_gms=true;
 
-    // ack a message before it is processed by the application to limit unnecessary retransmits
-    @Property
-    private boolean          immediate_ack=false;
+    @Property(description="Acks a message before it is processed by the application to limit unnecessary retransmits. Default is false")
+    private boolean immediate_ack=false;
 
-    /** whether to loop back messages sent to self (will be removed in the future, default=false) */
-    @Property
-    private boolean          loopback=false;
+    @Property(description="whether to loop back messages sent to self (will be removed in the future, default=false")
+    private boolean loopback=false;
+    
+    
+    private long[] timeout= { 400, 800, 1600, 3200 }; // for AckSenderWindow: max time to wait for missing acks
 
     /**
-     * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
-     * However, with eager_lock_release enabled (default), we release the lock as soon as the application calls
-     * Channel.down() <em>within</em> the receive() callback. This leads to issues as the one described in
-     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
-     * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
+     * By default, we release the lock on the sender in up() after the up()
+     * method call passed up the stack returns. However, with eager_lock_release
+     * enabled (default), we release the lock as soon as the application calls
+     * Channel.down() <em>within</em> the receive() callback. This leads to
+     * issues as the one described in
+     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is
+     * <em>still correct </em>, but messages from self might get delivered
+     * concurrently. This can be turned off by setting eager_lock_release to
+     * false.
      */
-    @Property
+    @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
     private boolean eager_lock_release=true;
+    
+    
+    
 
-    /** A list of members who left, used to determine when to prevent sending messages to left mbrs */
-    private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
-    /** Contains all members that were enabled for unicasts by Event.ENABLE_UNICAST_TO */
-    private final BoundedList<Address> enabled_members=new BoundedList<Address>(100);
-
-    private final static String name="UNICAST";
-    private static final long DEFAULT_FIRST_SEQNO=1;
-
+    /* --------------------------------------------- JMX  ---------------------------------------------- */    
+    
+    
     private long num_msgs_sent=0, num_msgs_received=0, num_bytes_sent=0, num_bytes_received=0;
     private long num_acks_sent=0, num_acks_received=0, num_xmit_requests_received=0;
 
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------ */
+
+    
+    
+    private final Vector<Address> members=new Vector<Address>(11);
+    
+    private final HashMap<Address,Entry> connections=new HashMap<Address,Entry>(11);      
+    
+    private Address local_addr=null;
+    
+    private TimeScheduler timer=null; // used for retransmissions (passed to AckSenderWindow)
+    
+    private Map<Thread,ReentrantLock> locks;
+
+    private boolean started=false;
+
+    /**
+     * A list of members who left, used to determine when to prevent sending
+     * messages to left mbrs
+     */
+    private final BoundedList<Address> previous_members=new BoundedList<Address>(50);
+    /**
+     * Contains all members that were enabled for unicasts by
+     * Event.ENABLE_UNICAST_TO
+     */
+    private final BoundedList<Address> enabled_members=new BoundedList<Address>(100);
+    
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
 
+    
+    
+    
     @ManagedAttribute
     public int getUndeliveredMessages() {
         return undelivered_msgs.get();
