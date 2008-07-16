@@ -16,12 +16,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.9 2008/05/29 11:13:09 belaban Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.10 2008/07/16 14:08:40 vlada Exp $
  */
 @Test(groups="temp",sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
-    final static int NUM=10, EXPECTED=NUM * 3;
+    final static int NUM=25, EXPECTED=NUM * 3;
     final static long SLEEPTIME=100;
     CyclicBarrier barrier;
 
@@ -29,7 +29,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
     @BeforeMethod
     void setUp() throws Exception {
         barrier=new CyclicBarrier(4);
-        ch1=createChannel(true);
+        ch1=createChannel(true,3);
         ch2=createChannel(ch1);
         ch3=createChannel(ch1);
     }
@@ -105,19 +105,19 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
     private void checkFIFO(MyReceiver r) {
         List<Pair<Address,Integer>> msgs=r.getMessages();
-        Map<Address,List<Integer>> map=new HashMap();
+        Map<Address,List<Integer>> map=new HashMap<Address,List<Integer>>();
         for(Pair<Address,Integer> p: msgs) {
             Address sender=p.key;
             List<Integer> list=map.get(sender);
             if(list == null) {
-                list=new LinkedList();
+                list=new LinkedList<Integer>();
                 map.put(sender, list);
             }
             list.add(p.val);
         }
 
         boolean fifo=true;
-        List<Address> incorrect_receivers=new LinkedList();
+        List<Address> incorrect_receivers=new LinkedList<Address>();
         System.out.println("Checking FIFO for " + r.getName() + ":");
         for(Address addr: map.keySet()) {
             List<Integer> list=map.get(addr);
@@ -135,7 +135,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
 
     private static boolean verifyFIFO(List<Integer> list) {
-        List<Integer> list2=new LinkedList(list);
+        List<Integer> list2=new LinkedList<Integer>(list);
         Collections.sort(list2);
         return list.equals(list2);
     }
@@ -182,8 +182,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
             for(int i=1; i <= NUM; i++) {
                 msg=new Message(null, null, new Integer(i));
-                try {
-                    // System.out.println(local_addr + ": sending " + i);
+                try {                    
                     ch.send(msg);
                 }
                 catch(Exception e) {
@@ -210,7 +209,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
     private class MyReceiver extends ReceiverAdapter {
         String name;
-        final List<Pair<Address,Integer>> msgs=new LinkedList();
+        final List<Pair<Address,Integer>> msgs=new LinkedList<Pair<Address,Integer>>();
         AtomicInteger count=new AtomicInteger(0);
 
         public MyReceiver(String name) {
@@ -219,8 +218,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Util.sleep(SLEEPTIME);
-            Pair pair=new Pair<Address,Integer>(msg.getSrc(), (Integer)msg.getObject());
-            // System.out.println(name + ": received " + pair);
+            Pair<Address,Integer> pair=new Pair<Address,Integer>(msg.getSrc(), (Integer)msg.getObject());           
             synchronized(msgs) {
                 msgs.add(pair);
             }
@@ -234,7 +232,7 @@ public class ConcurrentStackTest extends ChannelTestBase {
             }
         }
 
-        public List getMessages() {return msgs;}
+        public List<Pair<Address,Integer>> getMessages() {return msgs;}
 
         public String getName() {
             return name;
