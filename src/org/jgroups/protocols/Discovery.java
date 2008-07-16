@@ -16,48 +16,66 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * The Discovery protocol layer retrieves the initial membership (used by the GMS when started
- * by sending event FIND_INITIAL_MBRS down the stack). We do this by specific subclasses, e.g. by mcasting PING
- * requests to an IP MCAST address or, if gossiping is enabled, by contacting the GossipRouter.
- * The responses should allow us to determine the coordinator whom we have to
- * contact, e.g. in case we want to join the group.  When we are a server (after having
- * received the BECOME_SERVER event), we'll respond to PING requests with a PING
- * response.<p> The FIND_INITIAL_MBRS event will eventually be answered with a
- * FIND_INITIAL_MBRS_OK event up the stack.
- * The following properties are available
+ * The Discovery protocol layer retrieves the initial membership (used by the
+ * GMS when started by sending event FIND_INITIAL_MBRS down the stack). We do
+ * this by specific subclasses, e.g. by mcasting PING requests to an IP MCAST
+ * address or, if gossiping is enabled, by contacting the GossipRouter. The
+ * responses should allow us to determine the coordinator whom we have to
+ * contact, e.g. in case we want to join the group. When we are a server (after
+ * having received the BECOME_SERVER event), we'll respond to PING requests with
+ * a PING response.
+ * <p>
+ * The FIND_INITIAL_MBRS event will eventually be answered with a
+ * FIND_INITIAL_MBRS_OK event up the stack. The following properties are
+ * available
  * <ul>
- * <li>timeout - the timeout (ms) to wait for the initial members, default is 3000=3 secs
- * <li>num_initial_members - the minimum number of initial members for a FIND_INITAL_MBRS, default is 2
- * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent (min=1), distributed over timeout ms
+ * <li>timeout - the timeout (ms) to wait for the initial members, default is
+ * 3000=3 secs
+ * <li>num_initial_members - the minimum number of initial members for a
+ * FIND_INITAL_MBRS, default is 2
+ * <li>num_ping_requests - the number of GET_MBRS_REQ messages to be sent
+ * (min=1), distributed over timeout ms
  * </ul>
+ * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.46 2008/05/20 11:27:33 belaban Exp $
+ * @version $Id: Discovery.java,v 1.47 2008/07/16 16:14:38 vlada Exp $
  */
 @MBean
-public abstract class Discovery extends Protocol {
-    final Vector<Address>	members=new Vector<Address>(11);
-    Address					local_addr=null;
-    String					group_addr=null;
+public abstract class Discovery extends Protocol {   
     
-    @Property
-    @ManagedAttribute(description="Timeout (ms) to wait for the initial members",writable=true)
-    long					timeout=3000;
     
-    @Property
-    @ManagedAttribute(description="Minimum number of initial members to get a response from",writable=true)
-    int						num_initial_members=2;
-    boolean					is_server=false;
-    TimeScheduler			timer=null;
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+
+    @Property(description="Timeout to wait for the initial members. Default is 3000 msec")
+    @ManagedAttribute(description="Timeout (ms) to wait for the initial members", writable=true)
+    long timeout=3000;
+
+    @Property(description="Minimum number of initial members to get a response from. Default is 2")
+    @ManagedAttribute(description="Minimum number of initial members to get a response from", writable=true)
+    int num_initial_members=2;
+
+    @Property(description="Number of discovery requests to be sent distributed over timeout. Default is 2")
+    @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " + "distributed over timeout ms", writable=true)
+    int num_ping_requests=2;
+
     
-    @Property
-    @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " +
-                      "distributed over timeout ms",writable=true)
-    int                     num_ping_requests=2;
+    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
+
     
     @ManagedAttribute(description="Total number of discovery requests sent ")
-    int                     num_discovery_requests=0;
+    int num_discovery_requests=0;
 
 
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    
+    private boolean is_server=false;
+    protected TimeScheduler timer=null;
+
+    private final Vector<Address> members=new Vector<Address>(11);
+    protected Address local_addr=null;
+    protected String group_addr=null;
     private final Set<Responses> ping_responses=new HashSet<Responses>();
     private final PingSenderTask sender=new PingSenderTask();
     
