@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * true.
  * 
  * @author Bela Ban
- * @version $Id: FD.java,v 1.71 2008/07/16 15:36:07 vlada Exp $
+ * @version $Id: FD.java,v 1.72 2008/07/16 15:38:44 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
@@ -72,7 +72,7 @@ public class FD extends Protocol {
     
     protected int num_suspect_events=0;   
 
-    private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
+    protected final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
 
 
     
@@ -80,23 +80,23 @@ public class FD extends Protocol {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
 
     
-    private Address local_addr=null;
+    protected Address local_addr=null;
     
     private long last_ack=System.currentTimeMillis();
     
-    private int num_tries=0;
+    protected int num_tries=0;
 
     protected final Lock lock=new ReentrantLock();
 
     @GuardedBy("lock")
-    private Address ping_dest=null;
+    protected Address ping_dest=null;
 
     @GuardedBy("lock")
-    private final List<Address> members=new ArrayList<Address>();
+    protected final List<Address> members=new ArrayList<Address>();
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
     @GuardedBy("lock")
-    private final List<Address> pingable_mbrs=new ArrayList<Address>();
+    protected final List<Address> pingable_mbrs=new ArrayList<Address>();
    
     @GuardedBy("lock")
     private final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7);
