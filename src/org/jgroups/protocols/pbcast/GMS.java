@@ -17,108 +17,140 @@ import java.util.concurrent.TimeUnit;
 
 
 /**
- * Group membership protocol. Handles joins/leaves/crashes (suspicions) and emits new views
- * accordingly. Use VIEW_ENFORCER on top of this layer to make sure new members don't receive
- * any messages until they are members
+ * Group membership protocol. Handles joins/leaves/crashes (suspicions) and
+ * emits new views accordingly. Use VIEW_ENFORCER on top of this layer to make
+ * sure new members don't receive any messages until they are members
+ * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.149 2008/06/19 15:48:11 vlada Exp $
+ * @version $Id: GMS.java,v 1.150 2008/07/16 18:55:30 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
 public class GMS extends Protocol {
-    private GmsImpl           impl=null;
-    Address                   local_addr=null;
-    final Membership          members=new Membership();     // real membership
-    private final Membership  tmp_members=new Membership(); // base for computing next view
+    
+    public static final String name="GMS";
+
+    private static final String CLIENT="Client";
+    private static final String COORD="Coordinator";
+    private static final String PART="Participant";
+
+    /* ------------------------------------------ Properties  ------------------------------------------ */
+
+    @ManagedAttribute(description="Join timeout", writable=true)
+    @Property(description="Join timeout. Default is 5000 msec")
+    long join_timeout=5000;
+
+    @Property(description="Leave timeout. Default is 5000 msec")
+    long leave_timeout=5000;
+    
+    @Property(description="Timeout to complete merge. Default is 10000 msec")
+    long merge_timeout=10000; // time to wait for all MERGE_RSPS
+    
+    @ManagedAttribute(description="Shunning toggle", writable=true)
+    @Property(description="Shunning toggle. Default is false")
+    private boolean shun=false;
+    
+    @Property(description="If true this member is a designated merge leader. Default is false")
+    boolean merge_leader=false; // can I initiate a merge ?
+    
+    @Property(description="Print local address of this member after connect. Default is true")
+    private boolean print_local_addr=true;
+    
+    @Property(description="If true this member can never become coordinator. Default is false")
+    boolean disable_initial_coord=false; // can the member become a coord on startup or not ?
+    
+    /**
+     * Setting this to false disables concurrent startups. This is only used by
+     * unit testing code for testing merging. To everybody else: don't change it
+     * to false !
+     */
+    @Property(description="Temporary switch. Default is true and should not be changed")
+    boolean handle_concurrent_startup=true;
+    
+    /**
+     * Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should
+     * be enabled or not. Setting this to false forces each JOIN/LEAVE/SUPSECT
+     * request to be handled separately. By default these requests are processed
+     * together if they are queued at approximately the same time
+     */
+    @ManagedAttribute(description="View bundling toggle", writable=true)
+    @Property(description="Should views be bundled? Default is true")    
+    private boolean view_bundling=true;
+    
+    @Property(description="Max view bundling timeout if view bundling is turned on. Default is 50 msec")
+    @ManagedAttribute
+    private long max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
+    
+    @Property(description="Max number of old members to keep in history. Default is 50")
+    protected int num_prev_mbrs=50;
+    
+    @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
+    long view_ack_collection_timeout=2000;
+
+    /** How long should a Resumer wait until resuming the ViewHandler */
+    @Property
+    long resume_task_timeout=20000;
+
+    /**
+     * If we receive a JOIN request from P and P is already in the current
+     * membership, then we send back a JOIN response with an error message when
+     * this property is set to true (Channel.connect() will fail). Otherwise, we
+     * return the current view
+     */
+    @Property(description="Should repeated join requests from existing members be treated as errors. Default is true")
+    boolean reject_join_from_existing_member=true;
+    
+    @ManagedAttribute(writable=true, description="Logs failures for collecting all view acks if true")
+    boolean log_collect_msgs=true;   
+    
+    
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
+    
+    
+    private int num_views=0;
+
+    /** Stores the last 20 views */
+    private final BoundedList<View> prev_views=new BoundedList<View>(20);
+
+
+    /* --------------------------------------------- Fields ------------------------------------------------ */
+
+    private GmsImpl impl=null;
+    private final Object impl_mutex=new Object(); // synchronizes event entry into impl
+    private final Hashtable<String,GmsImpl> impls=new Hashtable<String,GmsImpl>(3);
+    
+    protected Address local_addr=null;
+    protected final Membership members=new Membership(); // real membership
+    
+    private final Membership tmp_members=new Membership(); // base for computing next view
 
     /** Members joined but for which no view has been received yet */
     private final Vector<Address> joining=new Vector<Address>(7);
 
     /** Members excluded from group, but for which no view has been received yet */
-    private final Vector<Address>  leaving=new Vector<Address>(7);
-
-    View                      view=null;
-    ViewId                    view_id=null;
-    private long              ltime=0;
-    @ManagedAttribute(description="Join timeout",writable=true)
-    @Property
-    long                      join_timeout=5000;
-    @Property
-    long                      leave_timeout=5000;
-    @Property
-    long                      merge_timeout=10000;           // time to wait for all MERGE_RSPS
-    private final Object      impl_mutex=new Object();       // synchronizes event entry into impl
-    private final Hashtable<String,GmsImpl>   impls=new Hashtable<String,GmsImpl>(3);
-    @ManagedAttribute(description="Shunning toggle",writable=true)
-    @Property
-    private boolean           shun=false;
-    @Property
-    boolean                   merge_leader=false;         // can I initiate a merge ?
-    @Property
-    private boolean           print_local_addr=true;
-    @Property
-    boolean                   disable_initial_coord=false; // can the member become a coord on startup or not ?
-    /** Setting this to false disables concurrent startups. This is only used by unit testing code
-     * for testing merging. To everybody else: don't change it to false ! */
-    @Property
-    boolean                   handle_concurrent_startup=true;
-    /** Whether view bundling (http://jira.jboss.com/jira/browse/JGRP-144) should be enabled or not. Setting this to
-     * false forces each JOIN/LEAVE/SUPSECT request to be handled separately. By default these requests are processed
-     * together if they are queued at approximately the same time */
-    @ManagedAttribute(description="View bundling toggle",writable=true)
-    @Property
-    private boolean           view_bundling=true;
-    @Property @ManagedAttribute
-    private long              max_bundling_time=50; // 50ms max to wait for other JOIN, LEAVE or SUSPECT requests
-    static final String       CLIENT="Client";
-    static final String       COORD="Coordinator";
-    static final String       PART="Participant";
-    TimeScheduler             timer=null;
-
-    /** Max number of old members to keep in history */
-    @Property
-    protected int             num_prev_mbrs=50;
+    private final Vector<Address> leaving=new Vector<Address>(7);
 
     /** Keeps track of old members (up to num_prev_mbrs) */
-    BoundedList<Address>      prev_members=null;
+    private BoundedList<Address> prev_members=null;
 
-    /** If we receive a JOIN request from P and P is already in the current membership, then we send back a JOIN
-     * response with an error message when this property is set to true (Channel.connect() will fail). Otherwise,
-     * we return the current view */
-    @Property
-    boolean                   reject_join_from_existing_member=true;
+    protected View view=null;
+    
+    protected ViewId view_id=null;
+    
+    protected long ltime=0;
 
-    int                       num_views=0;
-
-    /** Stores the last 20 views */
-    BoundedList<View>         prev_views=new BoundedList<View>(20);
-
+    protected TimeScheduler timer=null;    
 
     /** Class to process JOIN, LEAVE and MERGE requests */
     private final ViewHandler view_handler=new ViewHandler();
 
     /** To collect VIEW_ACKs from all members */
-    final AckCollector        ack_collector=new AckCollector();
-      
+    protected final AckCollector ack_collector=new AckCollector();
+
     //[JGRP-700] - FLUSH: flushing should span merge
-    final AckCollector        merge_ack_collector=new AckCollector();
+    protected final AckCollector merge_ack_collector=new AckCollector();
 
-
-    /** Time in ms to wait for all VIEW acks (0 == wait forever) */
-    @Property
-    long                      view_ack_collection_timeout=2000;
-
-    /** How long should a Resumer wait until resuming the ViewHandler */
-    @Property
-    long                      resume_task_timeout=20000;
-
-    boolean                   flushProtocolInStack=false;
-
-    @ManagedAttribute(writable=true,description="Logs failures for collecting all view acks if true")
-    boolean                   log_collect_msgs=true;
-
-    public static final String       name="GMS";
-
+    boolean flushProtocolInStack=false;   
 
 
     public GMS() {
@@ -1139,7 +1171,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.149 2008/06/19 15:48:11 vlada Exp $
+     * @version $Id: GMS.java,v 1.150 2008/07/16 18:55:30 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
