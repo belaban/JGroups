@@ -24,123 +24,180 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically increasing sequence number (seqno).
- * Receivers deliver messages ordered according to seqno and request retransmission of missing messages.<br/>
- * Retransmit requests are usually sent to the original sender of a message, but this can be changed by
- * xmit_from_random_member (send to random member) or use_mcast_xmit_req (send to everyone). Responses can also be sent
- * to everyone instead of the requester by setting use_mcast_xmit to true.
- *
+ * Negative AcKnowledgement layer (NAKs). Messages are assigned a monotonically
+ * increasing sequence number (seqno). Receivers deliver messages ordered
+ * according to seqno and request retransmission of missing messages.<br/>
+ * Retransmit requests are usually sent to the original sender of a message, but
+ * this can be changed by xmit_from_random_member (send to random member) or
+ * use_mcast_xmit_req (send to everyone). Responses can also be sent to everyone
+ * instead of the requester by setting use_mcast_xmit to true.
+ * 
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.193 2008/06/13 08:09:34 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.194 2008/07/16 19:20:09 vlada Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
 public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand, NakReceiverWindow.Listener {
-    @Property(name="retransmit_timeout",converter=PropertyConverters.LongArray.class)
-    private long[]              retransmit_timeouts={600, 1200, 2400, 4800}; // time(s) to wait before requesting retransmission
 
-    @Property
-    boolean enable_xmit_time_stats = false;
-
-    private boolean             is_server=false;
-    private Address             local_addr=null;
-    private final List<Address> members=new CopyOnWriteArrayList<Address>();
-    private View                view;
-    @GuardedBy("seqno_lock")
-    private long                seqno=0;                                  // current message sequence number (starts with 1)
-    private final Lock          seqno_lock=new ReentrantLock();
-
-    @ManagedAttribute(description = "Garbage collection lag", writable = true)
-    @Property
-    private int                 gc_lag=20;                                // number of msgs garbage collection lags behind
-    private Map<Thread,ReentrantLock> locks;
-
+    
     private static final long INITIAL_SEQNO=0;
 
+    private static final String name="NAKACK";
+
     /**
-     * Retransmit messages using multicast rather than unicast. This has the advantage that, if many receivers lost a
-     * message, the sender only retransmits once.
+     * the weight with which we take the previous smoothed average into account,
+     * WEIGHT should be >0 and <= 1
      */
+    private static final double WEIGHT=0.9;
+
+    private static final double INITIAL_SMOOTHED_AVG=30.0;
+
+    private static final int NUM_REBROADCAST_MSGS=3;
+
+    
+    /* -----------------------------------------------------    Properties     --------------------- ------------------------------------ */
+
+    
+    @Property(name="retransmit_timeout", converter=PropertyConverters.LongArray.class, description="Timeout before requesting retransmissions")
+    private long[] retransmit_timeouts= { 600, 1200, 2400, 4800 }; // time(s) to wait before requesting retransmission
+
+    @Property(description="If true, retransmissions stats will be captured. Default is false")
+    boolean enable_xmit_time_stats=false;
+
+    @ManagedAttribute(description="Garbage collection lag", writable=true)
     @Property
-    @ManagedAttribute(description = "Retransmit messages using multicast rather than unicast",  writable = true)
+    private int gc_lag=20; // number of msgs garbage collection lags behind    
+
+    /**
+     * Retransmit messages using multicast rather than unicast. This has the
+     * advantage that, if many receivers lost a message, the sender only
+     * retransmits once.
+     */
+    @Property(description="Retransmit messages using multicast rather than unicast. Default is true")
+    @ManagedAttribute(description="Retransmit messages using multicast rather than unicast", writable=true)
     private boolean use_mcast_xmit=true;
 
-    /** Use a multicast to request retransmission of missing messages. This may be costly as every member in the cluster
-     * will send a response
+    /**
+     * Use a multicast to request retransmission of missing messages. This may
+     * be costly as every member in the cluster will send a response
      */
-    @Property
+    @Property(description="Use a multicast to request retransmission of missing messages. Default is false")
     private boolean use_mcast_xmit_req=false;
 
     /**
-     * Ask a random member for retransmission of a missing message. If set to true, discard_delivered_msgs will be
-     * set to false
+     * Ask a random member for retransmission of a missing message. If set to
+     * true, discard_delivered_msgs will be set to false
      */
-    @Property
-    @ManagedAttribute(description = "Ask a random member for retransmission of a missing message",writable = true)
+    @Property(description="Ask a random member for retransmission of a missing message. Default is false")
+    @ManagedAttribute(description="Ask a random member for retransmission of a missing message", writable=true)
     private boolean xmit_from_random_member=false;
 
-
-    /** The first value (in milliseconds) to use in the exponential backoff retransmission mechanism. Only enabled
-     * if the value is > 0
+    /**
+     * The first value (in milliseconds) to use in the exponential backoff
+     * retransmission mechanism. Only enabled if the value is > 0
      */
-    @Property
+    @Property(description="The first value (in milliseconds) to use in the exponential backoff. Enabled if freater than 0. Default is 0")
     private long exponential_backoff=0;
 
-    /** If enabled, we use statistics gathered from actual retransmission times to compute the new retransmission times */
-    @Property
+    /**
+     * If enabled, we use statistics gathered from actual retransmission times
+     * to compute the new retransmission times
+     */
+    @Property(description="Use statistics gathered from actual retransmission times to compute new retransmission times. Default is false")
     private boolean use_stats_for_retransmission=false;
 
     /**
-     * Messages that have been received in order are sent up the stack (= delivered to the application). Delivered
-     * messages are removed from NakReceiverWindow.xmit_table and moved to NakReceiverWindow.delivered_msgs, where
-     * they are later garbage collected (by STABLE). Since we do retransmits only from sent messages, never
-     * received or delivered messages, we can turn the moving to delivered_msgs off, so we don't keep the message
-     * around, and don't need to wait for garbage collection to remove them.
+     * Messages that have been received in order are sent up the stack (=
+     * delivered to the application). Delivered messages are removed from
+     * NakReceiverWindow.xmit_table and moved to
+     * NakReceiverWindow.delivered_msgs, where they are later garbage collected
+     * (by STABLE). Since we do retransmits only from sent messages, never
+     * received or delivered messages, we can turn the moving to delivered_msgs
+     * off, so we don't keep the message around, and don't need to wait for
+     * garbage collection to remove them.
      */
-    @Property
-    @ManagedAttribute(description = "Discard delivered messages",writable = true)
+    @Property(description="Should messages delivere to application be discarded. Default is false")
+    @ManagedAttribute(description="Discard delivered messages", writable=true)
     private boolean discard_delivered_msgs=false;
 
     /**
-     * By default, we release the lock on the sender in up() after the up() method call passed up the stack returns.
-     * However, with eager_lock_release enabled (default), we release the lock as soon as the application calls
-     * Channel.down() <em>within</em> the receive() callback. This leads to issues as the one described in
-     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is <em>still correct </em>, but messages from self
-     * might get delivered concurrently. This can be turned off by setting eager_lock_release to false.
+     * By default, we release the lock on the sender in up() after the up()
+     * method call passed up the stack returns. However, with eager_lock_release
+     * enabled (default), we release the lock as soon as the application calls
+     * Channel.down() <em>within</em> the receive() callback. This leads to
+     * issues as the one described in
+     * http://jira.jboss.com/jira/browse/JGRP-656. Note that ordering is
+     * <em>still correct </em>, but messages from self might get delivered
+     * concurrently. This can be turned off by setting eager_lock_release to
+     * false.
      */
-    @Property
+    @Property(description="See http://jira.jboss.com/jira/browse/JGRP-656. Default is true")
     private boolean eager_lock_release=true;
 
-    /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
-     * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
+    /**
+     * If value is > 0, the retransmit buffer is bounded: only the
+     * max_xmit_buf_size latest messages are kept, older ones are discarded when
+     * the buffer size is exceeded. A value <= 0 means unbounded buffers
      */
-    @Property
-    @ManagedAttribute(description = "If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used", writable = true)
+    @Property(description="If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used. Default is 0")
+    @ManagedAttribute(description="If value is > 0, the retransmit buffer is bounded. If value <= 0 unbounded buffers are used", writable=true)
     private int max_xmit_buf_size=0;
 
+    @Property(description="Size of retransmission history. Default is 50 entries")
+    private int xmit_history_max_size=50;
 
-    /** Map to store sent and received messages (keyed by sender) */
-    private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
+    @Property
+    private long max_rebroadcast_timeout=2000;
 
-    /** Map which keeps track of threads removing messages from NakReceiverWindows, so we don't wait while a thread
-     * is removing messages */
-    // private final ConcurrentMap<Address,AtomicBoolean> in_progress=new ConcurrentHashMap<Address,AtomicBoolean>();
+    /**
+     * When not finding a message on an XMIT request, include the last N
+     * stability messages in the error message
+     */
+    @Property(description="Should stability history be printed if we fail in retransmission. Default is false")
+    protected boolean print_stability_history_on_failed_xmit=false;
+    
+    @Property(description="Size of send and receive history. Default is 20 entries")
+    private int stats_list_size=20;
 
-    private boolean leaving=false;
-    private boolean started=false;
-    private TimeScheduler timer=null;
-    private static final String name="NAKACK";
+    
 
-    @ManagedAttribute(description = "Number of retransmit requests received")
+    /* -------------------------------------------------- JMX ---------------------------------------------------------- */
+
+    
+    
+    @ManagedAttribute(description="Number of retransmit requests received")
     private long xmit_reqs_received;
-    @ManagedAttribute(description = "Number of retransmit requests sent")
+    @ManagedAttribute(description="Number of retransmit requests sent")
     private long xmit_reqs_sent;
-    @ManagedAttribute(description = "Number of retransmit responses received" )
+    @ManagedAttribute(description="Number of retransmit responses received")
     private long xmit_rsps_received;
-    @ManagedAttribute(description = "Number of retransmit responses sent" )
+    @ManagedAttribute(description="Number of retransmit responses sent")
     private long xmit_rsps_sent;
-    @ManagedAttribute(description = "Number of missing messages received")
+    @ManagedAttribute(description="Number of missing messages received")
     private long missing_msgs_received;
+
+    /**
+     * Maintains retransmission related data across a time. Only used if
+     * enable_xmit_time_stats is set to true. At program termination,
+     * accumulated data is dumped to a file named by the address of the member.
+     * Careful, don't enable this in production as the data in this hashmap are
+     * never reaped ! Really only meant for diagnostics !
+     */
+    private ConcurrentMap<Long,XmitTimeStat> xmit_time_stats=null;
+
+    private long xmit_time_stats_start;
+
+    /**
+     * BoundedList<MissingMessage>. Keeps track of the last stats_list_size
+     * XMIT requests
+     */
+    private BoundedList<MissingMessage> receive_history;
+
+    /**
+     * BoundedList<XmitRequest>. Keeps track of the last stats_list_size
+     * missing messages received
+     */
+    private BoundedList<XmitRequest> send_history;
 
     /** Captures stats on XMIT_REQS, XMIT_RSPS per sender */
     private HashMap<Address,StatsEntry> sent=new HashMap<Address,StatsEntry>();
@@ -148,48 +205,55 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Captures stats on XMIT_REQS, XMIT_RSPS per receiver */
     private HashMap<Address,StatsEntry> received=new HashMap<Address,StatsEntry>();
 
-    @Property
-    private int stats_list_size=20;
-
-    /** BoundedList<MissingMessage>. Keeps track of the last stats_list_size XMIT requests */
-    private BoundedList<MissingMessage> receive_history;
-
-    /** BoundedList<XmitRequest>. Keeps track of the last stats_list_size missing messages received */
-    private BoundedList<XmitRequest> send_history;
-
-    /** Per-sender map of seqnos and timestamps, to keep track of avg times for retransmission of messages */
+    /**
+     * Per-sender map of seqnos and timestamps, to keep track of avg times for
+     * retransmission of messages
+     */
     private final ConcurrentMap<Address,ConcurrentMap<Long,Long>> xmit_stats=new ConcurrentHashMap<Address,ConcurrentMap<Long,Long>>();
 
-    @Property
-    private int xmit_history_max_size=50;
-
-    /** Maintains a list of the last N retransmission times (duration it took to retransmit a message) for all members */
+    /**
+     * Maintains a list of the last N retransmission times (duration it took to
+     * retransmit a message) for all members
+     */
     private final ConcurrentMap<Address,BoundedList<Long>> xmit_times_history=new ConcurrentHashMap<Address,BoundedList<Long>>();
 
-    /** Maintains a smoothed average of the retransmission times per sender, these are the actual values that are used for
-     * new retransmission requests */
+    /**
+     * Maintains a smoothed average of the retransmission times per sender,
+     * these are the actual values that are used for new retransmission requests
+     */
     private final Map<Address,Double> smoothed_avg_xmit_times=new HashMap<Address,Double>();
+    
+    
 
-    /** the weight with which we take the previous smoothed average into account, WEIGHT should be >0 and <= 1 */
-    private static final double WEIGHT=0.9;
+    /* -------------------------------------------------    Fields    ------------------------------------------------------------------------- */
 
-    private static final double INITIAL_SMOOTHED_AVG=30.0;
+    
+    
+    
+    private Map<Thread,ReentrantLock> locks;
+    private boolean is_server=false;
+    private Address local_addr=null;
+    private final List<Address> members=new CopyOnWriteArrayList<Address>();
+    private View view;
+    @GuardedBy("seqno_lock")
+    private long seqno=0; // current message sequence number (starts with 1)
+    private final Lock seqno_lock=new ReentrantLock();
 
-
-    // private final ConcurrentMap<Address,LossRate> loss_rates=new ConcurrentHashMap<Address,LossRate>();
-
-
+    /** Map to store sent and received messages (keyed by sender) */
+    private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
     /**
-     * Maintains retransmission related data across a time. Only used if enable_xmit_time_stats is set to true.
-     * At program termination, accumulated data is dumped to a file named by the address of the member. Careful,
-     * don't enable this in production as the data in this hashmap are never reaped ! Really only meant for
-     * diagnostics !
+     * Map which keeps track of threads removing messages from
+     * NakReceiverWindows, so we don't wait while a thread is removing messages
      */
-    private ConcurrentMap<Long,XmitTimeStat> xmit_time_stats=null;
-    private long xmit_time_stats_start;
-
-    /** Keeps track of OOB messages sent by myself, needed by {@link #handleMessage(org.jgroups.Message, NakAckHeader)} */
+    // private final ConcurrentMap<Address,AtomicBoolean> in_progress=new ConcurrentHashMap<Address,AtomicBoolean>();
+    private volatile boolean leaving=false;
+    private volatile boolean started=false;
+    private TimeScheduler timer=null;   
+    /**
+     * Keeps track of OOB messages sent by myself, needed by
+     * {@link #handleMessage(org.jgroups.Message, NakAckHeader)}
+     */
     private final Set<Long> oob_loopback_msgs=Collections.synchronizedSet(new HashSet<Long>());
 
     private final Lock rebroadcast_lock=new ReentrantLock();
@@ -203,30 +267,16 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     @GuardedBy("rebroadcast_digest_lock")
     private Digest rebroadcast_digest=null;
 
-    @Property
-    private long max_rebroadcast_timeout=2000;
-
-    private static final int NUM_REBROADCAST_MSGS=3;
-
     /** BoundedList<Digest>, keeps the last 10 stability messages */
     private final BoundedList<Digest> stability_msgs=new BoundedList<Digest>(10);
 
-    /** When not finding a message on an XMIT request, include the last N stability messages in the error message */
-    @Property
-    protected boolean print_stability_history_on_failed_xmit=false;
-
     /** If true, logs messages discarded because received from other members */
-    @ManagedAttribute(description="If true, logs messages discarded because received from other members",writable=true)
+    @ManagedAttribute(description="If true, logs messages discarded because received from other members", writable=true)
     private boolean log_discard_msgs=true;
-
 
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
 
-    @ManagedAttribute
-    public int getUndeliveredMessages() {
-        return undelivered_msgs.get();
-    }
     
 
     public NAKACK() {
@@ -237,6 +287,11 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         return name;
     }
 
+    @ManagedAttribute
+    public int getUndeliveredMessages() {
+        return undelivered_msgs.get();
+    }
+    
     public long getXmitRequestsReceived() {return xmit_reqs_received;}
     public long getXmitRequestsSent() {return xmit_reqs_sent;}
     public long getXmitResponsesReceived() {return xmit_rsps_received;}
