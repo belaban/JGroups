@@ -12,7 +12,6 @@ import org.jgroups.util.Util;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.Collection;
-import java.util.Properties;
 import java.util.Set;
 
 /**
@@ -21,46 +20,64 @@ import java.util.Set;
  */
 public abstract class BasicTCP extends TP {
 
-    /** Should we drop unicast messages to suspected members or not */
-    @Property
-    boolean               skip_suspected_members=true;
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    
+    @Property(description="Should unicast messages to suspected members be dropped. Default is false")
+    boolean skip_suspected_members=true;
 
-    /** When we cannot send a message to P (on an exception), then we send a SUSPECT message up the stack */
-    @Property
-    boolean               suspect_on_send_failure=false;
+    @Property(description="If cannot send a message to P (on an exception), should SUSPECT message be raised. Default is false")
+    boolean suspect_on_send_failure=false;
 
+    @ManagedAttribute(description="Reaper interval", writable=true)
+    @Property(description="Reaper interval in msec. Default is 0 (no reaping)")
+    protected long reaper_interval=0; // time in msecs between connection reaps
 
-    /** List the maintains the currently suspected members. This is used so we don't send too many SUSPECT
-     * events up the stack (one per message !)
+    @ManagedAttribute(description="Connection expiration time", writable=true)
+    @Property(description="Max time connection can be idle before being reaped")
+    protected long conn_expire_time=0; // max time a conn can be idle before being reaped
+
+    @Property(description="Should separate send queues be used for each connection. Default is true")
+    boolean use_send_queues=true;
+    
+    @Property(description="Max number of messages in a send queue. Default is 10000 messages")
+    int send_queue_size=10000;
+    
+    @Property(description="Receiver buffer size in bytes. Default is 150000 bytes")
+    int recv_buf_size=150000;
+    
+    @Property(description="Send buffer size in bytes. Default is 150000 bytes")
+    int send_buf_size=150000;
+    
+    @Property(description="Max time allowed for a socket creation in ConnectionTable. Default is 2000 msec")
+    int sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
+    
+    @Property(description="Max time to block on reading of peer address. Default is 1000 msec")
+    int peer_addr_read_timeout=1000; // max time to block on reading of peer address
+    
+    @Property(description="Should TCP no delay flag be turned on. Default is false")
+    boolean tcp_nodelay=false;
+    
+    @Property(description="SO_LINGER in msec. Default of -1 disables it")
+    int linger=-1; // SO_LINGER (number of ms, -1 disables it)
+
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+
+    /**
+     * List the maintains the currently suspected members. This is used so we
+     * don't send too many SUSPECT events up the stack (one per message !)
      */
     final BoundedList<Address>  suspected_mbrs=new BoundedList<Address>(20);
-    protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
-        
-    @ManagedAttribute(description="Reaper interval",writable=true)
-    @Property
-    protected long         reaper_interval=0;  // time in msecs between connection reaps
     
-    @ManagedAttribute(description="Connection expiration time",writable=true)
-    @Property
-    protected long         conn_expire_time=0; // max time a conn can be idle before being reaped
-    /** Use separate send queues for each connection */
-    @Property
-    boolean                use_send_queues=true;
-    @Property
-    int                    send_queue_size=10000; // max number of messages in a send queue
-    @Property
-    int                    recv_buf_size=150000;
-    @Property
-    int                    send_buf_size=150000;
-    @Property
-    int                    sock_conn_timeout=2000; // max time in millis for a socket creation in ConnectionTable
-    @Property
-    int                    peer_addr_read_timeout=1000; // max time to block on reading of peer address
-    @Property
-    boolean                tcp_nodelay=false;
-    @Property
-    int                    linger=-1; // SO_LINGER (number of ms, -1 disables it)
+    protected InetAddress  external_addr=null; // the IP address which is broadcast to other group members
+           
   
+    protected BasicTCP() {
+        super();        
+    }
+    
     public long getReaperInterval() {return reaper_interval;}
     public void setReaperInterval(long reaper_interval) {this.reaper_interval=reaper_interval;}
     public long getConnExpireTime() {return conn_expire_time;}
@@ -77,9 +94,8 @@ public abstract class BasicTCP extends TP {
 
         Util.checkBufferSize(getName() + ".recv_buf_size", recv_buf_size);
         Util.checkBufferSize(getName() + ".send_buf_size", send_buf_size);
-
-        boolean is_shared_transport=singleton_name != null && singleton_name.length() > 0;
-        if(!is_shared_transport && bind_port <= 0) {
+       
+        if(!isSingleton() && bind_port <= 0) {
             Protocol dynamic_discovery_prot=stack.findProtocol("MPING");
             if(dynamic_discovery_prot == null)
                 dynamic_discovery_prot=stack.findProtocol("TCPGOSSIP");
