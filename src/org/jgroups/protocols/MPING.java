@@ -22,54 +22,88 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.41 2008/06/03 14:37:00 belaban Exp $
+ * @version $Id: MPING.java,v 1.42 2008/07/16 18:19:40 vlada Exp $
  */
 public class MPING extends PING implements Runnable {
-    MulticastSocket        mcast_sock=null;
+    
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
 
-    /** If we have multiple mcast send sockets, e.g. send_interfaces or send_on_all_interfaces enabled */
-    MulticastSocket[]      mcast_send_sockets=null;
-    Thread                 receiver=null;
-    @ManagedAttribute(description="Bind address for multicast socket",writable=true)
-    @Property(converter=PropertyConverters.BindAddress.class)
-    InetAddress            bind_addr=null;
-    @Property @ManagedAttribute(description="Time to live for discovery packets",writable=true)
-    int                    ip_ttl=8;
-    @ManagedAttribute(description="Multicast address for discovery packets",writable=true)
-    InetAddress            mcast_addr=null;
+    @ManagedAttribute(description="Bind address for multicast socket", writable=true)
+    @Property(converter=PropertyConverters.BindAddress.class, description="Bind address for multicast socket")
+    InetAddress bind_addr=null;
+    
+    @Property(description="Time to live for discovery packets. Default is 8")
+    @ManagedAttribute(description="Time to live for discovery packets", writable=true)
+    int ip_ttl=8;
 
-    @Property @ManagedAttribute(description="Multicast port for discovery packets",writable=true)
-    int                    mcast_port=7555;
+    @ManagedAttribute(description="Multicast address for discovery packets", writable=true)
+    InetAddress mcast_addr=null;
 
-     /** If true, the transport should use all available interfaces to receive multicast messages */
-    @Property(name="bind_to_all_interfaces",deprecatedMessage="bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead")
-    boolean                receive_on_all_interfaces=false;
+    @Property(description="Multicast port for discovery packets. Default is 7555")
+    @ManagedAttribute(description="Multicast port for discovery packets", writable=true)
+    int mcast_port=7555;
 
-     /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
-     * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
-     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
-     * If this property is set, it override receive_on_all_interfaces.
+    @Property(name="bind_to_all_interfaces", deprecatedMessage="bind_to_all_interfaces has been deprecated; use receive_on_all_interfaces instead", description="If true, the transport should use all available interfaces to receive multicast messages. Default is false")
+    boolean receive_on_all_interfaces=false;
+
+    /**
+     * List<NetworkInterface> of interfaces to receive multicasts on. The
+     * multicast receive socket will listen on all of these interfaces. This is
+     * a comma-separated list of IP addresses or interface names. E.g.
+     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
+     * an interface once. If this property is set, it override
+     * receive_on_all_interfaces.
      */
-    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to receive multicasts on")
     List<NetworkInterface> receive_interfaces=null;
 
-    /** If true, the transport should use all available interfaces to send multicast messages. This means
-     * the same multicast message is sent N times, so use with care */
-    @Property
-    boolean                send_on_all_interfaces=false;
-
-    /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
-     * same multicast message on all of these interfaces. This is a comma-separated list of IP addresses or
-     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
-     * If this property is set, it override send_on_all_interfaces.
+    /**
+     * If true, the transport should use all available interfaces to send
+     * multicast messages. This means the same multicast message is sent N
+     * times, so use with care
      */
-    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
+    @Property(description="Whether send messages are sent on all interfaces. Default is false")
+    boolean send_on_all_interfaces=false;
+
+    /**
+     * List<NetworkInterface> of interfaces to send multicasts on. The
+     * multicast send socket will send the same multicast message on all of
+     * these interfaces. This is a comma-separated list of IP addresses or
+     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are
+     * discarded. If this property is set, it override send_on_all_interfaces.
+     */
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class, description="List of interfaces to send multicasts on")
     List<NetworkInterface> send_interfaces=null;
+    
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
-    final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
-    byte                receive_buf[]=new byte[1024];
+    
+    private MulticastSocket mcast_sock=null;
 
+    /**
+     * If we have multiple mcast send sockets, e.g. send_interfaces or
+     * send_on_all_interfaces enabled
+     */
+    private MulticastSocket[] mcast_send_sockets=null;
+    
+    private volatile Thread receiver=null;
+
+    /**
+     * Pre-allocated byte stream. Used for serializing datagram packets. Will
+     * grow as needed
+     */
+    private final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
+    
+    private final byte receive_buf[]=new byte[1024];
+
+    
+    
+
+    public MPING() {        
+    }
 
     public String getName() {
         return "MPING";

@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.50 2008/07/16 18:11:12 vlada Exp $
+// $Id: MERGE2.java,v 1.51 2008/07/16 18:19:40 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -73,6 +73,11 @@ public class MERGE2 extends Protocol {
     private TimeScheduler timer;
     
     
+    
+    public MERGE2() {        
+    }
+
+
     public void init() throws Exception {
         timer=getTransport().getTimer();
         if(timer == null)
