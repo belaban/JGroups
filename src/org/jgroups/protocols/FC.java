@@ -38,19 +38,86 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.97 2008/05/30 16:15:57 vlada Exp $
+ * @version $Id: FC.java,v 1.98 2008/07/16 15:24:57 vlada Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
 
+    private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
+    private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);  
+    private final static String name="FC";
+    
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    /**
+     * Max number of bytes to send per receiver until an ack must
+     * be received before continuing sending
+     */
+    @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
+                                   "be received before continuing sending",writable=true)
+    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 500000 bytes")                                   
+    private long max_credits=500000;
+
+    /**
+     * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
+     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
+     * wait forever.
+     */
+    @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
+    @Property(description="Max time (in milliseconds) to block. Default is 5000 msec")
+    private long max_block_time=5000;
+
+    /**
+     * If credits fall below this limit, we send more credits to the sender. (We also send when
+     * credits are exhausted (0 credits left))
+     */
+    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",writable=true)
+    @Property(description="If credits fall below this limit, we send more credits to the sender. Default is 0.25")
+    private double min_threshold=0.25;
+
+    /**
+     * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
+     * override the above computation
+     */
+    @ManagedAttribute(description="Computed as max_credits x min_theshold",writable=true)
+    @Property(description="Computed as max_credits x min_theshold unless explicitely set")
+    private long min_credits=0;
+    
+    /**
+     * Whether an up thread that comes back down should be allowed to
+     * bypass blocking if all credits are exhausted. Avoids JGRP-465.
+     * Set to false by default in 2.5 because we have OOB messages for credit replenishments - this flag should not be set
+     * to true if the concurrent stack is used
+     */
+    @Property
+    private boolean ignore_synchronous_response=false;
+    
+    
+    
+    
+    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
+    
+    
+    private int num_blockings=0;
+    private int num_credit_requests_received=0, num_credit_requests_sent=0;
+    private int num_credit_responses_sent=0, num_credit_responses_received=0;
+    private long total_time_blocking=0;
+
+    private final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
+    
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    
     /**
      * Map<Address,Long>: keys are members, values are credits left. For each send, the
      * number of credits is decremented by the message size. A HashMap rather than a ConcurrentHashMap is
      * currently used as there might be null values
      */
     @GuardedBy("sent_lock")
-    private final Map<Address, Long> sent=new HashMap<Address, Long>(11);
-    // final Map sent=new ConcurrentHashMap(11);
+    private final Map<Address, Long> sent=new HashMap<Address, Long>(11);   
 
     /**
      * Map<Address,Long>: keys are members, values are credits left (in bytes).
@@ -68,58 +135,19 @@ public class FC extends Protocol {
     @GuardedBy("sent_lock")
     private final Set<Address> creditors=new HashSet<Address>(11);
 
+    
     /** Peers who have asked for credit that we didn't have */
     private final Set<Address> pending_requesters=new HashSet<Address>(11);
 
     /**
-     * Max number of bytes to send per receiver until an ack must
-     * be received before continuing sending
-     */
-    @ManagedAttribute(description="Max number of bytes to send per receiver until an ack must " + 
-                                   "be received before continuing sending",writable=true)
-    @Property                                   
-    private long max_credits=500000;
-
-    /**
-     * Max time (in milliseconds) to block. If credit hasn't been received after max_block_time, we send
-     * a REPLENISHMENT request to the members from which we expect credits. A value <= 0 means to
-     * wait forever.
-     */
-    @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
-    @Property
-    private long max_block_time=5000;
-
-    /**
-     * If credits fall below this limit, we send more credits to the sender. (We also send when
-     * credits are exhausted (0 credits left))
-     */
-    @ManagedAttribute(description="If credits fall below this limit, we send more credits to the sender",writable=true)
-    @Property
-    private double min_threshold=0.25;
-
-    /**
-     * Computed as <tt>max_credits</tt> times <tt>min_theshold</tt>. If explicitly set, this will
-     * override the above computation
-     */
-    @ManagedAttribute(description="Computed as max_credits x min_theshold",writable=true)
-    @Property
-    private long min_credits=0;
-
-    /**
      * Whether FC is still running, this is set to false when the protocol terminates (on stop())
      */
-    private boolean running=true;
+    private volatile boolean running=true;
 
 
     private boolean frag_size_received=false;
 
-    /**
-     * Determines whether or not to block on down(). Set when not enough credit is available to send a message
-     * to all or a single member
-     */
-    // @GuardedBy("sent_lock")
-    // private boolean insufficient_credit=false;
-
+   
     /**
      * the lowest credits of any destination (sent_msgs)
      */
@@ -135,37 +163,17 @@ public class FC extends Protocol {
 
     /** Mutex to block on down() */
     private final Condition credits_available=sent_lock.newCondition();
-
-    /**
-     * Whether an up thread that comes back down should be allowed to
-     * bypass blocking if all credits are exhausted. Avoids JGRP-465.
-     * Set to false by default in 2.5 because we have OOB messages for credit replenishments - this flag should not be set
-     * to true if the concurrent stack is used
-     */
-    @Property
-    private boolean ignore_synchronous_response=false;
+   
 
     /**
      * Thread that carries messages through up() and shouldn't be blocked
      * in down() if ignore_synchronous_response==true. JGRP-465.
      */
-    private Thread ignore_thread;
-
-    private static final String name="FC";
+    private Thread ignore_thread;   
 
     /** Last time a credit request was sent. Used to prevent credit request storms */
     @GuardedBy("sent_lock")
-    private long last_credit_request=0;
-
-    private int num_blockings=0;
-    private int num_credit_requests_received=0, num_credit_requests_sent=0;
-    private int num_credit_responses_sent=0, num_credit_responses_received=0;
-    private long total_time_blocking=0;
-
-    private final BoundedList<Long> last_blockings=new BoundedList<Long>(50);
-
-    private final static FcHeader REPLENISH_HDR=new FcHeader(FcHeader.REPLENISH);
-    private final static FcHeader CREDIT_REQUEST_HDR=new FcHeader(FcHeader.CREDIT_REQUEST);
+    private long last_credit_request=0;   
 
 
     public final String getName() {
