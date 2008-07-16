@@ -9,7 +9,6 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.annotations.Property;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 
 import java.io.*;
@@ -21,73 +20,95 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Failure detection based on simple heartbeat protocol. Regularly polls members for
- * liveness. Multicasts SUSPECT messages when a member is not reachable. The simple
- * algorithms works as follows: the membership is known and ordered. Each HB protocol
- * periodically sends an 'are-you-alive' message to its *neighbor*. A neighbor is the next in
- * rank in the membership list, which is recomputed upon a view change. When a response hasn't
- * been received for n milliseconds and m tries, the corresponding member is suspected (and
- * eventually excluded if faulty).<p>
- * FD starts when it detects (in a view change notification) that there are at least
- * 2 members in the group. It stops running when the membership drops below 2.<p>
- * When a message is received from the monitored neighbor member, it causes the pinger thread to
- * 'skip' sending the next are-you-alive message. Thus, traffic is reduced.<p>
- * When we receive a ping from a member that's not in the membership list, we shun it by sending it a
- * NOT_MEMBER message. That member will then leave the group (and possibly rejoin). This is only done if
- * <code>shun</code> is true.
+ * Failure detection based on simple heartbeat protocol. Regularly polls members
+ * for liveness. Multicasts SUSPECT messages when a member is not reachable. The
+ * simple algorithms works as follows: the membership is known and ordered. Each
+ * HB protocol periodically sends an 'are-you-alive' message to its *neighbor*.
+ * A neighbor is the next in rank in the membership list, which is recomputed
+ * upon a view change. When a response hasn't been received for n milliseconds
+ * and m tries, the corresponding member is suspected (and eventually excluded
+ * if faulty).
+ * <p>
+ * FD starts when it detects (in a view change notification) that there are at
+ * least 2 members in the group. It stops running when the membership drops
+ * below 2.
+ * <p>
+ * When a message is received from the monitored neighbor member, it causes the
+ * pinger thread to 'skip' sending the next are-you-alive message. Thus, traffic
+ * is reduced.
+ * <p>
+ * When we receive a ping from a member that's not in the membership list, we
+ * shun it by sending it a NOT_MEMBER message. That member will then leave the
+ * group (and possibly rejoin). This is only done if <code>shun</code> is
+ * true.
+ * 
  * @author Bela Ban
- * @version $Id: FD.java,v 1.70 2008/05/20 11:27:30 belaban Exp $
+ * @version $Id: FD.java,v 1.71 2008/07/16 15:36:07 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
-    Address               local_addr=null;
     
-    @Property
-    @ManagedAttribute(description="Number of milliseconds after which a " + 
-                      "node P is suspected if neither a heartbeat nor data were received from P",writable=true)
-    long                  timeout=3000;  // number of millisecs to wait for an are-you-alive msg
-    long                  last_ack=System.currentTimeMillis();
-    int                   num_tries=0;
-    @Property
-    @ManagedAttribute(description="Number of times to send a are-you-alive msg",writable=true)
-    int                   max_tries=2;   // number of times to send a are-you-alive msg (tot time= max_tries*timeout)
+    private final static String name="FD";
 
-    protected final Lock  lock=new ReentrantLock();
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+
+    @Property(description="Timeout to suspect a node P if neither a heartbeat nor data were received from P. Default is 3000 msec")
+    @ManagedAttribute(description="Timeout in msec to suspect a node P if neither a heartbeat nor data were received from P", writable=true)
+    long timeout=3000; 
+
+    @Property(description="Shun switch")
+    @ManagedAttribute(description="Shun switch", writable=true)
+    boolean shun=true;
+
+    @Property(description="Number of times to send heartbeat")
+    @ManagedAttribute(description="Number of times to send a are-you-alive msg", writable=true)
+    int max_tries=2;
+    
+    
+    
+    /* ---------------------------------------------   JMX      ------------------------------------------------------ */
+
+    protected int num_heartbeats=0;
+    
+    protected int num_suspect_events=0;   
+
+    private final BoundedList<Address> suspect_history=new BoundedList<Address>(20);
+
+
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
+    private Address local_addr=null;
+    
+    private long last_ack=System.currentTimeMillis();
+    
+    private int num_tries=0;
+
+    protected final Lock lock=new ReentrantLock();
 
     @GuardedBy("lock")
-    Address               ping_dest=null;
+    private Address ping_dest=null;
 
     @GuardedBy("lock")
-    final List<Address>   members=new ArrayList<Address>();
+    private final List<Address> members=new ArrayList<Address>();
 
     /** Members from which we select ping_dest. may be subset of {@link #members} */
     @GuardedBy("lock")
-    final List<Address>   pingable_mbrs=new ArrayList<Address>();
-
-    // number of pings from suspected mbrs
+    private final List<Address> pingable_mbrs=new ArrayList<Address>();
+   
     @GuardedBy("lock")
-    final Map<Address,Integer>  invalid_pingers=new HashMap<Address,Integer>(7);
+    private final Map<Address,Integer> invalid_pingers=new HashMap<Address,Integer>(7);
 
-    @Property
-    @ManagedAttribute(description="Shun switch",writable=true)
-    boolean               shun=true;
-    TimeScheduler         timer=null;
+    private TimeScheduler timer=null;
 
     @GuardedBy("lock")
-    private Future<?>        monitor_future=null;  // task that performs the actual monitoring for failure detection
-
-    protected int         num_heartbeats=0;
-    protected int         num_suspect_events=0;
-
+    private Future<?> monitor_future=null; // task that performs the actual monitoring for failure detection
+    
     /** Transmits SUSPECT message until view change or UNSUSPECT is received */
-    protected final Broadcaster  bcast_task=new Broadcaster();
-    final static String   name="FD";
-
-    final BoundedList<Address>   suspect_history=new BoundedList<Address>(20);
-
-
-
-
+    protected final Broadcaster bcast_task=new Broadcaster();
+    
 
     public String getName() {return name;}
     @ManagedAttribute(description="Member address")
