@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.49 2008/06/06 15:57:54 vlada Exp $
+// $Id: MERGE2.java,v 1.50 2008/07/16 18:11:12 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -49,16 +49,29 @@ import java.util.concurrent.TimeUnit;
 @MBean(description="Protocol to discover subgroups existing due to a network partition")
 @DeprecatedProperty(names={"use_separate_thread"})
 public class MERGE2 extends Protocol {
-    private Address					local_addr=null;   
-    private final FindSubgroupsTask	task=new FindSubgroupsTask();             // task periodically executing as long as we are coordinator
-    @ManagedAttribute(description="Minimum time between runs to discover other clusters",writable=true)
-    @Property
-    private long					min_interval=5000;     // minimum time between executions of the FindSubgroups task
-    @ManagedAttribute(description="Maximum time between runs to discover other clusters",writable=true)
-    @Property
-    private long					max_interval=20000;    // maximum time between executions of the FindSubgroups task
-    private volatile boolean		is_coord=false;    
-    private TimeScheduler			timer;
+    
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    @ManagedAttribute(description="Minimum time between runs to discover other clusters", writable=true)
+    @Property(description="Lower bound in msec to run merge protocol. Default is 5000 msec")
+    private long min_interval=5000;
+    
+    @ManagedAttribute(description="Maximum time between runs to discover other clusters", writable=true)
+    @Property(description="Upper bound in msec to run merge protocol. Default is 20000 msec")
+    private long max_interval=20000;   
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    private Address local_addr=null;
+    
+    private final FindSubgroupsTask task=new FindSubgroupsTask();   
+    
+    private volatile boolean is_coord=false;
+    
+    private TimeScheduler timer;
+    
     
     public void init() throws Exception {
         timer=getTransport().getTimer();
@@ -181,8 +194,8 @@ public class MERGE2 extends Protocol {
 
         public void findAndNotify() {
             List<PingRsp> initial_mbrs=findInitialMembers();
-            if(log.isTraceEnabled())
-                log.trace(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
+            if(log.isDebugEnabled())
+                log.debug(local_addr + " is looking for merge candidates, found initial_mbrs=" + initial_mbrs);
             
             Vector<Address> coords=detectMultipleCoordinators(initial_mbrs);
             if(coords.size() > 1) {

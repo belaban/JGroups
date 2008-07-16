@@ -36,29 +36,33 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.39 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FRAG2.java,v 1.40 2008/07/16 18:11:12 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
+    
+    private static final String name="FRAG2";
 
-    /** The max number of bytes in a message. If a message's buffer is bigger, it will be fragmented */
-    @Property
-    @ManagedAttribute(description="Fragmentation size",writable=true)
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 1500 bytes")
+    @ManagedAttribute(description="Fragmentation size", writable=true)
     int frag_size=1500;
-
-    /** Number of bytes that we think the headers plus src and dest will take up when
-        message is serialized by transport. This will be subtracted from frag_size */
-    @Property
-    @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ",writable=true)
+  
+    @Property(description="Estimate for message overhead. Default is 200 bytes ")
+    @ManagedAttribute(description="Estimate number of bytes for headers plus src and dest ", writable=true)
     int overhead=200;
 
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final FragmentationList    fragment_list=new FragmentationList();
-    private int                        curr_id=1;
-    private final Vector<Address>      members=new Vector<Address>(11);
-    private static final String        name="FRAG2";
+    private final FragmentationList fragment_list=new FragmentationList();
+    private int curr_id=1;
+    private final Vector<Address> members=new Vector<Address>(11);    
 
     @ManagedAttribute(description="Number of sent messages")
     AtomicLong num_sent_msgs=new AtomicLong(0);
