@@ -36,28 +36,37 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.43 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: FRAG.java,v 1.44 2008/07/16 18:11:12 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
     
-    @Property
-    @ManagedAttribute(description="Fragmentation size",writable=true)
-    private int frag_size=8192;  // conservative value
+    private final static String name="FRAG";
 
-    @Property
-    @ManagedAttribute(description="The max size in bytes the byte array output buffer should be, " +
-            "otherwise we keep memory occupied unnecessarily", writable=true)
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+
+    @Property(description="The max number of bytes in a message. Larger messages will be fragmented. Default is 8192 bytes")
+    @ManagedAttribute(description="Fragmentation size", writable=true)
+    private int frag_size=8192; // conservative value
+
+    @Property(description="The max size in bytes for the byte array output buffer")
+    @ManagedAttribute(description="The max size in bytes the byte array output buffer should be, " + "otherwise we keep memory occupied unnecessarily", writable=true)
     private int max_retained_buffer=70000;
 
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final FragmentationList     fragment_list=new FragmentationList();
-    private int                         curr_id=1;
+    private final FragmentationList fragment_list=new FragmentationList();
+    private int curr_id=1;
     private final ExposedByteArrayOutputStream bos=new ExposedByteArrayOutputStream(1024);
-    private final Vector<Address>       members=new Vector<Address>(11);
-    private final static String         name="FRAG";
+    private final Vector<Address> members=new Vector<Address>(11);
+    
+    
+ 
 
     @ManagedAttribute(description="Number of sent messages")
     long num_sent_msgs=0;
