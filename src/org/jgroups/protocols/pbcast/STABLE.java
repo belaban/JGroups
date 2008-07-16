@@ -20,89 +20,123 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Computes the broadcast messages that are stable; i.e., have been received by all members. Sends
- * STABLE events up the stack when this is the case. This allows NAKACK to garbage collect messages that
- * have been seen by all members.<p>
- * Works as follows: periodically we mcast our highest seqnos (seen for each member) to the group.
- * A stability vector, which maintains the highest seqno for each member and initially contains no data,
- * is updated when such a message is received. The entry for a member P is computed set to
- * min(entry[P], digest[P]). When messages from all members have been received, a stability
- * message is mcast, which causes all members to send a STABLE event up the stack (triggering garbage collection
- * in the NAKACK layer).<p>
- * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it to 0),
- * a STABLE task will be started (unless it is already running). Design in docs/design/STABLE.txt
+ * Computes the broadcast messages that are stable; i.e., have been received by
+ * all members. Sends STABLE events up the stack when this is the case. This
+ * allows NAKACK to garbage collect messages that have been seen by all members.
+ * <p>
+ * Works as follows: periodically we mcast our highest seqnos (seen for each
+ * member) to the group. A stability vector, which maintains the highest seqno
+ * for each member and initially contains no data, is updated when such a
+ * message is received. The entry for a member P is computed set to
+ * min(entry[P], digest[P]). When messages from all members have been received,
+ * a stability message is mcast, which causes all members to send a STABLE event
+ * up the stack (triggering garbage collection in the NAKACK layer).
+ * <p>
+ * New: when <code>max_bytes</code> is exceeded (unless disabled by setting it
+ * to 0), a STABLE task will be started (unless it is already running). Design
+ * in docs/design/STABLE.txt
+ * 
  * @author Bela Ban
- * @version $Id: STABLE.java,v 1.91 2008/05/29 14:17:38 vlada Exp $
+ * @version $Id: STABLE.java,v 1.92 2008/07/16 19:26:16 vlada Exp $
  */
 @MBean(description="Computes the broadcast messages that are stable")
 @DeprecatedProperty(names={"digest_timeout","max_gossip_runs","max_suspend_time"})
 public class STABLE extends Protocol {
-    private Address               local_addr=null;
-    private final Set<Address>    mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
+    
+    
+    private static final String name="STABLE";
+    
+    private static final long MAX_SUSPEND_TIME=200000;
 
-    @GuardedBy("lock")
-    private final MutableDigest   digest=new MutableDigest(10);        // keeps track of the highest seqnos from all members
+    /* ------------------------------------------ Properties  ------------------------------------------ */
 
-    /** Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is cleared initially, and we
-     * add the sender when a STABLE message is received. When the list is full (responses from all members),
-     * we send a STABILITY message */
-    @GuardedBy("lock")
-    private final Set<Address>    votes=new HashSet<Address>();
-
-
-    private final Lock            lock=new ReentrantLock();
-
-    /** Sends a STABLE gossip every 20 seconds on average. 0 disables gossipping of STABLE messages */
+    /**
+     * Sends a STABLE gossip every 20 seconds on average. 0 disables gossiping
+     * of STABLE messages
+     */
     @ManagedAttribute(writable=true)
+    @Property(description="Average time to send a STABLE message. Default is 20000 msec")
+    private long desired_avg_gossip=20000;
+
+    /**
+     * delay before we send STABILITY msg (give others a change to send first).
+     * This should be set to a very small number (> 0 !) if
+     * <code>max_bytes</code> is used
+     */
     @Property
-    private long                  desired_avg_gossip=20000;
+    private long stability_delay=6000;
 
-    /** delay before we send STABILITY msg (give others a change to send first). This should be set to a very
-     * small number (> 0 !) if <code>max_bytes</code> is used */
-    @Property
-    private long                  stability_delay=6000;
-
-    @GuardedBy("stability_lock")
-    private Future<?>                stability_task_future=null;
-    private final Lock            stability_lock=new ReentrantLock();   // to synchronize on stability_task
-
-    @GuardedBy("stable_task_lock")
-    private Future<?>                stable_task_future=null;               // bcasts periodic STABLE message (added to timer below)
-    private final Lock            stable_task_lock=new ReentrantLock(); // to sync on stable_task
-
-
-    private TimeScheduler         timer=null;                     // to send periodic STABLE msgs (and STABILITY messages)
-    private static final String   name="STABLE";
-
-    /** Total amount of bytes from incoming messages (default = 0 = disabled). When exceeded, a STABLE
-     * message will be broadcast and <code>num_bytes_received</code> reset to 0 . If this is > 0, then ideally
-     * <code>stability_delay</code> should be set to a low number as well */
+    /**
+     * Total amount of bytes from incoming messages (default = 0 = disabled).
+     * When exceeded, a STABLE message will be broadcast and
+     * <code>num_bytes_received</code> reset to 0 . If this is > 0, then
+     * ideally <code>stability_delay</code> should be set to a low number as
+     * well
+     */
     @ManagedAttribute(writable=true)
-    @Property
-    private long                  max_bytes=0;
+    @Property(description="Maximum number of bytes received in all messages before sending a STABLE message is triggered. Default is 0 (disabled)")
+    private long max_bytes=0;
 
-    /** The total number of bytes received from unicast and multicast messages */
-    @GuardedBy("received")
-    private long                  num_bytes_received=0;
-
-    private final Lock            received=new ReentrantLock();
-
-    /** When true, don't take part in garbage collection protocol: neither send STABLE messages nor
-     * handle STABILITY messages */
-    private boolean               suspended=false;
-
-    private boolean               initialized=false;
-
-    private Future<?>                resume_task_future=null;
-    private final Object          resume_task_mutex=new Object();
+    
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
 
     private int num_stable_msgs_sent=0;
     private int num_stable_msgs_received=0;
     private int num_stability_msgs_sent=0;
     private int num_stability_msgs_received=0;
-    
-    private static final long MAX_SUSPEND_TIME=200000;
 
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
+    private Address local_addr=null;
+    private final Set<Address> mbrs=new LinkedHashSet<Address>(); // we don't need ordering here
+
+    @GuardedBy("lock")
+    private final MutableDigest digest=new MutableDigest(10); // keeps track of the highest seqnos from all members
+
+    /**
+     * Keeps track of who we already heard from (STABLE_GOSSIP msgs). This is
+     * cleared initially, and we add the sender when a STABLE message is
+     * received. When the list is full (responses from all members), we send a
+     * STABILITY message
+     */
+    @GuardedBy("lock")
+    private final Set<Address> votes=new HashSet<Address>();
+
+    private final Lock lock=new ReentrantLock();
+
+    @GuardedBy("stability_lock")
+    private Future<?> stability_task_future=null;
+    private final Lock stability_lock=new ReentrantLock(); // to synchronize on stability_task
+
+    @GuardedBy("stable_task_lock")
+    private Future<?> stable_task_future=null; // bcasts periodic STABLE message (added to timer below)
+    private final Lock stable_task_lock=new ReentrantLock(); // to sync on stable_task
+
+    private TimeScheduler timer=null; // to send periodic STABLE msgs (and STABILITY messages)   
+
+    /** The total number of bytes received from unicast and multicast messages */
+    @GuardedBy("received")
+    private long num_bytes_received=0;
+
+    private final Lock received=new ReentrantLock();
+
+    /**
+     * When true, don't take part in garbage collection protocol: neither send
+     * STABLE messages nor handle STABILITY messages
+     */
+    private boolean suspended=false;
+
+    private boolean initialized=false;
+
+    private Future<?> resume_task_future=null;
+    private final Object resume_task_mutex=new Object();
+       
+    
+    
+    public STABLE() {             
+    }
 
     public String getName() {
         return name;
