@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.150 2008/07/16 18:55:30 vlada Exp $
+ * @version $Id: GMS.java,v 1.151 2008/07/17 17:42:52 belaban Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -434,7 +434,7 @@ public class GMS extends Protocol {
      * If the list is null, we take the members who are part of new_view
      * @param new_view
      * @param digest
-     * @param members
+     * @param newMembers
      */
     public void castViewChangeWithDest(View new_view, Digest digest, JoinRsp jr, Collection <Address> newMembers) {           
         if(log.isTraceEnabled())
@@ -1171,7 +1171,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.150 2008/07/16 18:55:30 vlada Exp $
+     * @version $Id: GMS.java,v 1.151 2008/07/17 17:42:52 belaban Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
