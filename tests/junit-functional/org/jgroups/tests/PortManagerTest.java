@@ -11,15 +11,16 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: PortManagerTest.java,v 1.5 2008/07/08 21:05:30 vlada Exp $
+ * @version $Id: PortManagerTest.java,v 1.6 2008/07/17 14:49:50 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class PortManagerTest {
     private final static int START_PORT=15550;
+    private static final String TEMP_DIR = System.getProperty("java.io.tmpdir", "/tmp");
 
 
     public static void testAddition() {
-        PortsManager pm=new PortsManager(30000,"testAddition.txt");
+        PortsManager pm=new PortsManager(30000,"testAddition.txt",TEMP_DIR);
         pm.deleteFile();
         List<Integer> ports=new LinkedList<Integer>();
 
@@ -35,7 +36,7 @@ public class PortManagerTest {
 
 
     public static void testNonDuplicateAddition() {
-        PortsManager pm=new PortsManager(30000,"testNonDuplicateAddition.txt");
+        PortsManager pm=new PortsManager(30000,"testNonDuplicateAddition.txt",TEMP_DIR);
         pm.deleteFile();
 
         int port=pm.getNextAvailablePort(START_PORT);
@@ -49,7 +50,7 @@ public class PortManagerTest {
 
 
     public static void testExpiration() {
-        PortsManager pm=new PortsManager(800,"testExpiration.txt");
+        PortsManager pm=new PortsManager(800,"testExpiration.txt",TEMP_DIR);
         pm.deleteFile();
 
         int port=pm.getNextAvailablePort(START_PORT);
@@ -68,7 +69,7 @@ public class PortManagerTest {
 
 
     public static void testRemove() {
-        PortsManager pm=new PortsManager(10000,"testRemove.txt");
+        PortsManager pm=new PortsManager(10000,"testRemove.txt",TEMP_DIR);
         pm.deleteFile();
         int port=pm.getNextAvailablePort(START_PORT);
         int old_port=port;
