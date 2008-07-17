@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.172 2008/07/10 20:31:40 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.173 2008/07/17 18:05:57 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -80,20 +80,7 @@
         <mkdir dir="${javadoc.dir}"/>
     	<copy file="${build.properties.file}.template" tofile="${build.properties.file}" overwrite="false"/>
     </target>
-
-    <target name="prepare.test">
-        <mkdir dir="${tmp.dir}"/>
-        <mkdir dir="${tmp.dir}/test-results"/>
-        <mkdir dir="${tmp.dir}/test-results/xml"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/functional"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/stack-independent"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/udp-flush"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
-    </target>
-
-
+  
     <target name="compile"
             depends="prepare"
             description="Compiles are Java files">
@@ -466,8 +453,12 @@
                 />
     </target>
 
-    <target name="tcp" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
+    <target name="tcp" depends="postcompile">    	
+    	<!-- Needed to force reading of properties. Otherwise tcp tests will fail -->
+    	<property name="build.properties.file" value="build.properties"/>
+    	<property file="${build.properties.file}"/>
+    	
+    	<mkdir dir="${tmp.dir}/test-results/xml/tcp"/>
         <runtest testname.ext="tcp"
                  threadcount="1"
                  parallel="tests"
@@ -479,7 +470,10 @@
     </target>
 
     <target name="tcp-flush" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
+    	<!-- Needed to force reading of properties. Otherwise tcp-flush tests will fail -->
+    	<property name="build.properties.file" value="build.properties"/>
+    	<property file="${build.properties.file}"/>
+    	<mkdir dir="${tmp.dir}/test-results/xml/tcp-flush"/>
         <runtest testname.ext="tcp-flush"
                  threadcount="1"
                  parallel="tests"
