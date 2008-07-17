@@ -1,4 +1,4 @@
-// $Id: McastSenderTest.java,v 1.8 2005/09/12 14:03:19 belaban Exp $
+// $Id: McastSenderTest.java,v 1.9 2008/07/17 17:48:32 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -17,7 +17,7 @@ import java.util.Enumeration;
  test whether IPMCAST works between different subnets.
  @see McastReceiverTest
  @author Bela Ban
- @version $Revision: 1.8 $
+ @version $Revision: 1.9 $
  */
 public class McastSenderTest {
 
@@ -67,7 +67,7 @@ public class McastSenderTest {
                 return;
             }
             if(mcast_addr == null)
-                mcast_addr=InetAddress.getByName("224.0.0.150");
+                mcast_addr=InetAddress.getByName("224.10.10.150");
         }
         catch(Exception ex) {
             System.err.println(ex);
