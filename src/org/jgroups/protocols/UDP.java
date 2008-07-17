@@ -19,54 +19,49 @@ import java.util.Map;
 
 
 /**
- * IP multicast transport based on UDP. Messages to the group (msg.dest == null) will
- * be multicast (to all group members), whereas point-to-point messages
- * (msg.dest != null) will be unicast to a single member. Uses a multicast and
- * a unicast socket.<p>
+ * IP multicast transport based on UDP. Messages to the group (msg.dest == null)
+ * will be multicast (to all group members), whereas point-to-point messages
+ * (msg.dest != null) will be unicast to a single member. Uses a multicast and a
+ * unicast socket.
+ * <p>
  * The following properties are read by the UDP protocol:
  * <ul>
  * <li> param mcast_addr - the multicast address to use; default is 228.8.8.8.
- * <li> param mcast_port - (int) the port that the multicast is sent on; default is 7600
- * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is true.
- * <li> param ip_ttl - the default time-to-live for multicast packets sent out on this
- * socket; default is 32.
- * <li> param use_packet_handler - boolean, defaults to false.
- * If set, the mcast and ucast receiver threads just put
- * the datagram's payload (a byte buffer) into a queue, from where a separate thread
- * will dequeue and handle them (unmarshal and pass up). This frees the receiver
- * threads from having to do message unmarshalling; this time can now be spent
- * receiving packets. If you have lots of retransmissions because of network
- * input buffer overflow, consider setting this property to true.
+ * <li> param mcast_port - (int) the port that the multicast is sent on; default
+ * is 7600
+ * <li> param ip_mcast - (boolean) flag whether to use IP multicast; default is
+ * true.
+ * <li> param ip_ttl - the default time-to-live for multicast packets sent out
+ * on this socket; default is 32.
+ * <li> param use_packet_handler - boolean, defaults to false. If set, the mcast
+ * and ucast receiver threads just put the datagram's payload (a byte buffer)
+ * into a queue, from where a separate thread will dequeue and handle them
+ * (unmarshal and pass up). This frees the receiver threads from having to do
+ * message unmarshalling; this time can now be spent receiving packets. If you
+ * have lots of retransmissions because of network input buffer overflow,
+ * consider setting this property to true.
  * </ul>
+ * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.179 2008/07/17 16:14:21 belaban Exp $
+ * @version $Id: UDP.java,v 1.180 2008/07/17 18:18:56 vlada Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP {
 
-    /** Socket used for
-     * <ol>
-     * <li>sending unicast packets and
-     * <li>receiving unicast packets
-     * </ol>
-     * The address of this socket will be our local address (<tt>local_addr</tt>) */
-    DatagramSocket  sock=null;
-
+    
     /**
-     * BoundedList<Integer> of the last 100 ports used. This is to avoid reusing a port for DatagramSocket
+     * BoundedList<Integer> of the last 100 ports used. This is to avoid
+     * reusing a port for DatagramSocket
      */
     private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
+    
+    
 
-    /** IP multicast socket for <em>sending</em> and <em>receiving</em> multicast packets */
-    MulticastSocket mcast_sock=null;
-
-
-    /** If we have multiple mcast send sockets, e.g. send_interfaces or send_on_all_interfaces enabled */
-    MulticastSocket[] mcast_send_sockets=null;
+    /* ------------------------------------------ Properties  ------------------------------------------ */
 
     /**
-     * Traffic class for sending unicast and multicast datagrams.
-     * Valid values are (check {@link DatagramSocket#setTrafficClass(int)} );  for details):
+     * Traffic class for sending unicast and multicast datagrams. Valid values
+     * are (check {@link DatagramSocket#setTrafficClass(int)} ); for details):
      * <UL>
      * <LI><CODE>IPTOS_LOWCOST (0x02)</CODE>, <b>decimal 2</b></LI>
      * <LI><CODE>IPTOS_RELIABILITY (0x04)</CODE><, <b>decimal 4</b>/LI>
@@ -74,58 +69,80 @@ public class UDP extends TP {
      * <LI><CODE>IPTOS_LOWDELAY (0x10)</CODE>, <b>decimal</b> 16</LI>
      * </UL>
      */
-    @Property
-    int             tos=8; // valid values: 2, 4, 8 (default), 16
+    @Property(description="Traffic class for sending unicast and multicast datagrams. Default is 8")
+    private int tos=8; // valid values: 2, 4, 8 (default), 16   
 
+    @Property(name="mcast_addr", description="The multicast address used for sending and receiving packets. Default is 228.8.8.8")
+    private String mcast_addr_name="228.8.8.8";
 
+    @Property(description="The multicast port used for sending and receiving packets. Default is 7600")
+    private int mcast_port=7600;
+
+    @Property(description="Multicast toggle. If false multiple unicast datagrams are sent instead of one multicast. Default is tru")
+    private boolean ip_mcast=true;
+
+    @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8")
+    private int ip_ttl=8;
+
+    @Property(description="Send buffer size of the multicast datagram socket. Default is 32000 bytes")
+    private int mcast_send_buf_size=32000;
+
+    @Property(description="Receive buffer size of the multicast datagram socket. Default is 64000 bytes")
+    private int mcast_recv_buf_size=64000;
+
+    @Property(description="Send buffer size of the unicast datagram socket. Default is 32000 bytes")
+    private int ucast_send_buf_size=32000;
+
+    @Property(description="Receive buffer size of the unicast datagram socket. Default is 64000 bytes")
+    private int ucast_recv_buf_size=64000;
+
+    
+   
+    
+    /* --------------------------------------------- Fields ------------------------------------------------ */
+
+    
+    
     /** The multicast address (mcast address and port) this member uses */
-    IpAddress       mcast_addr=null;
+    private IpAddress mcast_addr=null;
 
-    /** The multicast address used for sending and receiving packets */
-    @Property(name="mcast_addr")
-    String          mcast_addr_name="228.8.8.8";
+    /**
+     * Socket used for
+     * <ol>
+     * <li>sending unicast packets and
+     * <li>receiving unicast packets
+     * </ol>
+     * The address of this socket will be our local address (<tt>local_addr</tt>)
+     */
+    private DatagramSocket sock=null;
 
-    /** The multicast port used for sending and receiving packets */
-    @Property
-    int             mcast_port=7600;
+    /**
+     * IP multicast socket for <em>sending</em> and <em>receiving</em>
+     * multicast packets
+     */
+    private MulticastSocket mcast_sock=null;
+
+    /**
+     * If we have multiple mcast send sockets, e.g. send_interfaces or
+     * send_on_all_interfaces enabled
+     */
+    private MulticastSocket[] mcast_send_sockets=null;
 
     /** Runnable to receive multicast packets */
-    PacketReceiver mcast_receiver=null;
+    private PacketReceiver mcast_receiver=null;
 
     /** Runnable to receive unicast packets */
-    PacketReceiver ucast_receiver=null;
+    private PacketReceiver ucast_receiver=null;  
 
 
-    /** Whether to enable IP multicasting. If false, multiple unicast datagram
-     * packets are sent rather than one multicast packet */
-    @Property
-    boolean         ip_mcast=true;
-
-    /** The time-to-live (TTL) for multicast datagram packets */
-    @Property
-    int             ip_ttl=8;
-
-    /** Send buffer size of the multicast datagram socket */
-    @Property
-    int             mcast_send_buf_size=32000;
-
-    /** Receive buffer size of the multicast datagram socket */
-    @Property
-    int             mcast_recv_buf_size=64000;
-
-    /** Send buffer size of the unicast datagram socket */
-    @Property
-    int             ucast_send_buf_size=32000;
-
-    /** Receive buffer size of the unicast datagram socket */
-    @Property
-    int             ucast_recv_buf_size=64000;
-
-
-    /** Usually, src addresses are nulled, and the receiver simply sets them to the address of the sender. However,
-     * for multiple addresses on a Windows loopback device, this doesn't work
-     * (see http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for details). This must be the same
-     * value for all members of the same group. Default is true, for performance reasons */
+    /**
+     * Usually, src addresses are nulled, and the receiver simply sets them to
+     * the address of the sender. However, for multiple addresses on a Windows
+     * loopback device, this doesn't work (see
+     * http://jira.jboss.com/jira/browse/JGRP-79 and the JGroups wiki for
+     * details). This must be the same value for all members of the same group.
+     * Default is true, for performance reasons
+     */
     // private boolean null_src_addresses=true;
 
 
