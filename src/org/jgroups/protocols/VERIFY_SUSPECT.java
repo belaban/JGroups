@@ -20,7 +20,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.37 2008/07/15 18:52:49 vlada Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.38 2008/07/18 15:18:04 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     
@@ -155,7 +155,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     public void run() {       
         long val, diff;
 
-        while(timer != null && Thread.currentThread().equals(timer) && !suspects.isEmpty()) {
+        while(!suspects.isEmpty()) {
             diff=0;
 
             List<Address> confirmed_suspects=new LinkedList<Address>();
@@ -181,8 +181,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
 
             if(diff > 0)
                 Util.sleep(diff);
-        }
-        timer=null;
+        }        
     }
 
 
@@ -263,7 +262,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    void startTimer() {
+    private synchronized void startTimer() {
         if(timer == null || !timer.isAlive()) {            
             timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
             timer.setDaemon(true);
@@ -282,7 +281,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         shutting_down=false;
     }
 
-    public void stop() {
+    public synchronized void stop() {
         Thread tmp;
         if(timer != null && timer.isAlive()) {
             tmp=timer;
