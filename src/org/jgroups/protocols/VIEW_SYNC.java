@@ -21,46 +21,68 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Periodically sends the view to the group. When a view is received which is greater than the current view, we
- * install it. Otherwise we simply discard it. This is used to solve the problem for unreliable view
- * dissemination outlined in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be just below GMS.
+ * Periodically sends the view to the group. When a view is received which is
+ * greater than the current view, we install it. Otherwise we simply discard it.
+ * This is used to solve the problem for unreliable view dissemination outlined
+ * in JGroups/doc/ReliableViewInstallation.txt. This protocol is supposed to be
+ * just below GMS.
+ * 
  * @author Bela Ban
- * @version $Id: VIEW_SYNC.java,v 1.30 2008/05/20 11:27:30 belaban Exp $
+ * @version $Id: VIEW_SYNC.java,v 1.31 2008/07/18 15:55:17 vlada Exp $
  */
 @MBean(description="Periodically sends the view to the group")
 public class VIEW_SYNC extends Protocol {
-    Address               local_addr=null;
-    final Vector<Address> mbrs=new Vector<Address>();
-    View                  my_view=null;
-    ViewId                my_vid=null;
-  
-    @Property
-    @ManagedAttribute(description="Sends a VIEW_SYNC message to the group every 20 seconds on average",writable=true)
-    long                 avg_send_interval=60000;
+    
+    private static final String name="VIEW_SYNC";
 
-    private int          num_views_sent=0;
+    /* -----------------------------------------    Properties     --------------------------------------- */
+
+    @Property
+    @ManagedAttribute(description="Sends a VIEW_SYNC message to the group every 20 seconds on average", writable=true)
+    private long avg_send_interval=60000;
+
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
+
+    private int num_views_sent=0;
+
     @ManagedAttribute
-    private int          num_view_requests_sent=0;
+    private int num_view_requests_sent=0;
+
     @ManagedAttribute
-    private int          num_view_responses_seen=0;
+    private int num_view_responses_seen=0;
+
     @ManagedAttribute
-    private int          num_views_non_local=0;
+    private int num_views_non_local=0;
+
     @ManagedAttribute
-    private int          num_views_equal=0;
+    private int num_views_equal=0;
+
     @ManagedAttribute
-    private int          num_views_less=0;
+    private int num_views_less=0;
+
     @ManagedAttribute
-    private int          num_views_adjusted=0;
+    private int num_views_adjusted=0;
+
     @ManagedAttribute
-    private long         last_view_request_sent=0;
+    private long last_view_request_sent=0;
+
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    private Address local_addr=null;
+
+    private final Vector<Address> mbrs=new Vector<Address>();
+
+    private View my_view=null;
+
+    private ViewId my_vid=null;
 
     @GuardedBy("view_task_lock")
-    private Future<?>       view_send_task_future=null;       // bcasts periodic view sync message (added to timer below)
+    private Future<?> view_send_task_future=null; // bcasts periodic view sync message (added to timer below)
 
-    private final Lock   view_task_lock=new ReentrantLock();
+    private final Lock view_task_lock=new ReentrantLock();
 
-    TimeScheduler        timer=null;
-    static final String  name="VIEW_SYNC";
+    private TimeScheduler timer=null;    
 
 
 

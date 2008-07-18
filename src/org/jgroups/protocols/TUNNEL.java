@@ -1,4 +1,4 @@
-// $Id: TUNNEL.java,v 1.49 2008/05/20 11:27:32 belaban Exp $
+// $Id: TUNNEL.java,v 1.50 2008/07/18 15:51:43 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -38,16 +38,24 @@ import java.util.concurrent.locks.ReentrantLock;
  * @author Bela Ban
  */
 public class TUNNEL extends TP {
-    @Property
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    @Property(description="Router host address")
     private String router_host = null;
 
-    @Property
-    private int router_port = 0;
+    @Property(description="Router port")
+    private int router_port = 0;    
 
+    @Property(description="Interval in msec to attempt connecting back to router in case of torn connection. Default is 5000 msec")
+    private long reconnect_interval = 5000;
+    
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    
     private RouterStub stub;
-
-    @Property
-    long reconnect_interval = 5000;
     
     /*
      * flag indicating if tunnel was destroyed intentionally (disconnect, channel destroy etc)
