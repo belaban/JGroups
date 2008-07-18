@@ -9,7 +9,6 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.util.Streamable;
 
 import java.io.*;
-import java.util.Properties;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.zip.DataFormatException;
@@ -17,30 +16,43 @@ import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
 /**
- * Compresses the payload of a message. Goal is to reduce the number of messages sent across the wire.
- * Should ideally be layered somewhere above a fragmentation protocol (e.g. FRAG).
+ * Compresses the payload of a message. Goal is to reduce the number of messages
+ * sent across the wire. Should ideally be layered somewhere above a
+ * fragmentation protocol (e.g. FRAG).
+ * 
  * @author Bela Ban
- * @version $Id: COMPRESS.java,v 1.20 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: COMPRESS.java,v 1.21 2008/07/18 15:48:00 vlada Exp $
  */
-public class COMPRESS extends Protocol {
+public class COMPRESS extends Protocol {   
+    
+    
+    private final static String name="COMPRESS";
+    
+    
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    @Property(description="Compression level 0-9 (0=no compression, 9=best compression). Default is 9")
+    private int compression_level=Deflater.BEST_COMPRESSION; // this is 9
+   
+    @Property(description="Minimal payload size of a message (in bytes) for compression to kick in. Default is 500 bytes")
+    private long min_size=500;
+    
+    @Property(description="Number of inflaters/deflaters for concurrent processing. Default is 2 ")
+    private int pool_size=2;
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+    
+    
     BlockingQueue<Deflater> deflater_pool=null;
+    
     BlockingQueue<Inflater> inflater_pool=null;
 
+    
 
-    /** Values are from 0-9 (0=no compression, 9=best compression) */
-    @Property
-    int compression_level=Deflater.BEST_COMPRESSION; // this is 9
+    public COMPRESS() {      
+    }
 
-    /** Minimal payload size of a message (in bytes) for compression to kick in */
-    @Property
-    long min_size=500;
-
-    /** Number of inflaters/deflaters, for concurrency, increase this to the max number of concurrent requests possible */
-    @Property
-    int pool_size=2;
-
-
-    final static String name="COMPRESS";
 
     public String getName() {
         return name;
