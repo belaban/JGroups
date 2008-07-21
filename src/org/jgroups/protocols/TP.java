@@ -46,242 +46,411 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.223 2008/07/11 10:41:10 belaban Exp $
+ * @version $Id: TP.java,v 1.224 2008/07/21 19:10:30 vlada Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
 public abstract class TP extends Protocol {
+    
+    private static final byte LIST=1; // we have a list of messages rather than a single message when set
+    private static final byte MULTICAST=2; // message is a multicast (versus a unicast) message when set
+    private static final byte OOB=4; // message has OOB flag set (Message.OOB)
 
-    /** The address (host and port) of this member */
-    protected Address         local_addr=null;
+    private static NumberFormat f;
+    private static final int INITIAL_BUFSIZE=1024;
 
-    /** The name of the group to which this member is connected */    
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
+
+    
+    
+    /* ------------------------------------------ JMX and Properties  ------------------------------------------ */
+    
+    
+    
     @ManagedAttribute
-    protected String          channel_name=null;
+    @Property(converter=PropertyConverters.BindAddress.class,
+                      description="The interface (NIC) which should be used by this transport ")
+    protected InetAddress bind_addr=null;
 
-    /** The interface (NIC) which should be used by this transport */
-    @ManagedAttribute    
-    @Property(converter=PropertyConverters.BindAddress.class)
-    protected InetAddress     bind_addr=null;
+    @Property(description="Ignores all bind address parameters and  let's the OS return the local host address. Default is false")
+    protected boolean use_local_host=false;
 
-    /** Overrides bind_addr, -Djgroups.bind_addr and -Dbind.address: let's the OS return the local host address */
-    @Property
-    boolean                   use_local_host=false;
-
-    /** If true, the transport should use all available interfaces to receive multicast messages */
     @ManagedAttribute
-    @Property
-    boolean                   receive_on_all_interfaces=false;
+    @Property(description=" If true, the transport should use all available interfaces to receive multicast messages. Default is false")
+    protected boolean receive_on_all_interfaces=false;
 
-    /** List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
-     * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
-     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to an interface once.
-     * If this property is set, it override receive_on_all_interfaces.
+    /**
+     * List<NetworkInterface> of interfaces to receive multicasts on. The
+     * multicast receive socket will listen on all of these interfaces. This is
+     * a comma-separated list of IP addresses or interface names. E.g.
+     * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
+     * an interface once. If this property is set, it override
+     * receive_on_all_interfaces.
      */
     @ManagedAttribute
-    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
-    List<NetworkInterface>    receive_interfaces=null;
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class, 
+                      description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
+    protected List<NetworkInterface> receive_interfaces=null;
 
-    /** If true, the transport should use all available interfaces to send multicast messages. This means
-     * the same multicast message is sent N times, so use with care */
-    @ManagedAttribute
-    @Property
-    boolean                   send_on_all_interfaces=false;
-
-    /** List<NetworkInterface> of interfaces to send multicasts on. The multicast send socket will send the
-     * same multicast message on all of these interfaces. This is a comma-separated list of IP addresses or
-     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded.
-     * If this property is set, it override send_on_all_interfaces.
+    /**
+     * If true, the transport should use all available interfaces to send
+     * multicast messages. This means the same multicast message is sent N
+     * times, so use with care
      */
     @ManagedAttribute
-    @Property(converter=PropertyConverters.NetworkInterfaceList.class)
-    List<NetworkInterface>    send_interfaces=null;
+    @Property(description=" If true, the transport should use all available interfaces to send multicast messages. Default is false")
+    protected boolean send_on_all_interfaces=false;
 
+    /**
+     * List<NetworkInterface> of interfaces to send multicasts on. The
+     * multicast send socket will send the same multicast message on all of
+     * these interfaces. This is a comma-separated list of IP addresses or
+     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are
+     * discarded. If this property is set, it override send_on_all_interfaces.
+     */
+    @ManagedAttribute
+    @Property(converter=PropertyConverters.NetworkInterfaceList.class,
+                      description="Comma delimited list of interfaces (IP addresses or interface names) to send multicasts on")
+    protected List<NetworkInterface> send_interfaces=null;
 
-    /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
-    @Property(name="start_port",deprecatedMessage="start_port is deprecated; use bind_port instead")
-    int             bind_port=0;
-    @Property(name="end_port",deprecatedMessage="end_port is deprecated; use port_range instead")
-    int				port_range=1; // 27-6-2003 bgooren, Only try one port by default
+    /**
+     * The port to which the transport binds. 0 means to bind to any (ephemeral)
+     * port
+     */
+    @Property(name="start_port", deprecatedMessage="start_port is deprecated; use bind_port instead", 
+                      description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
+    protected int bind_port=0;
+    
+    @Property(name="end_port", deprecatedMessage="end_port is deprecated; use port_range instead")
+    protected int port_range=1; // 27-6-2003 bgooren, Only try one port by default
 
-    @Property
-    boolean         prevent_port_reuse=false;
+    @Property(description="TODO")
+    protected boolean prevent_port_reuse=false;
 
-    /** The members of this group (updated when a member joins or leaves) */
-    final protected HashSet<Address>   members=new HashSet<Address>(11);
+    /**
+     * If true, messages sent to self are treated specially: unicast messages
+     * are looped back immediately, multicast messages get a local copy first
+     * and - when the real copy arrives - it will be discarded. Useful for
+     * Window media (non)sense
+     */
+    @ManagedAttribute(description="", writable=true)
+    @Property(description="Messages to self are looped back immediatelly if true. Default is false")
+    protected boolean loopback=false;
 
-    protected View                     view=null;
-
-    final ExposedByteArrayInputStream  in_stream=new ExposedByteArrayInputStream(new byte[]{'0'});
-    final DataInputStream              dis=new DataInputStream(in_stream);
-
-
-    /** If true, messages sent to self are treated specially: unicast messages are
-     * looped back immediately, multicast messages get a local copy first and -
-     * when the real copy arrives - it will be discarded. Useful for Window
-     * media (non)sense */
-    @ManagedAttribute(description = "", writable = true)
-    @Property
-    boolean loopback = false;
-
-
-    /** Discard packets with a different version. Usually minor version differences are okay. Setting this property
-     * to true means that we expect the exact same version on all incoming packets */
-    @ManagedAttribute(description="Discard packets with a different version",writable=true)
-    @Property
+    /**
+     * Discard packets with a different version. Usually minor version
+     * differences are okay. Setting this property to true means that we expect
+     * the exact same version on all incoming packets
+     */
+    @ManagedAttribute(description="Discard packets with a different version", writable=true)
+    @Property(description="Discard packets with a different version if true. Default is false")
     protected boolean discard_incompatible_packets=false;
 
-    /** whether or not warnings about messages from different groups are logged - private flag, not for common use */
+    /**
+     * Sometimes receivers are overloaded (they have to handle de-serialization
+     * etc). Packet handler is a separate thread taking care of
+     * de-serialization, receiver thread(s) simply put packet in queue and
+     * return immediately. Setting this to true adds one more thread
+     */
+    @ManagedAttribute(description="Should additional thread be used for message deserialization", writable=true)
+    @Property(name="use_packet_handler", 
+                      deprecatedMessage="'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead",
+                      description="Should additional thread be used for message deserialization. Default is true")
+    protected boolean use_incoming_packet_handler=true;
+
+    @Property(description="Should concurrent stack with thread pools be used to deliver messages up the stack. Default is true")
+    protected boolean use_concurrent_stack=true;
+
+    @Property(description="Thread naming pattern for threads in this channel. Default is cl")
+    protected String thread_naming_pattern="cl";
+
+    @Property(name="oob_thread_pool.enabled",description="Switch for enabling thread pool for OOB messages. Default true")
+    protected boolean oob_thread_pool_enabled=true;
+
+    @ManagedAttribute(description="Minimum thread pool size for OOB messages. Default is 2")
+    @Property(name="oob_thread_pool.min_threads")
+    protected int oob_thread_pool_min_threads=2;
+    
+    @ManagedAttribute(description="Maximum thread pool size for OOB messages. Default is 10")
+    @Property(name="oob_thread_pool.max_threads")
+    protected int oob_thread_pool_max_threads=10;
+      
+    @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from OOB pool. Default is 30000")
+    @Property(name="oob_thread_pool.keep_alive_time")
+    protected long oob_thread_pool_keep_alive_time=30000;
+
+    @ManagedAttribute(description="Use queue to enqueue incoming OOB messages. Default is true")
+    @Property(name="oob_thread_pool.queue_enabled",
+                      description="Use queue to enqueue incoming OOB messages. Default is true")
+    protected boolean oob_thread_pool_queue_enabled=true;
+  
+    
+    @ManagedAttribute(description="Maximum queue size for incoming OOB messages. Default is 500")
+    @Property(name="oob_thread_pool.queue_max_size")
+    protected int oob_thread_pool_queue_max_size=500;
+       
+    @ManagedAttribute
+    @Property(name="oob_thread_pool.rejection_policy",
+                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run. Default is Run")
+    String oob_thread_pool_rejection_policy="Run";
+
+    @ManagedAttribute(description="Minimum thread pool size for regular messages. Default is 2")
+    @Property(name="thread_pool.min_threads")
+    protected int thread_pool_min_threads=2;
+
+    @ManagedAttribute(description="Maximum thread pool size for regular messages. Default is 10")
+    @Property(name="thread_pool.max_threads")
+    protected int thread_pool_max_threads=10;
+   
+    
+    @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
+    @Property(name="thread_pool.keep_alive_time")
+    protected long thread_pool_keep_alive_time=30000;
+
+    @ManagedAttribute(description="Switch for enabling thread pool for regular messages. Default true")
+    @Property(name="thread_pool.enabled")
+    protected boolean thread_pool_enabled=true;
+  
+    @ManagedAttribute(description="Use queue to enqueue incoming regular messages")
+    @Property(name="thread_pool.queue_enabled",
+                      description="Use queue to enqueue incoming regular messages. Default is true")
+    protected boolean thread_pool_queue_enabled=true;
+
+    
+    @ManagedAttribute(description="Maximum queue size for incoming OOB messages")
+    @Property(name="thread_pool.queue_max_size",
+                      description="Maximum queue size for incoming OOB messages. Default is 500")
+    protected int thread_pool_queue_max_size=500;
+
+    @ManagedAttribute
+    @Property(name="thread_pool.rejection_policy",
+                      description="Thread rejection policy. Possible values are Abort, Discard, DiscardOldest and Run Default is Run")
+    protected String thread_pool_rejection_policy="Run";
+
+    @ManagedAttribute(description="Number of threads to be used by the timer thread pool")
+    @Property(name="timer.num_threads",description="Number of threads to be used by the timer thread pool. Default is 4")
+    protected int num_timer_threads=4;
+    
+    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
+    @Property(description="Enable bundling of smaller messages into bigger ones. Default is false")
+    protected boolean enable_bundling=false;
+
+    /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
+    @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is true")
+    protected boolean enable_unicast_bundling=true;
+
+    @Property(description="Switch to enbale diagnostic probing. Default is true")
+    protected boolean enable_diagnostics=true;
+    
+    @Property(description="Address for diagnostic probing. Default is 224.0.75.75")
+    protected String diagnostics_addr="224.0.75.75";
+    
+    @Property(description="Port for diagnostic probing. Default is 7500")
+    protected int diagnostics_port=7500;
+  
+    @Property(description="If assigned enable this transport to be a singleton (shared) transport")
+    protected String singleton_name=null;
+
+    @Property(description="Path to a file to store currently used ports on this machine.")
+    protected String persistent_ports_file=null;
+    
+    @Property(name="ports_expiry_time",description="Timeout to expire ports used with PortManager. Default is 30000 msec")
+    protected long pm_expiry_time=30000L;
+    
+    @Property(description="Switch to enable tracking of currently used ports on this machine. Default is false")
+    protected boolean persistent_ports=false;
+    
+    
+    /**
+     * Maximum number of bytes for messages to be queued until they are sent.
+     * This value needs to be smaller than the largest datagram packet size in
+     * case of UDP
+     */
+
+    protected int max_bundle_size=64000;
+
+    /**
+     * Max number of milliseconds until queued messages are sent. Messages are
+     * sent when max_bundle_size or max_bundle_timeout has been exceeded
+     * (whichever occurs faster)
+     */
+    protected long max_bundle_timeout=20;
+    
+    
+    
+
+    /* --------------------------------------------- JMX  ---------------------------------------------- */
+
+    
+    
+    
+    @ManagedAttribute
+    protected long num_msgs_sent=0;
+    @ManagedAttribute
+    protected long num_msgs_received=0;
+
+    @ManagedAttribute
+    protected long num_bytes_sent=0;
+
+    @ManagedAttribute
+    protected long num_bytes_received=0;
+
+    /** The name of the group to which this member is connected */
+    @ManagedAttribute
+    protected String channel_name=null;
+
+    /**
+     * whether or not warnings about messages from different groups are logged -
+     * private flag, not for common use
+     */
     @ManagedAttribute(writable=true, description="whether or not warnings about messages from different groups are logged")
     private boolean log_discard_msgs=true;
 
-    /** Sometimes receivers are overloaded (they have to handle de-serialization etc).
-     * Packet handler is a separate thread taking care of de-serialization, receiver
-     * thread(s) simply put packet in queue and return immediately. Setting this to
-     * true adds one more thread */
-    @ManagedAttribute(description="Sometimes receivers are overloaded (they have to handle de-serialization etc) + " +
-    		"Packet handler is a separate thread taking care of de-serialization, receiver " +
-            "thread(s) simply put packet in queue and return immediately. Setting this to " + 
-            "true adds one more thread",writable=true)
-    @Property(name="use_packet_handler",deprecatedMessage="'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead")    
-    boolean         use_incoming_packet_handler=true;
+    @ManagedAttribute
+    protected long num_oob_msgs_received=0;
+
+    @ManagedAttribute
+    protected long num_incoming_msgs_received=0;
+    
+    
+
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
+
+    
+    
+    /** The address (host and port) of this member */
+    protected Address local_addr=null;
+
+    /** The members of this group (updated when a member joins or leaves) */
+    protected final HashSet<Address> members=new HashSet<Address>(11);
+
+    protected View view=null;
+
+    protected final ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(new byte[] { '0' });
+    protected final DataInputStream dis=new DataInputStream(in_stream);
 
     /** Used by packet handler to store incoming DatagramPackets */
-    Queue           incoming_packet_queue=null;
-
-    /** Dequeues DatagramPackets from packet_queue, unmarshalls them and
-     * calls <tt>handleIncomingUdpPacket()</tt> */
-    IncomingPacketHandler   incoming_packet_handler=null;
-
-
-    /** Used by packet handler to store incoming Messages */
-    Queue                  incoming_msg_queue=null;
-
-    IncomingMessageHandler incoming_msg_handler;
-
-
-    @Property
-    boolean use_concurrent_stack=true;
-    ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
+    protected Queue incoming_packet_queue=null;
 
     /**
-     * Names the current thread. Valid values are "pcl":
-     * p: include the previous (original) name, e.g. "Incoming thread-1", "UDP ucast receiver"
-     * c: include the cluster name, e.g. "MyCluster"
-     * l: include the local address of the current member, e.g. "192.168.5.1:5678"
+     * Dequeues DatagramPackets from packet_queue, unmarshalls them and calls
+     * <tt>handleIncomingUdpPacket()</tt>
      */
-    @Property
-    protected String thread_naming_pattern="cl";
+    protected IncomingPacketHandler incoming_packet_handler=null;
 
-    public String getThreadNamingPattern() {return thread_naming_pattern;}
+    /** Used by packet handler to store incoming Messages */
+    protected Queue incoming_msg_queue=null;
 
+    protected IncomingMessageHandler incoming_msg_handler;
 
-    /** Keeps track of connects and disconnects, in order to start and stop threads */
-    int connect_count=0;
+    protected ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
+    /**
+     * Keeps track of connects and disconnects, in order to start and stop
+     * threads
+     */
+    protected int connect_count=0;
 
-    /** ================================== OOB thread pool ============================== */
-    /** The thread pool which handles OOB messages */
-    Executor oob_thread_pool;
-    /** Factory which is used by oob_thread_pool */
-    ThreadFactory oob_thread_factory=null;
-    @Property(name="oob_thread_pool.enabled")
-    boolean oob_thread_pool_enabled=true;
-
-    @ManagedAttribute
-    public boolean isOOBThreadPoolEnabled() { return oob_thread_pool_enabled; }
-
-    @ManagedAttribute
-    @Property(name="oob_thread_pool.min_threads")
-    int oob_thread_pool_min_threads=2;
-    @ManagedAttribute
-    @Property(name="oob_thread_pool.max_threads")
-    int oob_thread_pool_max_threads=10;
-    /** Number of milliseconds after which an idle thread is removed */
-    @ManagedAttribute
-    @Property(name="oob_thread_pool.keep_alive_time")
-    long oob_thread_pool_keep_alive_time=30000;
-
-    @ManagedAttribute
-    long num_oob_msgs_received=0;
-
-    /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
-    BlockingQueue<Runnable> oob_thread_pool_queue=null;
-    /** Whether of not to use a queue with ThreadPoolExecutor (ignored with direct executor) */
-    @ManagedAttribute @Property(name="oob_thread_pool.queue_enabled")
-    boolean oob_thread_pool_queue_enabled=true;
-    /** max number of elements in queue (bounded) */
-    @ManagedAttribute    
-    @Property(name="oob_thread_pool.queue_max_size")
-    int oob_thread_pool_queue_max_size=500;
-    /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
-     * JDK 5's java.util.concurrent package */
-    @ManagedAttribute @Property(name="oob_thread_pool.rejection_policy")
-    String oob_thread_pool_rejection_policy="Run";
-
-    public Executor getOOBThreadPool() {
-        return oob_thread_pool;
-    }
-
-    public void setOOBThreadPool(Executor oob_thread_pool) {
-        if(this.oob_thread_pool != null) {
-            shutdownThreadPool(this.oob_thread_pool);
-        }
-        this.oob_thread_pool=oob_thread_pool;
-    }
-
-    public ThreadFactory getOOBThreadPoolThreadFactory() {
-        return oob_thread_factory;
-    }
-
-    public void setOOBThreadPoolThreadFactory(ThreadFactory factory) {
-        oob_thread_factory=factory;
-        if(oob_thread_pool instanceof ThreadPoolExecutor)
-            ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
-    }
-
-    /** ================================== Regular thread pool ============================== */
-
-    /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
-    Executor thread_pool;
-    /** Factory which is used by oob_thread_pool */
-    ThreadFactory default_thread_factory=null;
-
-    @ManagedAttribute @Property(name="thread_pool.enabled")
-    boolean thread_pool_enabled=true;
-
-    @ManagedAttribute
-    public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }
+    /**
+     * ================================== OOB thread pool ========================
+     */   
+    protected Executor oob_thread_pool;
     
-    @ManagedAttribute @Property(name="thread_pool.min_threads")
-    int thread_pool_min_threads=2;
+    /** Factory which is used by oob_thread_pool */
+    protected ThreadFactory oob_thread_factory=null;
+
+    /**
+     * Used if oob_thread_pool is a ThreadPoolExecutor and
+     * oob_thread_pool_queue_enabled is true
+     */
+    protected BlockingQueue<Runnable> oob_thread_pool_queue=null;
+   
+
+    /**
+     * ================================== Regular thread pool =======================
+     */
+
+    /**
+     * The thread pool which handles unmarshalling, version checks and
+     * dispatching of regular messages
+     */
+    protected Executor thread_pool;
     
-    @ManagedAttribute @Property(name="thread_pool.max_threads")
-    int thread_pool_max_threads=10;
-    /** Number of milliseconds after which an idle thread is removed */
-    @ManagedAttribute @Property(name="thread_pool.keep_alive_time")
-    long thread_pool_keep_alive_time=30000;
+    /** Factory which is used by oob_thread_pool */
+    protected ThreadFactory default_thread_factory=null;
 
-    @ManagedAttribute
-    long num_incoming_msgs_received=0;
+    /**
+     * Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled
+     * is true
+     */
+    protected BlockingQueue<Runnable> thread_pool_queue=null;
 
-    /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
-    BlockingQueue<Runnable> thread_pool_queue=null;
-    /** Whether of not to use a queue with ThreadPoolExecutor (ignored with directE decutor) */
-    @ManagedAttribute @Property(name="thread_pool.queue_enabled")
-    boolean thread_pool_queue_enabled=true;
+    /**
+     * ================================== Timer thread pool  =========================
+     */
+    protected TimeScheduler timer=null;
 
+    protected ThreadFactory timer_thread_factory;
+
+    /**
+     * =================================Default thread factory ========================
+     */
+    /** Used by all threads created by JGroups outside of the thread pools */
+    protected ThreadFactory global_thread_factory=null;
+
+  
+    /**
+     * If set it will be added to <tt>local_addr</tt>. Used to implement for
+     * example transport independent addresses
+     */
+    protected byte[] additional_data=null;
+
+    private Bundler bundler=null;
+
+    private DiagnosticsHandler diag_handler=null;
+
+    /**
+     * If singleton_name is enabled, this map is used to de-multiplex incoming
+     * messages according to their cluster names (attached to the message by the
+     * transport anyway). The values are the next protocols above the
+     * transports.
+     */
+    private final ConcurrentMap<String,Protocol> up_prots=new ConcurrentHashMap<String,Protocol>();
+
+    protected TpHeader header;
+
+    protected final String name=getName();
+
+    protected PortsManager pm=null;  
+   
+
+
+
+    /**
+     * Creates the TP protocol, and initializes the state variables, does
+     * however not start any sockets or threads.
+     */
+    protected TP() {
+    }
+
+    /**
+     * debug only
+     */
+    public String toString() {
+        return local_addr != null? name + "(local address: " + local_addr + ')' : name;
+    }
+    
+    public void resetStats() {
+        num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
+        num_oob_msgs_received=num_incoming_msgs_received=0;
+    }
+    
     public void setThreadPoolQueueEnabled(boolean flag) {thread_pool_queue_enabled=flag;}
 
-    /** max number of elements in queue (bounded) */
-    @ManagedAttribute
-    @Property(name="thread_pool.queue_max_size")
-    int thread_pool_queue_max_size=500;
-    /** Possible values are "Abort", "Discard", "DiscardOldest" and "Run". These values might change once we switch to
-     * JDK 5's java.util.concurrent package */
-    
-    @ManagedAttribute @Property(name="thread_pool.rejection_policy")
-    String thread_pool_rejection_policy="Run";
 
     public Executor getDefaultThreadPool() {
         return thread_pool;
@@ -302,16 +471,28 @@ public abstract class TP extends Protocol {
         if(thread_pool instanceof ThreadPoolExecutor)
             ((ThreadPoolExecutor)thread_pool).setThreadFactory(factory);
     }
+    
+    public Executor getOOBThreadPool() {
+        return oob_thread_pool;
+    }
 
-    /** ================================== Timer thread pool ================================= */
-    protected TimeScheduler timer=null;
+    public void setOOBThreadPool(Executor oob_thread_pool) {
+        if(this.oob_thread_pool != null) {
+            shutdownThreadPool(this.oob_thread_pool);
+        }
+        this.oob_thread_pool=oob_thread_pool;
+    }
 
-    protected ThreadFactory timer_thread_factory;
+    public ThreadFactory getOOBThreadPoolThreadFactory() {
+        return oob_thread_factory;
+    }
 
-    @ManagedAttribute(description="Number of threads to be used by the timer thread pool")
-    @Property(name="timer.num_threads")
-    int num_timer_threads=4;
-
+    public void setOOBThreadPoolThreadFactory(ThreadFactory factory) {
+        oob_thread_factory=factory;
+        if(oob_thread_pool instanceof ThreadPoolExecutor)
+            ((ThreadPoolExecutor)oob_thread_pool).setThreadFactory(factory);
+    }
+    
     public ThreadFactory getTimerThreadFactory() {
         return timer_thread_factory;
     }
@@ -322,11 +503,7 @@ public abstract class TP extends Protocol {
     }
 
     public TimeScheduler getTimer() {return timer;}
-
-    /** =================================Default thread factory ================================== */
-    /** Used by all threads created by JGroups outside of the thread pools */
-    protected ThreadFactory global_thread_factory=null;
-
+    
     public ThreadFactory getThreadFactory() {
         return global_thread_factory;
     }
@@ -335,113 +512,16 @@ public abstract class TP extends Protocol {
         global_thread_factory=factory;
     }
 
-    /** ============================= End of default thread factory ============================== */
-
-
-
-    /** If set it will be added to <tt>local_addr</tt>. Used to implement
-     * for example transport independent addresses */
-    byte[]          additional_data=null;
-
-    /** Maximum number of bytes for messages to be queued until they are sent. This value needs to be smaller
-        than the largest datagram packet size in case of UDP */
-        
-    int max_bundle_size=64000;
-
-    /** Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size or
-     * max_bundle_timeout has been exceeded (whichever occurs faster)
-     */    
-    long max_bundle_timeout=20;
-
-    /** Enable bundling of smaller messages into bigger ones */
-    @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
-    @Property
-    boolean enable_bundling=false;
-
-    /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
-    @Property
-    boolean enable_unicast_bundling=true;
-
-    private Bundler    bundler=null;
-
-    private DiagnosticsHandler diag_handler=null;
-    @Property
-    boolean enable_diagnostics=true;
-    @Property
-    String diagnostics_addr="224.0.75.75";
-    @Property
-    int    diagnostics_port=7500;
-
-    /** If this transport is shared, identifies all the transport instances which are to be shared */
-    @Property
-    String singleton_name=null;
-
-    /** If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their
-     * cluster names (attached to the message by the transport anyway). The values are the next protocols above
-     * the transports.
-     */
-    private final ConcurrentMap<String,Protocol> up_prots=new ConcurrentHashMap<String,Protocol>();
-
-    TpHeader header;
-    final String name=getName();
-
-    protected PortsManager pm=null;
-    @Property
-    protected String persistent_ports_file=null;
-    @Property(name="ports_expiry_time")
-    protected long pm_expiry_time=30000L;
-    @Property
-    protected boolean persistent_ports=false;
     
-
-    static final byte LIST      = 1;  // we have a list of messages rather than a single message when set
-    static final byte MULTICAST = 2;  // message is a multicast (versus a unicast) message when set
-    static final byte OOB       = 4;  // message has OOB flag set (Message.OOB)
-
-    @ManagedAttribute
-    protected long num_msgs_sent=0;
-    @ManagedAttribute
-    protected long num_msgs_received=0; 
-    
-    @ManagedAttribute
-    protected long num_bytes_sent=0; 
-    
-    @ManagedAttribute
-    protected long num_bytes_received=0;
-
-    static  NumberFormat f;
-    private static final int INITIAL_BUFSIZE=1024;
-
-    static {
-        f=NumberFormat.getNumberInstance();
-        f.setGroupingUsed(false);
-        f.setMaximumFractionDigits(2);
-    }
-
-
-
-
     /**
-     * Creates the TP protocol, and initializes the
-     * state variables, does however not start any sockets or threads.
-     */
-    protected TP() {
-    }
+     * Names the current thread. Valid values are "pcl":
+     * p: include the previous (original) name, e.g. "Incoming thread-1", "UDP ucast receiver"
+     * c: include the cluster name, e.g. "MyCluster"
+     * l: include the local address of the current member, e.g. "192.168.5.1:5678"
+     */ 
 
-    /**
-     * debug only
-     */
-    public String toString() {
-        return local_addr != null? name + "(local address: " + local_addr + ')' : name;
-    }
+    public String getThreadNamingPattern() {return thread_naming_pattern;}
 
-    @ManagedAttribute
-    public String getLocalAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
-
-    public void resetStats() {
-        num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
-        num_oob_msgs_received=num_incoming_msgs_received=0;
-    }
 
     public long getNumMessagesSent()     {return num_msgs_sent;}
     public long getNumMessagesReceived() {return num_msgs_received;}
@@ -472,6 +552,14 @@ public abstract class TP extends Protocol {
     public void setUseConcurrentStack(boolean flag) {use_concurrent_stack=flag;}
 
 
+    @ManagedAttribute
+    public String getLocalAddressAsString() {return local_addr != null? local_addr.toString() : "n/a";}
+    
+    @ManagedAttribute
+    public boolean isOOBThreadPoolEnabled() { return oob_thread_pool_enabled; }
+
+    @ManagedAttribute
+    public boolean isDefaulThreadPoolEnabled() { return thread_pool_enabled; }     
 
     @ManagedAttribute(description="Maximum number of bytes for messages to be queued until they are sent")
     public int getMaxBundleSize() {return max_bundle_size;}
