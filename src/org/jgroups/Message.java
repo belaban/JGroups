@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.82 2008/07/21 12:34:55 belaban Exp $
+ * @version $Id: Message.java,v 1.83 2008/07/21 13:42:21 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -105,11 +105,6 @@ public class Message implements Streamable {
         setBuffer(buf);
     }
 
-     public Message(Address dest, Address src, Buffer buf) {
-         this(dest);
-         setSrc(src);
-         setBuffer(buf);
-     }
 
     /**
      * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
