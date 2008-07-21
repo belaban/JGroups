@@ -25,7 +25,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.21 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: SFC.java,v 1.22 2008/07/21 18:31:47 vlada Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -270,9 +270,9 @@ public class SFC extends Protocol {
                 handleSuspect((Address)evt.getArg());
                 break;
 
-            case Event.INFO:
+            case Event.CONFIG:
                 Map<String,Object> map=(Map<String,Object>)evt.getArg();
-                handleInfo(map);
+                handleConfigEvent(map);
                 break;
         }
 
@@ -321,9 +321,9 @@ public class SFC extends Protocol {
             case Event.SUSPECT:
                 handleSuspect((Address)evt.getArg());
                 break;
-            case Event.INFO:
+            case Event.CONFIG:
                 Map<String,Object> map=(Map<String,Object>)evt.getArg();
-                handleInfo(map);
+                handleConfigEvent(map);
                 break;
         }
         return up_prot.up(evt);
@@ -360,7 +360,7 @@ public class SFC extends Protocol {
     }
 
 
-    private void handleInfo(Map<String,Object> map) {
+    private void handleConfigEvent(Map<String,Object> map) {
         if(map != null) {
             Integer frag_size=(Integer)map.get("frag_size");
             if(frag_size != null) {

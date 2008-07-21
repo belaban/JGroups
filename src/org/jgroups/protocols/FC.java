@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.98 2008/07/16 15:24:57 vlada Exp $
+ * @version $Id: FC.java,v 1.99 2008/07/21 18:31:47 vlada Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -358,9 +358,9 @@ public class FC extends Protocol {
         switch(evt.getType()) {
             case Event.MSG:
                 return handleDownMessage(evt);
-            case Event.INFO:
-                handleInfo((Map<String,Object>)evt.getArg());
-                return null;
+            case Event.CONFIG:
+                handleConfigEvent((Map<String,Object>)evt.getArg()); 
+                break;
             case Event.VIEW_CHANGE:
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
@@ -417,16 +417,16 @@ public class FC extends Protocol {
                 handleViewChange(((View)evt.getArg()).getMembers());
                 break;
 
-            case Event.INFO:
+            case Event.CONFIG:
                 Map<String,Object> map=(Map<String,Object>)evt.getArg();
-                handleInfo(map);
+                handleConfigEvent(map);
                 break;
         }
         return up_prot.up(evt);
     }
 
 
-    private void handleInfo(Map<String,Object> info) {
+    private void handleConfigEvent(Map<String,Object> info) {
         if(info != null) {
             Integer frag_size=(Integer)info.get("frag_size");
             if(frag_size != null) {

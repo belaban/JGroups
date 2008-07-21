@@ -36,7 +36,7 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.44 2008/07/16 18:11:12 vlada Exp $
+ * @version $Id: FRAG.java,v 1.45 2008/07/21 18:31:47 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -94,8 +94,8 @@ public class FRAG extends Protocol {
         super.init();
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
-        up_prot.up(new Event(Event.INFO, info));
-        down_prot.down(new Event(Event.INFO, info));
+        up_prot.up(new Event(Event.CONFIG, info));
+        down_prot.down(new Event(Event.CONFIG, info));
     }
 
     public void resetStats() {

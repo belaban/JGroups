@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.194 2008/06/02 09:55:08 belaban Exp $
+ * @version $Id: JChannel.java,v 1.195 2008/07/21 18:31:48 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -153,7 +153,7 @@ public class JChannel extends Channel {
      */
     protected final Map<String,Object> additional_data=new HashMap<String,Object>();
     
-    protected final ConcurrentMap<String,Object> info=new ConcurrentHashMap<String,Object>();
+    protected final ConcurrentMap<String,Object> config=new ConcurrentHashMap<String,Object>();
 
     protected final Log log=LogFactory.getLog(getClass());
 
@@ -1223,14 +1223,10 @@ public class JChannel extends Channel {
                     if(config.containsKey("flush_supported")) {
                         flush_supported=((Boolean)config.get("flush_supported")).booleanValue();
                     }
+                    config.putAll(config);
                 }
                 break;
-            
-            case Event.INFO:
-                Map<String, Object> m = (Map<String, Object>) evt.getArg();
-                info.putAll(m);
-                break;
-
+                
             case Event.GET_STATE_OK:
                 StateTransferInfo state_info=(StateTransferInfo)evt.getArg();
                 byte[] state=state_info.state;
@@ -1899,12 +1895,12 @@ public class JChannel extends Channel {
     
     @Override
     public Map<String, Object> getInfo(){
-       return new HashMap<String, Object>(info);
+       return new HashMap<String, Object>(config);
     }
 
     public void setInfo(String key, Object value) {
         if(key != null)
-            info.put(key, value);
+            config.put(key, value);
     }
 
     Address determineCoordinator() {
