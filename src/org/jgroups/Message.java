@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.83 2008/07/21 13:42:21 belaban Exp $
+ * @version $Id: Message.java,v 1.84 2008/07/21 13:54:01 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -109,7 +109,12 @@ public class Message implements Streamable {
     /**
      * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
      * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
-     * we want to avoid copying. When the message is serialized, only the subset is serialized.
+     * we want to avoid copying. When the message is serialized, only the subset is serialized.<br/>
+     * <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
      * @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
      *             Otherwise, it contains a single destination and is sent to that member.<p>
      * @param src    Address of sender
@@ -232,7 +237,14 @@ public class Message implements Streamable {
         }
     }
 
-    public final void setBuffer(Buffer buf) {
+    /**
+     <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
+     */
+     public final void setBuffer(Buffer buf) {
         if(buf != null) {
             this.buf=buf.getBuf();
             this.offset=buf.getOffset();
