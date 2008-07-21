@@ -66,10 +66,10 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
                                             GroupRequest.GET_ALL, 8000);
         System.out.println("responses:\n" + rsps + ", channel.view: " + channel.getView() + ", channel2.view: " + channel2.getView());
-        assertEquals(members.size(), rsps.size());
-        for(int i=0; i < rsps.size(); i++) {
-            Rsp rsp=(Rsp)rsps.elementAt(i);
-            assertTrue("response value is " + rsp.getValue(), rsp.getValue() instanceof NoSuchMethodException);
+        assert members.size() == rsps.size() : "expected " + members.size() + " responses, but got " + rsps + " (" + rsps.size() + ")";
+
+        for(Rsp rsp: rsps.values()) {
+            assert rsp.getValue() instanceof NoSuchMethodException : "response value is " + rsp.getValue();
         }
     }
 
@@ -84,7 +84,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
         rsps=disp.callRemoteMethods(null, "methodA", new Object[]{Boolean.TRUE, new Long(322649)},
                                     new Class[]{boolean.class, long.class},
                                     GroupRequest.GET_ALL, 0);
-        assertEquals(2, rsps.size());
+        assert rsps.size() == 2;
         for(Iterator it=rsps.values().iterator(); it.hasNext();) {
             Rsp rsp=(Rsp)it.next();
             assert rsp.getValue() == null;
