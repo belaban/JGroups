@@ -36,7 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.40 2008/07/16 18:11:12 vlada Exp $
+ * @version $Id: FRAG2.java,v 1.41 2008/07/21 18:31:47 vlada Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
@@ -104,8 +104,8 @@ public class FRAG2 extends Protocol {
         
         Map<String,Object> info=new HashMap<String,Object>(1);
         info.put("frag_size", frag_size);
-        up_prot.up(new Event(Event.INFO, info));
-        down_prot.down(new Event(Event.INFO, info));
+        up_prot.up(new Event(Event.CONFIG, info));
+        down_prot.down(new Event(Event.CONFIG, info));
     }
 
 

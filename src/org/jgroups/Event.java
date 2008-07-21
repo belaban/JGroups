@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.61 2008/05/20 11:27:28 belaban Exp $
+// $Id: Event.java,v 1.62 2008/07/21 18:31:48 vlada Exp $
 
 package org.jgroups;
 
@@ -48,8 +48,7 @@ public class Event {
     public static final int CONNECT_WITH_STATE_TRANSFER        = 80;  // arg = cluster name (string)
     public static final int DISABLE_UNICASTS_TO                = 81;  // arg = Address (member)
     public static final int START_PARTITION                    = 82;  // arg = null;
-    public static final int STOP_PARTITION                     = 83;  // arg = null;
-    public static final int INFO                               = 84;  // arg = Map<String,Object>
+    public static final int STOP_PARTITION                     = 83;  // arg = null; 
     public static final int PREPARE_VIEW                       = 86;  // arg = View
 
     public static final int USER_DEFINED                       = 1000; // arg = <user def., e.g. evt type + data>
@@ -133,8 +132,7 @@ public class Event {
             case CONNECT_WITH_STATE_TRANSFER:    return "CONNECT_WITH_STATE_TRANSFER";
             case DISABLE_UNICASTS_TO:    return "DISABLE_UNICASTS_TO";
             case START_PARTITION:        return "START_PARTITION";
-            case STOP_PARTITION:         return "STOP_PARTITION";
-            case INFO:                   return "INFO";
+            case STOP_PARTITION:         return "STOP_PARTITION";            
             case PREPARE_VIEW:           return "PREPARE_VIEW";
             case USER_DEFINED:           return "USER_DEFINED";
             default:                     return "UNDEFINED(" + t + ")";
