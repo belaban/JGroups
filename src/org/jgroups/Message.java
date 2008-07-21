@@ -8,6 +8,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.util.Buffer;
 
 import java.io.*;
 import java.util.*;
@@ -24,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.80 2008/02/25 16:24:15 belaban Exp $
+ * @version $Id: Message.java,v 1.81 2008/07/21 12:23:52 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -227,6 +228,14 @@ public class Message implements Streamable {
         }
         else {
             this.offset=this.length=0;
+        }
+    }
+
+    public final void setBuffer(Buffer buf) {
+        if(buf != null) {
+            this.buf=buf.getBuf();
+            this.offset=buf.getOffset();
+            this.length=buf.getLength();
         }
     }
 
