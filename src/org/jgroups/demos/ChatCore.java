@@ -153,8 +153,7 @@ public abstract class ChatCore implements MessageListener, MembershipListener {
 		try {
 			// for the sake of jgroups-me compatibility we stick with
 			// byte buffers and Streamable *only* (not Serializable)
-			Message msg = new Message(null, null, tmp.getBytes(), 0, tmp
-					.length());
+			Message msg = new Message(null, null, tmp.getBytes());
 			channel.send(msg);
 		} catch (Exception e) {
 			System.err.print("Failed sending message: " + e.toString() + '\n');
