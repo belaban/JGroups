@@ -1,4 +1,4 @@
-// $Id: SpeedTest.java,v 1.22 2007/11/19 16:15:25 belaban Exp $
+// $Id: SpeedTest.java,v 1.23 2008/07/21 14:01:01 belaban Exp $
 
 
 package org.jgroups.tests;
@@ -28,7 +28,7 @@ import java.net.MulticastSocket;
  * to be increased even further). If running with -jg option and Util.sleep() is commented out, there will
  * probably be packet loss, which will be repaired (by means of retransmission) by JGroups.
  * @author Bela Ban
- * @version $Id: SpeedTest.java,v 1.22 2007/11/19 16:15:25 belaban Exp $
+ * @version $Id: SpeedTest.java,v 1.23 2008/07/21 14:01:01 belaban Exp $
  */
 public class SpeedTest {
     static long start=0, stop=0;
@@ -48,7 +48,6 @@ public class SpeedTest {
         Message send_msg;
         boolean busy_sleep=false, yield=false, loopback=false;
         long sleep_time=1; // sleep in msecs between msg sends
-        ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(64);
         String props;
 
 
@@ -150,8 +149,7 @@ public class SpeedTest {
 
             start=System.currentTimeMillis();
             for(int i=0; i < num_msgs; i++) {
-                // buf=Util.objectToByteBuffer(new Integer(i));
-                output.reset();
+                ExposedByteArrayOutputStream output=new ExposedByteArrayOutputStream(64);
                 out=new DataOutputStream(output);
                 out.writeInt(i);
                 out.flush();
