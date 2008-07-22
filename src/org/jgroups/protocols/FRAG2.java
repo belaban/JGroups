@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.45 2008/07/22 14:18:31 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.46 2008/07/22 14:51:51 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
@@ -336,8 +336,6 @@ public class FRAG2 extends Protocol {
      * All methods are unsynchronized, use getLock() to obtain a lock for concurrent access.
      */
     private static class FragEntry {
-        //the total number of fragment in this message
-        final int tot_frags;
         // each fragment is a byte buffer
         final Message fragments[];
         //the number of fragments we have received
@@ -351,7 +349,6 @@ public class FRAG2 extends Protocol {
          * @param tot_frags the number of fragments to expect for this message
          */
         private FragEntry(int tot_frags) {
-            this.tot_frags=tot_frags;
             fragments=new Message[tot_frags];
             for(int i=0; i < tot_frags; i++)
                 fragments[i]=null;
@@ -386,7 +383,7 @@ public class FRAG2 extends Protocol {
          */
         public boolean isComplete() {
             /*first make a simple check*/
-            if(number_of_frags_recvd < tot_frags) {
+            if(number_of_frags_recvd < fragments.length) {
                 return false;
             }
             /*then double check just in case*/
@@ -435,7 +432,7 @@ public class FRAG2 extends Protocol {
 
         public String toString() {
             StringBuilder ret=new StringBuilder();
-            ret.append("[tot_frags=").append(tot_frags).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
+            ret.append("[tot_frags=").append(fragments.length).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
             return ret.toString();
         }
 
