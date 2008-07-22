@@ -4,19 +4,17 @@ import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.View;
-import org.jgroups.annotations.MBean;
-import org.jgroups.annotations.ManagedAttribute;
-import org.jgroups.annotations.Property;
-import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.*;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.Range;
 import org.jgroups.util.Util;
 
 import java.util.*;
-import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicLong;
 
 
 /**
@@ -39,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.43 2008/07/22 12:26:22 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.44 2008/07/22 14:01:32 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
@@ -63,10 +61,11 @@ public class FRAG2 extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final ConcurrentMap<Address,FragmentationTable> fragment_list=new ConcurrentHashMap<Address,FragmentationTable>(11);
+    private final ConcurrentMap<Address,ConcurrentMap<Long,FragEntry>> fragment_list=new ConcurrentHashMap<Address,ConcurrentMap<Long,FragEntry>>(11);
 
-
+    /** Used to assign fragmentation-specific sequence IDs (monotonically increasing) */
     private int curr_id=1;
+
     private final Vector<Address> members=new Vector<Address>(11);    
 
     @ManagedAttribute(description="Number of sent messages")
@@ -233,39 +232,29 @@ public class FRAG2 extends Protocol {
      [2344,3,2]{dst,src,buf3}
      </pre>
      */
-    void fragment(Message msg) {
-        byte[]             buffer;
-        List<Range>        fragments;
-        Event              evt;
-        FragHeader         hdr;
-        Message            frag_msg;
-        Address            dest=msg.getDest();
-        long               id=getNextId(); // used as seqnos
-        int                num_frags;
-        Range              r;
-
+    private void fragment(Message msg) {
         try {
-            buffer=msg.getBuffer();
-            fragments=Util.computeFragOffsets(buffer, frag_size);
-            num_frags=fragments.size();
+            byte[] buffer=msg.getBuffer();
+            List<Range> fragments=Util.computeFragOffsets(buffer, frag_size);
+            int num_frags=fragments.size();
             num_sent_frags.addAndGet(num_frags);
 
             if(log.isTraceEnabled()) {
+                Address dest=msg.getDest();
                 StringBuilder sb=new StringBuilder("fragmenting packet to ");
                 sb.append((dest != null ? dest.toString() : "<all members>")).append(" (size=").append(buffer.length);
                 sb.append(") into ").append(num_frags).append(" fragment(s) [frag_size=").append(frag_size).append(']');
                 log.trace(sb.toString());
             }
 
+            long id=getNextId(); // used as a seqno
             for(int i=0; i < fragments.size(); i++) {
-                r=fragments.get(i);
-                // Copy the original msg (needed because we need to copy the headers too)
-                frag_msg=msg.copy(false); // don't copy the buffer, only src, dest and headers
+                Range r=fragments.get(i);
+                Message frag_msg=msg.copy(false); // don't copy the buffer, only src, dest and headers. But do copy the headers
                 frag_msg.setBuffer(buffer, (int)r.low, (int)r.high);
-                hdr=new FragHeader(id, i, num_frags);
+                FragHeader hdr=new FragHeader(id, i, num_frags);
                 frag_msg.putHeader(name, hdr);
-                evt=new Event(Event.MSG, frag_msg);
-                down_prot.down(evt);
+                down_prot.down(new Event(Event.MSG, frag_msg));
             }
         }
         catch(Exception e) {
@@ -282,19 +271,39 @@ public class FRAG2 extends Protocol {
      5. Pass msg up the stack
      */
     private void unfragment(Message msg, FragHeader hdr) {
-        FragmentationTable frag_table;
         Address            sender=msg.getSrc();
-        Message            assembled_msg;
+        Message            assembled_msg=null;
 
-        frag_table=fragment_list.get(sender);
+        ConcurrentMap<Long,FragEntry> frag_table=fragment_list.get(sender);
         if(frag_table == null) {
-            frag_table=new FragmentationTable(sender);
-            FragmentationTable tmp=fragment_list.putIfAbsent(sender, frag_table);
+            frag_table=new ConcurrentHashMap<Long,FragEntry>();
+            ConcurrentMap<Long,FragEntry> tmp=fragment_list.putIfAbsent(sender, frag_table);
             if(tmp != null) // value was already present
                 frag_table=tmp;
         }
         num_received_frags.incrementAndGet();
-        assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
+
+        FragEntry entry=frag_table.get(hdr.id);
+        if(entry == null) {
+            entry=new FragEntry(hdr.num_frags);
+            FragEntry tmp=frag_table.putIfAbsent(hdr.id, entry);
+            if(tmp != null)
+                entry=tmp;
+        }
+
+        entry.lock();
+        try {
+            entry.set(hdr.frag_id, msg);
+            if(entry.isComplete()) {
+                assembled_msg=entry.assembleMessage();
+                frag_table.remove(hdr.id);
+            }
+        }
+        finally {
+            entry.unlock();
+        }
+
+        // assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
         if(assembled_msg != null) {
             try {
                 if(log.isTraceEnabled()) log.trace("assembled_msg is " + assembled_msg);
@@ -320,183 +329,116 @@ public class FRAG2 extends Protocol {
 
 
 
+
     /**
-     * Keeps track of the fragments that are received.
-     * Reassembles fragements into entire messages when all fragments have been received.
-     * The fragmentation holds a an array of byte arrays for a unique sender
-     * The first dimension of the array is the order of the fragmentation, in case the arrive out of order
+     * Class represents an entry for a message. Each entry holds an array of byte arrays sorted
+     * once all the byte buffer entries have been filled the fragmentation is considered complete.<br/>
+     * All methods are unsynchronized, use getLock() to obtain a lock for concurrent access.
      */
-    static class FragmentationTable {
-        private final Address sender;
-        /* the hashtable that holds the fragmentation entries for this sender*/
-        private final Hashtable<Long,FragEntry> h=new Hashtable<Long,FragEntry>(11);  // keys: frag_ids, vals: Entrys
+    private static class FragEntry {
+        //the total number of fragment in this message
+        final int tot_frags;
+        // each fragment is a byte buffer
+        final Message fragments[];
+        //the number of fragments we have received
+        int number_of_frags_recvd=0;
 
-
-        FragmentationTable(Address sender) {
-            this.sender=sender;
-        }
+        private final Lock lock=new ReentrantLock();
 
 
         /**
-         * inner class represents an entry for a message
-         * each entry holds an array of byte arrays sorted
-         * once all the byte buffer entries have been filled
-         * the fragmentation is considered complete.
+         * Creates a new entry
+         * @param tot_frags the number of fragments to expect for this message
          */
-        static class FragEntry {
-            //the total number of fragment in this message
-            int tot_frags=0;
-            // each fragment is a byte buffer
-            Message fragments[]=null;
-            //the number of fragments we have received
-            int number_of_frags_recvd=0;
-            // the message ID
-            long msg_id=-1;
+        private FragEntry(int tot_frags) {
+            this.tot_frags=tot_frags;
+            fragments=new Message[tot_frags];
+            for(int i=0; i < tot_frags; i++)
+                fragments[i]=null;
+        }
 
-            /**
-             * Creates a new entry
-             * @param tot_frags the number of fragments to expect for this message
-             */
-            FragEntry(long msg_id, int tot_frags) {
-                this.msg_id=msg_id;
-                this.tot_frags=tot_frags;
-                fragments=new Message[tot_frags];
-                for(int i=0; i < tot_frags; i++)
-                    fragments[i]=null;
+        /** Use to synchronize on FragEntry */
+        public void lock() {
+            lock.lock();
+        }
+
+        public void unlock() {
+            lock.unlock();
+        }
+
+        /**
+         * adds on fragmentation buffer to the message
+         * @param frag_id the number of the fragment being added 0..(tot_num_of_frags - 1)
+         * @param frag the byte buffer containing the data for this fragmentation, should not be null
+         */
+        public void set(int frag_id, Message frag) {
+            // don't count an already received fragment (should not happen though because the
+            // reliable transmission protocol(s) below should weed out duplicates
+            if(fragments[frag_id] == null) {
+                fragments[frag_id]=frag;
+                number_of_frags_recvd++;
             }
+        }
 
-            /**
-             * adds on fragmentation buffer to the message
-             * @param frag_id the number of the fragment being added 0..(tot_num_of_frags - 1)
-             * @param frag the byte buffer containing the data for this fragmentation, should not be null
-             */
-            public void set(int frag_id, Message frag) {
-                 // don't count an already received fragment (should not happen though because the
-                // reliable transmission protocol(s) below should weed out duplicates
-                if(fragments[frag_id] == null) {
-                    fragments[frag_id]=frag;
-                    number_of_frags_recvd++;
-                }
+        /** returns true if this fragmentation is complete
+         *  ie, all fragmentations have been received for this buffer
+         *
+         */
+        public boolean isComplete() {
+            /*first make a simple check*/
+            if(number_of_frags_recvd < tot_frags) {
+                return false;
             }
-
-            /** returns true if this fragmentation is complete
-             *  ie, all fragmentations have been received for this buffer
-             *
-             */
-            public boolean isComplete() {
-                /*first make the simple check*/
-                if(number_of_frags_recvd < tot_frags) {
+            /*then double check just in case*/
+            for(int i=0; i < fragments.length; i++) {
+                if(fragments[i] == null)
                     return false;
-                }
-                /*then double check just in case*/
-                for(int i=0; i < fragments.length; i++) {
-                    if(fragments[i] == null)
-                        return false;
-                }
-                /*all fragmentations have been received*/
-                return true;
             }
-
-            /**
-             * Assembles all the fragments into one buffer. Takes all Messages, and combines their buffers into one
-             * buffer.
-             * This method does not check if the fragmentation is complete (use {@link #isComplete()} to verify
-             * before calling this method)
-             * @return the complete message in one buffer
-             *
-             */
-            public Message assembleMessage() {
-                Message retval;
-                byte[]  combined_buffer, tmp;
-                int     combined_length=0, length, offset;
-                Message fragment;
-                int     index=0;
-
-                for(int i=0; i < fragments.length; i++) {
-                    fragment=fragments[i];
-                    combined_length+=fragment.getLength();
-                }
-
-                combined_buffer=new byte[combined_length];
-                for(int i=0; i < fragments.length; i++) {
-                    fragment=fragments[i];
-                    tmp=fragment.getRawBuffer();
-                    length=fragment.getLength();
-                    offset=fragment.getOffset();
-                    System.arraycopy(tmp, offset, combined_buffer, index, length);
-                    index+=length;
-                }
-
-                retval=fragments[0].copy(false);
-                retval.setBuffer(combined_buffer);
-                return retval;
-            }
-
-            /**
-             * debug only
-             */
-            public String toString() {
-                StringBuilder ret=new StringBuilder();
-                ret.append("[tot_frags=").append(tot_frags).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
-                return ret.toString();
-            }
-
-            public int hashCode() {
-                return super.hashCode();
-            }
+            /*all fragmentations have been received*/
+            return true;
         }
 
-
         /**
-         * Creates a new entry if not yet present. Adds the fragment.
-         * If all fragements for a given message have been received,
-         * an entire message is reassembled and returned.
-         * Otherwise null is returned.
-         * @param   id - the message ID, unique for a sender
-         * @param   frag_id the index of this fragmentation (0..tot_frags-1)
-         * @param   tot_frags the total number of fragmentations expected
-         * @param   fragment - the byte buffer for this fragment
+         * Assembles all the fragments into one buffer. Takes all Messages, and combines their buffers into one
+         * buffer.
+         * This method does not check if the fragmentation is complete (use {@link #isComplete()} to verify
+         * before calling this method)
+         * @return the complete message in one buffer
+         *
          */
-        public synchronized Message add(long id, int frag_id, int tot_frags, Message fragment) {
-            Message retval=null;
+        private Message assembleMessage() {
+            Message retval;
+            byte[]  combined_buffer, tmp;
+            int     combined_length=0, length, offset;
+            Message fragment;
+            int     index=0;
 
-            FragEntry e=h.get(id);
-
-            if(e == null) {   // Create new entry if not yet present
-                e=new FragEntry(id, tot_frags);
-                h.put(id, e);
+            for(int i=0; i < fragments.length; i++) {
+                fragment=fragments[i];
+                combined_length+=fragment.getLength();
             }
 
-            e.set(frag_id, fragment);
-            if(e.isComplete()) {
-                retval=e.assembleMessage();
-                h.remove(new Long(id));
+            combined_buffer=new byte[combined_length];
+            for(int i=0; i < fragments.length; i++) {
+                fragment=fragments[i];
+                tmp=fragment.getRawBuffer();
+                length=fragment.getLength();
+                offset=fragment.getOffset();
+                System.arraycopy(tmp, offset, combined_buffer, index, length);
+                index+=length;
             }
 
+            retval=fragments[0].copy(false);
+            retval.setBuffer(combined_buffer);
             return retval;
         }
 
-
-        public void reset() {
-        }
-
         public String toString() {
-            StringBuilder buf=new StringBuilder("Fragmentation Table Sender:").append(sender).append("\n\t");
-            Enumeration<FragEntry> e=this.h.elements();
-            while(e.hasMoreElements()) {
-                FragEntry entry=e.nextElement();
-                int count=0;
-                for(int i=0; i < entry.fragments.length; i++) {
-                    if(entry.fragments[i] != null) {
-                        count++;
-                    }
-                }
-                buf.append("Message ID:").append(entry.msg_id).append("\n\t");
-                buf.append("Total Frags:").append(entry.tot_frags).append("\n\t");
-                buf.append("Frags Received:").append(count).append("\n\n");
-            }
-            return buf.toString();
+            StringBuilder ret=new StringBuilder();
+            ret.append("[tot_frags=").append(tot_frags).append(", number_of_frags_recvd=").append(number_of_frags_recvd).append(']');
+            return ret.toString();
         }
+
     }
 
 }
