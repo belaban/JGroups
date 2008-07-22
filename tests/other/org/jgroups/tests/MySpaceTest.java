@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.2 2008/07/22 12:26:15 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.3 2008/07/22 15:44:34 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
@@ -51,6 +51,7 @@ public class MySpaceTest {
 
 
         if(sender) {
+            ch.setOpt(Channel.LOCAL, false);
             System.out.println("min=" + Util.printBytes(MIN_SIZE) + ", max=" + Util.printBytes(MAX_SIZE) + ", sleep time=" + sleep);
             while(true) {
                 Util.sleepRandom(sleep);
