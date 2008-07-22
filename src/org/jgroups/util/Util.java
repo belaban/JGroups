@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.4 2008/05/21 09:52:34 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.5 2008/07/22 08:03:53 belaban Exp $
  */
 public class Util {
 
@@ -926,7 +926,7 @@ public class Util {
 
     /** Returns a random value in the range [1 - range] */
     public static long random(long range) {
-        return (long)((Math.random() * 100000) % range) + 1;
+        return (long)((Math.random() * range) % range) + 1;
     }
 
 
