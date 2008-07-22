@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.195 2008/07/21 18:31:48 vlada Exp $
+ * @version $Id: JChannel.java,v 1.196 2008/07/22 10:06:59 loonix Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1095,7 +1095,7 @@ public class JChannel extends Channel {
             boolean successfulFlush = startFlush(false);
             //http://jira.jboss.com/jira/browse/JGRP-759
             if(!successfulFlush){
-                throw new IllegalStateException("Could not flush the cluster and proceed with state retrieaval");
+                throw new IllegalStateException("Could not flush the cluster and proceed with state retrieval");
             }
         }
 
