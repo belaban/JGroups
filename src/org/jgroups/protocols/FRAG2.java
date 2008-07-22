@@ -26,7 +26,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * size addition for headers and src and dest address is minimal when the transport finally has to serialize the
  * message, so we add a constant (200 bytes).
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.36 2007/09/07 11:42:44 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.36.2.1 2008/07/22 11:51:22 belaban Exp $
  */
 public class FRAG2 extends Protocol {
 
@@ -130,46 +130,29 @@ public class FRAG2 extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
 
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            long size=msg.getLength();
-            num_sent_msgs.incrementAndGet();
-            if(size > frag_size) {
-                if(log.isTraceEnabled()) {
-                    log.trace(new StringBuilder("message's buffer size is ").append(size)
-                            .append(", will fragment ").append("(frag_size=").append(frag_size).append(')'));
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                long size=msg.getLength();
+                num_sent_msgs.incrementAndGet();
+                if(size > frag_size) {
+                    if(log.isTraceEnabled()) {
+                        log.trace(new StringBuilder("message's buffer size is ").append(size)
+                                .append(", will fragment ").append("(frag_size=").append(frag_size).append(')'));
+                    }
+                    fragment(msg);  // Fragment and pass down
+                    return null;
                 }
-                fragment(msg);  // Fragment and pass down
-                return null;
-            }
-            break;
+                break;
 
-        case Event.VIEW_CHANGE:
-            //don't do anything if this dude is sending out the view change
-            //we are receiving a view change,
-            //in here we check for the
-            View view=(View)evt.getArg();
-            Vector new_mbrs=view.getMembers(), left_mbrs;
-            Address mbr;
+            case Event.VIEW_CHANGE:
+                handleView((View)evt.getArg());
+                break;
 
-            left_mbrs=Util.determineLeftMembers(members, new_mbrs);
-            members.clear();
-            members.addAll(new_mbrs);
-
-            for(int i=0; i < left_mbrs.size(); i++) {
-                mbr=(Address)left_mbrs.elementAt(i);
-                //the new view doesn't contain the sender, he must have left,
-                //hence we will clear all his fragmentation tables
-                fragment_list.remove(mbr);
-                if(log.isTraceEnabled()) log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
-            }
-            break;
-
-        case Event.CONFIG:
-            Object ret=down_prot.down(evt);
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((Map<String,Object>)evt.getArg());
-            return ret;
+            case Event.CONFIG:
+                Object ret=down_prot.down(evt);
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+                handleConfigEvent((Map<String,Object>)evt.getArg());
+                return ret;
         }
 
         return down_prot.down(evt);  // Pass on to the layer below us
@@ -183,26 +166,51 @@ public class FRAG2 extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
 
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            FragHeader hdr=(FragHeader)msg.getHeader(name);
-            if(hdr != null) { // needs to be defragmented
-                unfragment(msg, hdr); // Unfragment and possibly pass up
-                return null;
-            }
-            else {
-                num_received_msgs.incrementAndGet();
-            }
-            break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                FragHeader hdr=(FragHeader)msg.getHeader(name);
+                if(hdr != null) { // needs to be defragmented
+                    unfragment(msg, hdr); // Unfragment and possibly pass up
+                    return null;
+                }
+                else {
+                    num_received_msgs.incrementAndGet();
+                }
+                break;
 
-        case Event.CONFIG:
-            Object ret=up_prot.up(evt);
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((Map<String,Object>)evt.getArg());
-            return ret;
+            case Event.VIEW_CHANGE:
+                handleView((View)evt.getArg());
+                break;
+
+            case Event.CONFIG:
+                Object ret=up_prot.up(evt);
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+                handleConfigEvent((Map<String,Object>)evt.getArg());
+                return ret;
         }
 
         return up_prot.up(evt); // Pass up to the layer above us by default
+    }
+
+
+    private void handleView(View view) {
+        //don't do anything if this dude is sending out the view change
+        //we are receiving a view change,
+        //in here we check for the
+        Vector new_mbrs=view.getMembers(), left_mbrs;
+        Address mbr;
+
+        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        members.clear();
+        members.addAll(new_mbrs);
+
+        for(int i=0; i < left_mbrs.size(); i++) {
+            mbr=(Address)left_mbrs.elementAt(i);
+            //the new view doesn't contain the sender, he must have left,
+            //hence we will clear all his fragmentation tables
+            fragment_list.remove(mbr);
+            if(log.isTraceEnabled()) log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+        }
     }
 
 
