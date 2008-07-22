@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.44 2008/07/22 14:01:32 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.45 2008/07/22 14:18:31 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
@@ -410,17 +410,18 @@ public class FRAG2 extends Protocol {
             Message retval;
             byte[]  combined_buffer, tmp;
             int     combined_length=0, length, offset;
-            Message fragment;
             int     index=0;
 
-            for(int i=0; i < fragments.length; i++) {
-                fragment=fragments[i];
+            for(Message fragment: fragments) {
                 combined_length+=fragment.getLength();
             }
 
             combined_buffer=new byte[combined_length];
+            retval=fragments[0].copy(false);
+
             for(int i=0; i < fragments.length; i++) {
-                fragment=fragments[i];
+                Message fragment=fragments[i];
+                fragments[i]=null; // help garbage collection a bit
                 tmp=fragment.getRawBuffer();
                 length=fragment.getLength();
                 offset=fragment.getOffset();
@@ -428,7 +429,6 @@ public class FRAG2 extends Protocol {
                 index+=length;
             }
 
-            retval=fragments[0].copy(false);
             retval.setBuffer(combined_buffer);
             return retval;
         }
