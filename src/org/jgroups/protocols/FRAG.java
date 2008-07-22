@@ -36,7 +36,7 @@ import java.util.Map.Entry;
  * 
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.45 2008/07/21 18:31:47 vlada Exp $
+ * @version $Id: FRAG.java,v 1.46 2008/07/22 14:07:45 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG extends Protocol {
@@ -111,45 +111,30 @@ public class FRAG extends Protocol {
     public Object down(Event evt) {
         switch(evt.getType()) {
 
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            long size=msg.size();
-            num_sent_msgs++;
-            if(size > frag_size) {
-                if(log.isTraceEnabled()) {
-                    StringBuilder sb=new StringBuilder("message size is ");
-                    sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
-                    log.trace(sb.toString());
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                long size=msg.size();
+                num_sent_msgs++;
+                if(size > frag_size) {
+                    if(log.isTraceEnabled()) {
+                        StringBuilder sb=new StringBuilder("message size is ");
+                        sb.append(size).append(", will fragment (frag_size=").append(frag_size).append(')');
+                        log.trace(sb.toString());
+                    }
+                    fragment(msg);  // Fragment and pass down
+                    return null;
                 }
-                fragment(msg);  // Fragment and pass down
-                return null;
-            }
-            break;
+                break;
 
-        case Event.VIEW_CHANGE:
-            //don't do anything if this dude is sending out the view change
-            //we are receiving a view change,
-            //in here we check for the
-            View view=(View)evt.getArg();
-            Vector<Address> new_mbrs=view.getMembers(), left_mbrs;           
-            left_mbrs=Util.determineLeftMembers(members, new_mbrs);
-            members.clear();
-            members.addAll(new_mbrs);
+            case Event.VIEW_CHANGE:
+                handleViewChange((View)evt.getArg());
+                break;
 
-            for(Address mbr:left_mbrs){
-                //the new view doesn't contain the sender, he must have left,
-                //hence we will clear all his fragmentation tables
-                fragment_list.remove(mbr);
-                if(log.isTraceEnabled())
-                    log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table"); 
-            }           
-            break;
-
-        case Event.CONFIG:
-            Object ret=down_prot.down(evt);
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((Map<String,Object>)evt.getArg());
-            return ret;
+            case Event.CONFIG:
+                Object ret=down_prot.down(evt);
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+                handleConfigEvent((Map<String,Object>)evt.getArg());
+                return ret;
         }
 
         return down_prot.down(evt);  // Pass on to the layer below us
@@ -162,28 +147,47 @@ public class FRAG extends Protocol {
     public Object up(Event evt) {
         switch(evt.getType()) {
 
-        case Event.MSG:
-            Message msg=(Message)evt.getArg();
-            FragHeader hdr=(FragHeader)msg.getHeader(name);
-            if(hdr != null) { // needs to be defragmented
-                unfragment(msg, hdr); // Unfragment and possibly pass up
-                return null;
-            }
-            else {
-                num_received_msgs++;
-            }
-            break;
+            case Event.MSG:
+                Message msg=(Message)evt.getArg();
+                FragHeader hdr=(FragHeader)msg.getHeader(name);
+                if(hdr != null) { // needs to be defragmented
+                    unfragment(msg, hdr); // Unfragment and possibly pass up
+                    return null;
+                }
+                else {
+                    num_received_msgs++;
+                }
+                break;
 
-        case Event.CONFIG:
-            Object ret=up_prot.up(evt);
-            if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
-            handleConfigEvent((Map<String,Object>)evt.getArg());
-            return ret;
+            case Event.VIEW_CHANGE:
+                handleViewChange((View)evt.getArg());
+                break;
+
+            case Event.CONFIG:
+                Object ret=up_prot.up(evt);
+                if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
+                handleConfigEvent((Map<String,Object>)evt.getArg());
+                return ret;
         }
 
         return up_prot.up(evt); // Pass up to the layer above us by default
     }
 
+
+    private void handleViewChange(View view) {
+        Vector<Address> new_mbrs=view.getMembers(), left_mbrs;
+        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        members.clear();
+        members.addAll(new_mbrs);
+
+        for(Address mbr: left_mbrs){
+            //the new view doesn't contain the sender, he must have left,
+            //hence we will clear all his fragmentation tables
+            fragment_list.remove(mbr);
+            if(log.isTraceEnabled())
+                log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+        }
+    }
 
     /**
      * Send all fragments as separate messages (with same ID !).
