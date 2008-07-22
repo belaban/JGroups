@@ -15,6 +15,8 @@ import org.jgroups.util.Util;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 /**
@@ -37,7 +39,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * message, so we add a constant (200 bytes).
  * 
  * @author Bela Ban
- * @version $Id: FRAG2.java,v 1.42 2008/07/22 12:11:11 belaban Exp $
+ * @version $Id: FRAG2.java,v 1.43 2008/07/22 12:26:22 belaban Exp $
  */
 @MBean(description="Fragments messages larger than fragmentation size into smaller packets")
 public class FRAG2 extends Protocol {
@@ -61,7 +63,9 @@ public class FRAG2 extends Protocol {
     /*the fragmentation list contains a fragmentation table per sender
      *this way it becomes easier to clean up if a sender (member) leaves or crashes
      */
-    private final FragmentationList fragment_list=new FragmentationList();
+    private final ConcurrentMap<Address,FragmentationTable> fragment_list=new ConcurrentHashMap<Address,FragmentationTable>(11);
+
+
     private int curr_id=1;
     private final Vector<Address> members=new Vector<Address>(11);    
 
@@ -192,14 +196,12 @@ public class FRAG2 extends Protocol {
 
     private void handleViewChange(View view) {
         Vector<Address> new_mbrs=view.getMembers(), left_mbrs;
-
         left_mbrs=Util.determineLeftMembers(members, new_mbrs);
         members.clear();
         members.addAll(new_mbrs);
 
         for(Address mbr: left_mbrs) {
-            //the new view doesn't contain the sender, he must have left,
-            //hence we will clear all his fragmentation tables
+            // the new view doesn't contain the sender, it must have left, hence we will clear its fragmentation tables
             fragment_list.remove(mbr);
             if(log.isTraceEnabled())
                 log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
@@ -287,12 +289,9 @@ public class FRAG2 extends Protocol {
         frag_table=fragment_list.get(sender);
         if(frag_table == null) {
             frag_table=new FragmentationTable(sender);
-            try {
-                fragment_list.add(sender, frag_table);
-            }
-            catch(IllegalArgumentException x) { // the entry has already been added, probably in parallel from another thread
-                frag_table=fragment_list.get(sender);
-            }
+            FragmentationTable tmp=fragment_list.putIfAbsent(sender, frag_table);
+            if(tmp != null) // value was already present
+                frag_table=tmp;
         }
         num_received_frags.incrementAndGet();
         assembled_msg=frag_table.add(hdr.id, hdr.frag_id, hdr.num_frags, msg);
@@ -320,121 +319,6 @@ public class FRAG2 extends Protocol {
 
 
 
-
-    /**
-     * A fragmentation list keeps a list of fragmentation tables
-     * sorted by an Address ( the sender ).
-     * This way, if the sender disappears or leaves the group half way
-     * sending the content, we can simply remove this members fragmentation
-     * table and clean up the memory of the receiver.
-     * We do not have to do the same for the sender, since the sender doesn't keep a fragmentation table
-     */
-    static class FragmentationList {
-
-        private final Map<Address,FragmentationTable> frag_tables=new HashMap<Address,FragmentationTable>(11);
-
-
-        /**
-         * Adds a fragmentation table for this particular sender
-         * If this sender already has a fragmentation table, an IllegalArgumentException
-         * will be thrown.
-         * @param   sender - the address of the sender, cannot be null
-         * @param   table - the fragmentation table of this sender, cannot be null
-         * @exception IllegalArgumentException if an entry for this sender already exist
-         */
-        public void add(Address sender, FragmentationTable table) throws IllegalArgumentException {
-            
-            synchronized(frag_tables) {
-                FragmentationTable healthCheck=frag_tables.get(sender);
-                if(healthCheck == null) {
-                    frag_tables.put(sender, table);
-                }
-                else {
-                    throw new IllegalArgumentException("Sender <" + sender + "> already exists in the fragementation list.");
-                }
-            }
-        }
-
-        /**
-         * returns a fragmentation table for this sender
-         * returns null if the sender doesn't have a fragmentation table
-         * @return the fragmentation table for this sender, or null if no table exist
-         */
-        public FragmentationTable get(Address sender) {
-            synchronized(frag_tables) {
-                return frag_tables.get(sender);
-            }
-        }
-
-
-        /**
-         * returns true if this sender already holds a
-         * fragmentation for this sender, false otherwise
-         * @param sender - the sender, cannot be null
-         * @return true if this sender already has a fragmentation table
-         */
-        public boolean containsSender(Address sender) {
-            synchronized(frag_tables) {
-                return frag_tables.containsKey(sender);
-            }
-        }
-
-        /**
-         * removes the fragmentation table from the list.
-         * after this operation, the fragementation list will no longer
-         * hold a reference to this sender's fragmentation table
-         * @param sender - the sender who's fragmentation table you wish to remove, cannot be null
-         * @return true if the table was removed, false if the sender doesn't have an entry
-         */
-        public boolean remove(Address sender) {
-            synchronized(frag_tables) {
-                boolean result=containsSender(sender);
-                frag_tables.remove(sender);
-                return result;
-            }
-        }
-
-        /**
-         * Removes all entries from the fragmentation table. Dangerous: this might remove fragments that are still
-         * needed to assemble an entire message !
-         */
-        public void clear() {
-            synchronized(frag_tables) {
-                frag_tables.clear();
-            }
-        }
-
-        /**
-         * returns a list of all the senders that have fragmentation tables
-         * opened.
-         * @return an array of all the senders in the fragmentation list
-         */
-        public Address[] getSenders() {
-            Address[] result;
-            int index=0;
-
-            synchronized(frag_tables) {
-                result=new Address[frag_tables.size()];
-                for(Iterator<Address> it=frag_tables.keySet().iterator(); it.hasNext();) {
-                    result[index++]=it.next();
-                }
-            }
-            return result;
-        }
-
-        public String toString() {            
-            StringBuilder buf=new StringBuilder("Fragmentation list contains ");
-            synchronized(frag_tables) {
-                buf.append(frag_tables.size()).append(" tables\n");
-                for(Iterator<Entry<Address,FragmentationTable>> it=frag_tables.entrySet().iterator(); it.hasNext();) {
-                    Entry<Address,FragmentationTable> entry=it.next();
-                    buf.append(entry.getKey()).append(": " ).append(entry.getValue()).append("\n");
-                }
-            }
-            return buf.toString();
-        }
-
-    }
 
     /**
      * Keeps track of the fragments that are received.
