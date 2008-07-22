@@ -27,7 +27,7 @@ import java.util.*;
  * multicast messages.
  * @author Bela Ban
  * @author Filip Hanik
- * @version $Id: FRAG.java,v 1.39.2.1 2008/03/27 16:33:39 belaban Exp $
+ * @version $Id: FRAG.java,v 1.39.2.2 2008/07/22 14:08:59 belaban Exp $
  */
 public class FRAG extends Protocol {
     private int frag_size=8192;  // conservative value
@@ -123,25 +123,7 @@ public class FRAG extends Protocol {
             break;
 
         case Event.VIEW_CHANGE:
-            //don't do anything if this dude is sending out the view change
-            //we are receiving a view change,
-            //in here we check for the
-            View view=(View)evt.getArg();
-            Vector new_mbrs=view.getMembers(), left_mbrs;
-            Address mbr;
-
-            left_mbrs=Util.determineLeftMembers(members, new_mbrs);
-            members.clear();
-            members.addAll(new_mbrs);
-
-            for(int i=0; i < left_mbrs.size(); i++) {
-                mbr=(Address)left_mbrs.elementAt(i);
-                //the new view doesn't contain the sender, he must have left,
-                //hence we will clear all his fragmentation tables
-                fragment_list.remove(mbr);
-                if(log.isTraceEnabled())
-                    log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
-            }
+            handleViewChange((View)evt.getArg());
             break;
 
         case Event.CONFIG:
@@ -173,6 +155,10 @@ public class FRAG extends Protocol {
             }
             break;
 
+        case Event.VIEW_CHANGE:
+            handleViewChange((View)evt.getArg());
+            break;
+
         case Event.CONFIG:
             Object ret=up_prot.up(evt);
             if(log.isDebugEnabled()) log.debug("received CONFIG event: " + evt.getArg());
@@ -181,6 +167,24 @@ public class FRAG extends Protocol {
         }
 
         return up_prot.up(evt); // Pass up to the layer above us by default
+    }
+
+    private void handleViewChange(View view) {
+        Vector new_mbrs=view.getMembers(), left_mbrs;
+        Address mbr;
+
+        left_mbrs=Util.determineLeftMembers(members, new_mbrs);
+        members.clear();
+        members.addAll(new_mbrs);
+
+        for(int i=0; i < left_mbrs.size(); i++) {
+            mbr=(Address)left_mbrs.elementAt(i);
+            //the new view doesn't contain the sender, he must have left,
+            //hence we will clear all his fragmentation tables
+            fragment_list.remove(mbr);
+            if(log.isTraceEnabled())
+                log.trace("[VIEW_CHANGE] removed " + mbr + " from fragmentation table");
+        }
     }
 
 
