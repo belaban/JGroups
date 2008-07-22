@@ -1,14 +1,20 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
+import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+import java.io.*;
 import java.util.Date;
+import java.util.Map;
+import java.util.Vector;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.1.2.1 2008/07/22 08:06:34 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.1.2.2 2008/07/22 10:35:26 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
@@ -16,6 +22,12 @@ public class MySpaceTest {
     private final int sleep;
     private JChannel ch;
     private final int MIN_SIZE, MAX_SIZE;
+    private int seqno=1;
+    private final static String NAME="MySpace";
+    private int current_seqno=-1;
+    private final Map<Address, Long> stats=new ConcurrentHashMap<Address,Long>();
+
+
 
     public MySpaceTest(boolean sender, String props, int sleep, int min, int max) {
         this.sender=sender;
@@ -40,10 +52,17 @@ public class MySpaceTest {
 
     private void sendMessage() throws ChannelException {
         int size=(int)Util.random(MAX_SIZE);
-        // System.out.println("size = " + Util.printBytes(size));
         size=Math.max(size, MIN_SIZE);
         byte[] buf=new byte[size];
         Message msg=new Message(null, null, buf);
+        current_seqno=seqno;
+        stats.clear();
+        Vector<Address> mbrs=ch.getView().getMembers();
+        long current_time=System.currentTimeMillis();
+        for(Address mbr: mbrs)
+            stats.put(mbr, current_time);
+        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno++, size);
+        msg.putHeader(NAME, hdr);
         System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
         ch.send(msg);
     }
@@ -78,6 +97,9 @@ public class MySpaceTest {
             help();
             return;
         }
+
+        ClassConfigurator.getInstance(true).add((short)10000, MyHeader.class);
+
         new MySpaceTest(sender, props, sleep, min, max).start();
     }
 
@@ -86,7 +108,7 @@ public class MySpaceTest {
     }
 
 
-    private static class MyReceiver extends ReceiverAdapter {
+    private class MyReceiver extends ReceiverAdapter {
         private final JChannel channel;
 
         public MyReceiver(JChannel channel) {
@@ -99,11 +121,107 @@ public class MySpaceTest {
 
         public void receive(Message msg) {
             int len=msg.getLength();
-            log("<-- received " + Util.printBytes(len) + " from " + msg.getSrc());
+            MyHeader hdr=(MyHeader)msg.getHeader(NAME);
+            switch(hdr.type) {
+                case DATA:
+                    log("<-- received " + Util.printBytes(len) + " from " + msg.getSrc());
+                    if(hdr.size != len)
+                        System.err.println("hdr.size (" + hdr.size + ") != length (" + len + ")");
+                    sendConfirmation(msg.getSrc(), hdr.seqno, hdr.size);
+                    break;
+                case CONFIRMATION:
+                    handleConfirmation(msg.getSrc(), hdr.seqno);
+                    break;
+                default:
+                    System.err.println("received invalid header: " + hdr);
+            }
         }
 
-        private static void log(String msg) {
+        private void handleConfirmation(Address sender, int seqno) {
+            if(seqno != current_seqno) {
+                System.err.println("received seqno (" + seqno + ") != current seqno (" + current_seqno + ") - sender=" + sender);
+                return;
+            }
+            long start_time=stats.remove(sender);
+            long diff=System.currentTimeMillis() - start_time;
+            System.out.println("time for " + sender + ": " + diff + "ms");
+        }
+
+        private void sendConfirmation(Address dest, int seqno, int size) {
+            Message rsp=new Message(dest, null, null);
+            rsp.setFlag(Message.OOB);
+            MyHeader rsp_hdr=new MyHeader(MyHeader.Type.CONFIRMATION, seqno, size);
+            rsp.putHeader(NAME, rsp_hdr);
+            try {
+                channel.send(rsp);
+            }
+            catch(Throwable e) {
+                e.printStackTrace();
+            }
+        }
+
+        private void log(String msg) {
             System.out.println("[" + new Date() + "]: " + msg);
+        }
+    }
+
+    public static class MyHeader extends Header implements Streamable {
+        private static final long serialVersionUID=-8796883857099720796L;
+        private static enum Type {DATA, CONFIRMATION};
+        private Type type;
+        private int seqno;
+        private int size;
+
+
+        public MyHeader() {
+            type=Type.DATA;
+            seqno=-1;
+            size=-1;
+        }
+
+        public MyHeader(Type type, int seqno, int size) {
+            this.type=type;
+            this.seqno=seqno;
+            this.size=size;
+        }
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        }
+
+        public void writeTo(DataOutputStream out) throws IOException {
+            out.writeUTF(type.name());
+            out.writeInt(seqno);
+            out.writeInt(size);
+        }
+
+        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
+            String name=in.readUTF();
+            type=Type.valueOf(name);
+            seqno=in.readInt();
+            size=in.readInt();
+        }
+
+        public int size() {
+            int retval=Global.INT_SIZE * 2;
+            retval += type.name().length() +2;
+            return retval;
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            sb.append("type=" + type);
+            switch(type) {
+                case DATA:
+                    sb.append(", seqno=" + seqno + ", size=" + Util.printBytes(size));
+                    break;
+                case CONFIRMATION:
+                    sb.append(", seqno=" + seqno);
+                    break;
+            }
+            return sb.toString();
         }
     }
 }
