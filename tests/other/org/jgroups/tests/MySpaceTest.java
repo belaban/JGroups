@@ -1,10 +1,12 @@
 package org.jgroups.tests;
 
 import org.jgroups.*;
+import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanServer;
 import java.io.*;
 import java.util.Date;
 import java.util.Map;
@@ -14,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.1.2.2 2008/07/22 10:35:26 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.1.2.3 2008/07/22 11:51:37 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
@@ -24,8 +26,7 @@ public class MySpaceTest {
     private final int MIN_SIZE, MAX_SIZE;
     private int seqno=1;
     private final static String NAME="MySpace";
-    private int current_seqno=-1;
-    private final Map<Address, Long> stats=new ConcurrentHashMap<Address,Long>();
+    private final Map<Integer,Map<Address, Long>> stats=new ConcurrentHashMap<Integer,Map<Address,Long>>();
 
 
 
@@ -37,10 +38,18 @@ public class MySpaceTest {
         this.MAX_SIZE=max;
     }
 
-    public void start() throws ChannelException {
+    public void start() throws Exception {
         ch=new JChannel(props);
         ch.setReceiver(new MyReceiver(ch));
         ch.connect("MySpaceCluster");
+
+        MBeanServer server=Util.getMBeanServer();
+        if(server == null)
+            System.err.println("No MBeanServers found;" +
+                    "\nMySpaceTest needs to be run with an MBeanServer present, or inside JDK 5");
+        JmxConfigurator.registerChannel(ch, server, "jgroups", ch.getClusterName(), true);
+
+
         if(sender) {
             System.out.println("min=" + Util.printBytes(MIN_SIZE) + ", max=" + Util.printBytes(MAX_SIZE) + ", sleep time=" + sleep);
             while(true) {
@@ -55,19 +64,21 @@ public class MySpaceTest {
         size=Math.max(size, MIN_SIZE);
         byte[] buf=new byte[size];
         Message msg=new Message(null, null, buf);
-        current_seqno=seqno;
         stats.clear();
         Vector<Address> mbrs=ch.getView().getMembers();
         long current_time=System.currentTimeMillis();
+        Map<Address,Long> map=new ConcurrentHashMap<Address,Long>();
         for(Address mbr: mbrs)
-            stats.put(mbr, current_time);
-        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno++, size);
+            map.put(mbr, current_time);
+        stats.put(seqno, map);
+        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
         msg.putHeader(NAME, hdr);
-        System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
+        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
         ch.send(msg);
+        seqno++;
     }
 
-    public static void main(String[] args) throws ChannelException {
+    public static void main(String[] args) throws Exception {
         boolean sender=false;
         int sleep=10000, min=100 * 1000, max=100 * 1000 * 1000;
         String props="udp.xml";
@@ -124,7 +135,7 @@ public class MySpaceTest {
             MyHeader hdr=(MyHeader)msg.getHeader(NAME);
             switch(hdr.type) {
                 case DATA:
-                    log("<-- received " + Util.printBytes(len) + " from " + msg.getSrc());
+                    log("<-- received #" + hdr.seqno + ": " + Util.printBytes(len) + " from " + msg.getSrc());
                     if(hdr.size != len)
                         System.err.println("hdr.size (" + hdr.size + ") != length (" + len + ")");
                     sendConfirmation(msg.getSrc(), hdr.seqno, hdr.size);
@@ -138,13 +149,19 @@ public class MySpaceTest {
         }
 
         private void handleConfirmation(Address sender, int seqno) {
-            if(seqno != current_seqno) {
-                System.err.println("received seqno (" + seqno + ") != current seqno (" + current_seqno + ") - sender=" + sender);
+            Map<Address, Long> map=stats.get(seqno);
+            if(map == null) {
+                System.err.println("no map for seqno #" + seqno);
                 return;
             }
-            long start_time=stats.remove(sender);
-            long diff=System.currentTimeMillis() - start_time;
-            System.out.println("time for " + sender + ": " + diff + "ms");
+            Long start_time=map.remove(sender);
+            if(start_time != null) {
+                long diff=System.currentTimeMillis() - start_time;
+                System.out.println("time for #" + seqno + ": " + sender + ": " + diff + "ms");
+            }
+            if(map.isEmpty()) {
+                stats.remove(seqno);
+            }
         }
 
         private void sendConfirmation(Address dest, int seqno, int size) {
@@ -161,7 +178,8 @@ public class MySpaceTest {
         }
 
         private void log(String msg) {
-            System.out.println("[" + new Date() + "]: " + msg);
+            // System.out.println("[" + new Date() + "]: " + msg);
+            System.out.println(msg);
         }
     }
 
