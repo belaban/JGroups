@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.196 2008/07/22 10:06:59 loonix Exp $
+ * @version $Id: JChannel.java,v 1.197 2008/07/23 20:26:06 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -610,7 +610,7 @@ public class JChannel extends Channel {
 
     @ManagedAttribute
     public int getNumMessages() {
-        return mq != null? mq.size() : -1;
+        return mq.size();
     }
 
     @ManagedOperation
@@ -1539,8 +1539,7 @@ public class JChannel extends Channel {
         sb.append("my_view=").append(my_view).append('\n');
         sb.append("connected=").append(connected).append('\n');
         sb.append("closed=").append(closed).append('\n');
-        if(mq != null)
-            sb.append("incoming queue size=").append(mq.size()).append('\n');
+        sb.append("incoming queue size=").append(mq.size()).append('\n');
         if(details) {
             sb.append("receive_blocks=").append(receive_blocks).append('\n');
             sb.append("receive_local_msgs=").append(receive_local_msgs).append('\n');
@@ -1759,8 +1758,7 @@ public class JChannel extends Channel {
 
 
     public final void closeMessageQueue(boolean flush_entries) {
-        if(mq != null)
-            mq.close(flush_entries);
+        mq.close(flush_entries);
     }
 
 
@@ -1938,10 +1936,18 @@ public class JChannel extends Channel {
 
 
         public void run() {
+            //lock this channel so no other thread can call close, connect etc. 
+            synchronized(JChannel.this){
+                reconnectAndGetState();
+            }
+        }
+
+
+        private void reconnectAndGetState() {
             try {
                 String old_cluster_name=cluster_name; // remember because close() will null it
                 if(log.isDebugEnabled())
-                    log.debug("closing the channel");
+                    log.debug("closing the channel " + local_addr);
                 _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
 
                 if(up_handler != null)
@@ -1956,14 +1962,13 @@ public class JChannel extends Channel {
                     }
                 }
 
-                if(mq != null) {
-                    Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
-                    try {
-                        mq.close(false);
-                    }
-                    catch(Exception ex) {
-                    }
+                
+                Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
+                try {
+                    mq.close(false);
                 }
+                catch(Exception ex) {
+                }                
 
                 if(auto_reconnect) {
                     try {
@@ -2013,5 +2018,4 @@ public class JChannel extends Channel {
             }
         }
     }
-
 }
