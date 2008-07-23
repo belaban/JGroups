@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.12 2008/06/27 21:29:31 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.13 2008/07/23 16:16:44 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -143,6 +143,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         if(discovery != null){
             Protocol transport = stack.getTransport();
             MPING mping=new MPING();
+            mping.setMcastPort(8888);
             mping.setBindAddr(InetAddress.getLocalHost());
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
@@ -171,7 +172,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
 
         public void run() {
             try {
-                c.connect("test");
+                c.connect("ChannelConcurrencyTest");
                 if(useDispatcher) {
                     final MessageDispatcher md=new MessageDispatcher(c, null, null, new MyHandler());
                     for(int i=0;i < 10;i++) {

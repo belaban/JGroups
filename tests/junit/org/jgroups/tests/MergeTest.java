@@ -23,7 +23,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.32 2008/07/02 06:16:09 belaban Exp $
+ * @version $Id: MergeTest.java,v 1.33 2008/07/23 16:16:44 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -185,6 +185,7 @@ public class MergeTest extends ChannelTestBase {
         if(discovery != null){
             Protocol transport = stack.getTransport();
             MPING mping=new MPING();
+            mping.setMcastPort(7777);
             mping.setBindAddr(InetAddress.getLocalHost());
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
