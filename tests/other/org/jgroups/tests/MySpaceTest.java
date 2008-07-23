@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.4 2008/07/23 07:57:25 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.5 2008/07/23 08:16:42 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
@@ -97,20 +97,24 @@ public class MySpaceTest {
                 props=args[++i];
                 continue;
             }
-            if(tmp.endsWith("-sleep")) {
+            if(tmp.equalsIgnoreCase("-sleep")) {
                 sleep=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(tmp.endsWith("-min")) {
+            if(tmp.equalsIgnoreCase("-min")) {
                 min=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(tmp.endsWith("-max")) {
+            if(tmp.equalsIgnoreCase("-max")) {
                 max=Integer.parseInt(args[++i]);
                 continue;
             }
-            if(tmp.endsWith("-fixed")) {
+            if(tmp.equalsIgnoreCase("-fixed")) {
                 fixed=Integer.parseInt(args[++i]);
+                continue;
+            }
+            if(tmp.equalsIgnoreCase("-bind_addr")) {
+                System.setProperty("jgroups.bind_addr", args[++i]);
                 continue;
             }
             help();
@@ -123,7 +127,7 @@ public class MySpaceTest {
     }
 
     static void help() {
-        System.out.println("MySpaceTest [-sender] [-props <props>] [-sleep <time in ms>] " +
+        System.out.println("MySpaceTest [-sender] [-props <props>] [-bind_addr <addr>] [-sleep <time in ms>] " +
                 "[-min <size>] [-max <size>] [-fixed <size>]");
     }
 
