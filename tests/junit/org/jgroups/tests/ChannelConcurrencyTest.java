@@ -27,7 +27,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.13 2008/07/23 16:16:44 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.14 2008/07/23 20:25:00 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -80,7 +80,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             boolean converged=false;
             for(int timeoutToConverge=120,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
                 for(final JChannel channel:channels) {
-                    converged = channel.getView().size() == count;
+                    converged = channel.getView() != null && channel.getView().size() == count;
                     if(!converged)
                         break;
                 }                
