@@ -16,7 +16,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.5 2008/07/23 08:16:42 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.6 2008/07/23 11:20:30 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
@@ -68,7 +68,7 @@ public class MySpaceTest {
             size=FIXED_SIZE;
         byte[] buf=new byte[size];
         Message msg=new Message(null, null, buf);
-        stats.clear();
+        // stats.clear();
         Vector<Address> mbrs=ch.getView().getMembers();
         long current_time=System.currentTimeMillis();
         Map<Address,Long> map=new ConcurrentHashMap<Address,Long>();
