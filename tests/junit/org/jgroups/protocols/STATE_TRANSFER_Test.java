@@ -17,7 +17,7 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.16 2008/06/26 20:06:00 vlada Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.17 2008/07/23 19:30:21 vlada Exp $
  */
 @Test(groups="temp")
 public class STATE_TRANSFER_Test extends ChannelTestBase {
@@ -143,7 +143,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
 
     public void testBasicStateSync() throws Exception {
         Channel channel= null;
-        int timeout=120; //seconds
+        int timeout=60; //seconds
         int counter=0;
         try {
             channel = createChannel(coord.getChannel());
@@ -191,7 +191,7 @@ public class STATE_TRANSFER_Test extends ChannelTestBase {
         }
         finally {
             channel.close();
-            assertTrue("Timeout reached", counter < 120);
+            assertTrue("Timeout reached", counter < timeout);
         }
     }
 }
