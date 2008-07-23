@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
  * destroy them again when not needed anymore
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.86 2008/07/02 06:31:00 belaban Exp $
+ * @version $Id: ProtocolStack.java,v 1.87 2008/07/23 20:25:31 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -528,7 +528,14 @@ public class ProtocolStack extends Protocol implements Transport {
     public void destroy() {
         if(top_prot != null) {
             Configurator.destroyProtocolStack(getProtocols(), singleton_transports);           // destroys msg queues and threads
-            top_prot=null;
+            
+            /*
+             *Do not null top_prot reference since we need recreation of channel properties (JChannel#getProperties)
+             *during channel recreation, especially if those properties were modified after channel was created.
+             *We modify channel properties after channel creation in some tests for example
+             * 
+             */
+            //top_prot=null;
         }        
     }
 
