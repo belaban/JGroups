@@ -16,26 +16,27 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: MySpaceTest.java,v 1.3 2008/07/22 15:44:34 belaban Exp $
+ * @version $Id: MySpaceTest.java,v 1.4 2008/07/23 07:57:25 belaban Exp $
  */
 public class MySpaceTest {
     private final boolean sender;
     private final String props;
     private final int sleep;
     private JChannel ch;
-    private final int MIN_SIZE, MAX_SIZE;
+    private final int MIN_SIZE, MAX_SIZE, FIXED_SIZE;
     private int seqno=1;
     private final static String NAME="MySpace";
     private final Map<Integer,Map<Address, Long>> stats=new ConcurrentHashMap<Integer,Map<Address,Long>>();
 
 
 
-    public MySpaceTest(boolean sender, String props, int sleep, int min, int max) {
+    public MySpaceTest(boolean sender, String props, int sleep, int min, int max, int fixed) {
         this.sender=sender;
         this.props=props;
         this.sleep=sleep;
         this.MIN_SIZE=min;
         this.MAX_SIZE=max;
+        this.FIXED_SIZE=fixed;
     }
 
     public void start() throws Exception {
@@ -63,6 +64,8 @@ public class MySpaceTest {
     private void sendMessage() throws ChannelException {
         int size=(int)Util.random(MAX_SIZE);
         size=Math.max(size, MIN_SIZE);
+        if(FIXED_SIZE > 0)
+            size=FIXED_SIZE;
         byte[] buf=new byte[size];
         Message msg=new Message(null, null, buf);
         stats.clear();
@@ -81,7 +84,7 @@ public class MySpaceTest {
 
     public static void main(String[] args) throws Exception {
         boolean sender=false;
-        int sleep=10000, min=100 * 1000, max=100 * 1000 * 1000;
+        int sleep=10000, min=100 * 1000, max=100 * 1000 * 1000, fixed=0;
         String props="udp.xml";
 
         for(int i=0; i < args.length; i++) {
@@ -106,17 +109,22 @@ public class MySpaceTest {
                 max=Integer.parseInt(args[++i]);
                 continue;
             }
+            if(tmp.endsWith("-fixed")) {
+                fixed=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
 
         ClassConfigurator.add((short)10000, MyHeader.class);
 
-        new MySpaceTest(sender, props, sleep, min, max).start();
+        new MySpaceTest(sender, props, sleep, min, max, fixed).start();
     }
 
     static void help() {
-        System.out.println("MySpaceTest [-sender] [-props <props>] [-sleep <time in ms>] [-min <size>] [-max <size>]");
+        System.out.println("MySpaceTest [-sender] [-props <props>] [-sleep <time in ms>] " +
+                "[-min <size>] [-max <size>] [-fixed <size>]");
     }
 
 
