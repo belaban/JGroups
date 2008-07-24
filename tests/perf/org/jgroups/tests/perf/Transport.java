@@ -2,6 +2,7 @@ package org.jgroups.tests.perf;
 
 import java.util.Properties;
 import java.util.Map;
+import java.util.List;
 
 /**
  * Generic transport abstraction for all different transports (JGroups, JMS, UDP, TCP). The lifecycle is
@@ -16,7 +17,7 @@ import java.util.Map;
  * </ol>
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Transport.java,v 1.5 2008/07/24 10:05:58 belaban Exp $
+ * @version $Id: Transport.java,v 1.6 2008/07/24 10:15:09 belaban Exp $
  */
 public interface Transport {
     /** Return info about command line options */
@@ -30,6 +31,9 @@ public interface Transport {
     /** Get the local address (= endpoint) of this transport. Guaranteed to be called <em>after</em>
      *  <code>create()</code>, possibly even later (after <code>start()</code>) */
     Object getLocalAddress();
+
+    /** Returns a list of addresses of all nodes in the cluster */
+    List<Object> getClusterMembers();
 
     /** Start the transport */
     void start() throws Exception;
