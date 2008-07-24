@@ -3,6 +3,7 @@ package org.jgroups.tests;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import java.net.InetAddress;
+import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -27,7 +28,7 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.14 2008/07/23 20:25:00 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.15 2008/07/24 17:36:26 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -143,8 +144,10 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         if(discovery != null){
             Protocol transport = stack.getTransport();
             MPING mping=new MPING();
-            mping.setMcastPort(8888);
-            mping.setBindAddr(InetAddress.getLocalHost());
+            InetAddress bindAddress=Util.getBindAddress(new Properties());
+            mping.setBindAddr(bindAddress);
+            mping.setMulticastAddress("230.1.2.3");
+            mping.setMcastPort(8888);            
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
