@@ -16,6 +16,7 @@ import java.net.InetAddress;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
@@ -23,7 +24,7 @@ import java.util.concurrent.TimeUnit;
  * Tests merging on all stacks
  * 
  * @author vlada
- * @version $Id: MergeTest.java,v 1.33 2008/07/23 16:16:44 vlada Exp $
+ * @version $Id: MergeTest.java,v 1.34 2008/07/24 17:36:26 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class MergeTest extends ChannelTestBase {
@@ -185,8 +186,10 @@ public class MergeTest extends ChannelTestBase {
         if(discovery != null){
             Protocol transport = stack.getTransport();
             MPING mping=new MPING();
-            mping.setMcastPort(7777);
-            mping.setBindAddr(InetAddress.getLocalHost());
+            InetAddress bindAddress=Util.getBindAddress(new Properties());
+            mping.setBindAddr(bindAddress);
+            mping.setMulticastAddress("230.3.3.3");
+            mping.setMcastPort(7777);            
             stack.insertProtocol(mping, ProtocolStack.ABOVE, transport.getName());
             mping.setProtocolStack(ch.getProtocolStack());
             mping.init();
