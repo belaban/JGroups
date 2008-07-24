@@ -16,12 +16,16 @@ import java.util.Map;
  * </ol>
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Transport.java,v 1.4 2006/12/19 08:51:47 belaban Exp $
+ * @version $Id: Transport.java,v 1.5 2008/07/24 10:05:58 belaban Exp $
  */
 public interface Transport {
+    /** Return info about command line options */
+    String help();
 
     /** Create the transport */
     void create(Properties properties) throws Exception;
+
+    void create(Configuration config) throws Exception;
 
     /** Get the local address (= endpoint) of this transport. Guaranteed to be called <em>after</em>
      *  <code>create()</code>, possibly even later (after <code>start()</code>) */

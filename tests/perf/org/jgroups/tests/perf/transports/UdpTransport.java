@@ -4,6 +4,7 @@ package org.jgroups.tests.perf.transports;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.tests.perf.Configuration;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -16,11 +17,12 @@ import java.util.Map;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.7 2006/12/19 08:51:46 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.8 2008/07/24 10:06:00 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
     Properties       config=null;
+    Configuration    cfg=null;
     InetAddress      mcast_addr=null;
     int              mcast_port=7500;
     InetAddress      bind_addr=null;
@@ -38,6 +40,10 @@ public class UdpTransport implements Transport {
 
     public Object getLocalAddress() {
         return local_addr;
+    }
+
+    public String help() {
+        return null;
     }
 
     public void create(Properties properties) throws Exception {
@@ -65,6 +71,14 @@ public class UdpTransport implements Transport {
         mcast_sock.joinGroup(mcast_addr);
         local_addr=new IpAddress(ucast_sock.getLocalAddress(), ucast_sock.getLocalPort());
         System.out.println("-- local_addr is " + local_addr);
+    }
+
+    public void create(Configuration config) throws Exception {
+        this.cfg=config;
+        String[] args=config.getTransportArgs();
+        if(args != null) {
+            // todo: process
+        }
     }
 
 
