@@ -1,134 +1,116 @@
 package org.jgroups.tests.perf;
 
 import org.jgroups.*;
-import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import javax.management.MBeanServer;
 import java.io.*;
-import java.util.Date;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
-import java.util.Vector;
+import java.util.Date;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.1 2008/07/24 08:45:26 belaban Exp $
+ * @version $Id: IPerf.java,v 1.2 2008/07/24 10:05:59 belaban Exp $
  */
 public class IPerf {
-    private final boolean sender;
-    private final String props;
-    private final int sleep;
-    private JChannel ch;
-    private final int MIN_SIZE, MAX_SIZE, FIXED_SIZE;
+    private final Configuration config;
     private int seqno=1;
     private final static String NAME="IPerf";
     private final Map<Integer,Map<Address, Long>> stats=new ConcurrentHashMap<Integer,Map<Address,Long>>();
+    private Transport transport=null;
 
 
-
-    public IPerf(boolean sender, String props, int sleep, int min, int max, int fixed) {
-        this.sender=sender;
-        this.props=props;
-        this.sleep=sleep;
-        this.MIN_SIZE=min;
-        this.MAX_SIZE=max;
-        this.FIXED_SIZE=fixed;
+    public IPerf(Configuration config) {
+        this.config=config;
     }
 
     public void start() throws Exception {
-        ch=new JChannel(props);
-        ch.setReceiver(new MyReceiver(ch));
-        ch.connect("IPerfCluster");
+        transport=(Transport)Class.forName(config.getTransport()).newInstance();
+        transport.create(config);
+        transport.start();
 
-        MBeanServer server=Util.getMBeanServer();
-        if(server == null)
-            System.err.println("No MBeanServers found;" +
-                    "\nIPerf needs to be run with an MBeanServer present, or inside JDK 5");
-        JmxConfigurator.registerChannel(ch, server, "jgroups", ch.getClusterName(), true);
-
-
-        if(sender) {
-            ch.setOpt(Channel.LOCAL, false);
-            System.out.println("min=" + Util.printBytes(MIN_SIZE) + ", max=" + Util.printBytes(MAX_SIZE) + ", sleep time=" + sleep);
-            while(true) {
-                Util.sleepRandom(sleep);
-                sendMessage();
-            }
+        if(config.isSender()) {
+            sendMessage();
+            transport.stop();
+            transport.destroy();
+        }
+        else {
+            System.out.println("Transport " + transport.getClass().getName() + " started at " + new Date());
+            System.out.println("Listening on " + transport.getLocalAddress());
         }
     }
 
     private void sendMessage() throws ChannelException {
-        int size=(int)Util.random(MAX_SIZE);
-        size=Math.max(size, MIN_SIZE);
-        if(FIXED_SIZE > 0)
-            size=FIXED_SIZE;
-        byte[] buf=new byte[size];
-        Message msg=new Message(null, null, buf);
-        // stats.clear();
-        Vector<Address> mbrs=ch.getView().getMembers();
-        long current_time=System.currentTimeMillis();
-        Map<Address,Long> map=new ConcurrentHashMap<Address,Long>();
-        for(Address mbr: mbrs)
-            map.put(mbr, current_time);
-        stats.put(seqno, map);
-        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
-        msg.putHeader(NAME, hdr);
-        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
-        ch.send(msg);
-        seqno++;
+//        byte[] buf=new byte[size];
+//        Message msg=new Message(null, null, buf);
+//        Vector<Address> mbrs=ch.getView().getMembers();
+//        long current_time=System.currentTimeMillis();
+//        Map<Address,Long> map=new ConcurrentHashMap<Address,Long>();
+//        for(Address mbr: mbrs)
+//            map.put(mbr, current_time);
+//        stats.put(seqno, map);
+//        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
+//        msg.putHeader(NAME, hdr);
+//        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
+//        ch.send(msg);
+//        seqno++;
     }
 
     public static void main(String[] args) throws Exception {
-        boolean sender=false;
-        int sleep=10000, min=100 * 1000, max=100 * 1000 * 1000, fixed=0;
-        String props="udp.xml";
+        Configuration config=new Configuration();
+
+        List<String> unused_args=new ArrayList<String>(args.length);
 
         for(int i=0; i < args.length; i++) {
             String tmp=args[i];
             if(tmp.equalsIgnoreCase("-sender")) {
-                sender=true;
+                config.setSender(true);
                 continue;
             }
-            if(tmp.equalsIgnoreCase("-props")) {
-                props=args[++i];
+            if(tmp.equalsIgnoreCase("-size")) {
+                config.setSize(Integer.parseInt(args[++i]));
                 continue;
             }
-            if(tmp.equalsIgnoreCase("-sleep")) {
-                sleep=Integer.parseInt(args[++i]);
+            if(tmp.equals("-transport")) {
+                config.setTransport(args[++i]);
                 continue;
             }
-            if(tmp.equalsIgnoreCase("-min")) {
-                min=Integer.parseInt(args[++i]);
-                continue;
+            if(tmp.equals("-h") || tmp.equals("-help")) {
+                help(config.getTransport());
             }
-            if(tmp.equalsIgnoreCase("-max")) {
-                max=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(tmp.equalsIgnoreCase("-fixed")) {
-                fixed=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(tmp.equalsIgnoreCase("-bind_addr")) {
-                System.setProperty("jgroups.bind_addr", args[++i]);
-                continue;
-            }
-            help();
-            return;
+            unused_args.add(tmp);
+        }
+
+        if(!unused_args.isEmpty()) {
+            String[] tmp=new String[unused_args.size()];
+            for(int i=0; i < unused_args.size(); i++)
+                tmp[i]=unused_args.get(i);
+            config.setTransportArgs(tmp);
         }
 
         ClassConfigurator.add((short)10000, MyHeader.class);
 
-        new IPerf(sender, props, sleep, min, max, fixed).start();
+        new IPerf(config).start();
     }
 
-    static void help() {
-        System.out.println("IPerf [-sender] [-props <props>] [-bind_addr <addr>] [-sleep <time in ms>] " +
-                "[-min <size>] [-max <size>] [-fixed <size>]");
+    static void help(String transport) {
+        StringBuilder sb=new StringBuilder();
+        sb.append("IPerf [-sender] [-bind_addr <addr>] [-transport <class name>]");
+        try {
+            Transport tp=(Transport)Class.forName(transport).newInstance();
+            String tmp=tp.help();
+            if(tmp != null && tmp.length() > 0)
+                sb.append("\nTransport specific options:\n" + tp.help());
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+        System.out.println(sb);
     }
 
 

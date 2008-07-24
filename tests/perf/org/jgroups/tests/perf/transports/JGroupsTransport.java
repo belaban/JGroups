@@ -6,6 +6,7 @@ import org.jgroups.Message;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.tests.perf.Configuration;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
@@ -15,10 +16,11 @@ import java.util.Properties;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.15 2006/12/19 08:51:46 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.16 2008/07/24 10:06:00 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
+    Configuration cfg=null;
     JChannel   channel=null;
     Thread     t=null;
     String     props=null;
@@ -34,10 +36,32 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         return channel != null? channel.getLocalAddress() : null;
     }
 
+    public String help() {
+        return "[-props <props>]";
+    }
+
     public void create(Properties properties) throws Exception {
         this.config=properties;
         props=config.getProperty("props");
-        jmx=new Boolean(this.config.getProperty("jmx")).booleanValue();
+        jmx=Boolean.parseBoolean(this.config.getProperty("jmx"));
+        channel=new JChannel(props);
+        channel.setReceiver(this);
+    }
+
+    public void create(Configuration config) throws Exception {
+        this.cfg=config;
+        String[] args=config.getTransportArgs();
+        if(args != null) {
+            for(int i=0; i < args.length; i++) {
+                String tmp=args[i];
+                if(tmp.equals("-props")) {
+                    props=args[++i];
+                    continue;
+                }
+                throw new IllegalArgumentException(tmp + " is not known (options: " + help() + ")");
+            }
+        }
+        jmx=config.isJmx();
         channel=new JChannel(props);
         channel.setReceiver(this);
     }

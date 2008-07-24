@@ -3,6 +3,7 @@ package org.jgroups.tests.perf.transports;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
+import org.jgroups.tests.perf.Configuration;
 import org.jgroups.util.Util;
 import org.jgroups.Address;
 
@@ -13,11 +14,12 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.18 2007/12/11 11:57:20 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.19 2008/07/24 10:06:00 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
     Properties       config=null;
+    Configuration    cfg=null;
     int              max_receiver_buffer_size=500000;
     int              max_send_buffer_size=500000;
     List             nodes;
@@ -36,6 +38,10 @@ public class TcpTransport implements Transport {
         return local_addr;
     }
 
+    public String help() {
+        return "[-cluster <list of address:port pairs>]";
+    }
+
     public void create(Properties properties) throws Exception {
         this.config=properties;
         String tmp;
@@ -50,6 +56,14 @@ public class TcpTransport implements Transport {
             throw new Exception("TcpTransport.create(): property 'cluster' is not defined");
         nodes=parseCommaDelimitedList(cluster_def);
         ct=new ConnectionTable(nodes);
+    }
+
+    public void create(Configuration config) throws Exception {
+        this.cfg=config;
+        String[] args=config.getTransportArgs();
+        if(args != null) {
+            // todo: process
+        }
     }
 
 
