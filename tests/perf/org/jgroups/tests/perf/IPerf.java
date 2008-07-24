@@ -6,22 +6,19 @@ import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Date;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.2 2008/07/24 10:05:59 belaban Exp $
+ * @version $Id: IPerf.java,v 1.3 2008/07/24 10:15:09 belaban Exp $
  */
 public class IPerf {
     private final Configuration config;
     private int seqno=1;
     private final static String NAME="IPerf";
-    private final Map<Integer,Map<Address, Long>> stats=new ConcurrentHashMap<Integer,Map<Address,Long>>();
+    private final Map<Integer,Map<Object, Long>> stats=new ConcurrentHashMap<Integer,Map<Object,Long>>();
     private Transport transport=null;
 
 
@@ -45,20 +42,20 @@ public class IPerf {
         }
     }
 
-    private void sendMessage() throws ChannelException {
-//        byte[] buf=new byte[size];
-//        Message msg=new Message(null, null, buf);
-//        Vector<Address> mbrs=ch.getView().getMembers();
-//        long current_time=System.currentTimeMillis();
-//        Map<Address,Long> map=new ConcurrentHashMap<Address,Long>();
-//        for(Address mbr: mbrs)
-//            map.put(mbr, current_time);
-//        stats.put(seqno, map);
-//        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
-//        msg.putHeader(NAME, hdr);
-//        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
-//        ch.send(msg);
-//        seqno++;
+    private void sendMessage() throws Exception {
+        int size=config.getSize();
+        byte[] buf=new byte[size];
+        List<Object> mbrs=transport.getClusterMembers();
+        long current_time=System.currentTimeMillis();
+        Map<Object,Long> map=new ConcurrentHashMap<Object,Long>();
+        for(Object mbr: mbrs)
+            map.put(mbr, current_time);
+        stats.put(seqno, map);
+        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
+        // msg.putHeader(NAME, hdr);
+        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
+        transport.send(null, buf, false);
+        seqno++;
     }
 
     public static void main(String[] args) throws Exception {
@@ -144,7 +141,7 @@ public class IPerf {
         }
 
         private void handleConfirmation(Address sender, int seqno) {
-            Map<Address, Long> map=stats.get(seqno);
+            Map<Object, Long> map=stats.get(seqno);
             if(map == null) {
                 System.err.println("no map for seqno #" + seqno);
                 return;

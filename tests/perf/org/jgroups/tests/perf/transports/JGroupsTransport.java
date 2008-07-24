@@ -10,13 +10,12 @@ import org.jgroups.tests.perf.Configuration;
 import org.jgroups.util.Util;
 
 import javax.management.MBeanServer;
-import java.util.Map;
-import java.util.Properties;
+import java.util.*;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.16 2008/07/24 10:06:00 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.17 2008/07/24 10:15:11 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -34,6 +33,12 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
 
     public Object getLocalAddress() {
         return channel != null? channel.getLocalAddress() : null;
+    }
+
+    public List<Object> getClusterMembers() {
+        if(channel == null) return null;
+        Vector<Address> mbrs=channel.getView().getMembers();
+        return new ArrayList<Object>(mbrs);
     }
 
     public String help() {

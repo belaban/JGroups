@@ -13,11 +13,12 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.Properties;
 import java.util.Map;
+import java.util.List;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.8 2008/07/24 10:06:00 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.9 2008/07/24 10:15:11 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -40,6 +41,10 @@ public class UdpTransport implements Transport {
 
     public Object getLocalAddress() {
         return local_addr;
+    }
+
+    public List<Object> getClusterMembers() {
+        return null;
     }
 
     public String help() {
