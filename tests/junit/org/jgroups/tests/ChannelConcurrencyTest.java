@@ -5,8 +5,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import java.net.InetAddress;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.jgroups.Channel;
 import org.jgroups.Global;
@@ -22,13 +23,12 @@ import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.RspList;
 import org.jgroups.util.Util;
-import org.testng.AssertJUnit;
 import org.testng.annotations.Test;
 
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.15 2008/07/24 17:36:26 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.16 2008/07/25 20:09:39 vlada Exp $
  */
 @Test(groups=Global.FLUSH,sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
@@ -44,7 +44,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
     protected  void testhelper(boolean useDispatcher) throws Throwable {
         final int count=8;
 
-        final Executor executor=Executors.newFixedThreadPool(count);
+        final ExecutorService executor=Executors.newFixedThreadPool(count);
         final CountDownLatch latch=new CountDownLatch(count);
         final JChannel[] channels=new JChannel[count];
         final Task[] tasks=new Task[count];
@@ -66,56 +66,57 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
             executor.execute(t);
         }
 
+        int timeoutToConverge=120;
+        boolean successConnecting  = false;
         try {
             // Wait for all channels to finish connecting
-            latch.await();
+            successConnecting=latch.await(timeoutToConverge, TimeUnit.SECONDS);            
+            if(successConnecting) {
+                log.info("All connected. Converging...");
+                for(Task t:tasks) {
+                    Throwable ex=t.getException();
+                    if(ex != null)
+                        throw ex;
+                }
 
-            for(Task t:tasks) {
-                Throwable ex=t.getException();
-                if(ex != null)
-                    throw ex;
-            }
+                // Wait for all channels to have the correct number of members in their
+                // current view
+                boolean converged=false;
+                for(int counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
+                    for(final JChannel channel:channels) {
+                        converged=channel.getView() != null && channel.getView().size() == count;
+                        if(!converged)
+                            break;
+                    }
+                }
 
-            // Wait for all channels to have the correct number of members in their
-            // current view
-            boolean converged=false;
-            for(int timeoutToConverge=120,counter=0;counter < timeoutToConverge && !converged;SECONDS.sleep(1),counter++) {
-                for(final JChannel channel:channels) {
-                    converged = channel.getView() != null && channel.getView().size() == count;
-                    if(!converged)
-                        break;
+                final long duration=System.currentTimeMillis() - start;
+                log.info("Converged to a single group after " + duration
+                                   + " ms; group is:\n");
+                for(int i=0;i < channels.length;i++) {
+                    log.info("#" + (i + 1)
+                                       + ": "
+                                       + channels[i].getLocalAddress()
+                                       + ": "
+                                       + channels[i].getView());
                 }                
-            }
-
-            final long duration=System.currentTimeMillis() - start;
-            System.out.println("Converged to a single group after " + duration + " ms; group is:\n");
-            for(int i=0;i < channels.length;i++) {
-                System.out.println("#" + (i + 1) + ": " + channels[i].getLocalAddress() + ": " + channels[i].getView());
-            }
+            }         
 
             for(final JChannel channel:channels) {
-                AssertJUnit.assertSame("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
+                assertEquals("View ok for channel " + channel.getLocalAddress(), count, channel.getView().size());
             }
+            assertTrue("All channels were succefully connected",successConnecting);     
         }
         finally {
-            System.out.print("closing channels: ");
-            for(int i=channels.length -1; i>= 0; i--) {
-                Channel channel=channels[i];
-                channel.close();
-                
+            Util.sleep(2500);
+            executor.shutdownNow();
+            log.info("closing channels: ");            
+            for(JChannel ch:channels) {
+                ch.close();                               
                 //there are sometimes big delays until entire cluster shuts down
                 //use sleep to make a smoother shutdown so we avoid false positives
-                Util.sleep(300);
-                int tries=0;
-                while((channel.isConnected() || channel.isOpen()) && tries++ < 10) {
-                    Util.sleep(1000);
-                }
-            }
-            System.out.println("OK");
-
-            for(final JChannel channel: channels) {
-                assertFalse("Channel connected", channel.isConnected());
-            }
+                Util.sleep(500);                
+            }                                    
         }
     }
 
@@ -176,7 +177,7 @@ public class ChannelConcurrencyTest  extends ChannelTestBase{
         public void run() {
             try {
                 c.connect("ChannelConcurrencyTest");
-                if(useDispatcher) {
+                if(useDispatcher && c.isConnected()) {
                     final MessageDispatcher md=new MessageDispatcher(c, null, null, new MyHandler());
                     for(int i=0;i < 10;i++) {
                         final RspList rsp=md.castMessage(null,
