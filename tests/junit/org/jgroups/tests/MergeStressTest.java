@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.15 2008/06/09 12:13:44 belaban Exp $
+// $Id: MergeStressTest.java,v 1.16 2008/07/25 18:44:39 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -15,19 +15,21 @@ import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 
 
 /**
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.15 2008/06/09 12:13:44 belaban Exp $
+ * @version $Id: MergeStressTest.java,v 1.16 2008/07/25 18:44:39 vlada Exp $
  */
 @Test(groups={"temp"})
 public class MergeStressTest extends ChannelTestBase {
     CyclicBarrier           start_connecting=null;
-    CyclicBarrier           received_all_views=null;
-    CyclicBarrier           start_disconnecting=null;
+    CyclicBarrier           received_all_views=null;   
     CyclicBarrier           disconnected=null;
     static final int        NUM=10;
     static final long       TIMEOUT=50000;
@@ -43,8 +45,7 @@ public class MergeStressTest extends ChannelTestBase {
 
     public void testConcurrentStartupAndMerging() throws Exception {
         start_connecting=new CyclicBarrier(NUM+1);
-        received_all_views=new CyclicBarrier(NUM+1);
-        start_disconnecting=new CyclicBarrier(NUM+1);
+        received_all_views=new CyclicBarrier(NUM+1);       
         disconnected=new CyclicBarrier(NUM+1);
 
         long start, stop;
@@ -70,7 +71,7 @@ public class MergeStressTest extends ChannelTestBase {
         start=System.currentTimeMillis();
 
         try {
-            received_all_views.await();
+            received_all_views.await(90, TimeUnit.SECONDS);
             stop=System.currentTimeMillis();
             System.out.println("-- took " + (stop-start) + " msecs for all " + NUM + " threads to see all views");
 
@@ -84,11 +85,15 @@ public class MergeStressTest extends ChannelTestBase {
             }
             System.out.println("SUCCESSFUL");
         }
+        catch(TimeoutException timeoutOnReceiveViews){
+            for(MyThread channel:threads){
+                channel.interrupt();
+            }
+        }
         catch(Exception ex) {
             assert false : ex.toString();
         }
-        finally {
-            start_disconnecting.await();
+        finally {            
             disconnected.await();
         }
     }
@@ -138,6 +143,10 @@ public class MergeStressTest extends ChannelTestBase {
         public void start() {
             thread.start();
         }
+        
+        public void interrupt(){
+            thread.interrupt();
+        }
 
         public void closeChannel() {
             Util.close(ch);
@@ -177,33 +186,28 @@ public class MergeStressTest extends ChannelTestBase {
                     view.getMembers().size() + " members). VID=" + ch.getView());
 
                 synchronized(this) {
-                    while(num_members < NUM) {
-                        try {this.wait();} catch(InterruptedException e) {}
+                    while(num_members < NUM && !Thread.currentThread().isInterrupted()) {
+                        try {
+                            this.wait();
+                        }
+                        catch(InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
-                }
-
-                log("reached " + num_members + " members");
-                received_all_views.await();
-
-                start_disconnecting.await();
-                start=System.currentTimeMillis();
-                ch.shutdown();
-                stop=System.currentTimeMillis();
-
-                log(my_addr + " shut down in " + (stop-start) + " msecs");
-                disconnected.await();
+                }               
             }
             catch(Exception e) {
                 e.printStackTrace();
             }
+            finally{
+                log("reached " + num_members + " members");
+                try {
+                    received_all_views.await();
+                    ch.shutdown();     
+                    disconnected.await();
+                }              
+                catch(Exception e) {}                                          
+            }
         }
-
-
-
-
-
     }
-
-
-
 }
