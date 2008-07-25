@@ -1,4 +1,4 @@
-// $Id: MERGE2.java,v 1.51 2008/07/16 18:19:40 vlada Exp $
+// $Id: MERGE2.java,v 1.52 2008/07/25 19:32:46 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -186,7 +186,7 @@ public class MERGE2 extends Protocol {
                     public void run() {
                         findAndNotify();
                     }
-                }, 0, computeInterval(), TimeUnit.MILLISECONDS);
+                },  2500, computeInterval(), TimeUnit.MILLISECONDS);
             }
         }
 
