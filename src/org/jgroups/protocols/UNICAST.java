@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.114 2008/07/16 18:39:19 vlada Exp $
+ * @version $Id: UNICAST.java,v 1.115 2008/07/25 19:30:47 vlada Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -444,11 +444,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 }
 
                 // trash connections to/from members who are in the merge view, fix for: http://jira.jboss.com/jira/browse/JGRP-348
-                if(view instanceof MergeView) {
-                    if(log.isTraceEnabled())
-                        log.trace("removing all connections for the current members due to a merge");
-                    removeConnections(members);
-                }
+                // update (bela, April  25 2008): reverted because of http://jira.jboss.com/jira/browse/JGRP-659, we fix this
+                // in 2.7 only as we don't want to change the serialization format. The JIRA issue is
+                // http://jira.jboss.com/jira/browse/JGRP-742
+//                if(view instanceof MergeView) {
+//                    if(log.isTraceEnabled())
+//                        log.trace("removing all connections for the current members due to a merge");
+//                    removeConnections(members);
+//                }
 
                 break;
 
