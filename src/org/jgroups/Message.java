@@ -13,7 +13,6 @@ import org.jgroups.util.Util;
 import java.io.*;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -25,7 +24,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.3 2008/07/28 11:27:08 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.4 2008/07/28 12:41:58 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -42,8 +41,6 @@ public class Message implements Externalizable, Streamable {
 
     /** Map<String,Header> */
     protected Map<String,Header> headers;
-
-    protected final transient ReentrantReadWriteLock header_lock=new ReentrantReadWriteLock();
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
@@ -245,33 +242,15 @@ public class Message implements Externalizable, Streamable {
     /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
      * modify the returned map will cause a runtime exception */
     public Map<String,Header> getHeaders() {
-        header_lock.readLock().lock();
-        try {
-            return createHeaders(headers);
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        return createHeaders(headers);
     }
 
     public String printHeaders() {
-        header_lock.readLock().lock();
-        try {
-            return headers.toString();
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        return headers.toString();
     }
 
     public int getNumHeaders() {
-        header_lock.readLock().lock();
-        try {
-            return headers != null? headers.size() : 0;
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        return headers != null? headers.size() : 0;
     }
 
     /**
@@ -331,13 +310,7 @@ public class Message implements Externalizable, Streamable {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        header_lock.writeLock().lock();
-        try {
-            headers.put(key, hdr);
-        }
-        finally {
-            header_lock.writeLock().unlock();
-        }
+        headers.put(key, hdr);
     }
 
     /**
@@ -351,16 +324,10 @@ public class Message implements Externalizable, Streamable {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
-        header_lock.writeLock().lock();
-        try {
-            if(!headers.containsKey(key))
-                return headers.put(key, hdr);
-            else
-                return headers.get(key);
-        }
-        finally {
-            header_lock.writeLock().unlock();
-        }
+        if(!headers.containsKey(key))
+            return headers.put(key, hdr);
+        else
+            return headers.get(key);
     }
 
     /**
@@ -371,23 +338,11 @@ public class Message implements Externalizable, Streamable {
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
     public Header removeHeader(String key) {
-        header_lock.readLock().lock();
-        try {
-            return headers.get(key);
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        return headers.get(key);
     }
 
     public Header getHeader(String key) {
-        header_lock.readLock().lock();
-        try {
-            return headers.get(key);
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        return headers.get(key);
     }
     /*---------------------------------------------------------------------*/
 
@@ -414,13 +369,7 @@ public class Message implements Externalizable, Streamable {
             retval.setBuffer(buf, offset, length);
         }
 
-        header_lock.readLock().lock();
-        try {
-            retval.headers=createHeaders(headers);
-        }
-        finally {
-            header_lock.readLock().unlock();
-        }
+        retval.headers=createHeaders(headers);
         return retval;
     }
 
@@ -512,19 +461,13 @@ public class Message implements Externalizable, Streamable {
         Header hdr;
         retval+=Global.SHORT_SIZE; // size (short)
 
-        header_lock.readLock().lock();
-        try {
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                key=(String)entry.getKey();
-                retval+=key.length() +2; // not the same as writeUTF(), but almost
-                hdr=(Header)entry.getValue();
-                retval+=(Global.SHORT_SIZE *2); // 2 for magic number, 2 for size (short)
-                retval+=hdr.size();
-            }
-        }
-        finally {
-            header_lock.readLock().unlock();
+        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            key=(String)entry.getKey();
+            retval+=key.length() +2; // not the same as writeUTF(), but almost
+            hdr=(Header)entry.getValue();
+            retval+=(Global.SHORT_SIZE *2); // 2 for magic number, 2 for size (short)
+            retval+=hdr.size();
         }
         return retval;
     }
@@ -536,15 +479,9 @@ public class Message implements Externalizable, Streamable {
 
 
         if(headers != null) {
-            header_lock.readLock().lock();
-            try {
-                for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                    entry=(Map.Entry)it.next();
-                    sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-                }
-            }
-            finally {
-                header_lock.readLock().unlock();
+            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+                entry=(Map.Entry)it.next();
+                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
             }
         }
         return sb.toString();
@@ -584,19 +521,13 @@ public class Message implements Externalizable, Streamable {
             out.write(buf, offset, length);
         }
 
-        header_lock.readLock().lock();
-        try {
-            len=headers.size();
-            out.writeInt(len);
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                out.writeUTF((String)entry.getKey());
-                hdr=(Externalizable)entry.getValue();
-                Marshaller.write(hdr, out);
-            }
-        }
-        finally {
-            header_lock.readLock().unlock();
+        len=headers.size();
+        out.writeInt(len);
+        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
+            entry=(Map.Entry)it.next();
+            out.writeUTF((String)entry.getKey());
+            hdr=(Externalizable)entry.getValue();
+            Marshaller.write(hdr, out);
         }
     }
 
@@ -628,16 +559,10 @@ public class Message implements Externalizable, Streamable {
         }
 
         int len=in.readInt();
-        header_lock.writeLock().lock();
-        try {
-            while(len-- > 0) {
-                String key=in.readUTF();
-                Header value=(Header)Marshaller.read(in);
-                headers.put(key, value);
-            }
-        }
-        finally {
-            header_lock.writeLock().unlock();
+        while(len-- > 0) {
+            String key=in.readUTF();
+            Header value=(Header)Marshaller.read(in);
+            headers.put(key, value);
         }
     }
 
