@@ -25,7 +25,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.85 2008/07/28 08:29:37 belaban Exp $
+ * @version $Id: Message.java,v 1.86 2008/07/28 11:25:22 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -265,7 +265,13 @@ public class Message implements Streamable {
     /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
      * modify the returned map will cause a runtime exception */
     public Map<String,Header> getHeaders() {
-        return Collections.unmodifiableMap(headers);
+        header_lock.readLock().lock();
+        try {
+            return createHeaders(headers);
+        }
+        finally {
+            header_lock.readLock().unlock();
+        }
     }
 
     public String printHeaders() {
