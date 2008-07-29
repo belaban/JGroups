@@ -7,7 +7,7 @@ import org.jgroups.protocols.UNICAST;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageStressTest.java,v 1.2 2008/07/28 15:52:15 belaban Exp $
+ * @version $Id: MessageStressTest.java,v 1.3 2008/07/29 12:08:31 belaban Exp $
  */
 public class MessageStressTest {
     public static final int NUM=1000 * 1000;
@@ -31,6 +31,7 @@ public class MessageStressTest {
             msg.getHeader(UDP);
             msg.getHeader(NAKACK);
             msg.getHeader(UNICAST);
+            msg.size();
         }
         long total=System.nanoTime() - start;
         double ns_per_msg=total / NUM;
