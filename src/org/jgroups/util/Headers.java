@@ -5,6 +5,8 @@ import org.jgroups.Header;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * Open addressing based implementation of a hashmap (not supporting the Map interface though) for message
@@ -17,7 +19,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.2 2008/07/29 15:24:48 belaban Exp $
+ * @version $Id: Headers.java,v 1.3 2008/07/29 15:42:23 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -174,6 +176,26 @@ public class Headers {
     }
 
 
+//    public Iterator<Object> iterator() {
+//        return new Iterator<Object> () {
+//            int index=0, max=data.length;
+//
+//            public boolean hasNext() {
+//                return index < max;
+//            }
+//
+//            public Object next() {
+//                if(!hasNext())
+//                    throw new NoSuchElementException("index " + index + " is out of bounds (max=" + data.length + ")");
+//                return data[index++];
+//            }
+//
+//            public void remove() {
+//                throw new UnsupportedOperationException();
+//                // data[index++]=null;
+//            }
+//        };
+//    }
 
     /**
      * Doubles the capacity of the old data array and copies the contents of the old into the new array. This method
