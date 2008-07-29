@@ -5,8 +5,6 @@ import org.jgroups.Header;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Iterator;
-import java.util.NoSuchElementException;
 
 /**
  * Open addressing based implementation of a hashmap (not supporting the Map interface though) for message
@@ -19,7 +17,7 @@ import java.util.NoSuchElementException;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.3 2008/07/29 15:42:23 belaban Exp $
+ * @version $Id: Headers.java,v 1.4 2008/07/29 16:13:55 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
