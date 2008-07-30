@@ -6,10 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Headers;
-import org.jgroups.util.Marshaller;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.HashSet;
@@ -27,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.6 2008/07/30 12:14:08 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.7 2008/07/30 12:27:55 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -238,6 +235,20 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
+    /**
+     <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
+     */
+     public final void setBuffer(Buffer buf) {
+        if(buf != null) {
+            this.buf=buf.getBuf();
+            this.offset=buf.getOffset();
+            this.length=buf.getLength();
+        }
+    }
 
 
     /** Returns the offset into the buffer at which the data starts */

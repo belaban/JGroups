@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.40.2.1 2008/01/22 10:00:59 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.40.2.2 2008/07/30 12:27:58 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,10 +6,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.Scheduler;
-import org.jgroups.util.SchedulerListener;
-import org.jgroups.util.Streamable;
-import org.jgroups.util.Util;
+import org.jgroups.util.*;
 
 import java.io.*;
 import java.util.Iterator;
@@ -49,7 +46,7 @@ public class RequestCorrelator {
     protected RequestHandler request_handler=null;
 
     /** Possibility for an external marshaller to marshal/unmarshal responses */
-    protected RpcDispatcher.Marshaller marshaller=null;
+    protected RpcDispatcher.Marshaller2 marshaller=null;
 
     /** makes the instance unique (together with IDs) */
     protected String name=null;
@@ -231,7 +228,12 @@ public class RequestCorrelator {
     }
 
     public void setMarshaller(RpcDispatcher.Marshaller marshaller) {
-        this.marshaller=marshaller;
+        if(marshaller == null)
+            this.marshaller=null;
+        else if(marshaller instanceof RpcDispatcher.Marshaller2)
+            this.marshaller=(RpcDispatcher.Marshaller2)marshaller;
+        else
+            this.marshaller=new RpcDispatcher.MarshallerAdapter(marshaller);
     }
 
     public void sendRequest(long id, List<Address> dest_mbrs, Message msg, RspCollector coll) throws Exception {
@@ -540,8 +542,10 @@ public class RequestCorrelator {
                     Address sender=msg.getSrc();
                     Object retval=null;
                     byte[] buf=msg.getBuffer();
+                    int offset=msg.getOffset(), length=msg.getLength();
                     try {
-                        retval=marshaller != null? marshaller.objectFromByteBuffer(buf) : Util.objectFromByteBuffer(buf);
+                        retval=marshaller != null? marshaller.objectFromByteBuffer(buf, offset, length) :
+                                Util.objectFromByteBuffer(buf, offset, length);
                     }
                     catch(Exception e) {
                         log.error("failed unmarshalling buffer into return value", e);
@@ -576,8 +580,7 @@ public class RequestCorrelator {
      * ID -> <tt>RspCollector</tt>
      */
     private void addEntry(long id, RspCollector coll) {
-        Long id_obj = new Long(id);
-        requests.putIfAbsent(id_obj, coll);
+        requests.putIfAbsent(id, coll);
     }
 
 
@@ -602,9 +605,9 @@ public class RequestCorrelator {
      *
      * @param req the request msg
      */
-    private void handleRequest(Message req, Header hdr) {
+    protected void handleRequest(Message req, Header hdr) {
         Object        retval;
-        byte[]        rsp_buf;
+        Object        rsp_buf; // either byte[] or Buffer
         Header        rsp_hdr;
         Message       rsp;
 
@@ -638,11 +641,11 @@ public class RequestCorrelator {
 
         // changed (bela Feb 20 2004): catch exception and return exception
         try {  // retval could be an exception, or a real value
-            rsp_buf=marshaller != null? marshaller.objectToByteBuffer(retval) : Util.objectToByteBuffer(retval);
+            rsp_buf=marshaller != null? marshaller.objectToBuffer(retval) : Util.objectToByteBuffer(retval);
         }
         catch(Throwable t) {
             try {  // this call should succeed (all exceptions are serializable)
-                rsp_buf=marshaller != null? marshaller.objectToByteBuffer(t) : Util.objectToByteBuffer(t);
+                rsp_buf=marshaller != null? marshaller.objectToBuffer(t) : Util.objectToByteBuffer(t);
             }
             catch(Throwable tt) {
                 if(log.isErrorEnabled()) log.error("failed sending rsp: return value (" + retval + ") is not serializable");
@@ -651,8 +654,10 @@ public class RequestCorrelator {
         }
 
         rsp=req.makeReply();
-        if(rsp_buf != null)
-            rsp.setBuffer(rsp_buf);
+        if(rsp_buf instanceof Buffer)
+            rsp.setBuffer((Buffer)rsp_buf);
+        else if (rsp_buf instanceof byte[])
+            rsp.setBuffer((byte[])rsp_buf);
         rsp_hdr=new Header(Header.RSP, hdr.id, false, name);
         rsp.putHeader(name, rsp_hdr);
         if(log.isTraceEnabled())
