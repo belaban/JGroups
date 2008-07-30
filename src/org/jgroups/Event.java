@@ -1,4 +1,4 @@
-// $Id: Event.java,v 1.62 2008/07/21 18:31:48 vlada Exp $
+// $Id: Event.java,v 1.63 2008/07/30 11:45:52 belaban Exp $
 
 package org.jgroups;
 
@@ -145,7 +145,7 @@ public class Event {
         StringBuilder ret=new StringBuilder(64);
         ret.append("Event[type=" + type2String(type) + ", arg=" + arg + ']');
         if(type == MSG)
-            ret.append(" (headers=").append(((Message)arg).getHeaders()).append(")");
+            ret.append(" (headers=").append(((Message)arg).printHeaders()).append(")");
         return ret.toString();
     }
 
