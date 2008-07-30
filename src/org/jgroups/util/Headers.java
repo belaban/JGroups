@@ -17,7 +17,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.8 2008/07/30 10:46:00 belaban Exp $
+ * @version $Id: Headers.java,v 1.9 2008/07/30 11:16:09 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -74,7 +74,7 @@ public class Headers {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        _putHeader(key, hdr, true);
+        _putHeader(key, hdr, 0, true);
     }
 
 
@@ -91,7 +91,7 @@ public class Headers {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
-        return _putHeader(key, hdr, false);
+        return _putHeader(key, hdr, 0, false);
     }
 
     /**
@@ -159,26 +159,6 @@ public class Headers {
         return printHeaders();
     }
 
-    //    public Iterator<Object> iterator() {
-//        return new Iterator<Object> () {
-//            int index=0, max=data.length;
-//
-//            public boolean hasNext() {
-//                return index < max;
-//            }
-//
-//            public Object next() {
-//                if(!hasNext())
-//                    throw new NoSuchElementException("index " + index + " is out of bounds (max=" + data.length + ")");
-//                return data[index++];
-//            }
-//
-//            public void remove() {
-//                throw new UnsupportedOperationException();
-//                // data[index++]=null;
-//            }
-//        };
-//    }
 
     /**
      * Doubles the capacity of the old data array and copies the contents of the old into the new array. This method
@@ -192,37 +172,28 @@ public class Headers {
     }
 
 
-    private Header _putHeader(String key, Header hdr, boolean replace_if_present) {
-        int available=-1;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] == null && available < 0)
-                available=i;
-            if(data[i] != null && data[i].equals(key)) {
+    private Header _putHeader(String key, Header hdr, int start_index, boolean replace_if_present) {
+        int i=start_index;
+        while(i < data.length) {
+            if(data[i] == null) {
+                data[i]=key;
+                data[i+1]=hdr;
+                return null;
+            }
+            if(data[i].equals(key)) {
                 Header retval=(Header)data[i+1];
                 if(replace_if_present) {
                     data[i+1]=hdr;
                 }
                 return retval;
             }
-        }
-        if(available < 0) {
-            resize();
-        }
-        else {
-            data[available]=key;
-            data[available + 1]=hdr;
-            return null;
-        }
-        for(int i=data.length / 2; i < data.length; i+=2) {
-            if(data[i] == null) {
-                data[i]=key;
-                data[i+1]=hdr;
-                return null;
+            i+=2;
+            if(i >= data.length) {
+                resize();
             }
         }
-        throw new IllegalStateException("didn't find space for element " + key);
+        throw new IllegalStateException("unable to add element " + key + ", index=" + i); // we should never come here
     }
-
 
 
 }
