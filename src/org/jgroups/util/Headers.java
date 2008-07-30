@@ -17,11 +17,14 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.7 2008/07/30 08:56:21 belaban Exp $
+ * @version $Id: Headers.java,v 1.8 2008/07/30 10:46:00 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
     private Object[] data;
+
+    /** Add space for 3 new elements when resizing */
+    private static final int RESIZE_INCR=6;
 
     public Headers(int initial_capacity) {
         data=new Object[initial_capacity << 1];
@@ -46,7 +49,7 @@ public class Headers {
     }
 
     public String printHeaders() {
-        StringBuilder sb=new StringBuilder("[");
+        StringBuilder sb=new StringBuilder();
         boolean first=true;
         for(int i=0; i < data.length; i+=2) {
             if(data[i] != null) {
@@ -54,10 +57,9 @@ public class Headers {
                     first=false;
                 else
                     sb.append(", ");
-                sb.append(data[i]).append(':').append(data[i+1]);
+                sb.append(data[i]).append(": ").append(data[i+1]);
             }
         }
-        sb.append("]");
         return sb.toString();
     }
 
@@ -141,6 +143,10 @@ public class Headers {
         return retval;
     }
 
+    public int capacity() {
+        return data.length / 2;
+    }
+
     public String printObjectHeaders() {
         StringBuilder sb=new StringBuilder();
         for(int i=0; i < data.length; i+=2) {
@@ -179,7 +185,7 @@ public class Headers {
      * is synchronized, we probably don't need this as access to a Headers instance is never concurrent !
      */
     private synchronized void resize() {
-        int new_size=data.length * 2;
+        int new_size=data.length + RESIZE_INCR;
         Object[] new_data=new Object[new_size];
         System.arraycopy(data, 0, new_data, 0, data.length);
         data=new_data;
