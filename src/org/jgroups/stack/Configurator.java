@@ -10,6 +10,7 @@ import org.jgroups.annotations.Property;
 import org.jgroups.conf.PropertyConverter;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.protocols.TP;
+import org.jgroups.stack.ProtocolStack.ProtocolStackFactory;
 import org.jgroups.util.Tuple;
 import org.jgroups.util.Util;
 
@@ -35,11 +36,32 @@ import java.util.regex.Pattern;
  * Future functionality will include the capability to dynamically modify the layering
  * of the protocol stack and the properties of each layer.
  * @author Bela Ban
- * @version $Id: Configurator.java,v 1.56 2008/07/02 06:43:37 belaban Exp $
+ * @version $Id: Configurator.java,v 1.57 2008/07/30 15:10:16 vlada Exp $
  */
-public class Configurator {
+public class Configurator implements ProtocolStackFactory {
 
-     protected static final Log log=LogFactory.getLog(Configurator.class);
+    protected static final Log log=LogFactory.getLog(Configurator.class);
+    private final ProtocolStack stack;
+     
+    public Configurator() {      
+        stack = null;
+    }
+
+    public Configurator(ProtocolStack protocolStack) {
+         stack=protocolStack;
+    }
+
+    public Protocol setupProtocolStack() throws Exception{
+         return setupProtocolStack(stack.getSetupString(), stack);
+    }
+     
+    public Protocol setupProtocolStack(ProtocolStack copySource)throws Exception{
+        Vector<Protocol> protocols=copySource.copyProtocols(stack);
+        Collections.reverse(protocols);
+        return connectProtocols(protocols);                  
+    }
+     
+     
 
 
     /**
@@ -62,182 +84,13 @@ public class Configurator {
      *   -----------------------
      * </pre>
      */
-    public static Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {
-        Protocol protocol_stack=null;
-        Vector<ProtocolConfiguration> protocol_configs;
-        Vector<Protocol> protocols;
-
-        protocol_configs=parseConfigurations(configuration);
-        protocols=createProtocols(protocol_configs, st);
+    private Protocol setupProtocolStack(String configuration, ProtocolStack st) throws Exception {       
+        Vector<ProtocolConfiguration> protocol_configs=parseConfigurations(configuration);
+        Vector<Protocol> protocols=createProtocols(protocol_configs, st);
         if(protocols == null)
             return null;
-        protocol_stack=connectProtocols(protocols);
-        return protocol_stack;
+        return connectProtocols(protocols);        
     }
-
-
-    public static void initProtocolStack(List<Protocol> protocols, final Map<String, Tuple<TP,ProtocolStack.RefCounter>> singletons) throws Exception {
-        Collections.reverse(protocols);
-        for(Protocol prot: protocols) {
-            if(prot instanceof TP) {
-                TP transport=(TP)prot;
-                if(transport.isSingleton()) {
-                    String singleton_name=transport.getSingletonName();
-                    synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
-                        if(val == null) {
-                            singletons.put(singleton_name, new Tuple<TP, ProtocolStack.RefCounter>(transport,new ProtocolStack.RefCounter((short)1, (short)0)));
-                        }
-                        else {
-                            ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_inits=counter.incrementInitCount();
-                            if(num_inits >= 1) {
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }
-            prot.init();
-        }
-    }
-
-    public static void startProtocolStack(List<Protocol> protocols, String cluster_name, final Map<String, Tuple<TP, ProtocolStack.RefCounter>> singletons) throws Exception {
-        Protocol above_prot=null;        
-        for(final Protocol prot: protocols) {
-            if(prot instanceof TP) {
-                String singleton_name=((TP)prot).getSingletonName();
-                    TP transport=(TP)prot;
-                if(transport.isSingleton() && cluster_name != null) {
-                    final Map<String, Protocol> up_prots=transport.getUpProtocols();
-                    synchronized(up_prots) {
-                        Set<String> keys=up_prots.keySet();
-                        if(keys.contains(cluster_name))
-                            throw new IllegalStateException("cluster '" + cluster_name + "' is already connected to singleton " +
-                                    "transport: " + keys);
-
-                        for(Iterator<Map.Entry<String,Protocol>> it=up_prots.entrySet().iterator(); it.hasNext();) {
-                            Map.Entry<String,Protocol> entry=it.next();
-                            Protocol tmp=entry.getValue();
-                            if(tmp == above_prot) {
-                                it.remove();
-                            }
-                        }
-
-                        if(above_prot != null) {
-                            TP.ProtocolAdapter ad=new TP.ProtocolAdapter(cluster_name, prot.getName(), above_prot, prot, 
-                                                                         transport.getThreadNamingPattern(),
-                                                                         transport.getLocalAddress());
-                            ad.setProtocolStack(above_prot.getProtocolStack());
-                            above_prot.setDownProtocol(ad);
-                            up_prots.put(cluster_name, ad);
-                        }
-                    }
-                    synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
-                        if(val != null) {
-                            ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_starts=counter.incrementStartCount();
-                            if(num_starts >= 1) {
-                                if(above_prot != null)
-                                    above_prot.up(new Event(Event.SET_LOCAL_ADDRESS, transport.getLocalAddress()));
-                                continue;
-                            }
-                        }
-                    }
-                }
-            }                       
-            prot.start();
-            above_prot=prot;
-        }
-    }
-
-    public static void stopProtocolStack(List<Protocol> protocols, String cluster_name,
-                                         final Map<String, Tuple<TP, ProtocolStack.RefCounter>> singletons) {
-        for(final Protocol prot: protocols) {
-            if(prot instanceof TP) {
-                String singleton_name=((TP)prot).getSingletonName();
-                if(singleton_name != null && singleton_name.length() > 0) {
-                    TP transport=(TP)prot;
-                    final Map<String,Protocol> up_prots=transport.getUpProtocols();
-
-                    synchronized(up_prots) {
-                        up_prots.remove(cluster_name);
-                    }
-
-                    synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
-                        if(val != null) {
-                            ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_starts=counter.decrementStartCount();
-                            if(num_starts > 0) {
-                                continue; // don't call TP.stop() if we still have references to the transport
-                            }
-                            //else
-                                // singletons.remove(singleton_name); // do the removal in destroyProtocolStack()
-                        }
-                    }
-                }
-            }
-            prot.stop();
-        }
-    }
-
-
-    public static void destroyProtocolStack(List<Protocol> protocols, final Map<String, Tuple<TP, ProtocolStack.RefCounter>> singletons) {
-        for(Protocol prot: protocols) {
-            if(prot instanceof TP) {
-                TP transport=(TP)prot;
-                if(transport.isSingleton()) {
-                    String singleton_name=transport.getSingletonName();
-                    synchronized(singletons) {
-                        Tuple<TP, ProtocolStack.RefCounter> val=singletons.get(singleton_name);
-                        if(val != null) {
-                            ProtocolStack.RefCounter counter=val.getVal2();
-                            short num_inits=counter.decrementInitCount();
-                            if(num_inits >= 1) {
-                                continue;
-                            }
-                            else
-                                singletons.remove(singleton_name);
-                        }
-                    }
-                }
-            }
-            prot.destroy();
-        }
-    }
-
-
-    public static Protocol findProtocol(Protocol prot_stack, String name) {
-        String s;
-        Protocol curr_prot=prot_stack;
-
-        while(true) {
-            s=curr_prot.getName();
-            if(s == null)
-                continue;
-            if(s.equals(name))
-                return curr_prot;
-            curr_prot=curr_prot.getDownProtocol();
-            if(curr_prot == null)
-                break;
-        }
-        return null;
-    }
-
-
-    public static Protocol getBottommostProtocol(Protocol prot_stack) {
-        Protocol tmp=null, curr_prot=prot_stack;
-
-        while(true) {
-            if((tmp=curr_prot.getDownProtocol()) == null)
-                break;
-            curr_prot=tmp;
-        }
-        return curr_prot;
-    }
-
 
     /**
      * Creates a new protocol given the protocol specification. Initializes the properties and starts the
@@ -266,87 +119,7 @@ public class Configurator {
     }
 
 
-    /**
-     * Inserts an already created (and initialized) protocol into the protocol list. Sets the links
-     * to the protocols above and below correctly and adjusts the linked list of protocols accordingly.
-     * This should be done before starting the stack.
-     * @param prot  The protocol to be inserted. Before insertion, a sanity check will ensure that none
-     *              of the existing protocols have the same name as the new protocol.
-     * @param position Where to place the protocol with respect to the neighbor_prot (ABOVE, BELOW)
-     * @param neighbor_prot The name of the neighbor protocol. An exception will be thrown if this name
-     *                      is not found
-     * @param stack The protocol stack
-     * @exception Exception Will be thrown when the new protocol cannot be created, or inserted.
-     */
-    public static void insertProtocol(Protocol prot, int position, String neighbor_prot, ProtocolStack stack) throws Exception {
-        if(neighbor_prot == null) throw new Exception("Configurator.insertProtocol(): neighbor_prot is null");
-        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new Exception("position has to be ABOVE or BELOW");
-
-        Protocol neighbor=stack.findProtocol(neighbor_prot);
-        if(neighbor == null)
-            throw new Exception("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
-
-        insertProtocol(prot, neighbor,  position);
-    }
-
-
-    public static void insertProtocol(Protocol prot, int position, Class<? extends Protocol> neighbor_prot, ProtocolStack stack) throws Exception {
-        if(neighbor_prot == null) throw new Exception("Configurator.insertProtocol(): neighbor_prot is null");
-        if(position != ProtocolStack.ABOVE && position != ProtocolStack.BELOW)
-            throw new Exception("position has to be ABOVE or BELOW");
-
-        Protocol neighbor=stack.findProtocol(neighbor_prot);
-        if(neighbor == null)
-            throw new Exception("protocol \"" + neighbor_prot + "\" not found in " + stack.printProtocolSpec(false));
-
-        insertProtocol(prot, neighbor,  position);
-    }
-
-
-    protected static void insertProtocol(Protocol prot, Protocol neighbor, int position) {
-        // connect to the protocol layer below and above
-        if(position == ProtocolStack.BELOW) {
-            prot.setUpProtocol(neighbor);
-            Protocol below=neighbor.getDownProtocol();
-            prot.setDownProtocol(below);
-            if(below != null)
-                below.setUpProtocol(prot);
-            neighbor.setDownProtocol(prot);
-        }
-        else { // ABOVE is default
-            Protocol above=neighbor.getUpProtocol();
-            prot.setUpProtocol(above);
-            if(above != null)
-                above.setDownProtocol(prot);
-            prot.setDownProtocol(neighbor);
-            neighbor.setUpProtocol(prot);
-        }
-    }
-
-
-    /**
-     * Removes a protocol from the stack. Stops the protocol and readjusts the linked lists of
-     * protocols.
-     * @param prot_name The name of the protocol. Since all protocol names in a stack have to be unique
-     *                  (otherwise the stack won't be created), the name refers to just 1 protocol.
-     * @exception Exception Thrown if the protocol cannot be stopped correctly.
-     */
-    public static Protocol removeProtocol(Protocol top_prot, String prot_name) throws Exception {
-        if(prot_name == null) return null;
-        Protocol prot=findProtocol(top_prot, prot_name);
-        if(prot == null) return null;
-        Protocol above=prot.getUpProtocol(), below=prot.getDownProtocol();
-        if(above != null)
-            above.setDownProtocol(below);
-        if(below != null)
-            below.setUpProtocol(above);
-        prot.setUpProtocol(null);
-        prot.setDownProtocol(null);
-        return prot;
-    }
-
-
+   
 
     /* ------------------------------- Private Methods ------------------------------------- */
 
@@ -358,21 +131,21 @@ public class Configurator {
      * @param protocol_list List of Protocol elements (from top to bottom)
      * @return Protocol stack
      */
-    public static Protocol connectProtocols(Vector protocol_list) {
+    private Protocol connectProtocols(Vector<Protocol> protocol_list) {
         Protocol current_layer=null, next_layer=null;
 
         for(int i=0; i < protocol_list.size(); i++) {
-            current_layer=(Protocol)protocol_list.elementAt(i);
+            current_layer=protocol_list.elementAt(i);
             if(i + 1 >= protocol_list.size())
                 break;
-            next_layer=(Protocol)protocol_list.elementAt(i + 1);
+            next_layer=protocol_list.elementAt(i + 1);
             next_layer.setDownProtocol(current_layer);
             current_layer.setUpProtocol(next_layer);
 
              if(current_layer instanceof TP) {
-                String singleton_name= ((TP)current_layer).getSingletonName();
-                if(singleton_name != null && singleton_name.length() > 0) {
-                    ConcurrentMap<String, Protocol> up_prots=((TP)current_layer).getUpProtocols();
+                TP transport = (TP)current_layer;                
+                if(transport.isSingleton()) {                   
+                    ConcurrentMap<String, Protocol> up_prots=transport.getUpProtocols();
                     String key;
                     synchronized(up_prots) {
                         while(true) {
@@ -398,7 +171,7 @@ public class Configurator {
      * @param config_str Configuration string
      * @return Vector of strings
      */
-    public static Vector<String> parseProtocols(String config_str) throws IOException {
+    private Vector<String> parseProtocols(String config_str) throws IOException {
         Vector<String> retval=new Vector<String>();
         PushbackReader reader=new PushbackReader(new StringReader(config_str));
         int ch;
@@ -462,18 +235,15 @@ public class Configurator {
      * @param configuration protocol-stack configuration string
      * @return Vector of ProtocolConfigurations
      */
-    public static Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
+    public Vector<ProtocolConfiguration> parseConfigurations(String configuration) throws Exception {
         Vector<ProtocolConfiguration> retval=new Vector<ProtocolConfiguration>();
-        Vector protocol_string=parseProtocols(configuration);
-        String component_string;
-        ProtocolConfiguration protocol_config;
+        Vector<String> protocol_string=parseProtocols(configuration);              
 
         if(protocol_string == null)
             return null;
-        for(int i=0; i < protocol_string.size(); i++) {
-            component_string=(String)protocol_string.elementAt(i);
-            protocol_config=new ProtocolConfiguration(component_string);
-            retval.addElement(protocol_config);
+        
+        for(String component_string:protocol_string) {                       
+            retval.addElement(new ProtocolConfiguration(component_string));
         }
         return retval;
     }
@@ -516,7 +286,7 @@ public class Configurator {
      * @param stack The protocol stack
      * @return Vector of Protocols
      */
-    private static Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
+    private Vector<Protocol> createProtocols(Vector<ProtocolConfiguration> protocol_configs, final ProtocolStack stack) throws Exception {
         Vector<Protocol> retval=new Vector<Protocol>();
         ProtocolConfiguration protocol_config;
         Protocol layer;

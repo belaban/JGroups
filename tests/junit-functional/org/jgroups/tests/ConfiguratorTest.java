@@ -6,7 +6,6 @@ import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.testng.Assert;
-import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
@@ -16,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.6 2008/06/02 10:59:11 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.7 2008/07/30 15:10:21 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -35,16 +34,60 @@ public class ConfiguratorTest {
         stack=new ProtocolStack(mock_channel, props);
     }
 
+    
+    public void testRemovalOfTop() throws Exception {
+        stack.setup(); 
+        Protocol prot=stack.removeProtocol("FC");
+        assert prot != null;
+        Vector<Protocol> protocols=stack.getProtocols();
+        Assert.assertEquals(5, protocols.size());
+        assert protocols.firstElement().getName().endsWith("UNICAST");
+        assert  stack.getTopProtocol().getUpProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol().getUpProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol().getDownProtocol() != null;
+    }
+    
+    public void testRemovalOfBottom() throws Exception {
+        stack.setup(); 
+        Protocol prot=stack.removeProtocol("UDP");
+        assert prot != null;
+        Vector<Protocol> protocols=stack.getProtocols();
+        Assert.assertEquals(5, protocols.size());
+        assert protocols.lastElement().getName().endsWith("PING");
+    }
+    
+    public void testAddingAboveTop() throws Exception{
+        stack.setup();           
+        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        stack.insertProtocol(new_prot, ProtocolStack.ABOVE, "FC");
+        Vector<Protocol> protocols=stack.getProtocols();
+        Assert.assertEquals(7, protocols.size());       
+        assert protocols.firstElement().getName().endsWith("TRACE");
+        assert  stack.getTopProtocol().getUpProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol().getUpProtocol() != null;
+        assert  stack.getTopProtocol().getDownProtocol().getDownProtocol() != null;
+    }
+    
+    @Test(expectedExceptions={IllegalArgumentException.class})
+    public void testAddingBelowBottom() throws Exception{
+        stack.setup();           
+        Protocol new_prot=(Protocol)Class.forName("org.jgroups.protocols.TRACE").newInstance();
+        stack.insertProtocol(new_prot, ProtocolStack.BELOW, "UDP");        
+    }
+    
+    
 
     public void testInsertion() throws Exception {
         stack.setup();
-        List protocols=stack.getProtocols();
+        List<Protocol> protocols=stack.getProtocols();
         assert protocols != null;
         Assert.assertEquals(6, protocols.size());
 
         for(int i=0; i < names.length; i++) {
             String name=names[i];
-            Protocol p=(Protocol)protocols.get(i);
+            Protocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
@@ -55,7 +98,7 @@ public class ConfiguratorTest {
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < below.length; i++) {
             String name=below[i];
-            Protocol p=(Protocol)protocols.get(i);
+            Protocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
@@ -66,7 +109,7 @@ public class ConfiguratorTest {
         Assert.assertEquals(6, protocols.size());
         for(int i=0; i < names.length; i++) {
             String name=names[i];
-            Protocol p=(Protocol)protocols.get(i);
+            Protocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
 
@@ -77,7 +120,7 @@ public class ConfiguratorTest {
         Assert.assertEquals(7, protocols.size());
         for(int i=0; i < above.length; i++) {
             String name=above[i];
-            Protocol p=(Protocol)protocols.get(i);
+            Protocol p=protocols.get(i);
             Assert.assertEquals(name, p.getName());
         }
     }
@@ -112,17 +155,17 @@ public class ConfiguratorTest {
                 "FRAG2(frag_size=60000):" +
                 "pbcast.STREAMING_STATE_TRANSFER(use_reading_thread=true)";
         
-        Vector<Configurator.ProtocolConfiguration> ret=Configurator.parseConfigurations(config);
+        Vector<Configurator.ProtocolConfiguration> ret=new Configurator().parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(15, ret.size());
 
         config="UDP(mcast_addr=ff18:eb72:479f::2:3;mcast_port=2453):pbcast.FD:FRAG(frag_size=2292):FD_SIMPLE(s=22;d=33):MERGE2(a=22)";
-        ret=Configurator.parseConfigurations(config);
+        ret=new Configurator().parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(5, ret.size());
 
         config="com.mycomp.Class:B:pbcast.C:H(a=b;c=d;e=f)";
-        ret=Configurator.parseConfigurations(config);
+        ret=new Configurator().parseConfigurations(config);
         System.out.println("config:\n" + ret);
         Assert.assertEquals(4, ret.size());
     }

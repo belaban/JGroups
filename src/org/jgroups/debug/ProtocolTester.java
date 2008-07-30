@@ -1,4 +1,4 @@
-// $Id: ProtocolTester.java,v 1.15 2008/06/30 12:03:23 belaban Exp $
+// $Id: ProtocolTester.java,v 1.16 2008/07/30 15:10:20 vlada Exp $
 
 package org.jgroups.debug;
 
@@ -6,6 +6,7 @@ package org.jgroups.debug;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Event;
+import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.stack.Configurator;
 import org.jgroups.stack.Protocol;
@@ -44,14 +45,12 @@ public class ProtocolTester {
         props="LOOPBACK:" + props; // add a loopback layer at the bottom of the stack
 
         config=new Configurator();
-        ProtocolStack stack=new ProtocolStack();
-        top=Configurator.setupProtocolStack(props, stack);
-        harness.setDownProtocol(top);
-        top.setUpProtocol(harness); // +++
-
-        Configurator.initProtocolStack(getProtocols(), null);
-
-        bottom=getBottomProtocol(top);
+        JChannel mock_channel=new JChannel() {};
+        ProtocolStack stack=new ProtocolStack(mock_channel,props);
+        stack.setup();
+        stack.insertProtocol(harness, ProtocolStack.ABOVE, stack.getTopProtocol().getClass());
+        
+        bottom=stack.getBottomProtocol();
 
         // has to be set after StartProtocolStack, otherwise the up and down handler threads in the harness
         // will be started as well (we don't want that) !
@@ -109,7 +108,11 @@ public class ProtocolTester {
                 p.stop();
                 p=p.getDownProtocol();
             }
-            Configurator.destroyProtocolStack(protocols, null);
+            p=harness;
+            while(p != null) {                
+                p.destroy();
+                p=p.getDownProtocol();
+            }            
         }
         else if(top != null) {
             p=top;
@@ -118,8 +121,12 @@ public class ProtocolTester {
                 protocols.add(p);
                 p.stop();
                 p=p.getDownProtocol();
-            }
-            Configurator.destroyProtocolStack(protocols, null);
+            }    
+            p=top;
+            while(p != null) {                
+                p.destroy();
+                p=p.getDownProtocol();
+            }    
         }
     }
 
