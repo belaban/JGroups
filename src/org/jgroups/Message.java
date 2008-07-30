@@ -9,6 +9,7 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
+import org.jgroups.util.Headers;
 
 import java.io.*;
 import java.util.*;
@@ -24,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.87 2008/07/28 12:39:50 belaban Exp $
+ * @version $Id: Message.java,v 1.88 2008/07/30 08:56:39 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -40,7 +41,7 @@ public class Message implements Streamable {
     protected int     length=0;
 
     /** Map<String,Header> */
-    protected Map<String,Header> headers;
+    protected Headers headers;
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
@@ -86,7 +87,7 @@ public class Message implements Streamable {
      */
     public Message(Address dest) {
         setDest(dest);
-        headers=createHeaders(7);
+        headers=createHeaders(3);
     }
 
     /** Public constructor
@@ -145,13 +146,13 @@ public class Message implements Streamable {
 
 
     public Message() {
-        headers=createHeaders(7);
+        headers=createHeaders(3);
     }
 
 
     public Message(boolean create_headers) {
         if(create_headers)
-            headers=createHeaders(7);
+            headers=createHeaders(3);
     }
 
     public Address getDest() {
@@ -262,15 +263,15 @@ public class Message implements Streamable {
     /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
      * modify the returned map will cause a runtime exception */
     public Map<String,Header> getHeaders() {
-        return createHeaders(headers);
+        return headers.getHeaders();
     }
 
     public String printHeaders() {
-        return headers.toString();
+        return headers.printHeaders();
     }
 
     public int getNumHeaders() {
-        return headers != null? headers.size() : 0;
+        return headers.size();
     }
 
     /**
@@ -330,7 +331,7 @@ public class Message implements Streamable {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        headers.put(key, hdr);
+        headers.putHeader(key, hdr);
     }
 
     /**
@@ -344,10 +345,7 @@ public class Message implements Streamable {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
-        if(!headers.containsKey(key))
-            return headers.put(key, hdr);
-        else
-            return headers.get(key);
+        return headers.putHeaderIfAbsent(key, hdr);
     }
 
     /**
@@ -362,7 +360,7 @@ public class Message implements Streamable {
     }
 
     public Header getHeader(String key) {
-        return headers.get(key);
+        return headers.getHeader(key);
     }
     /*---------------------------------------------------------------------*/
 
@@ -476,35 +474,14 @@ public class Message implements Streamable {
         if(src_addr != null)
             retval+=(src_addr).size();
 
-        Map.Entry entry;
-        String key;
-        Header hdr;
         retval+=Global.SHORT_SIZE; // size (short)
-
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            key=(String)entry.getKey();
-            retval+=key.length() +2; // not the same as writeUTF(), but almost
-            hdr=(Header)entry.getValue();
-            retval+=(Global.SHORT_SIZE *2); // 2 for magic number, 2 for size (short)
-            retval+=hdr.size();
-        }
+        retval+=headers.marshalledSize();
         return retval;
     }
 
 
     public String printObjectHeaders() {
-        StringBuilder sb=new StringBuilder();
-        Map.Entry entry;
-
-
-        if(headers != null) {
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
-            }
-        }
-        return sb.toString();
+        return headers.printObjectHeaders();
     }
 
 
@@ -556,11 +533,12 @@ public class Message implements Streamable {
         // 5. headers
         int size=headers.size();
         out.writeShort(size);
-        Map.Entry        entry;
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            out.writeUTF((String)entry.getKey());
-            writeHeader((Header)entry.getValue(), out);
+        final Object[] data=headers.getRawData();
+        for(int i=0; i < data.length; i+=2) {
+            if(data[i] != null) {
+                out.writeUTF((String)data[i]);
+                writeHeader((Header)data[i+1], out);
+            }
         }
     }
 
@@ -600,10 +578,14 @@ public class Message implements Streamable {
         // 4. headers
         len=in.readShort();
         headers=createHeaders(len);
+        Object[] data=headers.getRawData();
+        int index=0;
         for(int i=0; i < len; i++) {
             hdr_name=in.readUTF();
+            data[index++]=hdr_name;
             hdr=readHeader(in);
-            headers.put(hdr_name, hdr);
+            data[index++]=hdr;
+            // headers.putHeader(hdr_name, hdr);
         }
     }
 
@@ -717,13 +699,13 @@ public class Message implements Streamable {
         return hdr;
     }
 
-    private static Map<String,Header> createHeaders(int size) {
-        return size > 0? new HashMap<String,Header>(size) : new HashMap<String,Header>(5);
+    private static Headers createHeaders(int size) {
+        return size > 0? new Headers(size) : new Headers(3);
     }
 
 
-    private static Map<String,Header> createHeaders(Map<String,Header> m) {
-        return new HashMap<String,Header>(m);
+    private static Headers createHeaders(Headers m) {
+        return new Headers(m);
     }
 
     /** canonicalize addresses to some extent.  There are race conditions
