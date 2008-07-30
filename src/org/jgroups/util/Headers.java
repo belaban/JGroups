@@ -9,7 +9,8 @@ import java.util.Map;
 /**
  * Open addressing based implementation of a hashmap (not supporting the Map interface though) for message
  * headers. The keys are strings and the values Headers, and they're stored in an array in the format
- * key-1 | header-1 | key-2 | header-2.
+ * key-1 | header-1 | key-2 | header-2. The array is populated from left to right, so any null slots can terminate
+ * an interation, or signal empty slots.
  * <br/>
  * It is assumed that we only have a few headers, 3-4 on average. Note that getting a header for a given key and
  * putting a new key/header are operations with O(n) cost, so this implementation is <em>not</em> recommended for
@@ -17,7 +18,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.10 2008/07/30 11:22:11 belaban Exp $
+ * @version $Id: Headers.java,v 1.11 2008/07/30 11:40:32 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -46,7 +47,9 @@ public class Headers {
      */
     public Header getHeader(String key) {
         for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null && data[i].equals(key))
+            if(data[i] == null)
+                return null;
+            if(data[i].equals(key))
                 return (Header)data[i+1];
         }
         return null;
@@ -57,6 +60,8 @@ public class Headers {
         for(int i=0; i < data.length; i+=2) {
             if(data[i] != null)
                 retval.put((String)data[i], (Header)data[i+1]);
+            else
+                break;
         }
         return retval;
     }
@@ -72,6 +77,8 @@ public class Headers {
                     sb.append(", ");
                 sb.append(data[i]).append(": ").append(data[i+1]);
             }
+            else
+                break;
         }
         return sb.toString();
     }
@@ -81,6 +88,8 @@ public class Headers {
         for(int i=0; i < data.length; i+=2) {
             if(data[i] != null)
                 num++;
+            else
+                break;
         }
         return num;
     }
@@ -130,6 +139,8 @@ public class Headers {
                 retval+=(Global.SHORT_SIZE *2); // 2 for magic number, 2 for size (short)
                 retval+=((Header)data[i+1]).size();
             }
+            else
+                break;
         }
         return retval;
     }
@@ -139,6 +150,8 @@ public class Headers {
         for(int i=0; i < data.length; i+=2) {
             if(data[i] != null)
                 retval++;
+            else
+                break;
         }
         return retval;
     }
@@ -150,7 +163,10 @@ public class Headers {
     public String printObjectHeaders() {
         StringBuilder sb=new StringBuilder();
         for(int i=0; i < data.length; i+=2) {
-            sb.append(data[i]).append(": ").append(data[i+1]).append('\n');
+            if(data[i] != null)
+                sb.append(data[i]).append(": ").append(data[i+1]).append('\n');
+            else
+                break;
         }
         return sb.toString();
     }
