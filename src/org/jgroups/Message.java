@@ -7,6 +7,7 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Headers;
+import org.jgroups.util.Marshaller;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
@@ -26,9 +27,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.5 2008/07/30 12:04:47 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.6 2008/07/30 12:14:08 belaban Exp $
  */
-public class Message implements Streamable {
+public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
     protected Address src_addr=null;
 
@@ -36,16 +37,17 @@ public class Message implements Streamable {
     private byte[]    buf=null;
 
     /** The index into the payload (usually 0) */
-    protected int     offset=0;
+    protected transient int     offset=0;
 
     /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
-    protected int     length=0;
+    protected transient int     length=0;
 
     /** All headers are placed here */
     protected Headers headers;
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
+    private static final long serialVersionUID=7966206671974139740L;
 
     static final byte DEST_SET      = 1;
     static final byte SRC_SET       = 2;
@@ -470,8 +472,89 @@ public class Message implements Streamable {
 
     public String printObjectHeaders() {
         return headers.printObjectHeaders();
-            }
+    }
 
+
+
+    /* ----------------------------------- Interface Externalizable ------------------------------- */
+
+    public void writeExternal(ObjectOutput out) throws IOException {
+        int             len;
+        Externalizable  hdr;
+        Map.Entry       entry;
+
+        if(dest_addr != null) {
+            out.writeBoolean(true);
+            Marshaller.write(dest_addr, out);
+        }
+        else {
+            out.writeBoolean(false);
+        }
+
+        if(src_addr != null) {
+            out.writeBoolean(true);
+            Marshaller.write(src_addr, out);
+        }
+        else {
+            out.writeBoolean(false);
+        }
+
+        out.write(flags);
+
+        if(buf == null)
+            out.writeInt(0);
+        else {
+            out.writeInt(length);
+            out.write(buf, offset, length);
+        }
+
+        len=headers.size();
+        out.writeInt(len);
+        final Object[] data=headers.getRawData();
+
+        for(int i=0; i < data.length; i+=2) {
+            out.writeUTF((String)data[i]);
+            hdr=(Externalizable)data[i+1];
+            Marshaller.write(hdr, out);
+        }
+    }
+
+
+    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+        boolean  destAddressExist=in.readBoolean();
+
+        if(destAddressExist) {
+            dest_addr=(Address)Marshaller.read(in);
+            if(!DISABLE_CANONICALIZATION)
+                dest_addr=canonicalAddress(dest_addr);
+        }
+
+        boolean srcAddressExist=in.readBoolean();
+        if(srcAddressExist) {
+            src_addr=(Address)Marshaller.read(in);
+            if(!DISABLE_CANONICALIZATION)
+                src_addr=canonicalAddress(src_addr);
+        }
+
+        flags=in.readByte();
+
+        int i=in.readInt();
+        if(i != 0) {
+            buf=new byte[i];
+            in.readFully(buf);
+            offset=0;
+            length=buf.length;
+        }
+
+        int len=in.readInt();
+        while(len-- > 0) {
+            String key=in.readUTF();
+            Header value=(Header)Marshaller.read(in);
+            headers.putHeader(key, value);
+        }
+    }
+
+    /* --------------------------------- End of Interface Externalizable ----------------------------- */
 
 
     /* ----------------------------------- Interface Streamable  ------------------------------- */
@@ -526,8 +609,8 @@ public class Message implements Streamable {
             if(data[i] != null) {
                 out.writeUTF((String)data[i]);
                 writeHeader((Header)data[i+1], out);
+            }
         }
-    }
     }
 
 
