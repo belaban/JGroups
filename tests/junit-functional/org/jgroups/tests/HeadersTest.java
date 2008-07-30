@@ -8,11 +8,12 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.util.Map;
 
 /**
  * Tests the functionality of the Headers class
  * @author Bela Ban
- * @version $Id: HeadersTest.java,v 1.2 2008/07/30 09:50:22 belaban Exp $
+ * @version $Id: HeadersTest.java,v 1.3 2008/07/30 11:22:25 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=false)
 public class HeadersTest {
@@ -60,10 +61,25 @@ public class HeadersTest {
         assert data[3].equals(h2);
         assert data[4].equals(UDP);
         assert data[5].equals(h3);
-        assert data.length == hdrs.capacity() / 2;
+        assert data.length == hdrs.capacity() * 2;
         assert hdrs.size() == 3;
     }
 
+
+    public static void testGetHeaders() {
+        Headers hdrs=createHeaders(3);
+        Map<String, Header> map=hdrs.getHeaders();
+        System.out.println("map = " + map);
+        assert map != null && map.size() == 3;
+        assert map.get(NAKACK) == h1;
+        assert map.get(FRAG) == h2;
+        assert map.get(UDP) == h3;
+    }
+
+    public static void testGetNumHeaders() {
+        Headers hdrs=createHeaders(3);
+        assert hdrs.getNumHeaders() == 3;
+    }
 
 
     private static Headers createHeaders(int initial_capacity) {
@@ -72,6 +88,59 @@ public class HeadersTest {
         hdrs.putHeader(FRAG, h2);
         hdrs.putHeader(UDP, h3);
         return hdrs;
+    }
+
+
+    public static void testPutHeader() {
+        Headers hdrs=createHeaders(3);
+        assert hdrs.getHeader(NAKACK) == h1;
+        hdrs.putHeader(NAKACK, new MyHeader());
+        assert hdrs.size() == 3;
+        assert hdrs.getHeader(NAKACK) != h1;
+        assert hdrs.capacity() == 3;
+
+        hdrs.putHeader("NEW", new MyHeader());
+        assert hdrs.size() == 4;
+        assert hdrs.capacity() > 3;
+    }
+
+
+    public static void testPutHeaderIfAbsent() {
+        Headers hdrs=createHeaders(3);
+        Header hdr=hdrs.putHeaderIfAbsent(FRAG, new MyHeader());
+        assert hdr == h2;
+        assert hdr == hdrs.getHeader(FRAG);
+        assert hdrs.size() == 3;
+        assert hdrs.capacity() == 3;
+
+        hdr=hdrs.putHeaderIfAbsent("NEW", new MyHeader());
+        System.out.println("hdrs = " + hdrs);
+        assert hdr == null;
+        assert hdrs.size() == 4;
+        assert hdrs.capacity() == 6;
+    }
+
+    public static void testGetHeader() {
+        Headers hdrs=createHeaders(3);
+        assert null == hdrs.getHeader("NOTAVAILABLE");
+        assert hdrs.getHeader(UDP) == h3;
+    }
+
+
+    public static void testResize() {
+        Headers hdrs=createHeaders(3);
+        int capacity=hdrs.capacity();
+        System.out.println("hdrs = " + hdrs + ", capacity=" + capacity);
+
+        hdrs.putHeader("NEW", new MyHeader());
+        System.out.println("hdrs = " + hdrs + ", capacity=" + hdrs.capacity());
+        assert hdrs.capacity() > capacity;
+
+        capacity=hdrs.capacity();
+        for(int i=0; i < 3; i++)
+            hdrs.putHeader("#" + i, new MyHeader());
+        System.out.println("hdrs = " + hdrs + ", capacity=" + hdrs.capacity());
+        assert hdrs.capacity() > capacity;
     }
 
 
