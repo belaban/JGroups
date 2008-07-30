@@ -17,7 +17,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.9 2008/07/30 11:16:09 belaban Exp $
+ * @version $Id: Headers.java,v 1.10 2008/07/30 11:22:11 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -37,6 +37,19 @@ public class Headers {
 
     public Object[] getRawData() {
         return data;
+    }
+
+    /**
+     * Returns the header associated with key
+     * @param key
+     * @return
+     */
+    public Header getHeader(String key) {
+        for(int i=0; i < data.length; i+=2) {
+            if(data[i] != null && data[i].equals(key))
+                return (Header)data[i+1];
+        }
+        return null;
     }
 
     public Map<String,Header> getHeaders() {
@@ -103,19 +116,6 @@ public class Headers {
      */
     public Header removeHeader(String key) {
         return getHeader(key);
-    }
-
-    /**
-     * Returns the header associated with key
-     * @param key
-     * @return
-     */
-    public Header getHeader(String key) {
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null && data[i].equals(key))
-                return (Header)data[i+1];
-        }
-        return null;
     }
 
     public Headers copy() {
