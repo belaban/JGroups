@@ -17,7 +17,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.6 2008/07/30 08:51:54 belaban Exp $
+ * @version $Id: Headers.java,v 1.7 2008/07/30 08:56:21 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -149,8 +149,11 @@ public class Headers {
         return sb.toString();
     }
 
+    public String toString() {
+        return printHeaders();
+    }
 
-//    public Iterator<Object> iterator() {
+    //    public Iterator<Object> iterator() {
 //        return new Iterator<Object> () {
 //            int index=0, max=data.length;
 //
