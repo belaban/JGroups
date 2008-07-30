@@ -17,7 +17,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.5 2008/07/29 16:21:58 belaban Exp $
+ * @version $Id: Headers.java,v 1.6 2008/07/30 08:51:54 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -72,33 +72,11 @@ public class Headers {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        int available=-1;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] == null && available < 0) {
-                available=i;
-            }
-            if(data[i] != null && data[i].equals(key)) {
-                data[i+1]=hdr;
-                return;
-            }
-        }
-        if(available < 0) {
-            resize();
-        }
-        else {
-            data[available]=key;
-            data[available + 1]=hdr;
-            return;
-        }
-        for(int i=data.length / 2; i < data.length; i+=2) {
-            if(data[i] == null) {
-                data[i]=key;
-                data[i+1]=hdr;
-                return;
-            }
-        }
-        throw new IllegalStateException("didn't find space for element " + key);
+        _putHeader(key, hdr, true);
     }
+
+
+
 
     /**
      * Puts a header given a key into the map, only if the key doesn't exist yet
@@ -111,14 +89,7 @@ public class Headers {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null && data[i].equals(key)) {
-                return (Header)data[i+1];
-            }
-        }
-
-        putHeader(key, hdr);
-        return null;
+        return _putHeader(key, hdr, false);
     }
 
     /**
@@ -132,6 +103,11 @@ public class Headers {
         return getHeader(key);
     }
 
+    /**
+     * Returns the header associated with key
+     * @param key
+     * @return
+     */
     public Header getHeader(String key) {
         for(int i=0; i < data.length; i+=2) {
             if(data[i] != null && data[i].equals(key))
@@ -204,6 +180,38 @@ public class Headers {
         Object[] new_data=new Object[new_size];
         System.arraycopy(data, 0, new_data, 0, data.length);
         data=new_data;
+    }
+
+
+    private Header _putHeader(String key, Header hdr, boolean replace_if_present) {
+        int available=-1;
+        for(int i=0; i < data.length; i+=2) {
+            if(data[i] == null && available < 0)
+                available=i;
+            if(data[i] != null && data[i].equals(key)) {
+                Header retval=(Header)data[i+1];
+                if(replace_if_present) {
+                    data[i+1]=hdr;
+                }
+                return retval;
+            }
+        }
+        if(available < 0) {
+            resize();
+        }
+        else {
+            data[available]=key;
+            data[available + 1]=hdr;
+            return null;
+        }
+        for(int i=data.length / 2; i < data.length; i+=2) {
+            if(data[i] == null) {
+                data[i]=key;
+                data[i+1]=hdr;
+                return null;
+            }
+        }
+        throw new IllegalStateException("didn't find space for element " + key);
     }
 
 
