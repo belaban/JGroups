@@ -6,12 +6,14 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Marshaller;
+import org.jgroups.util.Headers;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
 import java.io.*;
-import java.util.*;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -24,9 +26,9 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.4 2008/07/28 12:41:58 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.5 2008/07/30 12:04:47 belaban Exp $
  */
-public class Message implements Externalizable, Streamable {
+public class Message implements Streamable {
     protected Address dest_addr=null;
     protected Address src_addr=null;
 
@@ -34,17 +36,16 @@ public class Message implements Externalizable, Streamable {
     private byte[]    buf=null;
 
     /** The index into the payload (usually 0) */
-    protected transient int     offset=0;
+    protected int     offset=0;
 
     /** The number of bytes in the buffer (usually buf.length is buf not equal to null). */
-    protected transient int     length=0;
+    protected int     length=0;
 
-    /** Map<String,Header> */
-    protected Map<String,Header> headers;
+    /** All headers are placed here */
+    protected Headers headers;
 
     protected static final Log log=LogFactory.getLog(Message.class);
 
-    private static final long serialVersionUID=7966206671974139740L;
 
     static final byte DEST_SET      = 1;
     static final byte SRC_SET       = 2;
@@ -87,7 +88,7 @@ public class Message implements Externalizable, Streamable {
      */
     public Message(Address dest) {
         setDest(dest);
-        headers=createHeaders(7);
+        headers=createHeaders(3);
     }
 
     /** Public constructor
@@ -103,10 +104,16 @@ public class Message implements Externalizable, Streamable {
         setBuffer(buf);
     }
 
+
     /**
      * Constructs a message. The index and length parameters allow to provide a <em>reference</em> to
      * a byte buffer, rather than a copy, and refer to a subset of the buffer. This is important when
-     * we want to avoid copying. When the message is serialized, only the subset is serialized.
+     * we want to avoid copying. When the message is serialized, only the subset is serialized.<br/>
+     * <em>
+     * Note that the byte[] buffer passed as argument must not be modified. Reason: if we retransmit the
+     * message, it would still have a ref to the original byte[] buffer passed in as argument, and so we would
+     * retransmit a changed byte[] buffer !
+     * </em>
      * @param dest Address of receiver. If it is <em>null</em> then the message sent to the group.
      *             Otherwise, it contains a single destination and is sent to that member.<p>
      * @param src    Address of sender
@@ -140,13 +147,13 @@ public class Message implements Externalizable, Streamable {
 
 
     public Message() {
-        headers=createHeaders(7);
+        headers=createHeaders(3);
     }
 
 
     public Message(boolean create_headers) {
         if(create_headers)
-            headers=createHeaders(7);
+            headers=createHeaders(3);
     }
 
     public Address getDest() {
@@ -229,6 +236,8 @@ public class Message implements Externalizable, Streamable {
         }
     }
 
+
+
     /** Returns the offset into the buffer at which the data starts */
     public int getOffset() {
         return offset;
@@ -242,15 +251,15 @@ public class Message implements Externalizable, Streamable {
     /** Returns a reference to the headers hashmap, which is <em>immutable</em>. Any attempt to
      * modify the returned map will cause a runtime exception */
     public Map<String,Header> getHeaders() {
-        return createHeaders(headers);
+        return headers.getHeaders();
     }
 
     public String printHeaders() {
-        return headers.toString();
+        return headers.printHeaders();
     }
 
     public int getNumHeaders() {
-        return headers != null? headers.size() : 0;
+        return headers.size();
     }
 
     /**
@@ -310,7 +319,7 @@ public class Message implements Externalizable, Streamable {
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
-        headers.put(key, hdr);
+        headers.putHeader(key, hdr);
     }
 
     /**
@@ -324,10 +333,7 @@ public class Message implements Externalizable, Streamable {
      *         if the implementation supports null values.)
      */
     public Header putHeaderIfAbsent(String key, Header hdr) {
-        if(!headers.containsKey(key))
-            return headers.put(key, hdr);
-        else
-            return headers.get(key);
+        return headers.putHeaderIfAbsent(key, hdr);
     }
 
     /**
@@ -338,11 +344,11 @@ public class Message implements Externalizable, Streamable {
      * http://jira.jboss.com/jira/browse/JGRP-393
      */
     public Header removeHeader(String key) {
-        return headers.get(key);
+        return getHeader(key);
     }
 
     public Header getHeader(String key) {
-        return headers.get(key);
+        return headers.getHeader(key);
     }
     /*---------------------------------------------------------------------*/
 
@@ -456,117 +462,16 @@ public class Message implements Externalizable, Streamable {
         if(src_addr != null)
             retval+=(src_addr).size();
 
-        Map.Entry entry;
-        String key;
-        Header hdr;
         retval+=Global.SHORT_SIZE; // size (short)
-
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            key=(String)entry.getKey();
-            retval+=key.length() +2; // not the same as writeUTF(), but almost
-            hdr=(Header)entry.getValue();
-            retval+=(Global.SHORT_SIZE *2); // 2 for magic number, 2 for size (short)
-            retval+=hdr.size();
-        }
+        retval+=headers.marshalledSize();
         return retval;
     }
 
 
     public String printObjectHeaders() {
-        StringBuilder sb=new StringBuilder();
-        Map.Entry entry;
-
-
-        if(headers != null) {
-            for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
-                sb.append(entry.getKey()).append(": ").append(entry.getValue()).append('\n');
+        return headers.printObjectHeaders();
             }
-        }
-        return sb.toString();
-    }
 
-
-
-    /* ----------------------------------- Interface Externalizable ------------------------------- */
-
-    public void writeExternal(ObjectOutput out) throws IOException {
-        int             len;
-        Externalizable  hdr;
-        Map.Entry       entry;
-
-        if(dest_addr != null) {
-            out.writeBoolean(true);
-            Marshaller.write(dest_addr, out);
-        }
-        else {
-            out.writeBoolean(false);
-        }
-
-        if(src_addr != null) {
-            out.writeBoolean(true);
-            Marshaller.write(src_addr, out);
-        }
-        else {
-            out.writeBoolean(false);
-        }
-
-        out.write(flags);
-
-        if(buf == null)
-            out.writeInt(0);
-        else {
-            out.writeInt(length);
-            out.write(buf, offset, length);
-        }
-
-        len=headers.size();
-        out.writeInt(len);
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            out.writeUTF((String)entry.getKey());
-            hdr=(Externalizable)entry.getValue();
-            Marshaller.write(hdr, out);
-        }
-    }
-
-
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        boolean  destAddressExist=in.readBoolean();
-
-        if(destAddressExist) {
-            dest_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                dest_addr=canonicalAddress(dest_addr);
-        }
-
-        boolean srcAddressExist=in.readBoolean();
-        if(srcAddressExist) {
-            src_addr=(Address)Marshaller.read(in);
-            if(!DISABLE_CANONICALIZATION)
-                src_addr=canonicalAddress(src_addr);
-        }
-
-        flags=in.readByte();
-
-        int i=in.readInt();
-        if(i != 0) {
-            buf=new byte[i];
-            in.readFully(buf);
-            offset=0;
-            length=buf.length;
-        }
-
-        int len=in.readInt();
-        while(len-- > 0) {
-            String key=in.readUTF();
-            Header value=(Header)Marshaller.read(in);
-            headers.put(key, value);
-        }
-    }
-
-    /* --------------------------------- End of Interface Externalizable ----------------------------- */
 
 
     /* ----------------------------------- Interface Streamable  ------------------------------- */
@@ -578,12 +483,6 @@ public class Message implements Externalizable, Streamable {
      */
     public void writeTo(DataOutputStream out) throws IOException {
         byte leading=0;
-
-//        if(dest_addr != null) {
-//            leading+=DEST_SET;
-//            if(dest_addr instanceof IpAddress)
-//                leading+=IPADDR_DEST;
-//        }
 
         if(src_addr != null) {
             leading+=SRC_SET;
@@ -602,14 +501,6 @@ public class Message implements Externalizable, Streamable {
 
         // the flags (e.g. OOB, LOW_PRIO)
         out.write(flags);
-
-        // 2. dest_addr
-//        if(dest_addr != null) {
-//            if(dest_addr instanceof IpAddress)
-//                dest_addr.writeTo(out);
-//            else
-//                Util.writeAddress(dest_addr, out);
-//        }
 
         // 3. src_addr
         if(src_addr != null) {
@@ -630,12 +521,13 @@ public class Message implements Externalizable, Streamable {
         // 5. headers
         int size=headers.size();
         out.writeShort(size);
-        Map.Entry        entry;
-        for(Iterator it=headers.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            out.writeUTF((String)entry.getKey());
-            writeHeader((Header)entry.getValue(), out);
+        final Object[] data=headers.getRawData();
+        for(int i=0; i < data.length; i+=2) {
+            if(data[i] != null) {
+                out.writeUTF((String)data[i]);
+                writeHeader((Header)data[i+1], out);
         }
+    }
     }
 
 
@@ -647,17 +539,6 @@ public class Message implements Externalizable, Streamable {
 
         // 1. read the leading byte first
         leading=in.readByte();
-
-        // 1. dest_addr
-//        if((leading & DEST_SET) == DEST_SET) {
-//            if((leading & IPADDR_DEST) == IPADDR_DEST) {
-//                dest_addr=new IpAddress();
-//                dest_addr.readFrom(in);
-//            }
-//            else {
-//                dest_addr=Util.readAddress(in);
-//            }
-//        }
 
         flags=in.readByte();
 
@@ -685,10 +566,14 @@ public class Message implements Externalizable, Streamable {
         // 4. headers
         len=in.readShort();
         headers=createHeaders(len);
+        Object[] data=headers.getRawData();
+        int index=0;
         for(int i=0; i < len; i++) {
             hdr_name=in.readUTF();
+            data[index++]=hdr_name;
             hdr=readHeader(in);
-            headers.put(hdr_name, hdr);
+            data[index++]=hdr;
+            // headers.putHeader(hdr_name, hdr);
         }
     }
 
@@ -704,9 +589,6 @@ public class Message implements Externalizable, Streamable {
         StringBuilder sb=new StringBuilder();
         boolean first=true;
         if(isFlagSet(OOB)) {
-            if(!first)
-                sb.append("|");
-            else
                 first=false;
             sb.append("OOB");
         }
@@ -810,13 +692,13 @@ public class Message implements Externalizable, Streamable {
         return hdr;
     }
 
-    private static Map<String,Header> createHeaders(int size) {
-        return size > 0? new HashMap<String,Header>(size) : new HashMap<String,Header>(5);
+    private static Headers createHeaders(int size) {
+        return size > 0? new Headers(size) : new Headers(3);
     }
 
 
-    private static Map<String,Header> createHeaders(Map<String,Header> m) {
-        return new HashMap<String,Header>(m);
+    private static Headers createHeaders(Headers m) {
+        return new Headers(m);
     }
 
     /** canonicalize addresses to some extent.  There are race conditions

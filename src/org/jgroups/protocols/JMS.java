@@ -1,4 +1,4 @@
-// $Id: JMS.java,v 1.24 2007/01/15 16:33:13 belaban Exp $ 
+// $Id: JMS.java,v 1.24.4.1 2008/07/30 12:04:52 belaban Exp $ 
 
 package org.jgroups.protocols;
 
@@ -246,10 +246,10 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
                 byte[] buf = (byte[])((javax.jms.ObjectMessage)jmsMessage).getObject();
 
                 ByteArrayInputStream inp_stream=new ByteArrayInputStream(buf);
-                ObjectInputStream inp=new ObjectInputStream(inp_stream);
+                DataInputStream inp=new DataInputStream(inp_stream);
                     
                 Message msg=new Message();
-                msg.readExternal(inp);
+                msg.readFrom(inp);
                     
                 Event evt=new Event(Event.MSG, msg);
 
@@ -265,9 +265,12 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
         } catch(IOException ioex) {
             ioex.printStackTrace();
             if(log.isErrorEnabled()) log.error("IOException : " + ioex.toString());
-        } catch(ClassNotFoundException cnfex) {
-                cnfex.printStackTrace();
-                if(log.isErrorEnabled()) log.error("ClassNotFoundException : " + cnfex.toString());
+        }
+        catch(InstantiationException e) {
+            e.printStackTrace();
+        }
+        catch(IllegalAccessException e) {
+            e.printStackTrace();
         }
     }
 
@@ -344,8 +347,8 @@ public class JMS extends Protocol implements javax.jms.MessageListener {
             // convert the message into byte array.
             out_stream.reset();
 
-            ObjectOutputStream out=new ObjectOutputStream(out_stream);
-            msg.writeExternal(out);
+            DataOutputStream out=new DataOutputStream(out_stream);
+            msg.writeTo(out);
             out.flush();
             
             byte[] buf = out_stream.toByteArray();

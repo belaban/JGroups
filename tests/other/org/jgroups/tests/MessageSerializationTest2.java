@@ -13,7 +13,7 @@ import java.util.List;
 
 /**
  * @author Bela Ban Feb 12, 2004
- * @version $Id: MessageSerializationTest2.java,v 1.15 2007/07/27 09:26:31 belaban Exp $
+ * @version $Id: MessageSerializationTest2.java,v 1.15.2.1 2008/07/30 12:04:50 belaban Exp $
  */
 public class MessageSerializationTest2 {
     Message msg;
@@ -33,8 +33,7 @@ public class MessageSerializationTest2 {
 
 
 
-    public void start(int num, boolean use_serialization, boolean use_streamable,
-                      boolean use_additional_data, boolean add_headers) throws Exception {
+    public void start(int num, boolean use_additional_data, boolean add_headers) throws Exception {
         IpAddress dest=new IpAddress("228.8.8.8", 7500);
         IpAddress src=new IpAddress("127.0.0.1", 5555);
         if(use_additional_data)
@@ -61,14 +60,7 @@ public class MessageSerializationTest2 {
 
         List<Long> l_ser=null, l_stream=null;
 
-        if(use_streamable)
             l_stream=marshalMessages();
-
-        if(use_serialization)
-            l_ser=serializeMessage();
-
-        if(l_ser != null && l_stream != null)
-            printDiffs(l_ser, l_stream);
     }
 
 
@@ -103,53 +95,7 @@ public class MessageSerializationTest2 {
     }
 
 
-    /**
-     *
-     * @return LinkedList with 3 elements: size of serialized buffer, write time, read time
-     * @throws IOException
-     */
-    LinkedList<Long> serializeMessage() throws IOException {
-        LinkedList<Long> retval=new LinkedList<Long>();
-        System.out.println("-- starting to serialize " + num + " msgs");
-        start=System.currentTimeMillis();
-        output=new ExposedByteArrayOutputStream(65000);
-        out=new ObjectOutputStream(output);
-        serialize(my_list, out);
-        out.close();
-        stop=System.currentTimeMillis();
-        buf=new Buffer(output.getRawBuffer(), 0, output.size());
-        System.out.println("** serialized buffer size=" + buf.getLength() + " bytes");
-        retval.add(new Long(buf.getLength()));
 
-        total=stop-start;
-        retval.add(new Long(total));
-        msgs_per_sec=num / (total/1000.0);
-        time_per_msg=total / (double)num;
-        System.out.println("\n-- total time for serializing " + num +
-                " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + " ms)");
-
-        System.out.println("-- starting to unserialize msgs");
-        start=System.currentTimeMillis();
-        ByteArrayInputStream input2=new ByteArrayInputStream(buf.getBuf(), buf.getOffset(), buf.getLength());
-        ObjectInputStream in2=new ObjectInputStream(input2);
-
-        try {
-            unserialize(l2, in2);
-        }
-        catch(ClassNotFoundException e) {
-            e.printStackTrace();
-        }
-        stop=System.currentTimeMillis();
-        total=stop-start;
-        retval.add(new Long(total));
-        msgs_read=l2.size();
-        msgs_per_sec=msgs_read / (total/1000.0);
-        time_per_msg=total / (double)msgs_read;
-        System.out.println("\n-- total time for reading " + msgs_read +
-                " msgs = " + total + "ms \n(" + msgs_per_sec + " msgs/sec, time_per_msg=" + time_per_msg + ')');
-        l2.clear();
-        return retval;
-    }
 
     LinkedList<Long> marshalMessages() throws IOException, IllegalAccessException, InstantiationException {
         LinkedList<Long> retval=new LinkedList<Long>();
@@ -200,37 +146,15 @@ public class MessageSerializationTest2 {
         return retval;
     }
 
-    private static void serialize(List<Message> msgs, ObjectOutputStream out) throws IOException {
-        out.writeInt(msgs.size());
-        for(Message msg: msgs) {
-            msg.writeExternal(out);
-        }
-    }
 
-    private static void unserialize(List<Message> list, ObjectInputStream in) throws IOException, ClassNotFoundException {
-        int length=in.readInt();
-        for(int i=0; i < length; i++) {
-            Message tmp=new Message();
-            tmp.readExternal(in);
-            list.add(tmp);
-        }
-    }
 
     public static void main(String[] args) {
         int num=50000;
-        boolean use_serialization=true, use_streamable=true, use_additional_data=false, add_headers=true;
+        boolean use_additional_data=false, add_headers=true;
 
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-num")) {
                 num=Integer.parseInt(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-use_serialization")) {
-                use_serialization=Boolean.parseBoolean(args[++i]);
-                continue;
-            }
-            if(args[i].equals("-use_streamable")) {
-                use_streamable=Boolean.parseBoolean(args[++i]);
                 continue;
             }
             if(args[i].equals("-use_additional_data")) {
@@ -246,7 +170,7 @@ public class MessageSerializationTest2 {
         }
 
         try {
-            new MessageSerializationTest2().start(num, use_serialization, use_streamable, use_additional_data, add_headers);
+            new MessageSerializationTest2().start(num, use_additional_data, add_headers);
         }
         catch(Exception e) {
             e.printStackTrace();
@@ -255,7 +179,6 @@ public class MessageSerializationTest2 {
 
     static void help() {
         System.out.println("MessageSerializationTest2 [-help] [-num <number>] " +
-                           "[-use_serialization <true|false>] [-use_streamable <true|false>] " +
                            "[-use_additional_data <true|false>] [-add_headers <true|false>]");
     }
 }
