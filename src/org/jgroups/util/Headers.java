@@ -18,7 +18,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.12 2008/07/31 08:06:14 belaban Exp $
+ * @version $Id: Headers.java,v 1.13 2008/07/31 08:13:19 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -177,7 +177,7 @@ public class Headers {
 
 
     /**
-     * Doubles the capacity of the old data array and copies the contents of the old into the new array
+     * Increases the capacity of the array and copies the contents of the old into the new array
      */
     private void resize() {
         int new_size=data.length + RESIZE_INCR;
