@@ -12,7 +12,7 @@ import java.util.Map;
 /**
  * Tests the functionality of the Headers class
  * @author Bela Ban
- * @version $Id: HeadersTest.java,v 1.3.2.2 2008/07/30 11:51:22 belaban Exp $
+ * @version $Id: HeadersTest.java,v 1.3.2.3 2008/07/31 12:55:22 belaban Exp $
  */
 public class HeadersTest extends TestCase {
     private static final String UDP="UDP", FRAG="FRAG", NAKACK="NAKACK";
@@ -73,9 +73,9 @@ public class HeadersTest extends TestCase {
         assert map.get(UDP) == h3;
     }
 
-    public static void testGetNumHeaders() {
+    public static void testSize() {
         Headers hdrs=createHeaders(3);
-        assert hdrs.getNumHeaders() == 3;
+        assert hdrs.size() == 3;
     }
 
 

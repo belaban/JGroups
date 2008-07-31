@@ -18,7 +18,7 @@ import java.util.Map;
  * <br/>
  * This class is not synchronized
  * @author Bela Ban
- * @version $Id: Headers.java,v 1.11.2.4 2008/07/31 08:13:30 belaban Exp $
+ * @version $Id: Headers.java,v 1.11.2.5 2008/07/31 12:55:23 belaban Exp $
  */
 public class Headers {
     /** Used to store strings and headers, e.g: name-1 | header-1 | name-2 | header-2 | null | null | name-3 | header-3 */
@@ -83,16 +83,6 @@ public class Headers {
         return sb.toString();
     }
 
-    public int getNumHeaders() {
-        int num=0;
-        for(int i=0; i < data.length; i+=2) {
-            if(data[i] != null)
-                num++;
-            else
-                break;
-        }
-        return num;
-    }
 
     /** Puts a header given a key into the hashmap. Overwrites potential existing entry. */
     public void putHeader(String key, Header hdr) {
