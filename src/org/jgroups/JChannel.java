@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.197 2008/07/23 20:26:06 vlada Exp $
+ * @version $Id: JChannel.java,v 1.198 2008/07/31 20:26:32 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1924,88 +1924,91 @@ public class JChannel extends Channel {
 
 
     class CloserThread extends Thread {
-        final Event evt;
-        final Thread t=null;
-
+        final Event exitEvent;              
 
         CloserThread(Event evt) {
             super(Util.getGlobalThreadGroup(), "CloserThread");
-            this.evt=evt;
+            this.exitEvent=evt;            
             setDaemon(true);
         }
 
 
         public void run() {
-            //lock this channel so no other thread can call close, connect etc. 
-            synchronized(JChannel.this){
-                reconnectAndGetState();
-            }
-        }
-
-
-        private void reconnectAndGetState() {
             try {
                 String old_cluster_name=cluster_name; // remember because close() will null it
                 if(log.isDebugEnabled())
-                    log.debug("closing the channel " + local_addr);
-                _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
-
-                if(up_handler != null)
-                    up_handler.up(this.evt);
-                else {
-                    try {
-                        if(receiver == null)
-                            mq.add(this.evt);
-                    }
-                    catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("exception: " + ex);
-                    }
-                }
-
+                    log.debug("CloserThread - closing the channel " + local_addr);
                 
-                Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
-                try {
-                    mq.close(false);
-                }
-                catch(Exception ex) {
-                }                
-
-                if(auto_reconnect) {
-                    try {
-                        if(log.isDebugEnabled()) log.debug("reconnecting to group " + old_cluster_name);
-                        open();
-                        if(additional_data != null) {
-                            // send previously set additional_data down the stack - other protocols (e.g. TP) use it
-                            Map<String,Object> m=new HashMap<String,Object>(additional_data);
-                            down(new Event(Event.CONFIG, m));
-                        }
-                    }
-                    catch(Exception ex) {
-                        if(log.isErrorEnabled()) log.error("failure reopening channel: " + ex);
-                        return;
-                    }
-
-                    while(!connected) {
+                //consider closing and connecting as one operation to prevent 
+                //other threads from intervleaving 
+                synchronized(JChannel.this){
+                    _close(false, false); // do not disconnect before closing channel, do not close mq (yet !)
+    
+                    if(up_handler != null)
+                        up_handler.up(exitEvent);
+                    else {
                         try {
-                            connect(old_cluster_name);
-                            notifyChannelReconnected(local_addr);
+                            if(receiver == null)
+                                mq.add(exitEvent);
                         }
                         catch(Exception ex) {
-                            if(log.isErrorEnabled()) log.error("failure reconnecting to channel, retrying", ex);
-                            Util.sleep(1000); // sleep 1 sec between reconnect attempts
+                            if(log.isErrorEnabled()) log.error(ex);
+                        }
+                    }
+    
+                    
+                    Util.sleep(500); // give the mq thread a bit of time to deliver EXIT to the application
+                    try {
+                        mq.close(false);
+                    }
+                    catch(Exception ex) {
+                    }                
+    
+                    if(auto_reconnect) {
+                        try {
+                            if(log.isDebugEnabled()) log.debug("CloserThread - reconnecting to group " + old_cluster_name);
+                            open();
+                            if(additional_data != null) {
+                                // send previously set additional_data down the stack - other protocols (e.g. TP) use it
+                                Map<String,Object> m=new HashMap<String,Object>(additional_data);
+                                down(new Event(Event.CONFIG, m));
+                            }
+                        }
+                        catch(Exception ex) {
+                            if(log.isErrorEnabled()) log.error(ex);
+                            return;
+                        }
+    
+                        while(!connected) {
+                            try {
+                                connect(old_cluster_name);
+                                notifyChannelReconnected(local_addr);
+                            }
+                            catch(Exception ex) {
+                                if(log.isErrorEnabled()) log.error("CloserThread - failure reconnecting to channel, retrying", ex);                               
+                                //release the lock on channel so other threads can potentially close or shutdown
+                                JChannel.this.wait(1000);
+                                
+                                if(!isOpen()){
+                                    //other thread closed the channel in the meantime, give up from reconnecting
+                                    break;
+                                }
+                            }
                         }
                     }
                 }
 
-                if(auto_getstate && state_transfer_supported) {
+                boolean canFetchState = auto_getstate && state_transfer_supported && connected;
+                if(canFetchState) {
                     if(log.isDebugEnabled())
                         log.debug("fetching the state (auto_getstate=true)");
+                    
                     boolean rc=JChannel.this.getState(null, GET_STATE_DEFAULT_TIMEOUT);
                     if(log.isDebugEnabled()) {
                         if(rc)
-                            log.debug("state was retrieved successfully");
+                            log.debug("CloserThread - state was retrieved successfully");
                         else
-                            log.debug("state transfer failed");
+                            log.debug("CloserThread - state transfer failed");
                     }
                 }
 
@@ -2015,7 +2018,7 @@ public class JChannel extends Channel {
             }
             finally {
                 closer=null;
-            }
+            }              
         }
     }
 }
