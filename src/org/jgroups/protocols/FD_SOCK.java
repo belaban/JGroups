@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.96 2008/07/30 20:41:55 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.97 2008/07/31 20:27:39 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -105,8 +105,6 @@ public class FD_SOCK extends Protocol implements Runnable {
     private final BroadcastTask bcast_task=new BroadcastTask(); // to transmit SUSPECT message (until view change)
     private volatile boolean regular_sock_close=false; // used by interruptPingerThread() when new ping_dest is computed
 
-    private volatile boolean running=false;
-
     private boolean log_suspected_msgs=true;
 
 
@@ -163,12 +161,10 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
     public void start() throws Exception {
-        super.start();
-        running=true;
+        super.start();       
     }
 
-    public void stop() {
-        running=false;
+    public void stop() {       
         bcast_task.removeAll();
         synchronized(this) {
             stopPingerThread();
@@ -325,9 +321,10 @@ public class FD_SOCK extends Protocol implements Runnable {
                             if(log.isDebugEnabled()) log.debug("VIEW_CHANGE received: " + members);
 
                             if(members.size() > 1) {
-                                if(pinger_thread != null && pinger_thread.isAlive()) {
+                                if(isPingerThreadRunning()) {
                                     Address tmp_ping_dest=determinePingDest();
-                                    if(ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest)) {
+                                    boolean hasNewPingDest = ping_dest != null && tmp_ping_dest != null && !ping_dest.equals(tmp_ping_dest);
+                                    if(hasNewPingDest) {
                                         interruptPingerThread(); // allows the thread to use the new socket
                                     }
                                 }
@@ -359,9 +356,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * nothing happens. In both cases, a new member to be monitored will be chosen and monitoring continues (unless
      * there are fewer than 2 members).
      */
-    public void run() {
-        Address tmp_ping_dest;
-        IpAddress ping_addr;
+    public void run() {               
 
         // 1. Broadcast my own addr:sock to all members so they can update their cache
         if(!srv_sock_sent) {
@@ -384,21 +379,18 @@ public class FD_SOCK extends Protocol implements Runnable {
 
 
         if(log.isTraceEnabled()) log.trace("pinger_thread started"); // +++ remove
-        while(pinger_thread != null && Thread.currentThread().equals(pinger_thread) && running) {
-            tmp_ping_dest=determinePingDest(); // gets the neighbor to our right
-            if(log.isDebugEnabled())
-                log.debug("determinePingDest()=" + tmp_ping_dest + ", pingable_mbrs=" + pingable_mbrs);
-            if(tmp_ping_dest == null) {
-                ping_dest=null;
-                synchronized(this) {
-                    pinger_thread=null;
-                }
-                break;
-            }
-            ping_dest=tmp_ping_dest;
-            ping_addr=fetchPingAddress(ping_dest);
+        while(isPingerThreadRunning()) {
+            ping_dest=determinePingDest(); // gets the neighbor to our right
             
-            if(!running)
+            if(log.isDebugEnabled())
+                log.debug("determinePingDest()=" + ping_dest + ", pingable_mbrs=" + pingable_mbrs);           
+           
+            if(ping_dest == null)
+                break;
+            
+            IpAddress ping_addr=fetchPingAddress(ping_dest);
+            
+            if(!isPingerThreadRunning())
                 break;
             
             if(ping_addr == null) {                
@@ -407,6 +399,9 @@ public class FD_SOCK extends Protocol implements Runnable {
                 continue;
             }
 
+            if(!isPingerThreadRunning())
+                break;
+            
             if(!setupPingSocket(ping_addr)) {
                 // covers use cases #7 and #8 in ManualTests.txt
                 if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
@@ -424,10 +419,7 @@ public class FD_SOCK extends Protocol implements Runnable {
                     switch(c) {
                         case NORMAL_TERMINATION:
                             if(log.isDebugEnabled())
-                                log.debug("peer closed socket normally");
-                            synchronized(this) {
-                                pinger_thread=null;
-                            }
+                                log.debug("peer closed socket normally");                            
                             break;
                         case ABNORMAL_TERMINATION:
                             handleSocketClose(null);
@@ -448,6 +440,10 @@ public class FD_SOCK extends Protocol implements Runnable {
         synchronized(this) {
             pinger_thread=null;
         }
+    }
+    
+    private synchronized boolean isPingerThreadRunning(){
+        return pinger_thread != null && !pinger_thread.isInterrupted();       
     }
 
 
@@ -474,8 +470,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /**
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
-    void startPingerThread() {
-        running=true;
+    void startPingerThread() {        
         if(pinger_thread == null) {
             ThreadFactory factory=getThreadFactory();
             pinger_thread=factory.newThread(this, "FD_SOCK pinger");            
@@ -485,17 +480,23 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    void stopPingerThread() {
-        running=false;
-        if(pinger_thread != null && pinger_thread.isAlive()) {
-            regular_sock_close=true;
-            pinger_thread=null;
+    void stopPingerThread() {        
+        if(isPingerThreadRunning()) {                 
+            regular_sock_close=true;            
             sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
             teardownPingSocket();
+            
+            try {
+                pinger_thread.interrupt();
+                pinger_thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+            }
+            catch(InterruptedException ignored) {
+                Thread.currentThread().interrupt();
+            }    
+            pinger_thread=null;           
             ping_addr_promise.setResult(null);
             get_cache_promise.setResult(null);
         }
-
     }
 
     // PATCH: send something so the connection handler can exit
@@ -539,7 +540,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * @see {@link org.jgroups.tests.InterruptTest} to determine whether Thread.interrupt() works for InputStream.read().
      */
     void interruptPingerThread() {
-        if(pinger_thread != null && pinger_thread.isAlive()) {
+        if(isPingerThreadRunning()) {
             regular_sock_close=true;
             sendPingInterrupt();  // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
             teardownPingSocket(); // will wake up the pinger thread. less elegant than Thread.interrupt(), but does the job
@@ -614,7 +615,7 @@ public class FD_SOCK extends Protocol implements Runnable {
         Map<Address,IpAddress> result;
 
         get_cache_promise.reset();
-        while(attempts > 0 && running) {
+        while(attempts > 0 && isPingerThreadRunning()) {
             if((coord=determineCoordinator()) != null) {
                 if(coord.equals(local_addr)) { // we are the first member --> empty cache
                     if(log.isDebugEnabled()) log.debug("first member; cache is empty");
@@ -711,6 +712,8 @@ public class FD_SOCK extends Protocol implements Runnable {
         if((ret=cache.get(mbr)) != null)
             return ret;
 
+        if(!isPingerThreadRunning()) return null;
+        
         // 2. Try to get the server socket address from mbr
         ping_addr_promise.reset();
         ping_addr_req=new Message(mbr, null, null); // unicast
@@ -718,13 +721,14 @@ public class FD_SOCK extends Protocol implements Runnable {
         hdr=new FdHeader(FdHeader.WHO_HAS_SOCK);
         hdr.mbr=mbr;
         ping_addr_req.putHeader(name, hdr);
-        down_prot.down(new Event(Event.MSG, ping_addr_req));
-        if(!running) return null;
+        down_prot.down(new Event(Event.MSG, ping_addr_req));        
         ret=ping_addr_promise.getResult(500);
         if(ret != null) {
             return ret;
         }
 
+        if(!isPingerThreadRunning()) return null;
+        
         // 3. Try to get the server socket address from all members
         ping_addr_req=new Message(null); // multicast
         ping_addr_req.setFlag(Message.OOB);
