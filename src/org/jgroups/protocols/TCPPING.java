@@ -9,41 +9,54 @@ import org.jgroups.annotations.Property;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Util;
 
-import java.net.UnknownHostException;
 import java.util.List;
 
 
 /**
- * The TCPPING protocol layer retrieves the initial membership in answer to the GMS's
- * FIND_INITIAL_MBRS event. The initial membership is retrieved by directly contacting other group
- * members, sending point-to-point mebership requests. The responses should allow us to determine
- * the coordinator whom we have to contact in case we want to join the group. When we are a server
- * (after having received the BECOME_SERVER event), we'll respond to TCPPING requests with a TCPPING
- * response.
+ * The TCPPING protocol layer retrieves the initial membership in answer to the
+ * GMS's FIND_INITIAL_MBRS event. The initial membership is retrieved by
+ * directly contacting other group members, sending point-to-point mebership
+ * requests. The responses should allow us to determine the coordinator whom we
+ * have to contact in case we want to join the group. When we are a server
+ * (after having received the BECOME_SERVER event), we'll respond to TCPPING
+ * requests with a TCPPING response.
  * <p>
- * The FIND_INITIAL_MBRS event will eventually be answered with a FIND_INITIAL_MBRS_OK event up
- * the stack.
+ * The FIND_INITIAL_MBRS event will eventually be answered with a
+ * FIND_INITIAL_MBRS_OK event up the stack.
  * <p>
- * The TCPPING protocol requires a static conifiguration, which assumes that you to know in advance
- * where to find other members of your group. For dynamic discovery, use the PING protocol, which
- * uses multicast discovery, or the TCPGOSSIP protocol, which contacts a Gossip Router to acquire
- * the initial membership.
- *
+ * The TCPPING protocol requires a static conifiguration, which assumes that you
+ * to know in advance where to find other members of your group. For dynamic
+ * discovery, use the PING protocol, which uses multicast discovery, or the
+ * TCPGOSSIP protocol, which contacts a Gossip Router to acquire the initial
+ * membership.
+ * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.39 2008/06/11 13:04:55 belaban Exp $
+ * @version $Id: TCPPING.java,v 1.40 2008/07/31 18:59:08 vlada Exp $
  */
 public class TCPPING extends Discovery {
+    
+    private final static String NAME="TCPPING";
+    
+    /* -----------------------------------------    Properties     --------------------------------------- */
+    
     @Property
-    int                 port_range=1;        // number of ports to be probed for initial membership
+    private int port_range=1; // number of ports to be probed for initial membership
+    
+    @Property(name="initial_hosts")
+    private String hosts; // hosts to be contacted for the initial membership    
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
 
-    /** List<IpAddress> */
-    List<IpAddress>       initial_hosts=null;  // hosts to be contacted for the initial membership
-    final static String name="TCPPING";
+    
+    private List<IpAddress> initial_hosts;
 
 
+    public TCPPING() {    
+    }
 
     public String getName() {
-        return name;
+        return NAME;
     }
 
     /**
@@ -51,17 +64,14 @@ public class TCPPING extends Discovery {
      * careful with changes !
      * @return List<Address> list of initial hosts. This variable is only set after the channel has been created and
      * set Properties() has been called
-     */
-    @Property
+     */    
     public List<IpAddress> getInitialHosts() {
         return initial_hosts;
+    }      
+    
+    public void setInitialHosts(String hosts) {
+        this.hosts = hosts;
     }
-
-    @Property
-    public void setInitialHosts(String hosts) throws UnknownHostException {
-        initial_hosts=Util.parseCommaDelimetedHosts(hosts, port_range);
-    }
-
 
     public int getPortRange() {
         return port_range;
@@ -70,12 +80,11 @@ public class TCPPING extends Discovery {
     public void setPortRange(int port_range) {
         this.port_range=port_range;
     }
-
-    public void init() throws Exception {
-        super.init();
+       
+    public void start() throws Exception {        
+        super.start();
+        initial_hosts = Util.parseCommaDelimetedHosts(hosts, port_range);       
     }
-
-   
     
     public void sendGetMembersRequest(String cluster_name) {
         for(final Address addr: initial_hosts) {
@@ -83,7 +92,7 @@ public class TCPPING extends Discovery {
                 continue;
             final Message msg = new Message(addr, null, null);
             msg.setFlag(Message.OOB);
-            msg.putHeader(name, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
+            msg.putHeader(NAME, new PingHeader(PingHeader.GET_MBRS_REQ, cluster_name));
 
             if(log.isTraceEnabled())
                 log.trace("[FIND_INITIAL_MBRS] sending PING request to " + msg.getDest());                      
