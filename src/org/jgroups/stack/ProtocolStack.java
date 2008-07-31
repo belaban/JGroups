@@ -20,35 +20,42 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * A ProtocolStack manages a number of protocols layered above each other. It creates all
- * protocol classes, initializes them and, when ready, starts all of them, beginning with the
- * bottom most protocol. It also dispatches messages received from the stack to registered
- * objects (e.g. channel, GMP) and sends messages sent by those objects down the stack.<p>
- * The ProtocolStack makes use of the Configurator to setup and initialize stacks, and to
- * destroy them again when not needed anymore
+ * A ProtocolStack manages a number of protocols layered above each other. It
+ * creates all protocol classes, initializes them and, when ready, starts all of
+ * them, beginning with the bottom most protocol. It also dispatches messages
+ * received from the stack to registered objects (e.g. channel, GMP) and sends
+ * messages sent by those objects down the stack.
+ * <p>
+ * The ProtocolStack makes use of the Configurator to setup and initialize
+ * stacks, and to destroy them again when not needed anymore
+ * 
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.88 2008/07/30 15:10:16 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.89 2008/07/31 20:25:25 vlada Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
     public static final int BELOW = 2; // used by insertProtocol()
 
+    /**
+     * Holds the shared transports, keyed by 'TP.singleton_name'. The values are
+     * the transport and the use count for init() (decremented by destroy()) and
+     * start() (decremented by stop()
+     */
+    private static final ConcurrentMap<String,Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
+
+
+    
     private Protocol top_prot = null;
     private Protocol bottom_prot = null;
     private String   setup_string;
     private JChannel channel = null;
     private volatile boolean stopped=true;
 
-
-    /** Locks acquired by protocol below, need to get released on down().
-     * See http://jira.jboss.com/jira/browse/JGRP-535 for details */
-    private final Map<Thread, ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
-
-
-    /** Holds the shared transports, keyed by 'TP.singleton_name'.
-     * The values are the transport and the use count for init() (decremented by destroy()) and start() (decremented by stop() */
-    private static final ConcurrentMap<String, Tuple<TP,RefCounter>> singleton_transports=new ConcurrentHashMap<String,Tuple<TP,RefCounter>>();
-
+    /**
+     * Locks acquired by protocol below, need to get released on down(). See
+     * http://jira.jboss.com/jira/browse/JGRP-535 for details
+     */
+    private final Map<Thread,ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
@@ -133,11 +140,9 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Returns all protocols in a list, from top to bottom. <em>These are not copies of protocols,
      so modifications will affect the actual instances !</em> */
-    public Vector<Protocol> getProtocols() {
-        Protocol         p;
+    public Vector<Protocol> getProtocols() {        
         Vector<Protocol> v=new Vector<Protocol>();
-
-        p=top_prot;
+        Protocol p=top_prot;
         while(p != null) {
             v.addElement(p);
             p=p.getDownProtocol();
@@ -209,8 +214,7 @@ public class ProtocolStack extends Protocol implements Transport {
 
     /** Returns the bottom most protocol */
     public TP getTransport() {
-        Vector<Protocol> prots=getProtocols();
-        return (TP)(!prots.isEmpty()? prots.lastElement() : null);
+        return (TP)getBottomProtocol();
     }
 
     public static ConcurrentMap<String, Tuple<TP,RefCounter>> getSingletonTransports() {
