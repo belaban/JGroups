@@ -10,7 +10,7 @@ import java.text.NumberFormat;
 
 /**
  * @author Bela Ban
- * @version $Id: MemberInfo.java,v 1.10 2008/08/01 09:12:49 belaban Exp $
+ * @version $Id: MemberInfo.java,v 1.11 2008/08/01 10:15:53 belaban Exp $
  */
 public class MemberInfo implements Streamable {
     public  long start=0;
@@ -38,6 +38,10 @@ public class MemberInfo implements Streamable {
     public double getMessageSec() {
         long total_time=stop-start;
         return num_msgs_received / (total_time/1000.0);
+    }
+
+    public long getTime() {
+        return stop-start;
     }
 
 
