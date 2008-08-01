@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.8 2008/06/30 12:18:37 belaban Exp $
+ * @version $Id: OOBTest.java,v 1.9 2008/08/01 19:38:05 vlada Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -168,6 +168,8 @@ public class OOBTest extends ChannelTestBase {
     // @Test(invocationCount=5)
     public void testRandomRegularAndOOBMulticasts() throws Exception {
         DISCARD discard=new DISCARD();
+        discard.setDownDiscardRate(0.3);   
+        discard.setExcludeItself(false);
         ProtocolStack stack=c1.getProtocolStack();
         stack.insertProtocol(discard, ProtocolStack.BELOW, NAKACK.class);
         Address dest=null; // send to all
@@ -175,25 +177,24 @@ public class OOBTest extends ChannelTestBase {
         c1.setReceiver(r1);
         c2.setReceiver(r2);
         final int NUM_MSGS=100;
-        final int NUM_THREADS=10;
-        send(dest, NUM_MSGS, NUM_THREADS, 0.5, 0.5, discard);
+        final int NUM_THREADS=10;       
+        send(dest, NUM_MSGS, NUM_THREADS, 0.5);
         List<Integer> one=r1.getMsgs(), two=r2.getMsgs();
         for(int i=0; i < 20; i++) {
             if(one.size() == NUM_MSGS && two.size() == NUM_MSGS)
                 break;
-            log.info(".");
+            log.info("one size " + one.size() + ", two size " + two.size());
             Util.sleep(1000);
         }
-        log.info("");
+        log.info("one size " + one.size() + ", two size " + two.size());        
         check(NUM_MSGS, one, two);
     }
 
 
     private void send(final Address dest, final int num_msgs, final int num_threads,
-                      final double oob_prob, final double drop_prob, final DISCARD discard) throws Exception {
+                      final double oob_prob) throws Exception {
         Channel sender;
-        boolean oob, drop;
-        final boolean multicast=dest == null || dest.isMulticastAddress();
+        boolean oob;       
         Message msg;
 
         if(num_threads <= 0)
@@ -210,21 +211,14 @@ public class OOBTest extends ChannelTestBase {
             for(int i=0; i < threads.length; i++) {
                 threads[i]=new Thread() {
                     public void run() {
-                        for(int i=0; i < msgs_per_thread; i++) {
+                        for(int j=0; j < msgs_per_thread; j++) {
                             Channel sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
-                            boolean oob=Util.tossWeightedCoin(oob_prob);
-                            boolean drop=Util.tossWeightedCoin(drop_prob);
-                            Message msg=new Message(dest, null, counter.getAndIncrement());
+                            boolean oob=Util.tossWeightedCoin(oob_prob);                            
+                            Message msg=new Message(dest, null, counter.getAndIncrement());                            
                             if(oob)
-                                msg.setFlag(Message.OOB);
-                            if(drop) {
-                                if(multicast)
-                                    discard.setDropDownMulticasts(1);
-                                else
-                                    discard.setDropDownUnicasts(1);
-                            }
+                               msg.setFlag(Message.OOB);                            
                             try {
-                                sender.send(msg);
+                                sender.send(msg);                               
                             }
                             catch(Exception e) {
                                 e.printStackTrace();
@@ -232,10 +226,8 @@ public class OOBTest extends ChannelTestBase {
                         }
                     }
                 };
-            }
-            for(int i=0; i < threads.length; i++) {
                 threads[i].start();
-            }
+            }           
             for(int i=0; i < threads.length; i++) {
                 threads[i].join(20000);
             }
@@ -245,18 +237,11 @@ public class OOBTest extends ChannelTestBase {
 
         for(int i=0; i < num_msgs; i++) {
             sender=Util.tossWeightedCoin(0.5) ? c1 : c2;
-            oob=Util.tossWeightedCoin(oob_prob);
-            drop=Util.tossWeightedCoin(drop_prob);
+            oob=Util.tossWeightedCoin(oob_prob);            
             msg=new Message(dest, null, i);
             if(oob)
-                msg.setFlag(Message.OOB);
-            if(drop) {
-                if(multicast)
-                    discard.setDropDownMulticasts(1);
-                else
-                    discard.setDropDownUnicasts(1);
-            }
-            sender.send(msg);
+               msg.setFlag(Message.OOB);          
+            sender.send(msg);            
         }
     }
 
