@@ -56,7 +56,7 @@ public class Test implements Receiver {
     boolean         final_results_received=false;
 
     /** Map<Object, MemberInfo>. A hashmap of senders, each value is the 'senders' hashmap */
-    Map             results=new HashMap();
+    final Map<Object,MemberInfo>  results=new ConcurrentHashMap<Object,MemberInfo>(12);
 
     private ResultsPublisher publisher=new ResultsPublisher();
 
