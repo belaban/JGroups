@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * Tests sending large messages from one sender to multiple receivers
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.3 2008/07/24 10:15:09 belaban Exp $
+ * @version $Id: IPerf.java,v 1.4 2008/08/01 07:47:05 belaban Exp $
  */
 public class IPerf {
     private final Configuration config;
@@ -79,6 +79,7 @@ public class IPerf {
             }
             if(tmp.equals("-h") || tmp.equals("-help")) {
                 help(config.getTransport());
+                return;
             }
             unused_args.add(tmp);
         }
@@ -102,7 +103,7 @@ public class IPerf {
             Transport tp=(Transport)Class.forName(transport).newInstance();
             String tmp=tp.help();
             if(tmp != null && tmp.length() > 0)
-                sb.append("\nTransport specific options:\n" + tp.help());
+                sb.append("\nTransport specific options for " + tp.getClass().getName() + ":\n" + tp.help());
         }
         catch(Exception e) {
             e.printStackTrace();
