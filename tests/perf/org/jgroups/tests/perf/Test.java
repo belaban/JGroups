@@ -26,8 +26,8 @@ public class Test implements Receiver {
     Transport       transport=null;
     Object          local_addr=null;
 
-    /** Map<Object,MemberInfo> members. Keys=member addresses, value=MemberInfo */
-    Map             senders=new ConcurrentHashMap(10);
+    /** Keys=member addresses, value=MemberInfo */
+    final Map<Object,MemberInfo> senders=new ConcurrentHashMap<Object,MemberInfo>(10);
 
     /** Keeps track of members. ArrayList<SocketAddress> */
     final List      members=new ArrayList();
@@ -362,7 +362,7 @@ public class Test implements Receiver {
             if(counter % log_interval == 0) {
                 output(dumpStats(counter));
             }
-            info=(MemberInfo)this.senders.get(sender);
+            info=this.senders.get(sender);
             if(info != null) {
                 if(info.start == 0)
                     info.start=System.currentTimeMillis();
@@ -555,19 +555,17 @@ public class Test implements Receiver {
 
 
 
-    private void dumpResults(Map final_results) {
+    private void dumpResults(Map<Object,MemberInfo> final_results) {
         Object      member;
-        Map.Entry   entry;
         MemberInfo  val;
         double      combined_msgs_sec, tmp=0;
         long        combined_tp;
         StringBuilder sb=new StringBuilder();
         sb.append("\n-- results:\n");
 
-        for(Iterator it=final_results.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
+        for(Map.Entry<Object,MemberInfo> entry: final_results.entrySet()) {
             member=entry.getKey();
-            val=(MemberInfo)entry.getValue();
+            val=entry.getValue();
             tmp+=val.getMessageSec();
             sb.append("\n").append(member);
             if(member.equals(local_addr))
@@ -578,7 +576,6 @@ public class Test implements Receiver {
         }
         combined_msgs_sec=tmp / final_results.size();
         combined_tp=(long)combined_msgs_sec * msg_size;
-
 
         sb.append("\ncombined: ").append(f.format(combined_msgs_sec)).
                 append(" msgs/sec averaged over all receivers (throughput=" + Util.printBytes(combined_tp) + "/sec)\n");
@@ -593,8 +590,7 @@ public class Test implements Receiver {
         System.out.println(sb.toString());
     }
 
-    private static void dump(Map map, StringBuilder sb) {
-        Map.Entry  entry;
+    private static void dump(Map<Object,MemberInfo> map, StringBuilder sb) {
         Object     mySender;
         MemberInfo mi;
         MemberInfo combined=new MemberInfo(0);
@@ -602,10 +598,9 @@ public class Test implements Receiver {
         combined.stop = Long.MIN_VALUE;
 
         sb.append("\n-- local results:\n");
-        for(Iterator it2=map.entrySet().iterator(); it2.hasNext();) {
-            entry=(Map.Entry)it2.next();
+        for(Map.Entry<Object,MemberInfo> entry: map.entrySet()) {
             mySender=entry.getKey();
-            mi=(MemberInfo)entry.getValue();
+            mi=entry.getValue();
             combined.start=Math.min(combined.start, mi.start);
             combined.stop=Math.max(combined.stop, mi.stop);
             combined.num_msgs_expected+=mi.num_msgs_expected;
