@@ -26,7 +26,7 @@ import java.io.*;
  * expired members, and suspect those.
  * 
  * @author Bela Ban
- * @version $Id: FD_ALL.java,v 1.21 2008/07/15 18:20:37 vlada Exp $
+ * @version $Id: FD_ALL.java,v 1.22 2008/08/01 16:13:07 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD_ALL extends Protocol {
@@ -150,14 +150,15 @@ public class FD_ALL extends Protocol {
 
 
     public void stop() {
-        stopTasks();
+        stopHeartbeatSender();
+        stopTimeoutChecker();
     }
 
 
     public Object up(Event evt) {
         Message msg;
         Header  hdr;
-        Address sender;
+        Address sender = null;
 
         switch(evt.getType()) {
 
@@ -174,14 +175,13 @@ public class FD_ALL extends Protocol {
                     break;  // message did not originate from FD_ALL layer, just pass up
 
                 switch(hdr.type) {
-                    case Header.HEARTBEAT:                       // heartbeat request; send heartbeat ack
+                    case Header.HEARTBEAT: 
                         sender=msg.getSrc();
                         if(sender.equals(local_addr))
                             break;
-                        //if(log.isTraceEnabled())
-                          //  log.trace(local_addr + ": received a heartbeat from " + sender);
+                   
 
-                        // 2. Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
+                        // Shun the sender of a HEARTBEAT message if that sender is not a member. This will cause
                         //    the sender to leave the group (and possibly rejoin it later)
                         if(shun && !members.contains(sender)) {
                             shunInvalidHeartbeatSender(sender);
@@ -200,7 +200,7 @@ public class FD_ALL extends Protocol {
 
                     case Header.NOT_MEMBER:
                         if(shun) {
-                            if(log.isDebugEnabled()) log.debug("[NOT_MEMBER] I'm being shunned; exiting");
+                            if(log.isDebugEnabled()) log.debug("Received NOT_MEMBER event from " + sender + " I'm being shunned; exiting");
                             up_prot.up(new Event(Event.EXIT));
                         }
                         break;
@@ -220,21 +220,6 @@ public class FD_ALL extends Protocol {
                 return null;
         }
         return down_prot.down(evt);
-    }
-
-
-    private void startTasks() {
-        startHeartbeatSender();
-        startTimeoutChecker();        
-        if(log.isTraceEnabled())
-            log.trace("started heartbeat sender and timeout checker tasks");
-    }
-
-    private void stopTasks() {
-        stopTimeoutChecker();
-        stopHeartbeatSender();       
-        if(log.isTraceEnabled())
-            log.trace("stopped heartbeat sender and timeout checker tasks");
     }
 
     private void startTimeoutChecker() {
@@ -299,39 +284,38 @@ public class FD_ALL extends Protocol {
 
     private void update(Address sender) {
         if(sender != null && !sender.equals(local_addr))
-            timestamps.put(sender, Long.valueOf(System.currentTimeMillis()));
+            timestamps.put(sender, System.currentTimeMillis());
     }
 
 
     private void handleViewChange(View v) {
         Vector<Address> mbrs=v.getMembers();
+        boolean has_at_least_two=mbrs.size() > 1;
+
         members.clear();
         members.addAll(mbrs);
 
         Set<Address> keys=timestamps.keySet();
         keys.retainAll(mbrs); // remove all nodes which have left the cluster
-        for(Iterator<Address> it=mbrs.iterator(); it.hasNext();) { // and add new members
-            Address mbr=it.next();
-            if(mbr.equals(local_addr))
-                continue;
-            if(!timestamps.containsKey(mbr)) {
-                timestamps.put(mbr, Long.valueOf(System.currentTimeMillis()));
-            }
-        }
+        for(Address member:mbrs)
+            update(member);
 
         invalid_pingers.clear();
 
-        boolean tasks_running  = isRunning();
-        boolean has_at_least_two = members.size() > 1;
-        if(!tasks_running && has_at_least_two)
-            startTasks();
-        else if(tasks_running && !has_at_least_two)
-            stopTasks();
+        if(has_at_least_two) {
+            startHeartbeatSender();
+            startTimeoutChecker();
+        }
+        else {
+            stopHeartbeatSender();
+            stopTimeoutChecker();
+        }
     }
 
 
     /**
-     * If sender is not a member, send a NOT_MEMBER to sender (after n pings received)
+     * If sender is not a member, send a NOT_MEMBER to sender (after n pings
+     * received)
      */
     private void shunInvalidHeartbeatSender(Address sender) {
         int num_pings=0;
@@ -467,7 +451,7 @@ public class FD_ALL extends Protocol {
     }
 
 
-    class TimeoutChecker extends HeartbeatSender {
+    class TimeoutChecker implements Runnable {
 
         public void run() {                        
             
