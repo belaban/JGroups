@@ -12,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.12 2008/08/01 09:11:35 belaban Exp $
+ * @version $Id: Data.java,v 1.13 2008/08/01 15:21:25 vlada Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;
@@ -68,7 +68,7 @@ public class Data implements Streamable {
                     Util.writeObject(key, out);
                 }
                 catch(Exception e) {
-                    throw new IOException("failed to write object " + key, e);
+                    throw new IOException("failed to write object " + key);
                 }
                 Util.writeStreamable(val, out);
             }
