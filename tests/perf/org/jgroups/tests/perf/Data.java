@@ -12,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.11 2006/12/31 06:17:01 belaban Exp $
+ * @version $Id: Data.java,v 1.12 2008/08/01 09:11:35 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;
@@ -36,7 +36,7 @@ public class Data implements Streamable {
     boolean    sender=false; // used with DISCOVERY_RSP
     long       num_msgs=0;   // used with DISCOVERY_RSP
     MemberInfo result=null;  // used with RESULTS
-    Map        results=null; // used with final results
+    Map<Object,MemberInfo> results=null; // used with final results
 
     public int getType() {
         return type;
@@ -59,20 +59,16 @@ public class Data implements Streamable {
         if(results != null) {
             out.writeBoolean(true);
             out.writeInt(results.size());
-            Map.Entry entry;
             Object key;
             MemberInfo val;
-            for(Iterator it=results.entrySet().iterator(); it.hasNext();) {
-                entry=(Map.Entry)it.next();
+            for(Map.Entry<Object,MemberInfo> entry: results.entrySet()) {
                 key=entry.getKey();
-                val=(MemberInfo)entry.getValue();
+                val=entry.getValue();
                 try {
                     Util.writeObject(key, out);
                 }
                 catch(Exception e) {
-                    IOException ex=new IOException("failed to write object " + key);
-                    ex.initCause(e);
-                    throw ex;
+                    throw new IOException("failed to write object " + key, e);
                 }
                 Util.writeStreamable(val, out);
             }
