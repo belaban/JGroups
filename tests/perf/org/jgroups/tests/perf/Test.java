@@ -414,7 +414,7 @@ public class Test implements Receiver {
 
     private void sendFinalResults() throws Exception {
         Data d=new Data(Data.FINAL_RESULTS);
-        d.results=new ConcurrentHashMap(this.results);
+        d.results=new ConcurrentHashMap<Object,MemberInfo>(this.results);
         final byte[] buf=generatePayload(d, null);
         transport.send(null, buf, true);
     }
