@@ -13,6 +13,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.locks.Lock;
@@ -23,7 +24,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.9 2008/08/01 19:38:05 vlada Exp $
+ * @version $Id: OOBTest.java,v 1.10 2008/08/07 15:33:42 vlada Exp $
  */
 @Test(groups="temp",sequential=true)
 public class OOBTest extends ChannelTestBase {
@@ -315,7 +316,7 @@ public class OOBTest extends ChannelTestBase {
 
     private static class BlockingReceiver extends ReceiverAdapter {
         final Lock lock;
-        final List<Long> msgs=new LinkedList<Long>();
+        final List<Long> msgs=Collections.synchronizedList(new LinkedList<Long>());
 
         public BlockingReceiver(Lock lock) {
             this.lock=lock;
@@ -340,7 +341,7 @@ public class OOBTest extends ChannelTestBase {
     }
 
     private static class MyReceiver extends ReceiverAdapter {
-        private final List<Integer> msgs=new ArrayList<Integer>(3);
+        private final List<Integer> msgs=Collections.synchronizedList(new ArrayList<Integer>());
 
         public List<Integer> getMsgs() {
             return msgs;
@@ -348,8 +349,7 @@ public class OOBTest extends ChannelTestBase {
 
         public void receive(Message msg) {
             Integer val=(Integer)msg.getObject();
-            msgs.add(val);
-            // System.out.println("received " + msg + ": " + val + ", headers:\n" + msg.getHeaders());
+            msgs.add(val);            
         }
     }
 }
