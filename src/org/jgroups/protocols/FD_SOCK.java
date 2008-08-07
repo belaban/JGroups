@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.97 2008/07/31 20:27:39 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.98 2008/08/07 15:28:55 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -436,14 +436,11 @@ public class FD_SOCK extends Protocol implements Runnable {
                 log.error("exception", catch_all_the_rest);
             }
         }
-        if(log.isDebugEnabled()) log.debug("pinger thread terminated");
-        synchronized(this) {
-            pinger_thread=null;
-        }
+        if(log.isDebugEnabled()) log.debug("pinger thread terminated");        
     }
     
     private synchronized boolean isPingerThreadRunning(){
-        return pinger_thread != null && !pinger_thread.isInterrupted();       
+        return pinger_thread != null && pinger_thread.isAlive() && !pinger_thread.isInterrupted();       
     }
 
 
@@ -471,7 +468,7 @@ public class FD_SOCK extends Protocol implements Runnable {
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
     void startPingerThread() {        
-        if(pinger_thread == null) {
+        if(!isPingerThreadRunning()) {
             ThreadFactory factory=getThreadFactory();
             pinger_thread=factory.newThread(this, "FD_SOCK pinger");            
             pinger_thread.setDaemon(true);            
