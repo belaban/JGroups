@@ -25,9 +25,9 @@ import java.util.List;
 /**
  * Tests which test the shared transport
  * @author Bela Ban
- * @version $Id: SharedTransportTest.java,v 1.23 2008/07/08 20:04:53 vlada Exp $
+ * @version $Id: SharedTransportTest.java,v 1.24 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class SharedTransportTest extends ChannelTestBase {
     private JChannel a, b, c;
     private MyReceiver r1, r2, r3;

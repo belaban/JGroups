@@ -18,9 +18,9 @@ import java.util.Properties;
  * by discarding 10% of all network-bound messages
  * 
  * @author Bela Ban
- * @version $Id: DiscardTest.java,v 1.20 2008/05/29 11:13:06 belaban Exp $
+ * @version $Id: DiscardTest.java,v 1.21 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DiscardTest extends ChannelTestBase {
     JChannel ch1, ch2;
     static final long NUM_MSGS=10000;

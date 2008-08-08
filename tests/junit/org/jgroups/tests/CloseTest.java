@@ -1,4 +1,4 @@
-// $Id: CloseTest.java,v 1.22 2008/06/02 10:01:40 belaban Exp $
+// $Id: CloseTest.java,v 1.23 2008/08/08 17:07:11 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -15,7 +15,7 @@ import java.util.Vector;
  * Demos the creation of a channel and subsequent connection and closing. Demo application should exit (no
  * more threads running)
  */
-@Test(groups="temp", sequential=false)
+@Test(groups=Global.STACK_DEPENDENT, sequential=false)
 public class CloseTest extends ChannelTestBase {
     private final ThreadLocal<JChannel> ch=new ThreadLocal<JChannel>(),
             channel1=new ThreadLocal<JChannel>(),

@@ -9,9 +9,9 @@ import java.util.concurrent.CyclicBarrier;
 
 /**
  * @author Bela Ban
- * @version $Id: ConcurrentCloseTest.java,v 1.10 2008/05/29 11:13:10 belaban Exp $
+ * @version $Id: ConcurrentCloseTest.java,v 1.11 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConcurrentCloseTest extends ChannelTestBase {
     JChannel c1, c2;
 

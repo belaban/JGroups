@@ -17,9 +17,9 @@ import org.testng.annotations.AfterMethod;
  * after the setState will be validated to ensure the total ordering of msg delivery. <p>
  * This should cover the fix introduced by rev. 1.12
  * @author Wenbo Zhu
- * @version $Id: STATE_TRANSFER_Test.java,v 1.17 2008/07/23 19:30:21 vlada Exp $
+ * @version $Id: STATE_TRANSFER_Test.java,v 1.18 2008/08/08 17:07:19 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups={Global.STACK_DEPENDENT,"known-failures"})
 public class STATE_TRANSFER_Test extends ChannelTestBase {
     public static final String GROUP_NAME="STATE_TRANSFER_Test";
     private Coordinator coord;

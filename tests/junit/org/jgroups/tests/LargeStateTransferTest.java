@@ -3,6 +3,7 @@ package org.jgroups.tests;
 
 import org.jgroups.ChannelException;
 import org.jgroups.ExtendedReceiverAdapter;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.TP;
@@ -23,9 +24,9 @@ import java.io.*;
  * greater than max_bundle_size, e.g.
  * ifconfig lo0 mtu 65000
  * @author Bela Ban
- * @version $Id: LargeStateTransferTest.java,v 1.19 2008/06/27 23:38:51 vlada Exp $
+ * @version $Id: LargeStateTransferTest.java,v 1.20 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups={"temp"}, sequential=true)
+@Test(groups={Global.STACK_DEPENDENT}, sequential=true)
 public class LargeStateTransferTest extends ChannelTestBase {
     JChannel provider, requester;
     Promise<Integer> p=new Promise<Integer>();    

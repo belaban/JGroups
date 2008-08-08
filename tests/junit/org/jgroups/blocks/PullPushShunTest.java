@@ -1,7 +1,5 @@
 package org.jgroups.blocks;
 
-
-
 import org.testng.annotations.*;
 import org.jgroups.*;
 import org.jgroups.tests.ChannelTestBase;
@@ -9,13 +7,12 @@ import org.jgroups.util.Util;
 
 /**
  * @author Bela Ban
- * @version $Id: PullPushShunTest.java,v 1.9 2008/04/21 12:05:27 belaban Exp $
+ * @version $Id: PullPushShunTest.java,v 1.10 2008/08/08 17:07:30 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups=Global.STACK_DEPENDENT)
 public class PullPushShunTest extends ChannelTestBase {
     private JChannel channel;
     private PullPushAdapter adapter;
-
 
     public void testShunningandReconnect() throws Exception {
         Address old_local_addr, new_local_addr;
@@ -61,8 +58,4 @@ public class PullPushShunTest extends ChannelTestBase {
     private void shun() {
         channel.up(new Event(Event.EXIT));
     }
-
-
-
-
 }

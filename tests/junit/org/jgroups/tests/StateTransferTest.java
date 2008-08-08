@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.util.Util;
@@ -19,9 +20,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * Tests correct state transfer while other members continue sending messages to
  * the group
  * @author Bela Ban
- * @version $Id: StateTransferTest.java,v 1.28 2008/06/27 02:53:53 vlada Exp $
+ * @version $Id: StateTransferTest.java,v 1.29 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=false)
+@Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class StateTransferTest extends ChannelTestBase {
     private static final int MSG_SEND_COUNT=10000;
 

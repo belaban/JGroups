@@ -1,9 +1,10 @@
-// $Id: Deadlock2Test.java,v 1.18 2008/05/29 11:38:52 belaban Exp $
+// $Id: Deadlock2Test.java,v 1.19 2008/08/08 17:07:11 vlada Exp $
 
 package org.jgroups.tests;
 
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.GroupRequest;
 import org.jgroups.blocks.MethodCall;
@@ -23,9 +24,9 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.18 $
+ * @version $Revision: 1.19 $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
     private static boolean DEADLOCK_DETECTION = true;
     private String name = "Deadlock2Test";

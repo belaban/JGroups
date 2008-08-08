@@ -1,6 +1,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.TimeoutException;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
@@ -9,9 +10,9 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.10 2008/06/25 22:50:43 vlada Exp $
+ * @version $Id: RpcDispatcherUnicastMethodExceptionTest.java,v 1.11 2008/08/08 17:07:30 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherUnicastMethodExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;

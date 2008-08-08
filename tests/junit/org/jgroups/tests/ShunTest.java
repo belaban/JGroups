@@ -24,9 +24,9 @@ import java.util.concurrent.Semaphore;
  * Tests shunning of a channel
  * 
  * @author vlada
- * @version $Id: ShunTest.java,v 1.19 2008/06/27 23:38:51 vlada Exp $
+ * @version $Id: ShunTest.java,v 1.20 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="vlad",sequential=false)
+@Test(groups="broken",sequential=false)
 public class ShunTest extends ChannelTestBase {
     JChannel c1, c2;
     RpcDispatcher disp1, disp2;

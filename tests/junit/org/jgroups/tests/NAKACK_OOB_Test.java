@@ -1,6 +1,7 @@
 package org.jgroups.tests;
 
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -12,15 +13,16 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Tests the NAKACK protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-379
  * @author Bela Ban
- * @version $Id: NAKACK_OOB_Test.java,v 1.11 2008/06/09 12:47:33 belaban Exp $
+ * @version $Id: NAKACK_OOB_Test.java,v 1.12 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class NAKACK_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2, ch3;
 
@@ -77,9 +79,9 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
 
         Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
 
-        List seqnos1=receiver1.getSeqnos();
-        List seqnos2=receiver2.getSeqnos();
-        List seqnos3=receiver3.getSeqnos();
+        List<Long> seqnos1=receiver1.getSeqnos();
+        List<Long> seqnos2=receiver2.getSeqnos();
+        List<Long> seqnos3=receiver3.getSeqnos();
 
         System.out.println("sequence numbers:");
         System.out.println("ch1: " + seqnos1);
@@ -90,11 +92,11 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
         Long[] expected_seqnos=new Long[]{1L,2L,4L,3L,5L};
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
-            Long received_seqno=(Long)seqnos1.get(i);
+            Long received_seqno=seqnos1.get(i);
             Assert.assertEquals(expected_seqno, received_seqno);
-            received_seqno=(Long)seqnos2.get(i);
+            received_seqno=seqnos2.get(i);
             Assert.assertEquals(expected_seqno, received_seqno);
-            received_seqno=(Long)seqnos3.get(i);
+            received_seqno=seqnos3.get(i);
             Assert.assertEquals(expected_seqno, received_seqno);
         }
     }
@@ -102,12 +104,12 @@ public class NAKACK_OOB_Test extends ChannelTestBase {
 
     public static class MyReceiver extends ReceiverAdapter {
         /** List<Long> of unicast sequence numbers */
-        List seqnos=new LinkedList();
+        List<Long> seqnos=Collections.synchronizedList(new LinkedList<Long>());
 
         public MyReceiver() {
         }
 
-        public List getSeqnos() {
+        public List<Long> getSeqnos() {
             return seqnos;
         }
 

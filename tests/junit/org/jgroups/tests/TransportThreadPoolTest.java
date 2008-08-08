@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -16,9 +17,9 @@ import java.util.concurrent.Executors;
 
 /**
  * @author Bela Ban
- * @version $Id: TransportThreadPoolTest.java,v 1.7 2008/06/09 13:34:38 belaban Exp $
+ * @version $Id: TransportThreadPoolTest.java,v 1.8 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class TransportThreadPoolTest extends ChannelTestBase {
     JChannel c1, c2;
 

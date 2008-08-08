@@ -1,4 +1,4 @@
-// $Id: MergeStressTest.java,v 1.16 2008/07/25 18:44:39 vlada Exp $
+// $Id: MergeStressTest.java,v 1.17 2008/08/08 17:07:11 vlada Exp $
 
 package org.jgroups.tests;
 
@@ -24,9 +24,9 @@ import java.util.concurrent.TimeoutException;
  * Creates NUM channels, all trying to join the same channel concurrently. This will lead to singleton groups
  * and subsequent merging. To enable merging, GMS.handle_concurrent_startup has to be set to false.
  * @author Bela Ban
- * @version $Id: MergeStressTest.java,v 1.16 2008/07/25 18:44:39 vlada Exp $
+ * @version $Id: MergeStressTest.java,v 1.17 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups={"temp"})
+@Test(groups={Global.STACK_DEPENDENT})
 public class MergeStressTest extends ChannelTestBase {
     CyclicBarrier           start_connecting=null;
     CyclicBarrier           received_all_views=null;   

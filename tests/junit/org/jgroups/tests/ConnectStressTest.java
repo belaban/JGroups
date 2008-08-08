@@ -4,6 +4,7 @@ package org.jgroups.tests;
 
 import org.jgroups.Address;
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.*;
@@ -20,9 +21,9 @@ import java.util.concurrent.CyclicBarrier;
 /**
  * Creates 1 channel, then creates NUM channels, all try to join the same channel concurrently.
  * @author Bela Ban Nov 20 2003
- * @version $Id: ConnectStressTest.java,v 1.35 2008/06/09 11:09:44 belaban Exp $
+ * @version $Id: ConnectStressTest.java,v 1.36 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups={"temp"})
+@Test(groups={Global.STACK_DEPENDENT})
 public class ConnectStressTest extends ChannelTestBase {
     CyclicBarrier    start_connecting=null;
     CyclicBarrier    connected=null;
@@ -113,7 +114,7 @@ public class ConnectStressTest extends ChannelTestBase {
         int num_members=0;
         for(int i=0; i < 10; i++) {
             View v=channel.getView();
-            Vector mbrs=v != null? v.getMembers() : null;
+            Vector<Address> mbrs=v != null? v.getMembers() : null;
             if(mbrs != null) {
                 num_members=mbrs.size();
                 System.out.println("*--* number of members connected: " + num_members + ", (expected: 1), view=" + v);
@@ -176,7 +177,7 @@ public class ConnectStressTest extends ChannelTestBase {
                 int num_members=0;
                 while(true) {
                     View v=ch.getView();
-                    Vector mbrs=v != null? v.getMembers() : null;
+                    Vector<Address> mbrs=v != null? v.getMembers() : null;
                     if(mbrs == null) {
                         System.err.println("mbrs is null, v=" + v);
                     }

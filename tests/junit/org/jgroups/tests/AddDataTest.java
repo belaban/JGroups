@@ -1,23 +1,27 @@
 package org.jgroups.tests;
 
-import org.jgroups.*;
-import org.jgroups.protocols.TP;
-import org.jgroups.protocols.UDP;
-import org.jgroups.stack.IpAddress;
-import org.jgroups.util.Util;
-import org.testng.annotations.Test;
-
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 
+import org.jgroups.Address;
+import org.jgroups.Channel;
+import org.jgroups.Event;
+import org.jgroups.Global;
+import org.jgroups.JChannel;
+import org.jgroups.Message;
+import org.jgroups.ReceiverAdapter;
+import org.jgroups.stack.IpAddress;
+import org.jgroups.util.Util;
+import org.testng.annotations.Test;
+
 /**
  * 
  * @author Bela Ban
- * @version $Id: AddDataTest.java,v 1.20 2008/05/29 12:28:09 belaban Exp $
+ * @version $Id: AddDataTest.java,v 1.21 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups={"temp"},sequential=false)
+@Test(groups={Global.STACK_DEPENDENT},sequential=false)
 public class AddDataTest extends ChannelTestBase {
 
     @Test

@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.blocks.ReplicatedHashMap;
 import org.testng.Assert;
@@ -19,7 +20,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * @version $Id: ReplicatedHashMapTest.java,v 1.3 2007/08/22 11:23:28 belaban
  *          Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ReplicatedHashMapTest extends ChannelTestBase {
     private ReplicatedHashMap<String,String> map1;
     private ReplicatedHashMap<String,String> map2;

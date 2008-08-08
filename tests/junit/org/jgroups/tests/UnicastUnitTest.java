@@ -11,9 +11,9 @@ import java.util.List;
 /**
  * Tests unicast functionality
  * @author Bela Ban
- * @version $Id: UnicastUnitTest.java,v 1.6 2008/06/25 20:07:46 vlada Exp $
+ * @version $Id: UnicastUnitTest.java,v 1.7 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=false)
+@Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class UnicastUnitTest extends ChannelTestBase {
     JChannel ch1, ch2=null;
 

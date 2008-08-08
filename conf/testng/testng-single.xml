@@ -11,7 +11,8 @@
             <run>
                 <include name="single"/>
                 <exclude name="flush"/>
-                <exclude name="vlad"/>
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>

@@ -1,6 +1,7 @@
 package org.jgroups.protocols;
 
 
+import org.jgroups.Address;
 import org.jgroups.Event;
 import org.jgroups.Global;
 import org.jgroups.Message;
@@ -20,10 +21,10 @@ import java.util.Vector;
  * Tests the fragmentation (FRAG) protocol for http://jira.jboss.com/jira/browse/JGRP-215
  * @author Bela Ban
  */
-@Test(groups={"temp", "protocols"})
+@Test(groups={Global.STACK_DEPENDENT})
 public class FRAG_Test extends ChannelTestBase {
     private IpAddress a1;
-    private Vector members;
+    private Vector<Address> members;
     private View v;
     private Simulator s=null;
     private int num_done=0;
@@ -38,7 +39,7 @@ public class FRAG_Test extends ChannelTestBase {
     @BeforeMethod
     void setUp() throws Exception {
         a1=new IpAddress(1111);
-        members=new Vector();
+        members=new Vector<Address>();
         members.add(a1);
         v=new View(a1, 1, members);
         s=new Simulator();

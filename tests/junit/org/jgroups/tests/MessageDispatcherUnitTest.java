@@ -1,5 +1,6 @@
 package org.jgroups.tests;
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.blocks.GroupRequest;
@@ -24,7 +25,7 @@ import org.testng.annotations.Test;
  * @version $Id: MessageDispatcherUnitTest.java,v 1.10 2008/04/14 08:18:39
  *          belaban Exp $
  */
-@Test(groups="temp", sequential=true)
+@Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class MessageDispatcherUnitTest extends ChannelTestBase {
     MessageDispatcher disp, disp2;
     JChannel ch, ch2;

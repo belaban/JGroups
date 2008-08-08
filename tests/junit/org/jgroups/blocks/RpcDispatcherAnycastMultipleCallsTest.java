@@ -1,5 +1,6 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
@@ -7,7 +8,7 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-@Test(groups="temp", sequential=true)
+@Test(groups=Global.STACK_DEPENDENT, sequential=true)
 public class RpcDispatcherAnycastMultipleCallsTest extends ChannelTestBase {
     private RpcDispatcherAnycastServerObject[] targets=null;
     static final int NUM=3;

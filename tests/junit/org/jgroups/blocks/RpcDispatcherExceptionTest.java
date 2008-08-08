@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.tests.ChannelTestBase;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
@@ -11,9 +12,9 @@ import java.io.NotSerializableException;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherExceptionTest.java,v 1.8 2008/04/21 10:27:24 belaban Exp $
+ * @version $Id: RpcDispatcherExceptionTest.java,v 1.9 2008/08/08 17:07:30 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherExceptionTest extends ChannelTestBase {
     RpcDispatcher disp;
     Channel channel;

@@ -13,9 +13,9 @@ import org.testng.annotations.Test;
 
 /**
  * Runs through multiple channel connect and disconnects, without closing the channel.
- * @version $Id: ConnectTest.java,v 1.19 2008/05/29 11:38:54 belaban Exp $
+ * @version $Id: ConnectTest.java,v 1.20 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConnectTest extends ChannelTestBase {
     JChannel channel, coordinator;
 

@@ -1,5 +1,6 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Util;
@@ -15,9 +16,9 @@ import java.util.Map;
  * Testcase for the DistributedLockManager
  * 
  * @author Robert Schaffar-Taurok (robert@fusion.at)
- * @version $Id: DistributedLockManagerTest.java,v 1.10 2008/05/29 11:13:13 belaban Exp $
+ * @version $Id: DistributedLockManagerTest.java,v 1.11 2008/08/08 17:07:29 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class DistributedLockManagerTest extends ChannelTestBase {
     private JChannel channel1;
     private JChannel channel2;
@@ -85,8 +86,8 @@ public class DistributedLockManagerTest extends ChannelTestBase {
         
         // Override private members and simulate the errorcase which is, when two lockManagers have locked the same object
         // This can happen after a merge
-        Class acquireLockDecreeClass = Class.forName("org.jgroups.blocks.DistributedLockManager$AcquireLockDecree");
-        Constructor acquireLockDecreeConstructor = acquireLockDecreeClass.getDeclaredConstructor(new Class[] {Object.class, Object.class, Object.class});
+        Class<?> acquireLockDecreeClass = Class.forName("org.jgroups.blocks.DistributedLockManager$AcquireLockDecree");
+        Constructor<?> acquireLockDecreeConstructor = acquireLockDecreeClass.getDeclaredConstructor(new Class[] {Object.class, Object.class, Object.class});
         acquireLockDecreeConstructor.setAccessible(true);
         Object acquireLockDecree = acquireLockDecreeConstructor.newInstance("obj1", "owner2", "2");
         

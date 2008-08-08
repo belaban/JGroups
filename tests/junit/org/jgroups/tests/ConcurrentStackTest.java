@@ -16,9 +16,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * Tests the TLS
  * @author Bela Ban
- * @version $Id: ConcurrentStackTest.java,v 1.10 2008/07/16 14:08:40 vlada Exp $
+ * @version $Id: ConcurrentStackTest.java,v 1.11 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class ConcurrentStackTest extends ChannelTestBase {    
     JChannel ch1, ch2, ch3;
     final static int NUM=25, EXPECTED=NUM * 3;

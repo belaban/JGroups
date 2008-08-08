@@ -2,6 +2,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.ReceiverAdapter;
@@ -13,15 +14,16 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Tests the UNICAST protocol for OOB msgs, tests http://jira.jboss.com/jira/browse/JGRP-377
  * @author Bela Ban
- * @version $Id: UNICAST_OOB_Test.java,v 1.8 2008/06/09 13:38:18 belaban Exp $
+ * @version $Id: UNICAST_OOB_Test.java,v 1.9 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UNICAST_OOB_Test extends ChannelTestBase {
     JChannel ch1, ch2;
 
@@ -73,7 +75,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
 
         Util.sleep(5000); // wait until retransmission of seqno #3 happens, so that 4 and 5 are received as well
 
-        List seqnos=receiver.getSeqnos();
+        List<Long> seqnos=receiver.getSeqnos();
         System.out.println("sequence numbers: " + seqnos);
 
         // expected sequence is: 1 2 4 3 5 ! Reason: 4 is sent OOB,  does *not* wait until 3 has been retransmitted !!
@@ -82,7 +84,7 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
                 new Long[]{new Long(1), new Long(2), new Long(3), new Long(4), new Long(5)};  // regular
         for(int i=0; i < expected_seqnos.length; i++) {
             Long expected_seqno=expected_seqnos[i];
-            Long received_seqno=(Long)seqnos.get(i);
+            Long received_seqno=seqnos.get(i);
             assert expected_seqno.equals(received_seqno);
         }
     }
@@ -92,12 +94,12 @@ public class UNICAST_OOB_Test extends ChannelTestBase {
 
     public static class MyReceiver extends ReceiverAdapter {
         /** List<Long> of unicast sequence numbers */
-        List seqnos=new LinkedList();
+        List<Long> seqnos=Collections.synchronizedList(new LinkedList<Long>());
 
         public MyReceiver() {
         }
 
-        public List getSeqnos() {
+        public List<Long> getSeqnos() {
             return seqnos;
         }
 

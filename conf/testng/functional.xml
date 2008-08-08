@@ -5,8 +5,10 @@
 
     <test name="functional" junit="false">
         <groups>
-            <run>
-                <include name="functional"/>
+            <run>            	
+                <include name="functional"/>                
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>
