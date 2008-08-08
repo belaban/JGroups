@@ -20,9 +20,9 @@ import java.util.concurrent.TimeUnit;
 /**
  * Tests concurrent leaves of all members of a channel
  * @author Bela Ban
- * @version $Id: DisconnectStressTest.java,v 1.17 2008/06/26 20:20:15 vlada Exp $
+ * @version $Id: DisconnectStressTest.java,v 1.18 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="vlad")
+@Test(groups="broken")
 public class DisconnectStressTest extends ChannelTestBase {
     CyclicBarrier           all_disconnected=null;
     CyclicBarrier           start_disconnecting=null;

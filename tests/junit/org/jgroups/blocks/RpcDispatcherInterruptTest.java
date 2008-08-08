@@ -1,6 +1,8 @@
 package org.jgroups.blocks;
 
 
+import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.stack.ProtocolStack;
@@ -18,9 +20,9 @@ import java.util.Map;
 /**
  * Tests interruption of a blocked call with the timeout and a thread pool
  * @author Bela Ban
- * @version $Id: RpcDispatcherInterruptTest.java,v 1.9 2008/06/09 11:48:18 belaban Exp $
+ * @version $Id: RpcDispatcherInterruptTest.java,v 1.10 2008/08/08 17:07:30 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherInterruptTest extends ChannelTestBase {
     private RpcDispatcher disp, disp2;
     private JChannel ch, ch2;
@@ -93,11 +95,10 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
     }
 
     private static void checkResults(RspList rsps, int num, boolean received) {
-        assertEquals("responses: " + rsps, num, rsps.size());
-        Map.Entry entry;
-        for(Iterator it=rsps.entrySet().iterator(); it.hasNext();) {
-            entry=(Map.Entry)it.next();
-            Rsp rsp=(Rsp)entry.getValue();
+        assertEquals("responses: " + rsps, num, rsps.size());        
+        for(Iterator<Map.Entry<Address,Rsp>> it=rsps.entrySet().iterator(); it.hasNext();) {
+            Map.Entry<Address,Rsp> entry=it.next();
+            Rsp rsp=entry.getValue();
             assertEquals("rsp: " + rsp, rsp.wasReceived(), received);
         }
     }
@@ -109,7 +110,4 @@ public class RpcDispatcherInterruptTest extends ChannelTestBase {
             Util.sleep(timeout);
         }
     }
-
-
-  
 }

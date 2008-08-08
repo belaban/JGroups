@@ -24,9 +24,9 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.14 2008/06/04 06:41:11 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.15 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups=Global.STACK_INDEPENDENT,sequential=true)
+@Test(groups={Global.STACK_INDEPENDENT,"broken"},sequential=true)
 public class EncryptMessageOrderTestCase {
 
     public static int MESSAGE_NUMBER=5 * 100;
@@ -145,7 +145,7 @@ public class EncryptMessageOrderTestCase {
                         Long travelTime=new Long(System.currentTimeMillis() - ((Long)message).longValue());
 
                         try {
-                            Assert.assertEquals(counter, ((EncryptOrderTestHeader)((Message)jgMessage).getHeader("EncryptOrderTest")).seqno);
+                            Assert.assertEquals(counter, ((EncryptOrderTestHeader)jgMessage.getHeader("EncryptOrderTest")).seqno);
                         	counter++;
                         } catch (Exception e){
                         	e.printStackTrace();
@@ -226,9 +226,9 @@ public class EncryptMessageOrderTestCase {
             long maxDeliveryTime=Long.MIN_VALUE;
             long minDeliveryTime=Long.MAX_VALUE;
 
-            Iterator iterator=receivedTimes.iterator();
+            Iterator<Long> iterator=receivedTimes.iterator();
             while(iterator.hasNext()) {
-                Long message=(Long)iterator.next();
+                Long message=iterator.next();
 
                 if(avgDeliveryTime == -1.0)
                     avgDeliveryTime=message.longValue();

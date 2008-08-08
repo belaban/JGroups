@@ -2,6 +2,7 @@ package org.jgroups.blocks;
 
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.View;
 import org.jgroups.protocols.FRAG;
@@ -39,9 +40,9 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.21 2008/06/11 13:13:30 belaban Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.22 2008/08/08 17:07:30 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
     RpcDispatcher disp1, disp2, disp3;
     JChannel c1, c2, c3;

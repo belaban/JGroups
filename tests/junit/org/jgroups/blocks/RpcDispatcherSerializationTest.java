@@ -1,6 +1,8 @@
 package org.jgroups.blocks;
 
+import org.jgroups.Address;
 import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.Rsp;
@@ -14,7 +16,7 @@ import java.io.*;
 import java.util.Iterator;
 import java.util.Vector;
 
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherSerializationTest extends ChannelTestBase {
     private JChannel channel, channel2;
     private RpcDispatcher disp, disp2;
@@ -61,7 +63,7 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
     }
 
     public void testTargetMethodNotFound() {
-        Vector members=channel.getView().getMembers();
+        Vector<Address> members=channel.getView().getMembers();
         System.out.println("members are: " + members);
         RspList rsps=disp.callRemoteMethods(members, "foo", null, new Class[]{String.class, String.class},
                                             GroupRequest.GET_ALL, 8000);
@@ -85,8 +87,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
                                     new Class[]{boolean.class, long.class},
                                     GroupRequest.GET_ALL, 0);
         assert rsps.size() == 2;
-        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
-            Rsp rsp=(Rsp)it.next();
+        for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=it.next();
             assert rsp.getValue() == null;
             assertTrue(rsp.wasReceived());
             assertFalse(rsp.wasSuspected());
@@ -94,8 +96,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
         rsps=disp.callRemoteMethods(null, "methodB", null, (Class[])null, GroupRequest.GET_ALL, 0);
         assertEquals(2, rsps.size());
-        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
-            Rsp rsp=(Rsp)it.next();
+        for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=it.next();
             assertNotNull(rsp.getValue());
             assertEquals(Boolean.TRUE, rsp.getValue());
             assertTrue(rsp.wasReceived());
@@ -105,8 +107,8 @@ public class RpcDispatcherSerializationTest extends ChannelTestBase {
 
         rsps=disp.callRemoteMethods(null, "methodC", null, (Class[])null, GroupRequest.GET_ALL, 0);
         assertEquals(2, rsps.size());
-        for(Iterator it=rsps.values().iterator(); it.hasNext();) {
-            Rsp rsp=(Rsp)it.next();
+        for(Iterator<Rsp> it=rsps.values().iterator(); it.hasNext();) {
+            Rsp rsp=it.next();
             assertNotNull(rsp.getValue());
             assertTrue(rsp.getValue() instanceof Throwable);
             assertTrue(rsp.wasReceived());

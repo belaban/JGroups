@@ -18,9 +18,9 @@ import java.util.List;
 
 /**
  * @author Bela Ban
- * @version $Id: JoinTest.java,v 1.26 2008/06/09 11:54:59 belaban Exp $
+ * @version $Id: JoinTest.java,v 1.27 2008/08/08 17:07:11 vlada Exp $
  */
-@Test(groups="temp",sequential=true)
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class JoinTest extends ChannelTestBase {
     JChannel c1, c2;
 
@@ -89,7 +89,7 @@ public class JoinTest extends ChannelTestBase {
         c2.send(m2);
 
         Util.sleep(1500);
-        List c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
+        List<String>c1_list=r1.getMsgs(), c2_list=r2.getMsgs();
         System.out.println("c1: " + c1_list.size() + " msgs, c2: " + c2_list.size() + " msgs");
         assert c1_list.size() == 2 : "cl_list: " + c1_list;
         assert c2_list.size() == 2 : "c2_list: " + c2_list;
@@ -187,7 +187,7 @@ public class JoinTest extends ChannelTestBase {
             msgs = Collections.synchronizedList(new ArrayList<String>());
         }
 
-        public List getMsgs() {
+        public List<String> getMsgs() {
             return msgs;
         }
 

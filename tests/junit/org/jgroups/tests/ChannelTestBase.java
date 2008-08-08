@@ -32,7 +32,7 @@ import java.util.regex.Pattern;
  * @author <a href="mailto://brian.stansberry@jboss.com">Brian Stansberry</a>
  * @version $Id$
  */
-@Test(groups=Global.STACK_DEPENDENT, sequential=true)
+@Test(groups="base", sequential=true)
 public class ChannelTestBase {
 
     protected String channel_conf="udp.xml";

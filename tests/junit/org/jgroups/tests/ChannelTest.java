@@ -15,9 +15,9 @@ import java.util.List;
 /**
  * Tests various methods in JChannel
  * @author Bela Ban
- * @version $Id: ChannelTest.java,v 1.21 2008/05/29 11:38:51 belaban Exp $
+ * @version $Id: ChannelTest.java,v 1.22 2008/08/08 17:07:12 vlada Exp $
  */
-@Test(groups="temp",sequential=false)
+@Test(groups=Global.STACK_DEPENDENT,sequential=false)
 public class ChannelTest extends ChannelTestBase {
     private final ThreadLocal<JChannel> ch=new ThreadLocal<JChannel>();
     private final ThreadLocal<String>  GROUP=new ThreadLocal<String>();

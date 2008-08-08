@@ -8,10 +8,11 @@
         <parameter name="channel.conf" value="udp.xml"/>
         <groups>
             <run>
+            	<include name="base"/>       
             	<include name="stack-dependent"/>
-                <include name="temp"/>
-                <exclude name="flush"/>
-                <exclude name="vlad"/>
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
+                <exclude name="flush"/>               
             </run>
         </groups>
         <packages>

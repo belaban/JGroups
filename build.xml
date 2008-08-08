@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.173 2008/07/17 18:05:57 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.174 2008/08/08 17:07:50 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -380,43 +380,7 @@
                  testng.xmlfile="stack-independent.xml"
                 />
     </target>
-
-    <target name="temp" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <runtest testname.ext="udp"
-                 threadcount="10"
-                 parallel="methods"
-                 initial.mcast.addr="235.1.1.1"
-                 initial.mcast.port="25001"
-                 initial.tcp.port="25001"
-                 testng.xmlfile="testng-temp.xml"
-                />
-    </target>
-
-    <target name="temp2" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <runtest testname.ext="udp"
-                 threadcount="10"
-                 parallel="methods"
-                 initial.mcast.addr="235.1.1.1"
-                 initial.mcast.port="25001"
-                 initial.tcp.port="25001"
-                 testng.xmlfile="testng-temp2.xml"
-                />
-    </target>
-
-    <target name="protocols" depends="postcompile">
-        <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
-        <runtest testname.ext="udp"
-                 threadcount="10"
-                 parallel="methods"
-                 initial.mcast.addr="235.1.1.1"
-                 initial.mcast.port="25001"
-                 initial.tcp.port="25001"
-                 testng.xmlfile="testng-protocols.xml"
-                />
-    </target>
-
+	
     <target name="single" depends="postcompile">
         <mkdir dir="${tmp.dir}/test-results/xml/udp"/>
         <runtest testname.ext="udp"

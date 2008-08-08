@@ -1,7 +1,6 @@
 package org.jgroups.blocks;
 
-
-import org.jgroups.Channel;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.util.Util;
 import org.jgroups.tests.ChannelTestBase;
@@ -10,7 +9,7 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 
-@Test(groups="temp")
+@Test(groups=Global.STACK_DEPENDENT)
 public class VotingAdapterTest extends ChannelTestBase {
     private JChannel channel1;
     private JChannel channel2;

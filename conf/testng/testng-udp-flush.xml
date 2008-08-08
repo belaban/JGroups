@@ -9,12 +9,12 @@
 	<parameter name="use_blocking" value="true"/>
     <test name="udp-flush" junit="false">        
         <groups>
-            <run>
-                <include name="stack-dependent"/>
+            <run>                              
+            	<include name="base"/>                
                 <include name="flush"/>
-                <exclude name="temp"/>
-                <exclude name="temp2"/>
-                <exclude name="vlad"/>
+                <exclude name="stack-dependent"/>               
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>

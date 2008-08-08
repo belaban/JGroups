@@ -5,9 +5,10 @@
 
     <test name="stack-independent" junit="false">
         <groups>
-            <run>
-                <include name="stack-independent"/>
-                <exclude name="vlad"/>
+            <run>            	
+                <include name="stack-independent"/>                
+                <exclude name="broken"/>
+                <exclude name="known-failures"/>
             </run>
         </groups>
         <packages>

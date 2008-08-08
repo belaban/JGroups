@@ -8,14 +8,16 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 
 /**
  * Tests sending of unicasts to members not in the group (http://jira.jboss.com/jira/browse/JGRP-357)
  * @author Bela Ban
- * @version $Id: UnicastEnableToTest.java,v 1.8 2008/06/09 14:24:12 belaban Exp $
- */@Test(groups="temp",sequential=true)
+ * @version $Id: UnicastEnableToTest.java,v 1.9 2008/08/08 17:07:11 vlada Exp $
+ */
+@Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class UnicastEnableToTest extends ChannelTestBase {
     private JChannel c1=null, c2=null;
     private static final String GROUP="UnicastEnableToTest";
@@ -54,7 +56,7 @@ public class UnicastEnableToTest extends ChannelTestBase {
         Address dest=c2.getLocalAddress();
         c1.send(new Message(dest, null, "hello"));
         Util.sleep(500);
-        List list=receiver.getMsgs();
+        List<Message> list=receiver.getMsgs();
         System.out.println("channel2 received the following msgs: " + list);
         Assert.assertEquals(1, list.size());
         receiver.reset();
@@ -91,18 +93,18 @@ public class UnicastEnableToTest extends ChannelTestBase {
 
 
     private static class MyReceiver extends ExtendedReceiverAdapter {
-        List<Message> msgs=new LinkedList<Message>();
+        List<Message> msgs=Collections.synchronizedList(new LinkedList<Message>());
 
         public void receive(Message msg) {
             msgs.add(msg);
         }
 
-        List getMsgs() {
+        List<Message> getMsgs() {
             return msgs;
         }
 
-        void reset() {msgs.clear();}
+        void reset() {
+            msgs.clear();
+        }
     }
-
-
 }

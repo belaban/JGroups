@@ -1,6 +1,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.Address;
+import org.jgroups.Global;
 import org.jgroups.JChannel;
 import org.jgroups.tests.ChannelTestBase;
 import org.jgroups.util.RspList;
@@ -13,9 +14,9 @@ import java.util.Vector;
 
 /**
  * @author Bela Ban
- * @version $Id: RpcDispatcherAnycastTest.java,v 1.9 2008/05/29 11:13:14 belaban Exp $
+ * @version $Id: RpcDispatcherAnycastTest.java,v 1.10 2008/08/08 17:07:29 vlada Exp $
  */
-@Test(groups="temp")
+@Test(groups=Global.STACK_DEPENDENT)
 public class RpcDispatcherAnycastTest extends ChannelTestBase {
     RpcDispatcher disp, disp2, disp3;
     JChannel ch, ch2, ch3;
@@ -54,7 +55,7 @@ public class RpcDispatcherAnycastTest extends ChannelTestBase {
 
 
     public void testUnserializableValue() {
-        Vector members=ch.getView().getMembers();
+        Vector<Address> members=ch.getView().getMembers();
         System.out.println("members: " + members);
         assert members.size() > 1: "we should have more than 1 member";
 
