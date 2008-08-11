@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.98 2008/08/07 15:28:55 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.99 2008/08/11 16:09:45 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -164,11 +164,9 @@ public class FD_SOCK extends Protocol implements Runnable {
         super.start();       
     }
 
-    public void stop() {       
-        bcast_task.removeAll();
-        synchronized(this) {
-            stopPingerThread();
-        }
+    public void stop() {          
+        bcast_task.removeAll();        
+        stopPingerThread();        
         stopServerSocket(true); // graceful close
     }
 
@@ -467,7 +465,7 @@ public class FD_SOCK extends Protocol implements Runnable {
     /**
      * Does *not* need to be synchronized on pinger_mutex because the caller (down()) already has the mutex acquired
      */
-    void startPingerThread() {        
+    private synchronized void startPingerThread() {        
         if(!isPingerThreadRunning()) {
             ThreadFactory factory=getThreadFactory();
             pinger_thread=factory.newThread(this, "FD_SOCK pinger");            
@@ -477,23 +475,23 @@ public class FD_SOCK extends Protocol implements Runnable {
     }
 
 
-    void stopPingerThread() {        
-        if(isPingerThreadRunning()) {                 
-            regular_sock_close=true;            
-            sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
-            teardownPingSocket();
-            
+    private synchronized void stopPingerThread() {
+        regular_sock_close=true;
+        sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
+        teardownPingSocket();
+
+        if(pinger_thread != null) {
             try {
                 pinger_thread.interrupt();
                 pinger_thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
             }
             catch(InterruptedException ignored) {
                 Thread.currentThread().interrupt();
-            }    
-            pinger_thread=null;           
-            ping_addr_promise.setResult(null);
-            get_cache_promise.setResult(null);
+            }
         }
+        pinger_thread=null;
+        ping_addr_promise.setResult(null);
+        get_cache_promise.setResult(null);
     }
 
     // PATCH: send something so the connection handler can exit
