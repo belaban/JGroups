@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.198 2008/07/31 20:26:32 vlada Exp $
+ * @version $Id: JChannel.java,v 1.199 2008/08/11 15:13:42 vlada Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -1740,10 +1740,10 @@ public class JChannel extends Channel {
         init(); // sets local_addr=null; changed March 18 2003 (bela) -- prevented successful rejoining
     }
 
-    protected void stopStack(boolean disconnect, boolean destroy) {
+    protected void stopStack(boolean stop, boolean destroy) {
         if(prot_stack != null) {
             try {
-                if(disconnect)
+                if(stop)
                     prot_stack.stopStack(cluster_name);
 
                 if(destroy)
