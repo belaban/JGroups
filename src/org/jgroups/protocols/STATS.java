@@ -5,13 +5,14 @@ import org.jgroups.Event;
 import org.jgroups.Message;
 import org.jgroups.Address;
 import org.jgroups.View;
+import org.jgroups.annotations.ManagedAttribute;
 
 import java.util.*;
 
 /**
  * Provides various stats
  * @author Bela Ban
- * @version $Id: STATS.java,v 1.9 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: STATS.java,v 1.10 2008/08/12 08:43:56 belaban Exp $
  */
 public class STATS extends Protocol {
     long sent_msgs, sent_bytes, sent_ucasts, sent_mcasts, received_ucasts, received_mcasts;
@@ -38,19 +39,30 @@ public class STATS extends Protocol {
         received.clear();
     }
 
-
+    @ManagedAttribute
     public long getSentMessages() {return sent_msgs;}
+    @ManagedAttribute
     public long getSentBytes() {return sent_bytes;}
+    @ManagedAttribute
     public long getSentUnicastMessages() {return sent_ucasts;}
+    @ManagedAttribute
     public long getSentUnicastBytes() {return sent_ucast_bytes;}
+    @ManagedAttribute
     public long getSentMcastMessages() {return sent_mcasts;}
+    @ManagedAttribute
     public long getSentMcastBytes() {return sent_mcast_bytes;}
 
+    @ManagedAttribute
     public long getReceivedMessages() {return received_msgs;}
+    @ManagedAttribute
     public long getReceivedBytes() {return received_bytes;}
+    @ManagedAttribute
     public long getReceivedUnicastMessages() {return received_ucasts;}
+    @ManagedAttribute
     public long getReceivedUnicastBytes() {return received_ucast_bytes;}
+    @ManagedAttribute
     public long getReceivedMcastMessages() {return received_mcasts;}
+    @ManagedAttribute
     public long getReceivedMcastBytes() {return received_mcast_bytes;}
 
 
