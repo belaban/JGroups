@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.156 2008/07/22 08:04:34 belaban Exp $
+ * @version $Id: Util.java,v 1.157 2008/08/14 09:29:30 belaban Exp $
  */
 public class Util {
 
@@ -1025,7 +1025,7 @@ public class Util {
             StackTraceElement[] stack_trace=info.getStackTrace();
             for(int j=0; j < stack_trace.length; j++) {
                 StackTraceElement el=stack_trace[j];
-                sb.append("at ").append(el.getClassName()).append(".").append(el.getMethodName());
+                sb.append("    at ").append(el.getClassName()).append(".").append(el.getMethodName());
                 sb.append("(").append(el.getFileName()).append(":").append(el.getLineNumber()).append(")");
                 sb.append("\n");
             }
