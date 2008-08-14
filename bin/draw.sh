@@ -47,5 +47,5 @@ if [ "$cygwin" = "true" ]; then
 fi
 
 
-java -classpath $CLASSPATH $JAVA_OPTS org.jgroups.demos.Draw -props $PROPS
+java -classpath $CLASSPATH $JAVA_OPTS org.jgroups.demos.Draw -props $PROPS $*
 
