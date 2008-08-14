@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.181 2008/08/07 15:28:09 vlada Exp $
+ * @version $Id: UDP.java,v 1.182 2008/08/14 15:47:59 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP {
@@ -720,22 +720,22 @@ public class UDP extends TP {
 
 
     public class PacketReceiver implements Runnable {
-        private Thread thread;
+        private       Thread         thread=null;
         private final DatagramSocket receiver_socket;
-        private final Address dest;
-        private final String name;
-        private final Runnable close_strategy;
+        private final Address        dest;
+        private final String         name;
+        private final Runnable       close_strategy;
 
-        public PacketReceiver(DatagramSocket socket,Address dest,String name,Runnable close_strategy) {
+        public PacketReceiver(DatagramSocket socket, Address dest, String name, Runnable close_strategy) {
             this.receiver_socket=socket;
             this.dest=dest;
             this.name=name;
             this.close_strategy=close_strategy;
-        }      
+        }
 
         public synchronized void start() {
             if(thread == null || !thread.isAlive()) {
-                thread=getThreadFactory().newThread(this, name);               
+                thread=getThreadFactory().newThread(this, name);
                 thread.start();
                 if(log.isDebugEnabled())
                     log.debug("created " + name + " thread ");
@@ -752,34 +752,34 @@ public class UDP extends TP {
                 Util.close(receiver_socket); // second line of defense
             }
 
-            //loop in run has been broken now due to closed socket
-            //lets wait for the thread to die 
-            if(thread != null && thread.isAlive()) {                
+            if(thread != null && thread.isAlive()) {
+                Thread tmp=thread;
+                thread=null;
+                tmp.interrupt();
                 try {
-                    thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
+                    tmp.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
                 }
-                catch(InterruptedException ignored) {                   
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt(); // set interrupt flag again
                 }
             }
             thread=null;
         }
 
+
         public void run() {
-            final byte receive_buf[]=new byte[65535];
+            final byte           receive_buf[]=new byte[65535];
             final DatagramPacket packet=new DatagramPacket(receive_buf, receive_buf.length);
 
-            while(true) {
+            while(thread != null && Thread.currentThread().equals(thread)) {
                 try {
                     receiver_socket.receive(packet);
                     int len=packet.getLength();
                     if(len > receive_buf.length) {
                         if(log.isErrorEnabled())
-                            log.error("size of the received packet (" + len
-                                      + ") is bigger than allocated buffer ("
-                                      + receive_buf.length
-                                      + "): will not be able to handle packet. "
-                                      + "Use the FRAG2 protocol and make its frag_size lower than "
-                                      + receive_buf.length);
+                            log.error("size of the received packet (" + len + ") is bigger than allocated buffer (" +
+                                      receive_buf.length + "): will not be able to handle packet. " +
+                                      "Use the FRAG2 protocol and make its frag_size lower than " + receive_buf.length);
                     }
 
                     receive(dest,
@@ -787,24 +787,21 @@ public class UDP extends TP {
                             receive_buf,
                             packet.getOffset(),
                             len);
-                }               
+                }
                 catch(SocketException sock_ex) {
-                    if(log.isDebugEnabled())
-                        log.debug("unicast receiver socket is closed, exception=" + sock_ex);
+                    if(log.isDebugEnabled()) log.debug("unicast receiver socket is closed, exception=" + sock_ex);
                     break;
-                }                
+                }
                 catch(Throwable ex) {
                     if(log.isErrorEnabled())
                         log.error("[" + local_addr + "] failed receiving unicast packet", ex);
                 }
             }
-            if(log.isDebugEnabled())
-                log.debug(name + " thread terminated");
+            if(log.isDebugEnabled()) log.debug(name + " thread terminated");
         }
 
         public String toString() {
-            return receiver_socket != null? receiver_socket.getLocalSocketAddress().toString()
-                                          : "null";
+            return receiver_socket != null? receiver_socket.getLocalSocketAddress().toString() : "null";
         }
     }
 }
