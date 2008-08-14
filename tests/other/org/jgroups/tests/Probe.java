@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.14 $
+ * @version $Revision: 1.15 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -169,6 +169,6 @@ public class Probe {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
                 "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-query <query>] [-weed_out_duplicates]" +
                 "[-match <pattern>]" +
-                " (query can be jmx or props)");
+                " (query can be 'jmx', 'props' or 'dump' (for stack traces))");
     }
 }
