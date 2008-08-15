@@ -30,7 +30,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.83.2.3 2008/07/04 13:35:34 vlada Exp $
+ * @version $Id: FD_SOCK.java,v 1.83.2.4 2008/08/15 18:31:04 rachmatowicz Exp $
  */
 public class FD_SOCK extends Protocol implements Runnable {
     long                        get_cache_timeout=1000;            // msecs to wait for the socket cache from the coordinator
@@ -812,6 +812,12 @@ public class FD_SOCK extends Protocol implements Runnable {
             this.type=type;
             this.mbr=mbr;
         }
+        
+        public FdHeader(byte type, Address mbr, IpAddress sock_addr) {
+            this.type=type;
+            this.mbr=mbr;
+            this.sock_addr = sock_addr ;
+        }
 
         public FdHeader(byte type, Set<Address> mbrs) {
             this.type=type;
@@ -876,7 +882,14 @@ public class FD_SOCK extends Protocol implements Runnable {
         public int size() {
             int retval=Global.BYTE_SIZE; // type
             retval+=Util.size(mbr);
-            retval+=Util.size(sock_addr);
+            
+            // use of Util.size(Address) with IpAddress overestimates size by one byte. 
+            // replace: retval+=Util.size(sock_addr); with the following:
+            int ipaddr_size = 0 ;
+            ipaddr_size += Global.BYTE_SIZE ; 		// presence byte
+            if (sock_addr != null)
+            	ipaddr_size += sock_addr.size();	// IpAddress size
+            retval += ipaddr_size ;
 
             retval+=Global.INT_SIZE; // cachedAddrs size
             Address key;

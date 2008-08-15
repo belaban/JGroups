@@ -1,4 +1,4 @@
-// $Id: SizeTest.java,v 1.3 2007/10/01 07:09:18 belaban Exp $$
+// $Id: SizeTest.java,v 1.3.2.1 2008/08/15 18:31:05 rachmatowicz Exp $$
 
 package org.jgroups.tests;
 
@@ -11,10 +11,7 @@ import org.jgroups.mux.MuxHeader;
 import org.jgroups.blocks.RequestCorrelator;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.*;
-import org.jgroups.protocols.FD;
 import org.jgroups.protocols.pbcast.*;
-import org.jgroups.protocols.pbcast.NakAckHeader;
-import org.jgroups.protocols.pbcast.STABLE;
 import org.jgroups.util.Digest;
 import org.jgroups.protocols.pbcast.GMS;
 import org.jgroups.protocols.pbcast.STATE_TRANSFER;
@@ -128,6 +125,11 @@ public class SizeTest extends TestCase {
         map.put(new IpAddress(7000), new IpAddress(4553));
          hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, map);
         _testSize(hdr);
+        
+        // check that IpAddress is correctly sized in FD_SOCK.FdHeader
+        hdr = new FD_SOCK.FdHeader(FD_SOCK.FdHeader.I_HAVE_SOCK, new IpAddress("127.0.0.1", 4567), 
+				   new IpAddress("127.0.0.1", 4567));
+        _testSize(hdr) ;
     }
 
 
