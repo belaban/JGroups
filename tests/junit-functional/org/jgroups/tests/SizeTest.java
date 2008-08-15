@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.9 2008/04/08 12:51:17 belaban Exp $
+ * @version $Id: SizeTest.java,v 1.10 2008/08/15 18:19:31 rachmatowicz Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -111,6 +111,11 @@ public class SizeTest {
         map.put(new IpAddress(7000), new IpAddress(4553));
          hdr=new FD_SOCK.FdHeader(FD_SOCK.FdHeader.GET_CACHE, map);
         _testSize(hdr);
+        
+        // check that IpAddress is correctly sized in FD_SOCK.FdHeader
+        hdr = new FD_SOCK.FdHeader(FD_SOCK.FdHeader.I_HAVE_SOCK, new IpAddress("127.0.0.1", 4567), 
+				   new IpAddress("127.0.0.1", 4567));
+        _testSize(hdr) ;
     }
 
 
