@@ -14,7 +14,7 @@ import org.testng.annotations.Test;
 
 /**
  * @author Bela Ban
- * @version $Id: MessageTest.java,v 1.10 2008/04/24 07:13:34 belaban Exp $
+ * @version $Id: MessageTest.java,v 1.11 2008/08/18 10:58:56 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class MessageTest {
@@ -42,6 +42,57 @@ public class MessageTest {
         Assert.assertNotSame((m1.getFlags() & Message.LOW_PRIO), Message.LOW_PRIO);
     }
 
+    public static void testFlags3() {
+        Message msg=new Message();
+        assert msg.isFlagSet(Message.OOB) == false;
+        msg.setFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB);
+        msg.setFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB);
+    }
+
+
+    public static void testClearFlags() {
+        Message msg=new Message();
+        msg.setFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB);
+        msg.clearFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB) == false;
+        msg.clearFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB) == false;
+        msg.setFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB);
+    }
+
+
+    public static void testClearFlags2() {
+        Message msg=new Message();
+        msg.setFlag(Message.OOB);
+        msg.setFlag(Message.HIGH_PRIO);
+        assert msg.isFlagSet(Message.LOW_PRIO) == false;
+        assert msg.isFlagSet(Message.OOB);
+        assert msg.isFlagSet(Message.HIGH_PRIO);
+
+        msg.clearFlag(Message.OOB);
+        assert msg.isFlagSet(Message.OOB) == false;
+        msg.setFlag(Message.LOW_PRIO);
+        assert msg.isFlagSet(Message.LOW_PRIO);
+        assert msg.isFlagSet(Message.HIGH_PRIO);
+        msg.clearFlag(Message.HIGH_PRIO);
+        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
+        msg.clearFlag(Message.HIGH_PRIO);
+        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
+        msg.clearFlag(Message.LOW_PRIO);
+        msg.clearFlag(Message.OOB);
+        assert msg.getFlags() == 0;
+        assert msg.isFlagSet(Message.OOB) == false;
+        assert msg.isFlagSet(Message.LOW_PRIO) == false;
+        assert msg.isFlagSet(Message.HIGH_PRIO) == false;
+        msg.setFlag(Message.LOW_PRIO);
+        assert msg.isFlagSet(Message.LOW_PRIO);
+        msg.setFlag(Message.LOW_PRIO);
+        assert msg.isFlagSet(Message.LOW_PRIO);
+    }
 
 
     public static void testBufferSize() throws Exception {
