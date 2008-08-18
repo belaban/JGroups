@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.89 2008/07/30 11:52:59 belaban Exp $
+ * @version $Id: Message.java,v 1.90 2008/08/18 10:58:55 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -309,13 +309,16 @@ public class Message implements Streamable {
     public void setFlag(byte flag) {
         if(flag > Byte.MAX_VALUE || flag < 0)
             throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        flags += flag;
+        flags |= flag;
     }
 
     public void clearFlag(byte flag) {
         if(flag > Byte.MAX_VALUE || flag < 0)
             throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        flags -= flag;
+//        if(isFlagSet(flag)) {
+//            flags ^= flag;
+//        }
+        flags &= ~flag;
     }
 
     public boolean isFlagSet(byte flag) {
