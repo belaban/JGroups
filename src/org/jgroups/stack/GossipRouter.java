@@ -39,7 +39,7 @@ import java.util.concurrent.ConcurrentMap;
  * additional administrative effort on the part of the user.<p>
  * @author Bela Ban
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
- * @version $Id: GossipRouter.java,v 1.30 2008/03/28 07:53:55 belaban Exp $
+ * @version $Id: GossipRouter.java,v 1.31 2008/08/18 16:22:49 vlada Exp $
  * @since 2.1.1
  */
 public class GossipRouter {
@@ -436,21 +436,31 @@ public class GossipRouter {
                         break;
 
                     case GossipRouter.CONNECT:
-                        output=new DataOutputStream(sock.getOutputStream());
-                        peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
-                        logical_addr=req.getAddress();
-                        String group_name=req.getGroup();
+                        try {
+                            output=new DataOutputStream(sock.getOutputStream());
+                            peer_addr=new IpAddress(sock.getInetAddress(), sock.getPort());
+                            logical_addr=req.getAddress();
+                            String group_name=req.getGroup();
 
-                        if(log.isTraceEnabled())
-                            log.trace("CONNECT(" + group_name + ", " + logical_addr + ")");
-                        SocketThread st=new SocketThread(sock, input, group_name, logical_addr);
-                        addEntry(group_name, logical_addr, new AddressEntry(logical_addr, peer_addr, sock, st, output));
-                        st.start();
+                            if(log.isTraceEnabled())
+                                log.trace("CONNECT(" + group_name + ", " + logical_addr + ")");
+                            SocketThread st=new SocketThread(sock, input, group_name, logical_addr);
+                            addEntry(group_name, logical_addr, new AddressEntry(logical_addr,
+                                                                                peer_addr,
+                                                                                sock,
+                                                                                st,
+                                                                                output));
+                            st.start();
+                            //in thread's run method we write back an ack 
+                        }
+                        catch(Exception e) {
+                            output.writeBoolean(false);
+                        }
                         break;
 
                     case GossipRouter.DISCONNECT:
                         Address addr=req.getAddress();
-                        group_name=req.getGroup();
+                        String group_name=req.getGroup();
                         removeEntry(group_name, addr);
                         if(log.isTraceEnabled())
                             log.trace("DISCONNECT(" + group_name + ", " + addr + ")");
@@ -829,7 +839,19 @@ public class GossipRouter {
             int len;
             Address dst_addr=null;
             String gname;
-
+            
+            DataOutputStream output = null;
+            try {
+                output=new DataOutputStream(sock.getOutputStream());
+                output.writeBoolean(true);
+            }
+            catch(IOException e1) {
+                try {
+                    output.writeBoolean(false);
+                }
+                catch(IOException e) {}
+            }
+            
             while(active) {
                 try {
                     // 1. Group name is first
