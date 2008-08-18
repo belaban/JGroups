@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.76.2.7 2008/07/30 12:27:55 belaban Exp $
+ * @version $Id: Message.java,v 1.76.2.8 2008/08/18 11:14:34 belaban Exp $
  */
 public class Message implements Externalizable, Streamable {
     protected Address dest_addr=null;
@@ -310,13 +310,16 @@ public class Message implements Externalizable, Streamable {
     public void setFlag(byte flag) {
         if(flag > Byte.MAX_VALUE || flag < 0)
             throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        flags += flag;
+        flags |= flag;
     }
 
     public void clearFlag(byte flag) {
         if(flag > Byte.MAX_VALUE || flag < 0)
             throw new IllegalArgumentException("flag has to be >= 0 and <= " + Byte.MAX_VALUE);
-        flags -= flag;
+//        if(isFlagSet(flag)) {
+//            flags ^= flag;
+//        }
+        flags &= ~flag;
     }
 
     public boolean isFlagSet(byte flag) {
@@ -524,9 +527,11 @@ public class Message implements Externalizable, Streamable {
         final Object[] data=headers.getRawData();
 
         for(int i=0; i < data.length; i+=2) {
-            out.writeUTF((String)data[i]);
-            hdr=(Externalizable)data[i+1];
-            Marshaller.write(hdr, out);
+            if(data[i] != null) {
+                out.writeUTF((String)data[i]);
+                hdr=(Externalizable)data[i+1];
+                Marshaller.write(hdr, out);
+            }
         }
     }
 
