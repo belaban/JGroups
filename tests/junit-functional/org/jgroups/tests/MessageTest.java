@@ -1,4 +1,4 @@
-// $Id: MessageTest.java,v 1.1 2007/07/04 07:29:33 belaban Exp $
+// $Id: MessageTest.java,v 1.1.4.1 2008/08/18 11:14:35 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -47,14 +47,66 @@ public class MessageTest extends TestCase {
         m1=new Message();
         m1.setFlag(Message.OOB);
         assertTrue(m1.isFlagSet(Message.OOB));
-        assertEquals((m1.getFlags() & Message.OOB), Message.OOB);
+        assertEquals(Message.OOB, (m1.getFlags() & Message.OOB));
         assertFalse(m1.isFlagSet(Message.LOW_PRIO));
-        assertFalse((m1.getFlags() & Message.LOW_PRIO) == Message.LOW_PRIO);
+        assertNotSame((m1.getFlags() & Message.LOW_PRIO), Message.LOW_PRIO);
+    }
+
+    public static void testFlags3() {
+        Message msg=new Message();
+        assertFalse(msg.isFlagSet(Message.OOB));
+        msg.setFlag(Message.OOB);
+        assertTrue(msg.isFlagSet(Message.OOB));
+        msg.setFlag(Message.OOB);
+        assertTrue(msg.isFlagSet(Message.OOB));
     }
 
 
-    public void testBufferSize() throws Exception {
-        m1=new Message(null, null, "bela");
+    public static void testClearFlags() {
+        Message msg=new Message();
+        msg.setFlag(Message.OOB);
+        assertTrue(msg.isFlagSet(Message.OOB));
+        msg.clearFlag(Message.OOB);
+        assertFalse(msg.isFlagSet(Message.OOB));
+        msg.clearFlag(Message.OOB);
+        assertFalse(msg.isFlagSet(Message.OOB));
+        msg.setFlag(Message.OOB);
+        assertTrue(msg.isFlagSet(Message.OOB));
+    }
+
+
+    public static void testClearFlags2() {
+        Message msg=new Message();
+        msg.setFlag(Message.OOB);
+        msg.setFlag(Message.HIGH_PRIO);
+        assertFalse(msg.isFlagSet(Message.LOW_PRIO));
+        assertTrue(msg.isFlagSet(Message.OOB));
+        assertTrue(msg.isFlagSet(Message.HIGH_PRIO));
+
+        msg.clearFlag(Message.OOB);
+        assertFalse(msg.isFlagSet(Message.OOB));
+        msg.setFlag(Message.LOW_PRIO);
+        assertTrue(msg.isFlagSet(Message.LOW_PRIO));
+        assertTrue(msg.isFlagSet(Message.HIGH_PRIO));
+        msg.clearFlag(Message.HIGH_PRIO);
+        assertFalse(msg.isFlagSet(Message.HIGH_PRIO));
+        msg.clearFlag(Message.HIGH_PRIO);
+        assertFalse(msg.isFlagSet(Message.HIGH_PRIO));
+        msg.clearFlag(Message.LOW_PRIO);
+        msg.clearFlag(Message.OOB);
+        assertEquals(0, msg.getFlags());
+        assertFalse(msg.isFlagSet(Message.OOB));
+        assertFalse(msg.isFlagSet(Message.LOW_PRIO));
+        assertFalse(msg.isFlagSet(Message.HIGH_PRIO));
+        msg.setFlag(Message.LOW_PRIO);
+        assertTrue(msg.isFlagSet(Message.LOW_PRIO));
+        msg.setFlag(Message.LOW_PRIO);
+        assertTrue(msg.isFlagSet(Message.LOW_PRIO));
+    }
+
+
+    public static void testBufferSize() throws Exception {
+        Message m1=new Message(null, null, "bela");
         assertNotNull(m1.getRawBuffer());
         assertNotNull(m1.getBuffer());
         assertEquals(m1.getBuffer().length, m1.getLength());
