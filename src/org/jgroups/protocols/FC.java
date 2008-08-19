@@ -38,7 +38,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * <li>Receivers don't send the full credits (max_credits), but rather tha actual number of bytes received
  * <ol/>
  * @author Bela Ban
- * @version $Id: FC.java,v 1.99 2008/07/21 18:31:47 vlada Exp $
+ * @version $Id: FC.java,v 1.100 2008/08/19 12:13:27 belaban Exp $
  */
 @MBean(description="Simple flow control protocol based on a credit system")
 public class FC extends Protocol {
@@ -67,6 +67,21 @@ public class FC extends Protocol {
     @ManagedAttribute(description="Max time (in milliseconds) to block",writable=true)
     @Property(description="Max time (in milliseconds) to block. Default is 5000 msec")
     private long max_block_time=5000;
+
+    /**
+     * Defines the max number of milliseconds for a message to block before being sent, based on the length of
+     * the message. The property is defined as a comma-separated list of values (separated by ':'), where the key
+     * is the size in bytes and the value is the number of milliseconds to block.
+     * Example: max_block_times="50:1,500:3,1500:5,10000:10,100000:100". This means that messages up to 50 bytes wait
+     * 1 ms max until they get sent, messages up to 500 bytes 3 ms, and so on.
+     * If a message's length (size of the payload in bytes) is for example 15'000 bytes,
+     * FC blocks it for a max of 100 ms.
+     */
+    private Map<Long,Long> max_block_times=null;
+
+    /** Keeps track of the end time after which a message should not get blocked anymore */
+    private static final ThreadLocal<Long> end_time=new ThreadLocal<Long>();
+
 
     /**
      * If credits fall below this limit, we send more credits to the sender. (We also send when
@@ -224,6 +239,59 @@ public class FC extends Protocol {
     public void setMaxBlockTime(long t) {
         max_block_time=t;
     }
+
+    @ManagedAttribute(writable=true)
+    @Property(description="Max times to block for the listed messages sizes (Message.getLength())")
+    public void setMaxBlockTimes(String str) {
+        if(str == null) return;
+        Long prev_key=null, prev_val=null;
+        List<String> vals=Util.parseCommaDelimitedStrings(str);
+        if(max_block_times == null)
+            max_block_times=new TreeMap<Long,Long>();
+        for(String tmp: vals) {
+            int index=tmp.indexOf(':');
+            if(index == -1)
+                throw new IllegalArgumentException("element '" + tmp + "'  is missing a ':' separator");
+            Long key=Long.parseLong(tmp.substring(0, index).trim());
+            Long val=Long.parseLong(tmp.substring(index +1).trim());
+
+            // sanity checks:
+            if(key < 0 || val < 0)
+                throw new IllegalArgumentException("keys and values must be >= 0");
+
+            if(prev_key != null) {
+                if(key <= prev_key)
+                    throw new IllegalArgumentException("keys are not sorted: " + vals);
+            }
+            prev_key=key;
+
+            if(prev_val != null) {
+                if(val <= prev_val)
+                    throw new IllegalArgumentException("values are not sorted: " + vals);
+            }
+            prev_val=val;
+            max_block_times.put(key, val);
+        }
+        if(log.isDebugEnabled())
+            log.debug("max_block_times: " + max_block_times);
+    }
+
+    @ManagedAttribute
+    public String getMaxBlockTimes() {
+        if(max_block_times == null) return "n/a";
+        StringBuilder sb=new StringBuilder();
+        boolean first=true;
+        for(Map.Entry<Long,Long> entry: max_block_times.entrySet()) {
+            if(!first) {
+                sb.append(", ");
+            }
+            else {
+                first=false;
+            }
+            sb.append(entry.getKey()).append(":").append(entry.getValue());
+        }
+        return sb.toString();
+    }
     
     @ManagedAttribute(description="Total time (ms) spent in flow control block")
     public long getTotalTimeBlocked() {
@@ -291,6 +359,19 @@ public class FC extends Protocol {
         return last_blockings.toString();
     }
 
+
+    private long getMaxBlockTime(long length) {
+        if(max_block_times == null)
+            return 0;
+        Long retval=null;
+        for(Map.Entry<Long,Long> entry: max_block_times.entrySet()) {
+            retval=entry.getValue();
+            if(length <= entry.getKey())
+                break;
+        }
+
+        return retval != null? retval : 0;
+    }
 
     /**
      * Allows to unblock a blocked sender from an external program, e.g. JMX
@@ -446,6 +527,12 @@ public class FC extends Protocol {
         int length=msg.getLength();
         Address dest=msg.getDest();
 
+        if(max_block_times != null) {
+            long tmp=getMaxBlockTime(length);
+            if(tmp > 0)
+                end_time.set(System.currentTimeMillis() + tmp);
+        }
+
         sent_lock.lock();
         try {
             if(length > lowest_credit) { // then block and loop asking for credits until enough credits are available
@@ -462,8 +549,24 @@ public class FC extends Protocol {
 
                     while(length > lowest_credit && running) {
                         try {
-                            boolean rc=credits_available.await(max_block_time, TimeUnit.MILLISECONDS);
+                            long block_time=max_block_time;
+                            if(max_block_times != null) {
+                                Long tmp=end_time.get();
+                                if(tmp != null) {
+                                    // Negative value means we don't wait at all ! If the end_time already elapsed
+                                    // (because we waited for other threads to get processed), the message will not
+                                    // block at all and get sent immediately
+                                    block_time=tmp - start_blocking;
+                                }
+                            }
+
+                            boolean rc=credits_available.await(block_time, TimeUnit.MILLISECONDS);
                             if(rc || length <= lowest_credit || !running)
+                                break;
+
+                            // if we use max_block_times, then we do *not* send credit requests, even if we run
+                            // into timeouts: in this case, it is up to the receivers to send new credits
+                            if(!rc && max_block_times != null)
                                 break;
 
                             long wait_time=System.currentTimeMillis() - last_credit_request;
