@@ -1392,6 +1392,27 @@
                             continues sending. Set it to 0 to prevent this</entry>
                         </row>
                     </tbody>
+                    <tbody>
+                        <row>
+                            <entry>max_block_times</entry>
+                            <entry>
+                                A list of pairs KEY:VAL, separated by commas, where KEY is the number of bytes and
+                                VAL the max number of milliseconds to block. Compared to max_block_time, this
+                                property can be used to define the max number of milliseconds per message length to
+                                block if not enough credits are available. After that time, the message will be sent
+                                regardless of whether credits were received in the meantime.
+                                <para>
+                                    Example: max_block_times="50:2,500:5,1500:10,10000:20,100000:500"
+                                </para>
+                                <para>
+                                    This means that messages smaller than or equal to 50 bytes will block for 2 ms max (
+                                    or not block at all if enough credits are available, of course). Messages between
+                                    51 and 500 bytes will block a max time of 5 ms, and so on. All message larger than
+                                    100'000 bytes will block for a max time of 500 ms.
+                                </para>
+                            </entry>
+                        </row>
+                    </tbody>
                 </tgroup>
             </table>
 
