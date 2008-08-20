@@ -75,7 +75,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.199 2008/08/11 15:13:42 vlada Exp $
+ * @version $Id: JChannel.java,v 1.200 2008/08/20 03:59:37 belaban Exp $
  */
 @MBean(description="JGroups channel")
 public class JChannel extends Channel {
@@ -952,9 +952,6 @@ public class JChannel extends Channel {
      * 
      * @param target
      *                State provider. If null, coordinator is used
-     * @param state_id
-     *                The ID of the substate. If null, the entire state will be
-     *                transferred
      * @param timeout
      *                the number of milliseconds to wait for the operation to
      *                complete successfully. 0 waits until the state has been
