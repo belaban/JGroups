@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.157 2008/08/14 09:29:30 belaban Exp $
+ * @version $Id: Util.java,v 1.158 2008/08/20 14:47:54 vlada Exp $
  */
 public class Util {
 
@@ -916,16 +916,18 @@ public class Util {
         try {
             Thread.sleep(timeout);
         }
-        catch(Throwable e) {
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
 
     public static void sleep(long timeout, int nanos) {
         try {
-            Thread.sleep(timeout, nanos);
+            Thread.sleep(timeout,nanos);
         }
-        catch(Throwable e) {
+        catch(InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
