@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.17 2008/07/24 10:15:11 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.18 2008/08/20 04:27:00 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -85,7 +85,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
 
     public void stop() {
         if(channel != null) {
-            channel.shutdown(); // will cause thread to terminate anyways
+            channel.disconnect(); // will cause thread to terminate anyways
         }
         t=null;
     }
@@ -110,8 +110,7 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         Message msg=new Message((Address)destination, null, payload);
         if(oob)
             msg.setFlag(Message.OOB);
-        if(channel != null)
-            channel.send(msg);
+        channel.send(msg);
     }
 
 

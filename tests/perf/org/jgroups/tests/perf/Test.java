@@ -397,7 +397,7 @@ public class Test implements Receiver {
         }
     }
 
-    private void sendResults() throws Exception {
+    private void sendResults() {
         Data d=new Data(Data.RESULTS);
         byte[] buf;
         MemberInfo info=new MemberInfo(num_msgs_expected);
@@ -407,8 +407,12 @@ public class Test implements Receiver {
         info.stop=stop;
         info.total_bytes_received=this.num_bytes_received;
         d.result=info;
-        buf=generatePayload(d, null);
-        transport.send(null, buf, true);
+        try {
+            buf=generatePayload(d, null);
+            transport.send(null, buf, true);
+        }
+        catch(Throwable t) {
+        }
     }
 
 
@@ -416,13 +420,21 @@ public class Test implements Receiver {
         Data d=new Data(Data.FINAL_RESULTS);
         d.results=new ConcurrentHashMap<Object,MemberInfo>(this.results);
         final byte[] buf=generatePayload(d, null);
-        transport.send(null, buf, true);
+        try {
+            transport.send(null, buf, true);
+        }
+        catch(Throwable t) {
+        }
     }
 
     private void sendFinalResultsOk() throws Exception {
         Data d=new Data(Data.FINAL_RESULTS_OK);
         final byte[] buf=generatePayload(d, null);
-        transport.send(null, buf, true);
+        try {
+            transport.send(null, buf, true);
+        }
+        catch(Throwable t) {
+        }
     }
 
     boolean allReceived() {
@@ -891,14 +903,9 @@ public class Test implements Receiver {
         }
 
         public void run() {
-            try {
-                while(t != null) {
-                    sendResults();
-                    Util.sleep(interval);
-                }
-            }
-            catch(Exception e) {
-                e.printStackTrace();
+            while(t != null) {
+                sendResults();
+                Util.sleep(interval);
             }
         }
     }
