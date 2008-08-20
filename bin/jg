@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Author: Bela Ban
-#Version: $Id: jt,v 1.2 2008/08/20 10:34:23 belaban Exp $
+#Version: $Id: jg,v 1.1 2008/08/20 10:34:22 belaban Exp $
 
 
 JG=$HOME/JGroups
@@ -66,5 +66,5 @@ XFLAGS="-XX:+UseBiasedLocking"
 
 
 
-java -Ddisable_canonicalization=true -classpath $CP -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=192.168.1.5[7800] $LOG $FLAGS $XFLAGS $PROF -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.tests.$*
+java -Ddisable_canonicalization=true -classpath $CP -Djgroups.bind_addr=$IP_ADDR -Djboss.tcpping.initial_hosts=192.168.1.5[7800] $LOG $FLAGS $XFLAGS $PROF -Dcom.sun.management.jmxremote -Dresolve.dns=false org.jgroups.demos.$*
 
