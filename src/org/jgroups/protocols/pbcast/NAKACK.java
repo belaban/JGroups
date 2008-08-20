@@ -32,9 +32,9 @@ import java.util.concurrent.locks.ReentrantLock;
  * this can be changed by xmit_from_random_member (send to random member) or
  * use_mcast_xmit_req (send to everyone). Responses can also be sent to everyone
  * instead of the requester by setting use_mcast_xmit to true.
- * 
+ *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.195 2008/08/19 15:45:52 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.196 2008/08/20 03:53:53 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -243,13 +243,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** Map to store sent and received messages (keyed by sender) */
     private final ConcurrentMap<Address,NakReceiverWindow> xmit_table=new ConcurrentHashMap<Address,NakReceiverWindow>(11);
 
-    /**
-     * Map which keeps track of threads removing messages from
-     * NakReceiverWindows, so we don't wait while a thread is removing messages
-     */
-    // private final ConcurrentMap<Address,AtomicBoolean> in_progress=new ConcurrentHashMap<Address,AtomicBoolean>();
-    private final AtomicBoolean leaving=new AtomicBoolean(false);
-    private final AtomicBoolean started=new AtomicBoolean(false);
+    private volatile boolean leaving=false;
+    private volatile boolean started=false;
     private TimeScheduler timer=null;   
     /**
      * Keeps track of OOB messages sent by myself, needed by
@@ -262,7 +257,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private final Condition rebroadcast_done=rebroadcast_lock.newCondition();
 
     // set during processing of a rebroadcast event
-    private AtomicBoolean rebroadcasting=new AtomicBoolean(false);
+    private volatile boolean rebroadcasting=false;
 
     private final Lock rebroadcast_digest_lock=new ReentrantLock();
     @GuardedBy("rebroadcast_digest_lock")
@@ -542,7 +537,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(timer == null)
             throw new Exception("timer is null");
         locks=stack.getLocks();
-        started.set(true);
+        started=true;
 
         if(xmit_time_stats != null) {
             Runtime.getRuntime().addShutdownHook(new Thread() {
@@ -562,7 +557,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
 
     public void stop() {
-        started.set(false);
+        started=false;
         reset();  // clears sent_msgs and destroys all NakReceiverWindows
         oob_loopback_msgs.clear();
     }
@@ -629,18 +624,18 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                 break;
 
             case Event.DISCONNECT:
-                leaving.set(true);
+                leaving=true;
                 reset();
                 break;
 
             case Event.REBROADCAST:
-                rebroadcasting.set(true);
+                rebroadcasting=true;
                 rebroadcast_digest=(Digest)evt.getArg();
                 try {
                     rebroadcastMessages();
                 }
                 finally {
-                    rebroadcasting.set(false);
+                    rebroadcasting=false;
                     rebroadcast_digest_lock.lock();
                     try {
                         rebroadcast_digest=null;
@@ -722,7 +717,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         case Event.SUSPECT:
             // release the promise if rebroadcasting is in progress... otherwise we wait forever. there will be a new
             // flush round anyway
-            if(rebroadcasting.get()) {
+            if(rebroadcasting) {
                 cancelRebroadcasting();
             }
             break;
@@ -748,7 +743,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         if(msg == null)
             throw new NullPointerException("msg is null; event is " + evt);
 
-        if(!started.get()) {
+        if(!started) {
             if(log.isTraceEnabled())
                 log.trace("[" + local_addr + "] discarded message as start() has not been called, message: " + msg);
             return;
@@ -807,7 +802,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
         NakReceiverWindow win=xmit_table.get(sender);
         if(win == null) {  // discard message if there is no entry for sender
-            if(leaving.get())
+            if(leaving)
                 return;
             if(log.isWarnEnabled() && log_discard_msgs)
                 log.warn(local_addr + "] discarded message from non-member " + sender + ", my view is " + view);
@@ -955,7 +950,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     private void cancelRebroadcasting() {
         rebroadcast_lock.lock();
         try {
-            rebroadcasting.set(false);
+            rebroadcasting=false;
             rebroadcast_done.signalAll();
         }
         finally {
@@ -1044,7 +1039,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
 
             up(new Event(Event.MSG, wrapped_msg));
 
-            if(rebroadcasting.get()) {
+            if(rebroadcasting) {
                 Digest tmp=getDigest();
                 boolean cancel_rebroadcasting;
                 rebroadcast_digest_lock.lock();
@@ -1118,7 +1113,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
                     my_digest=getDigest();
                     rebroadcast_digest_lock.lock();
                     try {
-                        if(!rebroadcasting.get() || my_digest.isGreaterThanOrEqual(rebroadcast_digest))
+                        if(!rebroadcasting || my_digest.isGreaterThanOrEqual(rebroadcast_digest))
                             return;
                     }
                     finally {
