@@ -18,7 +18,6 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -34,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.196 2008/08/20 03:53:53 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.197 2008/08/20 04:05:26 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -538,6 +537,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             throw new Exception("timer is null");
         locks=stack.getLocks();
         started=true;
+        leaving=false;
 
         if(xmit_time_stats != null) {
             Runtime.getRuntime().addShutdownHook(new Thread() {
