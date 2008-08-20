@@ -1,8 +1,6 @@
 package org.jgroups.tests.perf.transports;
 
-import org.jgroups.Address;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
+import org.jgroups.*;
 import org.jgroups.jmx.JmxConfigurator;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
@@ -15,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.18 2008/08/20 04:27:00 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.19 2008/08/20 04:43:45 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -85,6 +83,14 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
 
     public void stop() {
         if(channel != null) {
+            // we give others a chance to disconnect first
+            if(isCoordinator(channel)) {
+                for(int i=0; i < 10; i++) {
+                    Util.sleep(300);
+                    if(channel.getView().size() == 1)
+                        break;
+                }
+            }
             channel.disconnect(); // will cause thread to terminate anyways
         }
         t=null;
@@ -125,6 +131,12 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
                 tt.printStackTrace();
             }
         }
+    }
+
+    private static boolean isCoordinator(Channel ch) {
+        Vector<Address> members=ch.getView().getMembers();
+        Address local_addr=ch.getLocalAddress();
+        return !members.isEmpty() && members.get(0).equals(local_addr);
     }
 
 
