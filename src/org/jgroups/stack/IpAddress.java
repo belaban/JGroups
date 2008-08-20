@@ -1,4 +1,4 @@
-// $Id: IpAddress.java,v 1.48 2008/06/05 12:47:53 belaban Exp $
+// $Id: IpAddress.java,v 1.49 2008/08/20 12:13:27 belaban Exp $
 
 package org.jgroups.stack;
 
@@ -22,8 +22,8 @@ import java.net.UnknownHostException;
 public class IpAddress implements Address {
 
 	private static final long serialVersionUID = 2592301708270771474L;
-	
-	private InetAddress             ip_addr=null;
+
+    private InetAddress             ip_addr=null;
     private int                     port=0;
     private byte[]                  additional_data;
     protected static final Log      log=LogFactory.getLog(IpAddress.class);
@@ -120,6 +120,7 @@ public class IpAddress implements Address {
      * Establishes an order between 2 addresses. Assumes other contains non-null IpAddress.
      * Excludes channel_name from comparison.
      * @return 0 for equality, value less than 0 if smaller, greater than 0 if greater.
+     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
      */
     public final int compare(IpAddress other) {
         return compareTo(other);
@@ -139,7 +140,7 @@ public class IpAddress implements Address {
         int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
 
         if(this == o) return 0;
-        if ((o == null) || !(o instanceof IpAddress))
+        if(!(o instanceof IpAddress))
             throw new ClassCastException("comparison between different classes: the other object is " +
                     (o != null? o.getClass() : o));
         IpAddress other = (IpAddress) o;
@@ -159,6 +160,7 @@ public class IpAddress implements Address {
      * identical. Ca 30% slower than {@link #compareTo(Object)} if used excessively.
      * @param o
      * @return
+     * @deprecated Use {@link #compareTo(org.jgroups.Address)} instead
      */
     public final int compareToUnique(Object o) {
         int   h1, h2, rc; // added Nov 7 2005, makes sense with canonical addresses
@@ -194,11 +196,16 @@ public class IpAddress implements Address {
 
     public final boolean equals(Object obj) {
         if(this == obj) return true; // added Nov 7 2005, makes sense with canonical addresses
-        if(obj == null) return false;
-        if(!(obj instanceof Address))
-            throw new ClassCastException(obj + " is not an Address");
-        Address other=(Address)obj;
-        return compareTo(other) == 0;
+
+        if(!(obj instanceof IpAddress))
+            return false;
+        IpAddress other=(IpAddress)obj;
+        boolean sameIP=false;
+        if(this.ip_addr != null)
+            sameIP=this.ip_addr.equals(other.ip_addr);
+        else
+            sameIP=(other.ip_addr == null);
+        return sameIP && (this.port == other.port);
     }
 
 
