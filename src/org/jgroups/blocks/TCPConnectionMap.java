@@ -256,41 +256,23 @@ public class TCPConnectionMap{
                     
                     mapper.getLock().lock();
                     try{
-                        Connection tmp=mapper.getConnection(peer_addr);
-                        //Vladimir Nov, 5th, 2007
-                        //we might have a connection to peer but is that 
-                        //connection still open? 
-                        boolean connectionOpen=tmp != null && tmp.isOpen();
-                        if(connectionOpen) {
-                            if(peer_addr.compareTo(local_addr) > 0) {
-                                if(log.isTraceEnabled())
-                                    log.trace("peer's address (" + peer_addr
-                                              + ") is greater than our local address ("
-                                              + local_addr
-                                              + "), replacing our existing connection");
-                                // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
-                                mapper.removeConnection(peer_addr);
-                                mapper.addConnection(peer_addr, conn);                                      
-                            }
-                            else {
-                                if(log.isTraceEnabled())
-                                    log.trace("peer's address (" + peer_addr
-                                              + ") is smaller than our local address ("
-                                              + local_addr
-                                              + "), rejecting peer connection request");
-                                conn.close();                                
-                                continue;
-                            }
+                        Connection currentConnection=mapper.getConnection(peer_addr);                       
+                        boolean currentConnectionOpen=currentConnection != null && currentConnection.isOpen();
+                        boolean replaceWithNewConnection = false;
+                        if(currentConnectionOpen) {
+                            replaceWithNewConnection = peer_addr.compareTo(local_addr) > 0;                               
                         }
-                        else {
-                            mapper.addConnection(peer_addr, conn);                                         
+                        if(!currentConnectionOpen || replaceWithNewConnection){
+                            mapper.removeConnection(peer_addr);
+                            mapper.addConnection(peer_addr, conn);
+                            conn.start(mapper.getThreadFactory()); // starts handler thread on this socket
+                        }else{
+                            conn.close();
                         }
                     }
                     finally{
                         mapper.getLock().unlock();
-                    }
-
-                    conn.start(mapper.getThreadFactory()); // starts handler thread on this socket
+                    }                   
                 }
                 catch(Exception ex) {
                     if(log.isWarnEnabled())
