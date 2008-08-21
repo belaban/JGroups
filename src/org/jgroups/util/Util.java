@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.158 2008/08/20 14:47:54 vlada Exp $
+ * @version $Id: Util.java,v 1.159 2008/08/21 17:45:16 vlada Exp $
  */
 public class Util {
 
@@ -190,6 +190,12 @@ public class Util {
     }
 
     public static void close(Socket s) {
+        if(s != null) {
+            try {s.close();} catch(Exception ex) {}
+        }
+    }
+    
+    public static void close(ServerSocket s) {
         if(s != null) {
             try {s.close();} catch(Exception ex) {}
         }
