@@ -20,28 +20,38 @@ import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
- * Sends a message to all members of the group and waits for all responses (or timeout). Returns a
- * boolean value (success or failure). Results (if any) can be retrieved when done.<p>
- * The supported transport to send requests is currently either a RequestCorrelator or a generic
- * Transport. One of them has to be given in the constructor. It will then be used to send a
- * request. When a message is received by either one, the receiveResponse() of this class has to
- * be called (this class does not actively receive requests/responses itself). Also, when a view change
- * or suspicion is received, the methods viewChange() or suspect() of this class have to be called.<p>
- * When started, an array of responses, correlating to the membership, is created. Each response
- * is added to the corresponding field in the array. When all fields have been set, the algorithm
- * terminates.
- * This algorithm can optionally use a suspicion service (failure detector) to detect (and
- * exclude from the membership) fauly members. If no suspicion service is available, timeouts
- * can be used instead (see <code>execute()</code>). When done, a list of suspected members
- * can be retrieved.<p>
- * Because a channel might deliver requests, and responses to <em>different</em> requests, the
- * <code>GroupRequest</code> class cannot itself receive and process requests/responses from the
- * channel. A mechanism outside this class has to do this; it has to determine what the responses
- * are for the message sent by the <code>execute()</code> method and call <code>receiveResponse()</code>
- * to do so.<p>
- * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message confirmation.
+ * Sends a message to all members of the group and waits for all responses (or
+ * timeout). Returns a boolean value (success or failure). Results (if any) can
+ * be retrieved when done.
+ * <p>
+ * The supported transport to send requests is currently either a
+ * RequestCorrelator or a generic Transport. One of them has to be given in the
+ * constructor. It will then be used to send a request. When a message is
+ * received by either one, the receiveResponse() of this class has to be called
+ * (this class does not actively receive requests/responses itself). Also, when
+ * a view change or suspicion is received, the methods viewChange() or suspect()
+ * of this class have to be called.
+ * <p>
+ * When started, an array of responses, correlating to the membership, is
+ * created. Each response is added to the corresponding field in the array. When
+ * all fields have been set, the algorithm terminates. This algorithm can
+ * optionally use a suspicion service (failure detector) to detect (and exclude
+ * from the membership) fauly members. If no suspicion service is available,
+ * timeouts can be used instead (see <code>execute()</code>). When done, a
+ * list of suspected members can be retrieved.
+ * <p>
+ * Because a channel might deliver requests, and responses to <em>different</em>
+ * requests, the <code>GroupRequest</code> class cannot itself receive and
+ * process requests/responses from the channel. A mechanism outside this class
+ * has to do this; it has to determine what the responses are for the message
+ * sent by the <code>execute()</code> method and call
+ * <code>receiveResponse()</code> to do so.
+ * <p>
+ * <b>Requirements</b>: lossless delivery, e.g. acknowledgment-based message
+ * confirmation.
+ * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.34 2008/06/11 10:39:28 belaban Exp $
+ * @version $Id: GroupRequest.java,v 1.35 2008/08/21 18:08:07 vlada Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -61,6 +71,14 @@ public class GroupRequest implements RspCollector, Command {
 
     /** return no response (async call) */
     public static final int GET_NONE=6;
+    
+    /** keep suspects vector bounded */
+    private static final int MAX_SUSPECTS=40;
+    
+    private static final Log log=LogFactory.getLog(GroupRequest.class);
+
+    /** to generate unique request IDs (see getRequestId()) */
+    private static long last_req_id=1;
 
     private Address caller;
 
@@ -81,65 +99,65 @@ public class GroupRequest implements RspCollector, Command {
     /** list of members, changed by viewChange() */
     @GuardedBy("lock")
     private final Collection<Address> members=new TreeSet<Address>();
-
-    /** keep suspects vector bounded */
-    private static final int max_suspects=40;
-    final protected Message request_msg;
-    final protected RequestCorrelator corr; // either use RequestCorrelator or ...
-    protected Transport transport;    // Transport (one of them has to be non-null)
+  
+    protected final  Message request_msg;
+    protected final RequestCorrelator corr; // either use RequestCorrelator or ...
+    protected final Transport transport;    // Transport (one of them has to be non-null)
 
     protected RspFilter rsp_filter=null;
 
-    protected int rsp_mode=GET_ALL;
-    protected boolean done=false;
-    protected long timeout=0;
-    protected int expected_mbrs=0;
+    protected final int rsp_mode;
+    protected volatile boolean done=false;
+    protected final long timeout;
+    protected final int expected_mbrs;   
 
-    private static final Log log=LogFactory.getLog(GroupRequest.class);
-
-    /** to generate unique request IDs (see getRequestId()) */
-    private static long last_req_id=1;
-
-    private long req_id=-1; // request ID for this request
+    private final long req_id; // request ID for this request
 
 
 
 
     /**
-     @param m The message to be sent
-     @param corr The request correlator to be used. A request correlator sends requests tagged with
-     a unique ID and notifies the sender when matching responses are received. The
-     reason <code>GroupRequest</code> uses it instead of a <code>Transport</code> is
-     that multiple requests/responses might be sent/received concurrently.
-     @param members The initial membership. This value reflects the membership to which the request
-     is sent (and from which potential responses are expected). Is reset by reset().
-     @param rsp_mode How many responses are expected. Can be
-     <ol>
-     <li><code>GET_ALL</code>: wait for all responses from non-suspected members.
-     A suspicion service might warn
-     us when a member from which a response is outstanding has crashed, so it can
-     be excluded from the responses. If no suspision service is available, a
-     timeout can be used (a value of 0 means wait forever). <em>If a timeout of
-     0 is used, no suspicion service is available and a member from which we
-     expect a response has crashed, this methods blocks forever !</em>.
-     <li><code>GET_FIRST</code>: wait for the first available response.
-     <li><code>GET_MAJORITY</code>: wait for the majority of all responses. The
-     majority is re-computed when a member is suspected.
-     <li><code>GET_ABS_MAJORITY</code>: wait for the majority of
-     <em>all</em> members.
-     This includes failed members, so it may block if no timeout is specified.
-     <li><code>GET_N</CODE>: wait for N members.
-     Return if n is >= membership+suspects.
-     <li><code>GET_NONE</code>: don't wait for any response. Essentially send an
-     asynchronous message to the group members.
-     </ol>
+     * @param m
+     *                The message to be sent
+     * @param corr
+     *                The request correlator to be used. A request correlator
+     *                sends requests tagged with a unique ID and notifies the
+     *                sender when matching responses are received. The reason
+     *                <code>GroupRequest</code> uses it instead of a
+     *                <code>Transport</code> is that multiple
+     *                requests/responses might be sent/received concurrently.
+     * @param members
+     *                The initial membership. This value reflects the membership
+     *                to which the request is sent (and from which potential
+     *                responses are expected). Is reset by reset().
+     * @param rsp_mode
+     *                How many responses are expected. Can be
+     *                <ol>
+     *                <li><code>GET_ALL</code>: wait for all responses from
+     *                non-suspected members. A suspicion service might warn us
+     *                when a member from which a response is outstanding has
+     *                crashed, so it can be excluded from the responses. If no
+     *                suspicion service is available, a timeout can be used (a
+     *                value of 0 means wait forever). <em>If a timeout of
+     *                0 is used, no suspicion service is available and a member from which we
+     *                expect a response has crashed, this methods blocks forever !</em>.
+     *                <li><code>GET_FIRST</code>: wait for the first
+     *                available response.
+     *                <li><code>GET_MAJORITY</code>: wait for the majority
+     *                of all responses. The majority is re-computed when a
+     *                member is suspected.
+     *                <li><code>GET_ABS_MAJORITY</code>: wait for the
+     *                majority of <em>all</em> members. This includes failed
+     *                members, so it may block if no timeout is specified.
+     *                <li><code>GET_N</CODE>: wait for N members. Return if
+     *                n is >= membership+suspects.
+     *                <li><code>GET_NONE</code>: don't wait for any
+     *                response. Essentially send an asynchronous message to the
+     *                group members.
+     *                </ol>
      */
     public GroupRequest(Message m, RequestCorrelator corr, Vector<Address> members, int rsp_mode) {
-        request_msg=m;
-        this.corr=corr;
-        this.rsp_mode=rsp_mode;
-        reset(members);
-        // suspects.removeAllElements(); // bela Aug 23 2002: made suspects bounded
+        this(m,corr,members,rsp_mode,0,0);
     }
 
 
@@ -147,22 +165,27 @@ public class GroupRequest implements RspCollector, Command {
      @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public GroupRequest(Message m, RequestCorrelator corr, Vector<Address> members, int rsp_mode,
+    public GroupRequest(Message m, RequestCorrelator corr, Vector<Address> mbrs, int rsp_mode,
                         long timeout, int expected_mbrs) {
-        this(m, corr, members, rsp_mode);
-        if(timeout > 0)
-            this.timeout=timeout;
+        this.request_msg=m;
+        this.transport = null;
+        this.corr=corr;
+        this.rsp_mode=rsp_mode;       
+        this.req_id=getRequestId();  
+        this.timeout=timeout;
         this.expected_mbrs=expected_mbrs;
+        if(mbrs != null) {            
+            for(Address mbr: mbrs) {
+                requests.put(mbr, new Rsp(mbr));
+            }            
+            this.members.clear();
+            this.members.addAll(mbrs);
+        }
     }
 
 
     public GroupRequest(Message m, Transport transport, Vector<Address> members, int rsp_mode) {
-        corr = null;
-        request_msg=m;
-        this.transport=transport;
-        this.rsp_mode=rsp_mode;
-        reset(members);
-        // suspects.removeAllElements(); // bela Aug 23 2002: make suspects bounded
+       this(m,transport,members,rsp_mode,0,0);
     }
 
 
@@ -170,12 +193,26 @@ public class GroupRequest implements RspCollector, Command {
      * @param timeout Time to wait for responses (ms). A value of <= 0 means wait indefinitely
      *                       (e.g. if a suspicion service is available; timeouts are not needed).
      */
-    public GroupRequest(Message m, Transport transport, Vector<Address> members,
-                        int rsp_mode, long timeout, int expected_mbrs) {
-       this(m, transport, members, rsp_mode);
-       if(timeout > 0)
-          this.timeout=timeout;
-       this.expected_mbrs=expected_mbrs;
+    public GroupRequest(Message m,
+                        Transport transport,
+                        Vector<Address> mbrs,
+                        int rsp_mode,
+                        long timeout,
+                        int expected_mbrs) {
+        this.corr=null;
+        this.request_msg=m;
+        this.transport=transport;
+        this.rsp_mode=rsp_mode;        
+        this.req_id=getRequestId();        
+        this.timeout=timeout;
+        this.expected_mbrs=expected_mbrs;
+        if(mbrs != null) {            
+            for(Address mbr: mbrs) {
+                requests.put(mbr, new Rsp(mbr));
+            }            
+            this.members.clear();
+            this.members.addAll(mbrs);
+        }
     }
 
     public Address getCaller() {
@@ -208,10 +245,7 @@ public class GroupRequest implements RspCollector, Command {
         Vector<Address> targets=null;
         lock.lock();
         try {
-            targets=new Vector<Address>(members);
-            req_id=getRequestId();
-            reset(null); // clear 'responses' array
-
+            targets=new Vector<Address>(members);           
             for(Address suspect: suspects) { // mark all suspects in 'received' array
                 Rsp rsp=requests.get(suspect);
                 if(rsp != null) {
@@ -240,39 +274,6 @@ public class GroupRequest implements RspCollector, Command {
         }
     }
 
-
-
-    /**
-     * This method sets the <code>membership</code> variable to the value of
-     * <code>members</code>. It requires that the caller already hold the
-     * <code>rsp_mutex</code> lock.
-     * @param mbrs The new list of members
-     */
-    public final void reset(Vector<Address> mbrs) {
-        lock.lock();
-        try {
-            if(mbrs != null) {
-                requests.clear();
-                for(Address mbr: mbrs) {
-                    requests.put(mbr, new Rsp(mbr));
-                }
-                // maintain local membership
-                this.members.clear();
-                this.members.addAll(mbrs);
-            }
-            else {
-                for(Rsp rsp: requests.values()) {
-                    rsp.setReceived(false);
-                    rsp.setValue(null);
-                }
-            }
-        }
-        finally {
-            lock.unlock();
-        }
-    }
-
-
     /* ---------------------- Interface RspCollector -------------------------- */
     /**
      * <b>Callback</b> (called by RequestCorrelator or Transport).
@@ -283,38 +284,33 @@ public class GroupRequest implements RspCollector, Command {
         lock.lock();
         try {
             if(done) {
-                if(log.isTraceEnabled()) log.trace("command is done; cannot add response !");
-                return;
+                if(log.isTraceEnabled())
+                    log.trace("command is done; cannot add response !");
             }
-            if(suspects.contains(sender)) {
-                if(log.isWarnEnabled()) log.warn("received response from suspected member " + sender + "; discarding");
-                return;
-            }
-
-            if(rsp_filter != null && !rsp_filter.isAcceptable(response_value, sender)) {
-                if(!rsp_filter.needMoreResponses()) {
-                    done=true;
-                    completed.signalAll(); // we're done as we don't need more responses
-                }
-                return;
-            }
-
-
-            Rsp rsp=requests.get(sender);
-            if(rsp != null) {
-                if(rsp.wasReceived() == false) {
-                    rsp.setValue(response_value);
-                    rsp.setReceived(true);
-                    if(log.isTraceEnabled())
-                        log.trace(new StringBuilder("received response for request ").append(req_id).append(", sender=").
-                                append(sender).append(", val=").append(response_value));
-                    if(rsp_filter != null && !rsp_filter.needMoreResponses())
-                        done=true;
-                    completed.signalAll(); // wakes up execute()
+            else if(suspects.contains(sender)) {
+                if(log.isWarnEnabled())
+                    log.warn("received response from suspected member " + sender + "; discarding");
+            }          
+            else {
+                Rsp rsp=requests.get(sender);                
+                if(rsp != null) {
+                    if(!rsp.wasReceived()) {
+                        boolean responseReceived = (rsp_filter == null) || (rsp_filter != null && rsp_filter.isAcceptable(response_value, sender));
+                        rsp.setValue(response_value);
+                        rsp.setReceived(responseReceived);
+                        if(log.isTraceEnabled())
+                            log.trace(new StringBuilder("received response for request ").append(req_id)
+                                                                                         .append(", sender=")
+                                                                                         .append(sender)
+                                                                                         .append(", val=")
+                                                                                         .append(response_value));                        
+                    }
+                    done=rsp_filter != null && !rsp_filter.needMoreResponses();
                 }
             }
         }
         finally {
+            completed.signalAll(); // wakes up execute()
             lock.unlock();
         }
     }
@@ -607,8 +603,7 @@ public class GroupRequest implements RspCollector, Command {
                     return true;
                 break;
             case GET_N:
-                if(expected_mbrs >= num_total) {
-                    rsp_mode=GET_ALL;
+                if(expected_mbrs >= num_total) {                    
                     return responsesComplete();
                 }
                 return num_received >= expected_mbrs || num_received + num_not_received < expected_mbrs && num_received + num_suspected >= expected_mbrs;
@@ -662,7 +657,7 @@ public class GroupRequest implements RspCollector, Command {
     private void addSuspect(Address suspected_mbr) {
         if(!suspects.contains(suspected_mbr)) {
             suspects.add(suspected_mbr);
-            while(suspects.size() >= max_suspects && !suspects.isEmpty())
+            while(suspects.size() >= MAX_SUSPECTS && !suspects.isEmpty())
                 suspects.remove(0); // keeps queue bounded
         }
     }
