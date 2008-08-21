@@ -270,8 +270,7 @@ public class TCPConnectionMap{
                                               + "), replacing our existing connection");
                                 // peer's address is greater, add peer's connection to ConnectionTable, destroy existing connection
                                 mapper.removeConnection(peer_addr);
-                                mapper.addConnection(peer_addr, conn);      
-                                mapper.notifyConnectionOpened(peer_addr,conn);
+                                mapper.addConnection(peer_addr, conn);                                      
                             }
                             else {
                                 if(log.isTraceEnabled())
@@ -279,14 +278,12 @@ public class TCPConnectionMap{
                                               + ") is smaller than our local address ("
                                               + local_addr
                                               + "), rejecting peer connection request");
-                                conn.close();
-                                mapper.notifyConnectionClosed(local_addr);
+                                conn.close();                                
                                 continue;
                             }
                         }
                         else {
-                            mapper.addConnection(peer_addr, conn);             
-                            mapper.notifyConnectionOpened(peer_addr,conn);
+                            mapper.addConnection(peer_addr, conn);                                         
                         }
                     }
                     finally{
@@ -300,8 +297,7 @@ public class TCPConnectionMap{
                         log.warn("Could not read accept connection from peer " + ex);
                     if(conn != null){
                         try {
-                            conn.close();
-                            mapper.notifyConnectionClosed(local_addr);
+                            conn.close();                            
                         }
                         catch(IOException e) {                           
                         }
@@ -640,8 +636,9 @@ public class TCPConnectionMap{
                 Util.close(in);
             }
             finally {
-                send_lock.unlock();
-            }
+                send_lock.unlock();                
+            }            
+            mapper.notifyConnectionClosed(peer_addr);
         }
     }
     
@@ -671,8 +668,7 @@ public class TCPConnectionMap{
                     setSocketParameters(sock);
                     conn=new TCPConnection(receiver, sock, dest);                   
                     conn.start(getThreadFactory());                    
-                    addConnection(dest, conn);
-                    notifyConnectionOpened(dest, conn);                              
+                    addConnection(dest, conn);                                    
                     if(log.isTraceEnabled())
                         log.trace("created socket to " + dest);
                 }

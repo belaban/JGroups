@@ -54,6 +54,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         finally {
             lock.unlock();
         }
+        notifyConnectionOpened(address, conn);
     }
 
     public void addConnectionMapListener(ConnectionMapListener<V> cml) {
@@ -89,10 +90,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                 conn.close();
             }
             catch(Exception e) {
-            }
-            finally{
-                notifyConnectionClosed(address);
-            }
+            }            
         }
     }
 
@@ -128,10 +126,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                 e.getValue().close();
             }
             catch(IOException ex) {
-            }
-            finally{
-                notifyConnectionClosed(e.getKey());
-            }         
+            }              
         }
         copy.clear();
     }
@@ -154,10 +149,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                     e.getValue().close();
                 }
                 catch(IOException ignored) {
-                }
-                finally{
-                    notifyConnectionClosed(e.getKey());
-                }         
+                }                  
             }           
         }
         finally {
@@ -228,8 +220,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                             }
                             catch(IOException ignored) {                                                               
                             }
-                            finally {
-                                notifyConnectionClosed(entry.getKey());
+                            finally {                                
                                 it.remove();
                             }
                         }
