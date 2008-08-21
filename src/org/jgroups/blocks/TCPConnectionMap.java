@@ -236,7 +236,7 @@ public class TCPConnectionMap{
         void receive(Address sender, byte[] data, int offset, int length);
     }
 
-    class ConnectionAcceptor implements Runnable {
+    private class ConnectionAcceptor implements Runnable {
 
         /**
          * Acceptor thread. Continuously accept new connections. Create a new
@@ -353,7 +353,7 @@ public class TCPConnectionMap{
         return send_queue_size;
     }
     
-    class TCPConnection implements Connection {
+    private class TCPConnection implements Connection {
 
         private final Socket sock; // socket to/from peer (result of srv_sock.accept() or new Socket())
         private final Lock send_lock=new ReentrantLock(); // serialize send()        
@@ -377,19 +377,20 @@ public class TCPConnectionMap{
                 this.peer_addr=readPeerAddress(s);
             } 
             else{
+                sendLocalAddress(getLocalAddress());
                 this.peer_addr=peer_addr;           
             }
         }   
         
-        Address getPeerAddress() {
+        private Address getPeerAddress() {
             return peer_addr;
         }
 
-        void updateLastAccessed() {
+        private void updateLastAccessed() {
             last_access=System.currentTimeMillis();
         }
 
-        void start(ThreadFactory f) {
+        private void start(ThreadFactory f) {
             if(!is_running){
                 is_running = true;
                 Thread t=f.newThread(new ConnectionPeerReceiver(), "Connection.Receiver [" + getSockAddress() + "]");
@@ -424,7 +425,7 @@ public class TCPConnectionMap{
          * @param offset
          * @param length
          */
-        public void send(byte[] data, int offset, int length) throws Exception{
+        private void send(byte[] data, int offset, int length) throws Exception{
             _send(data, offset, length, true);
         }
 
@@ -454,54 +455,46 @@ public class TCPConnectionMap{
             }
         }
 
-        void doSend(byte[] data, int offset, int length) throws Exception {
+        private void doSend(byte[] data, int offset, int length) throws Exception {
             // we're using 'double-writes', sending the buffer to the destination in 2 pieces. this would
             // ensure that, if the peer closed the connection while we were idle, we would get an exception.
             // this won't happen if we use a single write (see Stevens, ch. 5.13).
-            if(isOpen()){
-                out.writeInt(length); // write the length of the data buffer first
-                Util.doubleWrite(data, offset, length, out);
-                out.flush(); // may not be very efficient (but safe)
-            }
+
+            out.writeInt(length); // write the length of the data buffer first
+            Util.doubleWrite(data, offset, length, out);
+            out.flush(); // may not be very efficient (but safe)           
         }
 
         /**
          * Reads the peer's address. First a cookie has to be sent which has to
          * match my own cookie, otherwise the connection will be refused
          */
-        private Address readPeerAddress(Socket client_sock) throws Exception {
-            Address client_peer_addr=null;
-            byte[] input_cookie=new byte[cookie.length];
-            int client_port=client_sock != null? client_sock.getPort() : 0;
-            short version;
-            InetAddress client_addr=client_sock != null? client_sock.getInetAddress() : null;
-
+        private Address readPeerAddress(Socket client_sock) throws Exception {                    
             int timeout=client_sock.getSoTimeout();
             client_sock.setSoTimeout(peer_addr_read_timeout);
 
-            try {
-                initCookie(input_cookie);
-
+            try {              
                 // read the cookie first
+                byte[] input_cookie=new byte[cookie.length];
                 in.read(input_cookie, 0, input_cookie.length);
                 if(!matchCookie(input_cookie))
-                    throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie sent by " + client_peer_addr
+                    throw new SocketException("ConnectionTable.Connection.readPeerAddress(): cookie read by " + getLocalAddress()
                                               + " does not match own cookie; terminating connection");
                 // then read the version
-                version=in.readShort();
+                short version=in.readShort();
 
-                if(Version.isBinaryCompatible(version) == false) {
+                if(!Version.isBinaryCompatible(version) ) {
                     if(log.isWarnEnabled())
-                        log.warn(new StringBuilder("packet from ").append(client_addr)
+                        log.warn(new StringBuilder("packet from ").append(client_sock.getInetAddress())
                                                                   .append(':')
-                                                                  .append(client_port)
+                                                                  .append(client_sock.getPort())
                                                                   .append(" has different version (")
                                                                   .append(Version.print(version))
                                                                   .append(") from ours (")
                                                                   .append(Version.printVersion())
                                                                   .append("). This may cause problems"));
                 }
-                client_peer_addr=new IpAddress();
+                Address client_peer_addr=new IpAddress();
                 client_peer_addr.readFrom(in);
 
                 updateLastAccessed();
@@ -519,13 +512,7 @@ public class TCPConnectionMap{
          * 
          * @throws IOException
          */
-        public void sendLocalAddress(Address local_addr) throws IOException {
-            if(local_addr == null) {
-                if(log.isWarnEnabled())
-                    log.warn("local_addr is null");
-                return;
-            }
-
+        private void sendLocalAddress(Address local_addr) throws IOException {           
             // write the cookie
             out.write(cookie, 0, cookie.length);
 
@@ -534,16 +521,9 @@ public class TCPConnectionMap{
             local_addr.writeTo(out);
             out.flush(); // needed ?
             updateLastAccessed();
-        }
+        }       
 
-
-        void initCookie(byte[] c) {
-            if(c != null)
-                for(int i=0; i < c.length; i++)
-                    c[i]=0;
-        }
-
-        boolean matchCookie(byte[] input) {
+        private boolean matchCookie(byte[] input) {
             if(input == null || input.length < cookie.length) return false;
             for(int i=0; i < cookie.length; i++)
                 if(cookie[i] != input[i]) return false;
@@ -636,19 +616,7 @@ public class TCPConnectionMap{
             tmp_sock=null;
 
             return ret.toString();
-        }
-
-        private void closeSocket() {
-            send_lock.lock();
-            try {
-                Util.close(sock);
-                Util.close(out);
-                Util.close(in);
-            }
-            finally {
-                send_lock.unlock();
-            }
-        }
+        }      
 
         public boolean isExpired(long now) {
             if(getConnectionExpiryTimeout() > 0) {
@@ -665,11 +633,19 @@ public class TCPConnectionMap{
 
         public void close() throws IOException {
             is_running=false;
-            closeSocket();
+            send_lock.lock();
+            try {
+                Util.close(sock);
+                Util.close(out);
+                Util.close(in);
+            }
+            finally {
+                send_lock.unlock();
+            }
         }
     }
     
-    class Mapper extends AbstractConnectionMap<TCPConnection>{
+    private class Mapper extends AbstractConnectionMap<TCPConnection>{
 
         public Mapper(ThreadFactory factory) {
             super(factory);            
@@ -693,8 +669,7 @@ public class TCPConnectionMap{
                     sock.bind(tmpBindAddr);             
                     sock.connect(destAddr, sock_conn_timeout);
                     setSocketParameters(sock);
-                    conn=new TCPConnection(receiver, sock, dest);
-                    conn.sendLocalAddress(local_addr);
+                    conn=new TCPConnection(receiver, sock, dest);                   
                     conn.start(getThreadFactory());                    
                     addConnection(dest, conn);
                     notifyConnectionOpened(dest, conn);                              
