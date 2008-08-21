@@ -31,7 +31,7 @@ import java.util.concurrent.*;
  * monitors the client side of the socket connection (to monitor a peer) and another one that manages the
  * server socket. However, those threads will be idle as long as both peers are running.
  * @author Bela Ban May 29 2001
- * @version $Id: FD_SOCK.java,v 1.100 2008/08/15 18:19:30 rachmatowicz Exp $
+ * @version $Id: FD_SOCK.java,v 1.101 2008/08/21 18:08:34 vlada Exp $
  */
 @MBean(description="Failure detection protocol based on sockets connecting members")
 @DeprecatedProperty(names={"srv_sock_bind_addr"})
@@ -65,7 +65,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     @Property(description="Max time in millis to wait for ping Socket.connect() to return")
     @ManagedAttribute(writable=true, description="Max time in millis to wait for ping Socket.connect() to return. Default is 3000 msec")
-    private int sock_conn_timeout=3000;
+    private int sock_conn_timeout=1000;
 
     
     /* ---------------------------------------------   JMX      ------------------------------------------------------ */
@@ -164,10 +164,10 @@ public class FD_SOCK extends Protocol implements Runnable {
         super.start();       
     }
 
-    public void stop() {          
-        bcast_task.removeAll();        
+    public void stop() {                        
         stopPingerThread();        
         stopServerSocket(true); // graceful close
+        bcast_task.removeAll();
     }
 
     public void resetStats() {
@@ -383,24 +383,18 @@ public class FD_SOCK extends Protocol implements Runnable {
             if(log.isDebugEnabled())
                 log.debug("determinePingDest()=" + ping_dest + ", pingable_mbrs=" + pingable_mbrs);           
            
-            if(ping_dest == null)
+            if(ping_dest == null || !isPingerThreadRunning())
                 break;
             
-            IpAddress ping_addr=fetchPingAddress(ping_dest);
-            
-            if(!isPingerThreadRunning())
-                break;
+            IpAddress ping_addr=fetchPingAddress(ping_dest);                  
             
             if(ping_addr == null) {                
-                if(log.isErrorEnabled()) log.error("socket address for " + ping_dest + " could not be fetched, retrying");
+                if(log.isWarnEnabled()) log.warn("socket address for " + ping_dest + " could not be fetched, retrying");
                 Util.sleep(1000);
                 continue;
-            }
-
-            if(!isPingerThreadRunning())
-                break;
+            }            
             
-            if(!setupPingSocket(ping_addr)) {
+            if(!setupPingSocket(ping_addr) && isPingerThreadRunning()) {
                 // covers use cases #7 and #8 in ManualTests.txt
                 if(log.isDebugEnabled()) log.debug("could not create socket to " + ping_dest + "; suspecting " + ping_dest);
                 broadcastSuspectMessage(ping_dest);
@@ -477,9 +471,7 @@ public class FD_SOCK extends Protocol implements Runnable {
 
     private synchronized void stopPingerThread() {
         regular_sock_close=true;
-        sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
-        teardownPingSocket();
-
+        
         if(pinger_thread != null) {
             try {
                 pinger_thread.interrupt();
@@ -492,6 +484,9 @@ public class FD_SOCK extends Protocol implements Runnable {
         pinger_thread=null;
         ping_addr_promise.setResult(null);
         get_cache_promise.setResult(null);
+        
+        sendPingTermination(); // PATCH by Bruce Schuchardt (http://jira.jboss.com/jira/browse/JGRP-246)
+        teardownPingSocket();       
     }
 
     // PATCH: send something so the connection handler can exit
