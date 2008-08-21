@@ -247,48 +247,46 @@ public class TCPConnectionMap{
             while(running) {
                 TCPConnection conn=null;
                 try {
-                    Socket client_sock=srv_sock.accept();                    
-                    setSocketParameters(client_sock);
-
-                    // create new thread and add to conn table
+                    Socket client_sock=srv_sock.accept();
+                    setSocketParameters(client_sock);                    
                     conn=new TCPConnection(receiver, client_sock, null);
-                    Address peer_addr = conn.getPeerAddress();                    
-                    
+                    Address peer_addr=conn.getPeerAddress();
                     mapper.getLock().lock();
-                    try{
-                        Connection currentConnection=mapper.getConnection(peer_addr);                       
+                    try {
+                        Connection currentConnection=mapper.getConnection(peer_addr);
                         boolean currentConnectionOpen=currentConnection != null && currentConnection.isOpen();
-                        boolean replaceWithNewConnection = false;
+                        boolean replaceWithNewConnection=false;
                         if(currentConnectionOpen) {
-                            replaceWithNewConnection = peer_addr.compareTo(local_addr) > 0;                               
+                            replaceWithNewConnection=peer_addr.compareTo(local_addr) > 0;
                         }
-                        if(!currentConnectionOpen || replaceWithNewConnection){
+                        if(!currentConnectionOpen || replaceWithNewConnection) {
                             mapper.removeConnection(peer_addr);
                             mapper.addConnection(peer_addr, conn);
                             conn.start(mapper.getThreadFactory()); // starts handler thread on this socket
-                        }else{
+                        }
+                        else {
                             conn.close();
                         }
                     }
-                    finally{
+                    finally {
                         mapper.getLock().unlock();
-                    }                   
+                    }
                 }
                 catch(Exception ex) {
                     if(log.isWarnEnabled())
                         log.warn("Could not read accept connection from peer " + ex);
-                    if(conn != null){
+                    if(conn != null) {
                         try {
-                            conn.close();                            
+                            conn.close();
                         }
-                        catch(IOException e) {                           
+                        catch(IOException e) {
                         }
-                    }                   
-                }                                
+                    }
+                }
             }
             if(log.isTraceEnabled())
                 log.trace(Thread.currentThread().getName() + " terminated");
-        }       
+        }
     }
 
     public void setReceiveBufferSize(int recv_buf_size) {
