@@ -4,6 +4,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.auth.AuthToken;
+import org.jgroups.blocks.Connection;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
@@ -26,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.160 2008/08/22 21:28:07 vlada Exp $
+ * @version $Id: Util.java,v 1.161 2008/08/22 22:18:26 vlada Exp $
  */
 public class Util {
 
@@ -218,6 +219,12 @@ public class Util {
             for(Channel ch: channels)
                 Util.close(ch);
         }
+    }
+    
+    public static void close(Connection conn) {
+        if(conn != null) {
+            try {conn.close();} catch(Throwable t) {}
+        }       
     }
 
     

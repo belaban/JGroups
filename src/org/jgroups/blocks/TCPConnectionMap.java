@@ -16,6 +16,7 @@ import java.net.SocketException;
 import java.util.Collection;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -44,10 +45,10 @@ public class TCPConnectionMap{
     private int sock_conn_timeout=1000; // max time in millis to wait for Socket.connect() to return    
     private boolean tcp_nodelay=false;
     private int linger=-1;    
-    private Thread acceptor;
+    private final Thread acceptor;
     private PortsManager pm=null;       
 
-    private volatile boolean running = false;    
+    private final AtomicBoolean running = new AtomicBoolean(false);    
 
     public TCPConnectionMap(ThreadFactory f,
                             Receiver r,
@@ -81,6 +82,8 @@ public class TCPConnectionMap{
             local_addr=new IpAddress(bind_addr, srv_sock.getLocalPort());
         else
             local_addr=new IpAddress(srv_sock.getLocalPort());
+        
+        acceptor=f.newThread(thread_group, new ConnectionAcceptor(),"ConnectionTable.Acceptor");
     }    
     
     public Address getLocalAddress() {       
@@ -108,9 +111,9 @@ public class TCPConnectionMap{
             return;
         }      
         
-        if(!running ) {
-            if(log.isWarnEnabled())
-                log.warn("connection table is not running, discarding message to " + dest);
+        if(!running.get() ) {
+            if(log.isDebugEnabled())
+                log.debug("connection table is not running, discarding message to " + dest);
             return;
         }
 
@@ -138,26 +141,22 @@ public class TCPConnectionMap{
         }
     }
 
-    public synchronized void start() throws Exception {
-        mapper.start();
-        if(!running) {
-            running=true;
-            acceptor=mapper.getThreadFactory().newThread(thread_group, new ConnectionAcceptor(),"ConnectionTable.Acceptor");
-            acceptor.start();   
-        }               
+    public void start() throws Exception {        
+        if(running.compareAndSet(false, true)) {
+            acceptor.start();
+            mapper.start();
+        }
     }
 
-    public synchronized void stop() {
-        if(running) {      
-            running = false;
+    public void stop() {
+        if(running.compareAndSet(true, false)) {
             if(pm != null) {
                 pm.removePort(srv_sock.getLocalPort());
             }
             Util.close(srv_sock);
-            if(acceptor != null)
-                Util.interruptAndWaitToDie(acceptor);
+            Util.interruptAndWaitToDie(acceptor);
             mapper.stop();
-        }        
+        }
     }
 
     /**
@@ -244,10 +243,11 @@ public class TCPConnectionMap{
          * should stop, it is interrupted by the thread creator.
          */
         public void run() {
-            while(running) {
+            while(!srv_sock.isClosed() && !Thread.currentThread().isInterrupted()) {
                 TCPConnection conn=null;
+                Socket client_sock = null;
                 try {
-                    Socket client_sock=srv_sock.accept();
+                    client_sock=srv_sock.accept();
                     setSocketParameters(client_sock);                    
                     conn=new TCPConnection(receiver, client_sock, null);
                     Address peer_addr=conn.getPeerAddress();
@@ -265,23 +265,30 @@ public class TCPConnectionMap{
                             conn.start(mapper.getThreadFactory()); // starts handler thread on this socket
                         }
                         else {
-                            conn.close();
+                            Util.close(conn);
                         }
                     }
                     finally {
                         mapper.getLock().unlock();
                     }
                 }
+                catch(SocketException se){
+                    boolean threadExiting=srv_sock.isClosed() || Thread.currentThread().isInterrupted();
+                    if(threadExiting) {
+                        break;
+                    }
+                    else {
+                        if(log.isWarnEnabled())
+                            log.warn("Could not accept connection from peer ", se);
+                        Util.close(conn);
+                        Util.close(client_sock);
+                    }                                            
+                }
                 catch(Exception ex) {
                     if(log.isWarnEnabled())
                         log.warn("Could not read accept connection from peer " + ex);
-                    if(conn != null) {
-                        try {
-                            conn.close();
-                        }
-                        catch(IOException e) {
-                        }
-                    }
+                    Util.close(conn);
+                    Util.close(client_sock);
                 }
             }
             if(log.isTraceEnabled())
@@ -530,11 +537,7 @@ public class TCPConnectionMap{
                     catch(Throwable e) {
                     }
                 }
-                try {
-                    close();
-                }
-                catch(IOException ignore) {               
-                }                      
+                Util.close(TCPConnection.this);                 
             }
         }
         
