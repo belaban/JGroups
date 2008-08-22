@@ -85,13 +85,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         finally {
             lock.unlock();
         }       
-        if(conn != null) {
-            try {
-                conn.close();
-            }
-            catch(Exception e) {
-            }            
-        }
+        Util.close(conn);
     }
 
     public void removeConnectionMapListener(ConnectionMapListener<V> cml) {
@@ -122,11 +116,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
        
         for(Iterator<Entry<Address,V>> i = copy.entrySet().iterator();i.hasNext();) {
             Entry<Address,V> e = i.next();
-            try {
-                e.getValue().close();
-            }
-            catch(IOException ex) {
-            }              
+            Util.close(e.getValue());      
         }
         copy.clear();
     }
@@ -145,11 +135,7 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
         try {
             for(Iterator<Entry<Address,V>> i = conns.entrySet().iterator();i.hasNext();) {
                 Entry<Address,V> e = i.next();
-                try {
-                    e.getValue().close();
-                }
-                catch(IOException ignored) {
-                }                  
+                Util.close(e.getValue());          
             }           
         }
         finally {
@@ -215,14 +201,8 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
                         V c=entry.getValue();
                         if(c.isExpired(System.currentTimeMillis())) {
                             log.info("Connection " + c.toString() + " reaped");
-                            try {
-                                c.close();
-                            }
-                            catch(IOException ignored) {                                                               
-                            }
-                            finally {                                
-                                it.remove();
-                            }
+                            Util.close(c);                                            
+                            it.remove();                           
                         }
                     }
                 }
