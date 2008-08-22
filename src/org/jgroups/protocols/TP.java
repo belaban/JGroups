@@ -20,6 +20,7 @@ import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Lock;
 
 
 /**
@@ -46,7 +47,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.226 2008/08/22 09:03:06 belaban Exp $
+ * @version $Id: TP.java,v 1.227 2008/08/22 09:17:13 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -64,6 +65,10 @@ public abstract class TP extends Protocol {
         f.setGroupingUsed(false);
         f.setMaximumFractionDigits(2);
     }
+
+    private ExposedByteArrayOutputStream out_stream=null;
+    private ExposedDataOutputStream      dos=null;
+    private final Lock                   out_stream_lock=new ReentrantLock();
 
     
     
@@ -860,6 +865,9 @@ public abstract class TP extends Protocol {
         verifyRejectionPolicy(oob_thread_pool_rejection_policy);
         verifyRejectionPolicy(thread_pool_rejection_policy);
 
+        out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+        dos=new ExposedDataOutputStream(out_stream);
+
         // ========================================== OOB thread pool ==============================
 
         if(oob_thread_pool_enabled) {
@@ -1335,14 +1343,17 @@ public abstract class TP extends Protocol {
             }
         }
 
-        ExposedByteArrayOutputStream out_stream=null;
-        ExposedDataOutputStream      dos=null;
-        Buffer                       buf;
-        out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-        dos=new ExposedDataOutputStream(out_stream);
-        writeMessage(msg, dos, multicast);
-        buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
-        doSend(buf, dest, multicast);
+        out_stream_lock.lock();
+        try {
+            out_stream.reset();
+            dos.reset();
+            writeMessage(msg, dos, multicast);
+            Buffer buf=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+            doSend(buf, dest, multicast);
+        }
+        finally {
+            out_stream_lock.unlock();
+        }
     }
 
 
@@ -1825,8 +1836,8 @@ public abstract class TP extends Protocol {
         int                                num_bundling_tasks=0;
         long                               last_bundle_time;        
         final ReentrantLock                lock=new ReentrantLock();
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-        final ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
+        final ExposedByteArrayOutputStream bundler_out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+        final ExposedDataOutputStream      bundler_dos=new ExposedDataOutputStream(bundler_out_stream);
 
 
         private void send(Message msg, Address dest) throws Exception {
@@ -1866,8 +1877,6 @@ public abstract class TP extends Protocol {
         }
 
 
-
-
         /**
          * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
          * This method may be called by timer and bundler concurrently
@@ -1899,10 +1908,10 @@ public abstract class TP extends Protocol {
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
                 try {
-                    out_stream.reset();
-                    dos.reset();
-                    writeMessageList(list, dos, multicast); // flushes output stream when done
-                    buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
+                    bundler_out_stream.reset();
+                    bundler_dos.reset();
+                    writeMessageList(list, bundler_dos, multicast); // flushes output stream when done
+                    buffer=new Buffer(bundler_out_stream.getRawBuffer(), 0, bundler_out_stream.size());
                     doSend(buffer, dst, multicast);
                 }
                 catch(Throwable e) {
