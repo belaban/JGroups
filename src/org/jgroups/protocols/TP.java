@@ -46,7 +46,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.225 2008/08/14 09:25:10 belaban Exp $
+ * @version $Id: TP.java,v 1.226 2008/08/22 09:03:06 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -57,7 +57,7 @@ public abstract class TP extends Protocol {
     private static final byte OOB=4; // message has OOB flag set (Message.OOB)
 
     private static NumberFormat f;
-    private static final int INITIAL_BUFSIZE=1024;
+    private static final int INITIAL_BUFSIZE=4095;
 
     static {
         f=NumberFormat.getNumberInstance();
@@ -1824,18 +1824,21 @@ public abstract class TP extends Protocol {
         @GuardedBy("lock")
         int                                num_bundling_tasks=0;
         long                               last_bundle_time;        
-        final ReentrantLock                lock=new ReentrantLock();               
+        final ReentrantLock                lock=new ReentrantLock();
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
+        final ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
 
 
         private void send(Message msg, Address dest) throws Exception {
             long length=msg.size();
             checkLength(length);
-            Map<Address,List<Message>> bundled_msgs=null;
 
             lock.lock();
             try {
-                if(count + length >= max_bundle_size) {                    
-                    bundled_msgs=removeBundledMessages();
+                if(count + length >= max_bundle_size) {
+                    if(!msgs.isEmpty()) {
+                        sendBundledMessages(msgs);
+                    }
                 }
                 addMessage(msg, dest);
                 count+=length;
@@ -1846,10 +1849,6 @@ public abstract class TP extends Protocol {
             }
             finally {
                 lock.unlock();
-            }
-
-            if(bundled_msgs != null) {            	
-                sendBundledMessages(bundled_msgs);
             }
         }
 
@@ -1867,11 +1866,18 @@ public abstract class TP extends Protocol {
         }
 
 
-        /** Must always be called with lock held */
-        private Map<Address,List<Message>> removeBundledMessages() {
-            if(msgs.isEmpty())
-                return null;
-            Map<Address,List<Message>> copy=new HashMap<Address,List<Message>>(msgs);
+
+
+        /**
+         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
+         * This method may be called by timer and bundler concurrently
+         * @param msgs
+         */
+        private void sendBundledMessages(final Map<Address,List<Message>> msgs) {
+            boolean   multicast;
+            Buffer    buffer;
+            Address   dst;
+
             if(log.isTraceEnabled()) {
                 long stop=System.currentTimeMillis();
                 double percentage=100.0 / max_bundle_size * count;
@@ -1881,45 +1887,20 @@ public abstract class TP extends Protocol {
                 if(last_bundle_time > 0) {
                     sb.append(", collected in ").append(stop-last_bundle_time).append("ms) ");
                 }
-                sb.append(" to ").append(copy.size()).append(" destination(s)");
-                if(copy.size() > 1) sb.append(" (dests=").append(copy.keySet()).append(")");
+                sb.append(" to ").append(msgs.size()).append(" destination(s)");
+                if(msgs.size() > 1) sb.append(" (dests=").append(msgs.keySet()).append(")");
                 log.trace(sb);
             }
-            msgs.clear();
-            count=0;
-            return copy;
-        }
 
-
-        /**
-         * Sends all messages from the map, all messages for the same destination are bundled into 1 message.
-         * This method may be called by timer and bundler concurrently
-         * @param msgs
-         */
-        private void sendBundledMessages(Map<Address,List<Message>> msgs) {
-            boolean   multicast;
-            Buffer    buffer;
-            Map.Entry<Address,List<Message>> entry;
-            Address   dst;
-            ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(INITIAL_BUFSIZE);
-            ExposedDataOutputStream      dos=new ExposedDataOutputStream(out_stream);
-            boolean first=true;
-
-            for(Iterator<Map.Entry<Address,List<Message>>> it=msgs.entrySet().iterator(); it.hasNext();) {
-                entry=it.next();
+            for(Map.Entry<Address,List<Message>> entry: msgs.entrySet()) {
                 List<Message> list=entry.getValue();
                 if(list.isEmpty())
                     continue;
                 dst=entry.getKey();
                 multicast=dst == null || dst.isMulticastAddress();
                 try {
-                    if(first) {
-                        first=false;
-                    }
-                    else {
-                        out_stream.reset();
-                        dos.reset();
-                    }
+                    out_stream.reset();
+                    dos.reset();
                     writeMessageList(list, dos, multicast); // flushes output stream when done
                     buffer=new Buffer(out_stream.getRawBuffer(), 0, out_stream.size());
                     doSend(buffer, dst, multicast);
@@ -1928,6 +1909,8 @@ public abstract class TP extends Protocol {
                     if(log.isErrorEnabled()) log.error("exception sending msg: " + e.toString(), e.getCause());
                 }
             }
+            msgs.clear();
+            count=0;
         }
 
 
@@ -1942,21 +1925,13 @@ public abstract class TP extends Protocol {
         private class BundlingTimer implements Runnable {
 
             public void run() {
-                Map<Address, List<Message>> msgs=null;
-                boolean unlocked=false;
-
                 lock.lock();
                 try {
-                    msgs=removeBundledMessages();
-                    if(msgs != null) {
-                        lock.unlock();
-                        unlocked=true;
+                    if(!msgs.isEmpty()) {
                         sendBundledMessages(msgs);
                     }
                 }
                 finally {
-                    if(unlocked)
-                        lock.lock();
                     num_bundling_tasks--;
                     lock.unlock();
                 }
