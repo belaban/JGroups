@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.159 2008/08/21 17:45:16 vlada Exp $
+ * @version $Id: Util.java,v 1.160 2008/08/22 21:28:07 vlada Exp $
  */
 public class Util {
 
@@ -2145,8 +2145,10 @@ public class Util {
             throw new UnknownHostException("Invalid bind address " + retval);
         }
 
-        props.remove("bind_addr");
-        props.remove("bind_interface");
+        if(props != null) {
+            props.remove("bind_addr");
+            props.remove("bind_interface");
+        }
         return retval;
     }
 

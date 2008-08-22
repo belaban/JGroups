@@ -79,6 +79,8 @@ public class ChannelTestBase {
             active_threads=Thread.activeCount();
             before_threads="active threads before (" + active_threads + "):\n" + Util.activeThreads();
         }
+        
+        bind_addr = Util.getBindAddress(null).getHostAddress();
     }
 
     protected boolean isTunnelUsed() {
@@ -296,9 +298,6 @@ public class ChannelTestBase {
                 throw new IllegalStateException("Only UDP and TCP are supported as transport protocols");
             }
         }
-
-
-
     }
 
 
