@@ -6,19 +6,17 @@ import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.*;
 
 /** Hashmap which distributes its keys and values across the cluster. A PUT/GET/REMOVE computes the cluster node to which
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
  * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values.
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.2 2008/08/25 12:01:32 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.3 2008/08/25 12:29:09 belaban Exp $
  */
 @Experimental @Unsupported
-public class PartitionedHashMap implements MembershipListener {
-    private final ConcurrentMap<Object,Object> cache=new ConcurrentHashMap<Object,Object>();
+public class PartitionedHashMap<K,V> implements MembershipListener {
+    private final Cache<K,V> cache=new Cache<K,V>();
     private View view=null;
     private static final Log log=LogFactory.getLog(PartitionedHashMap.class);
     private JChannel ch=null;
@@ -28,11 +26,11 @@ public class PartitionedHashMap implements MembershipListener {
     private String cluster_name="PartitionedHashMap-Cluster";
     private long call_timeout=1000L;
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
-    private HashFunction hash_function=null;
+    private HashFunction<K> hash_function=null;
     private Set<MembershipListener> membership_listeners=new HashSet<MembershipListener>();
 
 
-    public interface HashFunction {
+    public interface HashFunction<K> {
         /**
          * Defines a hash function to pick the right node from the list of cluster nodes. Ideally, this function uses
          * consistent hashing, so that the same key maps to the same node despite cluster view changes. If a view change
@@ -41,7 +39,7 @@ public class PartitionedHashMap implements MembershipListener {
          * @param key The object to be hashed
          * @return
          */
-        Address hash(Object key);
+        Address hash(K key);
     }
 
 
@@ -114,7 +112,7 @@ public class PartitionedHashMap implements MembershipListener {
     }
 
 
-    public void put(Object key, Object val) {
+    public void put(K key, V val) {
         put(key, val, this.caching_time);
     }
 
@@ -125,12 +123,12 @@ public class PartitionedHashMap implements MembershipListener {
      * @param caching_time Time to live. -1 means never cache, 0 means cache forever. All other (positive) values
      * are the number of milliseconds to cache the item
      */
-    public void put(Object key, Object val, long caching_time) {
+    public void put(K key, V val, long caching_time) {
         Address dest_node=getNode(key);
         try {
             disp.callRemoteMethod(dest_node, "_put",
                                   new Object[]{key, val, caching_time},
-                                  new Class[]{Object.class, Object.class, long.class},
+                                  new Class[]{key.getClass(), val.getClass(), long.class},
                                   GroupRequest.GET_NONE, 0);
         }
         catch(Throwable t) {
@@ -139,13 +137,13 @@ public class PartitionedHashMap implements MembershipListener {
         }
     }
 
-    public Object get(Object key) {
+    public V get(K key) {
         Address dest_node=getNode(key);
         try {
-            return disp.callRemoteMethod(dest_node, "_get",
-                                                new Object[]{key},
-                                                new Class[]{Object.class},
-                                                GroupRequest.GET_FIRST, call_timeout);
+            return (V)disp.callRemoteMethod(dest_node, "_get",
+                                            new Object[]{key},
+                                            new Class[]{key.getClass()},
+                                            GroupRequest.GET_FIRST, call_timeout);
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -154,12 +152,12 @@ public class PartitionedHashMap implements MembershipListener {
         }
     }
 
-    public void remove(Object key) {
+    public void remove(K key) {
         Address dest_node=getNode(key);
         try {
             disp.callRemoteMethod(dest_node, "_remove",
                                   new Object[]{key},
-                                  new Class[]{Object.class},
+                                  new Class[]{key.getClass()},
                                   GroupRequest.GET_NONE, 0);
         }
         catch(Throwable t) {
@@ -170,25 +168,25 @@ public class PartitionedHashMap implements MembershipListener {
     
 
 
-    public void _put(Object key, Object val) {
+    public void _put(K key, V val) {
         if(log.isTraceEnabled())
             log.trace("_put(" + key + ", " + val + ")");
-        cache.put(key, val);
+        cache.put(key, val, caching_time);
     }
 
-    public void _put(Object key, Object val, long caching_time) {
+    public void _put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("_put(" + key + ", " + val + ", " + caching_time + ")");
-        cache.put(key, val);
+        cache.put(key, val, caching_time);
     }
 
-    public Object _get(Object key) {
+    public V _get(K key) {
         if(log.isTraceEnabled())
             log.trace("_get(" + key + ")");
         return cache.get(key);
     }
 
-    public void _remove(Object key) {
+    public void _remove(K key) {
         if(log.isTraceEnabled())
             log.trace("_remove(" + key + ")");
         cache.remove(key);
@@ -213,7 +211,7 @@ public class PartitionedHashMap implements MembershipListener {
     }
 
 
-    private Address getNode(Object key) {
+    private Address getNode(K key) {
         return hash_function.hash(key);
     }
 

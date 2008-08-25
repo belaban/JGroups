@@ -12,7 +12,7 @@ import java.util.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put(). 
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.2 2008/08/25 12:01:18 belaban Exp $
+ * @version $Id: Cache.java,v 1.3 2008/08/25 12:29:10 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -100,12 +100,12 @@ public class Cache<K,V> {
         }
     }
 
-    public Object get(K key) {
+    public V get(K key) {
         if(log.isTraceEnabled())
             log.trace("get(" + key + ")");
         Value<V> val=map.get(key);
         if(val == null)
-            return val;
+            return null;
         if(val.expiration_time < System.currentTimeMillis()) {
             map.remove(key);
             return null;
