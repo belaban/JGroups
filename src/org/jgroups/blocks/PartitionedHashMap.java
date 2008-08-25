@@ -12,7 +12,7 @@ import java.util.*;
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
  * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values.
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.4 2008/08/25 15:06:46 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.5 2008/08/25 15:43:35 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -26,6 +26,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     private static final Log log=LogFactory.getLog(PartitionedHashMap.class);
     private JChannel ch=null;
     private Address local_addr=null;
+    private View    view;
     private RpcDispatcher disp=null;
     private String props="udp.xml";
     private String cluster_name="PartitionedHashMap-Cluster";
@@ -49,7 +50,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
          * @param key The object to be hashed
          * @return
          */
-        Address hash(K key);
+        Address hash(K key, List<Address> membership);
     }
 
 
@@ -147,6 +148,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         disp=new RpcDispatcher(ch, null, this, this);
         ch.connect(cluster_name);
         local_addr=ch.getLocalAddress();
+        view=ch.getView();
     }
 
 
@@ -287,15 +289,15 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
 
     private Address getNode(K key) {
-        return hash_function.hash(key);
+        return hash_function.hash(key, view.getMembers());
     }
 
 
-    private static class ConsistentHashFunction implements HashFunction, MembershipListener {
+    private static class ConsistentHashFunction<K> implements HashFunction<K>, MembershipListener {
         private SortedMap<Short,Address> nodes=new  TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
 
-        public Address hash(Object key) {
+        public Address hash(K key, List<Address> members) {
             int hash=Math.abs(key.hashCode());
             int index=hash % HASH_SPACE;
 
