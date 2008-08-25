@@ -247,9 +247,8 @@ public class TCPConnectionMap{
                 TCPConnection conn=null;
                 Socket client_sock = null;
                 try {
-                    client_sock=srv_sock.accept();
-                    setSocketParameters(client_sock);                    
-                    conn=new TCPConnection(receiver, client_sock, null);
+                    client_sock=srv_sock.accept();                      
+                    conn=new TCPConnection(client_sock);
                     Address peer_addr=conn.getPeerAddress();
                     mapper.getLock().lock();
                     try {
@@ -346,24 +345,31 @@ public class TCPConnectionMap{
         private final DataInputStream in;    
         private final Address peer_addr; // address of the 'other end' of the connection
         private final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
-        private long last_access=System.currentTimeMillis(); // last time a message was sent or received    
-        private volatile boolean is_running=false;       
+        private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
 
-        private final Receiver receiver;
-
-        TCPConnection(Receiver r,Socket s,Address peer_addr) throws Exception {
-            this.receiver=r;
-            this.sock=s;                             
+        TCPConnection(Address peer_addr) throws Exception {
+            if(peer_addr == null)
+                throw new IllegalArgumentException("Invalid parameter peer_addr="+ peer_addr);           
+            SocketAddress destAddr=new InetSocketAddress(((IpAddress)peer_addr).getIpAddress(),((IpAddress)peer_addr).getPort());
+            this.sock=new Socket();
+            this.sock.bind(new InetSocketAddress(bind_addr, 0));
+            this.sock.connect(destAddr, sock_conn_timeout);
+            setSocketParameters(sock);
             this.out=new DataOutputStream(new BufferedOutputStream(sock.getOutputStream()));
-            this.in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));   
-            if(peer_addr == null){
-                this.peer_addr=readPeerAddress(s);
-            } 
-            else{
-                sendLocalAddress(getLocalAddress());
-                this.peer_addr=peer_addr;           
-            }
-        }   
+            this.in=new DataInputStream(new BufferedInputStream(sock.getInputStream()));
+            sendLocalAddress(getLocalAddress());
+            this.peer_addr=peer_addr;            
+        }
+
+        TCPConnection(Socket s) throws Exception {
+            if(s == null)
+                throw new IllegalArgumentException("Invalid parameter s=" + s);                       
+            setSocketParameters(s);
+            this.out=new DataOutputStream(new BufferedOutputStream(s.getOutputStream()));
+            this.in=new DataInputStream(new BufferedInputStream(s.getInputStream()));
+            this.peer_addr=readPeerAddress(s);            
+            this.sock=s;
+        }  
         
         private Address getPeerAddress() {
             return peer_addr;
@@ -374,16 +380,14 @@ public class TCPConnectionMap{
         }
 
         private void start(ThreadFactory f) {
-            if(!is_running){
-                is_running = true;
-                Thread t=f.newThread(new ConnectionPeerReceiver(), "Connection.Receiver [" + getSockAddress() + "]");
+
+            Thread t=f.newThread(new ConnectionPeerReceiver(),"Connection.Receiver [" + getSockAddress() + "]");
+            t.start();
+
+            if(getSenderQueueSize() > 0) {
+                t=f.newThread(new Sender(getSenderQueueSize()),"Connection.Sender [" + getSockAddress() + "]");
                 t.start();
-        
-                if(getSenderQueueSize() > 0) {
-                    t=f.newThread(new Sender(getSenderQueueSize()),"Connection.Sender [" + getSockAddress() + "]");
-                    t.start();
-                }            
-            }              
+            }
         }
 
         private String getSockAddress() {
@@ -519,7 +523,7 @@ public class TCPConnectionMap{
                 byte[] buf=new byte[256]; // start with 256, increase as we go
                 int len=0;
 
-                while(is_running) {
+                while(isOpen()) {
                     try {                    
                         len=in.readInt();
                         if(len > buf.length)
@@ -550,7 +554,7 @@ public class TCPConnectionMap{
             }
             
             public void run() {            
-                while(is_running) {
+                while(isOpen()) {
                     try {
                         byte[] data =send_queue.take();
                         if(data != null){                      
@@ -607,11 +611,10 @@ public class TCPConnectionMap{
         }
 
         public boolean isOpen() {
-            return sock != null && sock.isConnected();
+            return sock.isConnected();
         }
 
-        public void close() throws IOException {
-            is_running=false;
+        public void close() throws IOException {          
             send_lock.lock();
             try {
                 Util.close(sock);
@@ -638,25 +641,17 @@ public class TCPConnectionMap{
         public TCPConnection getConnection(Address dest) throws Exception {
             TCPConnection conn=null;
             getLock().lock();
-            try{
+            try {
                 conn=conns.get(dest);
-                Socket sock=null;
-                if(conn == null) {              
-                    SocketAddress tmpBindAddr=new InetSocketAddress(bind_addr, 0);
-                    InetAddress tmpDest=((IpAddress)dest).getIpAddress();
-                    SocketAddress destAddr=new InetSocketAddress(tmpDest, ((IpAddress)dest).getPort());
-                    sock=new Socket();
-                    sock.bind(tmpBindAddr);             
-                    sock.connect(destAddr, sock_conn_timeout);
-                    setSocketParameters(sock);
-                    conn=new TCPConnection(receiver, sock, dest);                   
-                    conn.start(getThreadFactory());                    
-                    addConnection(dest, conn);                                    
+                if(conn == null) {
+                    conn=new TCPConnection(dest);
+                    conn.start(getThreadFactory());
+                    addConnection(dest, conn);
                     if(log.isTraceEnabled())
                         log.trace("created socket to " + dest);
                 }
             }
-            finally{
+            finally {
                 getLock().unlock();
             }
             return conn;
