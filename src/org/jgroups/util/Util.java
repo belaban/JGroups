@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.161 2008/08/22 22:18:26 vlada Exp $
+ * @version $Id: Util.java,v 1.162 2008/08/25 12:56:15 belaban Exp $
  */
 public class Util {
 
@@ -348,7 +348,7 @@ public class Util {
                 out=new DataOutputStream(out_stream);
                 writeGenericStreamable((Streamable)obj, (DataOutputStream)out);
             }
-            else if((type=(Byte)PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
                 out_stream.write(type.byteValue());
                 out=new DataOutputStream(out_stream);
                 switch(type.byteValue()) {
