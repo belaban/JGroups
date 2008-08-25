@@ -6,23 +6,20 @@ import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
 
 import java.util.concurrent.*;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.SortedMap;
-import java.util.TreeMap;
+import java.util.*;
 
 /**
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put(). 
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.1 2008/08/25 11:31:51 belaban Exp $
+ * @version $Id: Cache.java,v 1.2 2008/08/25 12:01:18 belaban Exp $
  */
 @Experimental
 @Unsupported
 public class Cache<K,V> {
     private static final Log log=LogFactory.getLog(Cache.class);
     private final ConcurrentMap<K,Value<V>> map=new ConcurrentHashMap<K,Value<V>>();
-    private final ScheduledThreadPoolExecutor timer=new ScheduledThreadPoolExecutor(1);
+    private ScheduledThreadPoolExecutor timer=new ScheduledThreadPoolExecutor(1);
     private Future task=null;
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
@@ -52,7 +49,25 @@ public class Cache<K,V> {
         }
     }
 
+    public void start() {
+        if(timer == null)
+            timer=new ScheduledThreadPoolExecutor(1);
+    }
 
+    public void stop() {
+        timer.shutdown();
+        timer=null;
+    }
+
+    /**
+     *
+     * @param key
+     * @param val
+     * @param caching_time Number of milliseconds to keep an entry in the cache. -1 means don't cache (if reaping
+     * is enabled, we'll evict an entry with -1 caching time), 0 means never evict. In the latter case, we can still
+     * evict an entry with 0 caching time: when we have a bounded cache, we evict in order of insertion no matter
+     * what the caching time is.
+     */
     public void put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("put(" + key + ", " + val + ", " + caching_time + ")");
@@ -65,15 +80,19 @@ public class Cache<K,V> {
             }
             if(map.size() > max_num_entries) {
                 // still too many entries: now evict entries based on insertion time: oldest first
-                int diff=max_num_entries - map.size(); // we have to evict diff entries
+                int diff=map.size() - max_num_entries; // we have to evict diff entries
                 SortedMap<Long,K> tmp=new TreeMap<Long,K>();
                 for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
                     tmp.put(entry.getValue().insertion_time, entry.getKey());
                 }
 
-                for(K k: tmp.values()) {
-                    if(diff-- > 0)
-                        map.remove(k);
+                Collection<K> vals=tmp.values();
+                for(K k: vals) {
+                    if(diff-- > 0) {
+                        Value<V> v=map.remove(k);
+                        if(log.isTraceEnabled())
+                            log.trace("evicting " + k + ": " + v.value);
+                    }
                     else
                         break;
                 }
@@ -104,10 +123,12 @@ public class Cache<K,V> {
         for(Iterator<Map.Entry<K,Value<V>>> it=map.entrySet().iterator(); it.hasNext();) {
             Map.Entry<K,Value<V>> entry=it.next();
             Value<V> val=entry.getValue();
-            if(val != null && val.expiration_time > 0 && System.currentTimeMillis() > val.expiration_time) {
-                if(log.isTraceEnabled())
-                    log.trace("evicting " + entry.getKey() + ": " + entry.getValue().value);
-                it.remove();
+            if(val != null) {
+                if(val.expiration_time == -1 || (val.expiration_time > 0 && System.currentTimeMillis() > val.expiration_time)) {
+                    if(log.isTraceEnabled())
+                        log.trace("evicting " + entry.getKey() + ": " + entry.getValue().value);
+                    it.remove();
+                }
             }
         }
     }
