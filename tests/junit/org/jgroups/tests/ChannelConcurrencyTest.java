@@ -28,9 +28,9 @@ import org.testng.annotations.Test;
 /**
  * Tests concurrent startup
  * @author Brian Goose
- * @version $Id: ChannelConcurrencyTest.java,v 1.16 2008/07/25 20:09:39 vlada Exp $
+ * @version $Id: ChannelConcurrencyTest.java,v 1.17 2008/08/25 16:10:46 vlada Exp $
  */
-@Test(groups=Global.FLUSH,sequential=true)
+@Test(groups="broken",sequential=true)
 public class ChannelConcurrencyTest  extends ChannelTestBase{
 
     public void testPlainChannel () throws Throwable{
