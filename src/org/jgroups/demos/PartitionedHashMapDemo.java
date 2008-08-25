@@ -9,15 +9,21 @@ import java.io.InputStreamReader;
 
 /**
  * @author Bela Ban
- * @version $Id: PartitionedHashMapDemo.java,v 1.1 2008/08/25 14:17:51 belaban Exp $
+ * @version $Id: PartitionedHashMapDemo.java,v 1.2 2008/08/25 15:06:47 belaban Exp $
  */
 public class PartitionedHashMapDemo {
 
     public static void main(String[] args) throws Exception {
         String props="udp.xml";
+        boolean migrate_data=false;
+
         for(int i=0; i < args.length; i++) {
             if(args[i].equals("-props")) {
                 props=args[++i];
+                continue;
+            }
+            if(args[i].equals("-migrate_data")) {
+                migrate_data=true;
                 continue;
             }
             help();
@@ -33,6 +39,7 @@ public class PartitionedHashMapDemo {
         map.setL1Cache(l1_cache);
         Cache<String, String> l2_cache=map.getL2Cache();
         l2_cache.enableReaping(10000);
+        map.setMigrateData(migrate_data);
         map.start();
 
         while(true) {
@@ -51,6 +58,7 @@ public class PartitionedHashMapDemo {
                     System.out.println("val = " + val);
                     break;
                 case '3':
+                    System.out.println("address: " + map.getLocalAddress());
                     System.out.println("L1 cache:\n" + map.getL1Cache());
                     System.out.println("L2 cache:\n" + map.getL2Cache());
                     break;
@@ -65,7 +73,7 @@ public class PartitionedHashMapDemo {
 
 
     private static void help() {
-        System.out.println("PartitionedHashMapDemo [-props <props>]");
+        System.out.println("PartitionedHashMapDemo [-props <props>] [-migrate_data]");
     }
 
     static String readLine(String msg) {
