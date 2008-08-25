@@ -7,12 +7,13 @@ import org.jgroups.annotations.Unsupported;
 
 import java.util.concurrent.*;
 import java.util.*;
+import java.io.*;
 
 /**
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put(). 
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.3 2008/08/25 12:29:10 belaban Exp $
+ * @version $Id: Cache.java,v 1.4 2008/08/25 15:06:46 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -55,7 +56,8 @@ public class Cache<K,V> {
     }
 
     public void stop() {
-        timer.shutdown();
+        if(timer != null)
+            timer.shutdown();
         timer=null;
     }
 
@@ -106,17 +108,44 @@ public class Cache<K,V> {
         Value<V> val=map.get(key);
         if(val == null)
             return null;
-        if(val.expiration_time < System.currentTimeMillis()) {
+        if(val.expiration_time == -1 || val.expiration_time < System.currentTimeMillis()) {
             map.remove(key);
             return null;
         }
         return val.value;
     }
 
+    public Value<V> getEntry(K key) {
+        if(log.isTraceEnabled())
+            log.trace("getEntry(" + key + ")");
+        return map.get(key);
+    }
+
     public void remove(K key) {
         if(log.isTraceEnabled())
             log.trace("remove(" + key + ")");
         map.remove(key);
+    }
+
+    public Set<Map.Entry<K,Value<V>>> entrySet() {
+        return map.entrySet();
+    }
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
+            Value<V> val=entry.getValue();
+            sb.append(entry.getKey()).append(": ").append(entry.getValue().getValue());
+            sb.append(" (expiration_time: ");
+            long expiration_time=val.getExpirationTime();
+            if(expiration_time <= 0)
+                sb.append(expiration_time);
+            else {
+                sb.append(new Date(expiration_time));
+            }
+            sb.append(")\n");
+        }
+        return sb.toString();
     }
 
     private void evict() {
@@ -135,19 +164,40 @@ public class Cache<K,V> {
 
     
 
-    private static class Value<V> {
-        private final V value;
+    public static class Value<V> implements Externalizable {
+        private V value;
 
-        private final long insertion_time=System.currentTimeMillis();
+        private long insertion_time=System.currentTimeMillis();
         
         /** When the value can be reaped (in ms) */
-        private final long expiration_time;
+        private transient long expiration_time;
+        private static final long serialVersionUID=-3445944261826378608L;
+
 
         public Value(V value, long expiration_time) {
             this.value=value;
             this.expiration_time=expiration_time;
         }
+
+        public Value() {
+        }
+
+        public V getValue() {return value;}
+        public long getInsertionTime() {return insertion_time;}
+        public long getExpirationTime() {return expiration_time;}
+
+        public void writeExternal(ObjectOutput out) throws IOException {
+            out.writeLong(expiration_time);
+            out.writeObject(value);
+        }
+
+        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+            insertion_time=System.currentTimeMillis();
+            expiration_time=in.readLong();
+            value=(V)in.readObject();
+        }
     }
+    
 
     private class Reaper implements Runnable {
 
