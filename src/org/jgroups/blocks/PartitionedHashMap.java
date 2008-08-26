@@ -12,7 +12,7 @@ import java.util.*;
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
  * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values.
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.5 2008/08/25 15:43:35 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.6 2008/08/26 06:36:47 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -48,6 +48,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
          * causes all keys to hash to different nodes, then PartitionedHashMap will redirect requests to different nodes
          * and this causes unnecessary overhead.
          * @param key The object to be hashed
+         * @param membership The membership. This value can be ignored for example if the hash function keeps
+         * track of the membership itself, e.g. by registering as a membership
+         * listener ({@link PartitionedHashMap#addMembershipListener(org.jgroups.MembershipListener)} ) 
          * @return
          */
         Address hash(K key, List<Address> membership);
@@ -107,7 +110,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         return hash_function;
     }
 
-    public void setHashFunction(HashFunction hash_function) {
+    public void setHashFunction(HashFunction<K> hash_function) {
         this.hash_function=hash_function;
     }
 
@@ -142,7 +145,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
 
     public void start() throws Exception {
-        hash_function=new ConsistentHashFunction();
+        hash_function=new ConsistentHashFunction<K>();
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, null, this, this);
@@ -155,6 +158,21 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     public void stop() {
         if(l1_cache != null)
             l1_cache.stop();
+        if(migrate_data) {
+            List<Address> members_without_me=new ArrayList<Address>(view.getMembers());
+            members_without_me.remove(local_addr);
+
+            for(Map.Entry<K,Cache.Value<V>> entry: l2_cache.entrySet()) {
+                K key=entry.getKey();
+                Address node=hash_function.hash(key, members_without_me);
+                if(!node.equals(local_addr)) {
+                    Cache.Value<V> val=entry.getValue();
+                    sendPut(node, key, val.getValue(), val.getExpirationTime(), false, true);
+                    if(log.isTraceEnabled())
+                        log.trace("migrated " + key + " from " + local_addr + " to " + node);
+                }
+            }
+        }
         l2_cache.stop();
         disp.stop();
         ch.close();
@@ -174,16 +192,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
      */
     public void put(K key, V val, long caching_time) {
         Address dest_node=getNode(key);
-        try {
-            disp.callRemoteMethod(dest_node, "_put",
-                                  new Object[]{key, val, caching_time},
-                                  new Class[]{key.getClass(), val.getClass(), long.class},
-                                  GroupRequest.GET_NONE, 0);
-        }
-        catch(Throwable t) {
-            if(log.isWarnEnabled())
-                log.warn("_put() failed", t);
-        }
+        sendPut(dest_node, key, val, caching_time, true, false);
     }
 
     public V get(K key) {
@@ -225,7 +234,9 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             disp.callRemoteMethod(dest_node, "_remove",
                                   new Object[]{key},
                                   new Class[]{key.getClass()},
-                                  GroupRequest.GET_NONE, 0);
+                                  GroupRequest.GET_NONE, call_timeout);
+            if(l1_cache != null)
+                l1_cache.remove(key);
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -234,10 +245,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
     
 
-    public void _put(K key, V val, long caching_time) {
+    public V _put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("_put(" + key + ", " + val + ", " + caching_time + ")");
-        l2_cache.put(key, val, caching_time);
+        return l2_cache.put(key, val, caching_time);
     }
 
     public Cache.Value<V> _get(K key) {
@@ -246,10 +257,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         return l2_cache.getEntry(key);
     }
 
-    public void _remove(K key) {
+    public V _remove(K key) {
         if(log.isTraceEnabled())
             log.trace("_remove(" + key + ")");
-        l2_cache.remove(key);
+        return l2_cache.remove(key);
     }
 
 
@@ -258,6 +269,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     public void viewAccepted(View new_view) {
         System.out.println("view = " + new_view);
+        this.view=new_view;
         for(MembershipListener l: membership_listeners) {
             l.viewAccepted(new_view);
         }
@@ -288,30 +300,47 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         }
     }
 
+    private void sendPut(Address dest, K key, V val, long caching_time, boolean put_in_l1_cache, boolean synchronous) {
+        try {
+            int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
+            disp.callRemoteMethod(dest, "_put",
+                                  new Object[]{key, val, caching_time},
+                                  new Class[]{key.getClass(), val.getClass(), long.class},
+                                  mode, call_timeout);
+
+            if(l1_cache != null && put_in_l1_cache && caching_time >= 0)
+                l1_cache.put(key, val, caching_time);
+        }
+        catch(Throwable t) {
+            if(log.isWarnEnabled())
+                log.warn("_put() failed", t);
+        }
+    }
+
     private Address getNode(K key) {
-        return hash_function.hash(key, view.getMembers());
+        return hash_function.hash(key, null);
     }
 
 
     private static class ConsistentHashFunction<K> implements HashFunction<K>, MembershipListener {
-        private SortedMap<Short,Address> nodes=new  TreeMap<Short,Address>();
+        private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
 
         public Address hash(K key, List<Address> members) {
             int hash=Math.abs(key.hashCode());
             int index=hash % HASH_SPACE;
 
-            Address retval;
-            for(int i=index; i < index + HASH_SPACE; i++) {
-                short new_index=(short)(i % HASH_SPACE);
-                retval=nodes.get(new_index);
-                if(retval != null) {
-                    if(log.isTraceEnabled())
-                        log.trace("index for " + key + " is " + index + ", node is " + retval);
-                    return retval;
+            if(members != null && !members.isEmpty()) {
+                SortedMap<Short,Address> tmp=new TreeMap<Short,Address>(nodes);
+                for(Iterator<Map.Entry<Short,Address>> it=tmp.entrySet().iterator(); it.hasNext();) {
+                    Map.Entry<Short, Address> entry=it.next();
+                    if(!members.contains(entry.getValue())) {
+                        it.remove();
+                    }
                 }
+                return findFirst(tmp, index);
             }
-            return null;
+            return findFirst(nodes, index);
         }
 
         public void viewAccepted(View new_view) {
@@ -340,6 +369,17 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         }
 
         public void block() {
+        }
+
+        private static Address findFirst(Map<Short,Address> map, int index) {
+            Address retval;
+            for(int i=index; i < index + HASH_SPACE; i++) {
+                short new_index=(short)(i % HASH_SPACE);
+                retval=map.get(new_index);
+                if(retval != null)
+                    return retval;
+            }
+            return null;
         }
     }
 }

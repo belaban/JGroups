@@ -9,7 +9,7 @@ import java.io.InputStreamReader;
 
 /**
  * @author Bela Ban
- * @version $Id: PartitionedHashMapDemo.java,v 1.2 2008/08/25 15:06:47 belaban Exp $
+ * @version $Id: PartitionedHashMapDemo.java,v 1.3 2008/08/26 06:36:48 belaban Exp $
  */
 public class PartitionedHashMapDemo {
 
@@ -43,7 +43,7 @@ public class PartitionedHashMapDemo {
         map.start();
 
         while(true) {
-            int ch=Util.keyPress("[1] put [2] get [3] print [q] quit");
+            int ch=Util.keyPress("[1] put [2] get [3] remove [4] print [q] quit");
 
             switch(ch) {
                 case '1':
@@ -58,6 +58,10 @@ public class PartitionedHashMapDemo {
                     System.out.println("val = " + val);
                     break;
                 case '3':
+                    key=readLine("key: ");
+                    map.remove(key);
+                    break;
+                case '4':
                     System.out.println("address: " + map.getLocalAddress());
                     System.out.println("L1 cache:\n" + map.getL1Cache());
                     System.out.println("L2 cache:\n" + map.getL2Cache());

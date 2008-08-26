@@ -13,7 +13,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put(). 
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.4 2008/08/25 15:06:46 belaban Exp $
+ * @version $Id: Cache.java,v 1.5 2008/08/26 06:36:47 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -70,11 +70,11 @@ public class Cache<K,V> {
      * evict an entry with 0 caching time: when we have a bounded cache, we evict in order of insertion no matter
      * what the caching time is.
      */
-    public void put(K key, V val, long caching_time) {
+    public V put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("put(" + key + ", " + val + ", " + caching_time + ")");
         Value<V> value=new Value<V>(val, caching_time <= 0? caching_time : System.currentTimeMillis() + caching_time);
-        map.put(key, value);
+        Value<V> retval=map.put(key, value);
 
         if(max_num_entries > 0) {
             if(map.size() > max_num_entries) {
@@ -100,6 +100,7 @@ public class Cache<K,V> {
                 }
             }
         }
+        return retval != null? retval.value : null;
     }
 
     public V get(K key) {
@@ -108,7 +109,8 @@ public class Cache<K,V> {
         Value<V> val=map.get(key);
         if(val == null)
             return null;
-        if(val.expiration_time == -1 || val.expiration_time < System.currentTimeMillis()) {
+        if(val.expiration_time == -1 ||
+                (val.expiration_time > 0 && val.expiration_time < System.currentTimeMillis())) {
             map.remove(key);
             return null;
         }
@@ -121,10 +123,11 @@ public class Cache<K,V> {
         return map.get(key);
     }
 
-    public void remove(K key) {
+    public V remove(K key) {
         if(log.isTraceEnabled())
             log.trace("remove(" + key + ")");
-        map.remove(key);
+        Value<V> val=map.remove(key);
+        return val != null? val.value : null;
     }
 
     public Set<Map.Entry<K,Value<V>>> entrySet() {
