@@ -12,7 +12,7 @@ import java.util.*;
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
  * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values.
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.6 2008/08/26 06:36:47 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.7 2008/08/26 12:08:07 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -167,7 +167,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                 Address node=hash_function.hash(key, members_without_me);
                 if(!node.equals(local_addr)) {
                     Cache.Value<V> val=entry.getValue();
-                    sendPut(node, key, val.getValue(), val.getExpirationTime(), false, true);
+                    sendPut(node, key, val.getValue(), val.getExpirationTime(), true);
                     if(log.isTraceEnabled())
                         log.trace("migrated " + key + " from " + local_addr + " to " + node);
                 }
@@ -192,7 +192,14 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
      */
     public void put(K key, V val, long caching_time) {
         Address dest_node=getNode(key);
-        sendPut(dest_node, key, val, caching_time, true, false);
+        if(dest_node.equals(local_addr)) {
+            l2_cache.put(key, val, caching_time);
+        }
+        else {
+            sendPut(dest_node, key, val, caching_time, false);
+        }
+        if(l1_cache != null && caching_time >= 0)
+            l1_cache.put(key, val, caching_time);
     }
 
     public V get(K key) {
@@ -207,11 +214,17 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             }
         }
 
+        Cache.Value<V> val;
         try {
-            Cache.Value<V> val=(Cache.Value<V>)disp.callRemoteMethod(dest_node, "_get",
-                                                                     new Object[]{key},
-                                                                     new Class[]{key.getClass()},
-                                                                     GroupRequest.GET_FIRST, call_timeout);
+            // if we are the destination, don't invoke an RPC but return the item from our L2 cache irectly !
+            if(dest_node.equals(local_addr)) {
+                val=l2_cache.getEntry(key);
+            }
+            else
+                val=(Cache.Value<V>)disp.callRemoteMethod(dest_node, "_get",
+                                                          new Object[]{key},
+                                                          new Class[]{key.getClass()},
+                                                          GroupRequest.GET_FIRST, call_timeout);
             if(val != null) {
                 V retval=val.getValue();
                 if(l1_cache != null && val.getExpirationTime() >= 0)
@@ -230,11 +243,16 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     public void remove(K key) {
         Address dest_node=getNode(key);
+
         try {
-            disp.callRemoteMethod(dest_node, "_remove",
-                                  new Object[]{key},
-                                  new Class[]{key.getClass()},
-                                  GroupRequest.GET_NONE, call_timeout);
+            if(dest_node.equals(local_addr)) {
+                l2_cache.remove(key);
+            }
+            else
+                disp.callRemoteMethod(dest_node, "_remove",
+                                      new Object[]{key},
+                                      new Class[]{key.getClass()},
+                                      GroupRequest.GET_NONE, call_timeout);
             if(l1_cache != null)
                 l1_cache.remove(key);
         }
@@ -300,16 +318,13 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         }
     }
 
-    private void sendPut(Address dest, K key, V val, long caching_time, boolean put_in_l1_cache, boolean synchronous) {
+    private void sendPut(Address dest, K key, V val, long caching_time, boolean synchronous) {
         try {
             int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
             disp.callRemoteMethod(dest, "_put",
                                   new Object[]{key, val, caching_time},
                                   new Class[]{key.getClass(), val.getClass(), long.class},
                                   mode, call_timeout);
-
-            if(l1_cache != null && put_in_l1_cache && caching_time >= 0)
-                l1_cache.put(key, val, caching_time);
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())

@@ -18,11 +18,13 @@ import java.io.*;
  *     good for maintaining a bounded cache (rather than using the number of entries)
  * <li>Implement the ASCII and binary (when available) protocol of memcached
  * <li>JMX support for exposing stats
+ * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
  * <li>GUI (showing at least the topology and L1 and L2 caches)
+ * <li>Benchmarks, comparison to memcached
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.6 2008/08/26 07:35:55 belaban Exp $
+ * @version $Id: Cache.java,v 1.7 2008/08/26 12:08:08 belaban Exp $
  */
 @Experimental
 @Unsupported
