@@ -18,7 +18,7 @@ import java.util.concurrent.*;
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.1 2008/08/26 13:41:42 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.2 2008/08/26 14:47:05 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -132,11 +132,17 @@ public class MemcachedConnector implements Runnable {
                     for(Iterator<SelectionKey> it=keys.iterator(); it.hasNext();) {
                         SelectionKey key=it.next();
                         it.remove();
+                        SocketChannel client_channel;
                         if(key.isAcceptable()) {
                             ServerSocketChannel tmp=(ServerSocketChannel)key.channel();
-                            SocketChannel client_channel=tmp.accept();
-
-                            handleConnection(client_channel);
+                            client_channel=tmp.accept();
+                            client_channel.configureBlocking(false);
+                            client_channel.register(selector, SelectionKey.OP_READ);
+                            // handleConnection(client_channel);
+                        }
+                        else if(key.isReadable()) {
+                            client_channel=(SocketChannel)key.channel();
+                            handleRead(client_channel);
                         }
                     }
                 }
@@ -150,9 +156,9 @@ public class MemcachedConnector implements Runnable {
         }
     }
 
-    private void handleConnection(final SocketChannel client_channel) throws IOException {
+    private void handleRead(final SocketChannel client_channel) throws IOException {
         Socket client_sock=client_channel.socket();
-        System.out.println("accepted connection from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
+        System.out.println("got data from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
         ByteBuffer buf=ByteBuffer.wrap("hello from bela\r\n".getBytes());
         client_channel.write(buf);
         client_channel.close();
