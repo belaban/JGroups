@@ -11,20 +11,9 @@ import java.io.*;
 
 /**
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
- * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put(). <br/>
- * Todos:<br/>
- * <ol>
- * <li>Use MarshalledValue to keep track of byte[] buffers, and be able to compute the exact size of the cache. This is
- *     good for maintaining a bounded cache (rather than using the number of entries)
- * <li>Implement the ASCII and binary (when available) protocol of memcached
- * <li>JMX support for exposing stats
- * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
- * <li>GUI (showing at least the topology and L1 and L2 caches)
- * <li>Benchmarks, comparison to memcached
- * <li>Documentation, comparison to memcached
- * </ol>
+ * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.7 2008/08/26 12:08:08 belaban Exp $
+ * @version $Id: Cache.java,v 1.8 2008/08/26 13:43:28 belaban Exp $
  */
 @Experimental
 @Unsupported

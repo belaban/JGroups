@@ -10,9 +10,21 @@ import java.util.*;
 
 /** Hashmap which distributes its keys and values across the cluster. A PUT/GET/REMOVE computes the cluster node to which
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
- * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values.
+ * We also maintain a local cache (L1 cache) which is a bounded cache that caches retrieved keys/values. <br/>
+ * Todos:<br/>
+ * <ol>
+ * <li>Use MarshalledValue to keep track of byte[] buffers, and be able to compute the exact size of the cache. This is
+ *     good for maintaining a bounded cache (rather than using the number of entries)
+ * <li>Implement the ASCII and binary (when available) protocol of memcached
+ * <li>Provide a better consistent hashing algorithm than ConsistenHashFuntion as default
+ * <li>JMX support for exposing stats
+ * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
+ * <li>GUI (showing at least the topology and L1 and L2 caches)
+ * <li>Benchmarks, comparison to memcached
+ * <li>Documentation, comparison to memcached
+ * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.7 2008/08/26 12:08:07 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.8 2008/08/26 13:43:28 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
