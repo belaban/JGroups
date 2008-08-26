@@ -611,7 +611,7 @@ public class TCPConnectionMap{
         }
 
         public boolean isOpen() {
-            return sock.isConnected();
+            return !sock.isClosed() && sock.isConnected();
         }
 
         public void close() throws IOException {          
