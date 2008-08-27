@@ -3,17 +3,18 @@ package org.jgroups.demos;
 import org.jgroups.blocks.MemcachedConnector;
 import org.jgroups.blocks.PartitionedHashMap;
 import org.jgroups.blocks.Cache;
+import org.jgroups.util.Buffer;
 
 import java.net.InetAddress;
 
-/** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashmap.
+/** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashMap.
  * Uses MemcachedConnector and PartitionedHashMap.
  * @author Bela Ban
- * @version $Id: MemcachedServer.java,v 1.1 2008/08/27 07:29:44 belaban Exp $
+ * @version $Id: MemcachedServer.java,v 1.2 2008/08/27 12:12:28 belaban Exp $
  */
 public class MemcachedServer {
     private MemcachedConnector connector;
-    private PartitionedHashMap<String,byte[]> cache;
+    private PartitionedHashMap<String, Buffer> cache;
 
 
     private void start(String props, InetAddress bind_addr, int port, int min_threads, int max_threads,
@@ -29,7 +30,7 @@ public class MemcachedServer {
         cache.setCachingTime(caching_time);
         cache.setMigrateData(migrate_data);
         if(use_l1_cache || l1_max_entries > 0 || l1_reaping_interval > 0) {
-            Cache<String,byte[]> l1_cache=new Cache<String,byte[]>();
+            Cache<String,Buffer> l1_cache=new Cache<String,Buffer>();
             cache.setL1Cache(l1_cache);
             if(l1_reaping_interval > 0)
                 l1_cache.enableReaping(l1_reaping_interval);
@@ -38,7 +39,7 @@ public class MemcachedServer {
         }
 
         if(l2_max_entries > 0 || l2_reaping_interval > 0) {
-            Cache<String,byte[]> l2_cache=cache.getL2Cache();
+            Cache<String,Buffer> l2_cache=cache.getL2Cache();
             if(l2_max_entries > 0)
                 l2_cache.setMaxNumberOfEntries(l2_max_entries);
             if(l2_reaping_interval > 0)

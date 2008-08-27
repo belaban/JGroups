@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.164 2008/08/27 09:30:16 belaban Exp $
+ * @version $Id: Util.java,v 1.165 2008/08/27 12:12:25 belaban Exp $
  */
 public class Util {
 
@@ -1921,6 +1921,9 @@ public class Util {
             }
         }
 
+        if(buf.remaining() == 0)
+            return null;
+
         while(buf.remaining() > 0) {
             ch=(char)buf.get();
             if(!Character.isWhitespace(ch)) {
@@ -1954,6 +1957,12 @@ public class Util {
                 break;
         }
         return num;
+    }
+
+
+    public static void writeString(ByteBuffer buf, String s) {
+        for(int i=0; i < s.length(); i++)
+            buf.put((byte)s.charAt(i));
     }
 
 
