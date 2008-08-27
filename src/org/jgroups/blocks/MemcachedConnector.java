@@ -19,7 +19,7 @@ import java.util.concurrent.*;
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.3 2008/08/27 06:03:44 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.4 2008/08/27 07:25:29 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -95,9 +95,14 @@ public class MemcachedConnector implements Runnable {
         return thread_pool;
     }
 
-    public void setThreadPool(ExecutorService thread_pool) {
+    public void setThreadPool(Executor thread_pool) {
+        if(this.thread_pool instanceof ExecutorService) {
+            ((ExecutorService)thread_pool).shutdown();
+        }
         this.thread_pool=thread_pool;
     }
+
+
 
     
     public void start() throws IOException {
@@ -106,9 +111,11 @@ public class MemcachedConnector implements Runnable {
         srv_sock=srv_sock_channel.socket();
         srv_sock.bind(new InetSocketAddress(bind_addr, port));
 
-        // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
+        if(thread_pool == null) {
+            // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
             //                               new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
-        thread_pool=new DirectExecutor();
+            thread_pool=new DirectExecutor();
+        }
 
         selector=Selector.open();
         srv_sock_channel.register(selector, SelectionKey.OP_ACCEPT);
