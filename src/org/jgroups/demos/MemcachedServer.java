@@ -1,11 +1,15 @@
-package org.jgroups.blocks;
+package org.jgroups.demos;
+
+import org.jgroups.blocks.MemcachedConnector;
+import org.jgroups.blocks.PartitionedHashMap;
+import org.jgroups.blocks.Cache;
 
 import java.net.InetAddress;
 
 /** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashmap.
  * Uses MemcachedConnector and PartitionedHashMap.
  * @author Bela Ban
- * @version $Id: MemcachedServer.java,v 1.2 2008/08/27 07:25:28 belaban Exp $
+ * @version $Id: MemcachedServer.java,v 1.1 2008/08/27 07:29:44 belaban Exp $
  */
 public class MemcachedServer {
     private MemcachedConnector connector;
