@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutorService;
  *     a byte buffer based on the number of bytes sent in the request (e.g. set())
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.6 2008/08/27 12:12:48 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.5 2008/08/27 12:12:26 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -162,8 +162,10 @@ public class MemcachedConnector implements Runnable {
                         }
                         else if(key.isReadable()) {
                             client_channel=(SocketChannel)key.channel();
+                            client_channel.configureBlocking(true);
                             RequestHandler handler=new RequestHandler(cache, client_channel);
                             thread_pool.execute(handler);
+                            client_channel.configureBlocking(false);
                         }
                     }
                 }
