@@ -45,6 +45,27 @@ public abstract class AbstractConnectionMap<V extends Connection> implements Con
     public Lock getLock(){
         return lock;
     }
+    
+    public boolean hasOpenConnection(Address address) {
+        lock.lock();
+        try {
+            V v=conns.get(address);
+            return v != null && v.isOpen();
+        }
+        finally {
+            lock.unlock();
+        }
+    }
+    
+    public boolean hasConnection(Address address) {
+        lock.lock();
+        try {
+            return conns.containsKey(address);
+        }
+        finally {
+            lock.unlock();
+        }
+    }
 
     public void addConnection(Address address, V conn) {
         lock.lock();
