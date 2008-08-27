@@ -1,4 +1,4 @@
-// $Id: TCP.java,v 1.53 2008/08/21 17:45:16 vlada Exp $
+// $Id: TCP.java,v 1.54 2008/08/27 21:13:32 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -67,6 +67,7 @@ public class TCP extends BasicTCP implements TCPConnectionMap.Receiver {
                               pm);
         ct.setReceiveBufferSize(recv_buf_size);      
         ct.setSendQueueSize(send_queue_size);
+        ct.setUseSendQueues(use_send_queues);
         ct.setSendBufferSize(send_buf_size);
         ct.setSocketConnectionTimeout(sock_conn_timeout);
         ct.setTcpNodelay(tcp_nodelay);

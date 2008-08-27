@@ -48,7 +48,8 @@ public class TCPConnectionMap{
     private final Thread acceptor;
     private PortsManager pm=null;       
 
-    private final AtomicBoolean running = new AtomicBoolean(false);    
+    private final AtomicBoolean running = new AtomicBoolean(false);
+    private volatile boolean use_send_queues;    
 
     public TCPConnectionMap(ThreadFactory f,
                             Receiver r,
@@ -251,9 +252,8 @@ public class TCPConnectionMap{
                     conn=new TCPConnection(client_sock);
                     Address peer_addr=conn.getPeerAddress();
                     mapper.getLock().lock();
-                    try {
-                        Connection currentConnection=mapper.getConnection(peer_addr);
-                        boolean currentConnectionOpen=currentConnection != null && currentConnection.isOpen();
+                    try {                        
+                        boolean currentConnectionOpen=mapper.hasOpenConnection(peer_addr);
                         boolean replaceWithNewConnection=false;
                         if(currentConnectionOpen) {
                             replaceWithNewConnection=peer_addr.compareTo(local_addr) > 0;
@@ -319,6 +319,10 @@ public class TCPConnectionMap{
         this.send_queue_size = send_queue_size;        
     }
     
+    public void setUseSendQueues(boolean use_send_queues) {
+        this.use_send_queues=use_send_queues;       
+    }   
+    
     public int getNumConnections() {
         return mapper.getNumConnections();
      }
@@ -346,6 +350,7 @@ public class TCPConnectionMap{
         private final Address peer_addr; // address of the 'other end' of the connection
         private final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
         private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
+        private Thread sender;
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)
@@ -384,9 +389,9 @@ public class TCPConnectionMap{
             Thread t=f.newThread(new ConnectionPeerReceiver(),"Connection.Receiver [" + getSockAddress() + "]");
             t.start();
 
-            if(getSenderQueueSize() > 0) {
-                t=f.newThread(new Sender(getSenderQueueSize()),"Connection.Sender [" + getSockAddress() + "]");
-                t.start();
+            if(getSenderQueueSize() > 0 && use_send_queues) {
+                sender=f.newThread(new Sender(getSenderQueueSize()),"Connection.Sender [" + getSockAddress() + "]");
+                sender.start();
             }
         }
 
@@ -554,7 +559,7 @@ public class TCPConnectionMap{
             }
             
             public void run() {            
-                while(isOpen()) {
+                while(!Thread.currentThread().isInterrupted() && isOpen()) {
                     try {
                         byte[] data =send_queue.take();
                         if(data != null){                      
@@ -620,7 +625,10 @@ public class TCPConnectionMap{
                 Util.close(sock);
                 Util.close(out);
                 Util.close(in);
-            }
+                if(sender !=null){
+                    sender.interrupt();
+                }
+            }            
             finally {
                 send_lock.unlock();                
             }            
