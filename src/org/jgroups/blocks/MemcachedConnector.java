@@ -4,15 +4,14 @@ import org.jgroups.util.Buffer;
 import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.channels.ClosedSelectorException;
-import java.util.ArrayList;
+import java.nio.ByteBuffer;
+import java.nio.channels.*;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -26,7 +25,7 @@ import java.util.concurrent.ExecutorService;
  *     a byte buffer based on the number of bytes sent in the request (e.g. set())
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.8 2008/08/27 14:07:57 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.7 2008/08/27 14:05:24 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -174,8 +173,6 @@ public class MemcachedConnector implements Runnable {
                         output.write("CLIENT_ERROR failed to parse request\r\n".getBytes());
                         continue;
                     }
-
-                    System.out.println("req = " + req);
 
                     switch(req.type) {
                         case SET:
