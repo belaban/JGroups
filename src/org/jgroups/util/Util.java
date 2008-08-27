@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.165 2008/08/27 12:12:25 belaban Exp $
+ * @version $Id: Util.java,v 1.166 2008/08/27 14:05:23 belaban Exp $
  */
 public class Util {
 
@@ -790,12 +790,68 @@ public class Util {
         }
     }
 
+
+    public static void writeString(DataOutputStream out, String s) throws IOException {
+        out.write(s.getBytes());
+    }
+
     public static String readString(DataInputStream in) throws IOException {
         int b=in.read();
         if(b == 1)
             return in.readUTF();
         return null;
     }
+
+    public static String parseString(DataInputStream in) {
+        return parseString(in, false);
+    }
+
+    public static String parseString(DataInputStream in, boolean break_on_newline) {
+        StringBuilder sb=new StringBuilder();
+        char ch;
+
+        // read white space
+        while(true) {
+            try {
+                ch=(char)in.read();
+                if(ch == -1) {
+                    break;
+                }
+                if(Character.isWhitespace(ch)) {
+                    if(break_on_newline && ch == '\n')
+                        return null;
+                }
+                else {
+                    sb.append(ch);
+                    break;
+                }
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+
+        while(true) {
+            try {
+                ch=(char)in.read();
+                if(ch == -1)
+                    break;
+                if(Character.isWhitespace(ch))
+                    break;
+                else {
+                    sb.append(ch);
+                }
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+
+        return sb.toString();
+    }
+
+
+
 
     public static void writeByteBuffer(byte[] buf, DataOutputStream out) throws IOException {
         if(buf != null) {
@@ -1955,6 +2011,27 @@ public class Util {
             num++;
             if(ch == '\n')
                 break;
+        }
+        return num;
+    }
+
+
+    public static int readNewLine(DataInputStream in) {
+        char ch;
+        int num=0;
+
+        while(true) {
+            try {
+                ch=(char)in.read();
+                if(ch == -1)
+                    break;
+                num++;
+                if(ch == '\n')
+                    break;
+            }
+            catch(IOException e) {
+                break;
+            }
         }
         return num;
     }

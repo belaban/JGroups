@@ -4,17 +4,15 @@ import org.jgroups.util.Buffer;
 import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.List;
+import java.nio.channels.ClosedSelectorException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -28,17 +26,14 @@ import java.util.concurrent.ExecutorService;
  *     a byte buffer based on the number of bytes sent in the request (e.g. set())
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.5 2008/08/27 12:12:26 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.8 2008/08/27 14:07:57 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
     private InetAddress bind_addr=null;
     private PartitionedHashMap<String, Buffer> cache=null;
     private Thread thread=null;
-    private ServerSocketChannel srv_sock_channel;
     private ServerSocket srv_sock;
-    private Selector selector;
-
     private int core_threads=1, max_threads=100;
     private long idle_time=5000L;
     private Executor thread_pool;
@@ -115,19 +110,12 @@ public class MemcachedConnector implements Runnable {
 
     
     public void start() throws IOException {
-        srv_sock_channel=ServerSocketChannel.open();
-        srv_sock_channel.configureBlocking(false);
-        srv_sock=srv_sock_channel.socket();
-        srv_sock.bind(new InetSocketAddress(bind_addr, port));
-
+        srv_sock=new ServerSocket(port, 50, bind_addr);
         if(thread_pool == null) {
             // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
             //                               new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
             thread_pool=new DirectExecutor();
         }
-
-        selector=Selector.open();
-        srv_sock_channel.register(selector, SelectionKey.OP_ACCEPT);
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(this, "Acceptor");
             thread.start();
@@ -136,7 +124,6 @@ public class MemcachedConnector implements Runnable {
 
     public void stop() throws IOException {
         Util.close(srv_sock);
-        srv_sock_channel.close();
         thread=null;
         if(thread_pool instanceof ExecutorService)
             ((ExecutorService)thread_pool).shutdown();
@@ -145,32 +132,14 @@ public class MemcachedConnector implements Runnable {
     public void run() {
         System.out.println("MemcachedConnector listening on " + srv_sock.getLocalSocketAddress());
         while(thread != null && Thread.currentThread().equals(thread)) {
+            Socket client_sock=null;
             try {
-                if(selector.select() > 0) {
-                    Set<SelectionKey> keys=selector.selectedKeys();
-                    for(Iterator<SelectionKey> it=keys.iterator(); it.hasNext();) {
-                        SelectionKey key=it.next();
-                        it.remove();
-                        SocketChannel client_channel;
-                        if(!key.isValid())
-                            continue;
-                        if(key.isAcceptable()) {
-                            ServerSocketChannel tmp=(ServerSocketChannel)key.channel();
-                            client_channel=tmp.accept();
-                            client_channel.configureBlocking(false);
-                            client_channel.register(selector, SelectionKey.OP_READ);
-                        }
-                        else if(key.isReadable()) {
-                            client_channel=(SocketChannel)key.channel();
-                            client_channel.configureBlocking(true);
-                            RequestHandler handler=new RequestHandler(cache, client_channel);
-                            thread_pool.execute(handler);
-                            client_channel.configureBlocking(false);
-                        }
-                    }
-                }
+                client_sock=srv_sock.accept();
+                RequestHandler handler=new RequestHandler(cache, client_sock);
+                thread_pool.execute(handler);
             }
             catch(ClosedSelectorException closed) {
+                Util.close(client_sock);
                 break;
             }
             catch(IOException e) {
@@ -182,75 +151,67 @@ public class MemcachedConnector implements Runnable {
 
     private static class RequestHandler implements Runnable {
         private final PartitionedHashMap<String,Buffer> cache;
-        private final SocketChannel client_channel;
-        private static final ByteBuffer STORED=ByteBuffer.wrap("STORED\r\n".getBytes());
-        private static final ByteBuffer END=ByteBuffer.wrap("END\r\n".getBytes());
+        private final Socket client_sock;
+        private final DataInputStream input;
+        private final DataOutputStream output;
 
-        public RequestHandler(PartitionedHashMap<String,Buffer> cache, SocketChannel client_channel) {
+        private static final byte[] STORED="STORED\r\n".getBytes();
+
+        
+        public RequestHandler(PartitionedHashMap<String, Buffer> cache, Socket client_sock) throws IOException {
             this.cache=cache;
-            this.client_channel=client_channel;
+            this.client_sock=client_sock;
+            this.input=new DataInputStream(client_sock.getInputStream());
+            this.output=new DataOutputStream(client_sock.getOutputStream());
         }
 
         public void run() {
-            Socket client_sock=client_channel.socket();
+            Buffer val;
+            while(client_sock.isConnected()) {
+                try {
+                    Request req=parseRequest(input);
+                    if(req == null) {
+                        output.write("CLIENT_ERROR failed to parse request\r\n".getBytes());
+                        continue;
+                    }
 
-            ByteBuffer buf=ByteBuffer.allocate(4095);
-            int num;
+                    System.out.println("req = " + req);
 
-            try {
-                num=client_channel.read(buf);
-                if(num > 0)
-                    ;
-                else if(num == -1) {
-                    client_channel.close();
-                    Util.close(client_sock); // needed ?
-                    return;
-                }
-                buf.flip();
-                Request request=parseRequest(buf);
-                if(request == null) {
-                    // send error message to client
-                    return;
-                }
-                switch(request.type) {
-                    case SET:
-                        if(request.number_of_bytes > buf.limit()) {
-                            // todo: allocate a bigger buffer, copy part of the old buffer into the new one and
-                            // then read the remaining bytes from the socket channel
-                        }
-                        Buffer tmp=new Buffer(buf.array(), buf.position(), buf.remaining() -2); // minus the trailing /r/n
-                        cache.put(request.key, tmp, request.caching_time);
-                        client_channel.write(STORED);
-                        break;
+                    switch(req.type) {
+                        case SET:
+                            byte[] data=new byte[req.number_of_bytes];
+                            input.read(data, 0, data.length);
+                            Util.readNewLine(input); // discard all input until after \r\n
+                            val=new Buffer(data, 0, data.length);
+                            cache.put(req.key, val, req.caching_time);
+                            output.write(STORED);
+                            break;
 
-                    case GET:
-                    case GETS:
-                        if(request.get_key_list != null && !request.get_key_list.isEmpty()) {
-                            for(String key: request.get_key_list) {
-                                Buffer val=cache.get(key);
-                                if(val != null) {
-                                    int length=val.getLength();
-                                    ByteBuffer result=ByteBuffer.allocate(length + 255);
-                                    Util.writeString(result, "VALUE 0 " + length + "\r\n");
-                                    result.put(val.getBuf(), val.getOffset(), val.getLength());
-                                    Util.writeString(result, "\r\n");
-                                    result.flip();
-                                    client_channel.write(result);
+                        case GET:
+                        case GETS:
+                            if(req.get_key_list != null && !req.get_key_list.isEmpty()) {
+                                for(String key: req.get_key_list) {
+                                    val=cache.get(key);
+                                    if(val != null) {
+                                        int length=val.getLength();
+                                        output.write(("VALUE " + key + " 0 " + length + "\r\n").getBytes());
+                                        output.write(val.getBuf(), val.getOffset(), val.getLength());
+                                        output.write(("\r\n").getBytes());
+                                    }
                                 }
                             }
-                        }
-                        client_channel.write(END);
-                        break;
+                            Util.writeString(output, "END\r\n");
+                            break;
+                    }
                 }
-            }
-            catch(IOException e) {
-                e.printStackTrace();
+                catch(IOException e) {
+                }
             }
         }
 
-        private static Request parseRequest(ByteBuffer buf) {
+        private static Request parseRequest(DataInputStream in) throws IOException {
             Request req=new Request();
-            String tmp=Util.parseString(buf);
+            String tmp=Util.parseString(in);
             if(tmp.equals("set"))
                 req.type=Request.Type.SET;
             else if(tmp.equals("add"))
@@ -277,6 +238,9 @@ public class MemcachedConnector implements Runnable {
                 req.type=Request.Type.STAT;
             else if(tmp.equals("stats"))
                 req.type=Request.Type.STATS;
+            else {
+                return null;
+            }
 
             switch(req.type) {
                 case SET:
@@ -286,28 +250,28 @@ public class MemcachedConnector implements Runnable {
                 case APPEND:
 
                     // key
-                    tmp=Util.parseString(buf);
+                    tmp=Util.parseString(in);
                     req.key=tmp;
 
                     // read flags and discard: flags are not supported
-                    tmp=Util.parseString(buf);
+                    tmp=Util.parseString(in);
 
                     // expiry time
-                    tmp=Util.parseString(buf);
+                    tmp=Util.parseString(in);
                     req.caching_time=Long.parseLong(tmp) * 1000L; // convert from secs to ms
 
                     // number of bytes
-                    tmp=Util.parseString(buf, false);
+                    tmp=Util.parseString(in);
                     req.number_of_bytes=Integer.parseInt(tmp);
 
-                    Util.readNewLine(buf);
+                    Util.readNewLine(in); // discard all input until after \r\n
                     break;
                 case GET:
                 case GETS:
                     req.get_key_list=new ArrayList<String>(5);
                     while(true) {
                         // key(s)
-                        tmp=Util.parseString(buf);
+                        tmp=Util.parseString(in, true);
                         if(tmp == null || tmp.length() == 0)
                             break;
                         req.get_key_list.add(tmp);
