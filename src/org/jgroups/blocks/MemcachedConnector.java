@@ -4,14 +4,17 @@ import org.jgroups.util.Buffer;
 import org.jgroups.util.DirectExecutor;
 import org.jgroups.util.Util;
 
-import java.io.*;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
-import java.nio.channels.*;
-import java.util.List;
+import java.nio.channels.ClosedSelectorException;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 
@@ -21,11 +24,10 @@ import java.util.concurrent.ExecutorService;
  * completely.<br/>
  * toto list:
  * <ul>
- * <li>Currently, we use a static buffer of 4095 bytes. Requests with bigger payloads (= values) will fail. Allocate
- *     a byte buffer based on the number of bytes sent in the request (e.g. set())
+ * <li>Expose JMX stats and register with MBeanServer
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.7 2008/08/27 14:05:24 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.9 2008/08/27 15:19:30 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -36,6 +38,10 @@ public class MemcachedConnector implements Runnable {
     private int core_threads=1, max_threads=100;
     private long idle_time=5000L;
     private Executor thread_pool;
+    private long start_time;
+
+    private final byte[] STORED="STORED\r\n".getBytes();
+    private final byte[] DELETED="DELETED\r\n".getBytes();
 
 
 
@@ -106,6 +112,12 @@ public class MemcachedConnector implements Runnable {
     }
 
 
+    public Map<String, Object> getStats() {
+        Map<String,Object> stats=new HashMap<String,Object>();
+        stats.put("time", System.currentTimeMillis());
+        stats.put("uptime", (System.currentTimeMillis() - start_time) / 1000L);
+        return stats;
+    }
 
     
     public void start() throws IOException {
@@ -119,6 +131,7 @@ public class MemcachedConnector implements Runnable {
             thread=new Thread(this, "Acceptor");
             thread.start();
         }
+        start_time=System.currentTimeMillis();
     }
 
     public void stop() throws IOException {
@@ -134,7 +147,7 @@ public class MemcachedConnector implements Runnable {
             Socket client_sock=null;
             try {
                 client_sock=srv_sock.accept();
-                RequestHandler handler=new RequestHandler(cache, client_sock);
+                RequestHandler handler=new RequestHandler(client_sock);
                 thread_pool.execute(handler);
             }
             catch(ClosedSelectorException closed) {
@@ -148,17 +161,15 @@ public class MemcachedConnector implements Runnable {
     }
 
 
-    private static class RequestHandler implements Runnable {
-        private final PartitionedHashMap<String,Buffer> cache;
+    private class RequestHandler implements Runnable {
         private final Socket client_sock;
         private final DataInputStream input;
         private final DataOutputStream output;
 
-        private static final byte[] STORED="STORED\r\n".getBytes();
 
-        
-        public RequestHandler(PartitionedHashMap<String, Buffer> cache, Socket client_sock) throws IOException {
-            this.cache=cache;
+
+
+        public RequestHandler(Socket client_sock) throws IOException {
             this.client_sock=client_sock;
             this.input=new DataInputStream(client_sock.getInputStream());
             this.output=new DataOutputStream(client_sock.getOutputStream());
@@ -173,6 +184,8 @@ public class MemcachedConnector implements Runnable {
                         output.write("CLIENT_ERROR failed to parse request\r\n".getBytes());
                         continue;
                     }
+
+                    System.out.println("req = " + req);
 
                     switch(req.type) {
                         case SET:
@@ -199,6 +212,22 @@ public class MemcachedConnector implements Runnable {
                             }
                             Util.writeString(output, "END\r\n");
                             break;
+
+                        case DELETE:
+                            cache.remove(req.key);
+                            output.write(DELETED);
+                            break;
+
+                        case STATS:
+                            Map<String,Object> stats=getStats();
+                            StringBuilder sb=new StringBuilder();
+                            for(Map.Entry<String,Object> entry: stats.entrySet()) {
+                                sb.append("STAT ").append(entry.getKey()).append(" ").append(entry.getValue()).append("\r\n");
+                            }
+
+                            sb.append("END\r\n");
+                            output.write(sb.toString().getBytes());
+                            break;
                     }
                 }
                 catch(IOException e) {
@@ -206,7 +235,7 @@ public class MemcachedConnector implements Runnable {
             }
         }
 
-        private static Request parseRequest(DataInputStream in) throws IOException {
+        private Request parseRequest(DataInputStream in) throws IOException {
             Request req=new Request();
             String tmp=Util.parseString(in);
             if(tmp.equals("set"))
@@ -274,10 +303,22 @@ public class MemcachedConnector implements Runnable {
                         req.get_key_list.add(tmp);
                     }
                     break;
+
+                case DELETE:
+                    // key
+                    tmp=Util.parseString(in);
+                    req.key=tmp;
+                    Util.readNewLine(in); // discard all input until after \r\n
+                    break;
+
+                case STATS:
+                    Util.readNewLine(in); // discard all input until after \r\n
+                    break;
             }
 
             return req;
         }
+
 
     }
 
@@ -292,15 +333,6 @@ public class MemcachedConnector implements Runnable {
         int number_of_bytes=0;
 
         public Request() {
-        }
-
-        private Request(Type type) {
-            this.type=type;
-        }
-
-        private Request(Type type, String key) {
-            this(type);
-            this.key=key;
         }
 
         public String toString() {
