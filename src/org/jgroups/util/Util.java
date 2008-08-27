@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.163 2008/08/27 09:15:16 belaban Exp $
+ * @version $Id: Util.java,v 1.164 2008/08/27 09:30:16 belaban Exp $
  */
 public class Util {
 
@@ -1904,11 +1904,16 @@ public class Util {
 
 
     public static String parseString(ByteBuffer buf) {
+        return parseString(buf, true);
+    }
+
+
+    public static String parseString(ByteBuffer buf, boolean discard_whitespace) {
         StringBuilder sb=new StringBuilder();
         char ch;
 
         // read white space
-        while(buf.position() <= buf.remaining()) {
+        while(buf.remaining() > 0) {
             ch=(char)buf.get();
             if(!Character.isWhitespace(ch)) {
                 buf.position(buf.position() -1);
@@ -1916,7 +1921,7 @@ public class Util {
             }
         }
 
-        while(buf.position() <= buf.remaining()) {
+        while(buf.remaining() > 0) {
             ch=(char)buf.get();
             if(!Character.isWhitespace(ch)) {
                 sb.append(ch);
@@ -1926,14 +1931,29 @@ public class Util {
         }
 
         // read white space
-        while(buf.position() <= buf.remaining()) {
-            ch=(char)buf.get();
-            if(!Character.isWhitespace(ch)) {
-                buf.position(buf.position() -1);
-                break;
+        if(discard_whitespace) {
+            while(buf.remaining() > 0) {
+                ch=(char)buf.get();
+                if(!Character.isWhitespace(ch)) {
+                    buf.position(buf.position() -1);
+                    break;
+                }
             }
         }
         return sb.toString();
+    }
+
+    public static int readNewLine(ByteBuffer buf) {
+        char ch;
+        int num=0;
+
+        while(buf.remaining() > 0) {
+            ch=(char)buf.get();
+            num++;
+            if(ch == '\n')
+                break;
+        }
+        return num;
     }
 
 
