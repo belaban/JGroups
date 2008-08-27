@@ -1,6 +1,7 @@
 package org.jgroups.blocks;
 
 import org.jgroups.util.Util;
+import org.jgroups.util.DirectExecutor;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -18,7 +19,7 @@ import java.util.concurrent.*;
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.2 2008/08/26 14:47:05 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.3 2008/08/27 06:03:44 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -31,7 +32,7 @@ public class MemcachedConnector implements Runnable {
 
     private int core_threads=1, max_threads=100;
     private long idle_time=5000L;
-    private ExecutorService thread_pool;
+    private Executor thread_pool;
 
 
 
@@ -90,7 +91,7 @@ public class MemcachedConnector implements Runnable {
         this.idle_time=idle_time;
     }
 
-    public ExecutorService getThreadPool() {
+    public Executor getThreadPool() {
         return thread_pool;
     }
 
@@ -105,8 +106,9 @@ public class MemcachedConnector implements Runnable {
         srv_sock=srv_sock_channel.socket();
         srv_sock.bind(new InetSocketAddress(bind_addr, port));
 
-        thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
-                                           new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
+        // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
+            //                               new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
+        thread_pool=new DirectExecutor();
 
         selector=Selector.open();
         srv_sock_channel.register(selector, SelectionKey.OP_ACCEPT);
@@ -120,7 +122,8 @@ public class MemcachedConnector implements Runnable {
         Util.close(srv_sock);
         srv_sock_channel.close();
         thread=null;
-        thread_pool.shutdown();
+        if(thread_pool instanceof ExecutorService)
+            ((ExecutorService)thread_pool).shutdown();
     }
 
     public void run() {
@@ -138,11 +141,11 @@ public class MemcachedConnector implements Runnable {
                             client_channel=tmp.accept();
                             client_channel.configureBlocking(false);
                             client_channel.register(selector, SelectionKey.OP_READ);
-                            // handleConnection(client_channel);
                         }
                         else if(key.isReadable()) {
                             client_channel=(SocketChannel)key.channel();
-                            handleRead(client_channel);
+                            RequestHandler handler=new RequestHandler(cache, client_channel);
+                            thread_pool.execute(handler);
                         }
                     }
                 }
@@ -156,12 +159,41 @@ public class MemcachedConnector implements Runnable {
         }
     }
 
-    private void handleRead(final SocketChannel client_channel) throws IOException {
-        Socket client_sock=client_channel.socket();
-        System.out.println("got data from " + client_sock.getInetAddress() + ":" + client_sock.getPort());
-        ByteBuffer buf=ByteBuffer.wrap("hello from bela\r\n".getBytes());
-        client_channel.write(buf);
-        client_channel.close();
+
+    private static class RequestHandler implements Runnable {
+        private final PartitionedHashMap cache;
+        private final SocketChannel client_channel;
+
+        public RequestHandler(PartitionedHashMap cache, SocketChannel client_channel) {
+            this.cache=cache;
+            this.client_channel=client_channel;
+        }
+
+        public void run() {
+            Socket client_sock=client_channel.socket();
+
+            ByteBuffer buf=ByteBuffer.allocate(1024);
+
+            try {
+                int num=client_channel.read(buf);
+                if(num == -1) {
+                    client_channel.close();
+                    Util.close(client_sock); // needed ?
+                    return;
+                }
+                buf.flip();
+                String tmp=new String(buf.array(), 0, num);
+                System.out.println("got " + num + " bytes from " + client_sock.getInetAddress() +
+                        ":" + client_sock.getPort() + ": " + tmp);
+
+
+                buf=ByteBuffer.wrap(("echo: " + tmp).getBytes());
+                client_channel.write(buf);
+            }
+            catch(IOException e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
 
