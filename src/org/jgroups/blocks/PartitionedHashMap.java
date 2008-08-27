@@ -20,11 +20,12 @@ import java.util.*;
  * <li>JMX support for exposing stats
  * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
  * <li>GUI (showing at least the topology and L1 and L2 caches)
+ * <li>Notifications (puts, removes, gets etc)
  * <li>Benchmarks, comparison to memcached
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.8 2008/08/26 13:43:28 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.9 2008/08/27 15:19:29 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
