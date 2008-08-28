@@ -49,7 +49,7 @@ public class TCPConnectionMap{
     private PortsManager pm=null;       
 
     private final AtomicBoolean running = new AtomicBoolean(false);
-    private volatile boolean use_send_queues;    
+    private volatile boolean use_send_queues=false;    
 
     public TCPConnectionMap(ThreadFactory f,
                             Receiver r,
@@ -350,7 +350,7 @@ public class TCPConnectionMap{
         private final Address peer_addr; // address of the 'other end' of the connection
         private final int peer_addr_read_timeout=2000; // max time in milliseconds to block on reading peer address
         private long last_access=System.currentTimeMillis(); // last time a message was sent or received           
-        private Thread sender;
+        private Sender sender;
 
         TCPConnection(Address peer_addr) throws Exception {
             if(peer_addr == null)
@@ -389,10 +389,14 @@ public class TCPConnectionMap{
             Thread t=f.newThread(new ConnectionPeerReceiver(),"Connection.Receiver [" + getSockAddress() + "]");
             t.start();
 
-            if(getSenderQueueSize() > 0 && use_send_queues) {
-                sender=f.newThread(new Sender(getSenderQueueSize()),"Connection.Sender [" + getSockAddress() + "]");
-                sender.start();
+            if(isSenderUsed()) {
+                sender = new Sender(f,getSenderQueueSize());   
+                sender.start();                            
             }
+        }
+        
+        private boolean isSenderUsed(){
+            return getSenderQueueSize() > 0 && use_send_queues;
         }
 
         private String getSockAddress() {
@@ -418,7 +422,19 @@ public class TCPConnectionMap{
          * @param length
          */
         private void send(byte[] data, int offset, int length) throws Exception{
-            _send(data, offset, length, true);
+            if(isSenderUsed()) {
+                try {
+                    // we need to copy the byte[] buffer here because the original buffer might get changed meanwhile
+                    byte[] tmp=new byte[length];
+                    System.arraycopy(data, offset, tmp, 0, length);
+                    sender.getQueue().put(tmp);
+                }
+                catch(InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            else
+                _send(data, offset, length, true);           
         }
 
         /**
@@ -550,26 +566,47 @@ public class TCPConnectionMap{
             }
         }
         
-        private class Sender implements Runnable {      
-            
-            BlockingQueue<byte[]> send_queue=null;
-            
-            public Sender(int send_queue_size) {
-                this.send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);           
+        private class Sender implements Runnable {
+
+            final BlockingQueue<byte[]> send_queue;
+            final Thread runner;
+
+            public Sender(ThreadFactory tf,int send_queue_size) {
+                this.runner=tf.newThread(this, "Connection.Sender [" + getSockAddress() + "]");
+                this.send_queue=new LinkedBlockingQueue<byte[]>(send_queue_size);
             }
-            
-            public void run() {            
+
+            public BlockingQueue<byte[]> getQueue() {
+                return send_queue;
+            }
+
+            public void start() {
+                runner.start();
+            }
+
+            public void stop() {
+                runner.interrupt();
+            }
+
+            public void run() {
                 while(!Thread.currentThread().isInterrupted() && isOpen()) {
+                    byte[] data=null;
                     try {
-                        byte[] data =send_queue.take();
-                        if(data != null){                      
-                            // we don't need to serialize access to 'out' as we're the only thread sending messages
+                        data=send_queue.take();
+                    }
+                    catch(InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        break;
+                    }
+
+                    if(data != null) {                        
+                        try {
                             _send(data, 0, data.length, false);
                         }
-                    }              
-                    catch(Exception e) {                 
+                        catch(Exception ignored) {
+                        }
                     }
-                }           
+                }
                 if(log.isTraceEnabled())
                     log.trace("ConnectionTable.Connection.Sender thread terminated");
             }        
@@ -625,8 +662,8 @@ public class TCPConnectionMap{
                 Util.close(sock);
                 Util.close(out);
                 Util.close(in);
-                if(sender !=null){
-                    sender.interrupt();
+                if(isSenderUsed()){
+                    sender.stop();
                 }
             }            
             finally {
