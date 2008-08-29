@@ -24,7 +24,7 @@ import java.util.concurrent.*;
  * <li>Expose JMX stats and register with MBeanServer
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.10 2008/08/29 10:02:50 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.11 2008/08/29 12:28:59 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -120,9 +120,9 @@ public class MemcachedConnector implements Runnable {
     public void start() throws IOException {
         srv_sock=new ServerSocket(port, 50, bind_addr);
         if(thread_pool == null) {
-            //thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
-              //                                 new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
-            thread_pool=new DirectExecutor();
+            thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
+                                               new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
+            //thread_pool=new DirectExecutor();
         }
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(this, "Acceptor");
@@ -152,7 +152,6 @@ public class MemcachedConnector implements Runnable {
                 break;
             }
             catch(Throwable e) {
-                e.printStackTrace();
             }
         }
     }
@@ -164,16 +163,18 @@ public class MemcachedConnector implements Runnable {
         private final DataOutputStream output;
 
 
-
-
         public RequestHandler(Socket client_sock) throws IOException {
             this.client_sock=client_sock;
             this.input=new DataInputStream(client_sock.getInputStream());
             this.output=new DataOutputStream(client_sock.getOutputStream());
+
+
+
         }
 
         public void run() {
             Buffer val;
+            
             while(client_sock.isConnected()) {
                 try {
                     Request req=parseRequest(input);
@@ -193,6 +194,7 @@ public class MemcachedConnector implements Runnable {
                             val=new Buffer(data, 0, data.length);
                             cache.put(req.key, val, req.caching_time);
                             output.write(STORED);
+                            output.flush();
                             break;
 
                         case GET:
@@ -209,6 +211,7 @@ public class MemcachedConnector implements Runnable {
                                 }
                             }
                             Util.writeString(output, "END\r\n");
+                            output.flush();
                             break;
 
                         case DELETE:
