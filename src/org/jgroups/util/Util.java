@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.166 2008/08/27 14:05:23 belaban Exp $
+ * @version $Id: Util.java,v 1.167 2008/08/29 10:02:49 belaban Exp $
  */
 public class Util {
 
@@ -808,21 +808,21 @@ public class Util {
 
     public static String parseString(DataInputStream in, boolean break_on_newline) {
         StringBuilder sb=new StringBuilder();
-        char ch;
+        int ch;
 
         // read white space
         while(true) {
             try {
-                ch=(char)in.read();
+                ch=in.read();
                 if(ch == -1) {
-                    break;
+                    return null; // eof
                 }
                 if(Character.isWhitespace(ch)) {
                     if(break_on_newline && ch == '\n')
                         return null;
                 }
                 else {
-                    sb.append(ch);
+                    sb.append((char)ch);
                     break;
                 }
             }
@@ -833,13 +833,13 @@ public class Util {
 
         while(true) {
             try {
-                ch=(char)in.read();
+                ch=in.read();
                 if(ch == -1)
                     break;
                 if(Character.isWhitespace(ch))
                     break;
                 else {
-                    sb.append(ch);
+                    sb.append((char)ch);
                 }
             }
             catch(IOException e) {
@@ -2017,12 +2017,12 @@ public class Util {
 
 
     public static int readNewLine(DataInputStream in) {
-        char ch;
+        int ch;
         int num=0;
 
         while(true) {
             try {
-                ch=(char)in.read();
+                ch=in.read();
                 if(ch == -1)
                     break;
                 num++;
