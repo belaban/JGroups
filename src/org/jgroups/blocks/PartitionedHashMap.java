@@ -19,15 +19,15 @@ import java.util.*;
  *     good for maintaining a bounded cache (rather than using the number of entries)
  * <li>Implement the ASCII and binary (when available) protocol of memcached
  * <li>Provide a better consistent hashing algorithm than ConsistenHashFuntion as default
- * <li>JMX support for exposing stats
  * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
  * <li>GUI (showing at least the topology and L1 and L2 caches)
  * <li>Notifications (puts, removes, gets etc)
+ * <li>Invalidation of L1 caches (if used) on removal/put of item
  * <li>Benchmarks, comparison to memcached
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.10 2008/09/01 10:25:40 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.11 2008/09/01 11:54:02 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -240,8 +240,6 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     @ManagedOperation
     public V get(K key) {
-        Address dest_node=getNode(key);
-
         if(l1_cache != null) {
             V val=l1_cache.get(key);
             if(val != null) {
@@ -253,6 +251,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
         Cache.Value<V> val;
         try {
+            Address dest_node=getNode(key);
             // if we are the destination, don't invoke an RPC but return the item from our L2 cache irectly !
             if(dest_node.equals(local_addr)) {
                 val=l2_cache.getEntry(key);
