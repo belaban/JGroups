@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.171 2008/09/01 14:45:20 belaban Exp $
+ * @version $Id: Util.java,v 1.172 2008/09/01 14:59:21 belaban Exp $
  */
 public class Util {
 
@@ -47,6 +47,7 @@ public class Util {
     private static final byte TYPE_LONG         = 16;
     private static final byte TYPE_SHORT        = 17;
     private static final byte TYPE_STRING       = 18;
+    private static final byte TYPE_BYTEARRAY    = 19;
 
     // constants
     public static final int MAX_PORT=65535; // highest port allocatable
@@ -97,6 +98,7 @@ public class Util {
         PRIMITIVE_TYPES.put(Long.class, new Byte(TYPE_LONG));
         PRIMITIVE_TYPES.put(Short.class, new Byte(TYPE_SHORT));
         PRIMITIVE_TYPES.put(String.class, new Byte(TYPE_STRING));
+        PRIMITIVE_TYPES.put(byte[].class, new Byte(TYPE_BYTEARRAY));
     }
 
 
@@ -308,6 +310,11 @@ public class Util {
                         retval=((DataInputStream)in).readUTF();
                     }
                     break;
+                case TYPE_BYTEARRAY:
+                    int len=((DataInputStream)in).readInt();
+                    byte[] tmp=new byte[len];
+                    in.read(tmp, 0, tmp.length);
+                    break;
                 default:
                     throw new IllegalArgumentException("type " + b + " is invalid");
             }
@@ -392,6 +399,11 @@ public class Util {
                             ((DataOutputStream)out).writeBoolean(false);
                             ((DataOutputStream)out).writeUTF(str);
                         }
+                        break;
+                    case TYPE_BYTEARRAY:
+                        byte[] buf=(byte[])obj;
+                        ((DataOutputStream)out).writeInt(buf.length);
+                        out.write(buf, 0, buf.length);
                         break;
                     default:
                         throw new IllegalArgumentException("type " + type + " is invalid");
