@@ -21,12 +21,8 @@ import java.util.concurrent.*;
  * PartitionedHashMap and sends the response. A memcached client should be able to work without changes once the
  * memcached protocol (http://code.sixapart.com/svn/memcached/trunk/server/doc/protocol.txt) has been implemented
  * completely.<br/>
- * toto list:
- * <ul>
- * <li>Expose JMX stats and register with MBeanServer
- * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.13 2008/09/01 10:25:40 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.14 2008/09/01 11:54:02 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     @ManagedAttribute(writable=false)
