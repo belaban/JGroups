@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.168 2008/09/01 07:47:19 belaban Exp $
+ * @version $Id: Util.java,v 1.169 2008/09/01 08:25:14 belaban Exp $
  */
 public class Util {
 
@@ -2016,7 +2016,12 @@ public class Util {
     }
 
 
-    public static int readNewLine(DataInputStream in) {
+    /**
+     * Reads and discards all characters from the input stream until a \r\n or EOF is encountered
+     * @param in
+     * @return
+     */
+    public static int discardUntilNewLine(InputStream in) {
         int ch;
         int num=0;
 
@@ -2047,28 +2052,23 @@ public class Util {
      *
      * @exception  IOException  If an I/O error occurs
      */
-    public static String readLine(InputStream in) {
+    public static String readLine(InputStream in) throws IOException {
         StringBuilder sb=new StringBuilder(35);
         int ch;
 
         while(true) {
-            try {
-                ch=in.read();
-                if(ch == -1)
-                    break;
-                if(ch == '\r') {
-                    ;
-                }
-                else {
-                    if(ch == '\n')
-                        break;
-                    else {
-                        sb.append((char)ch);
-                    }
-                }
+            ch=in.read();
+            if(ch == -1)
+                return null;
+            if(ch == '\r') {
+                ;
             }
-            catch(IOException e) {
-                break;
+            else {
+                if(ch == '\n')
+                    break;
+                else {
+                    sb.append((char)ch);
+                }
             }
         }
         return sb.toString();

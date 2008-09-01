@@ -9,10 +9,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedSelectorException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
+import java.util.*;
 import java.util.concurrent.*;
 
 /** Class which listens on a server socket for memcached clients, reads the requests, forwards them to an instance of
@@ -24,7 +21,7 @@ import java.util.concurrent.*;
  * <li>Expose JMX stats and register with MBeanServer
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.11 2008/08/29 12:28:59 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.12 2008/09/01 08:25:14 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
     private int port=11211;
@@ -39,6 +36,9 @@ public class MemcachedConnector implements Runnable {
 
     private final byte[] STORED="STORED\r\n".getBytes();
     private final byte[] DELETED="DELETED\r\n".getBytes();
+    private final byte[] NOT_FOUND="NOT_FOUND\r\n".getBytes();
+    private final byte[] END="END\r\n".getBytes();
+    private final byte[] RN="\r\n".getBytes();
 
 
 
@@ -120,9 +120,9 @@ public class MemcachedConnector implements Runnable {
     public void start() throws IOException {
         srv_sock=new ServerSocket(port, 50, bind_addr);
         if(thread_pool == null) {
-            thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
-                                               new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
-            //thread_pool=new DirectExecutor();
+            // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
+               //                                new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
+            thread_pool=new DirectExecutor();
         }
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(this, "Acceptor");
@@ -159,25 +159,29 @@ public class MemcachedConnector implements Runnable {
 
     private class RequestHandler implements Runnable {
         private final Socket client_sock;
-        private final DataInputStream input;
-        private final DataOutputStream output;
+        private final InputStream input;
+        private final OutputStream output;
 
 
         public RequestHandler(Socket client_sock) throws IOException {
             this.client_sock=client_sock;
-            this.input=new DataInputStream(client_sock.getInputStream());
-            this.output=new DataOutputStream(client_sock.getOutputStream());
-
-
-
+            this.input=new BufferedInputStream(client_sock.getInputStream());
+            this.output=new BufferedOutputStream(client_sock.getOutputStream());
         }
 
         public void run() {
             Buffer val;
+            String line;
             
             while(client_sock.isConnected()) {
                 try {
-                    Request req=parseRequest(input);
+                    line=Util.readLine(input);
+                    if(line == null)
+                        break;
+
+                    System.out.println("line = " + line);
+
+                    Request req=parseRequest(line);
                     if(req == null) {
                         break;
                     }
@@ -190,11 +194,11 @@ public class MemcachedConnector implements Runnable {
                             int num=input.read(data, 0, data.length);
                             if(num == -1)
                                 throw new EOFException();
-                            Util.readNewLine(input); // discard all input until after \r\n
                             val=new Buffer(data, 0, data.length);
                             cache.put(req.key, val, req.caching_time);
                             output.write(STORED);
                             output.flush();
+                            Util.discardUntilNewLine(input);
                             break;
 
                         case GET:
@@ -206,17 +210,18 @@ public class MemcachedConnector implements Runnable {
                                         int length=val.getLength();
                                         output.write(("VALUE " + key + " 0 " + length + "\r\n").getBytes());
                                         output.write(val.getBuf(), val.getOffset(), val.getLength());
-                                        output.write(("\r\n").getBytes());
+                                        output.write(RN);
                                     }
                                 }
                             }
-                            Util.writeString(output, "END\r\n");
+                            output.write(END);
                             output.flush();
                             break;
 
                         case DELETE:
                             cache.remove(req.key);
                             output.write(DELETED);
+                            output.flush();
                             break;
 
                         case STATS:
@@ -228,25 +233,30 @@ public class MemcachedConnector implements Runnable {
 
                             sb.append("END\r\n");
                             output.write(sb.toString().getBytes());
+                            output.flush();
                             break;
                     }
                 }
                 catch(StreamCorruptedException corrupted_ex) {
-                    Util.readNewLine(input);
-                    try {output.write(("CLIENT_ERROR failed to parse request: " + corrupted_ex + ":\r\n").getBytes());} catch(IOException e) {}
+                    try {
+                        output.write(("CLIENT_ERROR failed to parse request: " + corrupted_ex + ":\r\n").getBytes());
+                        output.flush();
+                    }
+                    catch(IOException e) {}
                 }
                 catch(EOFException end_of_file_ex) {
                     break;
                 }
-                catch(IOException e) {
+                catch(Throwable e) {
                 }
             }
             Util.close(client_sock);
         }
 
-        private Request parseRequest(DataInputStream in) throws IOException {
+        private Request parseRequest(String line) throws IOException {
             Request req=new Request();
-            String tmp=Util.parseString(in);
+            String[] args=line.trim().split(" +");
+            String tmp=args[0];
             if(tmp == null)
                 throw new EOFException();
             if(tmp.equals("set"))
@@ -276,7 +286,7 @@ public class MemcachedConnector implements Runnable {
             else if(tmp.equals("stats"))
                 req.type=Request.Type.STATS;
             else {
-                throw new StreamCorruptedException("request \"" + tmp + "\" not known");
+                throw new StreamCorruptedException("request \"" + line + "\" not known");
             }
 
             switch(req.type) {
@@ -287,53 +297,44 @@ public class MemcachedConnector implements Runnable {
                 case APPEND:
 
                     // key
-                    tmp=Util.parseString(in);
+                    tmp=args[1];
                     if(tmp == null)
                         throw new EOFException();
                     req.key=tmp;
 
                     // read flags and discard: flags are not supported
-                    tmp=Util.parseString(in);
+                    tmp=args[2];
                     if(tmp == null)
                         throw new EOFException();
 
                     // expiry time
-                    tmp=Util.parseString(in);
+                    tmp=args[3];
                     if(tmp == null)
                         throw new EOFException();
                     req.caching_time=Long.parseLong(tmp) * 1000L; // convert from secs to ms
 
                     // number of bytes
-                    tmp=Util.parseString(in);
+                    tmp=args[4];
                     if(tmp == null)
                         throw new EOFException();
                     req.number_of_bytes=Integer.parseInt(tmp);
-
-                    Util.readNewLine(in); // discard all input until after \r\n
                     break;
                 case GET:
                 case GETS:
                     req.keys=new ArrayList<String>(5);
-                    while(true) {
-                        // key(s)
-                        tmp=Util.parseString(in, true);
-                        if(tmp == null || tmp.length() == 0)
-                            break;
-                        req.keys.add(tmp);
-                    }
+                    for(int i=1; i < args.length; i++)
+                        req.keys.add(args[i]);
                     break;
 
                 case DELETE:
                     // key
-                    tmp=Util.parseString(in);
+                    tmp=args[1];
                     if(tmp == null)
                         throw new EOFException();
                     req.key=tmp;
-                    Util.readNewLine(in); // discard all input until after \r\n
                     break;
 
                 case STATS:
-                    Util.readNewLine(in); // discard all input until after \r\n
                     break;
             }
 

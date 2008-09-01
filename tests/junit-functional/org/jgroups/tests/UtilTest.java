@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.7 2008/09/01 07:47:17 belaban Exp $
+// $Id: UtilTest.java,v 1.8 2008/09/01 08:25:13 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -479,7 +479,7 @@ public class UtilTest {
     }
 
 
-    public static void testReadLine() {
+    public static void testReadLine() throws IOException {
         final String input="   hello world\nthis is \r\n just an example\r\nthis is line 2 \r\n";
         String line;
         InputStream in=new BufferedInputStream(new ByteArrayInputStream(input.getBytes()));
