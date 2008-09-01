@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.167 2008/08/29 10:02:49 belaban Exp $
+ * @version $Id: Util.java,v 1.168 2008/09/01 07:47:19 belaban Exp $
  */
 public class Util {
 
@@ -2034,6 +2034,44 @@ public class Util {
             }
         }
         return num;
+    }
+
+    /**
+     * Reads a line of text.  A line is considered to be terminated by any one
+     * of a line feed ('\n'), a carriage return ('\r'), or a carriage return
+     * followed immediately by a linefeed.
+     *
+     *  @return     A String containing the contents of the line, not including
+     *             any line-termination characters, or null if the end of the
+     *             stream has been reached
+     *
+     * @exception  IOException  If an I/O error occurs
+     */
+    public static String readLine(InputStream in) {
+        StringBuilder sb=new StringBuilder(35);
+        int ch;
+
+        while(true) {
+            try {
+                ch=in.read();
+                if(ch == -1)
+                    break;
+                if(ch == '\r') {
+                    ;
+                }
+                else {
+                    if(ch == '\n')
+                        break;
+                    else {
+                        sb.append((char)ch);
+                    }
+                }
+            }
+            catch(IOException e) {
+                break;
+            }
+        }
+        return sb.toString();
     }
 
 
