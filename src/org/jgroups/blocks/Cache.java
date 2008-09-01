@@ -4,6 +4,8 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 
 import java.util.concurrent.*;
 import java.util.*;
@@ -13,7 +15,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.8 2008/08/26 13:43:28 belaban Exp $
+ * @version $Id: Cache.java,v 1.9 2008/09/01 10:25:40 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -26,6 +28,7 @@ public class Cache<K,V> {
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
      */
+    @ManagedAttribute(writable=true)
     private int max_num_entries=0;
 
     public int getMaxNumberOfEntries() {
@@ -36,13 +39,25 @@ public class Cache<K,V> {
         this.max_num_entries=max_num_entries;
     }
 
+    @ManagedAttribute
+    public int getSize() {
+        return map.size();
+    }
+
+    @ManagedAttribute
+    public boolean isReapingEnabled() {
+        return task != null && !task.isCancelled();
+    }
+
     /** Runs the reaper every interval ms, evicts expired items */
+    @ManagedOperation
     public void enableReaping(long interval) {
         if(task != null)
             task.cancel(false);
         task=timer.scheduleWithFixedDelay(new Reaper(), 0, interval, TimeUnit.MILLISECONDS);
     }
 
+    @ManagedOperation
     public void disableReaping() {
         if(task != null) {
             task.cancel(false);
@@ -50,11 +65,13 @@ public class Cache<K,V> {
         }
     }
 
+    @ManagedOperation
     public void start() {
         if(timer == null)
             timer=new ScheduledThreadPoolExecutor(1);
     }
 
+    @ManagedOperation
     public void stop() {
         if(timer != null)
             timer.shutdown();
@@ -70,6 +87,7 @@ public class Cache<K,V> {
      * evict an entry with 0 caching time: when we have a bounded cache, we evict in order of insertion no matter
      * what the caching time is.
      */
+    @ManagedOperation
     public V put(K key, V val, long caching_time) {
         if(log.isTraceEnabled())
             log.trace("put(" + key + ", " + val + ", " + caching_time + ")");
@@ -103,6 +121,7 @@ public class Cache<K,V> {
         return retval != null? retval.value : null;
     }
 
+    @ManagedOperation
     public V get(K key) {
         if(log.isTraceEnabled())
             log.trace("get(" + key + ")");
@@ -134,6 +153,7 @@ public class Cache<K,V> {
         return map.entrySet();
     }
 
+    @ManagedOperation
     public String toString() {
         StringBuilder sb=new StringBuilder();
         for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
@@ -147,6 +167,23 @@ public class Cache<K,V> {
                 sb.append(new Date(expiration_time));
             }
             sb.append(")\n");
+        }
+        return sb.toString();
+    }
+
+
+    public String dump() {
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
+            sb.append(entry.getKey()).append(": ");
+            V val=entry.getValue().getValue();
+            if(val != null) {
+                if(val instanceof byte[])
+                    sb.append(" (" + ((byte[])val).length).append(" bytes)");
+                else
+                    sb.append(val);
+            }
+            sb.append("\n");
         }
         return sb.toString();
     }
