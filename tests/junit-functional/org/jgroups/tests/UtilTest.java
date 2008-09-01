@@ -1,4 +1,4 @@
-// $Id: UtilTest.java,v 1.6 2008/03/10 15:39:21 belaban Exp $
+// $Id: UtilTest.java,v 1.7 2008/09/01 07:47:17 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -476,6 +476,22 @@ public class UtilTest {
         Assert.assertEquals(4, list.size());
         Assert.assertEquals("myID1::subID1", list.get(0));
         Assert.assertEquals("myID4::blaSubID4", list.get(list.size() - 1));
+    }
+
+
+    public static void testReadLine() {
+        final String input="   hello world\nthis is \r\n just an example\r\nthis is line 2 \r\n";
+        String line;
+        InputStream in=new BufferedInputStream(new ByteArrayInputStream(input.getBytes()));
+        List<String> list=new ArrayList<String>(4);
+
+        for(int i=0; i < 4; i++) {
+            line=Util.readLine(in);
+            System.out.println("line = \"" + line + "\"");
+            list.add(line);
+        }
+
+        assert list.size() == 4;
     }
 
 
