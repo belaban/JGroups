@@ -5,6 +5,8 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.annotations.Experimental;
 import org.jgroups.annotations.Unsupported;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 
 import java.util.*;
 
@@ -25,7 +27,7 @@ import java.util.*;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.9 2008/08/27 15:19:29 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.10 2008/09/01 10:25:40 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -41,9 +43,13 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     private Address local_addr=null;
     private View    view;
     private RpcDispatcher disp=null;
+    @ManagedAttribute(writable=true)
     private String props="udp.xml";
+    @ManagedAttribute(writable=true)
     private String cluster_name="PartitionedHashMap-Cluster";
+    @ManagedAttribute(writable=true)
     private long call_timeout=1000L;
+    @ManagedAttribute(writable=true)
     private long caching_time=30000L; // in milliseconds. -1 means don't cache, 0 means cache forever (or until changed)
     private HashFunction<K> hash_function=null;
     private Set<MembershipListener> membership_listeners=new HashSet<MembershipListener>();
@@ -51,6 +57,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     /** On a view change, if a member P1 detects that for any given key K, P1 is not the owner of K, then
      * it will compute the new owner P2 and transfer ownership for all Ks for which P2 is the new owner. P1
      * will then also evict those keys from its L2 cache */
+    @ManagedAttribute(writable=true)
     private boolean migrate_data=false;
 
 
@@ -85,6 +92,21 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
 
     public Address getLocalAddress() {
         return local_addr;
+    }
+
+    @ManagedAttribute
+    public String getLocalAddressAsString() {
+        return local_addr != null? local_addr.toString() : "null";
+    }
+
+    @ManagedAttribute
+    public String getView() {
+        return view != null? view.toString() : "null";
+    }
+
+    @ManagedAttribute
+    public boolean isL1CacheEnabled() {
+        return l1_cache != null;
     }
 
     public String getClusterName() {
@@ -156,7 +178,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
 
 
-
+    @ManagedOperation
     public void start() throws Exception {
         hash_function=new ConsistentHashFunction<K>();
         addMembershipListener((MembershipListener)hash_function);
@@ -167,7 +189,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         view=ch.getView();
     }
 
-
+    @ManagedOperation
     public void stop() {
         if(l1_cache != null)
             l1_cache.stop();
@@ -191,7 +213,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         ch.close();
     }
 
-
+    @ManagedOperation
     public void put(K key, V val) {
         put(key, val, caching_time);
     }
@@ -203,6 +225,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
      * @param caching_time Time to live. -1 means never cache, 0 means cache forever. All other (positive) values
      * are the number of milliseconds to cache the item
      */
+    @ManagedOperation
     public void put(K key, V val, long caching_time) {
         Address dest_node=getNode(key);
         if(dest_node.equals(local_addr)) {
@@ -215,6 +238,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             l1_cache.put(key, val, caching_time);
     }
 
+    @ManagedOperation
     public V get(K key) {
         Address dest_node=getNode(key);
 
@@ -253,7 +277,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         }
     }
 
-
+    @ManagedOperation
     public void remove(K key) {
         Address dest_node=getNode(key);
 
@@ -314,6 +338,27 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
 
     public void block() {
+    }
+
+
+    public String toString() {
+        StringBuilder sb=new StringBuilder();
+        if(l1_cache != null)
+            sb.append("L1 cache: " + l1_cache.getSize() + " entries");
+        sb.append("\nL2 cache: " + l2_cache.getSize() + "entries()");
+        return sb.toString();
+    }
+
+
+    @ManagedOperation
+    public String dump() {
+        StringBuilder sb=new StringBuilder();
+        if(l1_cache != null) {
+            sb.append("L1 cache:\n").append(l1_cache.dump());
+        }
+        sb.append("\nL2 cache:\n").append(l2_cache.dump());
+
+        return sb.toString();
     }
 
 

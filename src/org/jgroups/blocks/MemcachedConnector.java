@@ -1,15 +1,20 @@
 package org.jgroups.blocks;
 
-import org.jgroups.util.Buffer;
-import org.jgroups.util.DirectExecutor;
+import org.jgroups.annotations.ManagedAttribute;
+import org.jgroups.annotations.ManagedOperation;
 import org.jgroups.util.Util;
 
+import javax.management.MBeanRegistrationException;
+import javax.management.MalformedObjectNameException;
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.channels.ClosedSelectorException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.*;
 
 /** Class which listens on a server socket for memcached clients, reads the requests, forwards them to an instance of
@@ -21,28 +26,37 @@ import java.util.concurrent.*;
  * <li>Expose JMX stats and register with MBeanServer
  * </ul>
  * @author Bela Ban
- * @version $Id: MemcachedConnector.java,v 1.12 2008/09/01 08:25:14 belaban Exp $
+ * @version $Id: MemcachedConnector.java,v 1.13 2008/09/01 10:25:40 belaban Exp $
  */
 public class MemcachedConnector implements Runnable {
+    @ManagedAttribute(writable=false)
     private int port=11211;
+    @ManagedAttribute(writable=false)
     private InetAddress bind_addr=null;
-    private PartitionedHashMap<String, Buffer> cache=null;
+    private PartitionedHashMap<String, byte[]> cache=null;
     private Thread thread=null;
     private ServerSocket srv_sock;
-    private int core_threads=1, max_threads=100;
+
+    @ManagedAttribute(writable=true)
+    private int core_threads=1;
+
+    @ManagedAttribute(writable=true)
+    private int max_threads=500;
+
+    @ManagedAttribute(writable=true)
     private long idle_time=5000L;
+
     private Executor thread_pool;
     private long start_time;
 
     private final byte[] STORED="STORED\r\n".getBytes();
     private final byte[] DELETED="DELETED\r\n".getBytes();
-    private final byte[] NOT_FOUND="NOT_FOUND\r\n".getBytes();
     private final byte[] END="END\r\n".getBytes();
     private final byte[] RN="\r\n".getBytes();
 
 
 
-    public MemcachedConnector(InetAddress bind_addr, int port, PartitionedHashMap<String, Buffer> cache) {
+    public MemcachedConnector(InetAddress bind_addr, int port, PartitionedHashMap<String, byte[]> cache) {
         this.bind_addr=bind_addr;
         this.cache=cache;
         this.port=port;
@@ -65,11 +79,11 @@ public class MemcachedConnector implements Runnable {
         this.port=port;
     }
 
-    public PartitionedHashMap<String, Buffer> getCache() {
+    public PartitionedHashMap<String, byte[]> getCache() {
         return cache;
     }
 
-    public void setCache(PartitionedHashMap<String, Buffer> cache) {
+    public void setCache(PartitionedHashMap<String, byte[]> cache) {
         this.cache=cache;
     }
 
@@ -116,13 +130,14 @@ public class MemcachedConnector implements Runnable {
         return stats;
     }
 
-    
-    public void start() throws IOException {
+
+    @ManagedOperation
+    public void start() throws IOException, MalformedObjectNameException, MBeanRegistrationException {
         srv_sock=new ServerSocket(port, 50, bind_addr);
         if(thread_pool == null) {
-            // thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
-               //                                new LinkedBlockingQueue<Runnable>(100), new ThreadPoolExecutor.CallerRunsPolicy());
-            thread_pool=new DirectExecutor();
+            thread_pool=new ThreadPoolExecutor(core_threads, max_threads, idle_time, TimeUnit.MILLISECONDS,
+                                               new SynchronousQueue<Runnable>(), new ThreadPoolExecutor.CallerRunsPolicy());
+            // thread_pool=new DirectExecutor();
         }
         if(thread == null || !thread.isAlive()) {
             thread=new Thread(this, "Acceptor");
@@ -131,6 +146,7 @@ public class MemcachedConnector implements Runnable {
         start_time=System.currentTimeMillis();
     }
 
+    @ManagedOperation
     public void stop() throws IOException {
         Util.close(srv_sock);
         thread=null;
@@ -144,7 +160,14 @@ public class MemcachedConnector implements Runnable {
             Socket client_sock=null;
             try {
                 client_sock=srv_sock.accept();
-                RequestHandler handler=new RequestHandler(client_sock);
+                // System.out.println("ACCEPT: " + client_sock.getRemoteSocketAddress());
+                final RequestHandler handler=new RequestHandler(client_sock);
+                /*new Thread() {
+                    public void run() {
+                        handler.run();
+                    }
+                }.start();
+                */
                 thread_pool.execute(handler);
             }
             catch(ClosedSelectorException closed) {
@@ -170,7 +193,7 @@ public class MemcachedConnector implements Runnable {
         }
 
         public void run() {
-            Buffer val;
+            byte[] val;
             String line;
             
             while(client_sock.isConnected()) {
@@ -179,14 +202,14 @@ public class MemcachedConnector implements Runnable {
                     if(line == null)
                         break;
 
-                    System.out.println("line = " + line);
+                    // System.out.println("line = " + line);
 
                     Request req=parseRequest(line);
                     if(req == null) {
                         break;
                     }
 
-                    System.out.println("req = " + req);
+                    // System.out.println("req = " + req);
 
                     switch(req.type) {
                         case SET:
@@ -194,8 +217,7 @@ public class MemcachedConnector implements Runnable {
                             int num=input.read(data, 0, data.length);
                             if(num == -1)
                                 throw new EOFException();
-                            val=new Buffer(data, 0, data.length);
-                            cache.put(req.key, val, req.caching_time);
+                            cache.put(req.key, data, req.caching_time);
                             output.write(STORED);
                             output.flush();
                             Util.discardUntilNewLine(input);
@@ -207,9 +229,9 @@ public class MemcachedConnector implements Runnable {
                                 for(String key: req.keys) {
                                     val=cache.get(key);
                                     if(val != null) {
-                                        int length=val.getLength();
+                                        int length=val.length;
                                         output.write(("VALUE " + key + " 0 " + length + "\r\n").getBytes());
-                                        output.write(val.getBuf(), val.getOffset(), val.getLength());
+                                        output.write(val, 0, length);
                                         output.write(RN);
                                     }
                                 }
