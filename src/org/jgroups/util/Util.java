@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.169 2008/09/01 08:25:14 belaban Exp $
+ * @version $Id: Util.java,v 1.170 2008/09/01 14:25:33 belaban Exp $
  */
 public class Util {
 
@@ -332,12 +332,12 @@ public class Util {
             return oldObjectToByteBuffer(obj);
 
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
 
         if(obj == null) {
             out_stream.write(TYPE_NULL);
             out_stream.flush();
-            return out_stream.toByteArray();
+            return out_stream.getRawBuffer();
         }
 
         OutputStream out=null;
@@ -406,7 +406,7 @@ public class Util {
         finally {
             Util.close(out);
         }
-        result=out_stream.toByteArray();
+        result=out_stream.getRawBuffer();
         return result;
     }
 
@@ -458,7 +458,7 @@ public class Util {
      */
     public static byte[] oldObjectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
         if(obj instanceof Streamable) {  // use Streamable if we can
             DataOutputStream out=new DataOutputStream(out_stream);
             writeGenericStreamable((Streamable)obj, out);
@@ -469,7 +469,7 @@ public class Util {
             out.writeObject(obj);
             out.close();
         }
-        result=out_stream.toByteArray();
+        result=out_stream.getRawBuffer();
         return result;
     }
 
@@ -500,10 +500,10 @@ public class Util {
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(out_stream);
         obj.writeTo(out);
-        result=out_stream.toByteArray();
+        result=out_stream.getRawBuffer();
         out.close();
         return result;
     }
@@ -511,11 +511,10 @@ public class Util {
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         byte[] result=null;
-        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
+        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(out_stream);
         Util.writeAddresses(c, out);
-        result=out_stream.toByteArray();
-        out.close();
+        result=out_stream.getRawBuffer();
         return result;
     }
 
@@ -1763,15 +1762,15 @@ public class Util {
 
     public static int  sizeOf(Streamable inst) {
         byte[] data;
-        ByteArrayOutputStream output;
+        ExposedByteArrayOutputStream output;
         DataOutputStream out;
 
         try {
-            output=new ByteArrayOutputStream();
+            output=new ExposedByteArrayOutputStream();
             out=new DataOutputStream(output);
             inst.writeTo(out);
             out.flush();
-            data=output.toByteArray();
+            data=output.getRawBuffer();
             return data.length;
         }
         catch(Exception ex) {
