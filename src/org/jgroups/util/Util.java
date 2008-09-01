@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.170 2008/09/01 14:25:33 belaban Exp $
+ * @version $Id: Util.java,v 1.171 2008/09/01 14:45:20 belaban Exp $
  */
 public class Util {
 
@@ -195,7 +195,7 @@ public class Util {
             try {s.close();} catch(Exception ex) {}
         }
     }
-    
+
     public static void close(ServerSocket s) {
         if(s != null) {
             try {s.close();} catch(Exception ex) {}
@@ -220,14 +220,14 @@ public class Util {
                 Util.close(ch);
         }
     }
-    
+
     public static void close(Connection conn) {
         if(conn != null) {
             try {conn.close();} catch(Throwable t) {}
-        }       
+        }
     }
 
-    
+
 
     /**
      * Creates an object from a byte buffer
@@ -332,12 +332,12 @@ public class Util {
             return oldObjectToByteBuffer(obj);
 
         byte[] result=null;
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
 
         if(obj == null) {
             out_stream.write(TYPE_NULL);
             out_stream.flush();
-            return out_stream.getRawBuffer();
+            return out_stream.toByteArray();
         }
 
         OutputStream out=null;
@@ -406,7 +406,7 @@ public class Util {
         finally {
             Util.close(out);
         }
-        result=out_stream.getRawBuffer();
+        result=out_stream.toByteArray();
         return result;
     }
 
@@ -458,7 +458,7 @@ public class Util {
      */
     public static byte[] oldObjectToByteBuffer(Object obj) throws Exception {
         byte[] result=null;
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
         if(obj instanceof Streamable) {  // use Streamable if we can
             DataOutputStream out=new DataOutputStream(out_stream);
             writeGenericStreamable((Streamable)obj, out);
@@ -469,7 +469,7 @@ public class Util {
             out.writeObject(obj);
             out.close();
         }
-        result=out_stream.getRawBuffer();
+        result=out_stream.toByteArray();
         return result;
     }
 
@@ -500,10 +500,10 @@ public class Util {
 
     public static byte[] streamableToByteBuffer(Streamable obj) throws Exception {
         byte[] result=null;
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(out_stream);
         obj.writeTo(out);
-        result=out_stream.getRawBuffer();
+        result=out_stream.toByteArray();
         out.close();
         return result;
     }
@@ -511,10 +511,11 @@ public class Util {
 
     public static byte[] collectionToByteBuffer(Collection<Address> c) throws Exception {
         byte[] result=null;
-        final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(512);
+        final ByteArrayOutputStream out_stream=new ByteArrayOutputStream(512);
         DataOutputStream out=new DataOutputStream(out_stream);
         Util.writeAddresses(c, out);
-        result=out_stream.getRawBuffer();
+        result=out_stream.toByteArray();
+        out.close();
         return result;
     }
 
@@ -1022,7 +1023,7 @@ public class Util {
 
     public static int keyPress(String msg) {
         System.out.println(msg);
-        
+
         try {
             return System.in.read();
         }
@@ -1103,11 +1104,11 @@ public class Util {
         }
         return sb.toString();
     }
-    
+
     public static boolean interruptAndWaitToDie(Thread t) {
 		return interruptAndWaitToDie(t, Global.THREAD_SHUTDOWN_WAIT_TIME);
 	}
-    
+
     public static boolean interruptAndWaitToDie(Thread t, long timeout) {
         if(t == null)
             throw new IllegalArgumentException("Thread can not be null");
@@ -1762,15 +1763,15 @@ public class Util {
 
     public static int  sizeOf(Streamable inst) {
         byte[] data;
-        ExposedByteArrayOutputStream output;
+        ByteArrayOutputStream output;
         DataOutputStream out;
 
         try {
-            output=new ExposedByteArrayOutputStream();
+            output=new ByteArrayOutputStream();
             out=new DataOutputStream(output);
             inst.writeTo(out);
             out.flush();
-            data=output.getRawBuffer();
+            data=output.toByteArray();
             return data.length;
         }
         catch(Exception ex) {
