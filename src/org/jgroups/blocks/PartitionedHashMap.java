@@ -2,13 +2,23 @@ package org.jgroups.blocks;
 
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.*;
+import org.jgroups.Address;
+import org.jgroups.JChannel;
+import org.jgroups.MembershipListener;
+import org.jgroups.View;
+import org.jgroups.util.Util;
 import org.jgroups.annotations.Experimental;
-import org.jgroups.annotations.Unsupported;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Unsupported;
 
+import java.lang.reflect.Method;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.DataInputStream;
+import java.io.ByteArrayInputStream;
 
 /** Hashmap which distributes its keys and values across the cluster. A PUT/GET/REMOVE computes the cluster node to which
  * or from which to get/set the key/value from a hash of the key and then forwards the request to the remote cluster node.
@@ -27,7 +37,7 @@ import java.util.*;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.11 2008/09/01 11:54:02 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.12 2008/09/02 09:58:43 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -59,6 +69,27 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
      * will then also evict those keys from its L2 cache */
     @ManagedAttribute(writable=true)
     private boolean migrate_data=false;
+
+    private static final short PUT     = 1;
+    private static final short GET     = 2;
+    private static final short REMOVE  = 3;
+
+    protected static Map<Short, Method> methods=new ConcurrentHashMap<Short,Method>(8);
+
+     static {
+        try {
+            methods.put(PUT, PartitionedHashMap.class.getMethod("_put",
+                                                                Object.class,
+                                                                Object.class,
+                                                                long.class));
+            methods.put(GET, PartitionedHashMap.class.getMethod("_get",
+                                                               Object.class));
+            methods.put(REMOVE, PartitionedHashMap.class.getMethod("_remove", Object.class));
+        }
+        catch(NoSuchMethodException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
 
     public interface HashFunction<K> {
@@ -184,6 +215,35 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         addMembershipListener((MembershipListener)hash_function);
         ch=new JChannel(props);
         disp=new RpcDispatcher(ch, null, this, this);
+        RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
+        disp.setRequestMarshaller(marshaller);
+        disp.setResponseMarshaller(marshaller);
+
+        // methods.put(PUT, this.getClass().getMethod("_put", Class<K>, V.class, long.class));
+
+//        Method[] tmp=getClass().getMethods();
+//        for(Method method: tmp) {
+//            System.out.println("method = " + method);
+//        }
+
+//        disp.setMarshaller(new RpcDispatcher.Marshaller() {
+//
+//            public byte[] objectToByteBuffer(Object obj) throws Exception {
+//                return new byte[0];
+//            }
+//
+//            public Object objectFromByteBuffer(byte[] buf) throws Exception {
+//                return null;
+//            }
+//        });
+
+        disp.setMethodLookup(new MethodLookup() {
+
+            public Method findMethod(short id) {
+                return methods.get(id);
+            }
+        });
+
         ch.connect(cluster_name);
         local_addr=ch.getLocalAddress();
         view=ch.getView();
@@ -256,11 +316,12 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             if(dest_node.equals(local_addr)) {
                 val=l2_cache.getEntry(key);
             }
-            else
-                val=(Cache.Value<V>)disp.callRemoteMethod(dest_node, "_get",
-                                                          new Object[]{key},
-                                                          new Class[]{key.getClass()},
-                                                          GroupRequest.GET_FIRST, call_timeout);
+            else {
+                val=(Cache.Value<V>)disp.callRemoteMethod(dest_node,
+                                                          new MethodCall(GET, new Object[]{key}),
+                                                          GroupRequest.GET_FIRST,
+                                                          call_timeout); 
+            }
             if(val != null) {
                 V retval=val.getValue();
                 if(l1_cache != null && val.getExpirationTime() >= 0)
@@ -284,11 +345,10 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             if(dest_node.equals(local_addr)) {
                 l2_cache.remove(key);
             }
-            else
-                disp.callRemoteMethod(dest_node, "_remove",
-                                      new Object[]{key},
-                                      new Class[]{key.getClass()},
+            else {
+                disp.callRemoteMethod(dest_node, new MethodCall(REMOVE, new Object[]{key}),
                                       GroupRequest.GET_NONE, call_timeout);
+            }
             if(l1_cache != null)
                 l1_cache.remove(key);
         }
@@ -378,10 +438,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     private void sendPut(Address dest, K key, V val, long caching_time, boolean synchronous) {
         try {
             int mode=synchronous? GroupRequest.GET_ALL : GroupRequest.GET_NONE;
-            disp.callRemoteMethod(dest, "_put",
-                                  new Object[]{key, val, caching_time},
-                                  new Class[]{key.getClass(), val.getClass(), long.class},
-                                  mode, call_timeout);
+            disp.callRemoteMethod(dest, new MethodCall(PUT, new Object[]{key, val, caching_time}), mode, call_timeout);
         }
         catch(Throwable t) {
             if(log.isWarnEnabled())
@@ -452,6 +509,78 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                     return retval;
             }
             return null;
+        }
+    }
+
+
+    private static class CustomMarshaller implements RpcDispatcher.Marshaller {
+        static final byte OBJ         = 1;
+        static final byte METHOD_CALL = 2;
+        static final byte VALUE       = 3;
+        
+
+        public byte[] objectToByteBuffer(Object obj) throws Exception {
+            if(obj == null)
+                return null;
+            ByteArrayOutputStream out_stream=new ByteArrayOutputStream(35);
+            DataOutputStream out=new DataOutputStream(out_stream);
+            try {
+                if(obj instanceof MethodCall) {
+                    out.writeByte(METHOD_CALL);
+                    MethodCall call=(MethodCall)obj;
+                    out.writeShort(call.getId());
+                    Object[] args=call.getArgs();
+                    if(args == null || args.length == 0) {
+                        out.writeShort(0);
+                    }
+                    else {
+                        out.writeShort(args.length);
+                        for(int i=0; i < args.length; i++) {
+                            Util.objectToStream(args[i], out);
+                        }
+                    }
+                }
+                else if(obj instanceof Cache.Value) {
+                    Cache.Value value=(Cache.Value)obj;
+                    out.writeByte(VALUE);
+                    out.writeLong(value.getExpirationTime());
+                    Util.objectToStream(value.getValue(), out);
+                }
+                else {
+                    out.writeByte(OBJ);
+                    Util.objectToStream(obj, out);
+                }
+                out.flush();
+                return out_stream.toByteArray();
+            }
+            finally {
+                Util.close(out);
+            }
+        }
+
+        public Object objectFromByteBuffer(byte[] buf) throws Exception {
+            if(buf == null)
+                return null;
+
+            DataInputStream in=new DataInputStream(new ByteArrayInputStream(buf));
+            byte type=in.readByte();
+            if(type == METHOD_CALL) {
+                short id=in.readShort();
+                short length=in.readShort();
+                Object[] args=length > 0? new Object[length] : null;
+                if(args != null) {
+                    for(int i=0; i < args.length; i++)
+                        args[i]=Util.objectFromStream(in);
+                }
+                return new MethodCall(id, args);
+            }
+            else if(type == VALUE) {
+                long expiration_time=in.readLong();
+                Object obj=Util.objectFromStream(in);
+                return new Cache.Value(obj, expiration_time);
+            }
+            else
+                return Util.objectFromStream(in);
         }
     }
 }
