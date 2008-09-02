@@ -27,9 +27,7 @@ import java.io.ByteArrayInputStream;
  * <ol>
  * <li>Use MarshalledValue to keep track of byte[] buffers, and be able to compute the exact size of the cache. This is
  *     good for maintaining a bounded cache (rather than using the number of entries)
- * <li>Implement the ASCII and binary (when available) protocol of memcached
- * <li>Provide a better consistent hashing algorithm than ConsistenHashFuntion as default
- * <li>More efficient marshalling, installing a request and response marshaller in RpcDispatcher
+ * <li>Provide a better consistent hashing algorithm than ConsistentHashFunction as default
  * <li>GUI (showing at least the topology and L1 and L2 caches)
  * <li>Notifications (puts, removes, gets etc)
  * <li>Invalidation of L1 caches (if used) on removal/put of item
@@ -37,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.12 2008/09/02 09:58:43 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.13 2008/09/02 10:51:59 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
