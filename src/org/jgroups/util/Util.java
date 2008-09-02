@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.172 2008/09/01 14:59:21 belaban Exp $
+ * @version $Id: Util.java,v 1.173 2008/09/02 08:36:30 belaban Exp $
  */
 public class Util {
 
@@ -311,9 +311,11 @@ public class Util {
                     }
                     break;
                 case TYPE_BYTEARRAY:
+                    in=new DataInputStream(in_stream);
                     int len=((DataInputStream)in).readInt();
                     byte[] tmp=new byte[len];
                     in.read(tmp, 0, tmp.length);
+                    retval=tmp;
                     break;
                 default:
                     throw new IllegalArgumentException("type " + b + " is invalid");
@@ -424,6 +426,151 @@ public class Util {
 
 
 
+    public static void objectToStream(Object obj, DataOutputStream out) throws Exception {
+        if(obj == null) {
+            out.write(TYPE_NULL);
+            return;
+        }
+
+        Byte type;
+        try {
+            if(obj instanceof Streamable) {  // use Streamable if we can
+                out.write(TYPE_STREAMABLE);
+                writeGenericStreamable((Streamable)obj, out);
+            }
+            else if((type=PRIMITIVE_TYPES.get(obj.getClass())) != null) {
+                out.write(type.byteValue());
+                switch(type.byteValue()) {
+                    case TYPE_BOOLEAN:
+                        out.writeBoolean(((Boolean)obj).booleanValue());
+                        break;
+                    case TYPE_BYTE:
+                        out.writeByte(((Byte)obj).byteValue());
+                        break;
+                    case TYPE_CHAR:
+                        out.writeChar(((Character)obj).charValue());
+                        break;
+                    case TYPE_DOUBLE:
+                        out.writeDouble(((Double)obj).doubleValue());
+                        break;
+                    case TYPE_FLOAT:
+                        out.writeFloat(((Float)obj).floatValue());
+                        break;
+                    case TYPE_INT:
+                        out.writeInt(((Integer)obj).intValue());
+                        break;
+                    case TYPE_LONG:
+                        out.writeLong(((Long)obj).longValue());
+                        break;
+                    case TYPE_SHORT:
+                        out.writeShort(((Short)obj).shortValue());
+                        break;
+                    case TYPE_STRING:
+                        String str=(String)obj;
+                        if(str.length() > Short.MAX_VALUE) {
+                            out.writeBoolean(true);
+                            ObjectOutputStream oos=new ObjectOutputStream(out);
+                            try {
+                                oos.writeObject(str);
+                            }
+                            finally {
+                                oos.close();
+                            }
+                        }
+                        else {
+                            out.writeBoolean(false);
+                            out.writeUTF(str);
+                        }
+                        break;
+                    case TYPE_BYTEARRAY:
+                        byte[] buf=(byte[])obj;
+                        out.writeInt(buf.length);
+                        out.write(buf, 0, buf.length);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("type " + type + " is invalid");
+                }
+            }
+            else { // will throw an exception if object is not serializable
+                out.write(TYPE_SERIALIZABLE);
+                ObjectOutputStream tmp=new ObjectOutputStream(out);
+                tmp.writeObject(obj);
+            }
+        }
+        finally {
+            Util.close(out);
+        }
+    }
+
+
+
+    public static Object objectFromStream(DataInputStream in) throws Exception {
+        if(in == null) return null;
+        Object retval=null;
+        byte b=(byte)in.read();
+
+        switch(b) {
+            case TYPE_NULL:
+                return null;
+            case TYPE_STREAMABLE:
+                retval=readGenericStreamable(in);
+                break;
+            case TYPE_SERIALIZABLE: // the object is Externalizable or Serializable
+                ContextObjectInputStream tmp=new ContextObjectInputStream(in);
+                retval=tmp.readObject();
+                break;
+            case TYPE_BOOLEAN:
+                retval=Boolean.valueOf(in.readBoolean());
+                break;
+            case TYPE_BYTE:
+                retval=new Byte(in.readByte());
+                break;
+            case TYPE_CHAR:
+                retval=new Character(in.readChar());
+                break;
+            case TYPE_DOUBLE:
+                retval=new Double(in.readDouble());
+                break;
+            case TYPE_FLOAT:
+                retval=new Float(in.readFloat());
+                break;
+            case TYPE_INT:
+                retval=new Integer(in.readInt());
+                break;
+            case TYPE_LONG:
+                retval=new Long(in.readLong());
+                break;
+            case TYPE_SHORT:
+                retval=new Short(in.readShort());
+                break;
+            case TYPE_STRING:
+                if(in.readBoolean()) { // large string
+                    ObjectInputStream ois=new ObjectInputStream(in);
+                    try {
+                        retval=ois.readObject();
+                    }
+                    finally {
+                        ois.close();
+                    }
+                }
+                else {
+                    retval=in.readUTF();
+                }
+                break;
+            case TYPE_BYTEARRAY:
+                int len=in.readInt();
+                byte[] tmpbuf=new byte[len];
+                in.read(tmpbuf, 0, tmpbuf.length);
+                retval=tmpbuf;
+                break;
+            default:
+                throw new IllegalArgumentException("type " + b + " is invalid");
+        }
+        return retval;
+    }
+
+
+
 
     /** For backward compatibility in JBoss 4.0.2 */
     public static Object oldObjectFromByteBuffer(byte[] buffer) throws Exception {
@@ -484,6 +631,7 @@ public class Util {
         result=out_stream.toByteArray();
         return result;
     }
+
 
 
 
