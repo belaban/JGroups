@@ -42,7 +42,7 @@ import java.util.*;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.77.2.8 2008/07/11 10:17:29 belaban Exp $
+ * @version $Id: TP.java,v 1.77.2.9 2008/09/03 15:19:34 galderz Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -169,7 +169,7 @@ public abstract class TP extends Protocol {
 
     private DiagnosticsHandler diag_handler=null;
     boolean enable_diagnostics=true;
-    String diagnostics_addr="224.0.0.75";
+    String diagnostics_addr="224.0.75.75";
     int    diagnostics_port=7500;
 
 
