@@ -35,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.13 2008/09/02 10:51:59 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.14 2008/09/03 09:45:22 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -449,7 +449,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
     }
 
 
-    private static class ConsistentHashFunction<K> implements HashFunction<K>, MembershipListener {
+    public static class ConsistentHashFunction<K> extends MembershipListenerAdapter implements HashFunction<K> {
         private SortedMap<Short,Address> nodes=new TreeMap<Short,Address>();
         private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
 
@@ -492,11 +492,6 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
             }
         }
 
-        public void suspect(Address suspected_mbr) {
-        }
-
-        public void block() {
-        }
 
         private static Address findFirst(Map<Short,Address> map, int index) {
             Address retval;
@@ -507,6 +502,72 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
                     return retval;
             }
             return null;
+        }
+    }
+
+
+    /**
+     * Uses arrays to store hash values of addresses, plus addresses.
+     */
+    public static class ArrayBasedConsistentHashFunction<K> extends MembershipListenerAdapter implements HashFunction<K> {
+        Object[] nodes=null;
+        private final static int HASH_SPACE=2000; // must be > max number of nodes in a cluster
+
+        public Address hash(K key, List<Address> members) {
+            int hash=Math.abs(key.hashCode());
+            int index=hash % HASH_SPACE;
+
+            if(members != null && !members.isEmpty()) {
+                Object[] tmp=new Object[nodes.length];
+                System.arraycopy(nodes, 0, tmp, 0, nodes.length);
+                for(int i=0; i < tmp.length; i+=2) {
+                    if(!members.contains(tmp[i+1])) {
+                        tmp[i]=tmp[i+1]=null;
+                    }
+                }
+                return findFirst(tmp, index);
+            }
+            return findFirst(nodes, index);
+        }
+
+        public void viewAccepted(View new_view) {
+            nodes=new Object[new_view.size() * 2];
+            int index=0;
+            for(Address node: new_view.getMembers()) {
+                int hash=Math.abs(node.hashCode()) % HASH_SPACE;
+                nodes[index++]=hash;
+                nodes[index++]=node;
+            }
+
+            if(log.isTraceEnabled()) {
+                StringBuilder sb=new StringBuilder("node mappings:\n");
+                for(int i=0; i < nodes.length; i+=2) {
+                    sb.append(nodes[i] + ": " + nodes[i+1]).append("\n");
+                }
+                log.trace(sb);
+            }
+        }
+
+        public void suspect(Address suspected_mbr) {
+        }
+
+        public void block() {
+        }
+
+        private static Address findFirst(Object[] array, int index) {
+            Address retval=null;
+            if(array == null)
+                return null;
+
+            for(int i=0; i < array.length; i+=2) {
+                if(array[i] == null)
+                    continue;
+                if(array[i+1] != null)
+                    retval=(Address)array[i+1];
+                if(((Integer)array[i]) >= index)
+                    return (Address)array[i+1];
+            }
+            return retval;
         }
     }
 
