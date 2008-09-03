@@ -12,7 +12,7 @@ import java.lang.management.ManagementFactory;
 /** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashMap.
  * Uses MemcachedConnector and PartitionedHashMap.
  * @author Bela Ban
- * @version $Id: MemcachedServer.java,v 1.4 2008/09/02 09:58:44 belaban Exp $
+ * @version $Id: MemcachedServer.java,v 1.5 2008/09/03 10:14:12 belaban Exp $
  */
 public class MemcachedServer {
     private MemcachedConnector connector;
@@ -77,7 +77,7 @@ public class MemcachedServer {
         int min_threads=1, max_threads=500;
         long rpc_timeout=1500L, caching_time=30000L;
         boolean migrate_data=true, use_l1_cache=true;
-        int l1_max_entries=100, l2_max_entries=-1;
+        int l1_max_entries=5000, l2_max_entries=-1;
         long l1_reaping_interval=-1, l2_reaping_interval=30000L;
 
         for(int i=0; i < args.length; i++) {

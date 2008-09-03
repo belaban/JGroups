@@ -35,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.14 2008/09/03 09:45:22 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.15 2008/09/03 10:14:11 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -310,7 +310,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         Cache.Value<V> val;
         try {
             Address dest_node=getNode(key);
-            // if we are the destination, don't invoke an RPC but return the item from our L2 cache irectly !
+            // if we are the destination, don't invoke an RPC but return the item from our L2 cache directly !
             if(dest_node.equals(local_addr)) {
                 val=l2_cache.getEntry(key);
             }
