@@ -35,7 +35,7 @@ import java.io.ByteArrayInputStream;
  * <li>Documentation, comparison to memcached
  * </ol>
  * @author Bela Ban
- * @version $Id: PartitionedHashMap.java,v 1.15 2008/09/03 10:14:11 belaban Exp $
+ * @version $Id: PartitionedHashMap.java,v 1.16 2008/09/03 14:17:57 belaban Exp $
  */
 @Experimental @Unsupported
 public class PartitionedHashMap<K,V> implements MembershipListener {
@@ -216,27 +216,7 @@ public class PartitionedHashMap<K,V> implements MembershipListener {
         RpcDispatcher.Marshaller marshaller=new CustomMarshaller();
         disp.setRequestMarshaller(marshaller);
         disp.setResponseMarshaller(marshaller);
-
-        // methods.put(PUT, this.getClass().getMethod("_put", Class<K>, V.class, long.class));
-
-//        Method[] tmp=getClass().getMethods();
-//        for(Method method: tmp) {
-//            System.out.println("method = " + method);
-//        }
-
-//        disp.setMarshaller(new RpcDispatcher.Marshaller() {
-//
-//            public byte[] objectToByteBuffer(Object obj) throws Exception {
-//                return new byte[0];
-//            }
-//
-//            public Object objectFromByteBuffer(byte[] buf) throws Exception {
-//                return null;
-//            }
-//        });
-
         disp.setMethodLookup(new MethodLookup() {
-
             public Method findMethod(short id) {
                 return methods.get(id);
             }
