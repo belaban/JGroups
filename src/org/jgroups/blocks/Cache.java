@@ -8,6 +8,7 @@ import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
 
 import java.util.concurrent.*;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.*;
 import java.io.*;
 
@@ -15,7 +16,7 @@ import java.io.*;
  * Simple cache which maintains keys and value. A reaper can be enabled which periodically evicts expired entries.
  * Also, when the cache is configured to be bounded, entries in excess of the max size will be evicted on put().
  * @author Bela Ban
- * @version $Id: Cache.java,v 1.9 2008/09/01 10:25:40 belaban Exp $
+ * @version $Id: Cache.java,v 1.10 2008/09/03 10:38:25 belaban Exp $
  */
 @Experimental
 @Unsupported
@@ -24,6 +25,7 @@ public class Cache<K,V> {
     private final ConcurrentMap<K,Value<V>> map=new ConcurrentHashMap<K,Value<V>>();
     private ScheduledThreadPoolExecutor timer=new ScheduledThreadPoolExecutor(1);
     private Future task=null;
+    private final AtomicBoolean is_reaping=new AtomicBoolean(false);
 
     /** The maximum number of keys, When this value is exceeded we evict older entries, until we drop below this 
      * mark again. This effectively maintains a bounded cache. A value of 0 means don't bound the cache.
@@ -94,30 +96,49 @@ public class Cache<K,V> {
         Value<V> value=new Value<V>(val, caching_time <= 0? caching_time : System.currentTimeMillis() + caching_time);
         Value<V> retval=map.put(key, value);
 
-        if(max_num_entries > 0) {
-            if(map.size() > max_num_entries) {
-                evict(); // see if we can gracefully evict expired items
-            }
-            if(map.size() > max_num_entries) {
-                // still too many entries: now evict entries based on insertion time: oldest first
-                int diff=map.size() - max_num_entries; // we have to evict diff entries
-                SortedMap<Long,K> tmp=new TreeMap<Long,K>();
-                for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
-                    tmp.put(entry.getValue().insertion_time, entry.getKey());
-                }
+        if(max_num_entries > 0 && map.size() > max_num_entries) {
+            boolean rc=is_reaping.compareAndSet(false, true);
+            if(rc) {
+                if(log.isTraceEnabled())
+                    log.trace("reaping: max_num_entries=" + max_num_entries + ", size=" + map.size());
+                timer.execute(new Runnable() {
+                    public void run() {
+                        if(max_num_entries > 0) {
+                            try {
+                                if(map.size() > max_num_entries) {
+                                    evict(); // see if we can gracefully evict expired items
+                                }
+                                if(map.size() > max_num_entries) {
+                                    // still too many entries: now evict entries based on insertion time: oldest first
+                                    int diff=map.size() - max_num_entries; // we have to evict diff entries
+                                    SortedMap<Long,K> tmp=new TreeMap<Long,K>();
+                                    for(Map.Entry<K,Value<V>> entry: map.entrySet()) {
+                                        tmp.put(entry.getValue().insertion_time, entry.getKey());
+                                    }
 
-                Collection<K> vals=tmp.values();
-                for(K k: vals) {
-                    if(diff-- > 0) {
-                        Value<V> v=map.remove(k);
-                        if(log.isTraceEnabled())
-                            log.trace("evicting " + k + ": " + v.value);
+                                    Collection<K> vals=tmp.values();
+                                    for(K k: vals) {
+                                        if(diff-- > 0) {
+                                            Value<V> v=map.remove(k);
+                                            if(log.isTraceEnabled())
+                                                log.trace("evicting " + k + ": " + v.value);
+                                        }
+                                        else
+                                            break;
+                                    }
+                                }
+                                if(log.isTraceEnabled())
+                                    log.trace("done reaping (size=" + map.size() + ")");
+                            }
+                            finally {
+                                is_reaping.set(false);
+                            }
+                        }
                     }
-                    else
-                        break;
-                }
+                });
             }
         }
+
         return retval != null? retval.value : null;
     }
 
