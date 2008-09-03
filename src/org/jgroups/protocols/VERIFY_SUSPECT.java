@@ -19,7 +19,7 @@ import java.util.*;
  * passes SUSPECT event up the stack, otherwise discards it. Has to be placed somewhere above the FD layer and
  * below the GMS layer (receiver of the SUSPECT event). Note that SUSPECT events may be reordered by this protocol.
  * @author Bela Ban
- * @version $Id: VERIFY_SUSPECT.java,v 1.32.2.1 2008/05/22 13:23:06 belaban Exp $
+ * @version $Id: VERIFY_SUSPECT.java,v 1.32.2.2 2008/09/03 15:13:37 vlada Exp $
  */
 public class VERIFY_SUSPECT extends Protocol implements Runnable {
     private Address                local_addr=null;
@@ -175,40 +175,36 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      * time to wait (min of all timeouts) and waits(time) msecs. Will be woken up when entry is removed (in case
      * of successful verification of that member's liveness). Terminates when no entry remains in the hashtable.
      */
-    public void run() {
-        Address mbr;
-        long val, curr_time, diff;
+    public void run() {       
+        long val, diff;
 
-        while(timer != null && Thread.currentThread().equals(timer) && !suspects.isEmpty()) {
+        while(!suspects.isEmpty()) {
             diff=0;
 
-            List<Address> tmp=null;
+            List<Address> confirmed_suspects=new LinkedList<Address>();
             synchronized(suspects) {
-                for(Enumeration e=suspects.keys(); e.hasMoreElements();) {
-                    mbr=(Address)e.nextElement();
-                    val=suspects.get(mbr).longValue();
-                    curr_time=System.currentTimeMillis();
-                    diff=curr_time - val;
+                for(Enumeration<Address> e=suspects.keys(); e.hasMoreElements();) {
+                    Address mbr=e.nextElement();
+                    val=suspects.get(mbr).longValue();                    
+                    diff=System.currentTimeMillis() - val;
                     if(diff >= timeout) {  // haven't been unsuspected, pass up SUSPECT
                         if(log.isTraceEnabled())
-                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");
-                        if(tmp == null) tmp=new LinkedList<Address>();
-                        tmp.add(mbr);
+                            log.trace("diff=" + diff + ", mbr " + mbr + " is dead (passing up SUSPECT event)");                      
+                        
+                        confirmed_suspects.add(mbr);
                         suspects.remove(mbr);
                         continue;
                     }
                     diff=Math.max(diff, timeout - diff);
                 }
             }
-            if(tmp != null && !tmp.isEmpty()) {
-                for(Iterator it=tmp.iterator(); it.hasNext();)
-                    up_prot.up(new Event(Event.SUSPECT, it.next()));
-            }
+            
+            for(Address suspect:confirmed_suspects)
+                up_prot.up(new Event(Event.SUSPECT,suspect));            
 
             if(diff > 0)
                 Util.sleep(diff);
-        }
-        timer=null;
+        }        
     }
 
 
@@ -221,23 +217,27 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
      */
     void verifySuspect(Address mbr) {
         Message msg;
-        if(mbr == null) return;
+        if(mbr == null)
+            return;
 
         synchronized(suspects) {
             if(suspects.containsKey(mbr))
                 return;
             suspects.put(mbr, new Long(System.currentTimeMillis()));
         }
+        //start timer before we send out are you dead messages
+        startTimer();
+
         // moved out of synchronized statement (bela): http://jira.jboss.com/jira/browse/JGRP-302
-        if(log.isTraceEnabled()) log.trace("verifying that " + mbr + " is dead");
-        for(int i=0; i < num_msgs; i++) {
+        if(log.isTraceEnabled())
+            log.trace("verifying that " + mbr + " is dead");
+
+        for(int i=0;i < num_msgs;i++) {
             msg=new Message(mbr, null, null);
             msg.setFlag(Message.OOB);
             msg.putHeader(name, new VerifyHeader(VerifyHeader.ARE_YOU_DEAD, local_addr));
             down_prot.down(new Event(Event.MSG, msg));
         }
-        if(timer == null)
-            startTimer();
     }
 
 
@@ -286,7 +286,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
     }
 
 
-    void startTimer() {
+    private synchronized void startTimer() {
         if(timer == null || !timer.isAlive()) {            
             timer=getThreadFactory().newThread(this,"VERIFY_SUSPECT.TimerThread");
             timer.setDaemon(true);
@@ -305,7 +305,7 @@ public class VERIFY_SUSPECT extends Protocol implements Runnable {
         shutting_down=false;
     }
 
-    public void stop() {
+    public synchronized void stop() {
         Thread tmp;
         if(timer != null && timer.isAlive()) {
             tmp=timer;
