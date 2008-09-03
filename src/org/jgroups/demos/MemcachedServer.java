@@ -12,7 +12,7 @@ import java.lang.management.ManagementFactory;
 /** Server process which listens for memcached requests and forwards them to an instance of PartitionedHashMap.
  * Uses MemcachedConnector and PartitionedHashMap.
  * @author Bela Ban
- * @version $Id: MemcachedServer.java,v 1.6 2008/09/03 12:36:30 belaban Exp $
+ * @version $Id: MemcachedServer.java,v 1.7 2008/09/03 12:38:49 belaban Exp $
  */
 public class MemcachedServer {
     private MemcachedConnector connector;
@@ -72,7 +72,7 @@ public class MemcachedServer {
 
     public static void main(String[] args) throws Exception {
         InetAddress bind_addr=null;
-        int port=22122;
+        int port=11211;
         String props="udp.xml";
         int min_threads=1, max_threads=500;
         long rpc_timeout=1500L, caching_time=30000L;
