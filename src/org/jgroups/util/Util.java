@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.173 2008/09/02 08:36:30 belaban Exp $
+ * @version $Id: Util.java,v 1.174 2008/09/05 08:27:30 belaban Exp $
  */
 public class Util {
 
@@ -1740,6 +1740,20 @@ public class Util {
                 return false;
         }
         return true;
+    }
+
+    /**
+     * Returns a list of members which left from view one to two
+     * @param one
+     * @param two
+     * @return
+     */
+    public static List<Address> leftMembers(View one, View two) {
+        if(one == null || two == null)
+            return null;
+        List<Address> retval=new ArrayList<Address>(one.getMembers());
+        retval.removeAll(two.getMembers());
+        return retval;
     }
 
 

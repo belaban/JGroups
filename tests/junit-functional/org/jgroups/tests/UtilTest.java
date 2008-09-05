@@ -1,11 +1,8 @@
-// $Id: UtilTest.java,v 1.8 2008/09/01 08:25:13 belaban Exp $
+// $Id: UtilTest.java,v 1.9 2008/09/05 08:27:31 belaban Exp $
 
 package org.jgroups.tests;
 
-import org.jgroups.Global;
-import org.jgroups.Message;
-import org.jgroups.View;
-import org.jgroups.ViewId;
+import org.jgroups.*;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
 import org.jgroups.util.Util;
@@ -423,6 +420,54 @@ public class UtilTest {
         assert !(Util.match(c, a));
     }
 
+
+    public static void testLeftMembers() {
+        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
+                d=new IpAddress(4000), e=new IpAddress(5000);
+
+        Vector<Address> v1=new Vector<Address>();
+        v1.add(a);
+        v1.add(b);
+        v1.add(c);
+        v1.add(d);
+
+        Vector<Address> v2=new Vector<Address>();
+        v2.add(c);
+        v2.add(d);
+
+        View one=new View(new ViewId(a, 1), v1),
+                two=new View(new ViewId(b,2), v2);
+        List<Address> left=Util.leftMembers(one, two);
+        System.out.println("left = " + left);
+        assert left != null;
+        assert left.size() == 2;
+        assert left.contains(a);
+        assert left.contains(b);
+    }
+
+    public static void testLeftMembers2() {
+        final Address a=new IpAddress(1000), b=new IpAddress(2000), c=new IpAddress(3000),
+                d=new IpAddress(4000), e=new IpAddress(5000);
+
+        Vector<Address> v1=new Vector<Address>();
+        v1.add(a);
+        v1.add(b);
+        v1.add(c);
+        v1.add(d);
+
+        Vector<Address> v2=new Vector<Address>();
+        v2.add(c);
+        v2.add(d);
+        v2.add(a);
+        v2.add(b);
+
+        View one=new View(new ViewId(a, 1), v1),
+                two=new View(new ViewId(b,2), v2);
+        List<Address> left=Util.leftMembers(one, two);
+        System.out.println("left = " + left);
+        assert left != null;
+        assert left.isEmpty();
+    }
 
     public static void testPickRandomElement() {
         Vector v=new Vector();
