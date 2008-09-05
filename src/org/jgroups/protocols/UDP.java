@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.182 2008/08/14 15:47:59 belaban Exp $
+ * @version $Id: UDP.java,v 1.183 2008/09/05 14:59:03 vlada Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP {
@@ -485,12 +485,22 @@ public class UDP extends TP {
      * @param mcastAddr
      * @throws IOException
      */
-    private void bindToInterfaces(List<NetworkInterface> interfaces, MulticastSocket s, InetAddress mcastAddr) throws IOException {
+    private void bindToInterfaces(List<NetworkInterface> interfaces,
+                                  MulticastSocket s,
+                                  InetAddress mcastAddr) {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
-        for(NetworkInterface intf: interfaces) {
-            s.joinGroup(tmp_mcast_addr, intf);
-            if(log.isTraceEnabled())
-                log.trace("joined " + tmp_mcast_addr + " on " + intf.getName());
+        for(NetworkInterface intf:interfaces) {
+
+            //[JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
+            try {
+                s.joinGroup(tmp_mcast_addr, intf);
+                if(log.isTraceEnabled())
+                    log.trace("joined " + tmp_mcast_addr + " on " + intf.getName());
+            }
+            catch(IOException e) {
+                if(log.isWarnEnabled())
+                    log.warn("Could not join " + tmp_mcast_addr + " on interface " + intf.getName());
+            }
         }
     }
 
