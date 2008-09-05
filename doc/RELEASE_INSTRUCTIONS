@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.19 2008/03/04 15:35:29 belaban Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.20 2008/09/05 15:14:20 rachmatowicz Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -30,10 +30,39 @@ Release:
   - see JGroups/bin/upload_manual.sh
 - Create javadoc: ./build.sh javadoc and upload to web site
   - use process similar to pdf and html (script is bin/upload_javadocs.sh)
-- Add new release to ant repository http://repository.jboss.org
-  - the jar to release is dist/jgroups-all.jar, renamed to jgroups.jar
+- Add new release binary jar to the buildmagic repository (http://repository.jboss.org)
+  a. Check out the jgroups directory of the buildmagic repository into a working directory $JG_REPO
+     > svn co https://svn.jboss.org/repos/repository.jboss.org/jgroups $JG_REPO
+  b. Create the subdirectory for the new release (call it <release-name>)
+     > cd $JG_REPO
+     > mkdir <release-name>
+     > mkdir <release-name>/lib
+  c. Copy the new jar into the lib directory
+     > cp $JG_RELEASE/dist/jgroups-all.jar $JG_REPO/<release-name>/lib/jgroups.jar
+  d. Update the repository meta-data for the new entry
+     A simple way to arrange for this is to copy an existing component-info.xml entry into place and update the version number:    
+     > cp $JG_REPO/<another-release-name>/component-info.xml $JG_REPO/<release-name>/component-info.xml 
+     > edit the version number...
+  e. Add the new directories and files to version control and commit the changes to the buildmagic repo.
   (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=JBossBuild)
-- Add new release to maven2 repository http://repository.jboss.org/maven2
+- Add new release binary jar *and* source jar to maven2 repository (http://repository.jboss.org/maven2)
+  a. Check out the jgroups directory of the maven repository into a working directory $JG_REPO
+     > svn co https://svn.jboss.org/repos/repository.jboss.org/maven2/jgroups/jgroups $JG_REPO
+  b. Update the working copy with the new release binary jar file
+     > mvn deploy:deploy-file -Dfile=$JG_RELEASE/dist/jgroups-all.jar -Durl=file://$JG_REPO -DpomFile=$JG_RELEASE/jgroups-pom.xml
+     This command will do the following:
+     - use the pom you passed to determine groupId/artifactId/version 
+     - create a directory in the svn working copy you checked out with the groupId/artifactID/version number
+     - copy the jar into the directory and name it by version number
+     - copy the pom passed into the directory
+     - create checksums for the jar and the pom
+     - update the maven meta-data files in the parent directory 
+  c. Update the working copy with the new release sources jar file
+     > mvn deploy:deploy-file -Dfile=$JG_RELEASE/dist/jgroups-sources.jar -Durl=file://$JG_REPO \
+                              -DpomFile=$JG_RELEASE/jgroups-pom.xml -Dclassifier=sources
+     Performs the same actions as in step b., except that the classifier parameter causes the file to retain 
+     the sources suffix in the repository. 
+  d. Add the new directories and files to version control and commit the changes to the maven2 repo.
   (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=MavenReleaseRepository)
 - Announcement to the jg-dev and jg-users mailing lists
   -include release notes and changelog
