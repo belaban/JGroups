@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.175 2008/09/05 14:05:11 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.176 2008/09/05 14:20:42 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -138,16 +138,13 @@
     </target>
 
     <target name="jgroups-sources.jar"
-            description="Creates the jgroups-sources.jar. Includes only core source file, no demos, no tests">
+            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
         <mkdir dir="${dist.dir}"/>
         <jar jarfile="${dist.dir}/jgroups-sources.jar"
              basedir="${src.dir}"
              manifest="${conf.dir}/manifest.mf"
              includes="org/jgroups/**"
-             excludes="org/jgroups/demos/**,
-                      org/jgroups/tests/**,
-                      org/jgroups/**/*Test.class,
-                      org/jgroups/**/*Test\$*.class">
+             excludes="org/jgroups/demos/**">
         </jar>
     </target>
 
