@@ -8,7 +8,7 @@ import org.jgroups.JChannel;
 import org.jgroups.Message;
 import org.jgroups.TimeoutException;
 import org.jgroups.Global;
-import org.jgroups.tests.stack.Utilities;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
@@ -18,11 +18,11 @@ import org.testng.annotations.BeforeMethod;
  * under heavy load.
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
- * @version $Id: TUNNELDeadLockTest.java,v 1.15 2008/04/14 08:34:46 belaban Exp $
+ * @version $Id: TUNNELDeadLockTest.java,v 1.16 2008/09/10 15:41:00 vlada Exp $
  * @see TUNNELDeadLockTest#testStress
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
-public class TUNNELDeadLockTest {
+public class TUNNELDeadLockTest extends ChannelTestBase {
     private JChannel channel;
     private Promise promise;
     private int receivedCnt;
@@ -35,12 +35,14 @@ public class TUNNELDeadLockTest {
     // before declaring the test failed.
     private int mainTimeout=60000;
     int routerPort=-1;
+    GossipRouter gossipRouter;
 
 
     @BeforeMethod
     void setUp() throws Exception {
         promise=new Promise();
-        routerPort=Utilities.startGossipRouter("127.0.0.1");
+        gossipRouter=createGossipRouter("127.0.0.1",1000);        
+        routerPort=gossipRouter.getPort();
     }
 
     @AfterMethod
@@ -55,7 +57,7 @@ public class TUNNELDeadLockTest {
         channel=null;
         promise.reset();
         promise=null;
-        Utilities.stopGossipRouter();
+        gossipRouter.stop();
     }
 
 
