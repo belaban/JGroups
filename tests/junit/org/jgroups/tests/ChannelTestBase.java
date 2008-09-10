@@ -9,7 +9,9 @@ import org.jgroups.protocols.TCPPING;
 import org.jgroups.protocols.UDP;
 import org.jgroups.protocols.TP;
 import org.jgroups.protocols.pbcast.GMS;
+import org.jgroups.stack.GossipClient;
 import org.jgroups.stack.GossipRouter;
+import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.ResourceManager;
@@ -20,6 +22,7 @@ import org.testng.annotations.*;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.ServerSocket;
 import java.util.*;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -111,6 +114,64 @@ public class ChannelTestBase {
             assert active_threads == current_active_threads : msg;
         }
     }
+    
+    protected String getBindAddress(){
+        return bind_addr;
+    }
+    
+    public GossipRouter createGossipRouter(final long expiryTime,
+                                           final String bind_addr,
+                                           final long gossipRequestTimeout,
+                                           final long routingClientReplyTimeout) throws Exception {
+
+        ServerSocket ss=new ServerSocket(0);
+        int routerPort=ss.getLocalPort();
+        ss.close();
+        GossipRouter gr=new GossipRouter(routerPort,
+                                         bind_addr,
+                                         expiryTime,
+                                         gossipRequestTimeout,
+                                         routingClientReplyTimeout);
+        gr.start();
+        GossipClient client=null;
+
+        // verify the router - try for 10 secs to connect
+        long startms=System.currentTimeMillis();
+        Exception lastConnectException=null;
+        long crtms=startms;
+
+        while(crtms - startms < 10000) {
+            try {
+                client=new GossipClient(new IpAddress(bind_addr, routerPort), 10000, 1000, null);
+                client.getMembers("Utilities:startGossipRouterConnectionTest");
+                lastConnectException=null;
+                break;
+            }
+            catch(Exception e) {
+                if(client != null)
+                    client.stop();
+                lastConnectException=e;
+                Thread.sleep(1000);
+                crtms=System.currentTimeMillis();
+            }
+        }
+
+        if(lastConnectException != null) {
+            lastConnectException.printStackTrace();
+            throw new Exception("Cannot connect to the router");
+        }
+
+        return gr;
+    }
+
+    public GossipRouter createGossipRouter(String bindAddress, long expiryTime) throws Exception {
+
+        return createGossipRouter(expiryTime,
+                                  bindAddress,
+                                  GossipRouter.GOSSIP_REQUEST_TIMEOUT,
+                                  GossipRouter.ROUTING_CLIENT_REPLY_TIMEOUT);
+    }
+    
 
     protected final static void assertTrue(boolean condition) {
         Util.assertTrue(condition);

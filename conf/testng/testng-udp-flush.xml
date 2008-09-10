@@ -12,6 +12,7 @@
             <run>                              
             	<include name="base"/>                
                 <include name="flush"/>
+                <exclude name="stack-independent"/>
                 <exclude name="stack-dependent"/>               
                 <exclude name="broken"/>
                 <exclude name="known-failures"/>

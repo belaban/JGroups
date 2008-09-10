@@ -3,7 +3,7 @@ package org.jgroups.tests;
 
 
 import org.jgroups.*;
-import org.jgroups.tests.stack.Utilities;
+import org.jgroups.stack.GossipRouter;
 import org.jgroups.util.Promise;
 import org.jgroups.util.Util;
 import org.testng.annotations.AfterClass;
@@ -18,23 +18,26 @@ import org.testng.annotations.Test;
  *
  * @author Ovidiu Feodorov <ovidiu@feodorov.com>
  * @author Bela Ban belaban@yahoo.com
- * @version $Id: DisconnectTest.java,v 1.22 2008/06/04 06:49:01 belaban Exp $
+ * @version $Id: DisconnectTest.java,v 1.23 2008/09/10 15:41:01 vlada Exp $
  **/
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
-public class DisconnectTest {
+public class DisconnectTest extends ChannelTestBase{
     private JChannel channel, coordinator;
     private String props;
     private final static String GROUP="DisconnectTest";
+    private GossipRouter gossipRouter;
 
     @BeforeClass
     void startRouter() throws Exception {
-        int routerPort=Utilities.startGossipRouter();
+        gossipRouter=createGossipRouter("localhost",GossipRouter.EXPIRY_TIME);        
+        int routerPort=gossipRouter.getPort();
         props=getTUNNELProps(routerPort, routerPort);
+        System.out.println(props);
     }
-
+    
     @AfterClass
-    static void stopRouter() throws Exception {
-        Utilities.stopGossipRouter();
+    void stopRouter() throws Exception {
+        gossipRouter.stop();
     }
 
     @AfterMethod
