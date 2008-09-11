@@ -1,24 +1,30 @@
 package org.jgroups.tests.perf;
 
 import org.jgroups.*;
-import org.jgroups.conf.ClassConfigurator;
-import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
 
-import java.io.*;
-import java.util.*;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 /**
- * Tests sending large messages from one sender to multiple receivers
+ * Tests sending large messages from one sender to multiple receivers. The following messages are exchanged:
+ * <pre>
+ * | START (1 byte) |
+ * | DATA (1 byte) | size (int, 4 bytes) | byte[] buf |
+ * | STOP (1 byte) |
+ * | RESULT (1 byte) | total time (long, 8 bytes) | total_bytes (long, 8 bytes)| 
+ *
+ * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.4 2008/08/01 07:47:05 belaban Exp $
+ * @version $Id: IPerf.java,v 1.5 2008/09/11 12:08:16 belaban Exp $
  */
-public class IPerf {
+public class IPerf implements Receiver {
     private final Configuration config;
-    private int seqno=1;
-    private final static String NAME="IPerf";
-    private final Map<Integer,Map<Object, Long>> stats=new ConcurrentHashMap<Integer,Map<Object,Long>>();
+    private final ConcurrentMap<Object,Entry> receiver_table=new ConcurrentHashMap<Object,Entry>();
     private Transport transport=null;
 
 
@@ -29,10 +35,11 @@ public class IPerf {
     public void start() throws Exception {
         transport=(Transport)Class.forName(config.getTransport()).newInstance();
         transport.create(config);
+        transport.setReceiver(this);
         transport.start();
 
         if(config.isSender()) {
-            sendMessage();
+            send();
             transport.stop();
             transport.destroy();
         }
@@ -42,21 +49,102 @@ public class IPerf {
         }
     }
 
-    private void sendMessage() throws Exception {
-        int size=config.getSize();
-        byte[] buf=new byte[size];
-        List<Object> mbrs=transport.getClusterMembers();
-        long current_time=System.currentTimeMillis();
-        Map<Object,Long> map=new ConcurrentHashMap<Object,Long>();
-        for(Object mbr: mbrs)
-            map.put(mbr, current_time);
-        stats.put(seqno, map);
-        MyHeader hdr=new MyHeader(MyHeader.Type.DATA, seqno, size);
-        // msg.putHeader(NAME, hdr);
-        System.out.println("\n[" + new Date() + "] --> sending #" + seqno + ": " + Util.printBytes(size));
-        transport.send(null, buf, false);
-        seqno++;
+
+    public void receive(Object sender, byte[] payload) {
+        ByteBuffer buf=ByteBuffer.wrap(payload);
+        byte b=buf.get();
+        Type type=Type.getType(b);
+        switch(type) {
+            case START:
+                receiver_table.remove(sender);
+                break;
+            case DATA:
+                Entry entry=receiver_table.get(sender);
+                if(entry == null) {
+                    entry=new Entry();
+                    Entry tmp=receiver_table.putIfAbsent(sender, entry);
+                    if(tmp != null)
+                        entry=tmp;
+                }
+                int length=buf.getInt();
+                entry.total_bytes+=length;
+                break;
+            case STOP:
+                entry=receiver_table.get(sender);
+                if(entry == null) {
+                    err("entry for " + sender + " not found");
+                    return;
+                }
+                if(entry.stop_time == 0)
+                    entry.stop_time=System.currentTimeMillis();
+                sendResult(sender, entry);
+                break;
+            case RESULT:
+                long total_time=buf.getLong(), total_bytes=buf.getLong();
+                System.out.println("time for " + Util.printBytes(total_bytes) + ": " + total_time + " ms");
+                break;
+        }
     }
+
+
+
+
+    private void send() throws Exception {
+        int size=config.getSize();
+
+        byte[] buf=createStartMessage();
+        transport.send(null, buf, false);
+
+        buf=createDataMessage(size);
+        System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
+        transport.send(null, buf, false);
+
+        buf=createStopMessage();
+        transport.send(null, buf, false);
+
+
+        Util.sleep(30000);
+    }
+
+
+    private void sendResult(Object destination, Entry entry) {
+        ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + Global.LONG_SIZE * 2);
+        buf.put(Type.RESULT.getByte());
+        buf.putLong(entry.stop_time - entry.start_time);
+        buf.putLong(entry.total_bytes);
+        try {
+            transport.send(destination, buf.array(), false);
+        }
+        catch(Exception e) {
+            err(e.toString());
+        }
+    }
+
+
+    private static byte[] createStartMessage() {
+        return createMessage(Type.START);
+    }
+
+
+    private static byte[] createDataMessage(int length) {
+        ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + length + Global.INT_SIZE);
+        buf.put(Type.DATA.getByte());
+        buf.putInt(length);
+        return buf.array();
+    }
+
+
+    private static byte[] createStopMessage() {
+        return createMessage(Type.STOP);
+    }
+
+
+    private static byte[] createMessage(Type type) {
+        ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE);
+        buf.put(type.getByte());
+        return buf.array();
+    }
+
 
     public static void main(String[] args) throws Exception {
         Configuration config=new Configuration();
@@ -91,8 +179,6 @@ public class IPerf {
             config.setTransportArgs(tmp);
         }
 
-        ClassConfigurator.add((short)10000, MyHeader.class);
-
         new IPerf(config).start();
     }
 
@@ -111,128 +197,53 @@ public class IPerf {
         System.out.println(sb);
     }
 
+    private static void log(String msg) {
+        System.out.println(msg);
+    }
 
-    private class MyReceiver extends ReceiverAdapter {
-        private final JChannel channel;
+    private static void err(String msg) {
+        System.err.println(msg);
+    }
 
-        public MyReceiver(JChannel channel) {
-            this.channel=channel;
+
+
+    enum Type {
+        START(1),
+        DATA(2),
+        STOP(3),
+        RESULT(4);
+
+        final byte b;
+
+        Type(int i) {
+            b=(byte)i;
         }
 
-        public void viewAccepted(View new_view) {
-            log("view: " + new_view);
+        public byte getByte() {
+            return b;
         }
 
-        public void receive(Message msg) {
-            int len=msg.getLength();
-            MyHeader hdr=(MyHeader)msg.getHeader(NAME);
-            switch(hdr.type) {
-                case DATA:
-                    log("<-- received #" + hdr.seqno + ": " + Util.printBytes(len) + " from " + msg.getSrc());
-                    if(hdr.size != len)
-                        System.err.println("hdr.size (" + hdr.size + ") != length (" + len + ")");
-                    sendConfirmation(msg.getSrc(), hdr.seqno, hdr.size);
-                    break;
-                case CONFIRMATION:
-                    handleConfirmation(msg.getSrc(), hdr.seqno);
-                    break;
-                default:
-                    System.err.println("received invalid header: " + hdr);
+        public static Type getType(byte input) {
+            switch(input) {
+                case 1: return START;
+                case 2: return DATA;
+                case 3: return STOP;
+                case 4: return RESULT;
             }
-        }
-
-        private void handleConfirmation(Address sender, int seqno) {
-            Map<Object, Long> map=stats.get(seqno);
-            if(map == null) {
-                System.err.println("no map for seqno #" + seqno);
-                return;
-            }
-            Long start_time=map.remove(sender);
-            if(start_time != null) {
-                long diff=System.currentTimeMillis() - start_time;
-                System.out.println("time for #" + seqno + ": " + sender + ": " + diff + "ms");
-            }
-            if(map.isEmpty()) {
-                stats.remove(seqno);
-            }
-        }
-
-        private void sendConfirmation(Address dest, int seqno, int size) {
-            Message rsp=new Message(dest, null, null);
-            rsp.setFlag(Message.OOB);
-            MyHeader rsp_hdr=new MyHeader(MyHeader.Type.CONFIRMATION, seqno, size);
-            rsp.putHeader(NAME, rsp_hdr);
-            try {
-                channel.send(rsp);
-            }
-            catch(Throwable e) {
-                e.printStackTrace();
-            }
-        }
-
-        private void log(String msg) {
-            // System.out.println("[" + new Date() + "]: " + msg);
-            System.out.println(msg);
+            throw new IllegalArgumentException("type " + input + " is not valid");
         }
     }
 
-    public static class MyHeader extends Header implements Streamable {
-        private static final long serialVersionUID=-8796883857099720796L;
-        private static enum Type {DATA, CONFIRMATION};
-        private Type type;
-        private int seqno;
-        private int size;
+    private static class Entry {
+        private final long start_time;
+        private long stop_time=0;
+        private long total_bytes=0;
 
-
-        public MyHeader() {
-            type=Type.DATA;
-            seqno=-1;
-            size=-1;
-        }
-
-        public MyHeader(Type type, int seqno, int size) {
-            this.type=type;
-            this.seqno=seqno;
-            this.size=size;
-        }
-
-        public void writeExternal(ObjectOutput out) throws IOException {
-        }
-
-        public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        }
-
-        public void writeTo(DataOutputStream out) throws IOException {
-            out.writeUTF(type.name());
-            out.writeInt(seqno);
-            out.writeInt(size);
-        }
-
-        public void readFrom(DataInputStream in) throws IOException, IllegalAccessException, InstantiationException {
-            String name=in.readUTF();
-            type=Type.valueOf(name);
-            seqno=in.readInt();
-            size=in.readInt();
-        }
-
-        public int size() {
-            int retval=Global.INT_SIZE * 2;
-            retval += type.name().length() +2;
-            return retval;
-        }
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            sb.append("type=" + type);
-            switch(type) {
-                case DATA:
-                    sb.append(", seqno=" + seqno + ", size=" + Util.printBytes(size));
-                    break;
-                case CONFIRMATION:
-                    sb.append(", seqno=" + seqno);
-                    break;
-            }
-            return sb.toString();
+        public Entry() {
+            this.start_time=System.currentTimeMillis();
         }
     }
+    
+
+
 }
