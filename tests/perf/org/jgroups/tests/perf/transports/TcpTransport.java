@@ -14,7 +14,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: TcpTransport.java,v 1.20 2008/07/24 10:15:12 belaban Exp $
+ * @version $Id: TcpTransport.java,v 1.21 2008/09/11 17:43:12 belaban Exp $
  */
 public class TcpTransport implements Transport {
     Receiver         receiver=null;
@@ -38,9 +38,6 @@ public class TcpTransport implements Transport {
         return local_addr;
     }
 
-    public List<Object> getClusterMembers() {
-        return null;
-    }
 
     public String help() {
         return "[-cluster <list of address:port pairs>]";

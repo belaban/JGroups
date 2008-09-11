@@ -13,7 +13,7 @@ import java.util.*;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: JGroupsTransport.java,v 1.19 2008/08/20 04:43:45 belaban Exp $
+ * @version $Id: JGroupsTransport.java,v 1.20 2008/09/11 17:43:12 belaban Exp $
  */
 public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Transport  {
     Properties config=null;
@@ -33,11 +33,6 @@ public class JGroupsTransport extends org.jgroups.ReceiverAdapter implements Tra
         return channel != null? channel.getLocalAddress() : null;
     }
 
-    public List<Object> getClusterMembers() {
-        if(channel == null) return null;
-        Vector<Address> mbrs=channel.getView().getMembers();
-        return new ArrayList<Object>(mbrs);
-    }
 
     public String help() {
         return "[-props <props>]";
