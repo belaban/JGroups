@@ -2,13 +2,16 @@ package org.jgroups.tests.perf;
 
 import org.jgroups.*;
 import org.jgroups.util.Util;
+import org.jgroups.util.Tuple;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.Condition;
 
 /**
  * Tests sending large messages from one sender to multiple receivers. The following messages are exchanged:
@@ -20,12 +23,13 @@ import java.util.concurrent.ConcurrentMap;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.5 2008/09/11 12:08:16 belaban Exp $
+ * @version $Id: IPerf.java,v 1.6 2008/09/11 16:00:17 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
     private final ConcurrentMap<Object,Entry> receiver_table=new ConcurrentHashMap<Object,Entry>();
     private Transport transport=null;
+    private ResultSet results=null;
 
 
     public IPerf(Configuration config) {
@@ -57,14 +61,14 @@ public class IPerf implements Receiver {
         switch(type) {
             case START:
                 receiver_table.remove(sender);
+                receiver_table.putIfAbsent(sender, new Entry());
+                System.out.println(System.currentTimeMillis() + ": started");
                 break;
             case DATA:
                 Entry entry=receiver_table.get(sender);
                 if(entry == null) {
-                    entry=new Entry();
-                    Entry tmp=receiver_table.putIfAbsent(sender, entry);
-                    if(tmp != null)
-                        entry=tmp;
+                    err("entry for " + sender + " not found");
+                    return;
                 }
                 int length=buf.getInt();
                 entry.total_bytes+=length;
@@ -75,13 +79,16 @@ public class IPerf implements Receiver {
                     err("entry for " + sender + " not found");
                     return;
                 }
-                if(entry.stop_time == 0)
+                if(entry.stop_time == 0) {
                     entry.stop_time=System.currentTimeMillis();
+                    System.out.println(System.currentTimeMillis() + ": stopped");
+                }
                 sendResult(sender, entry);
                 break;
             case RESULT:
                 long total_time=buf.getLong(), total_bytes=buf.getLong();
                 System.out.println("time for " + Util.printBytes(total_bytes) + ": " + total_time + " ms");
+                results.add(sender, total_time, total_bytes);
                 break;
         }
     }
@@ -91,19 +98,24 @@ public class IPerf implements Receiver {
 
     private void send() throws Exception {
         int size=config.getSize();
+        results=new ResultSet(transport.getClusterMembers());
 
         byte[] buf=createStartMessage();
+        System.out.println(System.currentTimeMillis() + ": sending");
         transport.send(null, buf, false);
 
         buf=createDataMessage(size);
-        System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
+        // System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
         transport.send(null, buf, false);
 
         buf=createStopMessage();
         transport.send(null, buf, false);
 
-
-        Util.sleep(30000);
+        boolean rc=results.block(30000L);
+        if(rc)
+            log("got all results");
+        else
+            err("didnt get all results");
     }
 
 
@@ -241,6 +253,82 @@ public class IPerf implements Receiver {
 
         public Entry() {
             this.start_time=System.currentTimeMillis();
+        }
+    }
+
+    private static class ResultSet {
+        private final Set<Object> not_heard_from;
+        private final ConcurrentMap<Object, Tuple<Long,Long>> results=new ConcurrentHashMap<Object,Tuple<Long,Long>>();
+        private final Lock lock=new ReentrantLock();
+        private final Condition cond=lock.newCondition();
+        
+
+        public ResultSet(List<Object> not_heard_from) {
+            this.not_heard_from=new HashSet<Object>(not_heard_from); // make a copy
+
+        }
+
+        public boolean add(Object sender, long time, long total_bytes) {
+            results.putIfAbsent(sender, new Tuple<Long,Long>(time, total_bytes));
+            lock.lock();
+            try {
+                if(not_heard_from.remove(sender))
+                    cond.signalAll();
+                return not_heard_from.isEmpty();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        public boolean block(long timeout) {
+            long target=System.currentTimeMillis() + timeout;
+            long curr_time;
+            lock.lock();
+            try {
+
+                while((curr_time=System.currentTimeMillis()) < target && !not_heard_from.isEmpty()) {
+                    long wait_time=target - curr_time;
+                    try {
+                        cond.await(wait_time, TimeUnit.MILLISECONDS);
+                    }
+                    catch(InterruptedException e) {
+                        ;
+                    }
+                }
+                return not_heard_from.isEmpty();
+            }
+            finally {
+                lock.unlock();
+            }
+        }
+
+        public int size() {
+            return results.size();
+        }
+
+        public void reset() {
+            lock.lock();
+            try {
+                not_heard_from.clear();
+                results.clear();
+                cond.signalAll();
+            }
+            finally {
+                lock.unlock();;
+            }
+        }
+
+        public String toString() {
+            StringBuilder sb=new StringBuilder();
+            for(Map.Entry<Object,Tuple<Long,Long>> entry: results.entrySet()) {
+                Tuple<Long, Long> val=entry.getValue();
+                sb.append(entry.getKey()).append(" time=" + val.getVal1() + " ms for " + Util.printBytes(val.getVal2()));
+                sb.append("\n");
+            }
+            if(!not_heard_from.isEmpty())
+                sb.append("(not heard from " + not_heard_from + ")\n");
+            return sb.toString();
         }
     }
     
