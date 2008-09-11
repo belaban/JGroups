@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.9 2008/07/24 10:15:11 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.10 2008/09/11 17:36:29 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -43,9 +43,6 @@ public class UdpTransport implements Transport {
         return local_addr;
     }
 
-    public List<Object> getClusterMembers() {
-        return null;
-    }
 
     public String help() {
         return null;

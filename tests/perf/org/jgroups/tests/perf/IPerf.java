@@ -19,17 +19,19 @@ import java.util.concurrent.locks.Condition;
  * | START (1 byte) |
  * | DATA (1 byte) | size (int, 4 bytes) | byte[] buf |
  * | STOP (1 byte) |
- * | RESULT (1 byte) | total time (long, 8 bytes) | total_bytes (long, 8 bytes)| 
+ * | RESULT (1 byte) | total time (long, 8 bytes) | total_bytes (long, 8 bytes)|
+ * | REGISTER (1 byte) |
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.7 2008/09/11 16:15:47 belaban Exp $
+ * @version $Id: IPerf.java,v 1.8 2008/09/11 17:36:31 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
     private final ConcurrentMap<Object,Entry> receiver_table=new ConcurrentHashMap<Object,Entry>();
     private Transport transport=null;
     private ResultSet results=null;
+    private final Set<Object> members=new HashSet<Object>();
 
 
     public IPerf(Configuration config) {
@@ -88,6 +90,9 @@ public class IPerf implements Receiver {
                 long total_time=buf.getLong(), total_bytes=buf.getLong();
                 results.add(sender, total_time, total_bytes);
                 break;
+            case REGISTER:
+                members.add(sender);
+                break;
         }
     }
 
@@ -96,9 +101,12 @@ public class IPerf implements Receiver {
 
     private void send() throws Exception {
         int size=config.getSize();
-        results=new ResultSet(transport.getClusterMembers());
+        results=new ResultSet(members);
 
-        byte[] buf=createStartMessage();
+        byte[] buf=createRegisterMessage();
+        transport.send(null, buf, false);
+
+        buf=createStartMessage();
         transport.send(null, buf, false);
 
         buf=createDataMessage(size);
@@ -115,6 +123,11 @@ public class IPerf implements Receiver {
             err("didnt get all results");
         System.out.println("\nResults:\n" + results);
         results.reset();
+    }
+
+    
+    private static byte[] createRegisterMessage() {
+        return createMessage(Type.REGISTER);
     }
 
 
@@ -222,7 +235,8 @@ public class IPerf implements Receiver {
         START(1),
         DATA(2),
         STOP(3),
-        RESULT(4);
+        RESULT(4),
+        REGISTER(5);
 
         final byte b;
 
@@ -240,6 +254,7 @@ public class IPerf implements Receiver {
                 case 2: return DATA;
                 case 3: return STOP;
                 case 4: return RESULT;
+                case 5: return REGISTER;
             }
             throw new IllegalArgumentException("type " + input + " is not valid");
         }
@@ -266,7 +281,7 @@ public class IPerf implements Receiver {
         private final Condition cond=lock.newCondition();
         
 
-        public ResultSet(List<Object> not_heard_from) {
+        public ResultSet(Collection<Object> not_heard_from) {
             this.not_heard_from=new HashSet<Object>(not_heard_from); // make a copy
 
         }
