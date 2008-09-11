@@ -18,7 +18,7 @@ import java.util.List;
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.10 2008/09/11 17:36:29 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.11 2008/09/11 17:43:12 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;

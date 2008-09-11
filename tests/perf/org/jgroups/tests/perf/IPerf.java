@@ -24,7 +24,7 @@ import java.util.concurrent.locks.Condition;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.8 2008/09/11 17:36:31 belaban Exp $
+ * @version $Id: IPerf.java,v 1.9 2008/09/11 17:43:13 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -43,6 +43,11 @@ public class IPerf implements Receiver {
         transport.create(config);
         transport.setReceiver(this);
         transport.start();
+
+        members.add(transport.getLocalAddress());
+        byte[] buf=createRegisterMessage();
+        transport.send(null, buf, false);
+
 
         if(config.isSender()) {
             send();
@@ -103,10 +108,7 @@ public class IPerf implements Receiver {
         int size=config.getSize();
         results=new ResultSet(members);
 
-        byte[] buf=createRegisterMessage();
-        transport.send(null, buf, false);
-
-        buf=createStartMessage();
+        byte[] buf=createStartMessage();
         transport.send(null, buf, false);
 
         buf=createDataMessage(size);
