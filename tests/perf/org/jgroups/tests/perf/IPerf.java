@@ -23,7 +23,7 @@ import java.util.concurrent.locks.Condition;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.6 2008/09/11 16:00:17 belaban Exp $
+ * @version $Id: IPerf.java,v 1.7 2008/09/11 16:15:47 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -62,7 +62,6 @@ public class IPerf implements Receiver {
             case START:
                 receiver_table.remove(sender);
                 receiver_table.putIfAbsent(sender, new Entry());
-                System.out.println(System.currentTimeMillis() + ": started");
                 break;
             case DATA:
                 Entry entry=receiver_table.get(sender);
@@ -81,13 +80,12 @@ public class IPerf implements Receiver {
                 }
                 if(entry.stop_time == 0) {
                     entry.stop_time=System.currentTimeMillis();
-                    System.out.println(System.currentTimeMillis() + ": stopped");
                 }
+                System.out.println("result for " + sender + ": " + entry);
                 sendResult(sender, entry);
                 break;
             case RESULT:
                 long total_time=buf.getLong(), total_bytes=buf.getLong();
-                System.out.println("time for " + Util.printBytes(total_bytes) + ": " + total_time + " ms");
                 results.add(sender, total_time, total_bytes);
                 break;
         }
@@ -101,7 +99,6 @@ public class IPerf implements Receiver {
         results=new ResultSet(transport.getClusterMembers());
 
         byte[] buf=createStartMessage();
-        System.out.println(System.currentTimeMillis() + ": sending");
         transport.send(null, buf, false);
 
         buf=createDataMessage(size);
@@ -116,6 +113,8 @@ public class IPerf implements Receiver {
             log("got all results");
         else
             err("didnt get all results");
+        System.out.println("\nResults:\n" + results);
+        results.reset();
     }
 
 
@@ -253,6 +252,10 @@ public class IPerf implements Receiver {
 
         public Entry() {
             this.start_time=System.currentTimeMillis();
+        }
+
+        public String toString() {
+            return stop_time - start_time + " ms for " + Util.printBytes(total_bytes);
         }
     }
 
