@@ -17,7 +17,7 @@ import java.util.List;
  * </ol>
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Transport.java,v 1.6 2008/07/24 10:15:09 belaban Exp $
+ * @version $Id: Transport.java,v 1.7 2008/09/11 17:36:31 belaban Exp $
  */
 public interface Transport {
     /** Return info about command line options */
@@ -32,8 +32,6 @@ public interface Transport {
      *  <code>create()</code>, possibly even later (after <code>start()</code>) */
     Object getLocalAddress();
 
-    /** Returns a list of addresses of all nodes in the cluster */
-    List<Object> getClusterMembers();
 
     /** Start the transport */
     void start() throws Exception;
