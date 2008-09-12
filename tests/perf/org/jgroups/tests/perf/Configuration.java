@@ -5,10 +5,12 @@ import java.net.InetAddress;
 /**
  * Captures all config for IPerf
  * @author Bela Ban
- * @version $Id: Configuration.java,v 1.3 2008/09/12 06:44:24 belaban Exp $
+ * @version $Id: Configuration.java,v 1.4 2008/09/12 15:10:52 belaban Exp $
  */
 public class Configuration {
     private int size=10 * 1000 * 1000;
+    private long time=0; // time to send
+    private int chunk_size=1000; // send in chunks of 1000 bytes
     private boolean sender=false;
     private String transport="org.jgroups.tests.perf.transports.JGroupsTransport";
     private String[] transport_args;
@@ -29,6 +31,24 @@ public class Configuration {
 
     public void setSize(int size) {
         this.size=size;
+        this.time=0;
+    }
+
+    public int getChunkSize() {
+        return chunk_size;
+    }
+
+    public void setChunkSize(int chunk_size) {
+        this.chunk_size=chunk_size;
+    }
+
+    public long getTime() {
+        return time;
+    }
+
+    public void setTime(long time) {
+        this.time=time;
+        this.size=0;
     }
 
     public String getTransport() {

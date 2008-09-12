@@ -13,6 +13,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
 import java.net.InetAddress;
+import java.text.NumberFormat;
 
 /**
  * Tests sending large messages from one sender to multiple receivers. The following messages are exchanged:
@@ -25,7 +26,7 @@ import java.net.InetAddress;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.10 2008/09/12 06:44:24 belaban Exp $
+ * @version $Id: IPerf.java,v 1.11 2008/09/12 15:10:52 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -33,6 +34,14 @@ public class IPerf implements Receiver {
     private Transport transport=null;
     private ResultSet results=null;
     private final Set<Object> members=new HashSet<Object>();
+    private final static NumberFormat f;
+
+
+    static {
+        f=NumberFormat.getNumberInstance();
+        f.setGroupingUsed(false);
+        f.setMaximumFractionDigits(2);
+    }
 
 
     public IPerf(Configuration config) {
@@ -107,14 +116,33 @@ public class IPerf implements Receiver {
 
     private void send() throws Exception {
         int size=config.getSize();
-        results=new ResultSet(members);
+        long time=config.getTime();
+        int chunk_size=config.getChunkSize();
+
+        results=new ResultSet(members, size);
 
         byte[] buf=createStartMessage();
         transport.send(null, buf, false);
 
-        buf=createDataMessage(size);
-        // System.out.println("\n[" + new Date() + "] --> sending " + Util.printBytes(size));
-        transport.send(null, buf, false);
+        if(time > 0) {
+            long end_time=System.currentTimeMillis() + time;
+            while(System.currentTimeMillis() < end_time) {
+                buf=createDataMessage(chunk_size);
+                transport.send(null, buf, false);
+            }
+        }
+        else {
+            int sent=0;
+            int to_send, remaining;
+
+            while(sent < size) {
+                remaining=size - sent;
+                to_send=Math.min(remaining, chunk_size);
+                buf=createDataMessage(to_send);
+                transport.send(null, buf, false);
+                sent+=to_send;
+            }
+        }
 
         buf=createStopMessage();
         transport.send(null, buf, false);
@@ -188,6 +216,14 @@ public class IPerf implements Receiver {
                 config.setSize(Integer.parseInt(args[++i]));
                 continue;
             }
+            if(tmp.equals("-time")) {
+                config.setTime(Long.parseLong(args[++i]));
+                continue;
+            }
+            if(tmp.equals("-chunk_size")) {
+                config.setChunkSize(Integer.parseInt(args[++i]));
+                continue;
+            }
             if(tmp.equals("-transport")) {
                 config.setTransport(args[++i]);
                 continue;
@@ -215,7 +251,7 @@ public class IPerf implements Receiver {
 
     static void help(String transport) {
         StringBuilder sb=new StringBuilder();
-        sb.append("IPerf [-sender] [-bind_addr <addr>] [-transport <class name>] [-size <bytes>]");
+        sb.append("IPerf [-sender] [-bind_addr <addr>] [-transport <class name>] [-size <bytes> | -time <ms>] [-chunk_size <bytes>]");
         try {
             Transport tp=(Transport)Class.forName(transport).newInstance();
             String tmp=tp.help();
@@ -238,7 +274,7 @@ public class IPerf implements Receiver {
 
 
 
-    enum Type {
+    public static enum Type {
         START(1),
         DATA(2),
         STOP(3),
@@ -286,10 +322,12 @@ public class IPerf implements Receiver {
         private final ConcurrentMap<Object, Tuple<Long,Long>> results=new ConcurrentHashMap<Object,Tuple<Long,Long>>();
         private final Lock lock=new ReentrantLock();
         private final Condition cond=lock.newCondition();
+        private long  expected_bytes=0;
         
 
-        public ResultSet(Collection<Object> not_heard_from) {
+        public ResultSet(Collection<Object> not_heard_from, long expected_bytes) {
             this.not_heard_from=new HashSet<Object>(not_heard_from); // make a copy
+            this.expected_bytes=expected_bytes;
 
         }
 
@@ -349,6 +387,12 @@ public class IPerf implements Receiver {
             for(Map.Entry<Object,Tuple<Long,Long>> entry: results.entrySet()) {
                 Tuple<Long, Long> val=entry.getValue();
                 sb.append(entry.getKey()).append(" time=" + val.getVal1() + " ms for " + Util.printBytes(val.getVal2()));
+                if(expected_bytes > 0) {
+                    long total_received_bytes=val.getVal2();
+                    long missing=expected_bytes - total_received_bytes;
+                    double loss_rate=100.0 / expected_bytes * missing;
+                    sb.append(" (loss rate=" + f.format(loss_rate) + "%)");
+                }
                 sb.append("\n");
             }
             if(!not_heard_from.isEmpty())

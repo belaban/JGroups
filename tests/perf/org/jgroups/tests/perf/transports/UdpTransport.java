@@ -5,19 +5,19 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.tests.perf.Receiver;
 import org.jgroups.tests.perf.Transport;
 import org.jgroups.tests.perf.Configuration;
+import org.jgroups.tests.perf.IPerf;
+import org.jgroups.Global;
 
 import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetAddress;
-import java.net.MulticastSocket;
+import java.net.*;
 import java.util.Properties;
 import java.util.Map;
+import java.nio.ByteBuffer;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.12 2008/09/12 06:44:23 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.13 2008/09/12 15:10:51 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -26,11 +26,14 @@ public class UdpTransport implements Transport {
     InetAddress      mcast_addr=null;
     int              mcast_port=7500;
     InetAddress      bind_addr=null;
-    MulticastSocket  sock=null;
+    MulticastSocket  mcast_sock=null;
+    DatagramSocket   ucast_sock=null;
     IpAddress        local_addr=null;
     ReceiverThread   mcast_receiver=null;
+    ReceiverThread   ucast_receiver=null;
     int              max_receiver_buffer_size=500000;
     int              max_send_buffer_size=500000;
+    int              max_chunk_size=65000;
 
 
     public UdpTransport() {
@@ -42,7 +45,7 @@ public class UdpTransport implements Transport {
 
 
     public String help() {
-        return "-mcast_addr <addr> -mcast_port <port>";
+        return "-mcast_addr <addr> -mcast_port <port> -max_chunk_size <bytes>";
     }
 
     public void create(Properties properties) throws Exception {
@@ -59,13 +62,16 @@ public class UdpTransport implements Transport {
         else
             bind_addr=InetAddress.getLocalHost();
 
-        sock=new MulticastSocket(mcast_port);
-        sock.setReceiveBufferSize(max_receiver_buffer_size);
-        sock.setSendBufferSize(max_send_buffer_size);
+        ucast_sock=new DatagramSocket(0, bind_addr);
+        ucast_sock.setReceiveBufferSize(max_receiver_buffer_size);
+        ucast_sock.setSendBufferSize(max_send_buffer_size);
+        mcast_sock=new MulticastSocket(mcast_port);
+        mcast_sock.setReceiveBufferSize(max_receiver_buffer_size);
+        mcast_sock.setSendBufferSize(max_send_buffer_size);
         if(bind_addr != null)
-            sock.setInterface(bind_addr);
-        sock.joinGroup(mcast_addr);
-        local_addr=new IpAddress(sock.getLocalAddress(), sock.getLocalPort());
+            mcast_sock.setInterface(bind_addr);
+        mcast_sock.joinGroup(mcast_addr);
+        local_addr=new IpAddress(ucast_sock.getLocalAddress(), ucast_sock.getLocalPort());
         System.out.println("-- local_addr is " + local_addr);
     }
 
@@ -84,6 +90,14 @@ public class UdpTransport implements Transport {
                     mcast_port=Integer.parseInt(args[++i]);
                     continue;
                 }
+                if(args[i].equals("-max_chunk_size")) {
+                    int tmp=Integer.parseInt(args[++i]);
+                    if(tmp > max_chunk_size || tmp < 1000)
+                        throw new IllegalArgumentException("-max_chunk_size must be <= 65K and >= 1000");
+                    else
+                        max_chunk_size=tmp;
+                    continue;
+                }
                 help();
                 return;
             }
@@ -95,29 +109,38 @@ public class UdpTransport implements Transport {
         if(bind_addr == null)
             bind_addr=InetAddress.getLocalHost();
 
-        sock=new MulticastSocket(mcast_port);
-        sock.setReceiveBufferSize(max_receiver_buffer_size);
-        sock.setSendBufferSize(max_send_buffer_size);
-            sock.setInterface(bind_addr);
-        sock.joinGroup(mcast_addr);
-        local_addr=new IpAddress(bind_addr, sock.getLocalPort());
+        ucast_sock=new DatagramSocket(0, bind_addr);
+        ucast_sock.setReceiveBufferSize(max_receiver_buffer_size);
+        ucast_sock.setSendBufferSize(max_send_buffer_size);
+        mcast_sock=new MulticastSocket(mcast_port);
+        mcast_sock.setReceiveBufferSize(max_receiver_buffer_size);
+        mcast_sock.setSendBufferSize(max_send_buffer_size);
+        mcast_sock.setInterface(bind_addr);
+        mcast_sock.joinGroup(mcast_addr);
+        local_addr=new IpAddress(ucast_sock.getLocalAddress(), ucast_sock.getLocalPort());
         System.out.println("-- local_addr is " + local_addr);
     }
 
 
     public void start() throws Exception {
-        mcast_receiver=new ReceiverThread(sock);
+        mcast_receiver=new ReceiverThread(mcast_sock);
+        ucast_receiver=new ReceiverThread(ucast_sock);
         mcast_receiver.start();
+        ucast_receiver.start();
     }
 
     public void stop() {
         if(mcast_receiver != null)
             mcast_receiver.stop();
+        if(ucast_receiver != null)
+            ucast_receiver.stop();
     }
 
     public void destroy() {
-        if(sock != null)
-            sock.close();
+        if(mcast_sock != null)
+            mcast_sock.close();
+        if(ucast_sock != null)
+            ucast_sock.close();
     }
 
     public void setReceiver(Receiver r) {
@@ -128,17 +151,46 @@ public class UdpTransport implements Transport {
         return null;
     }
 
-    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
-        DatagramPacket p;
-        if(destination == null) {
-            p=new DatagramPacket(payload, payload.length, mcast_addr, mcast_port);
-        }
-        else {
-            IpAddress addr=(IpAddress)destination;
-            p=new DatagramPacket(payload, payload.length, addr.getIpAddress(), addr.getPort());
 
+    public void send(Object destination, byte[] payload, boolean oob) throws Exception {
+        int original_length=payload.length;
+
+        if(payload.length > max_chunk_size) {
+            int offset=0;
+            int length=max_chunk_size;
+
+            ByteBuffer data=ByteBuffer.wrap(payload, 0, Global.BYTE_SIZE + Global.INT_SIZE);
+            IPerf.Type type=IPerf.Type.getType(data.get());
+            if(type != IPerf.Type.DATA)
+                throw new IllegalArgumentException("only DATA requests can exceed the chunk size");
+            original_length=data.getInt();
+
+            while(offset < original_length) {
+                ByteBuffer chunk=ByteBuffer.allocate(length + Global.BYTE_SIZE + Global.INT_SIZE);
+                chunk.put(IPerf.Type.DATA.getByte());
+                chunk.putInt(length);
+                _send(destination, chunk.array(), 0, length + Global.BYTE_SIZE + Global.INT_SIZE);
+                offset+=length;
+                int remaining=original_length - offset;
+                length=Math.min(remaining, max_chunk_size);
+                if(length == 0)
+                    break;
+            }
         }
-        sock.send(p);
+        else
+            _send(destination, payload, 0, original_length);
+    }
+
+    private void _send(Object destination, byte[] payload, int offset, int length) throws Exception {
+        DatagramPacket p;
+        SocketAddress dest=destination == null?
+                new InetSocketAddress(mcast_addr, mcast_port) :
+                new InetSocketAddress(((IpAddress)destination).getIpAddress(), ((IpAddress)destination).getPort());
+        p=new DatagramPacket(payload, offset, length, dest);
+        if(destination == null)
+            mcast_sock.send(p);
+        else
+            ucast_sock.send(p);
     }
 
 
@@ -148,39 +200,39 @@ public class UdpTransport implements Transport {
 
 
     class ReceiverThread implements Runnable {
-        DatagramSocket sock;
+        DatagramSocket recv_sock;
         Thread         t=null;
 
         ReceiverThread(DatagramSocket sock) {
-            this.sock=sock;
+            this.recv_sock=sock;
         }
 
         void start() throws Exception {
-            t=new Thread(this, "ReceiverThread for " + sock.getLocalAddress() + ':' + sock.getLocalPort());
+            t=new Thread(this, "ReceiverThread for " + recv_sock.getLocalAddress() + ':' + recv_sock.getLocalPort());
             t.start();
         }
 
         void stop() {
             t=null;
-            if(sock != null)
-                sock.close();
+            if(recv_sock != null)
+                recv_sock.close();
         }
 
         public void run() {
-            byte[]         buf=new byte[128000];
+            byte[]         buf=new byte[65535];
             DatagramPacket p;
 
             while(t != null) {
                 p=new DatagramPacket(buf, buf.length);
                 try {
-                    sock.receive(p);
+                    recv_sock.receive(p);
                     if(receiver != null) {
                         IpAddress addr=new IpAddress(p.getAddress(), p.getPort());
                         receiver.receive(addr, p.getData());
                     }
                 }
                 catch(IOException e) {
-                    if(sock == null)
+                    if(recv_sock == null)
                         t=null;
                 }
             }
