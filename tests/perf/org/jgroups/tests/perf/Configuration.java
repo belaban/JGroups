@@ -1,9 +1,11 @@
 package org.jgroups.tests.perf;
 
+import java.net.InetAddress;
+
 /**
  * Captures all config for IPerf
  * @author Bela Ban
- * @version $Id: Configuration.java,v 1.2 2008/07/24 10:05:58 belaban Exp $
+ * @version $Id: Configuration.java,v 1.3 2008/09/12 06:44:24 belaban Exp $
  */
 public class Configuration {
     private int size=10 * 1000 * 1000;
@@ -11,6 +13,7 @@ public class Configuration {
     private String transport="org.jgroups.tests.perf.transports.JGroupsTransport";
     private String[] transport_args;
     private boolean   jmx=false;
+    private InetAddress bind_addr=null;
 
     public boolean isSender() {
         return sender;
@@ -30,6 +33,14 @@ public class Configuration {
 
     public String getTransport() {
         return transport;
+    }
+
+    public InetAddress getBindAddress() {
+        return bind_addr;
+    }
+
+    public void setBindAddress(InetAddress bind_addr) {
+        this.bind_addr=bind_addr;
     }
 
     public boolean isJmx() {
