@@ -13,12 +13,11 @@ import java.net.InetAddress;
 import java.net.MulticastSocket;
 import java.util.Properties;
 import java.util.Map;
-import java.util.List;
 
 /**
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: UdpTransport.java,v 1.11 2008/09/11 17:43:12 belaban Exp $
+ * @version $Id: UdpTransport.java,v 1.12 2008/09/12 06:44:23 belaban Exp $
  */
 public class UdpTransport implements Transport {
     Receiver         receiver=null;
@@ -27,11 +26,9 @@ public class UdpTransport implements Transport {
     InetAddress      mcast_addr=null;
     int              mcast_port=7500;
     InetAddress      bind_addr=null;
-    MulticastSocket  mcast_sock=null;
-    DatagramSocket   ucast_sock=null;
+    MulticastSocket  sock=null;
     IpAddress        local_addr=null;
     ReceiverThread   mcast_receiver=null;
-    ReceiverThread   ucast_receiver=null;
     int              max_receiver_buffer_size=500000;
     int              max_send_buffer_size=500000;
 
@@ -45,7 +42,7 @@ public class UdpTransport implements Transport {
 
 
     public String help() {
-        return null;
+        return "-mcast_addr <addr> -mcast_port <port>";
     }
 
     public void create(Properties properties) throws Exception {
@@ -62,47 +59,65 @@ public class UdpTransport implements Transport {
         else
             bind_addr=InetAddress.getLocalHost();
 
-        ucast_sock=new DatagramSocket(0, bind_addr);
-        ucast_sock.setReceiveBufferSize(max_receiver_buffer_size);
-        ucast_sock.setSendBufferSize(max_send_buffer_size);
-        mcast_sock=new MulticastSocket(mcast_port);
-        mcast_sock.setReceiveBufferSize(max_receiver_buffer_size);
-        mcast_sock.setSendBufferSize(max_send_buffer_size);
+        sock=new MulticastSocket(mcast_port);
+        sock.setReceiveBufferSize(max_receiver_buffer_size);
+        sock.setSendBufferSize(max_send_buffer_size);
         if(bind_addr != null)
-            mcast_sock.setInterface(bind_addr);
-        mcast_sock.joinGroup(mcast_addr);
-        local_addr=new IpAddress(ucast_sock.getLocalAddress(), ucast_sock.getLocalPort());
+            sock.setInterface(bind_addr);
+        sock.joinGroup(mcast_addr);
+        local_addr=new IpAddress(sock.getLocalAddress(), sock.getLocalPort());
         System.out.println("-- local_addr is " + local_addr);
     }
 
     public void create(Configuration config) throws Exception {
         this.cfg=config;
+        bind_addr=cfg.getBindAddress();
+
         String[] args=config.getTransportArgs();
         if(args != null) {
-            // todo: process
+            for(int i=0; i < args.length; i++) {
+                if(args[i].equals("-mcast_addr")) {
+                    mcast_addr=InetAddress.getByName(args[++i]);
+                    continue;
+                }
+                if(args[i].equals("-mcast_port")) {
+                    mcast_port=Integer.parseInt(args[++i]);
+                    continue;
+                }
+                help();
+                return;
+            }
         }
+
+        if(mcast_addr == null)
+            mcast_addr=InetAddress.getByName("232.5.5.5");
+
+        if(bind_addr == null)
+            bind_addr=InetAddress.getLocalHost();
+
+        sock=new MulticastSocket(mcast_port);
+        sock.setReceiveBufferSize(max_receiver_buffer_size);
+        sock.setSendBufferSize(max_send_buffer_size);
+            sock.setInterface(bind_addr);
+        sock.joinGroup(mcast_addr);
+        local_addr=new IpAddress(bind_addr, sock.getLocalPort());
+        System.out.println("-- local_addr is " + local_addr);
     }
 
 
     public void start() throws Exception {
-        mcast_receiver=new ReceiverThread(mcast_sock);
-        ucast_receiver=new ReceiverThread(ucast_sock);
+        mcast_receiver=new ReceiverThread(sock);
         mcast_receiver.start();
-        ucast_receiver.start();
     }
 
     public void stop() {
         if(mcast_receiver != null)
             mcast_receiver.stop();
-        if(ucast_receiver != null)
-            ucast_receiver.stop();
     }
 
     public void destroy() {
-        if(mcast_sock != null)
-            mcast_sock.close();
-        if(ucast_sock != null)
-            ucast_sock.close();
+        if(sock != null)
+            sock.close();
     }
 
     public void setReceiver(Receiver r) {
@@ -123,7 +138,7 @@ public class UdpTransport implements Transport {
             p=new DatagramPacket(payload, payload.length, addr.getIpAddress(), addr.getPort());
 
         }
-        ucast_sock.send(p);
+        sock.send(p);
     }
 
 

@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Condition;
+import java.net.InetAddress;
 
 /**
  * Tests sending large messages from one sender to multiple receivers. The following messages are exchanged:
@@ -24,7 +25,7 @@ import java.util.concurrent.locks.Condition;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.9 2008/09/11 17:43:13 belaban Exp $
+ * @version $Id: IPerf.java,v 1.10 2008/09/12 06:44:24 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -191,6 +192,10 @@ public class IPerf implements Receiver {
                 config.setTransport(args[++i]);
                 continue;
             }
+            if(tmp.equals("-bind_addr")) {
+                config.setBindAddress(InetAddress.getByName(args[++i]));
+                continue;
+            }
             if(tmp.equals("-h") || tmp.equals("-help")) {
                 help(config.getTransport());
                 return;
@@ -210,7 +215,7 @@ public class IPerf implements Receiver {
 
     static void help(String transport) {
         StringBuilder sb=new StringBuilder();
-        sb.append("IPerf [-sender] [-bind_addr <addr>] [-transport <class name>]");
+        sb.append("IPerf [-sender] [-bind_addr <addr>] [-transport <class name>] [-size <bytes>]");
         try {
             Transport tp=(Transport)Class.forName(transport).newInstance();
             String tmp=tp.help();
