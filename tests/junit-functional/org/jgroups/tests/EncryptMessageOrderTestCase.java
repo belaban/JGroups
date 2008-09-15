@@ -3,10 +3,8 @@ package org.jgroups.tests;
 import junit.framework.TestCase;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.jgroups.Header;
-import org.jgroups.JChannel;
-import org.jgroups.Message;
-import org.jgroups.MessageListener;
+import org.jgroups.*;
+import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.blocks.PullPushAdapter;
 
 import java.io.IOException;
@@ -25,7 +23,7 @@ import java.util.Vector;
  * <li><code>-msg_num n</code> - <code>n</code> is number of messages to send;
  * <li><code>-debug</code> - pop-up protocol debugger;
  * </ul>
- * $Id: EncryptMessageOrderTestCase.java,v 1.1.4.1 2008/01/22 10:01:33 belaban Exp $
+ * $Id: EncryptMessageOrderTestCase.java,v 1.1.4.2 2008/09/15 12:52:29 belaban Exp $
  */
 public class EncryptMessageOrderTestCase extends TestCase {
 
@@ -42,6 +40,15 @@ public class EncryptMessageOrderTestCase extends TestCase {
     protected Log log=LogFactory.getLog(this.getClass());
 
     public static final String properties ="EncryptNoKeyStore.xml";
+
+    static {
+        try {
+            ClassConfigurator.getInstance(true).add((short)5764, EncryptOrderTestHeader.class);
+        }
+        catch(ChannelException e) {
+            throw new IllegalArgumentException(e);
+        }
+    }
 
 
     /**
