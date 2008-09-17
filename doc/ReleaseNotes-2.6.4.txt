@@ -2,7 +2,7 @@
 Release Notes JGroups 2.6.4
 ===========================
 
-Version: $Id: ReleaseNotes-2.6.4.txt,v 1.1.2.1 2008/09/17 07:27:32 belaban Exp $
+Version: $Id: ReleaseNotes-2.6.4.txt,v 1.1.2.2 2008/09/17 07:39:22 belaban Exp $
 Author: Bela Ban
 
 JGroups 2.6.4 is still API-backwards compatible with previous versions (down to 2.2.7).
@@ -11,37 +11,30 @@ It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2 and 2.6.3.
 Below is a summary (with links to the detailed description) of the major new features between 2.6.3 and 2.6.4.
 
 
-Shared transport fixes
-----------------------
-[http://jira.jboss.com/jira/browse/JGRP-737]
+Performance enhancement: HashMaps in Messages replaced by more compact structures
+---------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-806]
 
-Critical bug in the shared transport which caused channels sharing a transport to stop working as soon as
-one shared channel was closed. Fixed by introducing reference counting.
-
-
-Better thread naming for threads in a shared transport
-------------------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-728]
+This speeds up creation of messages and access to a message's headers. It also reduces memory needed per message.
+Preliminary measurements showed a 10-20% performance gain in the JGroups perf test.
 
 
-Timer thread pool moved to transport protocol
----------------------------------------------
-Related to above. The timer thread pool was moved from the ProtocolStack to the transport protocol. Now *all* thread
-pools are located in the transport.
 
-Thread factories, which control the creation of all threads in the JGroups system, are now also located in the
-transport. They can be replaced entirely, or - as an alternative - a listener can be registered to be called
-whenever a thread is created or released back into a thread pool.
+Define max blocking times in FC
+-------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-804]
 
-Section 5.5.5 (http://www.jgroups.org/javagroupsnew/docs/manual/html/user-advanced.html#d0e2809) in the manual
-discusses the steps to be taken to replace thread pools and / or thread factories. 
+New property max_block_times, which defines the max number of milliseconds to blocks for a given message M,
+according to M's size. Example:
+max_block_times="50:2,500:5,1500:10,10000:20,100000:500"
+
+This means that messages smaller than or equal to 50 bytes will block for 2 ms max
+(or not block at all if enough credits are available, of course).
+Messages between 51 and 500 bytes will block a max time of 5 ms, and so on.
+All message larger than 100'000 bytes will block for a max time of 500 ms.
+Documentation: http://www.jgroups.org/javagroupsnew/docs/manual/html/protlist.html#d0e3803
 
 
-Eager ACKs for UNICAST
-----------------------
-[http://jira.jboss.com/jira/browse/JGRP-713]
-
-Optimization for heavy unicast traffic; reduces retransmissions
 
 
 Manual
@@ -56,26 +49,19 @@ Bug fixes
 ---------
 
 
-FD: messages other than from the pinged neighbor cause the missing heartbeat count to get reset
------------------------------------------------------------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-746]
-This is a regression in 2.6.
+FRAG/FRAG2: fragments from X are not cleared if X crashes
+---------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-800]
+Critical fix to prevent memory leaks when X crashes while it still hasn't sent all fragments for
+a large message.
 
-FLUSH: flush spans merges
-[http://jira.jboss.com/jira/browse/JGRP-700]
+MethodCall: match between formal parameters and actual arguments fails if an argument is a subtype of a parameter
+-----------------------------------------------------------------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-817]
 
-Merging of digests incorrect
-----------------------------
-[http://jira.jboss.com/jira/browse/JGRP-699]
-
-Blockings with large state transfers
-------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-774]
-
-Concurrent startups of many channels with FLUSH
------------------------------------------------
-[http://jira.jboss.com/jira/browse/JGRP-770]
-
+Message.setFlag is using addition instead of bit-wise or
+--------------------------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-810]
 
 
 The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
