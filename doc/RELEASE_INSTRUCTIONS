@@ -1,4 +1,4 @@
-// $Id: RELEASE_INSTRUCTIONS,v 1.20 2008/09/05 15:14:20 rachmatowicz Exp $
+// $Id: RELEASE_INSTRUCTIONS,v 1.21 2008/09/17 15:16:51 belaban Exp $
 
 	       Things to do before packaging a release
 	       ---------------------------------------
@@ -30,21 +30,6 @@ Release:
   - see JGroups/bin/upload_manual.sh
 - Create javadoc: ./build.sh javadoc and upload to web site
   - use process similar to pdf and html (script is bin/upload_javadocs.sh)
-- Add new release binary jar to the buildmagic repository (http://repository.jboss.org)
-  a. Check out the jgroups directory of the buildmagic repository into a working directory $JG_REPO
-     > svn co https://svn.jboss.org/repos/repository.jboss.org/jgroups $JG_REPO
-  b. Create the subdirectory for the new release (call it <release-name>)
-     > cd $JG_REPO
-     > mkdir <release-name>
-     > mkdir <release-name>/lib
-  c. Copy the new jar into the lib directory
-     > cp $JG_RELEASE/dist/jgroups-all.jar $JG_REPO/<release-name>/lib/jgroups.jar
-  d. Update the repository meta-data for the new entry
-     A simple way to arrange for this is to copy an existing component-info.xml entry into place and update the version number:    
-     > cp $JG_REPO/<another-release-name>/component-info.xml $JG_REPO/<release-name>/component-info.xml 
-     > edit the version number...
-  e. Add the new directories and files to version control and commit the changes to the buildmagic repo.
-  (see wiki http://wiki.jboss.org/wiki/Wiki.jsp?page=JBossBuild)
 - Add new release binary jar *and* source jar to maven2 repository (http://repository.jboss.org/maven2)
   a. Check out the jgroups directory of the maven repository into a working directory $JG_REPO
      > svn co https://svn.jboss.org/repos/repository.jboss.org/maven2/jgroups/jgroups $JG_REPO
