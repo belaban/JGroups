@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.199 2008/09/17 11:32:43 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.200 2008/09/17 11:33:48 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -1824,9 +1824,9 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     static class XmitRequest {
-        Address original_sender; // original sender of message
-        long low, high, timestamp=System.currentTimeMillis();
-        Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
+        final Address original_sender; // original sender of message
+        final long low, high, timestamp=System.currentTimeMillis();
+        final Address xmit_dest;       // destination to which XMIT_REQ is sent, usually the original sender
 
         XmitRequest(Address original_sender, long low, long high, Address xmit_dest) {
             this.original_sender=original_sender;
