@@ -33,7 +33,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.198 2008/08/20 04:11:13 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.199 2008/09/17 11:32:43 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -1845,8 +1845,8 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     }
 
     static class MissingMessage {
-        Address original_sender;
-        long    seq, timestamp=System.currentTimeMillis();
+        final Address original_sender;
+        final long    seq, timestamp=System.currentTimeMillis();
 
         MissingMessage(Address original_sender, long seqno) {
             this.original_sender=original_sender;
