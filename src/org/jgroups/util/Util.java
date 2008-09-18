@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.apache.commons.logging.LogFactory;
+import org.apache.commons.logging.Log;
 import org.jgroups.*;
 import org.jgroups.auth.AuthToken;
 import org.jgroups.conf.ClassConfigurator;
@@ -28,7 +29,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.5 2008/07/22 08:03:53 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.6 2008/09/18 16:19:30 belaban Exp $
  */
 public class Util {
 
@@ -2034,6 +2035,42 @@ public class Util {
     }
 
 
+    public static MulticastSocket createMulticastSocket(int port) throws IOException {
+        return createMulticastSocket(null, port, null);
+    }
+
+    public static MulticastSocket createMulticastSocket(InetAddress mcast_addr, int port, Log log) throws IOException {
+        if(mcast_addr != null && !mcast_addr.isMulticastAddress()) {
+            if(log != null && log.isWarnEnabled())
+                log.warn("mcast_addr (" + mcast_addr + ") is not a multicast address, will be ignored");
+            return new MulticastSocket(port);
+        }
+
+        SocketAddress saddr=new InetSocketAddress(mcast_addr, port);
+        MulticastSocket retval=null;
+
+        try {
+            retval=new MulticastSocket(saddr);
+        }
+        catch(IOException ex) {
+            if(log != null && log.isWarnEnabled()) {
+                StringBuilder sb=new StringBuilder();
+                String type=mcast_addr != null ? mcast_addr instanceof Inet4Address? "IPv4" : "IPv6" : "n/a";
+                sb.append("could not bind to " + mcast_addr + " (" + type + " address)");
+                sb.append("; make sure your mcast_addr is of the same type as the IP stack (IPv4 or IPv6).");
+                sb.append("\nWill ignore mcast_addr, but this may lead to cross talking " +
+                        "(see http://www.jboss.com/wiki/Edit.jsp?page=CrossTalking for details). ");
+                sb.append("\nException was: " + ex);
+                log.warn(sb);
+            }
+        }
+        if(retval == null)
+            retval=new MulticastSocket(port);
+        return retval;
+    }
+
+
+
     /**
      * Returns the address of the interface to use defined by bind_addr and bind_interface
      * @param props
@@ -2092,18 +2129,25 @@ public class Util {
 
 
     public static boolean checkForLinux() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("linux");
+        return checkForPresence("os.name", "linux");
     }
 
     public static boolean checkForSolaris() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("sun");
+        return checkForPresence("os.name", "sun");
     }
 
     public static boolean checkForWindows() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("win");
+        return checkForPresence("os.name", "win");
+    }
+
+    private static boolean checkForPresence(String key, String value) {
+        try {
+            String tmp=System.getProperty(key);
+            return tmp != null && tmp.trim().toLowerCase().startsWith(value);
+        }
+        catch(Throwable t) {
+            return false;
+        }
     }
 
     public static void prompt(String s) {
