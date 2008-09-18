@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.47 2008/07/16 16:14:38 vlada Exp $
+ * @version $Id: Discovery.java,v 1.48 2008/09/18 13:02:14 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -53,6 +53,10 @@ public abstract class Discovery extends Protocol {
     @Property(description="Minimum number of initial members to get a response from. Default is 2")
     @ManagedAttribute(description="Minimum number of initial members to get a response from", writable=true)
     int num_initial_members=2;
+
+    @Property(description="Return from the discovery phase as soon as we have 1 coordinator response")
+    @ManagedAttribute(writable=true, description="Return from the discovery phase as soon as we have 1 coordinator response")
+    boolean break_on_coord_rsp=true;
 
     @Property(description="Number of discovery requests to be sent distributed over timeout. Default is 2")
     @ManagedAttribute(description="Number of discovery requests to be sent (min=1), " + "distributed over timeout ms", writable=true)
@@ -157,7 +161,7 @@ public abstract class Discovery extends Protocol {
     public List<PingRsp> findInitialMembers(Promise<JoinRsp> promise) {
         num_discovery_requests++;
 
-        final Responses rsps=new Responses(num_initial_members, promise);
+        final Responses rsps=new Responses(num_initial_members, break_on_coord_rsp, promise);
         synchronized(ping_responses) {
             ping_responses.add(rsps);
         }
@@ -314,7 +318,12 @@ public abstract class Discovery extends Protocol {
 
         case Event.FIND_INITIAL_MBRS:   // sent by GMS layer, pass up a GET_MBRS_OK event
             // sends the GET_MBRS_REQ to all members, waits 'timeout' ms or until 'num_initial_members' have been retrieved
-            return findInitialMembers((Promise<JoinRsp>)evt.getArg());
+            long start=System.currentTimeMillis();
+            List<PingRsp> rsps=findInitialMembers((Promise<JoinRsp>)evt.getArg());
+            long diff=System.currentTimeMillis() - start;
+            if(log.isTraceEnabled())
+                log.trace("discovery took "+ diff + " ms (" + rsps.size() + " responses)");
+            return rsps;
 
         case Event.TMP_VIEW:
         case Event.VIEW_CHANGE:
@@ -398,12 +407,14 @@ public abstract class Discovery extends Protocol {
 
 
     private static class Responses {
-        final Promise<JoinRsp>       promise;
-        final List<PingRsp> ping_rsps=new LinkedList<PingRsp>();
-        final int           num_expected_rsps;
+        final Promise<JoinRsp>  promise;
+        final List<PingRsp>     ping_rsps=new LinkedList<PingRsp>();
+        final int               num_expected_rsps;
+        final boolean           break_on_coord_rsp;
 
-        public Responses(int num_expected_rsps, Promise<JoinRsp> promise) {
+        public Responses(int num_expected_rsps, boolean break_on_coord_rsp, Promise<JoinRsp> promise) {
             this.num_expected_rsps=num_expected_rsps;
+            this.break_on_coord_rsp=break_on_coord_rsp;
             this.promise=promise != null? promise : new Promise<JoinRsp>();
         }
 
@@ -414,8 +425,9 @@ public abstract class Discovery extends Protocol {
             try {
                 if(!ping_rsps.contains(rsp)) {
                     ping_rsps.add(rsp);
-                    if(ping_rsps.size() >= num_expected_rsps)
-                        promise.getCond().signalAll();
+                    System.out.println("adding respn: " + rsp);
+                    // if(ping_rsps.size() >= num_expected_rsps)
+                    promise.getCond().signalAll();
                 }
             }
             finally {
@@ -429,6 +441,12 @@ public abstract class Discovery extends Protocol {
             promise.getLock().lock();
             try {
                 while(ping_rsps.size() < num_expected_rsps && time_to_wait > 0 && !promise.hasResult()) {
+                    if(break_on_coord_rsp) {
+                        for(PingRsp rsp: ping_rsps) {
+                            if(rsp.isCoord())
+                                return new LinkedList<PingRsp>(ping_rsps);
+                        }
+                    }
                     promise.getCond().await(time_to_wait, TimeUnit.MILLISECONDS);
                     time_to_wait=timeout - (System.currentTimeMillis() - start_time);
                 }
