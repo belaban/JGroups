@@ -6,14 +6,13 @@ import org.jgroups.util.Promise;
 import org.jgroups.util.Digest;
 
 import java.util.Vector;
-import java.util.Iterator;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 
 
 /**
  * @author Bela Ban
- * @version $Id: ParticipantGmsImpl.java,v 1.29 2007/09/18 20:05:21 vlada Exp $
+ * @version $Id: ParticipantGmsImpl.java,v 1.30 2008/09/18 16:42:58 vlada Exp $
  */
 public class ParticipantGmsImpl extends GmsImpl {
     private final Vector<Address>   suspected_mbrs=new Vector<Address>(11);
@@ -144,7 +143,7 @@ public class ParticipantGmsImpl extends GmsImpl {
      *                 be set by GMS
      */
     public void handleViewChange(View new_view, Digest digest) {
-        Vector mbrs=new_view.getMembers();
+        Vector<Address> mbrs=new_view.getMembers();
          if(log.isDebugEnabled()) log.debug("view=" + new_view);
         suspected_mbrs.removeAllElements();
         if(leaving && !mbrs.contains(gms.local_addr)) { // received a view in which I'm not member: ignore
@@ -152,26 +151,6 @@ public class ParticipantGmsImpl extends GmsImpl {
         }
         gms.installView(new_view, digest);
     }
-
-
-/*    public void handleSuspect(Address mbr) {
-        if(mbr == null) return;
-        if(!suspected_mbrs.contains(mbr))
-            suspected_mbrs.addElement(mbr);
-
-        if(log.isDebugEnabled()) log.debug("suspected mbr=" + mbr + ", suspected_mbrs=" + suspected_mbrs);
-
-        if(wouldIBeCoordinator()) {
-            if(log.isDebugEnabled()) log.debug("suspected mbr=" + mbr + "), members are " +
-                    gms.members + ", coord=" + gms.local_addr + ": I'm the new coord !");
-
-            suspected_mbrs.removeAllElements();
-            gms.becomeCoordinator();
-            // gms.getImpl().suspect(mbr);
-            gms.getViewHandler().add(new Request(Request.SUSPECT, mbr, true, null));
-            gms.ack_collector.suspect(mbr);
-        }
-    }*/
 
     public void handleMergeRequest(Address sender, ViewId merge_id) {
         // only coords handle this method; reject it if we're not coord
