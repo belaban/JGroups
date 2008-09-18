@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.183 2008/09/05 14:59:03 vlada Exp $
+ * @version $Id: UDP.java,v 1.184 2008/09/18 10:25:20 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
 public class UDP extends TP {
@@ -54,7 +54,12 @@ public class UDP extends TP {
      */
     private static final BoundedList<Integer> last_ports_used=new BoundedList<Integer>(100);
     
-    
+    private static final boolean is_linux; // are we running on Linux ?
+
+
+    static {
+        is_linux=Util.checkForLinux();
+    }
 
     /* ------------------------------------------ Properties  ------------------------------------------ */
 
@@ -413,8 +418,14 @@ public class UDP extends TP {
         if(ip_mcast) {
             // 3a. Create mcast receiver socket
             tmp_addr=InetAddress.getByName(mcast_addr_name);
-            // mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
-            mcast_sock=new MulticastSocket(mcast_port);
+
+            // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
+            // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
+            if(is_linux)
+                mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
+            else
+                mcast_sock=new MulticastSocket(mcast_port);
+
             mcast_sock.setTimeToLive(ip_ttl);
 
             mcast_addr=new IpAddress(tmp_addr, mcast_port);
