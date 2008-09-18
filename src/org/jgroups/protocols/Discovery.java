@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.48 2008/09/18 13:02:14 belaban Exp $
+ * @version $Id: Discovery.java,v 1.49 2008/09/18 13:58:19 belaban Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -425,8 +425,6 @@ public abstract class Discovery extends Protocol {
             try {
                 if(!ping_rsps.contains(rsp)) {
                     ping_rsps.add(rsp);
-                    System.out.println("adding respn: " + rsp);
-                    // if(ping_rsps.size() >= num_expected_rsps)
                     promise.getCond().signalAll();
                 }
             }
