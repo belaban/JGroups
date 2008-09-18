@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.64 2008/09/18 08:30:45 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.65 2008/09/18 14:45:34 vlada Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.64 $
+ * @version $Revision: 1.65 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -213,8 +213,8 @@ public class ClientGmsImpl extends GmsImpl {
         List<PingRsp> responses=(List<PingRsp>)gms.getDownProtocol().down(new Event(Event.FIND_INITIAL_MBRS, promise));
         if(responses != null) {
             for(Iterator<PingRsp> iter=responses.iterator(); iter.hasNext();) {
-                PingRsp response=iter.next();
-                if(response.own_addr != null && response.own_addr.equals(gms.local_addr))
+                Address address=iter.next().getAddress();                
+                if(address != null && address.equals(gms.local_addr))
                     iter.remove();
             }
         }
@@ -315,12 +315,12 @@ public class ClientGmsImpl extends GmsImpl {
 
         // count *all* the votes (unlike the 2000 election)
         for(PingRsp mbr:mbrs) {            
-            if(mbr.is_server && mbr.coord_addr != null) {
-                if(!votes.containsKey(mbr.coord_addr))
-                    votes.put(mbr.coord_addr, 1);
+            if(mbr.hasCoord()) {
+                if(!votes.containsKey(mbr.getCoordAddress()))
+                    votes.put(mbr.getCoordAddress(), 1);
                 else {
-                    count=votes.get(mbr.coord_addr);
-                    votes.put(mbr.coord_addr, count + 1);
+                    count=votes.get(mbr.getCoordAddress());
+                    votes.put(mbr.getCoordAddress(), count + 1);
                 }
             }
         }
