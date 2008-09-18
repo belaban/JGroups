@@ -38,7 +38,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.49 2008/09/18 13:58:19 belaban Exp $
+ * @version $Id: Discovery.java,v 1.50 2008/09/18 14:45:33 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -74,7 +74,7 @@ public abstract class Discovery extends Protocol {
     /* --------------------------------------------- Fields ------------------------------------------------------ */
     
     
-    private boolean is_server=false;
+    private volatile boolean is_server=false;
     protected TimeScheduler timer=null;
 
     private final Vector<Address> members=new Vector<Address>(11);
