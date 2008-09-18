@@ -29,7 +29,7 @@ import java.util.Vector;
  * property: gossip_host - if you are using GOSSIP then this defines the host of the GossipRouter, default is null
  * property: gossip_port - if you are using GOSSIP then this defines the port of the GossipRouter, default is null
  * @author Bela Ban
- * @version $Id: PING.java,v 1.45 2008/07/15 20:39:48 vlada Exp $
+ * @version $Id: PING.java,v 1.46 2008/09/18 14:42:39 vlada Exp $
  */
 public class PING extends Discovery {
     
@@ -49,6 +49,10 @@ public class PING extends Discovery {
     
     @Property(description="Number of ports to be probed for initial membership. Default is 1")
     private int port_range=1;
+   
+    @Property(description="If socket is used for discovery, time in msecs to wait until socket is connected. Default is 1000 msec")
+    private int socket_conn_timeout =1000;
+    
     
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
@@ -72,7 +76,7 @@ public class PING extends Discovery {
         else if(gossip_host != null && gossip_port != 0) {
             try {
                 client=new GossipClient(new IpAddress(InetAddress.getByName(gossip_host),
-                                                      gossip_port), gossip_refresh, 1000, timer);
+                                                      gossip_port), gossip_refresh, socket_conn_timeout, timer);
             }
             catch(Exception e) {
                 if(log.isErrorEnabled())
