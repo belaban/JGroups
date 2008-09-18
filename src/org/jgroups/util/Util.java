@@ -27,7 +27,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.174 2008/09/05 08:27:30 belaban Exp $
+ * @version $Id: Util.java,v 1.175 2008/09/18 10:21:11 belaban Exp $
  */
 public class Util {
 
@@ -2512,18 +2512,25 @@ public class Util {
 
 
     public static boolean checkForLinux() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("linux");
+        return checkForPresence("os.name", "linux");
     }
 
     public static boolean checkForSolaris() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("sun");
+        return checkForPresence("os.name", "sun");
     }
 
     public static boolean checkForWindows() {
-        String os=System.getProperty("os.name");
-        return os != null && os.toLowerCase().startsWith("win");
+        return checkForPresence("os.name", "win");
+    }
+
+    private static boolean checkForPresence(String key, String value) {
+        try {
+            String tmp=System.getProperty(key);
+            return tmp != null && tmp.trim().toLowerCase().startsWith(value);
+        }
+        catch(Throwable t) {
+            return false;
+        }
     }
 
     public static void prompt(String s) {
