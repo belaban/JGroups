@@ -31,7 +31,7 @@ while [ $count -lt 20 ]
 do
   echo "Starting Draw instance #$count"
   # change the IP address to your system
-  java -classpath $CP -Dbind.address=192.168.2.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
+  java -classpath $CP -Dbind.address=192.168.1.5 org.jgroups.demos.Draw -props /home/bela/udp.xml &
   #  sleep 1
   count=$(($count+1))
 done
