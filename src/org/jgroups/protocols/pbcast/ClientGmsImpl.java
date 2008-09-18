@@ -1,4 +1,4 @@
-// $Id: ClientGmsImpl.java,v 1.63 2008/02/21 11:09:52 belaban Exp $
+// $Id: ClientGmsImpl.java,v 1.64 2008/09/18 08:30:45 belaban Exp $
 
 package org.jgroups.protocols.pbcast;
 
@@ -21,7 +21,7 @@ import java.util.*;
  * <code>ViewChange</code> which is called by the coordinator that was contacted by this client, to
  * tell the client what its initial membership is.
  * @author Bela Ban
- * @version $Revision: 1.63 $
+ * @version $Revision: 1.64 $
  */
 public class ClientGmsImpl extends GmsImpl {   
     private final Promise<JoinRsp> join_promise=new Promise<JoinRsp>();
@@ -74,6 +74,11 @@ public class ClientGmsImpl extends GmsImpl {
         while(!leaving) {
             if(rsp == null && !join_promise.hasResult()) { // null responses means that the discovery was cancelled
                 List<PingRsp> responses=findInitialMembers(join_promise);
+                // Sept 2008 (bela): break if we got a belated JoinRsp (https://jira.jboss.org/jira/browse/JGRP-687)
+                if(join_promise.hasResult()) {
+                    rsp=join_promise.getResult(gms.join_timeout); // clears the result
+                    continue;
+                }
                 if(log.isDebugEnabled())
                     log.debug("initial_mbrs are " + responses);
                 if(responses == null || responses.isEmpty()) {
@@ -137,57 +142,57 @@ public class ClientGmsImpl extends GmsImpl {
                 if(rsp == null) {
                     if(log.isWarnEnabled())
                         log.warn("join(" + mbr + ") sent to " + coord + " timed out (after " + gms.join_timeout + " ms), retrying");
+                    continue;
+                }
+                
+                // 1. check whether JOIN was rejected
+                String failure=rsp.getFailReason();
+                if(failure != null)
+                    throw new SecurityException(failure);
+
+                // 2. Install digest
+                // See if the digest does not have senders, this seems to happen on high volume startup
+                if(rsp.getDigest() == null || rsp.getDigest().getSenders() == null) {
+                    if(log.isWarnEnabled())
+                        log.warn("digest response has no senders: digest=" + rsp.getDigest());
+                    rsp=null; // just skip the response we guess
+                    continue;
+                }
+                MutableDigest tmp_digest=new MutableDigest(rsp.getDigest());
+                tmp_view=rsp.getView();
+                if(tmp_view == null) {
+                    if(log.isErrorEnabled())
+                        log.error("JoinRsp has a null view, skipping it");
+                    rsp=null;
                 }
                 else {
-                    // 1. check whether JOIN was rejected
-                    String failure=rsp.getFailReason();
-                    if(failure != null)
-                        throw new SecurityException(failure);
+                    if(!tmp_digest.contains(gms.local_addr)) {
+                        throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
+                                gms.local_addr + "): join response: " + rsp);
+                    }
+                    tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
+                    tmp_digest.seal();
+                    gms.setDigest(tmp_digest);
 
-                    // 2. Install digest
-                    // See if the digest does not have senders, this seems to happen on high volume startup
-                    if(rsp.getDigest() == null || rsp.getDigest().getSenders() == null) {
-                        if(log.isWarnEnabled())
-                            log.warn("digest response has no senders: digest=" + rsp.getDigest());
-                        rsp=null; // just skip the response we guess
+                    if(log.isDebugEnabled())
+                        log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
+
+                    if(!installView(tmp_view)) {
+                        if(log.isErrorEnabled())
+                            log.error("view installation failed, retrying to join group");
+                        rsp=null;
                         continue;
                     }
-                    MutableDigest tmp_digest=new MutableDigest(rsp.getDigest());
-                    tmp_view=rsp.getView();
-                    if(tmp_view == null) {
-                        if(log.isErrorEnabled())
-                            log.error("JoinRsp has a null view, skipping it");
-                        rsp=null;
-                    }
-                    else {
-                        if(!tmp_digest.contains(gms.local_addr)) {
-                            throw new IllegalStateException("digest returned from " + coord + " with JOIN_RSP does not contain myself (" +
-                                    gms.local_addr + "): join response: " + rsp);
-                        }
-                        tmp_digest.incrementHighestDeliveredSeqno(coord); // see DESIGN for details
-                        tmp_digest.seal();
-                        gms.setDigest(tmp_digest);
 
-                        if(log.isDebugEnabled())
-                            log.debug("[" + gms.local_addr + "]: JoinRsp=" + tmp_view + " [size=" + tmp_view.size() + "]\n\n");
-
-                        if(!installView(tmp_view)) {
-                            if(log.isErrorEnabled())
-                                log.error("view installation failed, retrying to join group");
-                            rsp=null;
-                            continue;
-                        }
-
-                        // send VIEW_ACK to sender of view
-                        Message view_ack=new Message(coord, null, null);
-                        view_ack.setFlag(Message.OOB);
-                        GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
-                        view_ack.putHeader(GMS.name, tmphdr);
-                        if(!gms.members.contains(coord))
-                            gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
-                        gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
-                        return;
-                    }
+                    // send VIEW_ACK to sender of view
+                    Message view_ack=new Message(coord, null, null);
+                    view_ack.setFlag(Message.OOB);
+                    GMS.GmsHeader tmphdr=new GMS.GmsHeader(GMS.GmsHeader.VIEW_ACK);
+                    view_ack.putHeader(GMS.name, tmphdr);
+                    if(!gms.members.contains(coord))
+                        gms.getDownProtocol().down(new Event(Event.ENABLE_UNICASTS_TO, coord));
+                    gms.getDownProtocol().down(new Event(Event.MSG, view_ack));
+                    return;
                 }
             }
             catch(SecurityException security_ex) {
