@@ -8,6 +8,7 @@ import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.protocols.FD;
 import org.jgroups.protocols.PingHeader;
 import org.jgroups.protocols.UdpHeader;
+import org.jgroups.protocols.PingRsp;
 import org.jgroups.protocols.pbcast.NakAckHeader;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
@@ -29,7 +30,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.137.2.6 2008/09/18 16:19:30 belaban Exp $
+ * @version $Id: Util.java,v 1.137.2.7 2008/09/19 10:56:41 belaban Exp $
  */
 public class Util {
 
@@ -1553,6 +1554,24 @@ public class Util {
         return sb.toString();
     }
 
+
+    public static String printPingRsps(List<PingRsp> rsps) {
+        StringBuilder sb=new StringBuilder();
+        if(rsps != null) {
+            int total=rsps.size();
+            int servers=0, clients=0, coords=0;
+            for(PingRsp rsp: rsps) {
+                if(rsp.isCoord())
+                    coords++;
+                if(rsp.isServer())
+                    servers++;
+                else
+                    clients++;
+            }
+            sb.append(total + " total (" + servers + " servers (" + coords + " coord), " + clients + " clients)");
+        }
+        return sb.toString();
+    }
 
     /**
      Makes sure that we detect when a peer connection is in the closed state (not closed while we send data,
