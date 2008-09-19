@@ -51,7 +51,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * confirmation.
  * 
  * @author Bela Ban
- * @version $Id: GroupRequest.java,v 1.35 2008/08/21 18:08:07 vlada Exp $
+ * @version $Id: GroupRequest.java,v 1.36 2008/09/19 09:03:51 belaban Exp $
  */
 public class GroupRequest implements RspCollector, Command {
     /** return only first response */
@@ -295,7 +295,7 @@ public class GroupRequest implements RspCollector, Command {
                 Rsp rsp=requests.get(sender);                
                 if(rsp != null) {
                     if(!rsp.wasReceived()) {
-                        boolean responseReceived = (rsp_filter == null) || (rsp_filter != null && rsp_filter.isAcceptable(response_value, sender));
+                        boolean responseReceived =(rsp_filter == null) || rsp_filter.isAcceptable(response_value, sender);
                         rsp.setValue(response_value);
                         rsp.setReceived(responseReceived);
                         if(log.isTraceEnabled())
