@@ -6,7 +6,7 @@ import java.util.concurrent.ThreadFactory;
 /**
  * ThreadPoolExecutor subclass that implements @{link ThreadManager}.
  * @author Brian Stansberry
- * @version $Id: ThreadManagerThreadPoolExecutor.java,v 1.2 2008/05/26 09:28:29 belaban Exp $
+ * @version $Id: ThreadManagerThreadPoolExecutor.java,v 1.3 2008/09/22 13:54:54 belaban Exp $
  */
 public class ThreadManagerThreadPoolExecutor extends ThreadPoolExecutor implements ThreadManager {
     private ThreadDecorator decorator;
@@ -44,7 +44,6 @@ public class ThreadManagerThreadPoolExecutor extends ThreadPoolExecutor implemen
      * <p/>
      * {@inheritDoc}
      */
-    @Override
     protected void afterExecute(Runnable r, Throwable t) {
         try {
             super.afterExecute(r, t);
