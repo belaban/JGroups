@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.201 2008/09/17 12:23:02 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.202 2008/09/23 13:43:19 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -827,7 +827,6 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // We *can* deliver messages from *different* senders concurrently, e.g. reception of P1, Q1, P2, Q2 can result in
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
-        Message msg_to_deliver;
         short removed_regular_msgs=0;
         ReentrantLock lock=win.getLock();
         lock.lock();
@@ -835,17 +834,20 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
 
-            while((msg_to_deliver=win.remove()) != null) {
+            List<Message> msgs=win.removeMany();
+            if(msgs != null) {
+                for(Message msg_to_deliver: msgs) {
 
-                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
-                if(msg_to_deliver.isFlagSet(Message.OOB)) {
-                    continue;
+                    // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                    if(msg_to_deliver.isFlagSet(Message.OOB)) {
+                        continue;
+                    }
+                    removed_regular_msgs++;
+
+                    // Changed by bela Jan 29 2003: not needed (see above)
+                    //msg_to_deliver.removeHeader(getName());
+                    up_prot.up(new Event(Event.MSG, msg_to_deliver));
                 }
-                removed_regular_msgs++;
-
-                // Changed by bela Jan 29 2003: not needed (see above)
-                //msg_to_deliver.removeHeader(getName());
-                up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
         }
         finally {

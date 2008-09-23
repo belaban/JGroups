@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.7 2008/06/10 09:03:52 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.8 2008/09/23 13:48:00 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -15,6 +15,8 @@ import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
+
+import java.util.List;
 
 
 @Test(groups=Global.FUNCTIONAL)
@@ -548,6 +550,24 @@ public class NakReceiverWindowTest {
         System.out.println("win = " + win);
 
         assert win.getHighestDelivered() == 2;
+    }
+
+    public void testRemoveMany() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        win.add(1, msg());
+        win.add(2, msg());
+        win.add(3, msg());
+        win.add(5, msg());
+        win.add(6, msg());
+        System.out.println("win = " + win);
+        List<Message> msgs=win.removeMany();
+        System.out.println("msgs = " + msgs);
+        assert msgs.size() == 3;
+
+        win.add(4, msg());
+        msgs=win.removeMany();
+        System.out.println("msgs = " + msgs);
+        assert msgs.size() == 3;
     }
 
 
