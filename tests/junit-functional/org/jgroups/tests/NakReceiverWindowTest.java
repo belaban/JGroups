@@ -1,4 +1,4 @@
-// $Id: NakReceiverWindowTest.java,v 1.8 2008/09/23 13:48:00 belaban Exp $
+// $Id: NakReceiverWindowTest.java,v 1.9 2008/09/23 14:50:29 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -569,6 +569,24 @@ public class NakReceiverWindowTest {
         System.out.println("msgs = " + msgs);
         assert msgs.size() == 3;
     }
+
+
+    public void testRetransmitter() {
+        NakReceiverWindow win=new NakReceiverWindow(sender, cmd, 0, timer);
+        win.add(1, msg());
+        win.add(2, msg());
+        win.add(3, msg());
+        win.add(5, msg());
+        win.add(6, msg());
+        System.out.println("win = " + win);
+        int num_pending_xmits=win.getPendingXmits();
+        assert num_pending_xmits == 1;
+
+        win.add(4, msg());
+        num_pending_xmits=win.getPendingXmits();
+        assert num_pending_xmits == 0;
+    }
+
 
 
     private void add(int num_msgs) {
