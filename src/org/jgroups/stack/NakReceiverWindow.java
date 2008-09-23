@@ -11,6 +11,8 @@ import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.TimeScheduler;
 
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -46,7 +48,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.57 2008/09/17 11:24:14 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.58 2008/09/23 13:47:59 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -266,7 +268,7 @@ public class NakReceiverWindow {
             // Case #3: we finally received a missing message. // Case #2 handled seqno <= highest_delivered, so this
             // seqno *must* be between highest_delivered and next_to_add 
             if(seqno < next_to_add) {
-                Object val=xmit_table.get(new Long(seqno));
+                Message val=xmit_table.get(seqno);
                 if(val == NULL_MSG) {
                     // only set message if not yet received (bela July 23 2003)
                     xmit_table.put(seqno, msg);
@@ -342,6 +344,58 @@ public class NakReceiverWindow {
         }
         finally {
             // setSmoothedLossRate();
+            lock.writeLock().unlock();
+        }
+    }
+
+
+    /**
+     * Removes as many messages as possible
+     * @return List<Message> A list of messages, or null if no available messages were found
+     */
+    public List<Message> removeMany() {
+        List<Message> retval=null;
+
+        lock.writeLock().lock();
+        try {
+            while(true) {
+                long next_to_remove=highest_delivered +1;
+                Message msg=xmit_table.get(next_to_remove);
+                if(msg == null)
+                    return retval;
+
+                if(msg != NULL_MSG) { // message exists and is ready for delivery
+                    if(discard_delivered_msgs) {
+                        Address sender=msg.getSrc();
+                        if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                            xmit_table.remove(next_to_remove);
+                        }
+                    }
+                    highest_delivered=next_to_remove;
+                    if(retval == null)
+                        retval=new ArrayList<Message>();
+                    retval.add(msg);
+                    continue;
+                }
+
+                // message has not yet been received (gap in the message sequence stream)
+                // drop all messages that have not been received
+                if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
+                    if(discard_delivered_msgs) {
+                        Address sender=msg.getSrc();
+                        if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                            xmit_table.remove(next_to_remove);
+                        }
+                    }
+                    highest_delivered=next_to_remove;
+                    retransmitter.remove(next_to_remove);
+                    continue;
+                }
+
+                return retval;
+            }
+        }
+        finally {
             lock.writeLock().unlock();
         }
     }
