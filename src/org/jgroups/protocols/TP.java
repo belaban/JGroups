@@ -8,7 +8,6 @@ import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
 import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
-import org.jgroups.util.Queue;
 import org.jgroups.util.ThreadFactory;
 
 import java.io.DataInputStream;
@@ -19,8 +18,8 @@ import java.text.NumberFormat;
 import java.util.*;
 import java.util.Map.Entry;
 import java.util.concurrent.*;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 /**
@@ -47,10 +46,11 @@ import java.util.concurrent.locks.Lock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.228 2008/09/25 13:15:06 belaban Exp $
+ * @version $Id: TP.java,v 1.229 2008/09/25 13:46:17 belaban Exp $
  */
 @MBean(description="Transport protocol")
-@DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
+@DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
+        "use_concurrent_stack"})
 public abstract class TP extends Protocol {
     
     private static final byte LIST=1; // we have a list of messages rather than a single message when set
@@ -89,43 +89,19 @@ public abstract class TP extends Protocol {
     protected boolean receive_on_all_interfaces=false;
 
     /**
-     * List<NetworkInterface> of interfaces to receive multicasts on. The
-     * multicast receive socket will listen on all of these interfaces. This is
-     * a comma-separated list of IP addresses or interface names. E.g.
+     * List<NetworkInterface> of interfaces to receive multicasts on. The multicast receive socket will listen
+     * on all of these interfaces. This is a comma-separated list of IP addresses or interface names. E.g.
      * "192.168.5.1,eth1,127.0.0.1". Duplicates are discarded; we only bind to
-     * an interface once. If this property is set, it override
-     * receive_on_all_interfaces.
+     * an interface once. If this property is set, it overrides receive_on_all_interfaces.
      */
     @ManagedAttribute
     @Property(converter=PropertyConverters.NetworkInterfaceList.class, 
                       description="Comma delimited list of interfaces (IP addresses or interface names) to receive multicasts on")
     protected List<NetworkInterface> receive_interfaces=null;
 
-    /**
-     * If true, the transport should use all available interfaces to send
-     * multicast messages. This means the same multicast message is sent N
-     * times, so use with care
-     */
-    @Property(description="If true, the transport should use all available interfaces to send multicast messages. Default is false",
-              deprecatedMessage="This property is deprecated. Use IP bonding or something similar")
-    protected boolean send_on_all_interfaces=false;
 
-    /**
-     * List<NetworkInterface> of interfaces to send multicasts on. The
-     * multicast send socket will send the same multicast message on all of
-     * these interfaces. This is a comma-separated list of IP addresses or
-     * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are
-     * discarded. If this property is set, it override send_on_all_interfaces.
-     */
-    @Property(converter=PropertyConverters.NetworkInterfaceList.class,
-                      description="Comma delimited list of interfaces (IP addresses or interface names) to send multicasts on",
-                      deprecatedMessage="This property is deprecated. Use IP bonding or something similar")
-    protected List<NetworkInterface> send_interfaces=null;
 
-    /**
-     * The port to which the transport binds. 0 means to bind to any (ephemeral)
-     * port
-     */
+    /** The port to which the transport binds. 0 means to bind to any (ephemeral) port */
     @Property(name="start_port", deprecatedMessage="start_port is deprecated; use bind_port instead", 
                       description="The port to which the transport binds. Default of 0 binds to any (ephemeral) port")
     protected int bind_port=0;
@@ -137,9 +113,8 @@ public abstract class TP extends Protocol {
     protected boolean prevent_port_reuse=false;
 
     /**
-     * If true, messages sent to self are treated specially: unicast messages
-     * are looped back immediately, multicast messages get a local copy first
-     * and - when the real copy arrives - it will be discarded. Useful for
+     * If true, messages sent to self are treated specially: unicast messages are looped back immediately,
+     * multicast messages get a local copy first and - when the real copy arrives - it will be discarded. Useful for
      * Window media (non)sense
      */
     @ManagedAttribute(description="", writable=true)
@@ -147,28 +122,13 @@ public abstract class TP extends Protocol {
     protected boolean loopback=false;
 
     /**
-     * Discard packets with a different version. Usually minor version
-     * differences are okay. Setting this property to true means that we expect
-     * the exact same version on all incoming packets
+     * Discard packets with a different version. Usually minor version differences are okay. Setting this property
+     * to true means that we expect the exact same version on all incoming packets
      */
     @ManagedAttribute(description="Discard packets with a different version", writable=true)
     @Property(description="Discard packets with a different version if true. Default is false")
     protected boolean discard_incompatible_packets=false;
 
-    /**
-     * Sometimes receivers are overloaded (they have to handle de-serialization
-     * etc). Packet handler is a separate thread taking care of
-     * de-serialization, receiver thread(s) simply put packet in queue and
-     * return immediately. Setting this to true adds one more thread
-     */
-    @ManagedAttribute(description="Should additional thread be used for message deserialization", writable=true)
-    @Property(name="use_packet_handler", 
-                      deprecatedMessage="'use_packet_handler' is deprecated; use 'use_incoming_packet_handler' instead",
-                      description="Should additional thread be used for message deserialization. Default is true")
-    protected boolean use_incoming_packet_handler=true;
-
-    @Property(description="Should concurrent stack with thread pools be used to deliver messages up the stack. Default is true")
-    protected boolean use_concurrent_stack=true;
 
     @Property(description="Thread naming pattern for threads in this channel. Default is cl")
     protected String thread_naming_pattern="cl";
@@ -241,12 +201,12 @@ public abstract class TP extends Protocol {
     protected int num_timer_threads=4;
     
     @ManagedAttribute(description="Enable bundling of smaller messages into bigger ones", writable=true)
-    @Property(description="Enable bundling of smaller messages into bigger ones. Default is false")
-    protected boolean enable_bundling=false;
+    @Property(description="Enable bundling of smaller messages into bigger ones. Default is true")
+    protected boolean enable_bundling=true;
 
     /** Enable bundling for unicast messages. Ignored if enable_bundling is off */
-    @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is true")
-    protected boolean enable_unicast_bundling=true;
+    @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is false")
+    protected boolean enable_unicast_bundling=false;
 
     @Property(description="Switch to enbale diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
@@ -272,16 +232,13 @@ public abstract class TP extends Protocol {
     
     /**
      * Maximum number of bytes for messages to be queued until they are sent.
-     * This value needs to be smaller than the largest datagram packet size in
-     * case of UDP
+     * This value needs to be smaller than the largest datagram packet size in case of UDP
      */
-
     protected int max_bundle_size=64000;
 
     /**
-     * Max number of milliseconds until queued messages are sent. Messages are
-     * sent when max_bundle_size or max_bundle_timeout has been exceeded
-     * (whichever occurs faster)
+     * Max number of milliseconds until queued messages are sent. Messages are sent when max_bundle_size
+     * or max_bundle_timeout has been exceeded (whichever occurs faster)
      */
     protected long max_bundle_timeout=20;
     
@@ -308,10 +265,7 @@ public abstract class TP extends Protocol {
     @ManagedAttribute
     protected String channel_name=null;
 
-    /**
-     * whether or not warnings about messages from different groups are logged -
-     * private flag, not for common use
-     */
+    /** whether or not warnings about messages from different groups are logged - private flag, not for common use */
     @ManagedAttribute(writable=true, description="whether or not warnings about messages from different groups are logged")
     private boolean log_discard_msgs=true;
 
@@ -338,26 +292,10 @@ public abstract class TP extends Protocol {
     protected final ExposedByteArrayInputStream in_stream=new ExposedByteArrayInputStream(new byte[] { '0' });
     protected final DataInputStream dis=new DataInputStream(in_stream);
 
-    /** Used by packet handler to store incoming DatagramPackets */
-    protected Queue incoming_packet_queue=null;
-
-    /**
-     * Dequeues DatagramPackets from packet_queue, unmarshalls them and calls
-     * <tt>handleIncomingUdpPacket()</tt>
-     */
-    protected IncomingPacketHandler incoming_packet_handler=null;
-
-    /** Used by packet handler to store incoming Messages */
-    protected Queue incoming_msg_queue=null;
-
-    protected IncomingMessageHandler incoming_msg_handler;
 
     protected ThreadGroup pool_thread_group=new ThreadGroup(Util.getGlobalThreadGroup(), "Thread Pools");
 
-    /**
-     * Keeps track of connects and disconnects, in order to start and stop
-     * threads
-     */
+    /** Keeps track of connects and disconnects, in order to start and stop threads */
     protected int connect_count=0;
 
     /**
@@ -368,10 +306,7 @@ public abstract class TP extends Protocol {
     /** Factory which is used by oob_thread_pool */
     protected ThreadFactory oob_thread_factory=null;
 
-    /**
-     * Used if oob_thread_pool is a ThreadPoolExecutor and
-     * oob_thread_pool_queue_enabled is true
-     */
+    /** Used if oob_thread_pool is a ThreadPoolExecutor and oob_thread_pool_queue_enabled is true */
     protected BlockingQueue<Runnable> oob_thread_pool_queue=null;
    
 
@@ -379,19 +314,13 @@ public abstract class TP extends Protocol {
      * ================================== Regular thread pool =======================
      */
 
-    /**
-     * The thread pool which handles unmarshalling, version checks and
-     * dispatching of regular messages
-     */
+    /** The thread pool which handles unmarshalling, version checks and dispatching of regular messages */
     protected Executor thread_pool;
     
     /** Factory which is used by oob_thread_pool */
     protected ThreadFactory default_thread_factory=null;
 
-    /**
-     * Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled
-     * is true
-     */
+    /** Used if thread_pool is a ThreadPoolExecutor and thread_pool_queue_enabled is true */
     protected BlockingQueue<Runnable> thread_pool_queue=null;
 
     /**
@@ -409,8 +338,7 @@ public abstract class TP extends Protocol {
 
   
     /**
-     * If set it will be added to <tt>local_addr</tt>. Used to implement for
-     * example transport independent addresses
+     * If set it will be added to <tt>local_addr</tt>. Used to implement for example transport independent addresses
      */
     protected byte[] additional_data=null;
 
@@ -419,9 +347,8 @@ public abstract class TP extends Protocol {
     private DiagnosticsHandler diag_handler=null;
 
     /**
-     * If singleton_name is enabled, this map is used to de-multiplex incoming
-     * messages according to their cluster names (attached to the message by the
-     * transport anyway). The values are the next protocols above the
+     * If singleton_name is enabled, this map is used to de-multiplex incoming messages according to their cluster
+     * names (attached to the message by the transport anyway). The values are the next protocols above the
      * transports.
      */
     private final ConcurrentMap<String,Protocol> up_prots=new ConcurrentHashMap<String,Protocol>();
@@ -524,7 +451,6 @@ public abstract class TP extends Protocol {
      * c: include the cluster name, e.g. "MyCluster"
      * l: include the local address of the current member, e.g. "192.168.5.1:5678"
      */ 
-
     public String getThreadNamingPattern() {return thread_naming_pattern;}
 
 
@@ -545,8 +471,10 @@ public abstract class TP extends Protocol {
 
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
-    public boolean isSendOnAllInterfaces() {return send_on_all_interfaces;}
-    public List<NetworkInterface> getSendInterfaces() {return send_interfaces;}
+    /** @deprecated This property was removed in 2.7*/
+    public boolean isSendOnAllInterfaces() {return false;}
+    /** @deprecated This property was removed in 2.7*/
+    public List<NetworkInterface> getSendInterfaces() {return null;}
     public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
@@ -554,7 +482,10 @@ public abstract class TP extends Protocol {
     public boolean isEnableUnicastBundling() {return enable_unicast_bundling;}
     public void setEnableUnicastBundling(boolean enable_unicast_bundling) {this.enable_unicast_bundling=enable_unicast_bundling;}
     public void setPortRange(int range) {this.port_range=range;}
-    public void setUseConcurrentStack(boolean flag) {use_concurrent_stack=flag;}
+
+    /** @deprecated the concurrent stack is used by default */
+    @Deprecated
+    public void setUseConcurrentStack(boolean flag) {}
 
 
     @ManagedAttribute
@@ -594,7 +525,9 @@ public abstract class TP extends Protocol {
     public String getChannelName() {return channel_name;}
     public boolean isLoopback() {return loopback;}
     public void setLoopback(boolean b) {loopback=b;}
-    public boolean isUseIncomingPacketHandler() {return use_incoming_packet_handler;}
+
+    /** @deprecated With the concurrent stack being the default, this property is ignored */
+    public boolean isUseIncomingPacketHandler() {return false;}
 
     public ConcurrentMap<String,Protocol> getUpProtocols() {
         return up_prots;
@@ -942,18 +875,6 @@ public abstract class TP extends Protocol {
             diag_handler.start();
         }
 
-        if(use_incoming_packet_handler && !use_concurrent_stack) {
-            incoming_packet_queue=new Queue();
-            incoming_packet_handler=new IncomingPacketHandler();
-            incoming_packet_handler.start();
-        }
-
-        if(loopback && !use_concurrent_stack) {
-            incoming_msg_queue=new Queue();
-            incoming_msg_handler=new IncomingMessageHandler();
-            incoming_msg_handler.start();
-        }
-
         if(enable_bundling) {
             bundler=new Bundler();
         }
@@ -968,15 +889,6 @@ public abstract class TP extends Protocol {
             diag_handler.stop();
             diag_handler=null;
         }
-
-        // 1. Stop the incoming packet handler thread
-        if(incoming_packet_handler != null)
-            incoming_packet_handler.stop();
-
-
-        // 2. Stop the incoming message handler
-        if(incoming_msg_handler != null)
-            incoming_msg_handler.stop();
     }
 
 
@@ -1198,29 +1110,14 @@ public abstract class TP extends Protocol {
 
         try {
             // determine whether OOB or not by looking at first byte of 'data'
-            boolean oob=false;
             byte oob_flag=data[Global.SHORT_SIZE]; // we need to skip the first 2 bytes (version)
-            if((oob_flag & OOB) == OOB)
-                oob=true;
-
-            if(use_concurrent_stack) {
-                if(oob) {
-                    num_oob_msgs_received++;
-                    dispatchToThreadPool(oob_thread_pool, dest, sender, data, offset, length);
-                }
-                else {
-                    num_incoming_msgs_received++;
-                    dispatchToThreadPool(thread_pool, dest, sender, data, offset, length);
-                }
+            if((oob_flag & OOB) == OOB) {
+                num_oob_msgs_received++;
+                dispatchToThreadPool(oob_thread_pool, dest, sender, data, offset, length);
             }
             else {
-                if(use_incoming_packet_handler) {
-                    byte[] tmp=new byte[length];
-                    System.arraycopy(data, offset, tmp, 0, length);
-                    incoming_packet_queue.add(new IncomingPacket(dest, sender, tmp, 0, length));
-                }
-                else
-                    handleIncomingPacket(dest, sender, data, offset, length);
+                num_incoming_msgs_received++;
+                dispatchToThreadPool(thread_pool, dest, sender, data, offset, length);
             }
         }
         catch(Throwable t) {
@@ -1244,89 +1141,6 @@ public abstract class TP extends Protocol {
     }
 
 
-    /**
-     * Processes a packet read from either the multicast or unicast socket. Needs to be synchronized because
-     * mcast or unicast socket reads can be concurrent.
-     * Correction (bela April 19 2005): we access no instance variables, all vars are allocated on the stack, so
-     * this method should be reentrant: removed 'synchronized' keyword
-     */
-    private void handleIncomingPacket(Address dest, Address sender, byte[] data, int offset, int length) {
-        Message                msg=null;
-        short                  version=0;
-        boolean                is_message_list, multicast;
-        byte                   flags;
-        List<Message>          msgs;
-
-        try {
-            synchronized(in_stream) {
-                in_stream.setData(data, offset, length);
-                try {
-                    version=dis.readShort();
-                }
-                catch(IOException ex) {
-                    if(discard_incompatible_packets)
-                        return;
-                    throw ex;
-                }
-                if(Version.isBinaryCompatible(version) == false) {
-                    if(log.isWarnEnabled()) {
-                        StringBuilder sb=new StringBuilder();
-                        sb.append("packet from ").append(sender).append(" has different version (").append(Version.print(version));
-                        sb.append(") from ours (").append(Version.printVersion()).append("). ");
-                        if(discard_incompatible_packets)
-                            sb.append("Packet is discarded");
-                        else
-                            sb.append("This may cause problems");
-                        log.warn(sb);
-                    }
-                    if(discard_incompatible_packets)
-                        return;
-                }
-
-                flags=dis.readByte();
-                is_message_list=(flags & LIST) == LIST;
-                multicast=(flags & MULTICAST) == MULTICAST;
-
-                if(is_message_list)
-                    msgs=readMessageList(dis, dest, multicast);
-                else {
-                    msg=readMessage(dis, dest, sender, multicast);
-                    msgs=new LinkedList<Message>();
-                    msgs.add(msg);
-                }
-            }
-
-            Address src;
-            for(Iterator<Message> it=msgs.iterator(); it.hasNext();) {
-                msg=it.next();
-                src=msg.getSrc();
-                if(loopback) {
-                    if(multicast && src != null && local_addr.equals(src)) { // discard own loopback multicast packets
-                        it.remove();
-                    }
-                }
-                else
-                    handleIncomingMessage(msg);
-            }
-            if(incoming_msg_queue != null && !msgs.isEmpty())
-                incoming_msg_queue.addAll(msgs);
-        }
-        catch(Throwable t) {
-            if(log.isErrorEnabled())
-                log.error("failed unmarshalling message", t);
-        }
-    }
-
-
-
-    private void handleIncomingMessage(Message msg) {
-        if(stats) {
-            num_msgs_received++;
-            num_bytes_received+=msg.getLength();
-        }
-
-        passMessageUp(msg, true);
-    }
 
 
     /** Internal method to serialize and send a message. This method is not reentrant */
@@ -1498,14 +1312,6 @@ public abstract class TP extends Protocol {
 
 
     protected void setThreadNames() {              
-        if(incoming_packet_handler != null){
-            global_thread_factory.renameThread(IncomingPacketHandler.THREAD_NAME, incoming_packet_handler.getThread());
-        }
-
-        if(incoming_msg_handler != null) {
-            global_thread_factory.renameThread(IncomingMessageHandler.THREAD_NAME, incoming_msg_handler.getThread());
-        }
-
         if(diag_handler != null) {
             global_thread_factory.renameThread(DiagnosticsHandler.THREAD_NAME, diag_handler.getThread());
         }
@@ -1513,16 +1319,12 @@ public abstract class TP extends Protocol {
 
 
     protected void unsetThreadNames() {
-        if(incoming_packet_handler != null && incoming_packet_handler.getThread() != null)
-            incoming_packet_handler.getThread().setName(IncomingPacketHandler.THREAD_NAME);
-        if(incoming_msg_handler != null && incoming_msg_handler.getThread() != null)
-            incoming_msg_handler.getThread().setName(IncomingMessageHandler.THREAD_NAME);
         if(diag_handler != null && diag_handler.getThread() != null)
             diag_handler.getThread().setName(DiagnosticsHandler.THREAD_NAME);
     }
 
     private void setInAllThreadFactories(String cluster_name, Address local_address, String pattern) {
-        ThreadFactory[] factories= { timer_thread_factory,
+        ThreadFactory[] factories= {timer_thread_factory,
                                     default_thread_factory,
                                     oob_thread_factory,
                                     global_thread_factory };
@@ -1718,109 +1520,6 @@ public abstract class TP extends Protocol {
 
 
 
-
-
-    /**
-     * This thread fetches byte buffers from the packet_queue, converts them into messages and passes them up
-     * to the higher layer (done in handleIncomingUdpPacket()).
-     */
-    class IncomingPacketHandler implements Runnable {
-    	
-    	public static final String THREAD_NAME="IncomingPacketHandler"; 
-        Thread t=null;
-
-        Thread getThread(){
-        	return t;
-        }
-
-        void start() {
-            if(t == null || !t.isAlive()) {
-                t=global_thread_factory.newThread(this, THREAD_NAME);
-                t.setDaemon(true);
-                t.start();
-            }
-        }
-
-        void stop() {
-            incoming_packet_queue.close(true); // should terminate the packet_handler thread too
-            if(t != null) {
-                try {
-                    t.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                }                
-            }
-        }
-
-        public void run() {
-            IncomingPacket entry;
-            while(!incoming_packet_queue.closed() && Thread.currentThread().equals(t)) {
-                try {
-                    entry=(IncomingPacket)incoming_packet_queue.remove();
-                    handleIncomingPacket(entry.dest, entry.sender, entry.buf, entry.offset, entry.length);
-                }
-                catch(QueueClosedException closed_ex) {
-                    break;
-                }
-                catch(Throwable ex) {
-                    if(log.isErrorEnabled())
-                        log.error("error processing incoming packet", ex);
-                }
-            }
-            if(log.isTraceEnabled()) log.trace("incoming packet handler terminating");
-        }
-    }
-
-
-    class IncomingMessageHandler implements Runnable {
-    	
-    	public static final String THREAD_NAME = "IncomingMessageHandler"; 
-        Thread t;
-
-        Thread getThread(){
-        	return t;
-        }
-
-        public void start() {
-            if(t == null || !t.isAlive()) {
-                t=global_thread_factory.newThread(this, THREAD_NAME);
-                t.setDaemon(true);
-                t.start();
-            }
-        }
-
-
-        public void stop() {
-            incoming_msg_queue.close(true);            
-            if(t != null) {
-                try {
-                    t.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
-                }
-                catch(InterruptedException e) {
-                    Thread.currentThread().interrupt(); // set interrupt flag again
-                }                
-            }
-        }
-
-        public void run() {
-            Message msg;
-            while(!incoming_msg_queue.closed() && Thread.currentThread().equals(t)) {
-                try {
-                    msg=(Message)incoming_msg_queue.remove();
-                    handleIncomingMessage(msg);
-                }
-                catch(QueueClosedException closed_ex) {
-                    break;
-                }
-                catch(Throwable ex) {
-                    if(log.isErrorEnabled())
-                        log.error("error processing incoming message", ex);
-                }
-            }
-            if(log.isTraceEnabled()) log.trace("incoming message handler terminating");
-        }
-    }
 
 
 
