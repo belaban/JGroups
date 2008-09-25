@@ -2,7 +2,7 @@
 <!--
   Sample file that defines a number of stacks, used by the multiplexer
   Author: Bela Ban
-  Version: $Id: stacks.xml,v 1.42 2008/06/17 08:27:19 belaban Exp $
+  Version: $Id: stacks.xml,v 1.43 2008/09/25 14:20:46 belaban Exp $
 -->
 <protocol_stacks>
     <stack name="udp"
@@ -20,11 +20,8 @@
                  discard_incompatible_packets="true"
                  max_bundle_size="64000"
                  max_bundle_timeout="30"
-                 use_incoming_packet_handler="true"
                  ip_ttl="${jgroups.udp.ip_ttl:2}"
                  enable_bundling="true"
-                 
-                 use_concurrent_stack="true"
 
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
@@ -87,11 +84,8 @@
                  discard_incompatible_packets="true"
                  max_bundle_size="64000"
                  max_bundle_timeout="30"
-                 use_incoming_packet_handler="true"
                  ip_ttl="${jgroups.udp.ip_ttl:2}"
                  enable_bundling="true"
-                 
-                 use_concurrent_stack="true"
 
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
@@ -146,14 +140,11 @@
                  discard_incompatible_packets="true"
                  max_bundle_size="64000"
                  max_bundle_timeout="30"
-                 use_incoming_packet_handler="true"
                  enable_bundling="true"
                  use_send_queues="false"
                  sock_conn_timeout="300"
                  skip_suspected_members="true"
-                 
-                 use_concurrent_stack="true"
-	
+
 		         thread_pool.enabled="true"
 		         thread_pool.min_threads="1"
 		         thread_pool.max_threads="25"
@@ -212,7 +203,6 @@
                  discard_incompatible_packets="true"
                  max_bundle_size="64000"
                  max_bundle_timeout="30"
-                 use_incoming_packet_handler="true"
                  enable_bundling="true"
                  use_send_queues="false"
                  sock_conn_timeout="300"
@@ -264,9 +254,7 @@
            description="TCP based stack, with flow control and message bundling. This is usually used when IP
            multicasting cannot be used in a network, e.g. because it is disabled (routers discard multicast).
            Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
-           -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
-           We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
-           due to threadless stack support).">
+           -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]">
         <config>
             <TCP_NIO
                      recv_buf_size="20000000"
@@ -275,7 +263,6 @@
                      discard_incompatible_packets="true"
                      max_bundle_size="64000"
                      max_bundle_timeout="30"
-                     use_incoming_packet_handler="true"
                      enable_bundling="true"
                      bind_port="7800"
                      use_send_queues="false"
@@ -329,7 +316,6 @@
                      discard_incompatible_packets="true"
                      max_bundle_size="64000"
                      max_bundle_timeout="30"
-                     use_incoming_packet_handler="true"
                      enable_bundling="true"
                      bind_port="7900"
                      use_send_queues="false"

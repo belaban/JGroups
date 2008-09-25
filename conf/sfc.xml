@@ -2,7 +2,7 @@
 <!--
   Stack which is a copy of udp.xml, but uses SFC (Simple Flow Control) instead of FC
   author: Bela Ban
-  version: $Id: sfc.xml,v 1.9 2007/11/19 16:02:15 belaban Exp $
+  version: $Id: sfc.xml,v 1.10 2008/09/25 14:20:48 belaban Exp $
 -->
 
 <config>
@@ -18,13 +18,10 @@
          discard_incompatible_packets="true"
          max_bundle_size="64000"
          max_bundle_timeout="30"
-         use_incoming_packet_handler="true"
          ip_ttl="${jgroups.udp.ip_ttl:2}"
          enable_bundling="true"
          enable_diagnostics="true"
          thread_naming_pattern="cl"
-
-         use_concurrent_stack="true"
 
          thread_pool.enabled="true"
          thread_pool.min_threads="1"
@@ -41,7 +38,6 @@
          oob_thread_pool.queue_enabled="false"
          oob_thread_pool.queue_max_size="100"
          oob_thread_pool.rejection_policy="Run" />
-
 
     <PING timeout="2000"
             num_initial_members="3" />

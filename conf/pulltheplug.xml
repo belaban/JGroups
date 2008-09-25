@@ -14,7 +14,6 @@
          discard_incompatible_packets="true"
          max_bundle_size="64000"
          max_bundle_timeout="30"
-         use_incoming_packet_handler="true" 
          ip_ttl="2"
          enable_bundling="true"/>
     <PING timeout="2000"
