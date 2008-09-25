@@ -47,7 +47,7 @@ import java.util.concurrent.locks.Lock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.227 2008/08/22 09:17:13 belaban Exp $
+ * @version $Id: TP.java,v 1.228 2008/09/25 13:15:06 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_outgoing_packet_handler"})
@@ -106,8 +106,8 @@ public abstract class TP extends Protocol {
      * multicast messages. This means the same multicast message is sent N
      * times, so use with care
      */
-    @ManagedAttribute
-    @Property(description=" If true, the transport should use all available interfaces to send multicast messages. Default is false")
+    @Property(description="If true, the transport should use all available interfaces to send multicast messages. Default is false",
+              deprecatedMessage="This property is deprecated. Use IP bonding or something similar")
     protected boolean send_on_all_interfaces=false;
 
     /**
@@ -117,9 +117,9 @@ public abstract class TP extends Protocol {
      * interface names. E.g. "192.168.5.1,eth1,127.0.0.1". Duplicates are
      * discarded. If this property is set, it override send_on_all_interfaces.
      */
-    @ManagedAttribute
     @Property(converter=PropertyConverters.NetworkInterfaceList.class,
-                      description="Comma delimited list of interfaces (IP addresses or interface names) to send multicasts on")
+                      description="Comma delimited list of interfaces (IP addresses or interface names) to send multicasts on",
+                      deprecatedMessage="This property is deprecated. Use IP bonding or something similar")
     protected List<NetworkInterface> send_interfaces=null;
 
     /**
@@ -1423,12 +1423,12 @@ public abstract class TP extends Protocol {
     }
 
     private List<Message> readMessageList(DataInputStream instream, Address dest, boolean multicast) throws Exception {
-        List<Message> list=new LinkedList<Message>();
         int           len;
         Message       msg;
         Address       src;
 
         len=instream.readInt();
+        List<Message> list=new ArrayList<Message>(len);
         src=Util.readAddress(instream);
         for(int i=0; i < len; i++) {
             msg=new Message(false); // don't create headers, readFrom() will do this
