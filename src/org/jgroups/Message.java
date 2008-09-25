@@ -7,13 +7,14 @@ import org.apache.commons.logging.LogFactory;
 import org.jgroups.conf.ClassConfigurator;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.util.Buffer;
+import org.jgroups.util.Headers;
 import org.jgroups.util.Streamable;
 import org.jgroups.util.Util;
-import org.jgroups.util.Headers;
 
 import java.io.*;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -25,7 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.91 2008/08/20 07:56:26 belaban Exp $
+ * @version $Id: Message.java,v 1.92 2008/09/25 10:29:21 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -46,13 +47,13 @@ public class Message implements Streamable {
     protected static final Log log=LogFactory.getLog(Message.class);
 
 
-    static final byte DEST_SET      = 1;
-    static final byte SRC_SET       = 2;
-    static final byte BUF_SET       = 4;
+    static final byte DEST_SET      =  1;
+    static final byte SRC_SET       =  2;
+    static final byte BUF_SET       =  4;
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
-    static final byte IPADDR_DEST   =16;
-    static final byte IPADDR_SRC    =32;
-    static final byte SRC_HOST_NULL =64;
+    static final byte IPADDR_DEST   = 16;
+    static final byte IPADDR_SRC    = 32;
+    static final byte SRC_HOST_NULL = 64;
 
 
     // =========================== Flags ==============================
@@ -64,26 +65,6 @@ public class Message implements Streamable {
 
     static final Set<Class> nonStreamableHeaders=new HashSet<Class>();
 
-    /** Map<Address,Address>. Maintains mappings to canonical addresses */
-    private static final ConcurrentHashMap<Address,Address> canonicalAddresses=new ConcurrentHashMap<Address,Address>();
-    private static final boolean DISABLE_CANONICALIZATION;
-
-    static {
-        boolean b=true;
-        try {
-            String tmp=System.getProperty("disable_canonicalization", "true");
-            b=Boolean.parseBoolean(tmp);
-        }
-//        catch (java.security.AccessControlException e) {
-//            // this will happen in an applet context
-//            b=true; // disabled by default
-//        }
-        catch(Throwable t) {
-            b=true; // disabled by default
-        }
-
-        DISABLE_CANONICALIZATION=b;
-    }
 
 
     /** Public constructor
@@ -165,10 +146,7 @@ public class Message implements Streamable {
     }
 
     public void setDest(Address new_dest) {
-        if(DISABLE_CANONICALIZATION)
-            dest_addr=new_dest;
-        else
-            dest_addr=canonicalAddress(new_dest);
+        dest_addr=new_dest;
     }
 
     public Address getSrc() {
@@ -176,10 +154,7 @@ public class Message implements Streamable {
     }
 
     public void setSrc(Address new_src) {
-        if(DISABLE_CANONICALIZATION)
-            src_addr=new_src;
-        else
-            src_addr=canonicalAddress(new_src);
+        src_addr=new_src;
     }
 
     /**
@@ -571,8 +546,6 @@ public class Message implements Streamable {
             else {
                 src_addr=Util.readAddress(in);
             }
-            if(!DISABLE_CANONICALIZATION)
-                src_addr=canonicalAddress(src_addr);
         }
 
         // 3. buf
@@ -716,27 +689,6 @@ public class Message implements Streamable {
         return new Headers(m);
     }
 
-    /** canonicalize addresses to some extent.  There are race conditions
-     * allowed in this method, so it may not fully canonicalize an address
-     * @param nonCanonicalAddress
-     * @return canonical representation of the address
-     */
-    private static Address canonicalAddress(Address nonCanonicalAddress) {
-        Address result=null;
-        if(nonCanonicalAddress == null) {
-            return null;
-        }
-        // do not synchronize between get/put on the canonical map to avoid cost of contention
-        // this can allow multiple equivalent addresses to leak out, but it's worth the cost savings
-        try {
-            result=canonicalAddresses.putIfAbsent(nonCanonicalAddress, nonCanonicalAddress);
-            return result != null? result : nonCanonicalAddress;
-        }
-        catch(NullPointerException npe) {
-            // no action needed
-        }
-        return result;
-    }
 
     /* ------------------------------- End of Private methods ---------------------------- */
 
