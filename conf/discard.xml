@@ -1,7 +1,7 @@
 <!--
 Discards 10% of all outgoing packets
 Author: Bela Ban
-Version: $Id: discard.xml,v 1.12 2007/11/19 16:02:35 belaban Exp $
+Version: $Id: discard.xml,v 1.13 2008/09/25 14:20:45 belaban Exp $
  -->
 <config>
     <UDP 
@@ -15,7 +15,6 @@ Version: $Id: discard.xml,v 1.12 2007/11/19 16:02:35 belaban Exp $
          loopback="false" 
          max_bundle_size="64000" 
          max_bundle_timeout="30"
-         use_incoming_packet_handler="true" 
          ip_ttl="2"
          enable_bundling="true"/>
     <DISCARD down="0.1"/>

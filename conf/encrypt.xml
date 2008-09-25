@@ -4,7 +4,7 @@
 
 <config>
     <UDP mcast_recv_buf_size="64000" mcast_send_buf_size="32000" mcast_port="45566" ucast_recv_buf_size="64000"
-        use_incoming_packet_handler="false" mcast_addr="228.8.8.8"
+        mcast_addr="228.8.8.8"
         loopback="true" ucast_send_buf_size="32000" ip_ttl="32"/>
     <PING timeout="2000" num_initial_members="3"/>
     <MERGE2 max_interval="10000" min_interval="5000"/>

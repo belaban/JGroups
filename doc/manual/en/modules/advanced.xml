@@ -146,9 +146,7 @@
                     &lt;stack name="discovery" description="Simple UDP-only stack for discovery"&gt;
                         &lt;config&gt;
                             &lt;UDP mcast_port="7609"
-                                 use_incoming_packet_handler="false"
                                  mcast_addr="228.15.15.15"
-                                 use_outgoing_packet_handler="false"
                                  ip_ttl="32"/&gt;
                         &lt;/config&gt;
                     &lt;/stack&gt;

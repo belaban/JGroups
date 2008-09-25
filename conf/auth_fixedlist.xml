@@ -8,7 +8,6 @@
         mcast_recv_buf_size="64000"
         max_bundle_size="60000"
         max_bundle_timeout="30"
-        use_incoming_packet_handler="false"
         ucast_send_buf_size="32000"
         ip_ttl="32"
         enable_bundling="false"/>

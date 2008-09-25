@@ -1,4 +1,4 @@
-// $Id: ConnectionTableNIO.java,v 1.40 2008/04/21 08:43:07 vlada Exp $
+// $Id: ConnectionTableNIO.java,v 1.41 2008/09/25 14:20:51 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -26,9 +26,6 @@ import java.util.concurrent.*;
  * after some time.
  * <p/>
  * Incoming messages from any of the sockets can be received by setting the message listener.
- *
- * We currently require use_incoming_packet_handler=true (release 2.4 will support use_incoming_packet_handler=false
- * due to threadless stack support).
  *
  * @author Bela Ban, Scott Marlow, Alex Fu
  */

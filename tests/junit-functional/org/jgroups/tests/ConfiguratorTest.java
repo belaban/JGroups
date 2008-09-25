@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.7 2008/07/30 15:10:21 vlada Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.8 2008/09/25 14:20:55 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -133,7 +133,7 @@ public class ConfiguratorTest {
                 "use_concurrent_stack=true;tos=8;mcast_port=45522;loopback=true;thread_pool.min_threads=2;" +
                 "oob_thread_pool.rejection_policy=Run;thread_pool.max_threads=8;enable_diagnostics=true;" +
                 "thread_naming_pattern=cl;ucast_send_buf_size=640000;ucast_recv_buf_size=20000000;" +
-                "thread_pool.enabled=true;use_incoming_packet_handler=true;oob_thread_pool.enabled=true;ip_ttl=2;" +
+                "thread_pool.enabled=true;oob_thread_pool.enabled=true;ip_ttl=2;" +
                 "enable_bundling=true;thread_pool.rejection_policy=Run;discard_incompatible_packets=true;" +
                 "thread_pool.keep_alive_time=5000;thread_pool.queue_enabled=false;mcast_addr=228.10.10.15;" +
                 "max_bundle_timeout=30;oob_thread_pool.queue_enabled=false;oob_thread_pool.min_threads=2;" +
