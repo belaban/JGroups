@@ -26,7 +26,7 @@ import java.util.Set;
  * The byte buffer can point to a reference, and we can subset it using index and length. However,
  * when the message is serialized, we only write the bytes between index and length.
  * @author Bela Ban
- * @version $Id: Message.java,v 1.92 2008/09/25 10:29:21 belaban Exp $
+ * @version $Id: Message.java,v 1.93 2008/09/25 13:09:18 belaban Exp $
  */
 public class Message implements Streamable {
     protected Address dest_addr=null;
@@ -47,19 +47,19 @@ public class Message implements Streamable {
     protected static final Log log=LogFactory.getLog(Message.class);
 
 
-    static final byte DEST_SET      =  1;
-    static final byte SRC_SET       =  2;
-    static final byte BUF_SET       =  4;
+    static final byte DEST_SET         =  1;
+    static final byte SRC_SET          =  2;
+    static final byte BUF_SET          =  4;
     // static final byte HDRS_SET=8; // bela July 15 2005: not needed, we always create headers
-    static final byte IPADDR_DEST   = 16;
-    static final byte IPADDR_SRC    = 32;
-    static final byte SRC_HOST_NULL = 64;
+    static final byte IPADDR_DEST      = 16;
+    static final byte IPADDR_SRC       = 32;
+    static final byte SRC_HOST_NULL    = 64;
 
 
     // =========================== Flags ==============================
-    public static final byte OOB       = 1;
-    public static final byte LOW_PRIO  = 2; // not yet sure if we want this flag...
-    public static final byte HIGH_PRIO = 4; // not yet sure if we want this flag...
+    public static final byte OOB               = 1;
+    public static final byte LOW_PRIO          = 2; // not yet sure if we want this flag...
+    public static final byte HIGH_PRIO         = 4; // not yet sure if we want this flag...
 
     private byte flags=0;
 
