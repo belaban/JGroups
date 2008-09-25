@@ -4,7 +4,7 @@
     Note that TCP.bind_addr and TCPPING.initial_hosts should be set, possibly via system properties, e.g.
     -Djgroups.bind_addr=192.168.5.2 and -Djgroups.tcpping.initial_hosts=192.168.5.2[7800]
     author: Bela Ban
-    version: $Id: tcp.xml,v 1.24 2008/09/25 14:20:42 belaban Exp $
+    version: $Id: tcp.xml,v 1.25 2008/09/25 14:26:07 belaban Exp $
 -->
 <config>
     <TCP bind_port="7800"
@@ -19,8 +19,6 @@
          sock_conn_timeout="300"
          skip_suspected_members="true"
          
-         use_concurrent_stack="true"
-
          thread_pool.enabled="true"
          thread_pool.min_threads="1"
          thread_pool.max_threads="25"

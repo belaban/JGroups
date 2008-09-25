@@ -15,7 +15,7 @@ import java.util.Vector;
 /**
  * Tests ProtocolStack.insertProtocol() and removeProtocol()
  * @author Bela Ban
- * @version $Id: ConfiguratorTest.java,v 1.8 2008/09/25 14:20:55 belaban Exp $
+ * @version $Id: ConfiguratorTest.java,v 1.9 2008/09/25 14:26:06 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL,sequential=true)
 public class ConfiguratorTest {
@@ -130,7 +130,7 @@ public class ConfiguratorTest {
         String config="UDP(mcast_addr=ff18:eb72:479f::2:3;oob_thread_pool.max_threads=4;" +
                 "oob_thread_pool.keep_alive_time=5000;max_bundle_size=64000;mcast_send_buf_size=640000;" +
                 "oob_thread_pool.queue_max_size=10;mcast_recv_buf_size=25000000;" +
-                "use_concurrent_stack=true;tos=8;mcast_port=45522;loopback=true;thread_pool.min_threads=2;" +
+                "tos=8;mcast_port=45522;loopback=true;thread_pool.min_threads=2;" +
                 "oob_thread_pool.rejection_policy=Run;thread_pool.max_threads=8;enable_diagnostics=true;" +
                 "thread_naming_pattern=cl;ucast_send_buf_size=640000;ucast_recv_buf_size=20000000;" +
                 "thread_pool.enabled=true;oob_thread_pool.enabled=true;ip_ttl=2;" +
