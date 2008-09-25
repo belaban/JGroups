@@ -42,9 +42,9 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.184 2008/09/18 10:25:20 belaban Exp $
+ * @version $Id: UDP.java,v 1.185 2008/09/25 13:14:27 belaban Exp $
  */
-@DeprecatedProperty(names={"num_last_ports","null_src_addresses"})
+@DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
 
     
@@ -88,16 +88,16 @@ public class UDP extends TP {
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8")
     private int ip_ttl=8;
 
-    @Property(description="Send buffer size of the multicast datagram socket. Default is 32000 bytes")
-    private int mcast_send_buf_size=32000;
+    @Property(description="Send buffer size of the multicast datagram socket. Default is 64'000 bytes")
+    private int mcast_send_buf_size=64000;
 
-    @Property(description="Receive buffer size of the multicast datagram socket. Default is 64000 bytes")
-    private int mcast_recv_buf_size=64000;
+    @Property(description="Receive buffer size of the multicast datagram socket. Default is 500'000 bytes")
+    private int mcast_recv_buf_size=500000;
 
-    @Property(description="Send buffer size of the unicast datagram socket. Default is 32000 bytes")
-    private int ucast_send_buf_size=32000;
+    @Property(description="Send buffer size of the unicast datagram socket. Default is 100'000 bytes")
+    private int ucast_send_buf_size=100000;
 
-    @Property(description="Receive buffer size of the unicast datagram socket. Default is 64000 bytes")
+    @Property(description="Receive buffer size of the unicast datagram socket. Default is 64'000 bytes")
     private int ucast_recv_buf_size=64000;
 
     
@@ -113,24 +113,15 @@ public class UDP extends TP {
     /**
      * Socket used for
      * <ol>
-     * <li>sending unicast packets and
+     * <li>sending unicast and multicast packets and
      * <li>receiving unicast packets
      * </ol>
      * The address of this socket will be our local address (<tt>local_addr</tt>)
      */
     private DatagramSocket sock=null;
 
-    /**
-     * IP multicast socket for <em>sending</em> and <em>receiving</em>
-     * multicast packets
-     */
+    /** IP multicast socket for <em>receiving</em> multicast packets */
     private MulticastSocket mcast_sock=null;
-
-    /**
-     * If we have multiple mcast send sockets, e.g. send_interfaces or
-     * send_on_all_interfaces enabled
-     */
-    private MulticastSocket[] mcast_send_sockets=null;
 
     /** Runnable to receive multicast packets */
     private PacketReceiver mcast_receiver=null;
@@ -208,28 +199,8 @@ public class UDP extends TP {
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
-            if(mcast) {
-                if(mcast_send_sockets != null) {
-                    MulticastSocket s;
-                    for(int i=0; i < mcast_send_sockets.length; i++) {
-                        s=mcast_send_sockets[i];
-                        try {
-                            s.send(packet);
-                        }
-                        catch(Exception e) {
-                            log.error("failed sending packet on socket " + s);
-                        }
-                    }
-                }
-                else { // DEFAULT path
-                    if(mcast_sock != null)
-                        mcast_sock.send(packet);
-                }
-            }
-            else {
-                if(sock != null)
-                    sock.send(packet);
-            }
+            if(sock != null)
+                sock.send(packet);
         }
         catch(Exception ex) {
             throw new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
@@ -451,31 +422,6 @@ public class UDP extends TP {
                     mcast_sock.setInterface(bind_addr);
                  mcast_sock.joinGroup(tmp_addr);
             }
-
-            // 3b. Create mcast sender socket
-            if(send_on_all_interfaces || (send_interfaces != null && !send_interfaces.isEmpty())) {
-                List<NetworkInterface> interfaces;
-                if(send_interfaces != null)
-                    interfaces=send_interfaces;
-                else
-                    interfaces=Util.getAllAvailableInterfaces();
-                mcast_send_sockets=new MulticastSocket[interfaces.size()];
-                int index=0;
-                for(NetworkInterface intf: interfaces) {
-                    mcast_send_sockets[index]=new MulticastSocket();
-                    mcast_send_sockets[index].setNetworkInterface(intf);
-                    mcast_send_sockets[index].setTimeToLive(ip_ttl);
-                    if(tos > 0) {
-                        try {
-                            mcast_send_sockets[index].setTrafficClass(tos);
-                        }
-                        catch(SocketException e) {
-                            log.warn("traffic class of " + tos + " could not be set, will be ignored", e);
-                        }
-                    }
-                    index++;
-                }
-            }
         }
 
         setBufferSizes();
@@ -502,7 +448,7 @@ public class UDP extends TP {
         SocketAddress tmp_mcast_addr=new InetSocketAddress(mcastAddr, mcast_port);
         for(NetworkInterface intf:interfaces) {
 
-            //[JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
+            //[ JGRP-680] - receive_on_all_interfaces requires every NIC to be configured
             try {
                 s.joinGroup(tmp_mcast_addr, intf);
                 if(log.isTraceEnabled())
@@ -604,18 +550,6 @@ public class UDP extends TP {
             sb.append(", send buffer size=").append(mcast_sock.getSendBufferSize());
             sb.append(", receive buffer size=").append(mcast_sock.getReceiveBufferSize());
         }
-
-
-        if(mcast_send_sockets != null) {
-            sb.append("\n").append(mcast_send_sockets.length).append(" mcast send sockets:\n");
-            MulticastSocket s;
-            for(int i=0; i < mcast_send_sockets.length; i++) {
-                s=mcast_send_sockets[i];
-                sb.append(s.getInterface().getHostAddress()).append(':').append(s.getLocalPort());
-                sb.append(", send buffer size=").append(s.getSendBufferSize());
-                sb.append(", receive buffer size=").append(s.getReceiveBufferSize()).append("\n");
-            }
-        }
         return sb.toString();
     }
 
@@ -626,12 +560,6 @@ public class UDP extends TP {
 
         if(mcast_sock != null)
             setBufferSize(mcast_sock, mcast_send_buf_size, mcast_recv_buf_size);
-
-        if(mcast_send_sockets != null) {
-            for(int i=0; i < mcast_send_sockets.length; i++) {
-                setBufferSize(mcast_send_sockets[i], mcast_send_buf_size, mcast_recv_buf_size);
-            }
-        }
     }
 
     private void setBufferSize(DatagramSocket sock, int send_buf_size, int recv_buf_size) {
@@ -665,16 +593,6 @@ public class UDP extends TP {
             catch(IOException ex) {
             }
             mcast_addr=null;
-        }
-
-        if(mcast_send_sockets != null) {
-            MulticastSocket s;
-            for(int i=0; i < mcast_send_sockets.length; i++) {
-                s=mcast_send_sockets[i];
-                s.close();
-                if(log.isDebugEnabled()) log.debug("multicast send socket " + s + " closed");
-            }
-            mcast_send_sockets=null;
         }
     }
 
