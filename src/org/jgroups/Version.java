@@ -15,7 +15,7 @@ import org.jgroups.annotations.Immutable;
  * Z = 0-63 for micro versions
  *
  * @author Bela Ban
- * @version $Id: Version.java,v 1.62 2008/06/04 06:51:59 belaban Exp $
+ * @version $Id: Version.java,v 1.63 2008/09/25 11:57:54 belaban Exp $
  * Holds version information for JGroups.
  */
 @Immutable
@@ -27,7 +27,7 @@ public class Version {
 
     public static final short version=encode(major, minor, micro);
     public static final String string_version=print(version);
-    public static final String cvs="$Id: Version.java,v 1.62 2008/06/04 06:51:59 belaban Exp $";
+    public static final String cvs="$Id: Version.java,v 1.63 2008/09/25 11:57:54 belaban Exp $";
 
     private static final int MAJOR_SHIFT = 11;
     private static final int MINOR_SHIFT = 6;
@@ -101,10 +101,10 @@ public class Version {
      * @return
      */
     public static boolean isBinaryCompatible(short ver) {
-        if(ver == version)
+        if(version == ver)
             return true;
-        short[] tmp=decode(ver);
-        short tmp_major=tmp[0], tmp_minor=tmp[1];
+        short tmp_major=(short)((ver & MAJOR_MASK) >> MAJOR_SHIFT);
+        short tmp_minor=(short)((ver & MINOR_MASK) >> MINOR_SHIFT);
         return major == tmp_major && minor == tmp_minor;
     }
 
