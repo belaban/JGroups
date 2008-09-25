@@ -610,7 +610,6 @@
                        max_bundle_timeout="30"
                        ip_ttl="${jgroups.udp.ip_ttl:2}"
                        enable_bundling="true"
-                       use_concurrent_stack="true"
                        thread_pool.enabled="true"
                        thread_pool.min_threads="1"
                        thread_pool.max_threads="25"

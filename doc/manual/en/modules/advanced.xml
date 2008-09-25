@@ -392,7 +392,6 @@
                              max_bundle_timeout="30"
                              ip_ttl="${jgroups.udp.ip_ttl:2}"
                              enable_bundling="true"
-                             use_concurrent_stack="true"
                              thread_pool.enabled="true"
                              thread_pool.min_threads="1"
                              thread_pool.max_threads="25"
@@ -1108,8 +1107,6 @@
                                 mcast_addr="228.10.10.10"
                                 mcast_port="45588"
 
-                                use_concurrent_stack="true"
-
                                 thread_pool.enabled="true"
                                 thread_pool.min_threads="1"
                                 thread_pool.max_threads="100"
@@ -1129,10 +1126,6 @@
                     </screen>
                 </para>
 
-                <para>
-                    The concurrent stack can be completely eliminated by setting use_concurrent_stack to false. (Note that
-                    this attribute might be removed in a future release).
-                </para>
                 <para>
                     The attributes for the 2 thread pools are prefixed with thread_pool and oob_thread_pool respectively.
                 </para>
