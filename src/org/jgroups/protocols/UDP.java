@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.185 2008/09/25 13:14:27 belaban Exp $
+ * @version $Id: UDP.java,v 1.186 2008/09/26 16:07:03 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -88,8 +88,8 @@ public class UDP extends TP {
     @Property(description="The time-to-live (TTL) for multicast datagram packets. Default is 8")
     private int ip_ttl=8;
 
-    @Property(description="Send buffer size of the multicast datagram socket. Default is 64'000 bytes")
-    private int mcast_send_buf_size=64000;
+    @Property(description="Send buffer size of the multicast datagram socket. Default is 100'000 bytes")
+    private int mcast_send_buf_size=100000;
 
     @Property(description="Receive buffer size of the multicast datagram socket. Default is 500'000 bytes")
     private int mcast_recv_buf_size=500000;
@@ -199,8 +199,14 @@ public class UDP extends TP {
     private void _send(InetAddress dest, int port, boolean mcast, byte[] data, int offset, int length) throws Exception {
         DatagramPacket packet=new DatagramPacket(data, offset, length, dest, port);
         try {
-            if(sock != null)
-                sock.send(packet);
+            if(mcast) {
+                if(mcast_sock != null)
+                    mcast_sock.send(packet);
+            }
+            else {
+                if(sock != null)
+                    sock.send(packet);
+            }
         }
         catch(Exception ex) {
             throw new Exception("dest=" + dest + ":" + port + " (" + length + " bytes)", ex);
