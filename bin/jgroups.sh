@@ -1,4 +1,10 @@
+
+# Author: Bela Ban
+# version: $Id: jgroups.sh,v 1.5 2008/09/26 10:47:19 belaban Exp $
+
 #!/bin/bash
+
+JG=${JG-$HOME/JGroups}
 
 LIB=$JG/lib
 
@@ -20,4 +26,3 @@ JMX="-Dcom.sun.management.jmxremote"
 EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
 
 java -classpath $CP $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*
-
