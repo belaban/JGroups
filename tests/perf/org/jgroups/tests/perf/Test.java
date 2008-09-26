@@ -36,6 +36,8 @@ public class Test implements Receiver {
     /** Set when first message is received */
     long            start=0;
 
+    long            last_interval=0;
+
     /** Set when last message is received */
     long            stop=0;
 
@@ -327,7 +329,7 @@ public class Test implements Receiver {
             if(all_received)
                 return;
             if(start == 0) {
-                start=System.currentTimeMillis();
+                start=last_interval=System.currentTimeMillis();
             }
 
             num_msgs_received++;
@@ -341,7 +343,12 @@ public class Test implements Receiver {
             }
 
             if(num_msgs_received % log_interval == 0) {
-                System.out.println(new StringBuilder("-- received ").append(num_msgs_received).append(" messages"));
+                long curr=System.currentTimeMillis();
+                long diff=curr - last_interval;
+                last_interval=curr;
+                double msgs_sec=log_interval / (diff / 1000.0);
+                System.out.println(new StringBuilder("-- received ").append(num_msgs_received).append(" messages")
+                                   .append(" (time=" + diff + " ms, " + f.format(msgs_sec) + " msgs/sec)"));
             }
 
             if(counter % log_interval == 0) {
