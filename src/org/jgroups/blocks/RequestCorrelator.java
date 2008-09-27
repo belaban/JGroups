@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.44 2008/07/21 14:06:10 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.45 2008/09/27 15:48:34 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -790,7 +790,7 @@ public class RequestCorrelator {
                 out.writeShort(callStack.size());
                 Address mbr;
                 for(int i=0; i < callStack.size(); i++) {
-                    mbr=(Address)callStack.elementAt(i);
+                    mbr=callStack.elementAt(i);
                     Util.writeAddress(mbr, out);
                 }
             }
@@ -838,7 +838,7 @@ public class RequestCorrelator {
             if(callStack != null) {
                 retval+=Global.SHORT_SIZE; // number of elements
                 if(!callStack.isEmpty()) {
-                    Address mbr=(Address)callStack.firstElement();
+                    Address mbr=callStack.firstElement();
                     retval+=callStack.size() * (Util.size(mbr));
                 }
             }
