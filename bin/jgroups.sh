@@ -1,6 +1,6 @@
 
 # Author: Bela Ban
-# version: $Id: jgroups.sh,v 1.5 2008/09/26 10:47:19 belaban Exp $
+# version: $Id: jgroups.sh,v 1.6 2008/09/30 07:49:02 belaban Exp $
 
 #!/bin/bash
 
@@ -23,6 +23,6 @@ FLAGS="$FLAGS -XX:TargetSurvivorRatio=90 -XX:MaxTenuringThreshold=31"
 FLAGS="$FLAGS -Djava.net.preferIPv4Stack=true -Djgroups.timer.num_threads=4"
 FLAGS="$FLAGS -Xshare:off -XX:+UseBiasedLocking"
 JMX="-Dcom.sun.management.jmxremote"
-EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB"
+EXPERIMENTAL="-XX:+UseFastAccessorMethods -XX:+UseTLAB -XX:+DoEscapeAnalysis"
 
 java -classpath $CP $LOG $JG_FLAGS $FLAGS $EXPERIMENTAL $JMX  $*
