@@ -5,7 +5,7 @@ Design of SEQUENCER, a total order protocol using a sequencer
 
 Author: Bela Ban
 Date: Dec 29 2005
-Version: $Id: SEQUENCER.txt,v 1.1 2006/01/27 14:46:12 belaban Exp $
+Version: $Id: SEQUENCER.txt,v 1.2 2008/10/06 16:05:53 belaban Exp $
 
 
 Motivation
@@ -118,6 +118,10 @@ Comments
 When forwarding we don't care about whether the message was forwarded before, e.g. by the previous
 coordinator. We simply forward, but discard duplicate messages when receiving the bcast. This is not
 overly efficient when failing over between coordinators, but makes the implementation simpler.
+
+SEQUENCER requires NAKACK and UNICAST. The latter is used for retransmission of unicast FORWARD requests, and
+NAKACK is used to deliver all messages from the coordinator in order and without gaps. Since we only have 1 member
+multicasting with FIFO properties, we essentially provide global order.
 
 
 
