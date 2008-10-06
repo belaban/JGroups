@@ -347,8 +347,10 @@ public class Test implements Receiver {
                 long diff=curr - last_interval;
                 last_interval=curr;
                 double msgs_sec=log_interval / (diff / 1000.0);
+                double throughput=msgs_sec * msg_size;
                 System.out.println(new StringBuilder("-- received ").append(num_msgs_received).append(" messages")
-                                   .append(" (time=" + diff + " ms, " + f.format(msgs_sec) + " msgs/sec)"));
+                        .append(" (" + diff + " ms, " + f.format(msgs_sec) + " msgs/sec, " +
+                        Util.printBytes(throughput) + "/sec)"));
             }
 
             if(counter % log_interval == 0) {
