@@ -1,12 +1,12 @@
 
 <!--
 Total order protocol stack using the SEQUENCER protocol
-Version: $Id: sequencer.xml,v 1.9 2008/09/25 14:20:45 belaban Exp $
+Version: $Id: sequencer.xml,v 1.10 2008/10/06 14:34:49 belaban Exp $
 -->
 <config>
     <UDP
-         mcast_port="45566" 
-         mcast_addr="228.10.10.10"
+         mcast_port="12563"
+         mcast_addr="235.15.14.13"
          tos="16"
          ucast_recv_buf_size="20000000"
          ucast_send_buf_size="640000"
