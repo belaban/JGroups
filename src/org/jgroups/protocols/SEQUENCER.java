@@ -5,6 +5,7 @@ import org.jgroups.*;
 import org.jgroups.annotations.MBean;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.ManagedOperation;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.stack.Protocol;
 import org.jgroups.util.SeqnoTable;
 import org.jgroups.util.Streamable;
@@ -17,8 +18,9 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.22 2008/05/08 09:46:42 vlada Exp $
+ * @version $Id: SEQUENCER.java,v 1.23 2008/10/06 12:16:43 belaban Exp $
  */
+@Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
 public class SEQUENCER extends Protocol {
     private Address           local_addr=null, coord=null;
