@@ -3,6 +3,7 @@ package org.jgroups.protocols;
 import org.jgroups.Address;
 import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
+import org.jgroups.annotations.Experimental;
 import org.jgroups.blocks.BasicConnectionTable;
 import org.jgroups.blocks.ConnectionTableNIO;
 import org.jgroups.stack.IpAddress;
@@ -16,8 +17,9 @@ import java.util.Collection;
  * @author Scott Marlow
  * @author Alex Fu
  * @author Bela Ban
- * @version $Id: TCP_NIO.java,v 1.23 2008/05/22 10:49:46 belaban Exp $
+ * @version $Id: TCP_NIO.java,v 1.24 2008/10/06 13:02:15 belaban Exp $
  */
+@Experimental
 public class TCP_NIO extends BasicTCP implements BasicConnectionTable.Receiver
 {
 
