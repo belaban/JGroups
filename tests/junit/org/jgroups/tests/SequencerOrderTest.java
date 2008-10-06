@@ -23,13 +23,13 @@ import java.util.List;
  * concurrent senders; using one sender will cause NAKACK to FIFO order 
  * the messages and the assertions in this test will still hold true, whether
  * SEQUENCER is present or not. 
- *
+ * @version $Id: SequencerOrderTest.java,v 1.9 2008/10/06 14:47:27 belaban Exp $
  */
 @Test(groups=Global.STACK_INDEPENDENT,sequential=true)
 public class SequencerOrderTest {
     private JChannel ch1, ch2;
     private MyReceiver r1, r2;
-    static final String GROUP="demo-group";
+    static final String GROUP="SequencerOrderGroup";
     static final int NUM_MSGS=1000;
     static final String props="sequencer.xml";
 
