@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.71.2.14 2008/10/03 11:52:05 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.71.2.15 2008/10/07 18:53:48 rachmatowicz Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -132,7 +132,8 @@
         description="Compiles and creates JAR files in the ./dist directory"
         depends="compile,
                 jgroups-all.jar,
-                jgroups-core.jar">
+                jgroups-core.jar,
+    			jgroups-sources.jar">
     </target>
 
 
@@ -140,7 +141,8 @@
         description="Compiles for 1.5 and creates JAR files in the ./dist directory"
         depends="compile-1.5,
                 jgroups-all.jar,
-                jgroups-core.jar">
+                jgroups-core.jar,
+    			jgroups-sources.jar">
     </target>
 
 
@@ -169,6 +171,16 @@
         </jar>
     </target>
 
+    <target name="jgroups-sources.jar"
+            description="Creates the jgroups-sources.jar. Includes only core source files, no demos, no tests">
+        <mkdir dir="${dist.dir}"/>
+        <jar jarfile="${dist.dir}/jgroups-sources.jar"
+             basedir="${src.dir}"
+             manifest="${conf.dir}/manifest.mf"
+             includes="org/jgroups/**"
+             excludes="org/jgroups/demos/**">
+        </jar>
+    </target>
 
     <target name="dist" description="Creates the distribution ZIP files in ./dist">
         <antcall target="src-dist"/>
