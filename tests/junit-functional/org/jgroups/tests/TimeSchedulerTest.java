@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * Test cases for TimeScheduler
  * @author Bela Ban
- * @version $Id: TimeSchedulerTest.java,v 1.8 2008/04/08 12:51:17 belaban Exp $
+ * @version $Id: TimeSchedulerTest.java,v 1.9 2008/10/07 12:34:14 vlada Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class TimeSchedulerTest {
@@ -33,7 +33,7 @@ public class TimeSchedulerTest {
     static double PERCENTAGE_OFF=0.3; // how much can expected xmit_timeout and real timeout differ to still be okay ?
 
 
-    public static void testCancel() throws InterruptedException {
+    public void testCancel() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         for(int i=0; i < 10; i++)
             timer.scheduleWithDynamicInterval(new OneTimeTask(1000));
@@ -43,7 +43,7 @@ public class TimeSchedulerTest {
     }
 
 
-    public static void testTaskCancellationBeforeTaskHasRun() throws InterruptedException {
+    public void testTaskCancellationBeforeTaskHasRun() throws InterruptedException {
         Future future;
         StressTask task=new StressTask();
         TimeScheduler timer=new TimeScheduler();
@@ -65,7 +65,7 @@ public class TimeSchedulerTest {
     }
 
     
-    public static void testTaskCancellationAfterHasRun() throws InterruptedException {
+    public void testTaskCancellationAfterHasRun() throws InterruptedException {
         Future future;
         StressTask task=new StressTask();
         TimeScheduler timer=new TimeScheduler();
@@ -91,7 +91,7 @@ public class TimeSchedulerTest {
 
 
 
-    public static void testRepeatingTask() throws InterruptedException {
+    public  void testRepeatingTask() throws InterruptedException {
         Future future;
         RepeatingTask task=new RepeatingTask(300);
         TimeScheduler timer=new TimeScheduler();
@@ -113,7 +113,7 @@ public class TimeSchedulerTest {
         }
     }
 
-    private static String printExecutionTimes(RepeatingTask task) {
+    private String printExecutionTimes(RepeatingTask task) {
         StringBuilder sb=new StringBuilder();
         List<Long> times=task.getExecutionTimes();
         long base=times.get(0);
@@ -126,7 +126,7 @@ public class TimeSchedulerTest {
 
 
 
-    public static void testStress() throws InterruptedException {
+    public void testStress() throws InterruptedException {
         StressTask t;
         TimeScheduler timer=new TimeScheduler();
         final int NUM_A=500, NUM_B=1000;
@@ -161,7 +161,7 @@ public class TimeSchedulerTest {
 
 
 
-    public static void testDynamicTask() throws InterruptedException {
+    public void testDynamicTask() throws InterruptedException {
         TimeScheduler.Task task=new DynamicTask();
         TimeScheduler timer=new TimeScheduler();
         try {
@@ -186,7 +186,7 @@ public class TimeSchedulerTest {
 
 
 
-    public static void testDynamicTaskCancel() throws InterruptedException {
+    public void testDynamicTaskCancel() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         try {
             TimeScheduler.Task task=new DynamicTask();
@@ -213,7 +213,7 @@ public class TimeSchedulerTest {
     }
 
 
-    public static void testIsDone() throws InterruptedException {
+    public void testIsDone() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         try {
             TimeScheduler.Task task=new DynamicTask();
@@ -235,7 +235,7 @@ public class TimeSchedulerTest {
         }
     }
 
-    public static void testIsDone2() throws InterruptedException {
+    public void testIsDone2() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{1000,2000,-1});
@@ -261,7 +261,7 @@ public class TimeSchedulerTest {
     }
 
 
-    public static void testIsDone3() throws InterruptedException {
+    public void testIsDone3() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         try {
             TimeScheduler.Task task=new DynamicTask(new long[]{-1});
@@ -283,7 +283,7 @@ public class TimeSchedulerTest {
     }
 
 
-    public static void testImmediateExecution() throws InterruptedException {
+    public void testImmediateExecution() throws InterruptedException {
         TimeScheduler timer=new TimeScheduler();
         try {
             Promise<Boolean> p=new Promise<Boolean>();
@@ -305,7 +305,7 @@ public class TimeSchedulerTest {
     }
 
 
-    public static void test2Tasks() throws InterruptedException {
+    public void test2Tasks() throws InterruptedException {
         int size;
         TimeScheduler timer=new TimeScheduler();
         try {
@@ -351,7 +351,7 @@ public class TimeSchedulerTest {
       * Tests whether retransmits are called at correct times for 1000 messages. A retransmit should not be
       * more than 30% earlier or later than the scheduled retransmission time
       */
-     public static void testRetransmits() throws InterruptedException {
+     public void testRetransmits() throws InterruptedException {
          Entry entry;
          int num_non_correct_entries=0;
          Map<Long,Entry> msgs=new ConcurrentHashMap<Long,Entry>(); // keys=seqnos (Long), values=Entries
