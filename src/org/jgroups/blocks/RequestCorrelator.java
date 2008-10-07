@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.30.2.5 2007/04/23 10:15:57 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.30.2.6 2008/10/07 17:26:11 rachmatowicz Exp $
 
 package org.jgroups.blocks;
 
@@ -742,7 +742,7 @@ public class RequestCorrelator {
         /** The unique name of the associated <tt>RequestCorrelator</tt> */
         public String corrName=null;
 
-        /** Stack<Address>. Contains senders (e.g. P --> Q --> R) */
+        /** Stack&lt;Address>. Contains senders (e.g. P --> Q --> R) */
         public java.util.Stack callStack=null;
 
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
