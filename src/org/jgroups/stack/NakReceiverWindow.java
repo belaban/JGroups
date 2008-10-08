@@ -49,7 +49,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.60 2008/10/08 12:37:42 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.61 2008/10/08 12:41:32 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -356,6 +356,7 @@ public class NakReceiverWindow {
         try {
             long next_to_remove=highest_delivered +1;
             retval=xmit_table.get(next_to_remove);
+            found=retval != null;
 
             if(retval != null) { // message exists and is ready for delivery
                 if(discard_delivered_msgs) {
@@ -365,7 +366,6 @@ public class NakReceiverWindow {
                     }
                 }
                 highest_delivered=next_to_remove;
-                found=true;
                 return retval;
             }
 
