@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.203 2008/09/23 14:50:30 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.204 2008/10/08 12:38:59 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -267,7 +268,7 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
     /** <em>Regular</em> messages which have been added, but not removed */
     private final AtomicInteger undelivered_msgs=new AtomicInteger(0);
 
-    
+
 
     public NAKACK() {
     }
@@ -828,29 +829,48 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
         short removed_regular_msgs=0;
-        ReentrantLock lock=win.getLock();
-        lock.lock();
+        final ReentrantLock lock=win.getLock();
+        final AtomicBoolean processing=win.getProcessing();
+
+        // Efficient way of checking whether another thread is already processing messages from 'sender'.
+        // If that's the case, we return immediately and let the exiting thread process our message
+        // (https://jira.jboss.org/jira/browse/JGRP-829). Benefit: fewer threads blocked on the same lock, these threads
+        // can be returned to the thread pool
+        if(!processing.compareAndSet(false, true)) {
+            return;
+        }
+
+        // 2nd line of defense: in case of an exception, remove() might not be called, therefore processing would never
+        // be set back to false. If we get an exception and released_processing is not true, then we set
+        // processing to false in the finally clause
+        boolean released_processing=false;
+
         try {
+            lock.lock();
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
 
-            List<Message> msgs=win.removeMany();
-            if(msgs != null) {
-                for(Message msg_to_deliver: msgs) {
-
-                    // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
-                    if(msg_to_deliver.isFlagSet(Message.OOB)) {
-                        continue;
-                    }
-                    removed_regular_msgs++;
-
-                    // Changed by bela Jan 29 2003: not needed (see above)
-                    //msg_to_deliver.removeHeader(getName());
-                    up_prot.up(new Event(Event.MSG, msg_to_deliver));
+            while(true) {
+                Message msg_to_deliver=win.remove(processing);
+                if(msg_to_deliver == null) {
+                    released_processing=true;
+                    return; // processing will be set to false now
                 }
+
+                // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-379)
+                if(msg_to_deliver.isFlagSet(Message.OOB)) {
+                    continue;
+                }
+                removed_regular_msgs++;
+
+                // Changed by bela Jan 29 2003: not needed (see above)
+                //msg_to_deliver.removeHeader(getName());
+                up_prot.up(new Event(Event.MSG, msg_to_deliver));
             }
         }
         finally {
+            if(!released_processing)
+                processing.set(false);
             if(eager_lock_release)
                 locks.remove(Thread.currentThread());
             if(lock.isHeldByCurrentThread())
