@@ -11,7 +11,7 @@ import java.util.Arrays;
 
 /** Tests FIFO order or messages
  * @author Bela Ban
- * @version $Id: FifoOrderTest.java,v 1.1 2008/10/08 14:03:59 belaban Exp $
+ * @version $Id: FifoOrderTest.java,v 1.2 2008/10/08 14:07:32 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class FifoOrderTest extends ChannelTestBase {
@@ -55,12 +55,20 @@ public class FifoOrderTest extends ChannelTestBase {
         for(JChannel channel: channels) {
             channel.setReceiver(receiver);
         }
-        
+
+        Sender[] senders=new Sender[NUM_NODES];
         for(int i=0; i < channels.length; i++) {
-            Sender sender=new Sender(i, channels[i]);
-            sender.start();
+            senders[i]=new Sender(i, channels[i]);
+            senders[i].start();
         }
 
+        for(Sender sender: senders) {
+            try {
+                sender.join();
+            }
+            catch(InterruptedException e) {
+            }
+        }
 
         while(true) {
             Util.sleep(2000);
