@@ -31,7 +31,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * instead of the requester by setting use_mcast_xmit to true.
  *
  * @author Bela Ban
- * @version $Id: NAKACK.java,v 1.204 2008/10/08 12:38:59 belaban Exp $
+ * @version $Id: NAKACK.java,v 1.205 2008/10/08 15:05:29 belaban Exp $
  */
 @MBean(description="Reliable transmission multipoint FIFO protocol")
 @DeprecatedProperty(names={"max_xmit_size"})
@@ -822,6 +822,15 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
             }
         }
 
+        // Efficient way of checking whether another thread is already processing messages from 'sender'.
+        // If that's the case, we return immediately and let the exiting thread process our message
+        // (https://jira.jboss.org/jira/browse/JGRP-829). Benefit: fewer threads blocked on the same lock, these threads
+        // can be returned to the thread pool
+        final AtomicBoolean processing=win.getProcessing();
+        if(!processing.compareAndSet(false, true)) {
+            return;
+        }
+
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
         // this is all the more important once we have a threadless stack (http://jira.jboss.com/jira/browse/JGRP-181),
         // where lots of threads can come up to this point concurrently, but only 1 is allowed to pass at a time
@@ -829,22 +838,12 @@ public class NAKACK extends Protocol implements Retransmitter.RetransmitCommand,
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by NAKACK) says messages need to be delivered in the
         // order in which they were sent by the sender
         short removed_regular_msgs=0;
-        final ReentrantLock lock=win.getLock();
-        final AtomicBoolean processing=win.getProcessing();
-
-        // Efficient way of checking whether another thread is already processing messages from 'sender'.
-        // If that's the case, we return immediately and let the exiting thread process our message
-        // (https://jira.jboss.org/jira/browse/JGRP-829). Benefit: fewer threads blocked on the same lock, these threads
-        // can be returned to the thread pool
-        if(!processing.compareAndSet(false, true)) {
-            return;
-        }
 
         // 2nd line of defense: in case of an exception, remove() might not be called, therefore processing would never
         // be set back to false. If we get an exception and released_processing is not true, then we set
         // processing to false in the finally clause
         boolean released_processing=false;
-
+        final ReentrantLock lock=win.getLock();
         try {
             lock.lock();
             if(eager_lock_release)
