@@ -10,14 +10,15 @@ import org.jgroups.Message;
 import org.jgroups.annotations.GuardedBy;
 import org.jgroups.util.TimeScheduler;
 
-import java.util.Map;
 import java.util.List;
-import java.util.ArrayList;
+import java.util.Map;
+import java.util.LinkedList;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 
 /**
@@ -48,7 +49,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * 
  * @author Bela Ban May 27 1999, May 2004, Jan 2007
  * @author John Georgiadis May 8 2001
- * @version $Id: NakReceiverWindow.java,v 1.59 2008/09/23 14:50:27 belaban Exp $
+ * @version $Id: NakReceiverWindow.java,v 1.60 2008/10/08 12:37:42 belaban Exp $
  */
 public class NakReceiverWindow {
 
@@ -91,6 +92,7 @@ public class NakReceiverWindow {
      */
     private boolean discard_delivered_msgs=false;
 
+    private final AtomicBoolean processing=new AtomicBoolean(false);
 
     /** If value is > 0, the retransmit buffer is bounded: only the max_xmit_buf_size latest messages are kept,
      * older ones are discarded when the buffer size is exceeded. A value <= 0 means unbounded buffers
@@ -168,6 +170,10 @@ public class NakReceiverWindow {
 
     public ReentrantLock getLock() {
         return up_lock;
+    }
+
+    public AtomicBoolean getProcessing() {
+        return processing;
     }
 
     public void setRetransmitTimeouts(Interval timeouts) {
@@ -335,6 +341,52 @@ public class NakReceiverWindow {
 
 
     /**
+     * Removes a message from the NakReceiverWindow. The message is in order. If the next message cannot be removed
+     * (e.g. because there is no message available, or because the next message is not in order), null will
+     * be returned. When null is returned, processing is set to false. This is needed to atomically remove a message
+     * and set the atomic boolean variable to false.
+     * @param processing
+     * @return
+     */
+    public Message remove(final AtomicBoolean processing) {
+        Message retval=null;
+        boolean found=false;
+
+        lock.writeLock().lock();
+        try {
+            long next_to_remove=highest_delivered +1;
+            retval=xmit_table.get(next_to_remove);
+
+            if(retval != null) { // message exists and is ready for delivery
+                if(discard_delivered_msgs) {
+                    Address sender=retval.getSrc();
+                    if(!local_addr.equals(sender)) { // don't remove if we sent the message !
+                        xmit_table.remove(next_to_remove);
+                    }
+                }
+                highest_delivered=next_to_remove;
+                found=true;
+                return retval;
+            }
+
+            // message has not yet been received (gap in the message sequence stream)
+            // drop all messages that have not been received
+            if(max_xmit_buf_size > 0 && xmit_table.size() > max_xmit_buf_size) {
+                highest_delivered=next_to_remove;
+                retransmitter.remove(next_to_remove);
+            }
+            return null;
+        }
+        finally {
+            if(!found)
+                processing.set(false);
+            // setSmoothedLossRate();
+            lock.writeLock().unlock();
+        }
+    }
+
+
+    /**
      * Removes as many messages as possible
      * @return List<Message> A list of messages, or null if no available messages were found
      */
@@ -356,7 +408,7 @@ public class NakReceiverWindow {
                     }
                     highest_delivered=next_to_remove;
                     if(retval == null)
-                        retval=new ArrayList<Message>();
+                        retval=new LinkedList<Message>();
                     retval.add(msg);
                     continue;
                 }
