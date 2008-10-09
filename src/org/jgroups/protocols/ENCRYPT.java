@@ -1,4 +1,4 @@
-// $Id: ENCRYPT.java,v 1.45 2008/06/04 06:48:33 belaban Exp $
+// $Id: ENCRYPT.java,v 1.46 2008/10/09 13:25:53 vlada Exp $
 
 package org.jgroups.protocols;
 
@@ -96,7 +96,7 @@ public class ENCRYPT extends Protocol {
     }
 
 
-    static final String DEFAULT_SYM_ALGO = "Blowfish";
+    static final String DEFAULT_SYM_ALGO = "AES";
     // address info
     Address local_addr = null;
     // keyserver address
@@ -121,7 +121,7 @@ public class ENCRYPT extends Protocol {
     int asymInit = 512; // initial public/private key length
 
     @Property(name="sym_init")
-    int symInit = 56; // initial shared key length
+    int symInit = 128; // initial shared key length
 
     // properties for functioning in supplied key mode
     private boolean suppliedKey = false;
