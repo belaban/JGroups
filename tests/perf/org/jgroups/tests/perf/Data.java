@@ -12,7 +12,7 @@ import java.util.Map;
  * Data sent around between members
  * @author Bela Ban Jan 22
  * @author 2004
- * @version $Id: Data.java,v 1.13 2008/08/01 15:21:25 vlada Exp $
+ * @version $Id: Data.java,v 1.14 2008/10/09 06:44:51 belaban Exp $
  */
 public class Data implements Streamable {
     final static byte DISCOVERY_REQ    = 1;
@@ -22,6 +22,7 @@ public class Data implements Streamable {
     final static byte FINAL_RESULTS    = 5; // sent when a sender is done
     final static byte FINAL_RESULTS_OK = 6; // sent when we know the everyone has received FINAL_MSGS
     final static byte START            = 7; // start sending messages
+    final static byte WARMUP           = 8; // warmup messages
 
     public Data() {
         ;
@@ -149,14 +150,15 @@ public class Data implements Streamable {
         StringBuilder sb=new StringBuilder();
         sb.append('[');
         switch(type) {
-        case DISCOVERY_REQ: sb.append("DISCOVERY_REQ"); break;
-        case DISCOVERY_RSP: sb.append("DISCOVERY_RSP"); break;
-        case DATA:          sb.append("DATA"); break;
-        case RESULTS:       sb.append("RESULTS"); break;
-        case FINAL_RESULTS: sb.append("FINAL_RESULTS"); break;
-        case FINAL_RESULTS_OK: sb.append("FINAL_RESULTS_OK"); break;
-        case START:            sb.append("START"); break;
-        default:            sb.append("<unknown>"); break;
+            case DISCOVERY_REQ:    sb.append("DISCOVERY_REQ"); break;
+            case DISCOVERY_RSP:    sb.append("DISCOVERY_RSP"); break;
+            case DATA:             sb.append("DATA"); break;
+            case RESULTS:          sb.append("RESULTS"); break;
+            case FINAL_RESULTS:    sb.append("FINAL_RESULTS"); break;
+            case FINAL_RESULTS_OK: sb.append("FINAL_RESULTS_OK"); break;
+            case START:            sb.append("START"); break;
+            case WARMUP:           sb.append("WARMUP"); break;
+            default:               sb.append("<unknown>"); break;
         }
         sb.append("] ");
         return sb.toString();
