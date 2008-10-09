@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReentrantLock;
 
 
@@ -41,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.115 2008/07/25 19:30:47 vlada Exp $
+ * @version $Id: UNICAST.java,v 1.116 2008/10/09 15:12:32 belaban Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -617,9 +618,14 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             return true; // ack the message, because this will stop retransmissions (which are unreliable) !
         }
 
+        final AtomicBoolean processing=win.getProcessing();
+        if(!processing.compareAndSet(false, true)) {
+            return true;
+        }
 
         // Try to remove (from the AckReceiverWindow) as many messages as possible as pass them up
         Message  m;
+        boolean released_processing=false;
         short removed_regular_msgs=0;
 
         // Prevents concurrent passing up of messages by different threads (http://jira.jboss.com/jira/browse/JGRP-198);
@@ -629,11 +635,17 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
         // delivery of P1, Q1, Q2, P2: FIFO (implemented by UNICAST) says messages need to be delivered only in the
         // order in which they were sent by their senders
         ReentrantLock lock=win.getLock();
-        lock.lock(); // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
         try {
             if(eager_lock_release)
                 locks.put(Thread.currentThread(), lock);
-            while((m=win.remove()) != null) {
+            lock.lock(); // we don't block on entry any more (http://jira.jboss.com/jira/browse/JGRP-485)
+            while(true) {
+                m=win.remove(processing);
+                if(m == null) {
+                    released_processing=true;
+                    return true;
+                }
+
                 // discard OOB msg as it has already been delivered (http://jira.jboss.com/jira/browse/JGRP-377)
                 if(m.isFlagSet(Message.OOB)) {
                     continue;
@@ -643,6 +655,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
             }
         }
         finally {
+            if(!released_processing)
+                processing.set(false);
             if(eager_lock_release)
                 locks.remove(Thread.currentThread());
             if(lock.isHeldByCurrentThread())
@@ -659,7 +673,6 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
                 undelivered_msgs.addAndGet(-(removed_regular_msgs -num_msgs_added));
             }
         }
-        return true; // msg was successfully received - send an ack back to the sender
     }
 
 
