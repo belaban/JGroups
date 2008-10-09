@@ -3,6 +3,7 @@ package org.jgroups.tests.perf;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.Version;
+import org.jgroups.Message;
 import org.jgroups.util.Util;
 
 import java.io.BufferedReader;
@@ -43,6 +44,8 @@ public class Test implements Receiver {
 
     int             num_members=0;
     int             num_senders=0;
+
+    int             warmup=0;
 
     int             num_buddies=0; // 0 == off, > 0 == on
     List            buddies=null;
@@ -94,14 +97,15 @@ public class Test implements Receiver {
 
 
 
-    public void start(Properties c, boolean verbose, boolean jmx, String output, int num_threads, int num_buddies) throws Exception {
+    public void start(Properties c, boolean verbose, boolean jmx, String output, int num_threads, int num_buddies,
+                      int warmup) throws Exception {
         String          config_file="config.txt";
         BufferedReader  fileReader;
         String          line;
         String          key, val;
         StringTokenizer st;
         Properties      tmp=new Properties();
-        long num_msgs=0;
+        long            num_msgs=0;
 
         if(output != null)
             this.output=new FileWriter(output, false);
@@ -120,6 +124,8 @@ public class Test implements Receiver {
             tmp.put(key, val);
         }
         fileReader.close();
+
+        this.warmup=warmup;
 
         // 'tmp' now contains all properties from the file, now we need to override the ones
         // passed to us by 'c'
@@ -255,6 +261,8 @@ public class Test implements Receiver {
             switch(d.getType()) {
                 case Data.DISCOVERY_REQ:
                     sendDiscoveryResponse();
+                    break;
+                case Data.WARMUP:
                     break;
                 case Data.DISCOVERY_RSP:
                     synchronized(this.members) {
@@ -495,6 +503,19 @@ public class Test implements Receiver {
                 }
             }
         }
+    }
+
+    void sendWarmupMessages(int num) throws Exception {
+        Data data=new Data(Data.WARMUP);
+        byte[] tmp=new byte[(int)msg_size];
+        data.payload=tmp;
+        
+        final byte[] buf=generatePayload(data, null);
+        System.out.println("sending " + num + " warmup messages");
+        for(int i=0; i < num; i++) {
+            transport.send(null, buf, false);
+        }
+        System.out.println("done");
     }
 
 
@@ -769,6 +790,7 @@ public class Test implements Receiver {
         boolean busy_sleep=false;
         int num_threads=0;
         int num_buddies=0; // 0 == off, > 0 == enabled
+        int warmup=0;
 
         for(int i=0; i < args.length; i++) {
             if("-bind_addr".equals(args[i])) {
@@ -832,6 +854,10 @@ public class Test implements Receiver {
                 num_buddies=Integer.parseInt(args[++i]);
                 continue;
             }
+            if("-warmup".equals(args[i])) {
+                warmup=Integer.parseInt(args[++i]);
+                continue;
+            }
             help();
             return;
         }
@@ -839,10 +865,15 @@ public class Test implements Receiver {
   
         try {
             t=new Test();
-            t.start(config, verbose, jmx, output, num_threads, num_buddies);
+            t.start(config, verbose, jmx, output, num_threads, num_buddies, warmup);
             t.runDiscoveryPhase();
             t.waitForAllOKs();
             if(sender) {
+
+                if(warmup > 0) {
+                    t.sendWarmupMessages(warmup);
+                }
+
                 t.sendMessages(interval, interval_nanos, busy_sleep, num_threads);
             }
             synchronized(t) {
@@ -883,7 +914,8 @@ public class Test implements Receiver {
                 "[-props <stack config>] [-verbose] [-jmx] [-bind_addr <bind address>" +
                 "[-dump_stats] [-f <filename>] [-interval <ms between sends>] " +
                 "[-nanos <additional nanos to sleep in interval>] [-busy_sleep (cancels out -nanos)] " +
-                "[-num_buddies <number of backup buddies>, this enables buddy replication]");
+                "[-num_buddies <number of backup buddies>, this enables buddy replication] " +
+                "[-warmup <num messages>]");
     }
 
 
