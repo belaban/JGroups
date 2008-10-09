@@ -9,6 +9,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeSet;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /**
@@ -21,13 +22,15 @@ import java.util.concurrent.locks.ReentrantLock;
  * a sorted set incurs overhead.
  *
  * @author Bela Ban
- * @version $Id: AckReceiverWindow.java,v 1.27 2008/06/04 15:10:28 belaban Exp $
+ * @version $Id: AckReceiverWindow.java,v 1.28 2008/10/09 15:10:49 belaban Exp $
  */
 public class AckReceiverWindow {
     long                    next_to_remove=0;
     final Map<Long,Message> msgs=new HashMap<Long,Message>();  // keys: seqnos (Long), values: Messages
     static final Log        log=LogFactory.getLog(AckReceiverWindow.class);
     final ReentrantLock     lock=new ReentrantLock();
+    final AtomicBoolean     processing=new AtomicBoolean(false);
+
 
     public AckReceiverWindow(long initial_seqno) {
         this.next_to_remove=initial_seqno;
@@ -35,6 +38,10 @@ public class AckReceiverWindow {
 
     public ReentrantLock getLock() {
         return lock;
+    }
+
+    public AtomicBoolean getProcessing() {
+        return processing;
     }
 
     /** Adds a new message. Message cannot be null
@@ -76,6 +83,28 @@ public class AckReceiverWindow {
                 if(log.isTraceEnabled())
                     log.trace("removed seqno=" + next_to_remove);
                 next_to_remove++;
+            }
+        }
+        return retval;
+    }
+
+    public Message remove(AtomicBoolean processing) {
+        Message retval;
+        boolean found=false;
+
+        synchronized(msgs) {
+            try {
+                retval=msgs.remove(next_to_remove);
+                found=retval != null;
+                if(retval != null) {
+                    if(log.isTraceEnabled())
+                        log.trace("removed seqno=" + next_to_remove);
+                    next_to_remove++;
+                }
+            }
+            finally {
+                if(!found)
+                    processing.set(false);
             }
         }
         return retval;
