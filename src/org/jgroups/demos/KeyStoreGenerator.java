@@ -1,4 +1,4 @@
-//$Id: KeyStoreGenerator.java,v 1.3 2008/07/14 14:42:40 vlada Exp $
+//$Id: KeyStoreGenerator.java,v 1.4 2008/10/09 13:25:52 vlada Exp $
 
 package org.jgroups.demos;
 
@@ -31,8 +31,8 @@ import javax.crypto.SecretKey;
  */
 public class KeyStoreGenerator {
 
-    static String symAlg="Blowfish";
-    static int keySize=56;
+    static String symAlg="AES";
+    static int keySize=128;
     static String keyStoreName="defaultStore.keystore";
     static String storePass="changeit";
     static String alias="myKey";
