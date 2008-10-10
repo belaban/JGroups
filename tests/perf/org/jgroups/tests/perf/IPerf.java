@@ -26,7 +26,7 @@ import java.text.NumberFormat;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.12 2008/10/10 15:26:34 belaban Exp $
+ * @version $Id: IPerf.java,v 1.13 2008/10/10 16:00:44 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -125,9 +125,13 @@ public class IPerf implements Receiver {
         transport.send(null, buf, false);
 
         if(time > 0) {
+            ByteBuffer buffer=createDataBuffer(chunk_size);
+            buffer.put(Type.DATA.getByte());
+            buffer.putInt(chunk_size);
+            buf=buffer.array();
+
             long end_time=System.currentTimeMillis() + time;
             while(System.currentTimeMillis() < end_time) {
-                buf=createDataMessage(chunk_size);
                 transport.send(null, buf, false);
             }
         }
@@ -186,6 +190,13 @@ public class IPerf implements Receiver {
         buf.put(Type.DATA.getByte());
         buf.putInt(length);
         return buf.array();
+    }
+
+    private static ByteBuffer createDataBuffer(int length) {
+        ByteBuffer buf=ByteBuffer.allocate(Global.BYTE_SIZE + length + Global.INT_SIZE);
+        buf.put(Type.DATA.getByte());
+        buf.putInt(length);
+        return buf;
     }
 
 
