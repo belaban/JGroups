@@ -26,7 +26,7 @@ import java.text.NumberFormat;
  *
  * </pre>
  * @author Bela Ban
- * @version $Id: IPerf.java,v 1.11 2008/09/12 15:10:52 belaban Exp $
+ * @version $Id: IPerf.java,v 1.12 2008/10/10 15:26:34 belaban Exp $
  */
 public class IPerf implements Receiver {
     private final Configuration config;
@@ -313,7 +313,9 @@ public class IPerf implements Receiver {
         }
 
         public String toString() {
-            return stop_time - start_time + " ms for " + Util.printBytes(total_bytes);
+            double throughput=total_bytes / ((stop_time - start_time) / 1000.0);
+            return stop_time - start_time + " ms for " + Util.printBytes(total_bytes) +
+                    " (" + Util.printBytes(throughput) + " / sec)";
         }
     }
 
@@ -391,7 +393,8 @@ public class IPerf implements Receiver {
                     long total_received_bytes=val.getVal2();
                     long missing=expected_bytes - total_received_bytes;
                     double loss_rate=100.0 / expected_bytes * missing;
-                    sb.append(" (loss rate=" + f.format(loss_rate) + "%)");
+                    double throughput=val.getVal2() / (val.getVal1() / 1000.0);
+                    sb.append(" (" + Util.printBytes(throughput) + " / sec, loss rate=" + f.format(loss_rate) + "%)");
                 }
                 sb.append("\n");
             }
