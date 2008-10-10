@@ -26,7 +26,7 @@ import java.util.*;
 /**
  * Tests whether method size() of a header and its serialized size correspond
  * @author  Bela Ban
- * @version $Id: SizeTest.java,v 1.10 2008/08/15 18:19:31 rachmatowicz Exp $
+ * @version $Id: SizeTest.java,v 1.11 2008/10/10 14:53:30 belaban Exp $
  */
 @Test(groups=Global.FUNCTIONAL)
 public class SizeTest {
@@ -455,15 +455,9 @@ public class SizeTest {
         l.add(new IpAddress(1111));
         l.add(new IpAddress(2222));
         hdr.dest_mbrs=l;
-        hdr.callStack=new Stack();
-        hdr.callStack.push(new IpAddress(2222));
-        hdr.callStack.push(new IpAddress(3333));
         _testSize(hdr);
 
         hdr=new RequestCorrelator.Header(RequestCorrelator.Header.RSP, 322649, true, "bla");
-        hdr.callStack=new Stack();
-        hdr.callStack.push(new IpAddress(2222));
-        hdr.callStack.push(new IpAddress(3333));
 
         ByteArrayOutputStream output=new ByteArrayOutputStream();
         DataOutputStream out=new DataOutputStream(output);
@@ -478,12 +472,7 @@ public class SizeTest {
 
         hdr=new RequestCorrelator.Header();
         hdr.readFrom(in);
-        System.out.println("call stack is " + hdr.callStack);
 
-        Address tmp=hdr.callStack.pop();
-        Assert.assertEquals(tmp, new IpAddress(3333));
-        tmp=hdr.callStack.pop();
-        Assert.assertEquals(tmp, new IpAddress(2222));
         Assert.assertEquals(322649, hdr.id);
         assert hdr.rsp_expected;
         Assert.assertEquals("bla", hdr.corrName);

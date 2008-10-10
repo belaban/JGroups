@@ -1,4 +1,4 @@
-// $Id: RequestCorrelator.java,v 1.45 2008/09/27 15:48:34 belaban Exp $
+// $Id: RequestCorrelator.java,v 1.46 2008/10/10 14:53:30 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -6,12 +6,13 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.jgroups.*;
 import org.jgroups.stack.Protocol;
-import org.jgroups.util.*;
+import org.jgroups.util.Buffer;
+import org.jgroups.util.Streamable;
+import org.jgroups.util.Util;
 
 import java.io.*;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Stack;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -51,38 +52,8 @@ public class RequestCorrelator {
     /** makes the instance unique (together with IDs) */
     protected String name=null;
 
-    /** The dispatching thread pool */
-    protected Scheduler scheduler=null;
-
-
     /** The address of this group member */
     protected Address local_addr=null;
-
-    /**
-     * This field is used only if deadlock detection is enabled.
-     * In case of nested synchronous requests, it holds a list of the
-     * addreses of the senders with the address at the bottom being the
-     * address of the first caller
-     */
-    protected java.util.Stack<Address> call_stack=null;
-
-    /** Whether or not to perform deadlock detection for synchronous (potentially recursive) group method invocations.
-     *  If on, we use a scheduler (handling a priority queue), otherwise we don't and call handleRequest() directly.
-     */
-    protected boolean deadlock_detection=false;
-
-    /**
-     * This field is used only if deadlock detection is enabled.
-     * It sets the calling stack to the currently running request
-     */
-    private CallStackSetter call_stack_setter=null;
-
-    /** Process items on the queue concurrently (Scheduler). The default is to wait until the processing of an item
-     * has completed before fetching the next item from the queue. Note that setting this to true
-     * may destroy the properties of a protocol stack, e.g total or causal order may not be
-     * guaranteed. Set this to true only if you know what you're doing ! */
-    protected boolean concurrent_processing=false;
-
 
     protected boolean started=false;
 
@@ -143,7 +114,6 @@ public class RequestCorrelator {
      */
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection) {
-        this.deadlock_detection = deadlock_detection;
         this.name               = name;
         this.transport          = transport;
         request_handler         = handler;
@@ -153,17 +123,14 @@ public class RequestCorrelator {
 
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, boolean concurrent_processing) {
-        this.deadlock_detection    = deadlock_detection;
         this.name                  = name;
         this.transport             = transport;
         request_handler            = handler;
-        this.concurrent_processing = concurrent_processing;
         start();
     }
 
     public RequestCorrelator(String name, Object transport,
                              RequestHandler handler, boolean deadlock_detection, Address local_addr) {
-        this.deadlock_detection = deadlock_detection;
         this.name               = name;
         this.transport          = transport;
         this.local_addr         = local_addr;
@@ -173,34 +140,30 @@ public class RequestCorrelator {
 
     public RequestCorrelator(String name, Object transport, RequestHandler handler,
                              boolean deadlock_detection, Address local_addr, boolean concurrent_processing) {
-        this.deadlock_detection    = deadlock_detection;
         this.name                  = name;
         this.transport             = transport;
         this.local_addr            = local_addr;
         request_handler            = handler;
-        this.concurrent_processing = concurrent_processing;
         start();
     }
 
+    public RequestCorrelator(String name, Object transport, RequestHandler handler,
+                             Address local_addr, boolean concurrent_processing) {
+        this.name                  = name;
+        this.transport             = transport;
+        this.local_addr            = local_addr;
+        request_handler            = handler;
+        start();
+    }
 
 
 
     /**
      * Switch the deadlock detection mechanism on/off
      * @param flag the deadlock detection flag
+     * @deprecated deadlock detection is not needed with a concurrent stack
      */
     public void setDeadlockDetection(boolean flag) {
-        if(deadlock_detection != flag) { // only set it if different
-            deadlock_detection=flag;
-            if(started) {
-                if(deadlock_detection) {
-                    startScheduler();
-                }
-                else {
-                    stopScheduler();
-                }
-            }
-        }
     }
 
 
@@ -209,9 +172,11 @@ public class RequestCorrelator {
         start();
     }
 
-
+    /**
+     * @deprecated Not needed since the introduction of the concurrent stack
+     * @param concurrent_processing
+     */
     public void setConcurrentProcessing(boolean concurrent_processing) {
-        this.concurrent_processing=concurrent_processing;
     }
 
 
@@ -275,16 +240,6 @@ public class RequestCorrelator {
         hdr.dest_mbrs=dest_mbrs;
 
         if (coll != null) {
-            if(deadlock_detection) {
-                if(local_addr == null) {
-                    if(log.isErrorEnabled()) log.error("local address is null !");
-                    return;
-                }
-                java.util.Stack<Address> new_call_stack = (call_stack != null?
-                                                  (java.util.Stack<Address>)call_stack.clone():new java.util.Stack<Address>());
-                new_call_stack.push(local_addr);
-                hdr.callStack=new_call_stack;
-            }
             addEntry(hdr.id, coll);
         }
         msg.putHeader(name, hdr);
@@ -368,49 +323,18 @@ public class RequestCorrelator {
                 return true; // message was consumed, don't pass it up
             break;
         }
-//        if(transport instanceof Protocol)
-//            ((Protocol)transport).getUpProtocol().up(evt);
-//        else
-//            if(log.isErrorEnabled()) log.error("we do not pass up messages via Transport");
         return false;
     }
 
 
-    /**
-     */
     public final void start() {
-        if(deadlock_detection) {
-            startScheduler();
-        }
         started=true;
     }
 
     public void stop() {
-        stopScheduler();
         started=false;
     }
 
-
-    void startScheduler() {
-        if(scheduler == null) {
-            scheduler=new Scheduler();
-            if(deadlock_detection && call_stack_setter == null) {
-                call_stack_setter=new CallStackSetter();
-                scheduler.setListener(call_stack_setter);
-            }
-            if(concurrent_processing)
-                scheduler.setConcurrentProcessing(concurrent_processing);
-            scheduler.start();
-        }
-    }
-
-
-    void stopScheduler() {
-        if(scheduler != null) {
-            scheduler.stop();
-            scheduler=null;
-        }
-    }
 
 
     // .......................................................................
@@ -508,28 +432,6 @@ public class RequestCorrelator {
                         log.warn("there is no request handler installed to deliver request !");
                     }
                     return true;
-                }
-
-                if(deadlock_detection) {
-                    if(scheduler == null) {
-                        log.error("deadlock_detection is true, but scheduler is null: this is not supposed to happen" +
-                                  " (discarding request)");
-                        break;
-                    }
-
-                    Request req=new Request(msg, hdr);
-                    java.util.Stack stack=hdr.callStack;
-                    if(hdr.rsp_expected && stack != null && local_addr != null) {
-                        if(stack.contains(local_addr)) {
-                            if(log.isTraceEnabled())
-                                log.trace("call stack=" + hdr.callStack + " contains " + local_addr +
-                                          ": adding request to priority queue");
-                            scheduler.addPrio(req);
-                            break;
-                        }
-                    }
-                    scheduler.add(req);
-                    break;
                 }
 
                 handleRequest(msg, hdr);
@@ -654,6 +556,7 @@ public class RequestCorrelator {
         }
 
         rsp=req.makeReply();
+        rsp.setFlag(Message.OOB);
         if(rsp_buf instanceof Buffer)
             rsp.setBuffer((Buffer)rsp_buf);
         else if (rsp_buf instanceof byte[])
@@ -704,11 +607,10 @@ public class RequestCorrelator {
         /** The unique name of the associated <tt>RequestCorrelator</tt> */
         public String corrName=null;
 
-        /** Stack&lt;Address>. Contains senders (e.g. P --> Q --> R) */
-        public java.util.Stack<Address> callStack=null;
-
         /** Contains a list of members who should receive the request (others will drop). Ignored if null */
         public java.util.List<Address> dest_mbrs=null;
+        
+        private static final long serialVersionUID=7550174166881969250L;
 
 
         /**
@@ -738,8 +640,6 @@ public class RequestCorrelator {
             ret.append(type == REQ ? "REQ" : type == RSP ? "RSP" : "<unknown>");
             ret.append(", id=" + id);
             ret.append(", rsp_expected=" + rsp_expected + ']');
-            if(callStack != null)
-                ret.append(", call stack=" + callStack);
             if(dest_mbrs != null)
                 ret.append(", dest_mbrs=").append(dest_mbrs);
             return ret.toString();
@@ -757,7 +657,6 @@ public class RequestCorrelator {
             else {
                 out.writeBoolean(false);
             }
-            out.writeObject(callStack);
             out.writeObject(dest_mbrs);
         }
 
@@ -768,7 +667,6 @@ public class RequestCorrelator {
             rsp_expected = in.readBoolean();
             if(in.readBoolean())
                 corrName         = in.readUTF();
-            callStack   = (java.util.Stack<Address>)in.readObject();
             dest_mbrs=(java.util.List<Address>)in.readObject();
         }
 
@@ -784,20 +682,6 @@ public class RequestCorrelator {
             else {
                 out.writeBoolean(false);
             }
-
-            if(callStack != null) {
-                out.writeBoolean(true);
-                out.writeShort(callStack.size());
-                Address mbr;
-                for(int i=0; i < callStack.size(); i++) {
-                    mbr=callStack.elementAt(i);
-                    Util.writeAddress(mbr, out);
-                }
-            }
-            else {
-                out.writeBoolean(false);
-            }
-
             Util.writeAddresses(dest_mbrs, out);
         }
 
@@ -811,17 +695,6 @@ public class RequestCorrelator {
             if(present)
                 corrName=in.readUTF();
 
-            present=in.readBoolean();
-            if(present) {
-                callStack=new Stack<Address>();
-                short len=in.readShort();
-                Address tmp;
-                for(short i=0; i < len; i++) {
-                    tmp=Util.readAddress(in);
-                    callStack.add(tmp);
-                }
-            }
-
             dest_mbrs=(List<Address>)Util.readAddresses(in, java.util.LinkedList.class);
         }
 
@@ -834,82 +707,11 @@ public class RequestCorrelator {
             if(corrName != null)
                 retval+=corrName.length() +2; // UTF
 
-            retval+=Global.BYTE_SIZE; // presence
-            if(callStack != null) {
-                retval+=Global.SHORT_SIZE; // number of elements
-                if(!callStack.isEmpty()) {
-                    Address mbr=callStack.firstElement();
-                    retval+=callStack.size() * (Util.size(mbr));
-                }
-            }
-
             retval+=Util.size(dest_mbrs);
             return retval;
         }
     }
 
 
-
-
-    /**
-     * Listens for scheduler events and sets the current call chain (stack)
-     * whenever a thread is started, or a suspended thread resumed. Does
-     * this only for synchronous requests (<code>Runnable</code> is actually
-     * a <code>Request</code>).
-     */
-    private class CallStackSetter implements SchedulerListener {
-        public void started(Runnable r)   { setCallStack(r); }
-        public void stopped(Runnable r)   { setCallStack(null); }
-        public void suspended(Runnable r) { setCallStack(null); }
-        public void resumed(Runnable r)   { setCallStack(r); }
-
-        void setCallStack(Runnable r) {
-            java.util.Stack new_stack;
-            Message req;
-            Header  hdr;
-            Object  obj;
-
-            if(r == null) {
-                call_stack=null;
-                return;
-            }
-
-            req=((Request)r).req;
-            if(req == null)
-                return;
-
-            obj=req.getHeader(name);
-            if(obj == null || !(obj instanceof Header))
-                return;
-
-            hdr=(Header)obj;
-            if(hdr.rsp_expected == false)
-                return;
-
-            new_stack=hdr.callStack;
-            if(new_stack != null)
-                call_stack=(java.util.Stack<Address>)new_stack.clone();
-        }
-    }
-
-
-    /**
-     * The runnable for an incoming request which is submitted to the
-     * dispatcher
-     */
-    private class Request implements Runnable {
-        final Message req;
-        final Header hdr;
-
-        public Request(Message req, Header hdr) { this.req=req; this.hdr=hdr;}
-        public void run() { handleRequest(req, hdr); }
-
-        public String toString() {
-            StringBuilder sb=new StringBuilder();
-            if(req != null)
-                sb.append("req=" + req + ", headers=" + req.printObjectHeaders());
-            return sb.toString();
-        }
-    }
 
 }

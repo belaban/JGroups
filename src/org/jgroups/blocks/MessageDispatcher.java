@@ -37,7 +37,7 @@ import java.util.Vector;
  * the application instead of protocol level.
  *
  * @author Bela Ban
- * @version $Id: MessageDispatcher.java,v 1.78 2008/05/30 11:28:34 belaban Exp $
+ * @version $Id: MessageDispatcher.java,v 1.79 2008/10/10 14:53:30 belaban Exp $
  */
 public class MessageDispatcher implements RequestHandler {
     protected Channel channel=null;
@@ -49,7 +49,6 @@ public class MessageDispatcher implements RequestHandler {
     protected TransportAdapter transport_adapter=null;
     protected final Collection members=new TreeSet();
     protected Address local_addr=null;
-    protected boolean deadlock_detection=false;
     protected PullPushAdapter adapter=null;
     protected PullPushHandler handler=null;
     protected Serializable id=null;
@@ -85,7 +84,6 @@ public class MessageDispatcher implements RequestHandler {
 
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2, boolean deadlock_detection) {
         this.channel=channel;
-        this.deadlock_detection=deadlock_detection;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
             local_addr=channel.getLocalAddress();
@@ -101,7 +99,6 @@ public class MessageDispatcher implements RequestHandler {
     public MessageDispatcher(Channel channel, MessageListener l, MembershipListener l2,
                              boolean deadlock_detection, boolean concurrent_processing) {
         this.channel=channel;
-        this.deadlock_detection=deadlock_detection;
         this.concurrent_processing=concurrent_processing;
         prot_adapter=new ProtocolAdapter();
         if(channel != null) {
@@ -258,12 +255,11 @@ public class MessageDispatcher implements RequestHandler {
         }
     }
 
-    public boolean getDeadlockDetection() {return deadlock_detection;}
+    @Deprecated
+    public boolean getDeadlockDetection() {return false;}
 
+    @Deprecated
     public void setDeadlockDetection(boolean flag) {
-        deadlock_detection=flag;
-        if(corr != null)
-            corr.setDeadlockDetection(flag);
     }
 
 
@@ -278,11 +274,11 @@ public class MessageDispatcher implements RequestHandler {
         if(corr == null) {
             if(transport_adapter != null) {
                 corr=new RequestCorrelator("MessageDispatcher", transport_adapter,
-                                           this, deadlock_detection, local_addr, concurrent_processing);
+                                           this, local_addr, concurrent_processing);
             }
             else {
                 corr=new RequestCorrelator("MessageDispatcher", prot_adapter,
-                                           this, deadlock_detection, local_addr, concurrent_processing);
+                                           this, local_addr, concurrent_processing);
             }
         }
         correlatorStarted();
