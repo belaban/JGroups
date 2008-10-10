@@ -1,0 +1,49 @@
+
+Release Notes JGroups 2.6.5
+===========================
+
+Version: $Id: ReleaseNotes-2.6.5.txt,v 1.1.2.1 2008/10/10 10:35:33 belaban Exp $
+Author: Bela Ban
+
+JGroups 2.6.5 is still API-backwards compatible with previous versions (down to 2.2.7).
+It is also binary backwards compatible with 2.6, 2.6.1, 2.6.2, 2.6.3 and 2.6.4.
+
+Below is a summary (with links to the detailed description) of the major new features between 2.6.4 and 2.6.5.
+
+
+Elimination of cross talking (on Linux)
+---------------------------------------
+[https://jira.jboss.org/jira/browse/JGRP-777]
+
+Different clusters using the same multicast port and only differing in the multicast address will not see each
+others' traffic anymore. See wiki.jboss.org/wiki/TwoClustersSameNetwork for details.
+
+
+
+Much faster discovery
+---------------------
+[https://jira.jboss.org/jira/browse/JGRP-735]
+
+Nodes started after the initial coordinator will have a very fast discovery phase. Documentation is
+at http://wiki.jboss.org/auth/wiki/JGroupsPING.
+
+
+
+
+Manual
+------
+The manual is online at http://www.jgroups.org/javagroupsnew/docs/manual/html/index.html
+
+
+
+
+The complete list of features and bug fixes can be found at http://jira.jboss.com/jira/browse/JGRP.
+
+
+Bela Ban, Kreuzlingen, Switzerland
+Vladimir Blagojevic, Toronto, Canada
+Richard Achmatowicz, Montreal, Canada
+
+Oct 2008
+
+
