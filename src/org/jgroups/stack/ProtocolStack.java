@@ -30,7 +30,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * stacks, and to destroy them again when not needed anymore
  * 
  * @author Bela Ban
- * @version $Id: ProtocolStack.java,v 1.89 2008/07/31 20:25:25 vlada Exp $
+ * @version $Id: ProtocolStack.java,v 1.90 2008/10/10 09:30:42 belaban Exp $
  */
 public class ProtocolStack extends Protocol implements Transport {
     public static final int ABOVE = 1; // used by insertProtocol()
@@ -56,6 +56,26 @@ public class ProtocolStack extends Protocol implements Transport {
      * http://jira.jboss.com/jira/browse/JGRP-535 for details
      */
     private final Map<Thread,ReentrantLock> locks=new ConcurrentHashMap<Thread,ReentrantLock>();
+
+
+    private final TP.ProbeHandler props_handler=new TP.ProbeHandler() {
+
+        public Map<String, String> handleProbe(String... keys) {
+            for(String key: keys) {
+                if(key.equals("props")) {
+                    String tmp=printProtocolSpec(true);
+                    HashMap<String, String> map=new HashMap<String, String>(1);
+                    map.put("props", tmp);
+                    return map;
+                }
+            }
+            return null;
+        }
+
+        public String[] supportedKeys() {
+            return new String[]{"props"};
+        }
+    };
 
 
     public ProtocolStack(JChannel channel, String setup_string) throws ChannelException {
@@ -697,7 +717,9 @@ public class ProtocolStack extends Protocol implements Transport {
             prot.start();
             above_prot=prot;
         }
-        
+
+        TP transport=getTransport();
+        transport.registerProbeHandler(props_handler);
         stopped=false;
     }
 
@@ -738,6 +760,9 @@ public class ProtocolStack extends Protocol implements Transport {
             }
             prot.stop();
         }
+
+        TP transport=getTransport();
+        transport.unregisterProbeHandler(props_handler);
         stopped=true;
     }
 
