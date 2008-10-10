@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.19 2008/10/10 10:08:00 belaban Exp $
+ * @version $Id: JChannel.java,v 1.158.2.20 2008/10/10 10:20:28 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -1687,7 +1687,8 @@ public class JChannel extends Channel {
             }
 
             TP transport=prot_stack.getTransport();
-            transport.unregisterProbeHandler(probe_handler);
+            if(transport != null)
+                transport.unregisterProbeHandler(probe_handler);
         }
     }
 
