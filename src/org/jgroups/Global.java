@@ -4,7 +4,7 @@ package org.jgroups;
  * Globals used by JGroups packages.
  * 
  * @author Bela Ban Mar 29, 2004
- * @version $Id: Global.java,v 1.40 2008/05/29 14:00:36 belaban Exp $
+ * @version $Id: Global.java,v 1.41 2008/10/10 14:53:30 belaban Exp $
  */
 public class Global {
     public static final int BYTE_SIZE  = Byte.SIZE    / 8; // 1
@@ -38,8 +38,6 @@ public class Global {
     public static final String RESOLVE_DNS="jgroups.resolve_dns";
 
     public static final String CHANNEL_LOCAL_ADDR_TIMEOUT="jgroups.channel.local_addr_timeout";
-
-    public static final String SCHEDULER_MAX_THREADS="jgroups.scheduler.max_threads";
 
     public static final String TIMER_NUM_THREADS="jgroups.timer.num_threads";
 

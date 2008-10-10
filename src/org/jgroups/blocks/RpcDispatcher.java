@@ -1,4 +1,4 @@
-// $Id: RpcDispatcher.java,v 1.35 2008/07/21 14:06:10 belaban Exp $
+// $Id: RpcDispatcher.java,v 1.36 2008/10/10 14:53:30 belaban Exp $
 
 package org.jgroups.blocks;
 
@@ -54,14 +54,14 @@ public class RpcDispatcher extends MessageDispatcher implements ChannelListener 
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
                          boolean deadlock_detection) {
-        super(channel, l, l2, deadlock_detection);
+        super(channel, l, l2);
         channel.addChannelListener(this);
         this.server_obj=server_obj;
     }
 
     public RpcDispatcher(Channel channel, MessageListener l, MembershipListener l2, Object server_obj,
                          boolean deadlock_detection, boolean concurrent_processing) {
-        super(channel, l, l2, deadlock_detection, concurrent_processing);
+        super(channel, l, l2, false, concurrent_processing);
         channel.addChannelListener(this);
         this.server_obj=server_obj;
     }

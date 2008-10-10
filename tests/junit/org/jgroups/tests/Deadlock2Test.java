@@ -1,4 +1,4 @@
-// $Id: Deadlock2Test.java,v 1.19 2008/08/08 17:07:11 vlada Exp $
+// $Id: Deadlock2Test.java,v 1.20 2008/10/10 14:53:30 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -24,7 +24,7 @@ import java.util.Vector;
  * @author John Giorgiadis
  * @author Ovidiu Feodorov <ovidiuf@users.sourceforge.net>
  * *
- * @version $Revision: 1.19 $
+ * @version $Revision: 1.20 $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class Deadlock2Test extends ChannelTestBase {
@@ -164,7 +164,7 @@ public class Deadlock2Test extends ChannelTestBase {
             log("**** outerMethod() received, calling innerMethod() on all members");
             MethodCall call = new MethodCall("innerMethod", new Object[0], new Class[0]);
             // RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 5000);
-            RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+            RspList rspList = disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0, false, true);
             Vector results = rspList.getResults();
             log("results of calling innerMethod():\n" + rspList);
             StringBuilder sb=new StringBuilder("outerMethod[");

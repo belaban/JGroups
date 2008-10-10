@@ -1,4 +1,4 @@
-// $Id: DeadlockTest.java,v 1.7 2006/02/28 16:32:11 belaban Exp $
+// $Id: DeadlockTest.java,v 1.8 2008/10/10 14:53:30 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -59,7 +59,7 @@ public class DeadlockTest {
 	private void cast_call(String method, Object[] args, Class[] types) {
 		MethodCall call;
 		call = new MethodCall(method, args, types);
-		disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0);
+		disp.callRemoteMethods(null, call, GroupRequest.GET_ALL, 0, false, true);
 	}
 
 	// .......................................................................
