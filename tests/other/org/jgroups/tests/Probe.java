@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.15 $
+ * @version $Revision: 1.16 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -31,7 +31,7 @@ public class Probe {
         if(bind_addr != null)
             mcast_sock.setInterface(bind_addr);
 
-        StringBuilder request=new StringBuilder("QUERY: ");
+        StringBuilder request=new StringBuilder();
         for(int i=0; i < query.size(); i++) {
             request.append(query.get(i)).append(" ");
         }
@@ -71,7 +71,7 @@ public class Probe {
 
             if(matches(response, match)) {
                 matched++;
-                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes): " + response);
+                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes):\n" + response);
             }
             else
                 not_matched++;
@@ -137,10 +137,6 @@ public class Probe {
                     timeout=Long.parseLong(args[++i]);
                     continue;
                 }
-                if("-query".equals(args[i])) {
-                    query.add(args[++i]);
-                    continue;
-                }
                 if("-match".equals(args[i])) {
                     match=args[++i];
                     continue;
@@ -149,9 +145,11 @@ public class Probe {
                     weed_out_duplicates=true;
                     continue;
                 }
-
-                help();
-                return;
+                if("-help".equals(args[i]) || "-h".equals(args[i])) {
+                    help();
+                    return;
+                }
+                query.add(args[i]);
             }
             Probe p=new Probe();
             if(addr == null)
@@ -167,8 +165,8 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-query <query>] [-weed_out_duplicates]" +
-                "[-match <pattern>]" +
-                " (query can be 'jmx', 'props' or 'dump' (for stack traces))");
+                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] " +
+                "[-match <pattern>] QUERY\n" +
+                "(QUERY is a whitespace separate list of keys)");
     }
 }
