@@ -9,9 +9,14 @@ import org.jgroups.Event;
 import org.jgroups.util.ThreadFactory;
 import org.jgroups.protocols.TP;
 import org.jgroups.annotations.DeprecatedProperty;
+import org.jgroups.annotations.ManagedAttribute;
 import org.jgroups.annotations.Property;
 
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 
 /**
@@ -31,7 +36,7 @@ import java.util.*;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.63 2008/06/03 15:27:32 belaban Exp $
+ * @version $Id: Protocol.java,v 1.64 2008/10/10 13:31:54 vlada Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
@@ -147,10 +152,70 @@ public abstract class Protocol {
     }
 
     public Map<String,Object> dumpStats() {
-        return null;
+        HashMap<String,Object> map=new HashMap<String,Object>();
+        for(Class<?> clazz=this.getClass();clazz != null;clazz=clazz.getSuperclass()) {
+            Field[] fields=clazz.getDeclaredFields();
+            for(Field field:fields) {
+                if(field.isAnnotationPresent(ManagedAttribute.class)) {
+                    String attributeName=field.getName();
+                    Object value;
+                    try {
+                        field.setAccessible(true);
+                        value=field.get(this);
+                        if(value != null) {
+                            map.put(attributeName, value.toString());
+                        }
+                        else {
+                            map.put(attributeName, null);
+                        }
+                    }
+                    catch(Exception e) {
+                        log.warn("Could not retrieve value of attribute (field) " + attributeName,e);
+                    }
+                }
+            }
+
+            Method[] methods=this.getClass().getMethods();
+            for(Method method:methods) {
+                if(method.isAnnotationPresent(ManagedAttribute.class)) {
+                    ManagedAttribute annotation=method.getAnnotation(ManagedAttribute.class);
+                    if(!annotation.writable() && (method.getName().startsWith("is")
+                       || method.getName().startsWith("get"))) {
+                        Object value=null;
+                        try {
+                            value=method.invoke(this, new Object[0]);
+                            String attributeName=methodNameToAttributeName(method.getName());
+                            if(value != null) {
+                                map.put(attributeName, value.toString());
+                            }
+                            else {
+                                map.put(attributeName, null);
+                            }
+                        }
+                        catch(Exception e) {
+                            log.warn("Could not retrieve value of attribute (method) " + method.getName(),e);
+                        }
+                    }
+                }
+            }
+        }
+        return map;
     }
-
-
+    
+    private String methodNameToAttributeName(String methodName) {
+        methodName=methodName.startsWith("get") || methodName.startsWith("set")? methodName.substring(3): methodName;
+        methodName=methodName.startsWith("is")? methodName.substring(2) : methodName;
+        Pattern p=Pattern.compile("[A-Z]");
+        Matcher m=p.matcher(methodName.substring(1));
+        StringBuffer sb=new StringBuffer();
+        while(m.find()) {
+            m.appendReplacement(sb, "_" + methodName.substring(m.end(), m.end() + 1).toLowerCase());
+        }
+        m.appendTail(sb);
+        sb.insert(0, methodName.substring(0, 1).toLowerCase());
+        return sb.toString();
+    }
+    
     /**
      * Called after instance has been created (null constructor) and before protocol is started.
      * Properties are already set. Other protocols are not yet connected and events cannot yet be sent.
