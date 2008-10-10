@@ -71,7 +71,7 @@ import java.util.concurrent.Exchanger;
  * the construction of the stack will be aborted.
  *
  * @author Bela Ban
- * @version $Id: JChannel.java,v 1.158.2.18 2008/05/28 15:09:38 vlada Exp $
+ * @version $Id: JChannel.java,v 1.158.2.19 2008/10/10 10:08:00 belaban Exp $
  */
 public class JChannel extends Channel {
 
@@ -151,6 +151,7 @@ public class JChannel extends Channel {
 
     protected long sent_msgs=0, received_msgs=0, sent_bytes=0, received_bytes=0;
 
+    private final TP.ProbeHandler probe_handler=new MyProbeHandler();
 
 
 
@@ -724,6 +725,10 @@ public class JChannel extends Channel {
      */
     public Address getLocalAddress() {
         return closed ? null : local_addr;
+    }
+
+    public String getLocalAddressAsString() {
+        return local_addr != null? local_addr.toString() : "n/a";
     }
 
 
@@ -1560,6 +1565,9 @@ public class JChannel extends Channel {
         Vector<Address> t=new Vector<Address>(1);
         t.addElement(local_addr);
         my_view=new View(local_addr, 0, t);  // create a dummy view
+
+        TP transport=prot_stack.getTransport();
+        transport.registerProbeHandler(probe_handler);
     }
 
 
@@ -1677,6 +1685,9 @@ public class JChannel extends Channel {
                 if(log.isErrorEnabled())
                     log.error("failed destroying the protocol stack", e);
             }
+
+            TP transport=prot_stack.getTransport();
+            transport.unregisterProbeHandler(probe_handler);
         }
     }
 
@@ -1847,6 +1858,35 @@ public class JChannel extends Channel {
 
     /* ------------------------------- End of Private Methods ---------------------------------- */
 
+    class MyProbeHandler implements TP.ProbeHandler {
+
+        public Map<String, String> handleProbe(String... keys) {
+            HashMap<String, String> map=new HashMap<String, String>(2);
+            for(String key: keys) {
+                if(key.equals("jmx")) {
+                    Map<String, Object> tmp_stats=dumpStats();
+                    map.put("jmx", tmp_stats != null? Util.mapToString(tmp_stats) : "null");
+                    continue;
+                }
+                if(key.equals("info")) {
+                    Map<String, Object> tmp_info=getInfo();
+                    map.put("info", tmp_info != null? Util.mapToString(tmp_info) : "null");
+                }
+            }
+
+            map.put("version", Version.description + ", cvs=\"" +  Version.cvs + "\"");
+            if(my_view != null && !map.containsKey("view"))
+                map.put("view", my_view.toString());
+            map.put("local_addr", local_addr != null? local_addr.toString() : "null");
+            map.put("cluster", getClusterName());
+            map.put("member", getLocalAddressAsString() + " (" + getClusterName() + ")");
+            return map;
+        }
+
+        public String[] supportedKeys() {
+            return new String[]{"jmx", "info"};
+        }
+    }
 
     class CloserThread extends Thread {
         final Event evt;

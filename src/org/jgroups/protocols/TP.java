@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author Bela Ban
- * @version $Id: TP.java,v 1.160.2.32 2008/07/11 10:42:33 belaban Exp $
+ * @version $Id: TP.java,v 1.160.2.33 2008/10/10 10:08:00 belaban Exp $
  */
 public abstract class TP extends Protocol {
 
@@ -350,6 +350,16 @@ public abstract class TP extends Protocol {
     public void resetStats() {
         num_msgs_sent=num_msgs_received=num_bytes_sent=num_bytes_received=0;
         num_oob_msgs_received=num_incoming_msgs_received=0;
+    }
+
+    public void registerProbeHandler(ProbeHandler handler) {
+        if(diag_handler != null)
+            diag_handler.registerProbeHandler(handler);
+    }
+
+    public void unregisterProbeHandler(ProbeHandler handler) {
+        if(diag_handler != null)
+            diag_handler.unregisterProbeHandler(handler);
     }
 
     public long getNumMessagesSent()     {return num_msgs_sent;}
@@ -2068,11 +2078,24 @@ public abstract class TP extends Protocol {
         }
     }
 
+    public interface ProbeHandler {
+        /**
+         * Handles a probe. For each key that is handled, the key and its result should be in the returned map.
+         * @param keys
+         * @return Map<String,String>. A map of keys and values. A null return value is permissible.
+         */
+        Map<String,String> handleProbe(String... keys);
+
+        /** Returns a list of supported keys */
+        String[] supportedKeys();
+    }
+
 
     private class DiagnosticsHandler implements Runnable {
     	public static final String THREAD_NAME = "DiagnosticsHandler"; 
-        Thread thread=null;
-        MulticastSocket diag_sock=null;
+        private Thread thread=null;
+        private MulticastSocket diag_sock=null;
+        private final Set<ProbeHandler> handlers=new HashSet<ProbeHandler>();
 
         DiagnosticsHandler() {
         }
@@ -2081,7 +2104,47 @@ public abstract class TP extends Protocol {
         	return thread;
         }
 
+        void registerProbeHandler(ProbeHandler handler) {
+            if(handler != null)
+                handlers.add(handler);
+        }
+
+        void unregisterProbeHandler(ProbeHandler handler) {
+            if(handler != null)
+                handlers.remove(handler);
+        }
+
         void start() throws IOException {
+
+            registerProbeHandler(new ProbeHandler() {
+
+                public Map<String, String> handleProbe(String... keys) {
+                    Map<String,String> retval=new HashMap<String,String>(2);
+                    for(String key: keys) {
+                        if(key.equals("dump")) {
+                            retval.put("dump", Util.dumpThreads());
+                            continue;
+                        }
+                        if(key.equals("keys")) {
+                            StringBuilder sb=new StringBuilder();
+                            for(ProbeHandler handler: handlers) {
+                                String[] tmp=handler.supportedKeys();
+                                if(tmp != null && tmp.length > 0) {
+                                    for(String s: tmp)
+                                        sb.append(s).append(" ");
+                                }
+                            }
+                            retval.put("keys", sb.toString());
+                        }
+                    }
+                    return retval;
+                }
+
+                public String[] supportedKeys() {
+                    return new String[]{"dump", "keys"};
+                }
+            });
+
             diag_sock=new MulticastSocket(diagnostics_port);
             java.util.List interfaces=Util.getAllAvailableInterfaces();
             bindToInterfaces(interfaces, diag_sock);
@@ -2096,6 +2159,7 @@ public abstract class TP extends Protocol {
         void stop() {
             if(diag_sock != null)
                 diag_sock.close();
+            handlers.clear();
             if(thread != null){
                 try{
                     thread.join(Global.THREAD_SHUTDOWN_WAIT_TIME);
@@ -2119,6 +2183,52 @@ public abstract class TP extends Protocol {
                 catch(IOException e) {
                 }
             }
+        }
+
+        private void handleDiagnosticProbe(SocketAddress sender, DatagramSocket sock, String request) {
+            StringTokenizer tok=new StringTokenizer(request);
+            List<String> list=new ArrayList<String>(10);
+
+            while(tok.hasMoreTokens()) {
+                String req=tok.nextToken().trim();
+                if(req.length() > 0)
+                    list.add(req);
+            }
+
+            String[] tokens=new String[list.size()];
+            for(int i=0; i < list.size(); i++)
+                tokens[i]=list.get(i);
+
+
+            for(ProbeHandler handler: handlers) {
+                Map<String, String> map=handler.handleProbe(tokens);
+                if(map == null || map.isEmpty())
+                    continue;
+                if(!map.containsKey("local_addr"))
+                    map.put("local_addr", local_addr != null? local_addr.toString() : "n/a");
+                if(!map.containsKey("cluster"))
+                    map.put("cluster", channel_name != null? channel_name : "n/a");
+                StringBuilder info=new StringBuilder();
+                for(Map.Entry<String,String> entry: map.entrySet()) {
+                    info.append(entry.getKey()).append("=").append(entry.getValue()).append("\r\n");
+                }
+
+                byte[] diag_rsp=info.toString().getBytes();
+                if(log.isDebugEnabled())
+                    log.debug("sending diag response to " + sender);
+                try {
+                    sendResponse(sock, sender, diag_rsp);
+                }
+                catch(Throwable t) {
+                    if(log.isErrorEnabled())
+                        log.error("failed sending diag rsp to " + sender, t);
+                }
+            }
+        }
+
+        private void sendResponse(DatagramSocket sock, SocketAddress sender, byte[] buf) throws IOException {
+            DatagramPacket p=new DatagramPacket(buf, 0, buf.length, sender);
+            sock.send(p);
         }
 
         private void bindToInterfaces(java.util.List<NetworkInterface> interfaces, MulticastSocket s) {

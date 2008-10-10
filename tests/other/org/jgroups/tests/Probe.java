@@ -10,7 +10,7 @@ import java.util.*;
 /**
  * Discovers all UDP-based members running on a certain mcast address
  * @author Bela Ban
- * @version $Revision: 1.11.4.1 $
+ * @version $Revision: 1.11.4.2 $
  * Date: Jun 2, 2003
  * Time: 4:35:29 PM
  */
@@ -25,13 +25,13 @@ public class Probe {
     }
 
     public void start(InetAddress addr, InetAddress bind_addr, int port, int ttl,
-                      final long timeout, List query, String match) throws Exception {
+                      final long timeout, List query, String match, boolean weed_out_duplicates) throws Exception {
         mcast_sock=new MulticastSocket();
         mcast_sock.setTimeToLive(ttl);
         if(bind_addr != null)
             mcast_sock.setInterface(bind_addr);
 
-        StringBuilder request=new StringBuilder("QUERY: ");
+        StringBuilder request=new StringBuilder();
         for(int i=0; i < query.size(); i++) {
             request.append(query.get(i)).append(" ");
         }
@@ -65,13 +65,13 @@ public class Probe {
 
             byte[] data=rsp.getData();
             response=new String(data, 0, rsp.getLength());
-            if(checkDuplicateResponse(response)) {
+            if(weed_out_duplicates && checkDuplicateResponse(response)) {
                 continue;
             }
 
             if(matches(response, match)) {
                 matched++;
-                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes): " + response);
+                System.out.println("\n#" + ++count + " (" + rsp.getLength() + " bytes):\n" + response);
             }
             else
                 not_matched++;
@@ -108,11 +108,12 @@ public class Probe {
         InetAddress  addr=null, bind_addr=null;
         int          port=0;
         int          ttl=32;
-        long         timeout=10000;
+        long         timeout=2000;
         final String DEFAULT_DIAG_ADDR="224.0.75.75";
         final int    DEFAULT_DIAG_PORT=7500;
         List<String> query=new ArrayList<String>();
         String       match=null;
+        boolean      weed_out_duplicates=false;
 
         try {
             for(int i=0; i < args.length; i++) {
@@ -136,24 +137,26 @@ public class Probe {
                     timeout=Long.parseLong(args[++i]);
                     continue;
                 }
-                if("-query".equals(args[i])) {
-                    query.add(args[++i]);
-                    continue;
-                }
                 if("-match".equals(args[i])) {
                     match=args[++i];
                     continue;
                 }
-
-                help();
-                return;
+                if("-weed_out_duplicates".equals(args[i])) {
+                    weed_out_duplicates=true;
+                    continue;
+                }
+                if("-help".equals(args[i]) || "-h".equals(args[i])) {
+                    help();
+                    return;
+                }
+                query.add(args[i]);
             }
             Probe p=new Probe();
             if(addr == null)
                 addr=InetAddress.getByName(DEFAULT_DIAG_ADDR);
             if(port == 0)
                 port=DEFAULT_DIAG_PORT;
-            p.start(addr, bind_addr, port, ttl, timeout, query, match);
+            p.start(addr, bind_addr, port, ttl, timeout, query, match, weed_out_duplicates);
         }
         catch(Throwable t) {
             t.printStackTrace();
@@ -162,7 +165,8 @@ public class Probe {
 
     static void help() {
         System.out.println("Probe [-help] [-addr <addr>] [-bind_addr <addr>] " +
-                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-query <query>] [-match <pattern>]" +
-                " (query can be jmx or props)");
+                "[-port <port>] [-ttl <ttl>] [-timeout <timeout>] [-weed_out_duplicates] " +
+                "[-match <pattern>] QUERY\n" +
+                "(QUERY is a whitespace separate list of keys)");
     }
 }
