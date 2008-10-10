@@ -25,7 +25,7 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.22 2008/07/21 18:31:47 vlada Exp $
+ * @version $Id: SFC.java,v 1.23 2008/10/10 13:46:12 vlada Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
@@ -120,16 +120,7 @@ public class SFC extends Protocol {
     public long getTotalBlockingTime() {return total_block_time;}
     @ManagedAttribute
     public double getAverageBlockingTime() {return num_blockings == 0? 0 : total_block_time / num_blockings;}
-
-
-    @ManagedOperation
-    public Map<String,Object> dumpStats() {
-        Map<String,Object> retval=super.dumpStats();
-        if(retval == null)
-            retval=new HashMap<String,Object>();
-        return retval;
-    }
-
+ 
     @ManagedOperation
     public String printBlockingTimes() {
         return blockings.toString();
