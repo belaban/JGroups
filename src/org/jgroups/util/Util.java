@@ -28,7 +28,7 @@ import java.util.*;
 /**
  * Collection of various utility routines that can not be assigned to other classes.
  * @author Bela Ban
- * @version $Id: Util.java,v 1.176 2008/09/18 14:36:04 belaban Exp $
+ * @version $Id: Util.java,v 1.177 2008/10/10 09:29:16 belaban Exp $
  */
 public class Util {
 
@@ -1410,7 +1410,23 @@ public class Util {
         catch(Exception e) {  // it is not an object
             return "";
         }
+    }
 
+    public static String mapToString(Map<? extends Object,? extends Object> map) {
+        if(map == null)
+            return "null";
+        StringBuilder sb=new StringBuilder();
+        for(Map.Entry<? extends Object,? extends Object> entry: map.entrySet()) {
+            Object key=entry.getKey();
+            Object val=entry.getValue();
+            sb.append(key).append("=");
+            if(val == null)
+                sb.append("null");
+            else
+                sb.append(val);
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
 
