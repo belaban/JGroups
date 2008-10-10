@@ -42,7 +42,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * whenever a message is received: the new message is added and then we try to remove as many messages as
  * possible (until we stop at a gap, or there are no more messages).
  * @author Bela Ban
- * @version $Id: UNICAST.java,v 1.116 2008/10/09 15:12:32 belaban Exp $
+ * @version $Id: UNICAST.java,v 1.117 2008/10/10 13:46:12 vlada Exp $
  */
 @MBean(description="Reliable unicast layer")
 public class UNICAST extends Protocol implements AckSenderWindow.RetransmitCommand {
@@ -241,17 +241,8 @@ public class UNICAST extends Protocol implements AckSenderWindow.RetransmitComma
 
 
     public Map<String, Object> dumpStats() {
-        Map<String,Object> m=new HashMap<String,Object>();
-        m.put("num_msgs_sent", new Long(num_msgs_sent));
-        m.put("num_msgs_received", new Long(num_msgs_received));
-        m.put("num_bytes_sent", new Long(num_bytes_sent));
-        m.put("num_bytes_received", new Long(num_bytes_received));
-        m.put("num_acks_sent", new Long(num_acks_sent));
-        m.put("num_acks_received", new Long(num_acks_received));
-        m.put("num_xmit_requests_received", new Long(num_xmit_requests_received));
-        m.put("num_unacked_msgs", new Long(getNumberOfUnackedMessages()));
-        m.put("unacked_msgs", printUnackedMessages());
-        m.put("num_msgs_in_recv_windows", new Long(getNumberOfMessagesInReceiveWindows()));
+        Map<String, Object> m=super.dumpStats();       
+        m.put("unacked_msgs", printUnackedMessages());        
         return m;
     }
 

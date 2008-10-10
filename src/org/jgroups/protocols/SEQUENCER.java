@@ -18,7 +18,7 @@ import java.util.*;
 /**
  * Implementation of total order protocol using a sequencer. Consult doc/design/SEQUENCER.txt for details
  * @author Bela Ban
- * @version $Id: SEQUENCER.java,v 1.23 2008/10/06 12:16:43 belaban Exp $
+ * @version $Id: SEQUENCER.java,v 1.24 2008/10/10 13:46:12 vlada Exp $
  */
 @Experimental
 @MBean(description="Implementation of total order protocol using a sequencer")
@@ -60,9 +60,7 @@ public class SEQUENCER extends Protocol {
 
     @ManagedOperation
     public Map<String,Object> dumpStats() {
-        Map<String,Object> m=super.dumpStats();
-        if(m == null)
-            m=new HashMap<String,Object>();
+        Map<String,Object> m=super.dumpStats();       
         m.put("forwarded", new Long(forwarded_msgs));
         m.put("broadcast", new Long(bcast_msgs));
         m.put("received_forwards", new Long(received_forwards));
