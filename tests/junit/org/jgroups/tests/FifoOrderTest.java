@@ -11,9 +11,9 @@ import java.util.Arrays;
 
 /** Tests FIFO order or messages
  * @author Bela Ban
- * @version $Id: FifoOrderTest.java,v 1.3 2008/10/13 08:10:47 vlada Exp $
+ * @version $Id: FifoOrderTest.java,v 1.4 2008/10/13 14:21:12 vlada Exp $
  */
-@Test(groups=Global.STACK_DEPENDENT,sequential=true)
+@Test(groups="broken",sequential=true)
 public class FifoOrderTest extends ChannelTestBase {
     private static final int NUM_MSGS=5000;
     private static final int NUM_NODES=4;
@@ -32,7 +32,7 @@ public class FifoOrderTest extends ChannelTestBase {
             channels[i].connect("FifoOrderTest-Group");
         }
         for(int i=0; i < channels.length; i++) {
-            System.out.println("view[" + i + "]: " + channels[i].getView());
+            log.info("view[" + i + "]: " + channels[i].getView());
         }
         assert channels[0].getView().size() == NUM_NODES;
     }
@@ -75,11 +75,11 @@ public class FifoOrderTest extends ChannelTestBase {
             long[] seqnos=receiver.getSeqnos();
             if(receiver.isDone())
                 break;
-            System.out.println("seqnos: " + Arrays.toString(seqnos));
+            log.info("seqnos: " + Arrays.toString(seqnos));
         }
 
         long[] seqnos=receiver.getSeqnos();
-        System.out.println("seqnos: " + Arrays.toString(seqnos));
+        log.info("seqnos: " + Arrays.toString(seqnos));
         for(long seqno: seqnos)
             assert seqno == NUM_MSGS;
 
@@ -89,7 +89,7 @@ public class FifoOrderTest extends ChannelTestBase {
     }
 
 
-    static class Sender extends Thread {
+    class Sender extends Thread {
         final int index;
         final JChannel ch;
         static final int LENGTH=Global.LONG_SIZE + Global.BYTE_SIZE;
@@ -112,11 +112,11 @@ public class FifoOrderTest extends ChannelTestBase {
                     e.printStackTrace();
                 }
             }
-            System.out.println("Sender #" + index + " done (sent " + NUM_MSGS + " msgs");
+            log.info("Sender #" + index + " done (sent " + NUM_MSGS + " msgs");
         }
     }
 
-    static class MyReceiver extends ReceiverAdapter {
+    class MyReceiver extends ReceiverAdapter {
         private final long[] seqnos=new long[NUM_NODES];
         private final StringBuilder sb=new StringBuilder();
         private static final int print=NUM_MSGS / 10;
@@ -149,7 +149,7 @@ public class FifoOrderTest extends ChannelTestBase {
             if(current_seqno +1 == new_seqno) {
                 seqnos[index]++;
                 if(new_seqno % print == 0) {
-                    System.out.println(sender + ": " + new_seqno);
+                    log.info(sender + ": " + new_seqno);
                 }
             }
             else {
@@ -168,6 +168,4 @@ public class FifoOrderTest extends ChannelTestBase {
             return true;
         }
     }
-
-
 }
