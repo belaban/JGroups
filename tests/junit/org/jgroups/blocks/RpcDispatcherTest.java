@@ -40,7 +40,7 @@ import java.util.Vector;
  * This also applies to the return value of callRemoteMethod(...).
  * 
  * @author Bela Ban
- * @version $Id: RpcDispatcherTest.java,v 1.22 2008/08/08 17:07:30 vlada Exp $
+ * @version $Id: RpcDispatcherTest.java,v 1.23 2008/10/13 08:11:27 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class RpcDispatcherTest extends ChannelTestBase {
@@ -213,13 +213,13 @@ public class RpcDispatcherTest extends ChannelTestBase {
      * the length of time depends upon the speed of the machine the test runs on. 
      *
      */
-    @Test(groups="first")
+    /*@Test(groups="first")
     public void testHugeReturnValue() {
         setProps(c1, c2, c3);
         for(int i=0; i < HUGESIZES.length; i++) {
             _testHugeValue(HUGESIZES[i]);
         }
-    }
+    }*/
     
 
     /**
