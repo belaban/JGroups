@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.176 2008/09/05 14:20:42 rachmatowicz Exp $ -->
+<!-- $Id: build.xml,v 1.177 2008/10/13 14:18:14 vlada Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -29,7 +29,11 @@
     <property name="bin.dir" value="${root.dir}/bin"/>
     <property name="keystore.dir" value="${root.dir}/keystore"/>
     <property name="javadoc.packages" value="org.jgroups.*"/>
-    <property name="unittest.timeout.low" value="240000"/>
+	
+	<!-- 5 minutes per test suite timeout -->
+    <property name="unittest.timeout.low" value="300000"/>
+	
+	
     <property name="version" value="2.7.0.ALPHA1"/>
 
     <!-- default properties used in all test targets -->
@@ -490,9 +494,7 @@
             <testng classpathref="jg.classpath"
                     usedefaultlisteners="false"
                     outputdir="@{outputdir}"
-                    listeners="org.jgroups.util.JUnitXMLReporter"
-                    threadcount="@{threadcount}"
-                    parallel="tests"
+                    listeners="org.jgroups.util.JUnitXMLReporter"                   
             		timeout="${unittest.timeout.low}"
             	    verbose="${test.verbose}"
                     >
