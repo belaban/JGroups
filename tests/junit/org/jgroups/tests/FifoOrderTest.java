@@ -11,11 +11,11 @@ import java.util.Arrays;
 
 /** Tests FIFO order or messages
  * @author Bela Ban
- * @version $Id: FifoOrderTest.java,v 1.2 2008/10/08 14:07:32 belaban Exp $
+ * @version $Id: FifoOrderTest.java,v 1.3 2008/10/13 08:10:47 vlada Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class FifoOrderTest extends ChannelTestBase {
-    private static final int NUM_MSGS=50000;
+    private static final int NUM_MSGS=5000;
     private static final int NUM_NODES=4;
     private final JChannel[] channels=new JChannel[NUM_NODES];
 
