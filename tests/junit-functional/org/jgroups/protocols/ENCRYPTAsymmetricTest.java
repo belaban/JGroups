@@ -48,9 +48,9 @@ public class ENCRYPTAsymmetricTest {
         assert encrypt.getKpair().getPublic().getEncoded() != null;
 
         // test the default symetric key
-        assert "Blowfish".equals(encrypt.getSymAlgorithm());
-        assert encrypt.getSymInit() == 56;
-        assert "Blowfish".equals(encrypt.getDesKey().getAlgorithm());
+        assert "AES".equals(encrypt.getSymAlgorithm());
+        assert encrypt.getSymInit() == 128;
+        assert "AES".equals(encrypt.getDesKey().getAlgorithm());
         assert "RAW".equals(encrypt.getDesKey().getFormat());
         assert encrypt.getDesKey().getEncoded() != null;
 
