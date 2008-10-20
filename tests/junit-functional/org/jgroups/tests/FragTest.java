@@ -1,4 +1,4 @@
-// $Id: FragTest.java,v 1.4 2008/04/08 12:28:08 belaban Exp $
+// $Id: FragTest.java,v 1.5 2008/10/20 10:21:22 belaban Exp $
 
 package org.jgroups.tests;
 
@@ -37,23 +37,44 @@ public class FragTest {
 
 
 
-    public void test0() throws Exception {
-        Object mutex=new Object();
-        FragReceiver frag_receiver=new FragReceiver(this, mutex);
-        ProtocolTester t=new ProtocolTester("FRAG(frag_size=" + FRAG_SIZE + ')', frag_receiver);
+    public void testRegularMessages() throws Exception {
+        FragReceiver frag_receiver=new FragReceiver(this);
+        ProtocolTester t=new ProtocolTester("FRAG2(frag_size=" + FRAG_SIZE + ')', frag_receiver);
         Message big_msg;
         IpAddress local_addr=new IpAddress(5555);
 
         System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + '\n');
 
-        synchronized(mutex) {
-            for(int i=0; i < NUM_MSGS; i++) {
-                big_msg=createBigMessage(MSG_SIZE);
-                big_msg.setSrc(local_addr);
-                System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
-                frag_receiver.down(new Event(Event.MSG, big_msg));
-                Util.sleep(10);
-            }
+        for(int i=0; i < NUM_MSGS; i++) {
+            big_msg=createBigMessage(MSG_SIZE);
+            big_msg.setSrc(local_addr);
+            System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
+            frag_receiver.down(new Event(Event.MSG, big_msg));
+            Util.sleep(10);
+        }
+        t.stop();
+    }
+
+
+    public void testMessagesWithOffsets() throws Exception {
+        FragReceiver frag_receiver=new FragReceiver(this);
+        ProtocolTester t=new ProtocolTester("FRAG2(frag_size=" + FRAG_SIZE + ')', frag_receiver);
+        Message big_msg;
+        IpAddress local_addr=new IpAddress(5555);
+
+        System.out.println("\nProtocol for protocol tester: " + t.getProtocolSpec() + '\n');
+
+        byte[] big_buffer=new byte[(int)(MSG_SIZE * NUM_MSGS)];
+
+        int offset=0;
+
+        for(int i=0; i < NUM_MSGS; i++) {
+            big_msg=new Message(null, null, big_buffer, offset, MSG_SIZE);
+            big_msg.setSrc(local_addr);
+            System.out.println("sending msg #" + i + " [" + big_msg.getLength() + " bytes]");
+            frag_receiver.down(new Event(Event.MSG, big_msg));
+            Util.sleep(10);
+            offset+=MSG_SIZE;
         }
         t.stop();
     }
@@ -63,11 +84,9 @@ public class FragTest {
     private static class FragReceiver extends Protocol {
         long num_msgs=0;
         FragTest t=null;
-        Object mut=null;
 
-        FragReceiver(FragTest t, Object mut) {
+        FragReceiver(FragTest t) {
             this.t=t;
-            this.mut=mut;
         }
 
         public String getName() {
