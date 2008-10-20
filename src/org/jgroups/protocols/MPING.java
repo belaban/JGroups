@@ -19,7 +19,7 @@ import java.util.*;
  * back via the regular transport (e.g. TCP) to the sender (discovery request contained sender's regular address,
  * e.g. 192.168.0.2:7800).
  * @author Bela Ban
- * @version $Id: MPING.java,v 1.29.2.3 2008/04/12 12:46:35 belaban Exp $
+ * @version $Id: MPING.java,v 1.29.2.4 2008/10/20 06:50:24 belaban Exp $
  */
 public class MPING extends PING implements Runnable {
     MulticastSocket        mcast_sock=null;
@@ -56,6 +56,15 @@ public class MPING extends PING implements Runnable {
     /** Pre-allocated byte stream. Used for serializing datagram packets. Will grow as needed */
     final ExposedByteArrayOutputStream out_stream=new ExposedByteArrayOutputStream(128);
     byte                receive_buf[]=new byte[1024];
+
+
+    private static final boolean is_linux; // are we running on Linux ?
+
+
+    static {
+        is_linux=Util.checkForLinux();
+    }
+
 
 
     public String getName() {
@@ -220,7 +229,11 @@ public class MPING extends PING implements Runnable {
 
 
     public void start() throws Exception {
-        mcast_sock=new MulticastSocket(mcast_port);
+        if(is_linux) // https://jira.jboss.org/jira/browse/JGRP-836 - prevent cross talking on Linux
+            mcast_sock=Util.createMulticastSocket(mcast_addr, mcast_port, log);
+        else
+            mcast_sock=new MulticastSocket(mcast_port);
+
         mcast_sock.setTimeToLive(ip_ttl);
 
         if(receive_on_all_interfaces || (receive_interfaces != null && !receive_interfaces.isEmpty())) {
