@@ -42,7 +42,7 @@ import java.util.Map;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: UDP.java,v 1.186 2008/09/26 16:07:03 belaban Exp $
+ * @version $Id: UDP.java,v 1.187 2008/10/20 10:47:10 belaban Exp $
  */
 @DeprecatedProperty(names={"num_last_ports","null_src_addresses", "send_on_all_interfaces", "send_interfaces"})
 public class UDP extends TP {
@@ -330,8 +330,6 @@ public class UDP extends TP {
      * in the JDK port (see DESIGN).
      */
     private void createSockets() throws Exception {
-        InetAddress tmp_addr;
-
         // bind_addr not set, try to assign one by default. This is needed on Windows
 
         // changed by bela Feb 12 2003: by default multicast sockets will be bound to all network interfaces
@@ -394,18 +392,18 @@ public class UDP extends TP {
         // 3. Create socket for receiving IP multicast packets
         if(ip_mcast) {
             // 3a. Create mcast receiver socket
-            tmp_addr=InetAddress.getByName(mcast_addr_name);
+            InetAddress group_addr=InetAddress.getByName(mcast_addr_name);
 
             // https://jira.jboss.org/jira/browse/JGRP-777 - this doesn't work on MacOS, and we don't have
             // cross talking on Windows anyway, so we just do it for Linux. (How about Solaris ?)
             if(is_linux)
-                mcast_sock=Util.createMulticastSocket(tmp_addr, mcast_port, log);
+                mcast_sock=Util.createMulticastSocket(group_addr, mcast_port, log);
             else
                 mcast_sock=new MulticastSocket(mcast_port);
 
             mcast_sock.setTimeToLive(ip_ttl);
 
-            mcast_addr=new IpAddress(tmp_addr, mcast_port);
+            mcast_addr=new IpAddress(group_addr, mcast_port);
             if(tos > 0) {
                 try {
                     mcast_sock.setTrafficClass(tos);
@@ -426,7 +424,7 @@ public class UDP extends TP {
             else {
                 if(bind_addr != null)
                     mcast_sock.setInterface(bind_addr);
-                 mcast_sock.joinGroup(tmp_addr);
+                 mcast_sock.joinGroup(group_addr);
             }
         }
 
