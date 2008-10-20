@@ -17,7 +17,7 @@ import java.util.concurrent.ConcurrentMap;
  * Copied from TestNG (www.testng.org) and modified
  * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.10 2008/10/20 13:07:57 vlada Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.11 2008/10/20 13:14:51 vlada Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -163,7 +163,7 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         results.add(result);
         
         ITestNGMethod[] testMethods=result.getMethod().getTestClass().getTestMethods();
-        boolean allTestsInClassCompleted = testMethods.length >= results.size();
+        boolean allTestsInClassCompleted = results.size() >= testMethods.length;
         if(allTestsInClassCompleted){
             try {
                 generateReport(clazz, results);
