@@ -1,6 +1,7 @@
 package org.jgroups.util;
 
 import org.testng.ITestContext;
+import org.testng.ITestNGMethod;
 import org.testng.ITestResult;
 import org.testng.TestListenerAdapter;
 import org.testng.annotations.Test;
@@ -12,10 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * Listener generating XML output suitable to be processed by JUnitReport. Copied from TestNG (www.testng.org) and
- * modified
+ * Listener generating XML output suitable to be processed by JUnitReport.
+ * Copied from TestNG (www.testng.org) and modified
+ * 
  * @author Bela Ban
- * @version $Id: JUnitXMLReporter.java,v 1.9 2008/04/17 09:10:27 belaban Exp $
+ * @version $Id: JUnitXMLReporter.java,v 1.10 2008/10/20 13:07:57 vlada Exp $
  */
 public class JUnitXMLReporter extends TestListenerAdapter {
     private String output_dir=null;
@@ -32,19 +34,17 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     private PrintStream old_stdout=System.out;
     private PrintStream old_stderr=System.err;
 
-
-    private final ConcurrentMap<Class, List<ITestResult>> classes=new ConcurrentHashMap<Class,List<ITestResult>>();
+    private final ConcurrentMap<Class,List<ITestResult>> classes=new ConcurrentHashMap<Class,List<ITestResult>>();
 
     /** Map to keep systemout and systemerr associated with a class */
     private final ConcurrentMap<Class,Tuple<StringBuffer,StringBuffer>> outputs=new ConcurrentHashMap<Class,Tuple<StringBuffer,StringBuffer>>();
 
     public static InheritableThreadLocal<Class> local=new InheritableThreadLocal<Class>();
 
-
     class MyOutput extends PrintStream {
         final int type; // 1 == stdout, 2 == stderr
 
-        public MyOutput(String fileName, int type) throws FileNotFoundException {
+        public MyOutput(String fileName,int type) throws FileNotFoundException {
             super(fileName);
             this.type=type;
             if(type != 1 && type != 2)
@@ -95,7 +95,6 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         }
     }
 
-
     public void onTestStart(ITestResult result) {
         Class real_class=result.getTestClass().getRealClass();
         local.set(real_class);
@@ -106,26 +105,23 @@ public class JUnitXMLReporter extends TestListenerAdapter {
             classes.putIfAbsent(real_class, results);
         }
 
-        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(), new StringBuffer()));
+        outputs.putIfAbsent(real_class, new Tuple<StringBuffer,StringBuffer>(new StringBuffer(),
+                                                                             new StringBuffer()));
         // old_stdout.println(Thread.currentThread() + " running " + real_class.getName() + "." + result.getName() + "()");
     }
-
-
 
     /** Invoked each time a test succeeds */
     public void onTestSuccess(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(real_class, tr);
-        print(old_stdout, "OK:   ",  real_class.getName(), tr.getName());
+        print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
     }
 
     public void onTestFailedButWithinSuccessPercentage(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stdout, "OK:   ",  real_class.getName(), tr.getName());
+        print(old_stdout, "OK:   ", real_class.getName(), tr.getName());
     }
-
-
 
     /**
      * Invoked each time a test fails.
@@ -133,7 +129,7 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     public void onTestFailure(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stderr, "FAIL: ",  real_class.getName(), tr.getName());
+        print(old_stderr, "FAIL: ", real_class.getName(), tr.getName());
     }
 
     /**
@@ -142,11 +138,17 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     public void onTestSkipped(ITestResult tr) {
         Class real_class=tr.getTestClass().getRealClass();
         addTest(tr.getTestClass().getRealClass(), tr);
-        print(old_stdout, "SKIP: ",  real_class.getName(), tr.getName());
+        print(old_stdout, "SKIP: ", real_class.getName(), tr.getName());
     }
 
     private static void print(PrintStream out, String msg, String classname, String method_name) {
-        out.println(msg + "[" + Thread.currentThread().getId()  + "] " + classname + "." + method_name + "()");
+        out.println(msg + "["
+                    + Thread.currentThread().getId()
+                    + "] "
+                    + classname
+                    + "."
+                    + method_name
+                    + "()");
         // out.println(msg  + classname + "." + method_name + "()");
     }
 
@@ -159,10 +161,22 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
         results=classes.get(clazz);
         results.add(result);
+        
+        ITestNGMethod[] testMethods=result.getMethod().getTestClass().getTestMethods();
+        boolean allTestsInClassCompleted = testMethods.length >= results.size();
+        if(allTestsInClassCompleted){
+            try {
+                generateReport(clazz, results);
+            }
+            catch(IOException e) {
+                print(old_stderr, "Failed generating report: ", clazz.getName(), "");
+            }
+        }                   
     }
 
     /**
-     * Invoked after the test class is instantiated and before any configuration method is called.
+     * Invoked after the test class is instantiated and before any configuration
+     * method is called.
      */
     public void onStart(ITestContext context) {
         suffix=System.getProperty(SUFFIX);
@@ -172,7 +186,7 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
         try {
             System.setOut(new MyOutput("/tmp/tmp.txt", 1));
-    }
+        }
         catch(FileNotFoundException e) {
         }
 
@@ -184,106 +198,127 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     }
 
     /**
-     * Invoked after all the tests have run and all their
-     * Configuration methods have been called.
+     * Invoked after all the tests have run and all their Configuration methods
+     * have been called.
      */
     public void onFinish(ITestContext context) {
         System.setOut(old_stdout);
         System.setErr(old_stderr);
 
-        try {
+        /*
+         * Not needed since we dump test output files as soon as all methods in a test class complete
+         * 
+         * 
+         * try {
             generateReport();
         }
         catch(IOException e) {
             e.printStackTrace();
-        }
+        }*/
     }
 
     /**
      * generate the XML report given what we know from all the test results
      */
     protected void generateReport() throws IOException {
-        for(Map.Entry<Class,List<ITestResult>> entry: classes.entrySet()) {
+        for(Map.Entry<Class,List<ITestResult>> entry:classes.entrySet()) {
             Class clazz=entry.getKey();
             List<ITestResult> results=entry.getValue();
+            generateReport(clazz, results);
+        }
+    }
+    
+    /**
+     * generate the XML report given what we know from all the test results
+     */
+    protected void generateReport(Class clazz, List<ITestResult> results) throws IOException {
 
-            int num_failures=getFailures(results);
-            int num_skips=getSkips(results);
-            int num_errors=getErrors(results);
-            long total_time=getTotalTime(results);
+        int num_failures=getFailures(results);
+        int num_skips=getSkips(results);
+        int num_errors=getErrors(results);
+        long total_time=getTotalTime(results);
 
-            String file_name=output_dir + File.separator + "TEST-" + clazz.getName();
+        String file_name=output_dir + File.separator + "TEST-" + clazz.getName();
+        if(suffix != null)
+            file_name=file_name + "-" + suffix;
+        file_name=file_name + ".xml";
+        FileWriter out=new FileWriter(file_name, false); // don't append, overwrite
+        try {
+            out.write(XML_DEF + "\n");
+
+            out.write("\n<testsuite " + " failures=\""
+                      + num_failures
+                      + "\" errors=\""
+                      + num_errors
+                      + "\" skips=\""
+                      + num_skips
+                      + "\" name=\""
+                      + clazz.getName());
             if(suffix != null)
-                file_name=file_name + "-" + suffix;
-            file_name=file_name + ".xml";
-            FileWriter out=new FileWriter(file_name, false); // don't append, overwrite
-            try {
-                out.write(XML_DEF + "\n");
+                out.write(" (" + suffix + ")");
+            out.write("\" tests=\"" + results.size() + "\" time=\"" + (total_time / 1000.0) + "\">");
 
-                out.write("\n<testsuite " +
-                        " failures=\"" + num_failures +
-                        "\" errors=\"" + num_errors +
-                        "\" skips=\"" + num_skips +
-                        "\" name=\"" + clazz.getName());
+            out.write("\n<properties>");
+            Properties props=System.getProperties();
+
+            for(Map.Entry<Object,Object> tmp:props.entrySet()) {
+                out.write("\n    <property name=\"" + tmp.getKey()
+                          + "\""
+                          + " value=\""
+                          + tmp.getValue()
+                          + "\"/>");
+            }
+            out.write("\n</properties>\n");
+
+            for(ITestResult result:results) {
+                if(result == null)
+                    continue;
+                long time=result.getEndMillis() - result.getStartMillis();
+                out.write("\n    <testcase classname=\"" + clazz.getName());
                 if(suffix != null)
                     out.write(" (" + suffix + ")");
-                out.write("\" tests=\"" + results.size() + "\" time=\"" + (total_time / 1000.0) + "\">");
+                out.write("\" name=\"" + result.getMethod().getMethodName()
+                          + "\" time=\""
+                          + (time / 1000.0)
+                          + "\">");
 
-                out.write("\n<properties>");
-                Properties props=System.getProperties();
+                Throwable ex=result.getThrowable();
 
-                for(Map.Entry<Object,Object> tmp: props.entrySet()) {
-                    out.write("\n    <property name=\"" + tmp.getKey() + "\"" +
-                    " value=\"" + tmp.getValue() + "\"/>");
-                }
-                out.write("\n</properties>\n");
-
-
-                for(ITestResult result: results) {
-                    if(result == null)
-                        continue;
-                    long time=result.getEndMillis() - result.getStartMillis();
-                    out.write("\n    <testcase classname=\"" + clazz.getName());
-                    if(suffix != null)
-                        out.write(" (" + suffix + ")");
-                    out.write("\" name=\"" + result.getMethod().getMethodName() +
-                            "\" time=\"" + (time/1000.0) + "\">");
-
-                    Throwable ex=result.getThrowable();
-
-                    switch(result.getStatus()) {
-                        case ITestResult.SUCCESS:
-                            case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
-                                break;
-                        case ITestResult.FAILURE:
-                            writeFailure("failure", result.getMethod().getMethod(), ex, "exception", out);
-                            break;
-                        case ITestResult.SKIP:
-                            writeFailure("error", result.getMethod().getMethod(), ex, "SKIPPED", out);
-                            break;
-                        default:
-                            writeFailure("error", result.getMethod().getMethod(), ex, "exception", out);
-                    }
-
-                    out.write("\n</testcase>");
+                switch(result.getStatus()) {
+                    case ITestResult.SUCCESS:
+                    case ITestResult.SUCCESS_PERCENTAGE_FAILURE:
+                        break;
+                    case ITestResult.FAILURE:
+                        writeFailure("failure",
+                                     result.getMethod().getMethod(),
+                                     ex,
+                                     "exception",
+                                     out);
+                        break;
+                    case ITestResult.SKIP:
+                        writeFailure("error", result.getMethod().getMethod(), ex, "SKIPPED", out);
+                        break;
+                    default:
+                        writeFailure("error", result.getMethod().getMethod(), ex, "exception", out);
                 }
 
-                Tuple<StringBuffer, StringBuffer> stdout=outputs.get(clazz);
-                if(stdout != null) {
-                    StringBuffer system_out=stdout.getVal1();
-                    StringBuffer system_err=stdout.getVal2();
-                    writeOutput(out, system_out.toString(), 1);
-                    out.write("\n");
-                    writeOutput(out, system_err.toString(), 2);
-                }
-
-                out.write("\n</testsuite>\n");
+                out.write("\n</testcase>");
             }
-            finally {
-                out.close();
+
+            Tuple<StringBuffer,StringBuffer> stdout=outputs.get(clazz);
+            if(stdout != null) {
+                StringBuffer system_out=stdout.getVal1();
+                StringBuffer system_err=stdout.getVal2();
+                writeOutput(out, system_out.toString(), 1);
+                out.write("\n");
+                writeOutput(out, system_err.toString(), 2);
             }
+
+            out.write("\n</testsuite>\n");
         }
-
+        finally {
+            out.close();
+        }
     }
 
     private static void writeOutput(FileWriter out, String s, int type) throws IOException {
@@ -295,12 +330,15 @@ public class JUnitXMLReporter extends TestListenerAdapter {
         }
     }
 
-
-    private static void writeFailure(String type, Method method, Throwable ex, String msg, FileWriter out) throws IOException {
+    private static void writeFailure(String type,
+                                     Method method,
+                                     Throwable ex,
+                                     String msg,
+                                     FileWriter out) throws IOException {
         Test annotation=method.getAnnotation(Test.class);
         if(annotation != null && ex != null) {
             Class[] expected_exceptions=annotation.expectedExceptions();
-            for(int i=0; i < expected_exceptions.length; i++) {
+            for(int i=0;i < expected_exceptions.length;i++) {
                 Class expected_exception=expected_exceptions[i];
                 if(expected_exception.equals(ex.getClass())) {
                     return;
@@ -319,11 +357,12 @@ public class JUnitXMLReporter extends TestListenerAdapter {
     }
 
     private static void printException(Throwable ex, FileWriter out) throws IOException {
-        if(ex == null) return;
+        if(ex == null)
+            return;
         StackTraceElement[] stack_trace=ex.getStackTrace();
         out.write("\n<" + CDATA + "\n");
         out.write(ex.getClass().getName() + " \n");
-        for(int i=0; i < stack_trace.length; i++) {
+        for(int i=0;i < stack_trace.length;i++) {
             StackTraceElement frame=stack_trace[i];
             try {
                 out.write("at " + frame.toString() + " \n");
@@ -340,8 +379,9 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
     private static long getTotalTime(List<ITestResult> results) {
         long start=0, stop=0;
-        for(ITestResult result: results) {
-            if(result == null) continue;
+        for(ITestResult result:results) {
+            if(result == null)
+                continue;
             long tmp_start=result.getStartMillis(), tmp_stop=result.getEndMillis();
             if(start == 0)
                 start=tmp_start;
@@ -355,12 +395,12 @@ public class JUnitXMLReporter extends TestListenerAdapter {
                 stop=Math.max(stop, tmp_stop);
             }
         }
-        return stop-start;
+        return stop - start;
     }
 
     private static int getFailures(List<ITestResult> results) {
         int retval=0;
-        for(ITestResult result: results) {
+        for(ITestResult result:results) {
             if(result != null && result.getStatus() == ITestResult.FAILURE)
                 retval++;
         }
@@ -369,11 +409,10 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
     private static int getErrors(List<ITestResult> results) {
         int retval=0;
-        for(ITestResult result: results) {
-            if(result != null
-                    && result.getStatus() != ITestResult.SUCCESS
-                    && result.getStatus() != ITestResult.SUCCESS_PERCENTAGE_FAILURE
-                    && result.getStatus() != ITestResult.FAILURE)
+        for(ITestResult result:results) {
+            if(result != null && result.getStatus() != ITestResult.SUCCESS
+               && result.getStatus() != ITestResult.SUCCESS_PERCENTAGE_FAILURE
+               && result.getStatus() != ITestResult.FAILURE)
                 retval++;
         }
         return retval;
@@ -381,13 +420,11 @@ public class JUnitXMLReporter extends TestListenerAdapter {
 
     private static int getSkips(List<ITestResult> results) {
         int retval=0;
-        for(ITestResult result: results) {
+        for(ITestResult result:results) {
             if(result != null && result.getStatus() == ITestResult.SKIP)
                 retval++;
         }
         return retval;
     }
-
-
 
 }
