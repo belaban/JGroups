@@ -24,12 +24,11 @@ import java.util.concurrent.atomic.AtomicInteger;
  * Tests whether OOB multicast/unicast messages are blocked by regular messages (which block) - should NOT be the case.
  * The class name is a misnomer, both multicast *and* unicast messages are tested
  * @author Bela Ban
- * @version $Id: OOBTest.java,v 1.12 2008/10/14 14:21:31 vlada Exp $
+ * @version $Id: OOBTest.java,v 1.13 2008/10/20 08:15:16 belaban Exp $
  */
 @Test(groups=Global.STACK_DEPENDENT,sequential=true)
 public class OOBTest extends ChannelTestBase {
     private JChannel c1, c2;
-    private ReentrantLock lock;
 
     @BeforeMethod
     public void init() throws Exception {
@@ -43,15 +42,11 @@ public class OOBTest extends ChannelTestBase {
         View view=c2.getView();
         log.info("view = " + view);
         assert view.size() == 2 : "view is " + view;
-        lock=new ReentrantLock();
-        lock.lock();
     }
 
 
     @AfterMethod
     public void cleanup() {
-        if(lock.isHeldByCurrentThread())
-            lock.unlock();
         Util.sleep(1000);
         Util.close(c2, c1);
     }
@@ -248,10 +243,13 @@ public class OOBTest extends ChannelTestBase {
 
 
     private void send(Address dest) throws ChannelNotConnectedException, ChannelClosedException {
+        final ReentrantLock lock=new ReentrantLock();
         final BlockingReceiver receiver=new BlockingReceiver(lock);
         final int NUM=10;
         c2.setReceiver(receiver);
 
+
+        lock.lock();
         c1.send(new Message(dest, null, 1L));
         Util.sleep(1000); // this (regular) message needs to be received first
 
@@ -265,21 +263,23 @@ public class OOBTest extends ChannelTestBase {
         List<Long> list=receiver.getMsgs();
         for(int i=0; i < 10; i++) {
             log.info("list = " + list);
-            if(list.size() == NUM -1)
+            if(list.size() == NUM-1)
                 break;
             Util.sleep(1000); // give the asynchronous msgs some time to be received
         }
 
+        System.out.println("list = " + list);
+
         assert list.size() == NUM-1 : "list is " + list;
         assert list.contains(2L);
 
-        Util.sleep(2000);
         log.info("[" + Thread.currentThread().getName() + "]: unlocking lock");
         if(lock.isHeldByCurrentThread())
             lock.unlock();
         Util.sleep(10);
 
         list=receiver.getMsgs();
+        System.out.println("list = " + list);
         assert list.size() == NUM : "list is " + list;
         for(long i=1; i <= NUM; i++)
             assert list.contains(i);
@@ -331,9 +331,9 @@ public class OOBTest extends ChannelTestBase {
             // System.out.println("[" + Thread.currentThread().getName() + "]: got " + (msg.isFlagSet(Message.OOB)? "OOB" : "regular") + " message "
                //     + "from " + msg.getSrc() + ": " + msg.getObject());
             if(!msg.isFlagSet(Message.OOB)) {
-                //System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
+                // System.out.println("[" + Thread.currentThread().getName() + "]: acquiring lock");
                 lock.lock();
-                //System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
+                // System.out.println("[" + Thread.currentThread().getName() + "]: acquired lock successfully");
                 lock.unlock();
             }
 
