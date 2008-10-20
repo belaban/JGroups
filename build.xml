@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.177 2008/10/13 14:18:14 vlada Exp $ -->
+<!-- $Id: build.xml,v 1.178 2008/10/20 06:36:39 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -303,6 +303,7 @@
         <delete dir="${compile.dir}" failonerror="false"/>
         <delete dir="${dist.dir}" failonerror="false"/>
         <delete dir="${tmp.dir}" failonerror="false"/>
+        <delete dir="${root.dir}/test-output" failonerror="false"/>
         <delete dir="${keystore.dir}" failonerror="false"/>
         <delete file="${lib.dir}/jboss-test.jar" failonerror="false"/>
         <delete file="${root.dir}/velocity.log" failonerror="false"/>
