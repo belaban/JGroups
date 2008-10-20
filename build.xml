@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 
-<!-- $Id: build.xml,v 1.178 2008/10/20 06:36:39 belaban Exp $ -->
+<!-- $Id: build.xml,v 1.179 2008/10/20 07:53:46 belaban Exp $ -->
 
 <project name="JGroups" default="compile" basedir=".">
     <description>
@@ -508,6 +508,7 @@
                 <jvmarg value="-Djgroups.tcpping.initial_hosts=${jgroups.tcpping.initial_hosts}"/>
                 <jvmarg value="-Dtests.tmp.dir=${tmp.dir}"/>
                 <jvmarg value="-Dlog4j.configuration=file:${conf.dir}/log4j.properties"/>
+                <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
             </testng>
         </sequential>
     </macrodef>
