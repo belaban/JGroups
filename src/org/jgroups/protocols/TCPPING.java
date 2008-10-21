@@ -31,7 +31,7 @@ import java.util.List;
  * membership.
  * 
  * @author Bela Ban
- * @version $Id: TCPPING.java,v 1.40 2008/07/31 18:59:08 vlada Exp $
+ * @version $Id: TCPPING.java,v 1.41 2008/10/21 12:47:04 vlada Exp $
  */
 public class TCPPING extends Discovery {
     
@@ -39,11 +39,11 @@ public class TCPPING extends Discovery {
     
     /* -----------------------------------------    Properties     --------------------------------------- */
     
-    @Property
-    private int port_range=1; // number of ports to be probed for initial membership
+    @Property(description="Number of ports to be probed for initial membership. Default is 1")
+    private int port_range=1; 
     
-    @Property(name="initial_hosts")
-    private String hosts; // hosts to be contacted for the initial membership    
+    @Property(name="initial_hosts", description="Comma delimeted list of hosts to be contacted for initial membership")
+    private String hosts;
     
     
     /* --------------------------------------------- Fields ------------------------------------------------------ */
