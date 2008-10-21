@@ -37,7 +37,7 @@ import org.w3c.dom.Element;
  * documentation.
  * 
  * @author Vladimir Blagojevic
- * @version $Id: PropertiesToXML.java,v 1.2 2008/10/21 12:10:31 vlada Exp $
+ * @version $Id: PropertiesToXML.java,v 1.3 2008/10/21 13:19:41 vlada Exp $
  * 
  */
 public class PropertiesToXML {
@@ -90,13 +90,14 @@ public class PropertiesToXML {
             DocumentBuilder builder=factory.newDocumentBuilder();
             DOMImplementation impl=builder.getDOMImplementation();
             xmldoc=impl.createDocument(null, "table", null);
-            Element row=createXMLTree(xmldoc);
+            Element tbody=createXMLTree(xmldoc);
             int propertyCount = 0;
 
             for(;clazz != null;clazz=clazz.getSuperclass()) {
                 Field[] fields=clazz.getDeclaredFields();
                 for(Field field:fields) {
                     if(field.isAnnotationPresent(Property.class)) {
+                        Element row=xmldoc.createElement("row");                        
                         String property=field.getName();
                         Element entry=xmldoc.createElement("entry");
                         entry.setTextContent(property);
@@ -108,6 +109,8 @@ public class PropertiesToXML {
                         entry.setTextContent(desc);
                         row.appendChild(entry);
                         propertyCount++;
+                        
+                        tbody.appendChild(row);
 
                         //System.out.println(protocol + "#" + property + "=" + desc);
                     }
@@ -158,11 +161,8 @@ public class PropertiesToXML {
         row.appendChild(entry);
 
         Element tbody=xmldoc.createElement("tbody");
-        tgroup.appendChild(tbody);
+        tgroup.appendChild(tbody);        
 
-        row=xmldoc.createElement("row");
-        tbody.appendChild(row);
-
-        return row;
+        return tbody;
     }
 }
