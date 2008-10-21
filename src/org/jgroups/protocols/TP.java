@@ -44,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.233 2008/10/21 07:39:03 belaban Exp $
+ * @version $Id: TP.java,v 1.234 2008/10/21 08:35:16 vlada Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -116,7 +116,7 @@ public abstract class TP extends Protocol {
      * Window media (non)sense
      */
     @ManagedAttribute(description="", writable=true)
-    @Property(description="Messages to self are looped back immediatelly if true. Default is false")
+    @Property(description="Messages to self are looped back immediately if true. Default is false")
     protected boolean loopback=false;
 
     /**
@@ -135,15 +135,15 @@ public abstract class TP extends Protocol {
     protected boolean oob_thread_pool_enabled=true;
 
     @ManagedAttribute(description="Minimum thread pool size for OOB messages. Default is 2")
-    @Property(name="oob_thread_pool.min_threads")
+    @Property(name="oob_thread_pool.min_threads",description="Minimum thread pool size for OOB messages. Default is 2")
     protected int oob_thread_pool_min_threads=2;
     
     @ManagedAttribute(description="Maximum thread pool size for OOB messages. Default is 10")
-    @Property(name="oob_thread_pool.max_threads")
+    @Property(name="oob_thread_pool.max_threads",description="Maximum thread pool size for OOB messages. Default is 10")
     protected int oob_thread_pool_max_threads=10;
       
     @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from OOB pool. Default is 30000")
-    @Property(name="oob_thread_pool.keep_alive_time")
+    @Property(name="oob_thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from OOB pool. Default is 30000")
     protected long oob_thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute(description="Use queue to enqueue incoming OOB messages. Default is true")
@@ -153,7 +153,7 @@ public abstract class TP extends Protocol {
   
     
     @ManagedAttribute(description="Maximum queue size for incoming OOB messages. Default is 500")
-    @Property(name="oob_thread_pool.queue_max_size")
+    @Property(name="oob_thread_pool.queue_max_size",description="Maximum queue size for incoming OOB messages. Default is 500")
     protected int oob_thread_pool_queue_max_size=500;
        
     @ManagedAttribute
@@ -162,20 +162,20 @@ public abstract class TP extends Protocol {
     String oob_thread_pool_rejection_policy="Run";
 
     @ManagedAttribute(description="Minimum thread pool size for regular messages. Default is 2")
-    @Property(name="thread_pool.min_threads")
+    @Property(name="thread_pool.min_threads",description="Minimum thread pool size for regular messages. Default is 2")
     protected int thread_pool_min_threads=2;
 
     @ManagedAttribute(description="Maximum thread pool size for regular messages. Default is 10")
-    @Property(name="thread_pool.max_threads")
+    @Property(name="thread_pool.max_threads",description="Maximum thread pool size for regular messages. Default is 10")
     protected int thread_pool_max_threads=10;
    
     
     @ManagedAttribute(description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
-    @Property(name="thread_pool.keep_alive_time")
+    @Property(name="thread_pool.keep_alive_time",description="Timeout in milliseconds to remove idle thread from regular pool. Default is 30000")
     protected long thread_pool_keep_alive_time=30000;
 
     @ManagedAttribute(description="Switch for enabling thread pool for regular messages. Default true")
-    @Property(name="thread_pool.enabled")
+    @Property(name="thread_pool.enabled",description="Switch for enabling thread pool for regular messages. Default true")
     protected boolean thread_pool_enabled=true;
   
     @ManagedAttribute(description="Use queue to enqueue incoming regular messages")
@@ -206,7 +206,7 @@ public abstract class TP extends Protocol {
     @Property(description="Enable bundling of smaller messages into bigger ones for unicast messages. Default is false")
     protected boolean enable_unicast_bundling=false;
 
-    @Property(description="Switch to enbale diagnostic probing. Default is true")
+    @Property(description="Switch to enable diagnostic probing. Default is true")
     protected boolean enable_diagnostics=true;
     
     @Property(description="Address for diagnostic probing. Default is 224.0.75.75")
