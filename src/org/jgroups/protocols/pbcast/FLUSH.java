@@ -53,19 +53,19 @@ public class FLUSH extends Protocol {
     
     
     /* ------------------------------------------ Properties  ------------------------------------------ */
-    @Property
+    @Property(description="Max time to keep channel blocked in flush. Default is 8000 msec")
     private long timeout = 8000;
      
-    @Property
+    @Property(description="Timeout (per atttempr) to quiet the cluster during the first flush phase. Default is 2500 msec")
     private long start_flush_timeout = 2500;
     
-    @Property
+    @Property(description="Retry timeout after an unsuccessful attempt to quiet the cluster (first flush phase). Default is 3000 msec")
     private long retry_timeout = 3000;
 
-    @Property
+    @Property(description="Reconcilliation phase toggle. Default is true")
     private boolean enable_reconciliation = true;
     
-    @Property
+    @Property(description="Max number of attempts to quiet the cluster during first flush phase. Default is 4")
     private int flush_retry_count = 4;
 
     
