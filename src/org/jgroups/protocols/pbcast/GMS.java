@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
  * sure new members don't receive any messages until they are members
  * 
  * @author Bela Ban
- * @version $Id: GMS.java,v 1.151 2008/07/17 17:42:52 belaban Exp $
+ * @version $Id: GMS.java,v 1.152 2008/10/21 12:56:59 vlada Exp $
  */
 @MBean(description="Group membership protocol")
 @DeprecatedProperty(names={"join_retry_timeout","digest_timeout","use_flush","flush_timeout"})
@@ -86,9 +86,8 @@ public class GMS extends Protocol {
     
     @Property(description="Time in ms to wait for all VIEW acks (0 == wait forever. Default is 2000 msec" )
     long view_ack_collection_timeout=2000;
-
-    /** How long should a Resumer wait until resuming the ViewHandler */
-    @Property
+ 
+    @Property(description="Timeout to resume ViewHandler. Default is 20000 msec")
     long resume_task_timeout=20000;
 
     /**
@@ -1171,7 +1170,7 @@ public class GMS extends Protocol {
     /**
      * Class which processes JOIN, LEAVE and MERGE requests. Requests are queued and processed in FIFO order
      * @author Bela Ban
-     * @version $Id: GMS.java,v 1.151 2008/07/17 17:42:52 belaban Exp $
+     * @version $Id: GMS.java,v 1.152 2008/10/21 12:56:59 vlada Exp $
      */
     class ViewHandler implements Runnable {
         volatile Thread                    thread;
