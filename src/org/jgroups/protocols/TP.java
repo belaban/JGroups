@@ -6,7 +6,6 @@ import org.jgroups.annotations.*;
 import org.jgroups.conf.PropertyConverters;
 import org.jgroups.stack.IpAddress;
 import org.jgroups.stack.Protocol;
-import org.jgroups.stack.ProtocolStack;
 import org.jgroups.util.*;
 import org.jgroups.util.ThreadFactory;
 
@@ -16,7 +15,6 @@ import java.io.IOException;
 import java.net.*;
 import java.text.NumberFormat;
 import java.util.*;
-import java.util.Map.Entry;
 import java.util.concurrent.*;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -46,7 +44,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * The {@link #receive(Address, Address, byte[], int, int)} method must
  * be called by subclasses when a unicast or multicast message has been received.
  * @author staBela Ban
- * @version $Id: TP.java,v 1.231 2008/10/10 13:46:12 vlada Exp $
+ * @version $Id: TP.java,v 1.232 2008/10/21 07:37:10 belaban Exp $
  */
 @MBean(description="Transport protocol")
 @DeprecatedProperty(names={"bind_to_all_interfaces", "use_incoming_packet_handler", "use_outgoing_packet_handler",
@@ -482,9 +480,9 @@ public abstract class TP extends Protocol {
     public boolean isReceiveOnAllInterfaces() {return receive_on_all_interfaces;}
     public List<NetworkInterface> getReceiveInterfaces() {return receive_interfaces;}
     /** @deprecated This property was removed in 2.7*/
-    public boolean isSendOnAllInterfaces() {return false;}
+    public static boolean isSendOnAllInterfaces() {return false;}
     /** @deprecated This property was removed in 2.7*/
-    public List<NetworkInterface> getSendInterfaces() {return null;}
+    public static List<NetworkInterface> getSendInterfaces() {return null;}
     public boolean isDiscardIncompatiblePackets() {return discard_incompatible_packets;}
     public void setDiscardIncompatiblePackets(boolean flag) {discard_incompatible_packets=flag;}
     public boolean isEnableBundling() {return enable_bundling;}
@@ -537,7 +535,7 @@ public abstract class TP extends Protocol {
     public void setLoopback(boolean b) {loopback=b;}
 
     /** @deprecated With the concurrent stack being the default, this property is ignored */
-    public boolean isUseIncomingPacketHandler() {return false;}
+    public static boolean isUseIncomingPacketHandler() {return false;}
 
     public ConcurrentMap<String,Protocol> getUpProtocols() {
         return up_prots;
@@ -680,19 +678,6 @@ public abstract class TP extends Protocol {
     public abstract void postUnmarshalling(Message msg, Address dest, Address src, boolean multicast);
 
     public abstract void postUnmarshallingList(Message msg, Address dest, boolean multicast);
-
-
-    private StringBuilder _getInfo(Channel ch) {
-        StringBuilder sb=new StringBuilder();
-        sb.append(ch.getLocalAddress()).append(" (").append(ch.getClusterName()).append(") ").append("\n");
-        sb.append("local_addr=").append(ch.getLocalAddress()).append("\n");
-        sb.append("group_name=").append(ch.getClusterName()).append("\n");
-        sb.append("version=").append(Version.description).append(", cvs=\"").append(Version.cvs).append("\"\n");
-        sb.append("view: ").append(ch.getView()).append('\n');
-        sb.append(getInfo());
-        return sb;
-    }
-
 
     /* ------------------------------------------------------------------------------- */
 
