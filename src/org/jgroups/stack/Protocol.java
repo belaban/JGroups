@@ -36,14 +36,15 @@ import java.util.regex.Pattern;
  * constructor !</b>
  *
  * @author Bela Ban
- * @version $Id: Protocol.java,v 1.64 2008/10/10 13:31:54 vlada Exp $
+ * @version $Id: Protocol.java,v 1.65 2008/10/21 08:14:47 vlada Exp $
  */
 @DeprecatedProperty(names={"down_thread","down_thread_prio","up_thread","up_thread_prio"})
 public abstract class Protocol {
     protected Protocol         up_prot=null, down_prot=null;
     protected ProtocolStack    stack=null;
-    @Property
-    protected boolean          stats=true;  // determines whether to collect statistics (and expose them via JMX)
+    
+    @Property(description="Determines whether to collect statistics (and expose them via JMX). Default is true")
+    protected boolean          stats=true;
     protected final Log        log=LogFactory.getLog(this.getClass());
 
 
