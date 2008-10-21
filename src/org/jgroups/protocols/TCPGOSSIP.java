@@ -14,30 +14,38 @@ import java.net.UnknownHostException;
 
 
 /**
- * The TCPGOSSIP protocol layer retrieves the initial membership (used by the GMS when started
- * by sending event FIND_INITIAL_MBRS down the stack).
- * We do this by contacting one or more GossipRouters, which must be running at well-known
- * addresses:ports. The responses should allow us to determine the coordinator whom we have to
- * contact, e.g. in case we want to join the group.  When we are a server (after having
- * received the BECOME_SERVER event), we'll respond to TCPGOSSIP requests with a TCPGOSSIP
- * response.<p> The FIND_INITIAL_MBRS event will eventually be answered with a
+ * The TCPGOSSIP protocol layer retrieves the initial membership (used by the
+ * GMS when started by sending event FIND_INITIAL_MBRS down the stack). We do
+ * this by contacting one or more GossipRouters, which must be running at
+ * well-known addresses:ports. The responses should allow us to determine the
+ * coordinator whom we have to contact, e.g. in case we want to join the group.
+ * When we are a server (after having received the BECOME_SERVER event), we'll
+ * respond to TCPGOSSIP requests with a TCPGOSSIP response.
+ * <p>
+ * The FIND_INITIAL_MBRS event will eventually be answered with a
  * FIND_INITIAL_MBRS_OK event up the stack.
- *
+ * 
  * @author Bela Ban
- * @version $Id: TCPGOSSIP.java,v 1.31 2008/05/30 15:42:28 vlada Exp $
+ * @version $Id: TCPGOSSIP.java,v 1.32 2008/10/21 12:45:55 vlada Exp $
  */
 public class TCPGOSSIP extends Discovery {
-    List<IpAddress>   initial_hosts=null;  // (list of IpAddresses) hosts to be contacted for the initial membership
-    GossipClient        gossip_client=null;  // accesses the GossipRouter(s) to find initial mbrship
+    
+    private final static String name="TCPGOSSIP";    
 
-    // we need to refresh the registration with the GossipRouter(s) periodically,
-    // so that our entries are not purged from the cache
-    @Property
-    long                gossip_refresh_rate=20000;
-    @Property
-    int                 sock_conn_timeout=1000;     // max time in millis for a socket creation
-    final static String name="TCPGOSSIP";
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    
+    @Property(description="Rate of continious refresh registering of underlying gossip client with gossip server. Default is 20000 msec")
+    long gossip_refresh_rate=20000;
+    @Property(description="Max time for socket creation. Default is 1000 msec")
+    int sock_conn_timeout=1000;
+    
+    
+    /* --------------------------------------------- Fields ------------------------------------------------------ */
 
+    
+    List<IpAddress> initial_hosts=null; // (list of IpAddresses) hosts to be contacted for the initial membership
+    GossipClient gossip_client=null; // accesses the GossipRouter(s) to find initial mbrship    
 
     public String getName() {
         return name;

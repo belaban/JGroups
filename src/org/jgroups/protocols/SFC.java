@@ -25,15 +25,19 @@ import java.io.*;
  * <em>Note that SFC supports only flow control for multicast messages; unicast flow control is not supported ! Use FC if
  * unicast flow control is required.</em>
  * @author Bela Ban
- * @version $Id: SFC.java,v 1.23 2008/10/10 13:46:12 vlada Exp $
+ * @version $Id: SFC.java,v 1.24 2008/10/21 12:41:47 vlada Exp $
  */
 @MBean(description="Simple flow control protocol")
 public class SFC extends Protocol {
-    static final String name="SFC";
+    private static final String name="SFC";
 
-    /** Max number of bytes to send per receiver until an ack must be received before continuing sending */
-    @Property
+    /* -----------------------------------------    Properties     -------------------------------------------------- */
+    
+    @Property(description="Max number of bytes to send per receiver until an ack must be received to proceed. Default is 2000000 bytes")
     private long max_credits=2000000;
+    
+    @Property(description="Max time (in milliseconds) to block. Default is 5000 msec")
+    private long max_block_time=5000;
 
     private Long MAX_CREDITS;
 
@@ -62,11 +66,7 @@ public class SFC extends Protocol {
 
 
     /** Used to wait for and signal when credits become available again */
-    private final Condition credits_available=lock.newCondition();
-
-    /** Number of milliseconds after which we send a new credit request if we are waiting for credit responses */
-    @Property
-    private long max_block_time=5000;
+    private final Condition credits_available=lock.newCondition();  
 
     /** Last time a thread woke up from blocking and had to request credit */
     private long last_blocked_request=0L;
