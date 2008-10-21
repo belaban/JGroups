@@ -14,16 +14,15 @@ import java.io.InputStreamReader;
  * taking 1 argument; the host name of the host to be pinged. Property 'cmd' determines the program to be executed
  * (use a fully qualified name if the program is not on the path).
  * @author Bela Ban
- * @version $Id: FD_PING.java,v 1.6 2008/05/08 09:46:43 vlada Exp $
+ * @version $Id: FD_PING.java,v 1.7 2008/10/21 12:20:32 vlada Exp $
  */
 public class FD_PING extends FD {
     /** Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure.
      * The only argument passed to cmd is the host's address (symbolic name or dotted-decimal IP address) */
-    @Property
+    @Property(description="Command (script or executable) to ping a host: a return value of 0 means success, anything else is a failure. Default is ping")
     String cmd="ping";
-
-    /** Write the stdout of the command to the log */
-    @Property
+  
+    @Property(description="Write the stdout of the command to the log. Default is true")
     boolean verbose=true;
 
     public String getName() {

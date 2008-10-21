@@ -43,7 +43,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * true.
  * 
  * @author Bela Ban
- * @version $Id: FD.java,v 1.72 2008/07/16 15:38:44 vlada Exp $
+ * @version $Id: FD.java,v 1.73 2008/10/21 12:16:15 vlada Exp $
  */
 @MBean(description="Failure detection based on simple heartbeat protocol")
 public class FD extends Protocol {
@@ -56,11 +56,11 @@ public class FD extends Protocol {
     @ManagedAttribute(description="Timeout in msec to suspect a node P if neither a heartbeat nor data were received from P", writable=true)
     long timeout=3000; 
 
-    @Property(description="Shun switch")
+    @Property(description="Shun switch. Default is true")
     @ManagedAttribute(description="Shun switch", writable=true)
     boolean shun=true;
 
-    @Property(description="Number of times to send heartbeat")
+    @Property(description="Number of times to send heartbeat. Default is 2")
     @ManagedAttribute(description="Number of times to send a are-you-alive msg", writable=true)
     int max_tries=2;
     
