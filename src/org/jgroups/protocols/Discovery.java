@@ -39,7 +39,7 @@ import java.util.concurrent.TimeUnit;
  * </ul>
  * 
  * @author Bela Ban
- * @version $Id: Discovery.java,v 1.51 2008/09/18 15:02:41 belaban Exp $
+ * @version $Id: Discovery.java,v 1.52 2008/10/21 12:37:10 vlada Exp $
  */
 @MBean
 public abstract class Discovery extends Protocol {   
@@ -55,7 +55,7 @@ public abstract class Discovery extends Protocol {
     @ManagedAttribute(description="Minimum number of initial members to get a response from", writable=true)
     int num_initial_members=2;
 
-    @Property(description="Minimum number of server responses (PingRsp.isServer()=true). If this value is" +
+    @Property(description="Minimum number of server responses (PingRsp.isServer()=true). If this value is " +
             "greater than 0, we'll ignore num_initial_members")
     @ManagedAttribute(writable=true, description="Minimum number of server responses (PingRsp.isServer()=true). " +
             "If this value is greater than 0, we'll ignore num_initial_members")
